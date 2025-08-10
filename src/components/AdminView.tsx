@@ -30,7 +30,7 @@ export interface Output {
   id: string;
   name: string;
   description: string;
-  type: 'deliverable' | 'checkpoint' | 'result';
+  type: 'minor-aesthetic' | 'major-aesthetic' | 'performance-durability' | 'safety';
 }
 
 export interface WorkflowStep {
@@ -222,7 +222,7 @@ export default function AdminView() {
       id: Date.now().toString(),
       name: '',
       description: '',
-      type: 'deliverable'
+      type: 'minor-aesthetic'
     };
     setFormData(prev => ({
       ...prev,
@@ -470,15 +470,16 @@ export default function AdminView() {
                       />
                       <Select 
                         value={output.type} 
-                        onValueChange={(value: 'deliverable' | 'checkpoint' | 'result') => updateOutput(index, 'type', value)}
+                        onValueChange={(value: 'minor-aesthetic' | 'major-aesthetic' | 'performance-durability' | 'safety') => updateOutput(index, 'type', value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Output type" />
+                          <SelectValue placeholder="Criticality level" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="deliverable">Deliverable</SelectItem>
-                          <SelectItem value="checkpoint">Checkpoint</SelectItem>
-                          <SelectItem value="result">Result</SelectItem>
+                          <SelectItem value="minor-aesthetic">Minor Aesthetic</SelectItem>
+                          <SelectItem value="major-aesthetic">Major Aesthetic</SelectItem>
+                          <SelectItem value="performance-durability">Performance/Durability</SelectItem>
+                          <SelectItem value="safety">Safety</SelectItem>
                         </SelectContent>
                       </Select>
                       <Input

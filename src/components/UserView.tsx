@@ -26,8 +26,8 @@ const sampleSteps: WorkflowStep[] = [
       { id: '2', name: 'Video Conferencing', description: 'Zoom, Teams, or similar', category: 'Software', required: true }
     ],
     outputs: [
-      { id: '1', name: 'Interview Notes', description: 'Documented responses from stakeholders', type: 'deliverable' },
-      { id: '2', name: 'Requirements List', description: 'Initial list of project requirements', type: 'checkpoint' }
+      { id: '1', name: 'Interview Notes', description: 'Documented responses from stakeholders', type: 'minor-aesthetic' },
+      { id: '2', name: 'Requirements List', description: 'Initial list of project requirements', type: 'performance-durability' }
     ]
   },
   {
@@ -46,7 +46,7 @@ const sampleSteps: WorkflowStep[] = [
       { id: '3', name: 'Word Processor', description: 'Google Docs, Word, or similar', category: 'Software', required: true }
     ],
     outputs: [
-      { id: '3', name: 'Requirements Document', description: 'Complete project requirements specification', type: 'deliverable' }
+      { id: '3', name: 'Requirements Document', description: 'Complete project requirements specification', type: 'performance-durability' }
     ]
   },
   {
@@ -63,7 +63,7 @@ const sampleSteps: WorkflowStep[] = [
       { id: '4', name: 'Diagramming Tool', description: 'Lucidchart, Draw.io, or similar', category: 'Software', required: true }
     ],
     outputs: [
-      { id: '4', name: 'Architecture Diagram', description: 'System architecture visualization', type: 'deliverable' }
+      { id: '4', name: 'Architecture Diagram', description: 'System architecture visualization', type: 'performance-durability' }
     ]
   },
   {
@@ -81,7 +81,7 @@ const sampleSteps: WorkflowStep[] = [
       { id: '6', name: 'Version Control', description: 'Git installation', category: 'Software', required: true }
     ],
     outputs: [
-      { id: '5', name: 'Development Environment', description: 'Fully configured development setup', type: 'checkpoint' }
+      { id: '5', name: 'Development Environment', description: 'Fully configured development setup', type: 'safety' }
     ]
   },
   {
@@ -99,8 +99,8 @@ const sampleSteps: WorkflowStep[] = [
       { id: '8', name: 'Database Tool', description: 'Database management software', category: 'Software', required: false }
     ],
     outputs: [
-      { id: '6', name: 'Core Features', description: 'Implemented and tested core functionality', type: 'deliverable' },
-      { id: '7', name: 'Test Suite', description: 'Comprehensive test coverage', type: 'result' }
+      { id: '6', name: 'Core Features', description: 'Implemented and tested core functionality', type: 'performance-durability' },
+      { id: '7', name: 'Test Suite', description: 'Comprehensive test coverage', type: 'safety' }
     ]
   }
 ];
