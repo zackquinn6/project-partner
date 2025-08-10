@@ -366,7 +366,7 @@ export const AdminView: React.FC = () => {
                   name: e.target.value
                 }
               }))} className="font-medium" /> : <span className="font-medium text-blue-600">{operation.name}</span>}
-                <Badge variant="secondary">Operation</Badge>
+                
               </div>
             </TableCell>
             <TableCell>
@@ -418,7 +418,7 @@ export const AdminView: React.FC = () => {
                   step: e.target.value
                 }
               }))} /> : <span>{step.step}</span>}
-                <Badge variant="secondary">Step</Badge>
+                
               </div>
             </TableCell>
             <TableCell>
@@ -519,8 +519,8 @@ export const AdminView: React.FC = () => {
               <TableRow>
                 <TableHead className="w-1/3">Name</TableHead>
                 <TableHead className="w-1/3">Description</TableHead>
-                <TableHead className="w-32">Content Type</TableHead>
-                <TableHead className="w-32">Resources</TableHead>
+                
+                
                 <TableHead className="w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
