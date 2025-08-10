@@ -4,13 +4,12 @@ import { WorkflowStep, Material, Tool, Output, Phase, Operation } from '@/interf
 import { ProjectSelector } from '@/components/ProjectSelector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Plus, Save, X, Check } from 'lucide-react';
+import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EditingState {
@@ -19,11 +18,19 @@ interface EditingState {
   data: any;
 }
 
+interface TableRow {
+  type: 'phase' | 'operation' | 'step';
+  id: string;
+  data: Phase | Operation | WorkflowStep;
+  parentId?: string;
+  level: number;
+}
+
 export const AdminView: React.FC = () => {
   const { currentProject, updateProject } = useProject();
-  const [selectedPhaseId, setSelectedPhaseId] = useState<string>('');
-  const [selectedOperationId, setSelectedOperationId] = useState<string>('');
   const [editing, setEditing] = useState<EditingState>({ type: null, id: null, data: null });
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
+  const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
 
   const updateProjectData = (updatedProject: typeof currentProject) => {
     if (updatedProject) {
@@ -31,7 +38,85 @@ export const AdminView: React.FC = () => {
     }
   };
 
-  // Phase Management
+  // Build flat table structure from hierarchical data
+  const buildTableRows = (): TableRow[] => {
+    if (!currentProject) return [];
+
+    const rows: TableRow[] = [];
+
+    currentProject.phases.forEach(phase => {
+      // Add phase row
+      rows.push({
+        type: 'phase',
+        id: phase.id,
+        data: phase,
+        level: 0
+      });
+
+      // Add operation rows if phase is expanded
+      if (expandedPhases.has(phase.id)) {
+        phase.operations.forEach(operation => {
+          rows.push({
+            type: 'operation',
+            id: operation.id,
+            data: operation,
+            parentId: phase.id,
+            level: 1
+          });
+
+          // Add step rows if operation is expanded
+          if (expandedOperations.has(operation.id)) {
+            operation.steps.forEach(step => {
+              rows.push({
+                type: 'step',
+                id: step.id,
+                data: step,
+                parentId: operation.id,
+                level: 2
+              });
+            });
+          }
+        });
+      }
+    });
+
+    return rows;
+  };
+
+  const togglePhaseExpansion = (phaseId: string) => {
+    setExpandedPhases(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(phaseId)) {
+        newSet.delete(phaseId);
+        // Also collapse all operations in this phase
+        const phase = currentProject?.phases.find(p => p.id === phaseId);
+        phase?.operations.forEach(op => {
+          setExpandedOperations(prev => {
+            const newOpSet = new Set(prev);
+            newOpSet.delete(op.id);
+            return newOpSet;
+          });
+        });
+      } else {
+        newSet.add(phaseId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleOperationExpansion = (operationId: string) => {
+    setExpandedOperations(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(operationId)) {
+        newSet.delete(operationId);
+      } else {
+        newSet.add(operationId);
+      }
+      return newSet;
+    });
+  };
+
+  // Add functions
   const addPhase = () => {
     if (!currentProject) return;
     
@@ -49,41 +134,12 @@ export const AdminView: React.FC = () => {
 
     updateProjectData(updatedProject);
     setEditing({ type: 'phase', id: newPhase.id, data: { ...newPhase } });
+    setExpandedPhases(prev => new Set([...prev, newPhase.id]));
     toast.success('Phase added');
   };
 
-  const updatePhase = (phaseId: string, updates: Partial<Phase>) => {
+  const addOperation = (phaseId: string) => {
     if (!currentProject) return;
-
-    const updatedProject = {
-      ...currentProject,
-      phases: currentProject.phases.map(phase => 
-        phase.id === phaseId ? { ...phase, ...updates } : phase
-      )
-    };
-
-    updateProjectData(updatedProject);
-  };
-
-  const deletePhase = (phaseId: string) => {
-    if (!currentProject) return;
-
-    const updatedProject = {
-      ...currentProject,
-      phases: currentProject.phases.filter(phase => phase.id !== phaseId)
-    };
-
-    updateProjectData(updatedProject);
-    if (selectedPhaseId === phaseId) {
-      setSelectedPhaseId('');
-      setSelectedOperationId('');
-    }
-    toast.success('Phase deleted');
-  };
-
-  // Operation Management
-  const addOperation = () => {
-    if (!currentProject || !selectedPhaseId) return;
 
     const newOperation: Operation = {
       id: Date.now().toString(),
@@ -95,7 +151,7 @@ export const AdminView: React.FC = () => {
     const updatedProject = {
       ...currentProject,
       phases: currentProject.phases.map(phase =>
-        phase.id === selectedPhaseId
+        phase.id === phaseId
           ? { ...phase, operations: [...phase.operations, newOperation] }
           : phase
       )
@@ -103,51 +159,13 @@ export const AdminView: React.FC = () => {
 
     updateProjectData(updatedProject);
     setEditing({ type: 'operation', id: newOperation.id, data: { ...newOperation } });
+    setExpandedPhases(prev => new Set([...prev, phaseId]));
+    setExpandedOperations(prev => new Set([...prev, newOperation.id]));
     toast.success('Operation added');
   };
 
-  const updateOperation = (operationId: string, updates: Partial<Operation>) => {
-    if (!currentProject || !selectedPhaseId) return;
-
-    const updatedProject = {
-      ...currentProject,
-      phases: currentProject.phases.map(phase =>
-        phase.id === selectedPhaseId
-          ? {
-              ...phase,
-              operations: phase.operations.map(op =>
-                op.id === operationId ? { ...op, ...updates } : op
-              )
-            }
-          : phase
-      )
-    };
-
-    updateProjectData(updatedProject);
-  };
-
-  const deleteOperation = (operationId: string) => {
-    if (!currentProject || !selectedPhaseId) return;
-
-    const updatedProject = {
-      ...currentProject,
-      phases: currentProject.phases.map(phase =>
-        phase.id === selectedPhaseId
-          ? { ...phase, operations: phase.operations.filter(op => op.id !== operationId) }
-          : phase
-      )
-    };
-
-    updateProjectData(updatedProject);
-    if (selectedOperationId === operationId) {
-      setSelectedOperationId('');
-    }
-    toast.success('Operation deleted');
-  };
-
-  // Step Management
-  const addStep = () => {
-    if (!currentProject || !selectedPhaseId || !selectedOperationId) return;
+  const addStep = (phaseId: string, operationId: string) => {
+    if (!currentProject) return;
 
     const newStep: WorkflowStep = {
       id: Date.now().toString(),
@@ -163,11 +181,11 @@ export const AdminView: React.FC = () => {
     const updatedProject = {
       ...currentProject,
       phases: currentProject.phases.map(phase =>
-        phase.id === selectedPhaseId
+        phase.id === phaseId
           ? {
               ...phase,
               operations: phase.operations.map(op =>
-                op.id === selectedOperationId
+                op.id === operationId
                   ? { ...op, steps: [...op.steps, newStep] }
                   : op
               )
@@ -178,57 +196,68 @@ export const AdminView: React.FC = () => {
 
     updateProjectData(updatedProject);
     setEditing({ type: 'step', id: newStep.id, data: { ...newStep } });
+    setExpandedPhases(prev => new Set([...prev, phaseId]));
+    setExpandedOperations(prev => new Set([...prev, operationId]));
     toast.success('Step added');
   };
 
-  const updateStep = (stepId: string, updates: Partial<WorkflowStep>) => {
-    if (!currentProject || !selectedPhaseId || !selectedOperationId) return;
+  // Update functions
+  const updateItem = (type: string, id: string, updates: any) => {
+    if (!currentProject) return;
 
-    const updatedProject = {
-      ...currentProject,
-      phases: currentProject.phases.map(phase =>
-        phase.id === selectedPhaseId
-          ? {
-              ...phase,
-              operations: phase.operations.map(op =>
-                op.id === selectedOperationId
-                  ? {
-                      ...op,
-                      steps: op.steps.map(step =>
-                        step.id === stepId ? { ...step, ...updates } : step
-                      )
-                    }
-                  : op
-              )
-            }
-          : phase
-      )
-    };
+    let updatedProject = { ...currentProject };
+
+    if (type === 'phase') {
+      updatedProject.phases = updatedProject.phases.map(phase =>
+        phase.id === id ? { ...phase, ...updates } : phase
+      );
+    } else if (type === 'operation') {
+      updatedProject.phases = updatedProject.phases.map(phase => ({
+        ...phase,
+        operations: phase.operations.map(op =>
+          op.id === id ? { ...op, ...updates } : op
+        )
+      }));
+    } else if (type === 'step') {
+      updatedProject.phases = updatedProject.phases.map(phase => ({
+        ...phase,
+        operations: phase.operations.map(op => ({
+          ...op,
+          steps: op.steps.map(step =>
+            step.id === id ? { ...step, ...updates } : step
+          )
+        }))
+      }));
+    }
 
     updateProjectData(updatedProject);
   };
 
-  const deleteStep = (stepId: string) => {
-    if (!currentProject || !selectedPhaseId || !selectedOperationId) return;
+  // Delete functions
+  const deleteItem = (type: string, id: string) => {
+    if (!currentProject) return;
 
-    const updatedProject = {
-      ...currentProject,
-      phases: currentProject.phases.map(phase =>
-        phase.id === selectedPhaseId
-          ? {
-              ...phase,
-              operations: phase.operations.map(op =>
-                op.id === selectedOperationId
-                  ? { ...op, steps: op.steps.filter(step => step.id !== stepId) }
-                  : op
-              )
-            }
-          : phase
-      )
-    };
+    let updatedProject = { ...currentProject };
+
+    if (type === 'phase') {
+      updatedProject.phases = updatedProject.phases.filter(phase => phase.id !== id);
+    } else if (type === 'operation') {
+      updatedProject.phases = updatedProject.phases.map(phase => ({
+        ...phase,
+        operations: phase.operations.filter(op => op.id !== id)
+      }));
+    } else if (type === 'step') {
+      updatedProject.phases = updatedProject.phases.map(phase => ({
+        ...phase,
+        operations: phase.operations.map(op => ({
+          ...op,
+          steps: op.steps.filter(step => step.id !== id)
+        }))
+      }));
+    }
 
     updateProjectData(updatedProject);
-    toast.success('Step deleted');
+    toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`);
   };
 
   const startEdit = (type: EditingState['type'], id: string, data: any) => {
@@ -237,19 +266,7 @@ export const AdminView: React.FC = () => {
 
   const saveEdit = () => {
     if (!editing.type || !editing.id || !editing.data) return;
-
-    switch (editing.type) {
-      case 'phase':
-        updatePhase(editing.id, editing.data);
-        break;
-      case 'operation':
-        updateOperation(editing.id, editing.data);
-        break;
-      case 'step':
-        updateStep(editing.id, editing.data);
-        break;
-    }
-
+    updateItem(editing.type, editing.id, editing.data);
     setEditing({ type: null, id: null, data: null });
     toast.success('Changes saved');
   };
@@ -258,12 +275,250 @@ export const AdminView: React.FC = () => {
     setEditing({ type: null, id: null, data: null });
   };
 
-  const selectedPhase = currentProject?.phases.find(p => p.id === selectedPhaseId);
-  const selectedOperation = selectedPhase?.operations.find(o => o.id === selectedOperationId);
+  const getIndentStyle = (level: number) => ({
+    paddingLeft: `${level * 24}px`
+  });
+
+  const renderRowContent = (row: TableRow) => {
+    const isEditing = editing.type === row.type && editing.id === row.id;
+    const data = row.data as any;
+
+    switch (row.type) {
+      case 'phase':
+        const phase = data as Phase;
+        const isPhaseExpanded = expandedPhases.has(phase.id);
+        return (
+          <>
+            <TableCell style={getIndentStyle(row.level)}>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => togglePhaseExpansion(phase.id)}
+                  className="p-1 h-6 w-6"
+                >
+                  {isPhaseExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </Button>
+                {isEditing ? (
+                  <Input
+                    value={editing.data.name}
+                    onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, name: e.target.value } }))}
+                    className="font-bold"
+                  />
+                ) : (
+                  <span className="font-bold text-lg text-primary">{phase.name}</span>
+                )}
+                <Badge variant="secondary">Phase</Badge>
+              </div>
+            </TableCell>
+            <TableCell>
+              {isEditing ? (
+                <Textarea
+                  value={editing.data.description}
+                  onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, description: e.target.value } }))}
+                />
+              ) : (
+                <span className="text-sm text-muted-foreground">{phase.description || 'No description'}</span>
+              )}
+            </TableCell>
+            <TableCell>-</TableCell>
+            <TableCell>
+              <Badge variant="outline">{phase.operations.length} operations</Badge>
+            </TableCell>
+            <TableCell>
+              <div className="flex gap-1">
+                {isEditing ? (
+                  <>
+                    <Button size="sm" onClick={saveEdit}>
+                      <Check className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEdit}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => addOperation(phase.id)}>
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => deleteItem('phase', phase.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </TableCell>
+          </>
+        );
+
+      case 'operation':
+        const operation = data as Operation;
+        const isOperationExpanded = expandedOperations.has(operation.id);
+        return (
+          <>
+            <TableCell style={getIndentStyle(row.level)}>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleOperationExpansion(operation.id)}
+                  className="p-1 h-6 w-6"
+                >
+                  {isOperationExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </Button>
+                {isEditing ? (
+                  <Input
+                    value={editing.data.name}
+                    onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, name: e.target.value } }))}
+                    className="font-medium"
+                  />
+                ) : (
+                  <span className="font-medium text-blue-600">{operation.name}</span>
+                )}
+                <Badge variant="secondary">Operation</Badge>
+              </div>
+            </TableCell>
+            <TableCell>
+              {isEditing ? (
+                <Textarea
+                  value={editing.data.description}
+                  onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, description: e.target.value } }))}
+                />
+              ) : (
+                <span className="text-sm text-muted-foreground">{operation.description || 'No description'}</span>
+              )}
+            </TableCell>
+            <TableCell>-</TableCell>
+            <TableCell>
+              <Badge variant="outline">{operation.steps.length} steps</Badge>
+            </TableCell>
+            <TableCell>
+              <div className="flex gap-1">
+                {isEditing ? (
+                  <>
+                    <Button size="sm" onClick={saveEdit}>
+                      <Check className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEdit}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => addStep(row.parentId!, operation.id)}>
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => startEdit('operation', operation.id, operation)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => deleteItem('operation', operation.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </TableCell>
+          </>
+        );
+
+      case 'step':
+        const step = data as WorkflowStep;
+        return (
+          <>
+            <TableCell style={getIndentStyle(row.level)}>
+              <div className="flex items-center gap-2">
+                <div className="w-6" /> {/* Spacer for alignment */}
+                {isEditing ? (
+                  <Input
+                    value={editing.data.step}
+                    onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, step: e.target.value } }))}
+                  />
+                ) : (
+                  <span>{step.step}</span>
+                )}
+                <Badge variant="secondary">Step</Badge>
+              </div>
+            </TableCell>
+            <TableCell>
+              {isEditing ? (
+                <Textarea
+                  value={editing.data.description}
+                  onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, description: e.target.value } }))}
+                />
+              ) : (
+                <span className="text-sm text-muted-foreground">{step.description || 'No description'}</span>
+              )}
+            </TableCell>
+            <TableCell>
+              {isEditing ? (
+                <Select
+                  value={editing.data.contentType}
+                  onValueChange={(value) => setEditing(prev => ({ ...prev, data: { ...prev.data, contentType: value } }))}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Text</SelectItem>
+                    <SelectItem value="video">Video</SelectItem>
+                    <SelectItem value="image">Image</SelectItem>
+                    <SelectItem value="document">Document</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant="outline" className="capitalize">{step.contentType}</Badge>
+              )}
+            </TableCell>
+            <TableCell>
+              <div className="flex gap-1">
+                <Badge variant="secondary" className="text-xs">
+                  {step.materials?.length || 0}M
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  {step.tools?.length || 0}T
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  {step.outputs?.length || 0}O
+                </Badge>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="flex gap-1">
+                {isEditing ? (
+                  <>
+                    <Button size="sm" onClick={saveEdit}>
+                      <Check className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEdit}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => startEdit('step', step.id, step)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => deleteItem('step', step.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </TableCell>
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   if (!currentProject) {
     return (
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         <ProjectSelector />
         <Card>
           <CardContent className="text-center py-8">
@@ -274,17 +529,18 @@ export const AdminView: React.FC = () => {
     );
   }
 
+  const tableRows = buildTableRows();
+
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       <ProjectSelector />
 
-      {/* Phases Table */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Phases</CardTitle>
-              <CardDescription>Manage project phases</CardDescription>
+              <CardTitle>Workflow Structure</CardTitle>
+              <CardDescription>Complete project workflow with phases, operations, and steps</CardDescription>
             </div>
             <Button onClick={addPhase}>
               <Plus className="w-4 h-4 mr-2" />
@@ -296,314 +552,31 @@ export const AdminView: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Operations</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-1/3">Name</TableHead>
+                <TableHead className="w-1/3">Description</TableHead>
+                <TableHead className="w-32">Content Type</TableHead>
+                <TableHead className="w-32">Resources</TableHead>
+                <TableHead className="w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentProject.phases.map((phase) => (
-                <TableRow 
-                  key={phase.id}
-                  className={selectedPhaseId === phase.id ? 'bg-muted/50' : ''}
-                >
-                  <TableCell>
-                    {editing.type === 'phase' && editing.id === phase.id ? (
-                      <Input
-                        value={editing.data.name}
-                        onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, name: e.target.value } }))}
-                        className="w-full"
-                      />
-                    ) : (
-                      <div 
-                        className="font-medium cursor-pointer hover:text-primary"
-                        onClick={() => setSelectedPhaseId(phase.id)}
-                      >
-                        {phase.name}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editing.type === 'phase' && editing.id === phase.id ? (
-                      <Textarea
-                        value={editing.data.description}
-                        onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, description: e.target.value } }))}
-                        className="w-full"
-                      />
-                    ) : (
-                      <div className="text-sm text-muted-foreground">
-                        {phase.description || 'No description'}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{phase.operations.length} operations</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {editing.type === 'phase' && editing.id === phase.id ? (
-                        <>
-                          <Button size="sm" onClick={saveEdit}>
-                            <Check className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={cancelEdit}>
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => startEdit('phase', phase.id, phase)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => deletePhase(phase.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
+              {tableRows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    No workflow items yet. Click "Add Phase" to get started.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                tableRows.map((row) => (
+                  <TableRow key={`${row.type}-${row.id}`} className="group">
+                    {renderRowContent(row)}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
-
-      {/* Operations Table */}
-      {selectedPhaseId && selectedPhase && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Operations - {selectedPhase.name}</CardTitle>
-                <CardDescription>Manage operations within this phase</CardDescription>
-              </div>
-              <Button onClick={addOperation}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Operation
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Steps</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {selectedPhase.operations.map((operation) => (
-                  <TableRow 
-                    key={operation.id}
-                    className={selectedOperationId === operation.id ? 'bg-muted/50' : ''}
-                  >
-                    <TableCell>
-                      {editing.type === 'operation' && editing.id === operation.id ? (
-                        <Input
-                          value={editing.data.name}
-                          onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, name: e.target.value } }))}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div 
-                          className="font-medium cursor-pointer hover:text-primary"
-                          onClick={() => setSelectedOperationId(operation.id)}
-                        >
-                          {operation.name}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editing.type === 'operation' && editing.id === operation.id ? (
-                        <Textarea
-                          value={editing.data.description}
-                          onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, description: e.target.value } }))}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div className="text-sm text-muted-foreground">
-                          {operation.description || 'No description'}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{operation.steps.length} steps</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {editing.type === 'operation' && editing.id === operation.id ? (
-                          <>
-                            <Button size="sm" onClick={saveEdit}>
-                              <Check className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={cancelEdit}>
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => startEdit('operation', operation.id, operation)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => deleteOperation(operation.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Steps Table */}
-      {selectedOperationId && selectedOperation && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Steps - {selectedOperation.name}</CardTitle>
-                <CardDescription>Manage steps within this operation</CardDescription>
-              </div>
-              <Button onClick={addStep}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Step
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Content Type</TableHead>
-                  <TableHead>Resources</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {selectedOperation.steps.map((step) => (
-                  <TableRow key={step.id}>
-                    <TableCell>
-                      {editing.type === 'step' && editing.id === step.id ? (
-                        <Input
-                          value={editing.data.step}
-                          onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, step: e.target.value } }))}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div className="font-medium">{step.step}</div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editing.type === 'step' && editing.id === step.id ? (
-                        <Textarea
-                          value={editing.data.description}
-                          onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, description: e.target.value } }))}
-                          className="w-full"
-                        />
-                      ) : (
-                        <div className="text-sm text-muted-foreground max-w-xs">
-                          {step.description || 'No description'}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editing.type === 'step' && editing.id === step.id ? (
-                        <Select
-                          value={editing.data.contentType}
-                          onValueChange={(value) => setEditing(prev => ({ ...prev, data: { ...prev.data, contentType: value } }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="text">Text</SelectItem>
-                            <SelectItem value="video">Video</SelectItem>
-                            <SelectItem value="image">Image</SelectItem>
-                            <SelectItem value="document">Document</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge variant="outline" className="capitalize">{step.contentType}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {step.materials?.length || 0}M
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          {step.tools?.length || 0}T
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          {step.outputs?.length || 0}O
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {editing.type === 'step' && editing.id === step.id ? (
-                          <>
-                            <Button size="sm" onClick={saveEdit}>
-                              <Check className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={cancelEdit}>
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => startEdit('step', step.id, step)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => deleteStep(step.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
