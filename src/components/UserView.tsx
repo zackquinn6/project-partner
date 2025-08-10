@@ -4,112 +4,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video } from "lucide-react";
-import { WorkflowStep } from "@/interfaces/Project";
-
-// Sample data - in a real app this would come from a backend
-const sampleSteps: WorkflowStep[] = [
-  {
-    id: '1',
-    phase: 'Planning',
-    operation: 'Requirements Gathering',
-    step: 'Stakeholder Interview',
-    description: 'Conduct interviews with key stakeholders to understand project requirements and expectations.',
-    contentType: 'text',
-    content: 'Prepare a comprehensive list of open-ended questions focusing on:\n\n• Project goals and objectives\n• Budget and timeline constraints\n• Success criteria and KPIs\n• Potential risks and challenges\n• Stakeholder expectations\n\nTip: Schedule 60-90 minutes for each interview and record with permission.',
-    materials: [
-      { id: '1', name: 'Interview Template', description: 'Structured question template', category: 'Other', required: true },
-      { id: '2', name: 'Recording Device', description: 'Audio recording equipment', category: 'Hardware', required: false }
-    ],
-    tools: [
-      { id: '1', name: 'Calendar App', description: 'For scheduling meetings', category: 'Software', required: true },
-      { id: '2', name: 'Video Conferencing', description: 'Zoom, Teams, or similar', category: 'Software', required: true }
-    ],
-    outputs: [
-      { id: '1', name: 'Interview Notes', description: 'Documented responses from stakeholders', type: 'none' },
-      { id: '2', name: 'Requirements List', description: 'Initial list of project requirements', type: 'performance-durability', potentialEffects: 'Project delays, scope creep', photosOfEffects: 'timeline-issues.jpg', mustGetRight: 'Complete stakeholder buy-in', qualityChecks: 'Review with all stakeholders' }
-    ]
-  },
-  {
-    id: '2',
-    phase: 'Planning',
-    operation: 'Requirements Gathering',
-    step: 'Document Requirements',
-    description: 'Create comprehensive documentation of all gathered requirements using our template.',
-    contentType: 'document',
-    content: 'https://docs.google.com/document/d/example-requirements-template',
-    materials: [
-      { id: '3', name: 'Requirements Template', description: 'Standard documentation template', category: 'Other', required: true }
-    ],
-    tools: [
-      { id: '3', name: 'Word Processor', description: 'Google Docs, Word, or similar', category: 'Software', required: true }
-    ],
-    outputs: [
-      { id: '3', name: 'Requirements Document', description: 'Complete project requirements specification', type: 'performance-durability', potentialEffects: 'Misaligned expectations, rework', photosOfEffects: 'requirements-gap.jpg', mustGetRight: 'Clear acceptance criteria', qualityChecks: 'Technical review and sign-off' }
-    ]
-  },
-  {
-    id: '3',
-    phase: 'Planning',
-    operation: 'Technical Planning',
-    step: 'Architecture Design',
-    description: 'Review the system architecture diagram and understand the technical approach.',
-    contentType: 'image',
-    content: 'https://via.placeholder.com/800x400/6366f1/ffffff?text=System+Architecture+Diagram',
-    materials: [],
-    tools: [
-      { id: '4', name: 'Diagramming Tool', description: 'Lucidchart, Draw.io, or similar', category: 'Software', required: true }
-    ],
-    outputs: [
-      { id: '4', name: 'Architecture Diagram', description: 'System architecture visualization', type: 'performance-durability', potentialEffects: 'Scalability issues, technical debt', photosOfEffects: 'architecture-problems.jpg', mustGetRight: 'Scalable design patterns', qualityChecks: 'Architecture review board approval' }
-    ]
-  },
-  {
-    id: '4',
-    phase: 'Execution',
-    operation: 'Development Setup',
-    step: 'Environment Setup',
-    description: 'Watch the tutorial video on setting up your development environment.',
-    contentType: 'video',
-    content: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    materials: [],
-    tools: [
-      { id: '5', name: 'Code Editor', description: 'VS Code, WebStorm, or similar', category: 'Software', required: true },
-      { id: '6', name: 'Version Control', description: 'Git installation', category: 'Software', required: true }
-    ],
-    outputs: [
-      { id: '5', name: 'Development Environment', description: 'Fully configured development setup', type: 'safety', potentialEffects: 'Security vulnerabilities, data loss', photosOfEffects: 'security-breach.jpg', mustGetRight: 'Secure configurations', qualityChecks: 'Security audit and penetration testing' }
-    ]
-  },
-  {
-    id: '5',
-    phase: 'Execution',
-    operation: 'Implementation',
-    step: 'Core Features',
-    description: 'Begin implementing the core features as outlined in the requirements document.',
-    contentType: 'text',
-    content: 'Focus on implementing these core features in order:\n\n1. User authentication and authorization\n2. Data models and database setup\n3. Core business logic\n4. User interface components\n5. API endpoints and integration\n\nRemember to write tests for each feature as you implement them.',
-    materials: [],
-    tools: [
-      { id: '7', name: 'Testing Framework', description: 'Jest, Vitest, or similar', category: 'Software', required: true },
-      { id: '8', name: 'Database Tool', description: 'Database management software', category: 'Software', required: false }
-    ],
-    outputs: [
-      { id: '6', name: 'Core Features', description: 'Implemented and tested core functionality', type: 'performance-durability', potentialEffects: 'User experience issues, performance problems', photosOfEffects: 'feature-bugs.jpg', mustGetRight: 'User acceptance criteria', qualityChecks: 'User testing and performance benchmarks' },
-      { id: '7', name: 'Test Suite', description: 'Comprehensive test coverage', type: 'safety', potentialEffects: 'Production failures, data corruption', photosOfEffects: 'test-failures.jpg', mustGetRight: 'Critical path coverage', qualityChecks: 'Code coverage analysis and quality gates' }
-    ]
-  }
-];
+import { useProject } from '@/contexts/ProjectContext';
 
 export default function UserView() {
+  const { currentProject } = useProject();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
-  const [steps] = useState<WorkflowStep[]>(sampleSteps);
 
-  const currentStep = steps[currentStepIndex];
-  const progress = ((currentStepIndex + 1) / steps.length) * 100;
+  // Flatten all steps from all phases and operations for navigation
+  const allSteps = currentProject?.phases.flatMap(phase => 
+    phase.operations.flatMap(operation => 
+      operation.steps.map(step => ({
+        ...step,
+        phaseName: phase.name,
+        operationName: operation.name
+      }))
+    )
+  ) || [];
+
+  const currentStep = allSteps[currentStepIndex];
+  const progress = allSteps.length > 0 ? ((currentStepIndex + 1) / allSteps.length) * 100 : 0;
 
   const handleNext = () => {
-    if (currentStepIndex < steps.length - 1) {
+    if (currentStepIndex < allSteps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
     }
   };
@@ -121,32 +38,36 @@ export default function UserView() {
   };
 
   const handleComplete = () => {
-    setCompletedSteps(prev => new Set([...prev, currentStep.id]));
-    if (currentStepIndex < steps.length - 1) {
-      handleNext();
+    if (currentStep) {
+      setCompletedSteps(prev => new Set([...prev, currentStep.id]));
+      if (currentStepIndex < allSteps.length - 1) {
+        handleNext();
+      }
     }
   };
 
-  const renderContent = (step: WorkflowStep) => {
+  const renderContent = (step: typeof currentStep) => {
+    if (!step) return null;
+
     switch (step.contentType) {
       case 'document':
         return (
-            <div className="space-y-4">
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <ExternalLink className="w-5 h-5 text-orange-600" />
-                  <span className="font-medium text-orange-800">External Resource</span>
-                </div>
-                <a 
-                  href={step.content} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-orange-600 hover:text-orange-800 underline break-all"
-                >
-                  {step.content}
-                </a>
+          <div className="space-y-4">
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <ExternalLink className="w-5 h-5 text-orange-600" />
+                <span className="font-medium text-orange-800">External Resource</span>
               </div>
+              <a 
+                href={step.content} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-orange-600 hover:text-orange-800 underline break-all"
+              >
+                {step.content}
+              </a>
             </div>
+          </div>
         );
       
       case 'image':
@@ -193,16 +114,31 @@ export default function UserView() {
     }
   };
 
-  const groupedSteps = steps.reduce((acc, step) => {
-    if (!acc[step.phase]) {
-      acc[step.phase] = {};
-    }
-    if (!acc[step.phase][step.operation]) {
-      acc[step.phase][step.operation] = [];
-    }
-    acc[step.phase][step.operation].push(step);
+  // Group steps by phase and operation for sidebar navigation
+  const groupedSteps = currentProject?.phases.reduce((acc, phase) => {
+    acc[phase.name] = phase.operations.reduce((opAcc, operation) => {
+      opAcc[operation.name] = operation.steps;
+      return opAcc;
+    }, {} as Record<string, any[]>);
     return acc;
-  }, {} as Record<string, Record<string, WorkflowStep[]>>);
+  }, {} as Record<string, Record<string, any[]>>) || {};
+
+  if (!currentProject || allSteps.length === 0) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-muted-foreground">
+              {!currentProject 
+                ? 'Please select a project to view its workflow steps.' 
+                : 'No workflow steps found. Please add some steps in the admin view.'
+              }
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -212,7 +148,7 @@ export default function UserView() {
           <CardHeader>
             <CardTitle className="text-lg">Workflow Progress</CardTitle>
             <CardDescription>
-              Step {currentStepIndex + 1} of {steps.length}
+              Step {currentStepIndex + 1} of {allSteps.length}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -231,24 +167,27 @@ export default function UserView() {
                   {Object.entries(operations).map(([operation, opSteps]) => (
                     <div key={operation} className="ml-2 space-y-1">
                       <h5 className="text-sm font-medium text-muted-foreground">{operation}</h5>
-                      {opSteps.map((step) => (
-                        <div 
-                          key={step.id}
-                          className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast ${
-                            step.id === currentStep.id 
-                              ? 'bg-primary/10 text-primary border border-primary/20' 
-                              : completedSteps.has(step.id)
-                              ? 'bg-green-50 text-green-700 border border-green-200'
-                              : 'hover:bg-muted/50'
-                          }`}
-                          onClick={() => setCurrentStepIndex(steps.findIndex(s => s.id === step.id))}
-                        >
-                          <div className="flex items-center gap-2">
-                            {completedSteps.has(step.id) && <CheckCircle className="w-4 h-4" />}
-                            <span className="truncate">{step.step}</span>
+                      {opSteps.map((step) => {
+                        const stepIndex = allSteps.findIndex(s => s.id === step.id);
+                        return (
+                          <div 
+                            key={step.id}
+                            className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast ${
+                              step.id === currentStep?.id 
+                                ? 'bg-primary/10 text-primary border border-primary/20' 
+                                : completedSteps.has(step.id)
+                                ? 'bg-green-50 text-green-700 border border-green-200'
+                                : 'hover:bg-muted/50'
+                            }`}
+                            onClick={() => setCurrentStepIndex(stepIndex)}
+                          >
+                            <div className="flex items-center gap-2">
+                              {completedSteps.has(step.id) && <CheckCircle className="w-4 h-4" />}
+                              <span className="truncate">{step.step}</span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
@@ -264,15 +203,15 @@ export default function UserView() {
             <CardHeader>
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                  {currentStep.phase}
+                  {currentStep?.phaseName}
                 </Badge>
                 <span className="text-muted-foreground">→</span>
                 <Badge variant="outline">
-                  {currentStep.operation}
+                  {currentStep?.operationName}
                 </Badge>
               </div>
-              <CardTitle className="text-2xl">{currentStep.step}</CardTitle>
-              {currentStep.description && (
+              <CardTitle className="text-2xl">{currentStep?.step}</CardTitle>
+              {currentStep?.description && (
                 <CardDescription className="text-base">
                   {currentStep.description}
                 </CardDescription>
@@ -288,7 +227,7 @@ export default function UserView() {
           </Card>
 
           {/* Materials, Tools, and Outputs */}
-          {(currentStep.materials?.length > 0 || currentStep.tools?.length > 0 || currentStep.outputs?.length > 0) && (
+          {currentStep && (currentStep.materials?.length > 0 || currentStep.tools?.length > 0 || currentStep.outputs?.length > 0) && (
             <div className="grid md:grid-cols-3 gap-6">
               {/* Materials */}
               {currentStep.materials?.length > 0 && (
@@ -376,7 +315,7 @@ export default function UserView() {
                 </Button>
 
                 <div className="flex items-center gap-3">
-                  {!completedSteps.has(currentStep.id) && (
+                  {currentStep && !completedSteps.has(currentStep.id) && (
                     <Button
                       onClick={handleComplete}
                       className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth"
@@ -388,7 +327,7 @@ export default function UserView() {
                   
                   <Button
                     onClick={handleNext}
-                    disabled={currentStepIndex === steps.length - 1}
+                    disabled={currentStepIndex === allSteps.length - 1}
                     className="transition-fast"
                   >
                     Next

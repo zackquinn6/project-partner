@@ -27,7 +27,7 @@ export const ProjectSelector: React.FC = () => {
       description: newProjectForm.description,
       createdAt: new Date(),
       updatedAt: new Date(),
-      workflows: []
+      phases: []
     };
 
     addProject(newProject);
@@ -122,7 +122,7 @@ export const ProjectSelector: React.FC = () => {
             <h3 className="font-semibold">{currentProject.name}</h3>
             <p className="text-sm text-muted-foreground">{currentProject.description}</p>
             <p className="text-xs text-muted-foreground mt-2">
-              {currentProject.workflows.length} workflow steps
+              {currentProject.phases.length} phases
             </p>
           </div>
         )}
