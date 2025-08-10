@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Users, ArrowRight, CheckCircle, Route, Target, TrendingUp } from "lucide-react";
 import heroImage from "@/assets/hero-workflow.jpg";
+import generalDiyImage from "@/assets/general-diy.png";
 
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
@@ -76,7 +77,13 @@ export default function Home({ onViewChange }: HomeProps) {
                 alt="Workflow Management Visualization" 
                 className="w-full h-auto rounded-2xl shadow-card transition-smooth hover:shadow-elegant"
               />
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-primary/10 to-transparent"></div>
+              <div className="absolute inset-0 rounded-2xl overflow-hidden">
+                <img 
+                  src={generalDiyImage} 
+                  alt="General DIY" 
+                  className="w-full h-full object-cover opacity-20"
+                />
+              </div>
             </div>
           </div>
         </div>
