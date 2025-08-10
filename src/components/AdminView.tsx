@@ -9,363 +9,535 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Edit, Trash2, Plus, Settings, FileText, Video, Image, File } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Edit, Trash2, Plus, Save, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface EditingState {
+  type: 'phase' | 'operation' | 'step' | null;
+  id: string | null;
+  data: any;
+}
 
 export const AdminView: React.FC = () => {
   const { currentProject, updateProject } = useProject();
   const [selectedPhaseId, setSelectedPhaseId] = useState<string>('');
   const [selectedOperationId, setSelectedOperationId] = useState<string>('');
-  const [editingStepId, setEditingStepId] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState({
-    step: '',
-    description: '',
-    contentType: 'text' as 'text' | 'video' | 'image' | 'document',
-    content: '',
-    materials: [] as Material[],
-    tools: [] as Tool[],
-    outputs: [] as Output[]
-  });
+  const [editing, setEditing] = useState<EditingState>({ type: null, id: null, data: null });
 
-  const [newPhase, setNewPhase] = useState({ name: '', description: '' });
-  const [newOperation, setNewOperation] = useState({ name: '', description: '' });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!currentProject || !selectedPhaseId || !selectedOperationId) {
-      toast.error('Please select a project, phase, and operation first');
-      return;
+  const updateProjectData = (updatedProject: typeof currentProject) => {
+    if (updatedProject) {
+      updateProject({ ...updatedProject, updatedAt: new Date() });
     }
+  };
 
-    const updatedProject = { ...currentProject };
-    const phaseIndex = updatedProject.phases.findIndex(p => p.id === selectedPhaseId);
-    const operationIndex = updatedProject.phases[phaseIndex].operations.findIndex(o => o.id === selectedOperationId);
-
-    if (editingStepId) {
-      const stepIndex = updatedProject.phases[phaseIndex].operations[operationIndex].steps.findIndex(s => s.id === editingStepId);
-      updatedProject.phases[phaseIndex].operations[operationIndex].steps[stepIndex] = { ...formData, id: editingStepId };
-      toast.success('Step updated successfully');
-    } else {
-      const newStep: WorkflowStep = { ...formData, id: Date.now().toString() };
-      updatedProject.phases[phaseIndex].operations[operationIndex].steps.push(newStep);
-      toast.success('Step added successfully');
-    }
-
-    updatedProject.updatedAt = new Date();
-    updateProject(updatedProject);
-    setEditingStepId(null);
+  // Phase Management
+  const addPhase = () => {
+    if (!currentProject) return;
     
-    // Reset form
-    setFormData({
-      step: '',
+    const newPhase: Phase = {
+      id: Date.now().toString(),
+      name: 'New Phase',
+      description: '',
+      operations: []
+    };
+
+    const updatedProject = {
+      ...currentProject,
+      phases: [...currentProject.phases, newPhase]
+    };
+
+    updateProjectData(updatedProject);
+    setEditing({ type: 'phase', id: newPhase.id, data: { ...newPhase } });
+    toast.success('Phase added');
+  };
+
+  const updatePhase = (phaseId: string, updates: Partial<Phase>) => {
+    if (!currentProject) return;
+
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase => 
+        phase.id === phaseId ? { ...phase, ...updates } : phase
+      )
+    };
+
+    updateProjectData(updatedProject);
+  };
+
+  const deletePhase = (phaseId: string) => {
+    if (!currentProject) return;
+
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.filter(phase => phase.id !== phaseId)
+    };
+
+    updateProjectData(updatedProject);
+    if (selectedPhaseId === phaseId) {
+      setSelectedPhaseId('');
+      setSelectedOperationId('');
+    }
+    toast.success('Phase deleted');
+  };
+
+  // Operation Management
+  const addOperation = () => {
+    if (!currentProject || !selectedPhaseId) return;
+
+    const newOperation: Operation = {
+      id: Date.now().toString(),
+      name: 'New Operation',
+      description: '',
+      steps: []
+    };
+
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase =>
+        phase.id === selectedPhaseId
+          ? { ...phase, operations: [...phase.operations, newOperation] }
+          : phase
+      )
+    };
+
+    updateProjectData(updatedProject);
+    setEditing({ type: 'operation', id: newOperation.id, data: { ...newOperation } });
+    toast.success('Operation added');
+  };
+
+  const updateOperation = (operationId: string, updates: Partial<Operation>) => {
+    if (!currentProject || !selectedPhaseId) return;
+
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase =>
+        phase.id === selectedPhaseId
+          ? {
+              ...phase,
+              operations: phase.operations.map(op =>
+                op.id === operationId ? { ...op, ...updates } : op
+              )
+            }
+          : phase
+      )
+    };
+
+    updateProjectData(updatedProject);
+  };
+
+  const deleteOperation = (operationId: string) => {
+    if (!currentProject || !selectedPhaseId) return;
+
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase =>
+        phase.id === selectedPhaseId
+          ? { ...phase, operations: phase.operations.filter(op => op.id !== operationId) }
+          : phase
+      )
+    };
+
+    updateProjectData(updatedProject);
+    if (selectedOperationId === operationId) {
+      setSelectedOperationId('');
+    }
+    toast.success('Operation deleted');
+  };
+
+  // Step Management
+  const addStep = () => {
+    if (!currentProject || !selectedPhaseId || !selectedOperationId) return;
+
+    const newStep: WorkflowStep = {
+      id: Date.now().toString(),
+      step: 'New Step',
       description: '',
       contentType: 'text',
       content: '',
       materials: [],
       tools: [],
       outputs: []
-    });
-  };
-
-  const addPhase = () => {
-    if (!currentProject || !newPhase.name.trim()) return;
-    
-    const phase: Phase = {
-      id: Date.now().toString(),
-      name: newPhase.name,
-      description: newPhase.description,
-      operations: []
     };
 
     const updatedProject = {
       ...currentProject,
-      phases: [...currentProject.phases, phase],
-      updatedAt: new Date()
+      phases: currentProject.phases.map(phase =>
+        phase.id === selectedPhaseId
+          ? {
+              ...phase,
+              operations: phase.operations.map(op =>
+                op.id === selectedOperationId
+                  ? { ...op, steps: [...op.steps, newStep] }
+                  : op
+              )
+            }
+          : phase
+      )
     };
 
-    updateProject(updatedProject);
-    setNewPhase({ name: '', description: '' });
-    toast.success('Phase added successfully');
+    updateProjectData(updatedProject);
+    setEditing({ type: 'step', id: newStep.id, data: { ...newStep } });
+    toast.success('Step added');
   };
 
-  const addOperation = () => {
-    if (!currentProject || !selectedPhaseId || !newOperation.name.trim()) return;
-    
-    const operation: Operation = {
-      id: Date.now().toString(),
-      name: newOperation.name,
-      description: newOperation.description,
-      steps: []
+  const updateStep = (stepId: string, updates: Partial<WorkflowStep>) => {
+    if (!currentProject || !selectedPhaseId || !selectedOperationId) return;
+
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase =>
+        phase.id === selectedPhaseId
+          ? {
+              ...phase,
+              operations: phase.operations.map(op =>
+                op.id === selectedOperationId
+                  ? {
+                      ...op,
+                      steps: op.steps.map(step =>
+                        step.id === stepId ? { ...step, ...updates } : step
+                      )
+                    }
+                  : op
+              )
+            }
+          : phase
+      )
     };
 
-    const updatedProject = { ...currentProject };
-    const phaseIndex = updatedProject.phases.findIndex(p => p.id === selectedPhaseId);
-    updatedProject.phases[phaseIndex].operations.push(operation);
-    updatedProject.updatedAt = new Date();
-
-    updateProject(updatedProject);
-    setNewOperation({ name: '', description: '' });
-    toast.success('Operation added successfully');
-  };
-
-  const editStep = (step: WorkflowStep) => {
-    setFormData(step);
-    setEditingStepId(step.id);
+    updateProjectData(updatedProject);
   };
 
   const deleteStep = (stepId: string) => {
     if (!currentProject || !selectedPhaseId || !selectedOperationId) return;
 
-    const updatedProject = { ...currentProject };
-    const phaseIndex = updatedProject.phases.findIndex(p => p.id === selectedPhaseId);
-    const operationIndex = updatedProject.phases[phaseIndex].operations.findIndex(o => o.id === selectedOperationId);
-    
-    updatedProject.phases[phaseIndex].operations[operationIndex].steps = 
-      updatedProject.phases[phaseIndex].operations[operationIndex].steps.filter(s => s.id !== stepId);
-    updatedProject.updatedAt = new Date();
-
-    updateProject(updatedProject);
-    toast.success('Step deleted successfully');
-  };
-
-  // Material management functions
-  const addMaterial = () => {
-    const newMaterial: Material = {
-      id: Date.now().toString(),
-      name: '',
-      description: '',
-      category: 'Other',
-      required: false
-    };
-    setFormData(prev => ({
-      ...prev,
-      materials: [...prev.materials, newMaterial]
-    }));
-  };
-
-  const updateMaterial = (index: number, field: keyof Material, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      materials: prev.materials.map((material, i) => 
-        i === index ? { ...material, [field]: value } : material
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase =>
+        phase.id === selectedPhaseId
+          ? {
+              ...phase,
+              operations: phase.operations.map(op =>
+                op.id === selectedOperationId
+                  ? { ...op, steps: op.steps.filter(step => step.id !== stepId) }
+                  : op
+              )
+            }
+          : phase
       )
-    }));
-  };
-
-  const removeMaterial = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      materials: prev.materials.filter((_, i) => i !== index)
-    }));
-  };
-
-  // Tool management functions
-  const addTool = () => {
-    const newTool: Tool = {
-      id: Date.now().toString(),
-      name: '',
-      description: '',
-      category: 'Other',
-      required: false
     };
-    setFormData(prev => ({
-      ...prev,
-      tools: [...prev.tools, newTool]
-    }));
+
+    updateProjectData(updatedProject);
+    toast.success('Step deleted');
   };
 
-  const updateTool = (index: number, field: keyof Tool, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      tools: prev.tools.map((tool, i) => 
-        i === index ? { ...tool, [field]: value } : tool
-      )
-    }));
+  const startEdit = (type: EditingState['type'], id: string, data: any) => {
+    setEditing({ type, id, data: { ...data } });
   };
 
-  const removeTool = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      tools: prev.tools.filter((_, i) => i !== index)
-    }));
-  };
+  const saveEdit = () => {
+    if (!editing.type || !editing.id || !editing.data) return;
 
-  // Output management functions
-  const addOutput = () => {
-    const newOutput: Output = {
-      id: Date.now().toString(),
-      name: '',
-      description: '',
-      type: 'none'
-    };
-    setFormData(prev => ({
-      ...prev,
-      outputs: [...prev.outputs, newOutput]
-    }));
-  };
-
-  const updateOutput = (index: number, field: keyof Output, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      outputs: prev.outputs.map((output, i) => 
-        i === index ? { ...output, [field]: value } : output
-      )
-    }));
-  };
-
-  const removeOutput = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      outputs: prev.outputs.filter((_, i) => i !== index)
-    }));
-  };
-
-  const getContentIcon = (contentType: string) => {
-    switch (contentType) {
-      case 'video': return <Video className="w-4 h-4" />;
-      case 'image': return <Image className="w-4 h-4" />;
-      case 'document': return <File className="w-4 h-4" />;
-      default: return <FileText className="w-4 h-4" />;
+    switch (editing.type) {
+      case 'phase':
+        updatePhase(editing.id, editing.data);
+        break;
+      case 'operation':
+        updateOperation(editing.id, editing.data);
+        break;
+      case 'step':
+        updateStep(editing.id, editing.data);
+        break;
     }
+
+    setEditing({ type: null, id: null, data: null });
+    toast.success('Changes saved');
+  };
+
+  const cancelEdit = () => {
+    setEditing({ type: null, id: null, data: null });
   };
 
   const selectedPhase = currentProject?.phases.find(p => p.id === selectedPhaseId);
   const selectedOperation = selectedPhase?.operations.find(o => o.id === selectedOperationId);
 
-  return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <ProjectSelector />
-      
-      {!currentProject ? (
+  if (!currentProject) {
+    return (
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        <ProjectSelector />
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground">Please select or create a project to manage workflows.</p>
           </CardContent>
         </Card>
-      ) : (
-        <>
-          {/* Phase Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Phase Management</CardTitle>
-              <CardDescription>Create and manage project phases</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-4">
-                <Input
-                  placeholder="Phase name"
-                  value={newPhase.name}
-                  onChange={(e) => setNewPhase(prev => ({ ...prev, name: e.target.value }))}
-                />
-                <Input
-                  placeholder="Phase description"
-                  value={newPhase.description}
-                  onChange={(e) => setNewPhase(prev => ({ ...prev, description: e.target.value }))}
-                />
-                <Button onClick={addPhase} disabled={!newPhase.name.trim()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Phase
-                </Button>
-              </div>
-              
-              <Select value={selectedPhaseId} onValueChange={setSelectedPhaseId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a phase" />
-                </SelectTrigger>
-                <SelectContent>
-                  {currentProject.phases.map(phase => (
-                    <SelectItem key={phase.id} value={phase.id}>{phase.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+      </div>
+    );
+  }
 
-          {/* Operation Management */}
-          {selectedPhaseId && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Operation Management</CardTitle>
-                <CardDescription>Create and manage operations for {selectedPhase?.name}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-4">
-                  <Input
-                    placeholder="Operation name"
-                    value={newOperation.name}
-                    onChange={(e) => setNewOperation(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Operation description"
-                    value={newOperation.description}
-                    onChange={(e) => setNewOperation(prev => ({ ...prev, description: e.target.value }))}
-                  />
-                  <Button onClick={addOperation} disabled={!newOperation.name.trim()}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Operation
-                  </Button>
-                </div>
-                
-                <Select value={selectedOperationId} onValueChange={setSelectedOperationId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an operation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedPhase?.operations.map(operation => (
-                      <SelectItem key={operation.id} value={operation.id}>{operation.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-          )}
+  return (
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <ProjectSelector />
 
-          {/* Step Management */}
-          {selectedOperationId && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Form Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="w-5 h-5" />
-                    {editingStepId ? 'Edit Step' : 'Add Step'}
-                  </CardTitle>
-                  <CardDescription>
-                    Create detailed steps for {selectedOperation?.name}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <Label htmlFor="step">Step Name</Label>
+      {/* Phases Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Phases</CardTitle>
+              <CardDescription>Manage project phases</CardDescription>
+            </div>
+            <Button onClick={addPhase}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Phase
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Operations</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentProject.phases.map((phase) => (
+                <TableRow 
+                  key={phase.id}
+                  className={selectedPhaseId === phase.id ? 'bg-muted/50' : ''}
+                >
+                  <TableCell>
+                    {editing.type === 'phase' && editing.id === phase.id ? (
                       <Input
-                        id="step"
-                        placeholder="e.g., Stakeholder Interviews"
-                        value={formData.step}
-                        onChange={(e) => setFormData({...formData, step: e.target.value})}
-                        required
+                        value={editing.data.name}
+                        onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, name: e.target.value } }))}
+                        className="w-full"
                       />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="description">Description</Label>
+                    ) : (
+                      <div 
+                        className="font-medium cursor-pointer hover:text-primary"
+                        onClick={() => setSelectedPhaseId(phase.id)}
+                      >
+                        {phase.name}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editing.type === 'phase' && editing.id === phase.id ? (
                       <Textarea
-                        id="description"
-                        placeholder="Detailed description of this step"
-                        value={formData.description}
-                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        value={editing.data.description}
+                        onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, description: e.target.value } }))}
+                        className="w-full"
                       />
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        {phase.description || 'No description'}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{phase.operations.length} operations</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      {editing.type === 'phase' && editing.id === phase.id ? (
+                        <>
+                          <Button size="sm" onClick={saveEdit}>
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={cancelEdit}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => startEdit('phase', phase.id, phase)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => deletePhase(phase.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="contentType">Content Type</Label>
-                        <Select 
-                          value={formData.contentType} 
-                          onValueChange={(value: 'text' | 'video' | 'image' | 'document') => setFormData({...formData, contentType: value})}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Operations Table */}
+      {selectedPhaseId && selectedPhase && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Operations - {selectedPhase.name}</CardTitle>
+                <CardDescription>Manage operations within this phase</CardDescription>
+              </div>
+              <Button onClick={addOperation}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Operation
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Steps</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedPhase.operations.map((operation) => (
+                  <TableRow 
+                    key={operation.id}
+                    className={selectedOperationId === operation.id ? 'bg-muted/50' : ''}
+                  >
+                    <TableCell>
+                      {editing.type === 'operation' && editing.id === operation.id ? (
+                        <Input
+                          value={editing.data.name}
+                          onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, name: e.target.value } }))}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div 
+                          className="font-medium cursor-pointer hover:text-primary"
+                          onClick={() => setSelectedOperationId(operation.id)}
+                        >
+                          {operation.name}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editing.type === 'operation' && editing.id === operation.id ? (
+                        <Textarea
+                          value={editing.data.description}
+                          onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, description: e.target.value } }))}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div className="text-sm text-muted-foreground">
+                          {operation.description || 'No description'}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{operation.steps.length} steps</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {editing.type === 'operation' && editing.id === operation.id ? (
+                          <>
+                            <Button size="sm" onClick={saveEdit}>
+                              <Check className="w-4 h-4" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={cancelEdit}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => startEdit('operation', operation.id, operation)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => deleteOperation(operation.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Steps Table */}
+      {selectedOperationId && selectedOperation && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Steps - {selectedOperation.name}</CardTitle>
+                <CardDescription>Manage steps within this operation</CardDescription>
+              </div>
+              <Button onClick={addStep}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Step
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Content Type</TableHead>
+                  <TableHead>Resources</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedOperation.steps.map((step) => (
+                  <TableRow key={step.id}>
+                    <TableCell>
+                      {editing.type === 'step' && editing.id === step.id ? (
+                        <Input
+                          value={editing.data.step}
+                          onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, step: e.target.value } }))}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div className="font-medium">{step.step}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editing.type === 'step' && editing.id === step.id ? (
+                        <Textarea
+                          value={editing.data.description}
+                          onChange={(e) => setEditing(prev => ({ ...prev, data: { ...prev.data, description: e.target.value } }))}
+                          className="w-full"
+                        />
+                      ) : (
+                        <div className="text-sm text-muted-foreground max-w-xs">
+                          {step.description || 'No description'}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editing.type === 'step' && editing.id === step.id ? (
+                        <Select
+                          value={editing.data.contentType}
+                          onValueChange={(value) => setEditing(prev => ({ ...prev, data: { ...prev.data, contentType: value } }))}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -377,235 +549,60 @@ export const AdminView: React.FC = () => {
                             <SelectItem value="document">Document</SelectItem>
                           </SelectContent>
                         </Select>
+                      ) : (
+                        <Badge variant="outline" className="capitalize">{step.contentType}</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {step.materials?.length || 0}M
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {step.tools?.length || 0}T
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {step.outputs?.length || 0}O
+                        </Badge>
                       </div>
-                      <div>
-                        <Label htmlFor="content">Content</Label>
-                        <Input
-                          id="content"
-                          placeholder="Content URL or description"
-                          value={formData.content}
-                          onChange={(e) => setFormData({...formData, content: e.target.value})}
-                        />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {editing.type === 'step' && editing.id === step.id ? (
+                          <>
+                            <Button size="sm" onClick={saveEdit}>
+                              <Check className="w-4 h-4" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={cancelEdit}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => startEdit('step', step.id, step)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => deleteStep(step.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
-                    </div>
-
-                    {/* Materials Section */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label>Materials</Label>
-                        <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Material
-                        </Button>
-                      </div>
-                      {formData.materials.map((material, index) => (
-                        <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                          <Input
-                            className="col-span-4"
-                            placeholder="Material name"
-                            value={material.name}
-                            onChange={(e) => updateMaterial(index, 'name', e.target.value)}
-                          />
-                          <Input
-                            className="col-span-4"
-                            placeholder="Description"
-                            value={material.description}
-                            onChange={(e) => updateMaterial(index, 'description', e.target.value)}
-                          />
-                          <Select 
-                            value={material.category} 
-                            onValueChange={(value) => updateMaterial(index, 'category', value)}
-                          >
-                            <SelectTrigger className="col-span-3">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Software">Software</SelectItem>
-                              <SelectItem value="Hardware">Hardware</SelectItem>
-                              <SelectItem value="Document">Document</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="col-span-1"
-                            onClick={() => removeMaterial(index)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Tools Section */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label>Tools</Label>
-                        <Button type="button" variant="outline" size="sm" onClick={addTool}>
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Tool
-                        </Button>
-                      </div>
-                      {formData.tools.map((tool, index) => (
-                        <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                          <Input
-                            className="col-span-4"
-                            placeholder="Tool name"
-                            value={tool.name}
-                            onChange={(e) => updateTool(index, 'name', e.target.value)}
-                          />
-                          <Input
-                            className="col-span-4"
-                            placeholder="Description"
-                            value={tool.description}
-                            onChange={(e) => updateTool(index, 'description', e.target.value)}
-                          />
-                          <Select 
-                            value={tool.category} 
-                            onValueChange={(value) => updateTool(index, 'category', value)}
-                          >
-                            <SelectTrigger className="col-span-3">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Software">Software</SelectItem>
-                              <SelectItem value="Hardware">Hardware</SelectItem>
-                              <SelectItem value="Document">Document</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="col-span-1"
-                            onClick={() => removeTool(index)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Outputs Section */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label>Outputs</Label>
-                        <Button type="button" variant="outline" size="sm" onClick={addOutput}>
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Output
-                        </Button>
-                      </div>
-                      {formData.outputs.map((output, index) => (
-                        <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                          <Input
-                            className="col-span-4"
-                            placeholder="Output name"
-                            value={output.name}
-                            onChange={(e) => updateOutput(index, 'name', e.target.value)}
-                          />
-                          <Input
-                            className="col-span-4"
-                            placeholder="Description"
-                            value={output.description}
-                            onChange={(e) => updateOutput(index, 'description', e.target.value)}
-                          />
-                          <Select 
-                            value={output.type} 
-                            onValueChange={(value) => updateOutput(index, 'type', value)}
-                          >
-                            <SelectTrigger className="col-span-3">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="document">Document</SelectItem>
-                              <SelectItem value="deliverable">Deliverable</SelectItem>
-                              <SelectItem value="artifact">Artifact</SelectItem>
-                              <SelectItem value="none">None</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="col-span-1"
-                            onClick={() => removeOutput(index)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth"
-                    >
-                      {editingStepId ? 'Update Step' : 'Add Step'}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              {/* Step List */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Steps</CardTitle>
-                  <CardDescription>
-                    Current steps for {selectedOperation?.name}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {selectedOperation?.steps.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8">
-                        No steps yet. Add your first step to get started.
-                      </p>
-                    ) : (
-                      selectedOperation?.steps.map((step) => (
-                        <div key={step.id} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-2">
-                              <h4 className="font-medium">{step.step}</h4>
-                              <p className="text-sm text-muted-foreground">{step.description}</p>
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  {getContentIcon(step.contentType)}
-                                  {step.contentType}
-                                </span>
-                                <span>{step.materials?.length || 0} materials</span>
-                                <span>{step.tools?.length || 0} tools</span>
-                                <span>{step.outputs?.length || 0} outputs</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => editStep(step)}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteStep(step.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
