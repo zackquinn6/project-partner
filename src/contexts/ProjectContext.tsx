@@ -32,25 +32,37 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       description: 'Complete software development lifecycle',
       createdAt: new Date(),
       updatedAt: new Date(),
-      workflows: [
+      phases: [
         {
           id: '1',
-          phase: 'Discovery',
-          operation: 'Requirements Gathering',
-          step: 'Stakeholder Interviews',
-          description: 'Conduct interviews with key stakeholders to understand project requirements and constraints.',
-          contentType: 'text',
-          content: 'Schedule and conduct 1-on-1 interviews with each stakeholder to gather their requirements, expectations, and constraints.',
-          materials: [
-            { id: '1', name: 'Interview Template', description: 'Standardized questions for stakeholder interviews', category: 'Other', required: true }
-          ],
-          tools: [
-            { id: '1', name: 'Recording Device', description: 'Digital recorder or smartphone', category: 'Hardware', required: false },
-            { id: '2', name: 'Video Conferencing', description: 'Zoom, Teams, or similar', category: 'Software', required: true }
-          ],
-          outputs: [
-            { id: '1', name: 'Interview Notes', description: 'Documented responses from stakeholders', type: 'none' },
-            { id: '2', name: 'Requirements List', description: 'Initial list of project requirements', type: 'performance-durability', potentialEffects: 'Project delays, scope creep', photosOfEffects: 'timeline-issues.jpg', mustGetRight: 'Complete stakeholder buy-in', qualityChecks: 'Review with all stakeholders' }
+          name: 'Discovery',
+          description: 'Project discovery and planning phase',
+          operations: [
+            {
+              id: '1',
+              name: 'Requirements Gathering',
+              description: 'Collect and document project requirements',
+              steps: [
+                {
+                  id: '1',
+                  step: 'Stakeholder Interviews',
+                  description: 'Conduct interviews with key stakeholders',
+                  contentType: 'text',
+                  content: 'Schedule and conduct 1-on-1 interviews with each stakeholder',
+                  materials: [
+                    { id: '1', name: 'Interview Template', description: 'Standardized questions', category: 'Other', required: true }
+                  ],
+                  tools: [
+                    { id: '1', name: 'Recording Device', description: 'Digital recorder', category: 'Hardware', required: false },
+                    { id: '2', name: 'Video Conferencing', description: 'Zoom, Teams, or similar', category: 'Software', required: true }
+                  ],
+                  outputs: [
+                    { id: '1', name: 'Interview Notes', description: 'Documented responses', type: 'none' },
+                    { id: '2', name: 'Requirements List', description: 'Initial requirements list', type: 'performance-durability', potentialEffects: 'Project delays, scope creep', photosOfEffects: 'timeline-issues.jpg', mustGetRight: 'Complete stakeholder buy-in', qualityChecks: 'Review with all stakeholders' }
+                  ]
+                }
+              ]
+            }
           ]
         }
       ]

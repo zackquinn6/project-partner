@@ -27,8 +27,6 @@ export interface Output {
 
 export interface WorkflowStep {
   id: string;
-  phase: string;
-  operation: string;
   step: string;
   description: string;
   contentType: 'text' | 'video' | 'image' | 'document';
@@ -38,11 +36,25 @@ export interface WorkflowStep {
   outputs: Output[];
 }
 
+export interface Operation {
+  id: string;
+  name: string;
+  description: string;
+  steps: WorkflowStep[];
+}
+
+export interface Phase {
+  id: string;
+  name: string;
+  description: string;
+  operations: Operation[];
+}
+
 export interface Project {
   id: string;
   name: string;
   description: string;
   createdAt: Date;
   updatedAt: Date;
-  workflows: WorkflowStep[];
+  phases: Phase[];
 }
