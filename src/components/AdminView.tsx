@@ -10,6 +10,29 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit3, Trash2, Image, Video, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 
+export interface Material {
+  id: string;
+  name: string;
+  quantity: string;
+  description?: string;
+  category?: string;
+}
+
+export interface Tool {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  required: boolean;
+}
+
+export interface Output {
+  id: string;
+  name: string;
+  description: string;
+  type: 'deliverable' | 'checkpoint' | 'result';
+}
+
 export interface WorkflowStep {
   id: string;
   phase: string;
@@ -19,6 +42,9 @@ export interface WorkflowStep {
   contentType: 'text' | 'link' | 'image' | 'video';
   content: string;
   order: number;
+  materials: Material[];
+  tools: Tool[];
+  outputs: Output[];
 }
 
 export default function AdminView() {
@@ -31,7 +57,10 @@ export default function AdminView() {
       description: 'Conduct interviews with key stakeholders to understand project requirements.',
       contentType: 'text',
       content: 'Prepare a list of open-ended questions focusing on project goals, constraints, and success criteria.',
-      order: 1
+      order: 1,
+      materials: [],
+      tools: [],
+      outputs: []
     },
     {
       id: '2',
@@ -41,7 +70,10 @@ export default function AdminView() {
       description: 'Create comprehensive documentation of all gathered requirements.',
       contentType: 'link',
       content: 'https://example.com/requirements-template',
-      order: 2
+      order: 2,
+      materials: [],
+      tools: [],
+      outputs: []
     }
   ]);
   
@@ -52,13 +84,19 @@ export default function AdminView() {
     description: string;
     contentType: 'text' | 'link' | 'image' | 'video';
     content: string;
+    materials: Material[];
+    tools: Tool[];
+    outputs: Output[];
   }>({
     phase: '',
     operation: '',
     step: '',
     description: '',
     contentType: 'text',
-    content: ''
+    content: '',
+    materials: [],
+    tools: [],
+    outputs: []
   });
   
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -92,7 +130,10 @@ export default function AdminView() {
       step: '',
       description: '',
       contentType: 'text',
-      content: ''
+      content: '',
+      materials: [],
+      tools: [],
+      outputs: []
     });
   };
 
@@ -103,7 +144,10 @@ export default function AdminView() {
       step: step.step,
       description: step.description,
       contentType: step.contentType,
-      content: step.content
+      content: step.content,
+      materials: step.materials || [],
+      tools: step.tools || [],
+      outputs: step.outputs || []
     });
     setEditingId(step.id);
   };
@@ -111,6 +155,95 @@ export default function AdminView() {
   const handleDelete = (id: string) => {
     setSteps(steps.filter(step => step.id !== id));
     toast.success("Step deleted successfully");
+  };
+
+  const addMaterial = () => {
+    const newMaterial: Material = {
+      id: Date.now().toString(),
+      name: '',
+      quantity: '',
+      description: '',
+      category: ''
+    };
+    setFormData(prev => ({
+      ...prev,
+      materials: [...prev.materials, newMaterial]
+    }));
+  };
+
+  const updateMaterial = (index: number, field: keyof Material, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      materials: prev.materials.map((material, i) => 
+        i === index ? { ...material, [field]: value } : material
+      )
+    }));
+  };
+
+  const removeMaterial = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      materials: prev.materials.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addTool = () => {
+    const newTool: Tool = {
+      id: Date.now().toString(),
+      name: '',
+      description: '',
+      category: '',
+      required: true
+    };
+    setFormData(prev => ({
+      ...prev,
+      tools: [...prev.tools, newTool]
+    }));
+  };
+
+  const updateTool = (index: number, field: keyof Tool, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      tools: prev.tools.map((tool, i) => 
+        i === index ? { ...tool, [field]: value } : tool
+      )
+    }));
+  };
+
+  const removeTool = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      tools: prev.tools.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addOutput = () => {
+    const newOutput: Output = {
+      id: Date.now().toString(),
+      name: '',
+      description: '',
+      type: 'deliverable'
+    };
+    setFormData(prev => ({
+      ...prev,
+      outputs: [...prev.outputs, newOutput]
+    }));
+  };
+
+  const updateOutput = (index: number, field: keyof Output, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      outputs: prev.outputs.map((output, i) => 
+        i === index ? { ...output, [field]: value } : output
+      )
+    }));
+  };
+
+  const removeOutput = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      outputs: prev.outputs.filter((_, i) => i !== index)
+    }));
   };
 
   const getContentIcon = (type: string) => {
@@ -224,6 +357,140 @@ export default function AdminView() {
                   className="transition-fast focus:shadow-soft"
                 />
               </div>
+
+              {/* Materials Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Materials</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addMaterial}>
+                    Add Material
+                  </Button>
+                </div>
+                {formData.materials.map((material, index) => (
+                  <div key={material.id} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Material {index + 1}</span>
+                      <Button type="button" variant="outline" size="sm" onClick={() => removeMaterial(index)}>
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        placeholder="Material name"
+                        value={material.name}
+                        onChange={(e) => updateMaterial(index, 'name', e.target.value)}
+                      />
+                      <Input
+                        placeholder="Quantity"
+                        value={material.quantity}
+                        onChange={(e) => updateMaterial(index, 'quantity', e.target.value)}
+                      />
+                      <Input
+                        placeholder="Category"
+                        value={material.category || ''}
+                        onChange={(e) => updateMaterial(index, 'category', e.target.value)}
+                      />
+                      <Input
+                        placeholder="Description"
+                        value={material.description || ''}
+                        onChange={(e) => updateMaterial(index, 'description', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tools Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Tools</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addTool}>
+                    Add Tool
+                  </Button>
+                </div>
+                {formData.tools.map((tool, index) => (
+                  <div key={tool.id} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Tool {index + 1}</span>
+                      <Button type="button" variant="outline" size="sm" onClick={() => removeTool(index)}>
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        placeholder="Tool name"
+                        value={tool.name}
+                        onChange={(e) => updateTool(index, 'name', e.target.value)}
+                      />
+                      <Input
+                        placeholder="Category"
+                        value={tool.category || ''}
+                        onChange={(e) => updateTool(index, 'category', e.target.value)}
+                      />
+                      <Input
+                        placeholder="Description"
+                        value={tool.description || ''}
+                        onChange={(e) => updateTool(index, 'description', e.target.value)}
+                        className="col-span-2"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={tool.required}
+                          onChange={(e) => updateTool(index, 'required', e.target.checked)}
+                        />
+                        <Label>Required</Label>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Outputs Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Outputs</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addOutput}>
+                    Add Output
+                  </Button>
+                </div>
+                {formData.outputs.map((output, index) => (
+                  <div key={output.id} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Output {index + 1}</span>
+                      <Button type="button" variant="outline" size="sm" onClick={() => removeOutput(index)}>
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        placeholder="Output name"
+                        value={output.name}
+                        onChange={(e) => updateOutput(index, 'name', e.target.value)}
+                      />
+                      <Select 
+                        value={output.type} 
+                        onValueChange={(value: 'deliverable' | 'checkpoint' | 'result') => updateOutput(index, 'type', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Output type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="deliverable">Deliverable</SelectItem>
+                          <SelectItem value="checkpoint">Checkpoint</SelectItem>
+                          <SelectItem value="result">Result</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder="Description"
+                        value={output.description}
+                        onChange={(e) => updateOutput(index, 'description', e.target.value)}
+                        className="col-span-2"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
               
               <Button 
                 type="submit" 
@@ -245,7 +512,10 @@ export default function AdminView() {
                       step: '',
                       description: '',
                       contentType: 'text',
-                      content: ''
+                      content: '',
+                      materials: [],
+                      tools: [],
+                      outputs: []
                     });
                   }}
                 >

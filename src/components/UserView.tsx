@@ -16,7 +16,19 @@ const sampleSteps: WorkflowStep[] = [
     description: 'Conduct interviews with key stakeholders to understand project requirements and expectations.',
     contentType: 'text',
     content: 'Prepare a comprehensive list of open-ended questions focusing on:\n\n• Project goals and objectives\n• Budget and timeline constraints\n• Success criteria and KPIs\n• Potential risks and challenges\n• Stakeholder expectations\n\nTip: Schedule 60-90 minutes for each interview and record with permission.',
-    order: 1
+    order: 1,
+    materials: [
+      { id: '1', name: 'Interview Template', quantity: '1', description: 'Structured question template', category: 'Document' },
+      { id: '2', name: 'Recording Device', quantity: '1', description: 'Audio recording equipment', category: 'Equipment' }
+    ],
+    tools: [
+      { id: '1', name: 'Calendar App', description: 'For scheduling meetings', category: 'Software', required: true },
+      { id: '2', name: 'Video Conferencing', description: 'Zoom, Teams, or similar', category: 'Software', required: true }
+    ],
+    outputs: [
+      { id: '1', name: 'Interview Notes', description: 'Documented responses from stakeholders', type: 'deliverable' },
+      { id: '2', name: 'Requirements List', description: 'Initial list of project requirements', type: 'checkpoint' }
+    ]
   },
   {
     id: '2',
@@ -26,7 +38,16 @@ const sampleSteps: WorkflowStep[] = [
     description: 'Create comprehensive documentation of all gathered requirements using our template.',
     contentType: 'link',
     content: 'https://docs.google.com/document/d/example-requirements-template',
-    order: 2
+    order: 2,
+    materials: [
+      { id: '3', name: 'Requirements Template', quantity: '1', description: 'Standard documentation template', category: 'Document' }
+    ],
+    tools: [
+      { id: '3', name: 'Word Processor', description: 'Google Docs, Word, or similar', category: 'Software', required: true }
+    ],
+    outputs: [
+      { id: '3', name: 'Requirements Document', description: 'Complete project requirements specification', type: 'deliverable' }
+    ]
   },
   {
     id: '3',
@@ -36,7 +57,14 @@ const sampleSteps: WorkflowStep[] = [
     description: 'Review the system architecture diagram and understand the technical approach.',
     contentType: 'image',
     content: 'https://via.placeholder.com/800x400/6366f1/ffffff?text=System+Architecture+Diagram',
-    order: 3
+    order: 3,
+    materials: [],
+    tools: [
+      { id: '4', name: 'Diagramming Tool', description: 'Lucidchart, Draw.io, or similar', category: 'Software', required: true }
+    ],
+    outputs: [
+      { id: '4', name: 'Architecture Diagram', description: 'System architecture visualization', type: 'deliverable' }
+    ]
   },
   {
     id: '4',
@@ -46,7 +74,15 @@ const sampleSteps: WorkflowStep[] = [
     description: 'Watch the tutorial video on setting up your development environment.',
     contentType: 'video',
     content: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    order: 4
+    order: 4,
+    materials: [],
+    tools: [
+      { id: '5', name: 'Code Editor', description: 'VS Code, WebStorm, or similar', category: 'Software', required: true },
+      { id: '6', name: 'Version Control', description: 'Git installation', category: 'Software', required: true }
+    ],
+    outputs: [
+      { id: '5', name: 'Development Environment', description: 'Fully configured development setup', type: 'checkpoint' }
+    ]
   },
   {
     id: '5',
@@ -56,7 +92,16 @@ const sampleSteps: WorkflowStep[] = [
     description: 'Begin implementing the core features as outlined in the requirements document.',
     contentType: 'text',
     content: 'Focus on implementing these core features in order:\n\n1. User authentication and authorization\n2. Data models and database setup\n3. Core business logic\n4. User interface components\n5. API endpoints and integration\n\nRemember to write tests for each feature as you implement them.',
-    order: 5
+    order: 5,
+    materials: [],
+    tools: [
+      { id: '7', name: 'Testing Framework', description: 'Jest, Vitest, or similar', category: 'Software', required: true },
+      { id: '8', name: 'Database Tool', description: 'Database management software', category: 'Software', required: false }
+    ],
+    outputs: [
+      { id: '6', name: 'Core Features', description: 'Implemented and tested core functionality', type: 'deliverable' },
+      { id: '7', name: 'Test Suite', description: 'Comprehensive test coverage', type: 'result' }
+    ]
   }
 ];
 
@@ -246,6 +291,83 @@ export default function UserView() {
               {renderContent(currentStep)}
             </CardContent>
           </Card>
+
+          {/* Materials, Tools, and Outputs */}
+          {(currentStep.materials?.length > 0 || currentStep.tools?.length > 0 || currentStep.outputs?.length > 0) && (
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Materials */}
+              {currentStep.materials?.length > 0 && (
+                <Card className="gradient-card border-0 shadow-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Materials Needed</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {currentStep.materials.map((material) => (
+                      <div key={material.id} className="p-3 bg-background/50 rounded-lg">
+                        <div className="font-medium">{material.name}</div>
+                        {material.quantity && (
+                          <div className="text-sm text-muted-foreground">Quantity: {material.quantity}</div>
+                        )}
+                        {material.category && (
+                          <Badge variant="outline" className="text-xs mt-1">{material.category}</Badge>
+                        )}
+                        {material.description && (
+                          <div className="text-sm text-muted-foreground mt-1">{material.description}</div>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Tools */}
+              {currentStep.tools?.length > 0 && (
+                <Card className="gradient-card border-0 shadow-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Tools Required</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {currentStep.tools.map((tool) => (
+                      <div key={tool.id} className="p-3 bg-background/50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium">{tool.name}</div>
+                          {tool.required && (
+                            <Badge variant="destructive" className="text-xs">Required</Badge>
+                          )}
+                        </div>
+                        {tool.category && (
+                          <Badge variant="outline" className="text-xs mt-1">{tool.category}</Badge>
+                        )}
+                        {tool.description && (
+                          <div className="text-sm text-muted-foreground mt-1">{tool.description}</div>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Outputs */}
+              {currentStep.outputs?.length > 0 && (
+                <Card className="gradient-card border-0 shadow-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Expected Outputs</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {currentStep.outputs.map((output) => (
+                      <div key={output.id} className="p-3 bg-background/50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium">{output.name}</div>
+                          <Badge variant="outline" className="text-xs capitalize">{output.type}</Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">{output.description}</div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
 
           {/* Navigation */}
           <Card className="gradient-card border-0 shadow-card">
