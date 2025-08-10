@@ -30,7 +30,11 @@ export interface Output {
   id: string;
   name: string;
   description: string;
-  type: 'minor-aesthetic' | 'major-aesthetic' | 'performance-durability' | 'safety';
+  type: 'none' | 'major-aesthetics' | 'performance-durability' | 'safety';
+  potentialEffects?: string;
+  photosOfEffects?: string;
+  mustGetRight?: string;
+  qualityChecks?: string;
 }
 
 export interface WorkflowStep {
@@ -222,7 +226,7 @@ export default function AdminView() {
       id: Date.now().toString(),
       name: '',
       description: '',
-      type: 'minor-aesthetic'
+      type: 'none'
     };
     setFormData(prev => ({
       ...prev,
@@ -470,14 +474,14 @@ export default function AdminView() {
                       />
                       <Select 
                         value={output.type} 
-                        onValueChange={(value: 'minor-aesthetic' | 'major-aesthetic' | 'performance-durability' | 'safety') => updateOutput(index, 'type', value)}
+                        onValueChange={(value: 'none' | 'major-aesthetics' | 'performance-durability' | 'safety') => updateOutput(index, 'type', value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Criticality level" />
+                          <SelectValue placeholder="Criticality" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="minor-aesthetic">Minor Aesthetic</SelectItem>
-                          <SelectItem value="major-aesthetic">Major Aesthetic</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="major-aesthetics">Major Aesthetics</SelectItem>
                           <SelectItem value="performance-durability">Performance/Durability</SelectItem>
                           <SelectItem value="safety">Safety</SelectItem>
                         </SelectContent>
@@ -488,6 +492,49 @@ export default function AdminView() {
                         onChange={(e) => updateOutput(index, 'description', e.target.value)}
                         className="col-span-2"
                       />
+                      
+                      {output.type !== 'none' && (
+                        <>
+                          <Input
+                            placeholder="Potential Effects of errors *"
+                            value={output.potentialEffects || ''}
+                            onChange={(e) => updateOutput(index, 'potentialEffects', e.target.value)}
+                            required
+                            className="col-span-3"
+                          />
+                          <Input
+                            placeholder="Photos of potential effects *"
+                            value={output.photosOfEffects || ''}
+                            onChange={(e) => updateOutput(index, 'photosOfEffects', e.target.value)}
+                            required
+                            className="col-span-3"
+                          />
+                          <Input
+                            placeholder="Must get Right *"
+                            value={output.mustGetRight || ''}
+                            onChange={(e) => updateOutput(index, 'mustGetRight', e.target.value)}
+                            required
+                            className="col-span-3"
+                          />
+                          <Input
+                            placeholder="Quality checks *"
+                            value={output.qualityChecks || ''}
+                            onChange={(e) => updateOutput(index, 'qualityChecks', e.target.value)}
+                            required
+                            className="col-span-3"
+                          />
+                        </>
+                      )}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeOutput(index)}
+                        className="col-span-3"
+                      >
+                        Remove
+                      </Button>
                     </div>
                   </div>
                 ))}
