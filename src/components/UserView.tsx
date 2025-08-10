@@ -91,22 +91,22 @@ export default function UserView() {
     switch (step.contentType) {
       case 'link':
         return (
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <ExternalLink className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-blue-800">External Resource</span>
+            <div className="space-y-4">
+              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <ExternalLink className="w-5 h-5 text-orange-600" />
+                  <span className="font-medium text-orange-800">External Resource</span>
+                </div>
+                <a 
+                  href={step.content} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-orange-600 hover:text-orange-800 underline break-all"
+                >
+                  {step.content}
+                </a>
               </div>
-              <a 
-                href={step.content} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline break-all"
-              >
-                {step.content}
-              </a>
             </div>
-          </div>
         );
       
       case 'image':

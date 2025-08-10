@@ -36,7 +36,7 @@ export default function Home({ onViewChange }: HomeProps) {
               <div className="space-y-4">
                 <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
                   Streamline Your{" "}
-                  <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">
                     Workflows
                   </span>
                 </h1>
