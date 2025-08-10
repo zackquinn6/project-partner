@@ -4,38 +4,27 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { Shield, Users, ArrowRight, CheckCircle, Route, Target, TrendingUp } from "lucide-react";
 import generalDiyImage from "@/assets/general-diy.png";
 import Autoplay from "embla-carousel-autoplay";
-
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
-
-export default function Home({ onViewChange }: HomeProps) {
-  const projects = [
-    "Interior painting", "Tile flooring", "LVP flooring", "Tile backsplash", 
-    "Landscaping", "Power washing", "Smart home", "Drywall", 
-    "Lighting", "Home maintenance"
-  ];
-
-  const features = [
-    {
-      icon: Shield,
-      title: "Build with Confidence",
-      description: "Never wonder if you're doing it right. Our proven processes ensure professional-quality results every time."
-    },
-    {
-      icon: Route,
-      title: "Clear Step-by-Step Guidance",
-      description: "Follow our detailed guides with videos, photos, and pro tips that make complex projects manageable."
-    },
-    {
-      icon: TrendingUp,
-      title: "Track Your Progress",
-      description: "Stay motivated and on track with built-in progress tracking and quality checkpoints."
-    }
-  ];
-
-  return (
-    <div className="min-h-screen">
+export default function Home({
+  onViewChange
+}: HomeProps) {
+  const projects = ["Interior painting", "Tile flooring", "LVP flooring", "Tile backsplash", "Landscaping", "Power washing", "Smart home", "Drywall", "Lighting", "Home maintenance"];
+  const features = [{
+    icon: Shield,
+    title: "Build with Confidence",
+    description: "Never wonder if you're doing it right. Our proven processes ensure professional-quality results every time."
+  }, {
+    icon: Route,
+    title: "Clear Step-by-Step Guidance",
+    description: "Follow our detailed guides with videos, photos, and pro tips that make complex projects manageable."
+  }, {
+    icon: TrendingUp,
+    title: "Track Your Progress",
+    description: "Stay motivated and on track with built-in progress tracking and quality checkpoints."
+  }];
+  return <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="container mx-auto px-6 py-20">
@@ -58,23 +47,12 @@ export default function Home({ onViewChange }: HomeProps) {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  onClick={() => onViewChange('user')}
-                  size="lg" 
-                  className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth"
-                >
+                <Button onClick={() => onViewChange('user')} size="lg" className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth">
                   <Target className="w-5 h-5 mr-2" />
                   Start My Project
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
-                <Button 
-                  onClick={() => onViewChange('user')}
-                  variant="outline" 
-                  size="lg"
-                  className="transition-smooth border-primary/20 hover:border-primary"
-                >
-                  Browse Projects
-                </Button>
+                
               </div>
 
             </div>
@@ -83,19 +61,15 @@ export default function Home({ onViewChange }: HomeProps) {
         
         {/* Projects Carousel - Full Width */}
         <div className="w-full bg-gradient-to-r from-card/20 to-card/40 py-8">
-          <Carousel 
-            className="w-full" 
-            opts={{ align: "start", loop: true }}
-            plugins={[
-              Autoplay({
-                delay: 2000,
-                stopOnInteraction: true,
-              }),
-            ]}
-          >
+          <Carousel className="w-full" opts={{
+          align: "start",
+          loop: true
+        }} plugins={[Autoplay({
+          delay: 2000,
+          stopOnInteraction: true
+        })]}>
             <CarouselContent className="-ml-1">
-              {projects.map((project, index) => (
-                <CarouselItem key={index} className="pl-1 basis-1/4 md:basis-1/5 lg:basis-1/6">
+              {projects.map((project, index) => <CarouselItem key={index} className="pl-1 basis-1/4 md:basis-1/5 lg:basis-1/6">
                   <div className="p-1">
                     <Card className="border-primary/20 bg-card/70 hover:bg-card transition-smooth">
                       <CardContent className="flex items-center justify-center p-4">
@@ -105,8 +79,7 @@ export default function Home({ onViewChange }: HomeProps) {
                       </CardContent>
                     </Card>
                   </div>
-                </CarouselItem>
-              ))}
+                </CarouselItem>)}
             </CarouselContent>
           </Carousel>
         </div>
@@ -126,8 +99,7 @@ export default function Home({ onViewChange }: HomeProps) {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-smooth">
+            {features.map((feature, index) => <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-smooth">
                 <CardHeader className="text-center">
                   <div className="w-16 h-16 gradient-primary rounded-xl flex items-center justify-center mx-auto mb-4">
                     <feature.icon className="w-8 h-8 text-white" />
@@ -139,8 +111,7 @@ export default function Home({ onViewChange }: HomeProps) {
                     {feature.description}
                   </CardDescription>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -157,12 +128,7 @@ export default function Home({ onViewChange }: HomeProps) {
                 Join thousands of homeowners who've successfully completed their projects with confidence using Project Partner's guided approach.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  onClick={() => onViewChange('user')}
-                  variant="secondary"
-                  size="lg"
-                  className="bg-white text-primary hover:bg-white/90 transition-smooth"
-                >
+                <Button onClick={() => onViewChange('user')} variant="secondary" size="lg" className="bg-white text-primary hover:bg-white/90 transition-smooth">
                   Start My First Project
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
@@ -171,6 +137,5 @@ export default function Home({ onViewChange }: HomeProps) {
           </Card>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 }
