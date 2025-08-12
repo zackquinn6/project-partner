@@ -1,6 +1,18 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Project } from '@/interfaces/Project';
 
+// Import placeholder images
+import interiorPaintingPlaceholder from '@/assets/interior-painting-placeholder.jpg';
+import tileFlooringPlaceholder from '@/assets/tile-flooring-placeholder.jpg';
+import lvpFlooringPlaceholder from '@/assets/lvp-flooring-placeholder.jpg';
+import tileBacksplashPlaceholder from '@/assets/tile-backsplash-placeholder.jpg';
+import landscapingPlaceholder from '@/assets/landscaping-placeholder.jpg';
+import powerWashingPlaceholder from '@/assets/power-washing-placeholder.jpg';
+import smartHomePlaceholder from '@/assets/smart-home-placeholder.jpg';
+import drywallPlaceholder from '@/assets/drywall-placeholder.jpg';
+import lightingPlaceholder from '@/assets/lighting-placeholder.jpg';
+import homeMaintenancePlaceholder from '@/assets/home-maintenance-placeholder.jpg';
+
 interface ProjectContextType {
   projects: Project[];
   currentProject: Project | null;
@@ -31,6 +43,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-interior-painting',
       name: 'Interior Painting',
       description: 'Transform your space with professional interior painting techniques',
+      image: interiorPaintingPlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),
@@ -46,6 +59,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-tile-flooring',
       name: 'Tile Flooring',
       description: 'Complete tile flooring installation from planning to finish',
+      image: tileFlooringPlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),
@@ -95,6 +109,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-lvp-flooring',
       name: 'LVP Flooring',
       description: 'Luxury vinyl plank flooring installation made simple',
+      image: lvpFlooringPlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),
@@ -110,6 +125,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-tile-backsplash',
       name: 'Tile Backsplash',
       description: 'Add style and protection with a beautiful tile backsplash',
+      image: tileBacksplashPlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),
@@ -125,6 +141,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-landscaping',
       name: 'Landscaping',
       description: 'Design and create beautiful outdoor spaces',
+      image: landscapingPlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),
@@ -140,6 +157,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-power-washing',
       name: 'Power Washing',
       description: 'Restore surfaces with proper power washing techniques',
+      image: powerWashingPlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),
@@ -155,6 +173,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-smart-home',
       name: 'Smart Home',
       description: 'Install and configure smart home automation systems',
+      image: smartHomePlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),
@@ -170,6 +189,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-drywall',
       name: 'Drywall',
       description: 'Master drywall installation and finishing techniques',
+      image: drywallPlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),
@@ -185,6 +205,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-lighting',
       name: 'Lighting',
       description: 'Install and upgrade lighting fixtures safely',
+      image: lightingPlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),
@@ -200,6 +221,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: 'template-home-maintenance',
       name: 'Home Maintenance',
       description: 'Essential maintenance tasks to keep your home in top condition',
+      image: homeMaintenancePlaceholder,
       createdAt: new Date(),
       updatedAt: new Date(),
       startDate: new Date(),

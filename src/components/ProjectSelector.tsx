@@ -34,6 +34,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
     category: '',
     difficulty: '',
     effortLevel: '',
+    image: '',
     publishStatus: 'draft' as 'draft' | 'published'
   });
 
@@ -74,6 +75,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
           category: project.category || '',
           difficulty: project.difficulty || '',
           effortLevel: project.effortLevel || '',
+          image: project.image || '',
           publishStatus: project.publishStatus
         });
       }
@@ -101,6 +103,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       category: currentProject.category || '',
       difficulty: currentProject.difficulty || '',
       effortLevel: currentProject.effortLevel || '',
+      image: currentProject.image || '',
       publishStatus: currentProject.publishStatus
     });
     setIsEditingProject(true);
@@ -115,6 +118,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       category: editingForm.category,
       difficulty: editingForm.difficulty as 'Beginner' | 'Intermediate' | 'Advanced' | undefined,
       effortLevel: editingForm.effortLevel as 'Low' | 'Medium' | 'High' | undefined,
+      image: editingForm.image,
       publishStatus: editingForm.publishStatus,
       updatedAt: new Date()
     };
@@ -131,6 +135,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
         category: currentProject.category || '',
         difficulty: currentProject.difficulty || '',
         effortLevel: currentProject.effortLevel || '',
+        image: currentProject.image || '',
         publishStatus: currentProject.publishStatus
       });
     }
@@ -223,6 +228,26 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                   <h3 className="font-semibold">{currentProject.name}</h3>
                   {isAdminMode && isEditingProject ? (
                     <div className="space-y-3 mt-3">
+                      {/* Project Image */}
+                      {editingForm.image && (
+                        <div>
+                          <Label>Current Image</Label>
+                          <img 
+                            src={editingForm.image} 
+                            alt={currentProject.name}
+                            className="w-full h-32 object-cover rounded-lg mt-1"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <Label htmlFor="edit-image">Project Image URL</Label>
+                        <Input
+                          id="edit-image"
+                          value={editingForm.image}
+                          onChange={(e) => setEditingForm(prev => ({ ...prev, image: e.target.value }))}
+                          placeholder="Enter image URL or path"
+                        />
+                      </div>
                       <div>
                         <Label htmlFor="edit-description">Description</Label>
                         <Textarea
@@ -316,6 +341,14 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                     </div>
                   ) : (
                     <div className="mt-2">
+                      {/* Project Image Display */}
+                      {currentProject.image && (
+                        <img 
+                          src={currentProject.image} 
+                          alt={currentProject.name}
+                          className="w-full h-32 object-cover rounded-lg mb-3"
+                        />
+                      )}
                       <p className="text-sm text-muted-foreground">{currentProject.description}</p>
                       {isAdminMode && (
                         <div className="flex items-center gap-2 mt-2">
