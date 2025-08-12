@@ -7,7 +7,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, Wrench, MapPin, CheckCircle, AlertTriangle } from 'lucide-react';
-
 interface ItemUsage {
   id: string;
   name: string;
@@ -23,36 +22,23 @@ interface ItemUsage {
     stepId: string;
   }[];
 }
-
 const ProjectRollup: React.FC = () => {
-  const { currentProject } = useProject();
-
+  const {
+    currentProject
+  } = useProject();
   if (!currentProject) {
-    return (
-      <Card>
+    return <Card>
         <CardContent className="py-8 text-center">
           <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-semibold mb-2">No Project Selected</h3>
           <p className="text-muted-foreground">Select a project to view its tools and materials rollup</p>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   const rollupData = extractToolsAndMaterials(currentProject);
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5" />
-            Project Rollup: {currentProject.name}
-          </CardTitle>
-          <CardDescription>
-            Complete overview of all tools and materials needed for this project
-          </CardDescription>
-        </CardHeader>
+        
       </Card>
 
       <Tabs defaultValue="materials" className="space-y-4">
@@ -75,19 +61,18 @@ const ProjectRollup: React.FC = () => {
           <RollupSection items={rollupData.tools} type="tool" />
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>;
 };
-
 interface RollupSectionProps {
   items: ItemUsage[];
   type: 'material' | 'tool';
 }
-
-const RollupSection: React.FC<RollupSectionProps> = ({ items, type }) => {
+const RollupSection: React.FC<RollupSectionProps> = ({
+  items,
+  type
+}) => {
   const requiredItems = items.filter(item => item.required);
   const optionalItems = items.filter(item => !item.required);
-
   const getCategoryColor = (category: string) => {
     const colors = {
       'Hardware': 'bg-blue-100 text-blue-800',
@@ -99,18 +84,12 @@ const RollupSection: React.FC<RollupSectionProps> = ({ items, type }) => {
     };
     return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
-
-  const renderItemCard = (item: ItemUsage) => (
-    <Card key={item.id} className="hover:shadow-md transition-shadow">
+  const renderItemCard = (item: ItemUsage) => <Card key={item.id} className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <CardTitle className="text-lg flex items-center gap-2">
-              {item.required ? (
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              ) : (
-                <AlertTriangle className="w-5 h-5 text-yellow-600" />
-              )}
+              {item.required ? <CheckCircle className="w-5 h-5 text-green-600" /> : <AlertTriangle className="w-5 h-5 text-yellow-600" />}
               {item.name}
             </CardTitle>
             <CardDescription className="mt-1">{item.description}</CardDescription>
@@ -134,34 +113,26 @@ const RollupSection: React.FC<RollupSectionProps> = ({ items, type }) => {
           </div>
           
           <div className="space-y-2 max-h-40 overflow-y-auto">
-            {item.locations.map((location, index) => (
-              <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm">
+            {item.locations.map((location, index) => <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm">
                 <div className="flex-1">
                   <div className="font-medium">{location.phase}</div>
                   <div className="text-muted-foreground">
                     {location.operation} → {location.step}
                   </div>
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
 
-          {item.locations.length > 3 && (
-            <div className="text-center">
+          {item.locations.length > 3 && <div className="text-center">
               <Badge variant="outline" className="text-xs">
                 Used across {item.locations.length} steps
               </Badge>
-            </div>
-          )}
+            </div>}
         </div>
       </CardContent>
-    </Card>
-  );
-
-  return (
-    <div className="space-y-6">
-      {requiredItems.length > 0 && (
-        <div>
+    </Card>;
+  return <div className="space-y-6">
+      {requiredItems.length > 0 && <div>
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-600" />
             Required {type === 'material' ? 'Materials' : 'Tools'} ({requiredItems.length})
@@ -169,11 +140,9 @@ const RollupSection: React.FC<RollupSectionProps> = ({ items, type }) => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {requiredItems.map(renderItemCard)}
           </div>
-        </div>
-      )}
+        </div>}
 
-      {optionalItems.length > 0 && (
-        <div>
+      {optionalItems.length > 0 && <div>
           <Separator className="my-6" />
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-yellow-600" />
@@ -193,11 +162,9 @@ const RollupSection: React.FC<RollupSectionProps> = ({ items, type }) => {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </div>
-      )}
+        </div>}
 
-      {items.length === 0 && (
-        <Card>
+      {items.length === 0 && <Card>
           <CardContent className="py-8 text-center">
             <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">
@@ -207,16 +174,15 @@ const RollupSection: React.FC<RollupSectionProps> = ({ items, type }) => {
               This project doesn't have any {type === 'material' ? 'materials' : 'tools'} defined yet
             </p>
           </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+        </Card>}
+    </div>;
 };
-
-function extractToolsAndMaterials(project: Project): { materials: ItemUsage[], tools: ItemUsage[] } {
+function extractToolsAndMaterials(project: Project): {
+  materials: ItemUsage[];
+  tools: ItemUsage[];
+} {
   const materialsMap = new Map<string, ItemUsage>();
   const toolsMap = new Map<string, ItemUsage>();
-
   project.phases.forEach(phase => {
     phase.operations.forEach(operation => {
       operation.steps.forEach(step => {
@@ -233,7 +199,6 @@ function extractToolsAndMaterials(project: Project): { materials: ItemUsage[], t
               locations: []
             });
           }
-          
           materialsMap.get(key)!.locations.push({
             phase: phase.name,
             operation: operation.name,
@@ -257,7 +222,6 @@ function extractToolsAndMaterials(project: Project): { materials: ItemUsage[], t
               locations: []
             });
           }
-          
           toolsMap.get(key)!.locations.push({
             phase: phase.name,
             operation: operation.name,
@@ -270,7 +234,6 @@ function extractToolsAndMaterials(project: Project): { materials: ItemUsage[], t
       });
     });
   });
-
   return {
     materials: Array.from(materialsMap.values()).sort((a, b) => {
       // Sort by required first, then by name
@@ -284,5 +247,4 @@ function extractToolsAndMaterials(project: Project): { materials: ItemUsage[], t
     })
   };
 }
-
 export default ProjectRollup;
