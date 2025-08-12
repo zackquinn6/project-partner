@@ -105,11 +105,6 @@ export default function UserView() {
   if (allSteps.length === 0) {
     return (
       <div className="container mx-auto px-6 py-8">
-        <div className="mb-6">
-          <Button variant="outline" onClick={() => setViewMode('listing')}>
-            ← Back to Projects
-          </Button>
-        </div>
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground">
@@ -122,11 +117,6 @@ export default function UserView() {
   }
   return (
     <div className="container mx-auto px-6 py-8">
-      <div className="mb-6">
-        <Button variant="outline" onClick={() => setViewMode('listing')}>
-          ← Back to Projects
-        </Button>
-      </div>
       <div className="grid lg:grid-cols-4 gap-8">
         {/* Sidebar */}
         <Card className="lg:col-span-1 gradient-card border-0 shadow-card">
