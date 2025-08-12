@@ -180,14 +180,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
-                {projects
-                  .filter(project => project.publishStatus === 'published')
-                  .map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))
-                }
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
