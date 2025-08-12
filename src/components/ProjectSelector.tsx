@@ -181,10 +181,18 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
               </SelectTrigger>
               <SelectContent>
                 {projects
-                  .filter(project => project.publishStatus === 'published')
+                  .filter(project => isAdminMode ? true : project.publishStatus === 'published')
                   .map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
+                      {isAdminMode && (
+                        <Badge 
+                          variant="outline" 
+                          className="ml-2"
+                        >
+                          {project.publishStatus}
+                        </Badge>
+                      )}
                     </SelectItem>
                   ))
                 }
