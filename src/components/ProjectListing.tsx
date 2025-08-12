@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Play, Trash2 } from "lucide-react";
+import { Play, Trash2, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { Project } from '@/interfaces/Project';
 
@@ -14,6 +15,7 @@ interface ProjectListingProps {
 
 export default function ProjectListing({ onProjectSelect }: ProjectListingProps) {
   const { projects, setCurrentProject, deleteProject } = useProject();
+  const navigate = useNavigate();
 
   const calculateProgress = (project: Project) => {
     const allSteps = project.phases.flatMap(phase => 
@@ -69,10 +71,21 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     <div className="container mx-auto px-6 py-8">
       <Card className="gradient-card border-0 shadow-card">
         <CardHeader>
-          <CardTitle className="text-2xl">My Projects</CardTitle>
-          <CardDescription>
-            View and manage your project portfolio
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl">My Projects</CardTitle>
+              <CardDescription>
+                View and manage your project portfolio
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={() => navigate('/projects')}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Start a New Project
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
