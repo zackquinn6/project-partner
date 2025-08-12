@@ -3,6 +3,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Material, Tool, Output, Phase, Operation } from '@/interfaces/Project';
 import { ProjectSelector } from '@/components/ProjectSelector';
 import ProjectRollup from '@/components/ProjectRollup';
+import EditWorkflowView from '@/components/EditWorkflowView';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,14 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput } from 'lucide-react';
+import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
 interface EditingState {
   type: 'phase' | 'operation' | 'step' | null;
   id: string | null;
   data: any;
 }
+
 interface TableRow {
   type: 'phase' | 'operation' | 'step';
   id: string;
@@ -25,11 +28,10 @@ interface TableRow {
   parentId?: string;
   level: number;
 }
+
 export const AdminView: React.FC = () => {
-  const {
-    currentProject,
-    updateProject
-  } = useProject();
+  const { currentProject, updateProject } = useProject();
+  const [currentView, setCurrentView] = useState<'table' | 'editWorkflow'>('table');
   const [editing, setEditing] = useState<EditingState>({
     type: null,
     id: null,
@@ -514,6 +516,11 @@ export const AdminView: React.FC = () => {
         return null;
     }
   };
+  // Helper to get all steps for the edit workflow view
+  const allSteps = currentProject?.phases.flatMap(phase => 
+    phase.operations.flatMap(operation => operation.steps)
+  ) || [];
+
   if (!currentProject) {
     return <div className="max-w-7xl mx-auto p-6 space-y-6">
         <ProjectSelector />
@@ -524,6 +531,11 @@ export const AdminView: React.FC = () => {
         </Card>
       </div>;
   }
+  // Render different views based on currentView
+  if (currentView === 'editWorkflow') {
+    return <EditWorkflowView onBackToAdmin={() => setCurrentView('table')} />;
+  }
+
   const tableRows = buildTableRows();
   return <div className="max-w-7xl mx-auto p-6 space-y-6">
       <ProjectSelector />
@@ -535,10 +547,20 @@ export const AdminView: React.FC = () => {
               <CardTitle>Workflow Structure</CardTitle>
               <CardDescription>Complete project workflow with phases, operations, and steps</CardDescription>
             </div>
-            <Button onClick={addPhase}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Phase
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setCurrentView('editWorkflow')} 
+                variant="outline"
+                disabled={!currentProject || allSteps.length === 0}
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Edit Steps
+              </Button>
+              <Button onClick={addPhase}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Phase
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
