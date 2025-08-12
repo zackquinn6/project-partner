@@ -15,12 +15,11 @@ export default function Navigation({
   onAdminAccess,
   onProjectsView
 }: NavigationProps) {
-  const { projects, currentProject, setCurrentProject } = useProject();
-  // Filter to show only user projects that are in-progress
-  const openProjects = projects.filter(p => 
-    p.status === 'in-progress' && 
-    p.publishStatus === 'draft' && 
-    !p.id.startsWith('template-')
+  const { projectRuns, currentProjectRun, setCurrentProjectRun } = useProject();
+  
+  // Filter to show only project runs that are not completed (progress < 100%)
+  const activeProjectRuns = projectRuns.filter(run => 
+    run.status !== 'complete' && run.progress < 100
   );
   return <nav className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-6 py-4">
@@ -51,25 +50,28 @@ export default function Navigation({
                   <ChevronDown className="w-4 h-4 ml-2" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg z-50">
-                {openProjects.length > 0 ? (
-                  openProjects.map((project) => (
+              <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg z-[60] backdrop-blur-sm">
+                {activeProjectRuns.length > 0 ? (
+                  activeProjectRuns.map((projectRun) => (
                     <DropdownMenuItem 
-                      key={project.id} 
+                      key={projectRun.id} 
                       onClick={() => {
-                        setCurrentProject(project);
+                        setCurrentProjectRun(projectRun);
                         onViewChange('user');
-                        // Reset user view if needed
+                        // This will trigger the workflow view
                         onProjectsView?.();
                       }}
-                      className={`cursor-pointer ${currentProject?.id === project.id ? 'bg-primary/10 text-primary' : ''}`}
+                      className={`cursor-pointer ${currentProjectRun?.id === projectRun.id ? 'bg-primary/10 text-primary' : ''}`}
                     >
-                      {project.name}
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">{projectRun.customProjectName || projectRun.name}</span>
+                        <span className="text-xs text-muted-foreground">{Math.round(projectRun.progress)}% complete</span>
+                      </div>
                     </DropdownMenuItem>
                   ))
                 ) : (
                   <DropdownMenuItem disabled>
-                    No open projects
+                    No active projects
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
