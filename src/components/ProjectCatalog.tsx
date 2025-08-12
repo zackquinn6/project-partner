@@ -28,6 +28,7 @@ const ProjectCatalog: React.FC = () => {
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [projectSetupForm, setProjectSetupForm] = useState({
+    customProjectName: '',
     projectLeader: '',
     accountabilityPartner: '',
     targetEndDate: ''
@@ -168,6 +169,7 @@ const ProjectCatalog: React.FC = () => {
 
   const handleSelectProject = (template: ProjectTemplate) => {
     setSelectedTemplate(template);
+    setProjectSetupForm(prev => ({ ...prev, customProjectName: template.name })); // Set default name
     setIsProjectSetupOpen(true);
   };
 
@@ -177,7 +179,7 @@ const ProjectCatalog: React.FC = () => {
     // Create a new project based on the template
     const newProject = {
       id: Date.now().toString(),
-      name: selectedTemplate.name,
+      name: projectSetupForm.customProjectName || selectedTemplate.name,
       description: selectedTemplate.description,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -192,6 +194,7 @@ const ProjectCatalog: React.FC = () => {
     
     // Reset form and close dialog
     setProjectSetupForm({
+      customProjectName: '',
       projectLeader: '',
       accountabilityPartner: '',
       targetEndDate: ''
@@ -319,6 +322,18 @@ const ProjectCatalog: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              <div>
+                <Label htmlFor="custom-project-name">Project Name</Label>
+                <Input
+                  id="custom-project-name"
+                  placeholder="Give your project a custom name"
+                  value={projectSetupForm.customProjectName}
+                  onChange={(e) => setProjectSetupForm(prev => ({ ...prev, customProjectName: e.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Based on: {selectedTemplate?.name}
+                </p>
+              </div>
               <div>
                 <Label htmlFor="project-leader">Project Leader</Label>
                 <Input
