@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
 import ProjectListing from './ProjectListing';
@@ -23,6 +26,15 @@ export default function UserView({
   const [checkedMaterials, setCheckedMaterials] = useState<Record<string, Set<string>>>({});
   const [checkedTools, setCheckedTools] = useState<Record<string, Set<string>>>({});
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
+  
+  // Issue report state
+  const [issueReportOpen, setIssueReportOpen] = useState(false);
+  const [reportIssues, setReportIssues] = useState({
+    toolsMaterials: false,
+    extraWork: false,
+    instructionsUnclear: false
+  });
+  const [reportComments, setReportComments] = useState("");
 
   // Flatten all steps from all phases and operations for navigation
   const allSteps = currentProject?.phases.flatMap(phase => phase.operations.flatMap(operation => operation.steps.map(step => ({
@@ -110,6 +122,26 @@ export default function UserView({
         handleNext();
       }
     }
+  };
+
+  // Handle issue report submission
+  const handleReportSubmit = () => {
+    // Log the issue report (in a real app, this would be sent to a backend)
+    console.log("Issue Report:", {
+      stepId: currentStep?.id,
+      step: currentStep?.step,
+      issues: reportIssues,
+      comments: reportComments
+    });
+    
+    // Reset form and close dialog
+    setReportIssues({
+      toolsMaterials: false,
+      extraWork: false,
+      instructionsUnclear: false
+    });
+    setReportComments("");
+    setIssueReportOpen(false);
   };
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
@@ -394,6 +426,80 @@ export default function UserView({
                       </Button>
                     )
                   )}
+                  
+                  {/* Report Issue Button */}
+                  <Dialog open={issueReportOpen} onOpenChange={setIssueReportOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <AlertTriangle className="w-4 h-4 mr-2" />
+                        Report Issue
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Oh no - What happened?</DialogTitle>
+                        <DialogDescription>
+                          Help us improve this step by reporting any issues you encountered.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="tools-materials"
+                              checked={reportIssues.toolsMaterials}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, toolsMaterials: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="tools-materials">Issues with tools/materials</Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="extra-work"
+                              checked={reportIssues.extraWork}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, extraWork: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="extra-work">Extra work needed, not in instructions</Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="instructions-unclear"
+                              checked={reportIssues.instructionsUnclear}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, instructionsUnclear: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="instructions-unclear">Instructions not clear</Label>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="comments">Comments</Label>
+                          <Textarea
+                            id="comments"
+                            placeholder="Please describe the issue in detail..."
+                            value={reportComments}
+                            onChange={(e) => setReportComments(e.target.value)}
+                            rows={4}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setIssueReportOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleReportSubmit}>
+                          Submit Report
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </CardContent>
