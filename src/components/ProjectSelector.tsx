@@ -10,7 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, FolderOpen } from 'lucide-react';
 
-export const ProjectSelector: React.FC = () => {
+interface ProjectSelectorProps {
+  isAdminMode?: boolean;
+}
+
+export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = false }) => {
   const { projects, currentProject, setCurrentProject, addProject } = useProject();
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
@@ -44,14 +48,20 @@ export const ProjectSelector: React.FC = () => {
     setCurrentProject(newProject);
     setNewProjectForm({ name: '', description: '' });
     setIsNewProjectOpen(false);
-    setIsProjectSetupOpen(true); // Open setup dialog after creating project
+    // Only open setup dialog in user mode, not admin mode
+    if (!isAdminMode) {
+      setIsProjectSetupOpen(true);
+    }
   };
 
   const handleProjectSelect = (value: string) => {
     const project = projects.find(p => p.id === value);
     if (project && project.id !== currentProject?.id) {
       setCurrentProject(project);
-      setIsProjectSetupOpen(true); // Open setup dialog when selecting a different project
+      // Only open setup dialog in user mode, not admin mode
+      if (!isAdminMode) {
+        setIsProjectSetupOpen(true);
+      }
     }
   };
 
@@ -153,8 +163,9 @@ export const ProjectSelector: React.FC = () => {
           </div>
         )}
 
-        {/* Project Setup Dialog */}
-        <Dialog open={isProjectSetupOpen} onOpenChange={setIsProjectSetupOpen}>
+        {/* Project Setup Dialog - Only show in user mode */}
+        {!isAdminMode && (
+          <Dialog open={isProjectSetupOpen} onOpenChange={setIsProjectSetupOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Let's get this project going! 🚀</DialogTitle>
@@ -199,8 +210,9 @@ export const ProjectSelector: React.FC = () => {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </CardContent>
     </Card>
   );

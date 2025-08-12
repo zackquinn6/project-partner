@@ -523,7 +523,7 @@ export const AdminView: React.FC = () => {
 
   if (!currentProject) {
     return <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <ProjectSelector />
+        <ProjectSelector isAdminMode={true} />
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground">Please select or create a project to manage workflows.</p>
@@ -538,7 +538,7 @@ export const AdminView: React.FC = () => {
 
   const tableRows = buildTableRows();
   return <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <ProjectSelector />
+      <ProjectSelector isAdminMode={true} />
 
       <Card>
         <CardHeader>
