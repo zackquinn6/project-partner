@@ -247,10 +247,7 @@ export default function UserView({
           <Card className="gradient-card border-0 shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <Button variant="outline" onClick={handlePrevious} disabled={currentStepIndex === 0} className="transition-fast">
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Previous
-                </Button>
+                
 
                 <div className="flex items-center gap-3">
                   {currentStep && !completedSteps.has(currentStep.id) && <Button onClick={handleComplete} className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth">
