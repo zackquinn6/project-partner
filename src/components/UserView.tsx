@@ -14,13 +14,17 @@ import ProjectListing from './ProjectListing';
 interface UserViewProps {
   resetToListing?: boolean;
   onProjectSelected?: () => void;
+  projectRunId?: string;
 }
 export default function UserView({
   resetToListing,
-  onProjectSelected
+  onProjectSelected,
+  projectRunId
 }: UserViewProps = {}) {
   const {
-    currentProject
+    currentProject,
+    projectRuns,
+    setCurrentProjectRun
   } = useProject();
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -44,6 +48,17 @@ export default function UserView({
     phaseName: phase.name,
     operationName: operation.name
   })))) || [];
+
+  // Load project run if projectRunId is provided
+  useEffect(() => {
+    if (projectRunId) {
+      const projectRun = projectRuns.find(run => run.id === projectRunId);
+      if (projectRun) {
+        setCurrentProjectRun(projectRun);
+        setViewMode('workflow');
+      }
+    }
+  }, [projectRunId, projectRuns, setCurrentProjectRun]);
 
   // Auto-switch to workflow view when a project is selected
   useEffect(() => {
