@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield } from 'lucide-react';
+import { ProjectSelector } from '@/components/ProjectSelector';
 
 interface ProjectTemplate {
   id: string;
@@ -260,7 +261,37 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({ isAdminMode = false }) 
     setIsProjectSetupOpen(false);
     setSelectedTemplate(null);
     
-    // Navigate back to home with user view
+    // Navigate directly to workflow view in user mode
+    navigate('/', { state: { view: 'user' } });
+  };
+
+  const handleSkipSetup = () => {
+    if (!selectedTemplate) return;
+
+    // Create a new project based on the template without setup details
+    const newProject = {
+      id: Date.now().toString(),
+      name: selectedTemplate.name,
+      description: selectedTemplate.description,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      startDate: new Date(),
+      planEndDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+      status: 'not-started' as const,
+      publishStatus: 'draft' as const,
+      category: selectedTemplate.category,
+      difficulty: selectedTemplate.difficulty,
+      estimatedTime: selectedTemplate.estimatedTime,
+      phases: [] // Start with empty phases, user can build from template
+    };
+
+    addProject(newProject);
+    setCurrentProject(newProject);
+    
+    setIsProjectSetupOpen(false);
+    setSelectedTemplate(null);
+    
+    // Navigate directly to workflow view in user mode
     navigate('/', { state: { view: 'user' } });
   };
 
@@ -268,9 +299,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({ isAdminMode = false }) 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 py-8 space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -283,15 +314,23 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({ isAdminMode = false }) 
           </div>
         </div>
 
-        <div className="text-center mb-12">
+        {/* Project Selector for existing projects */}
+        {!isAdminMode && (
+          <ProjectSelector onProjectSelected={() => navigate('/', { state: { view: 'user' } })} />
+        )}
+
+        <div className="text-center">
           <h1 className="text-4xl lg:text-5xl font-bold mb-4">
-            Choose Your{" "}
+            {!isAdminMode ? 'Or Start a New' : 'Choose Your'}{" "}
             <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">
               Project
             </span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Select from our expertly crafted project guides to get started with confidence
+            {!isAdminMode 
+              ? 'Create a new project from our expertly crafted templates'
+              : 'Select from our expertly crafted project guides to get started with confidence'
+            }
           </p>
         </div>
 
@@ -421,7 +460,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({ isAdminMode = false }) 
                   />
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setIsProjectSetupOpen(false)}>
+                  <Button variant="outline" onClick={handleSkipSetup}>
                     Skip for now
                   </Button>
                   <Button onClick={handleProjectSetupComplete}>
