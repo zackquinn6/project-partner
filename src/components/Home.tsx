@@ -5,11 +5,9 @@ import { Shield, Users, ArrowRight, CheckCircle, Route, Target, TrendingUp } fro
 import { useNavigate } from "react-router-dom";
 import generalDiyImage from "@/assets/general-diy.png";
 import Autoplay from "embla-carousel-autoplay";
-
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
-
 export default function Home({
   onViewChange
 }: HomeProps) {
@@ -17,7 +15,6 @@ export default function Home({
   const projects = ["Interior painting", "Tile flooring", "LVP flooring", "Tile backsplash", "Landscaping", "Power washing", "Smart home", "Drywall", "Lighting", "Home maintenance"];
   // Triple projects for seamless infinite scroll
   const infiniteProjects = [...projects, ...projects, ...projects];
-  
   const features = [{
     icon: Shield,
     title: "Build with Confidence",
@@ -31,7 +28,6 @@ export default function Home({
     title: "Track Your Progress",
     description: "Stay motivated and on track with built-in progress tracking and quality checkpoints."
   }];
-  
   return <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
@@ -48,9 +44,7 @@ export default function Home({
                 <h2 className="text-2xl lg:text-3xl font-semibold text-muted-foreground mb-4">
                   A Guided Home Improvement Experience
                 </h2>
-                <p className="text-xl text-muted-foreground max-w-2xl">
-                  expert-guided steps, progress tracking, and access to pro help—so DIYers stay focused, avoid missteps, and confidently finish what they started.
-                </p>
+                <p className="text-xl text-muted-foreground max-w-2xl">Expert-designed processes + digital tools + accountability—learn, track, and confidently finish every home improvement project. </p>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
@@ -68,22 +62,18 @@ export default function Home({
         
         {/* Projects Carousel - Full Width */}
         <div className="w-full bg-gradient-to-r from-card/20 to-card/40 py-8">
-          <Carousel 
-            className="w-full" 
-            opts={{
-              align: "start",
-              loop: true,
-              skipSnaps: false,
-              dragFree: false
-            }} 
-            plugins={[Autoplay({
-              delay: 800,
-              stopOnInteraction: false,
-              stopOnMouseEnter: false,
-              stopOnFocusIn: false,
-              playOnInit: true
-            })]}
-          >
+          <Carousel className="w-full" opts={{
+          align: "start",
+          loop: true,
+          skipSnaps: false,
+          dragFree: false
+        }} plugins={[Autoplay({
+          delay: 800,
+          stopOnInteraction: false,
+          stopOnMouseEnter: false,
+          stopOnFocusIn: false,
+          playOnInit: true
+        })]}>
             <CarouselContent className="-ml-1">
               {infiniteProjects.map((project, index) => <CarouselItem key={`${project}-${index}`} className="pl-1 basis-1/4 md:basis-1/5 lg:basis-1/6">
                   <div className="p-1">
