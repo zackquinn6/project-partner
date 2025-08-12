@@ -379,7 +379,7 @@ export const AdminView: React.FC = () => {
             </TableCell>
             <TableCell>-</TableCell>
             <TableCell>
-              <Badge variant="outline">{operation.steps.length} steps</Badge>
+              
             </TableCell>
             <TableCell>
               <div className="flex gap-1">
@@ -429,41 +429,11 @@ export const AdminView: React.FC = () => {
               }
             }))} /> : <span className="text-sm text-muted-foreground">{step.description || 'No description'}</span>}
             </TableCell>
-            <TableCell>
-              {isEditing ? <Select value={editing.data.contentType} onValueChange={value => setEditing(prev => ({
-              ...prev,
-              data: {
-                ...prev.data,
-                contentType: value
-              }
-            }))}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="text">Text</SelectItem>
-                    <SelectItem value="video">Video</SelectItem>
-                    <SelectItem value="image">Image</SelectItem>
-                    <SelectItem value="document">Document</SelectItem>
-                  </SelectContent>
-                </Select> : <Badge variant="outline" className="capitalize">{step.contentType}</Badge>}
-            </TableCell>
+            
             <TableCell>
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="resources" className="border-none">
-                  <AccordionTrigger className="py-2 hover:no-underline">
-                    <div className="flex gap-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {step.materials?.length || 0}M
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {step.tools?.length || 0}T
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {step.outputs?.length || 0}O
-                      </Badge>
-                    </div>
-                  </AccordionTrigger>
+                  
                   <AccordionContent className="space-y-3 pt-2">
                     {step.materials && step.materials.length > 0 && <div>
                         <div className="flex items-center gap-2 mb-2">
