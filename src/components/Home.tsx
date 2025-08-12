@@ -67,7 +67,7 @@ export default function Home({
           loop: true,
           skipSnaps: true,
           dragFree: true,
-          duration: 5000
+          duration: 10000
         }} plugins={[Autoplay({
           delay: 50,
           stopOnInteraction: false,
