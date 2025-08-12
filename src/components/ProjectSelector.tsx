@@ -153,6 +153,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
 
   const handleDeleteProject = () => {
     if (!currentProject) return;
+    console.log('handleDeleteProject called for project:', currentProject.name, 'with id:', currentProject.id);
     deleteProject(currentProject.id);
   };
 
