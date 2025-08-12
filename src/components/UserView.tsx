@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video } from "lucide-react";
@@ -19,6 +20,9 @@ export default function UserView({
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const [checkedMaterials, setCheckedMaterials] = useState<Record<string, Set<string>>>({});
+  const [checkedTools, setCheckedTools] = useState<Record<string, Set<string>>>({});
+  const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
 
   // Flatten all steps from all phases and operations for navigation
   const allSteps = currentProject?.phases.flatMap(phase => phase.operations.flatMap(operation => operation.steps.map(step => ({
@@ -52,8 +56,55 @@ export default function UserView({
       setCurrentStepIndex(currentStepIndex - 1);
     }
   };
+  // Helper functions for check-off functionality
+  const toggleMaterialCheck = (stepId: string, materialId: string) => {
+    setCheckedMaterials(prev => {
+      const stepMaterials = prev[stepId] || new Set();
+      const newSet = new Set(stepMaterials);
+      if (newSet.has(materialId)) {
+        newSet.delete(materialId);
+      } else {
+        newSet.add(materialId);
+      }
+      return { ...prev, [stepId]: newSet };
+    });
+  };
+
+  const toggleToolCheck = (stepId: string, toolId: string) => {
+    setCheckedTools(prev => {
+      const stepTools = prev[stepId] || new Set();
+      const newSet = new Set(stepTools);
+      if (newSet.has(toolId)) {
+        newSet.delete(toolId);
+      } else {
+        newSet.add(toolId);
+      }
+      return { ...prev, [stepId]: newSet };
+    });
+  };
+
+  const toggleOutputCheck = (stepId: string, outputId: string) => {
+    setCheckedOutputs(prev => {
+      const stepOutputs = prev[stepId] || new Set();
+      const newSet = new Set(stepOutputs);
+      if (newSet.has(outputId)) {
+        newSet.delete(outputId);
+      } else {
+        newSet.add(outputId);
+      }
+      return { ...prev, [stepId]: newSet };
+    });
+  };
+
+  // Check if all outputs are completed (required for step completion)
+  const areAllOutputsCompleted = (step: typeof currentStep) => {
+    if (!step || !step.outputs || step.outputs.length === 0) return true;
+    const stepOutputs = checkedOutputs[step.id] || new Set();
+    return step.outputs.every(output => stepOutputs.has(output.id));
+  };
+
   const handleComplete = () => {
-    if (currentStep) {
+    if (currentStep && areAllOutputsCompleted(currentStep)) {
       setCompletedSteps(prev => new Set([...prev, currentStep.id]));
       if (currentStepIndex < allSteps.length - 1) {
         handleNext();
@@ -199,57 +250,126 @@ export default function UserView({
               <CardContent className="p-6">
                 <Accordion type="multiple" className="w-full">
                   {/* Materials */}
-                  {currentStep.materials?.length > 0 && <AccordionItem value="materials">
+                  {currentStep.materials?.length > 0 && (() => {
+                    const stepMaterials = checkedMaterials[currentStep.id] || new Set();
+                    const completedCount = stepMaterials.size;
+                    const totalCount = currentStep.materials.length;
+                    const isAllCompleted = completedCount === totalCount;
+                    
+                    return <AccordionItem value="materials">
                       <AccordionTrigger className="text-lg font-semibold">
-                        Materials Needed ({currentStep.materials.length})
+                        <div className="flex items-center gap-2">
+                          <span>Materials Needed</span>
+                          <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-green-500 text-white" : ""}>
+                            {completedCount}/{totalCount}
+                          </Badge>
+                          {isAllCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-3 pt-2">
                           {currentStep.materials.map(material => <div key={material.id} className="p-3 bg-background/50 rounded-lg">
-                              <div className="font-medium">{material.name}</div>
-                              {material.category && <Badge variant="outline" className="text-xs mt-1">{material.category}</Badge>}
-                              {material.description && <div className="text-sm text-muted-foreground mt-1">{material.description}</div>}
+                              <div className="flex items-start gap-3">
+                                <Checkbox 
+                                  id={`material-${material.id}`}
+                                  checked={stepMaterials.has(material.id)}
+                                  onCheckedChange={() => toggleMaterialCheck(currentStep.id, material.id)}
+                                  className="mt-1"
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium">{material.name}</div>
+                                  {material.category && <Badge variant="outline" className="text-xs mt-1">{material.category}</Badge>}
+                                  {material.description && <div className="text-sm text-muted-foreground mt-1">{material.description}</div>}
+                                </div>
+                              </div>
                             </div>)}
                         </div>
                       </AccordionContent>
-                    </AccordionItem>}
+                    </AccordionItem>;
+                  })()}
 
                   {/* Tools */}
-                  {currentStep.tools?.length > 0 && <AccordionItem value="tools">
+                  {currentStep.tools?.length > 0 && (() => {
+                    const stepTools = checkedTools[currentStep.id] || new Set();
+                    const completedCount = stepTools.size;
+                    const totalCount = currentStep.tools.length;
+                    const isAllCompleted = completedCount === totalCount;
+                    
+                    return <AccordionItem value="tools">
                       <AccordionTrigger className="text-lg font-semibold">
-                        Tools Required ({currentStep.tools.length})
+                        <div className="flex items-center gap-2">
+                          <span>Tools Required</span>
+                          <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-green-500 text-white" : ""}>
+                            {completedCount}/{totalCount}
+                          </Badge>
+                          {isAllCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-3 pt-2">
                           {currentStep.tools.map(tool => <div key={tool.id} className="p-3 bg-background/50 rounded-lg">
-                              <div className="flex items-center gap-2">
-                                <div className="font-medium">{tool.name}</div>
-                                {tool.required && <Badge variant="destructive" className="text-xs">Required</Badge>}
+                              <div className="flex items-start gap-3">
+                                <Checkbox 
+                                  id={`tool-${tool.id}`}
+                                  checked={stepTools.has(tool.id)}
+                                  onCheckedChange={() => toggleToolCheck(currentStep.id, tool.id)}
+                                  className="mt-1"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="font-medium">{tool.name}</div>
+                                    {tool.required && <Badge variant="destructive" className="text-xs">Required</Badge>}
+                                  </div>
+                                  {tool.category && <Badge variant="outline" className="text-xs mt-1">{tool.category}</Badge>}
+                                  {tool.description && <div className="text-sm text-muted-foreground mt-1">{tool.description}</div>}
+                                </div>
                               </div>
-                              {tool.category && <Badge variant="outline" className="text-xs mt-1">{tool.category}</Badge>}
-                              {tool.description && <div className="text-sm text-muted-foreground mt-1">{tool.description}</div>}
                             </div>)}
                         </div>
                       </AccordionContent>
-                    </AccordionItem>}
+                    </AccordionItem>;
+                  })()}
 
                   {/* Outputs */}
-                  {currentStep.outputs?.length > 0 && <AccordionItem value="outputs">
+                  {currentStep.outputs?.length > 0 && (() => {
+                    const stepOutputs = checkedOutputs[currentStep.id] || new Set();
+                    const completedCount = stepOutputs.size;
+                    const totalCount = currentStep.outputs.length;
+                    const isAllCompleted = completedCount === totalCount;
+                    
+                    return <AccordionItem value="outputs">
                       <AccordionTrigger className="text-lg font-semibold">
-                        Outputs ({currentStep.outputs.length})
+                        <div className="flex items-center gap-2">
+                          <span>Outputs</span>
+                          <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-green-500 text-white" : ""}>
+                            {completedCount}/{totalCount}
+                          </Badge>
+                          {isAllCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
+                        </div>
                       </AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-3 pt-2">
                           {currentStep.outputs.map(output => <div key={output.id} className="p-3 bg-background/50 rounded-lg">
-                              <div className="flex items-center gap-2">
-                                <div className="font-medium">{output.name}</div>
-                                <Badge variant="outline" className="text-xs capitalize">{output.type}</Badge>
+                              <div className="flex items-start gap-3">
+                                <Checkbox 
+                                  id={`output-${output.id}`}
+                                  checked={stepOutputs.has(output.id)}
+                                  onCheckedChange={() => toggleOutputCheck(currentStep.id, output.id)}
+                                  className="mt-1"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="font-medium">{output.name}</div>
+                                    <Badge variant="outline" className="text-xs capitalize">{output.type}</Badge>
+                                  </div>
+                                  <div className="text-sm text-muted-foreground mt-1">{output.description}</div>
+                                </div>
                               </div>
-                              <div className="text-sm text-muted-foreground mt-1">{output.description}</div>
                             </div>)}
                         </div>
                       </AccordionContent>
-                    </AccordionItem>}
+                    </AccordionItem>;
+                  })()}
                 </Accordion>
               </CardContent>
             </Card>}
@@ -261,12 +381,19 @@ export default function UserView({
                 
 
                 <div className="flex items-center gap-3">
-                  {currentStep && !completedSteps.has(currentStep.id) && <Button onClick={handleComplete} className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth">
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark Complete
-                    </Button>}
-                  
-                  
+                  {currentStep && !completedSteps.has(currentStep.id) && (
+                    areAllOutputsCompleted(currentStep) ? (
+                      <Button onClick={handleComplete} className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Mark Complete
+                      </Button>
+                    ) : (
+                      <Button disabled className="opacity-50 cursor-not-allowed">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Complete All Outputs First
+                      </Button>
+                    )
+                  )}
                 </div>
               </div>
             </CardContent>
