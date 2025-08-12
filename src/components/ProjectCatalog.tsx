@@ -260,7 +260,44 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({ isAdminMode = false }) 
     setIsProjectSetupOpen(false);
     setSelectedTemplate(null);
     
-    // Navigate back to home with user view
+    // Navigate to user workflow view
+    navigate('/', { state: { view: 'user' } });
+  };
+
+  const handleSkipSetup = () => {
+    if (!selectedTemplate) return;
+
+    // Create a new project based on the template without setup info
+    const newProject = {
+      id: Date.now().toString(),
+      name: selectedTemplate.name,
+      description: selectedTemplate.description,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      startDate: new Date(),
+      planEndDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      status: 'not-started' as const,
+      publishStatus: 'draft' as const,
+      category: selectedTemplate.category,
+      difficulty: selectedTemplate.difficulty,
+      estimatedTime: selectedTemplate.estimatedTime,
+      phases: []
+    };
+
+    addProject(newProject);
+    setCurrentProject(newProject);
+    
+    // Reset form and close dialog
+    setProjectSetupForm({
+      customProjectName: '',
+      projectLeader: '',
+      accountabilityPartner: '',
+      targetEndDate: ''
+    });
+    setIsProjectSetupOpen(false);
+    setSelectedTemplate(null);
+    
+    // Navigate to user workflow view
     navigate('/', { state: { view: 'user' } });
   };
 
@@ -421,7 +458,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({ isAdminMode = false }) 
                   />
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setIsProjectSetupOpen(false)}>
+                  <Button variant="outline" onClick={handleSkipSetup}>
                     Skip for now
                   </Button>
                   <Button onClick={handleProjectSetupComplete}>
