@@ -30,13 +30,21 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({ isAdminMode = false }) 
   const navigate = useNavigate();
   const { setCurrentProject, addProject, projects } = useProject();
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
   const [projectSetupForm, setProjectSetupForm] = useState({
     customProjectName: '',
     projectLeader: '',
     accountabilityPartner: '',
     targetEndDate: ''
   });
+
+  // Reset dialog state when switching to admin mode
+  React.useEffect(() => {
+    if (isAdminMode) {
+      setIsProjectSetupOpen(false);
+      setSelectedTemplate(null);
+    }
+  }, [isAdminMode]);
 
   // Sample project templates based on the projects mentioned in Home component
   const projectTemplates: ProjectTemplate[] = [
