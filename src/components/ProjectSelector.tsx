@@ -33,6 +33,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
     description: '',
     category: '',
     difficulty: '',
+    effortLevel: '',
     publishStatus: 'draft' as 'draft' | 'published'
   });
 
@@ -72,6 +73,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
           description: project.description,
           category: project.category || '',
           difficulty: project.difficulty || '',
+          effortLevel: project.effortLevel || '',
           publishStatus: project.publishStatus
         });
       }
@@ -98,6 +100,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       description: currentProject.description,
       category: currentProject.category || '',
       difficulty: currentProject.difficulty || '',
+      effortLevel: currentProject.effortLevel || '',
       publishStatus: currentProject.publishStatus
     });
     setIsEditingProject(true);
@@ -111,6 +114,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       description: editingForm.description,
       category: editingForm.category,
       difficulty: editingForm.difficulty as 'Beginner' | 'Intermediate' | 'Advanced' | undefined,
+      effortLevel: editingForm.effortLevel as 'Low' | 'Medium' | 'High' | undefined,
       publishStatus: editingForm.publishStatus,
       updatedAt: new Date()
     };
@@ -126,6 +130,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
         description: currentProject.description,
         category: currentProject.category || '',
         difficulty: currentProject.difficulty || '',
+        effortLevel: currentProject.effortLevel || '',
         publishStatus: currentProject.publishStatus
       });
     }
@@ -265,20 +270,38 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                           </Select>
                         </div>
                       </div>
-                      <div>
-                        <Label htmlFor="edit-status">Publish Status</Label>
-                        <Select 
-                          value={editingForm.publishStatus} 
-                          onValueChange={(value) => setEditingForm(prev => ({ ...prev, publishStatus: value as 'draft' | 'published' }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="published">Published</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="edit-effort">Effort Level</Label>
+                          <Select 
+                            value={editingForm.effortLevel} 
+                            onValueChange={(value) => setEditingForm(prev => ({ ...prev, effortLevel: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select effort level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Low">Low</SelectItem>
+                              <SelectItem value="Medium">Medium</SelectItem>
+                              <SelectItem value="High">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-status">Publish Status</Label>
+                          <Select 
+                            value={editingForm.publishStatus} 
+                            onValueChange={(value) => setEditingForm(prev => ({ ...prev, publishStatus: value as 'draft' | 'published' }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="published">Published</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" onClick={handleSaveProjectChanges}>
@@ -307,6 +330,17 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                             }
                           >
                             {currentProject.difficulty || 'Unset'}
+                          </Badge>
+                          <Badge 
+                            variant="outline"
+                            className={
+                              currentProject.effortLevel === 'Low' ? 'bg-blue-100 text-blue-800' :
+                              currentProject.effortLevel === 'Medium' ? 'bg-orange-100 text-orange-800' :
+                              currentProject.effortLevel === 'High' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }
+                          >
+                            {currentProject.effortLevel || 'Unset'} Effort
                           </Badge>
                           <Badge 
                             variant={currentProject.publishStatus === 'published' ? 'default' : 'secondary'}

@@ -63,6 +63,7 @@ export interface Project {
   publishStatus: 'draft' | 'published';
   category?: string;
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
+  effortLevel?: 'Low' | 'Medium' | 'High';
   estimatedTime?: string;
   phases: Phase[];
 }
