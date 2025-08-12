@@ -106,7 +106,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                       <div className="space-y-1">
                         <Progress value={progress} className="h-2" />
                         <div className="text-xs text-muted-foreground text-center">
-                          {progress.toFixed(1)}%
+                          {Math.round(progress)}%
                         </div>
                       </div>
                     </TableCell>
