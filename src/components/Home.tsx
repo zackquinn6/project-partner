@@ -44,7 +44,7 @@ export default function Home({
                 <h2 className="text-2xl lg:text-3xl font-semibold text-muted-foreground mb-4">
                   A Guided Home Improvement Experience
                 </h2>
-                <p className="text-xl text-muted-foreground max-w-2xl">Expert-designed processes + digital tools + accountability—learn, track, and confidently finish every home improvement project. </p>
+                <p className="text-xl text-muted-foreground max-w-2xl">Expert-designed processes + digital tools + accountability—confidently finish every home improvement project. </p>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
