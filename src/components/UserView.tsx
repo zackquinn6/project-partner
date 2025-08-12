@@ -47,10 +47,10 @@ export default function UserView({
 
   // Auto-switch to workflow view when a project is selected
   useEffect(() => {
-    if (currentProject && allSteps.length > 0) {
+    if (currentProject) {
       setViewMode('workflow');
     }
-  }, [currentProject, allSteps.length]);
+  }, [currentProject]);
 
   // Reset to listing view when projects view is requested
   useEffect(() => {
