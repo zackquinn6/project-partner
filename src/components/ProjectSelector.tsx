@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, FolderOpen, Edit, Save, X, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { toast } from '@/hooks/use-toast';
 
 interface ProjectSelectorProps {
   isAdminMode?: boolean;
@@ -19,7 +18,7 @@ interface ProjectSelectorProps {
 }
 
 export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = false, onProjectSelected }) => {
-  const { projects, currentProject, setCurrentProject, addProject, updateProject, deleteProject, startProjectRun } = useProject();
+  const { projects, currentProject, setCurrentProject, addProject, updateProject, deleteProject } = useProject();
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
   const [isEditingProject, setIsEditingProject] = useState(false);
@@ -70,9 +69,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   const handleProjectSelect = (value: string) => {
     const project = projects.find(p => p.id === value);
     if (project && project.id !== currentProject?.id) {
+      setCurrentProject(project);
+      // Initialize editing form with current project data
       if (isAdminMode) {
-        // In admin mode, just select the template for editing
-        setCurrentProject(project);
         setEditingForm({
           description: project.description,
           category: project.category || '',
@@ -81,25 +80,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
           image: project.image || '',
           publishStatus: project.publishStatus
         });
-      } else {
-        // In user mode, create a project run and start the workflow
-        try {
-          const newRun = startProjectRun(value);
-          setCurrentProject(project);
-          
-          toast({
-            title: "Project Started",
-            description: `Started a new run of "${project.name}". Your progress will be tracked.`,
-          });
-          
-          setIsProjectSetupOpen(true);
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to start project. Please try again.",
-            variant: "destructive"
-          });
-        }
+      }
+      // Only open setup dialog in user mode, not admin mode
+      if (!isAdminMode) {
+        setIsProjectSetupOpen(true);
       }
     }
   };
@@ -197,10 +181,18 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
               </SelectTrigger>
               <SelectContent>
                 {projects
-                  .filter(project => project.publishStatus === 'published')
+                  .filter(project => isAdminMode ? true : project.publishStatus === 'published')
                   .map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
+                      {isAdminMode && (
+                        <Badge 
+                          variant="outline" 
+                          className="ml-2"
+                        >
+                          {project.publishStatus}
+                        </Badge>
+                      )}
                     </SelectItem>
                   ))
                 }

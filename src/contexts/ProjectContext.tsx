@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Project, ProjectRun } from '@/interfaces/Project';
+import { Project } from '@/interfaces/Project';
 
 // Import placeholder images
 import interiorPaintingPlaceholder from '@/assets/interior-painting-placeholder.jpg';
@@ -9,15 +9,11 @@ import powerWashingPlaceholder from '@/assets/power-washing-placeholder.jpg';
 
 interface ProjectContextType {
   projects: Project[];
-  projectRuns: ProjectRun[];
   currentProject: Project | null;
   setCurrentProject: (project: Project | null) => void;
   addProject: (project: Project) => void;
   updateProject: (project: Project) => void;
   deleteProject: (projectId: string) => void;
-  startProjectRun: (projectTemplateId: string, userName?: string, userEmail?: string) => ProjectRun;
-  updateProjectRun: (run: ProjectRun) => void;
-  deleteProjectRun: (runId: string) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -350,7 +346,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     }
   ]);
   
-  const [projectRuns, setProjectRuns] = useState<ProjectRun[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
 
   const addProject = (project: Project) => {
@@ -368,53 +363,30 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
   };
 
   const deleteProject = (projectId: string) => {
-    setProjects(projects.filter(p => p.id !== projectId));
-    if (currentProject?.id === projectId) {
-      setCurrentProject(null);
-    }
-  };
-
-  const startProjectRun = (projectTemplateId: string, userName?: string, userEmail?: string): ProjectRun => {
-    const template = projects.find(p => p.id === projectTemplateId);
-    if (!template) {
-      throw new Error('Project template not found');
-    }
-
-    const newRun: ProjectRun = {
-      id: `run-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      projectTemplateId,
-      projectName: template.name,
-      userName,
-      userEmail,
-      startedAt: new Date(),
-      status: 'not-started',
-      progress: 0
-    };
-
-    setProjectRuns(prev => [...prev, newRun]);
-    return newRun;
-  };
-
-  const updateProjectRun = (run: ProjectRun) => {
-    setProjectRuns(prev => prev.map(r => r.id === run.id ? run : r));
-  };
-
-  const deleteProjectRun = (runId: string) => {
-    setProjectRuns(prev => prev.filter(r => r.id !== runId));
+    console.log('deleteProject called with projectId:', projectId);
+    console.log('current projects before delete:', projects.map(p => p.id));
+    setProjects(prev => {
+      const updatedProjects = prev.filter(project => project.id !== projectId);
+      console.log('updated projects after delete:', updatedProjects.map(p => p.id));
+      
+      // If the deleted project was the current project, set a new current project
+      if (currentProject?.id === projectId) {
+        console.log('deleted project was current project, setting new current project');
+        setCurrentProject(updatedProjects[0] || null);
+      }
+      
+      return updatedProjects;
+    });
   };
 
   return (
     <ProjectContext.Provider value={{
       projects,
-      projectRuns,
       currentProject,
       setCurrentProject,
       addProject,
       updateProject,
-      deleteProject,
-      startProjectRun,
-      updateProjectRun,
-      deleteProjectRun
+      deleteProject
     }}>
       {children}
     </ProjectContext.Provider>

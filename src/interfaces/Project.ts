@@ -68,18 +68,3 @@ export interface Project {
   estimatedTime?: string;
   phases: Phase[];
 }
-
-export interface ProjectRun {
-  id: string;
-  projectTemplateId: string;
-  projectName: string;
-  userName?: string;
-  userEmail?: string;
-  startedAt: Date;
-  completedAt?: Date;
-  status: 'not-started' | 'in-progress' | 'complete' | 'paused';
-  currentPhase?: string;
-  currentOperation?: string;
-  currentStep?: string;
-  progress: number; // 0-100
-}

@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import Home from "@/components/Home";
-import AdminView from "@/components/AdminView";
+import { AdminView } from "@/components/AdminView";
 import UserView from "@/components/UserView";
 import AdminPasswordGate from "@/components/AdminPasswordGate";
 
 const Index = () => {
-  console.log('Index component loaded, AdminView import successful');
   const location = useLocation();
   const [currentView, setCurrentView] = useState<'home' | 'admin' | 'user'>('home');
   const [showAdminGate, setShowAdminGate] = useState(false);
