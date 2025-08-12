@@ -231,9 +231,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               Project
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Select from our expertly crafted project guides to get started with confidence
-          </p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Select an expertly crafted workflow to get started with confidence</p>
         </div>
 
         {/* Project Grid */}
