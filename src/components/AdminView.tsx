@@ -8,6 +8,7 @@ import ProjectRunsView from './ProjectRunsView';
 import { Settings, BarChart3, FolderOpen, Calendar } from 'lucide-react';
 
 const AdminView: React.FC = () => {
+  console.log('AdminView component loaded successfully');
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       <Card>

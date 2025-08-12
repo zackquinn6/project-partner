@@ -7,6 +7,7 @@ import UserView from "@/components/UserView";
 import AdminPasswordGate from "@/components/AdminPasswordGate";
 
 const Index = () => {
+  console.log('Index component loaded, AdminView import successful');
   const location = useLocation();
   const [currentView, setCurrentView] = useState<'home' | 'admin' | 'user'>('home');
   const [showAdminGate, setShowAdminGate] = useState(false);
