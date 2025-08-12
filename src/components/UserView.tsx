@@ -90,7 +90,7 @@ export default function UserView() {
   }, {} as Record<string, Record<string, any[]>>) || {};
   // If no current project selected or viewing listing mode, show project listing
   if (!currentProject || viewMode === 'listing') {
-    return <ProjectListing />;
+    return <ProjectListing onProjectSelect={(project) => setViewMode('workflow')} />;
   }
 
   // If current project has no workflow steps

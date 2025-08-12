@@ -6,7 +6,11 @@ import { Play } from "lucide-react";
 import { useProject } from '@/contexts/ProjectContext';
 import { Project } from '@/interfaces/Project';
 
-export default function ProjectListing() {
+interface ProjectListingProps {
+  onProjectSelect?: (project: Project) => void;
+}
+
+export default function ProjectListing({ onProjectSelect }: ProjectListingProps) {
   const { projects, setCurrentProject } = useProject();
 
   const getStatusColor = (status: Project['status']) => {
@@ -34,6 +38,7 @@ export default function ProjectListing() {
 
   const handleOpenProject = (project: Project) => {
     setCurrentProject(project);
+    onProjectSelect?.(project);
   };
 
   return (
