@@ -6,12 +6,15 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video } from "lucide-react";
 import { useProject } from '@/contexts/ProjectContext';
 import ProjectListing from './ProjectListing';
-
 interface UserViewProps {
   resetToListing?: boolean;
 }
-export default function UserView({ resetToListing }: UserViewProps = {}) {
-  const { currentProject } = useProject();
+export default function UserView({
+  resetToListing
+}: UserViewProps = {}) {
+  const {
+    currentProject
+  } = useProject();
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
@@ -36,7 +39,6 @@ export default function UserView({ resetToListing }: UserViewProps = {}) {
       setViewMode('listing');
     }
   }, [resetToListing]);
-
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
   const handleNext = () => {
@@ -109,13 +111,12 @@ export default function UserView({ resetToListing }: UserViewProps = {}) {
   }, {} as Record<string, Record<string, any[]>>) || {};
   // If no current project selected or viewing listing mode, show project listing
   if (!currentProject || viewMode === 'listing') {
-    return <ProjectListing onProjectSelect={(project) => setViewMode('workflow')} />;
+    return <ProjectListing onProjectSelect={project => setViewMode('workflow')} />;
   }
 
   // If current project has no workflow steps
   if (allSteps.length === 0) {
-    return (
-      <div className="container mx-auto px-6 py-8">
+    return <div className="container mx-auto px-6 py-8">
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground">
@@ -123,11 +124,9 @@ export default function UserView({ resetToListing }: UserViewProps = {}) {
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
+      </div>;
   }
-  return (
-    <div className="container mx-auto px-6 py-8">
+  return <div className="container mx-auto px-6 py-8">
       <div className="grid lg:grid-cols-4 gap-8">
         {/* Sidebar */}
         <Card className="lg:col-span-1 gradient-card border-0 shadow-card">
@@ -259,16 +258,12 @@ export default function UserView({ resetToListing }: UserViewProps = {}) {
                       Mark Complete
                     </Button>}
                   
-                  <Button onClick={handleNext} disabled={currentStepIndex === allSteps.length - 1} className="transition-fast">
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
