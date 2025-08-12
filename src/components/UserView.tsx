@@ -18,6 +18,14 @@ export default function UserView() {
     phaseName: phase.name,
     operationName: operation.name
   })))) || [];
+
+  // Auto-switch to workflow view when a project is selected
+  useEffect(() => {
+    if (currentProject && allSteps.length > 0) {
+      setViewMode('workflow');
+    }
+  }, [currentProject, allSteps.length]);
+
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
   const handleNext = () => {
