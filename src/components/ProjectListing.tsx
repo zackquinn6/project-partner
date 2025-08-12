@@ -59,9 +59,6 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-6">
-      <ProjectSelector onProjectSelected={() => {
-        // This creates a new project run when a template is selected
-      }} />
       
       <Card className="gradient-card border-0 shadow-card">
         <CardHeader>
