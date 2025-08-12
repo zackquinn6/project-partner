@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Project } from '@/interfaces/Project';
+import { ProjectRun } from '@/interfaces/ProjectRun';
 
 // Import placeholder images
 import interiorPaintingPlaceholder from '@/assets/interior-painting-placeholder.jpg';
@@ -9,11 +10,17 @@ import powerWashingPlaceholder from '@/assets/power-washing-placeholder.jpg';
 
 interface ProjectContextType {
   projects: Project[];
+  projectRuns: ProjectRun[];
   currentProject: Project | null;
+  currentProjectRun: ProjectRun | null;
   setCurrentProject: (project: Project | null) => void;
+  setCurrentProjectRun: (projectRun: ProjectRun | null) => void;
   addProject: (project: Project) => void;
+  addProjectRun: (projectRun: ProjectRun) => void;
   updateProject: (project: Project) => void;
+  updateProjectRun: (projectRun: ProjectRun) => void;
   deleteProject: (projectId: string) => void;
+  deleteProjectRun: (projectRunId: string) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -322,7 +329,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       startDate: new Date(),
       planEndDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days
       status: 'not-started' as const,
-      publishStatus: 'draft' as const,
+      publishStatus: 'published' as const,
       category: 'Interior',
       difficulty: 'Beginner',
       estimatedTime: '2-3 days',
@@ -338,7 +345,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       startDate: new Date(),
       planEndDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days
       status: 'not-started' as const,
-      publishStatus: 'draft' as const,
+      publishStatus: 'published' as const,
       category: 'Exterior',
       difficulty: 'Beginner',
       estimatedTime: '1-2 days',
@@ -346,19 +353,29 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     }
   ]);
   
+  const [projectRuns, setProjectRuns] = useState<ProjectRun[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [currentProjectRun, setCurrentProjectRun] = useState<ProjectRun | null>(null);
 
   const addProject = (project: Project) => {
     setProjects(prev => [...prev, project]);
   };
 
-  const updateProject = (updatedProject: Project) => {
-    setProjects(prev => prev.map(project => 
-      project.id === updatedProject.id ? updatedProject : project
-    ));
-    // If the updated project is the current project, update the current project as well
-    if (currentProject?.id === updatedProject.id) {
-      setCurrentProject(updatedProject);
+  const addProjectRun = (projectRun: ProjectRun) => {
+    setProjectRuns(prev => [...prev, projectRun]);
+  };
+
+  const updateProject = (project: Project) => {
+    setProjects(prev => prev.map(p => p.id === project.id ? project : p));
+    if (currentProject?.id === project.id) {
+      setCurrentProject(project);
+    }
+  };
+
+  const updateProjectRun = (projectRun: ProjectRun) => {
+    setProjectRuns(prev => prev.map(pr => pr.id === projectRun.id ? projectRun : pr));
+    if (currentProjectRun?.id === projectRun.id) {
+      setCurrentProjectRun(projectRun);
     }
   };
 
@@ -379,14 +396,27 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     });
   };
 
+  const deleteProjectRun = (projectRunId: string) => {
+    setProjectRuns(prev => prev.filter(pr => pr.id !== projectRunId));
+    if (currentProjectRun?.id === projectRunId) {
+      setCurrentProjectRun(null);
+    }
+  };
+
   return (
     <ProjectContext.Provider value={{
       projects,
+      projectRuns,
       currentProject,
+      currentProjectRun,
       setCurrentProject,
+      setCurrentProjectRun,
       addProject,
+      addProjectRun,
       updateProject,
-      deleteProject
+      updateProjectRun,
+      deleteProject,
+      deleteProjectRun
     }}>
       {children}
     </ProjectContext.Provider>
