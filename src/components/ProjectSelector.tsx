@@ -67,6 +67,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   };
 
   const handleProjectSelect = (value: string) => {
+    // Don't auto-select if value is empty (happens when current project is deleted)
+    if (!value) return;
+    
     const project = projects.find(p => p.id === value);
     if (project && project.id !== currentProject?.id) {
       setCurrentProject(project);
