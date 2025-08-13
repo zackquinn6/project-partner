@@ -14,6 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Output } from '@/interfaces/Project';
 import { OutputDetailPopup } from './OutputDetailPopup';
+import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { toast } from 'sonner';
 
 interface EditableUserViewProps {
@@ -29,6 +30,8 @@ export default function EditableUserView({ onBackToAdmin }: EditableUserViewProp
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
   const [outputPopupOpen, setOutputPopupOpen] = useState(false);
+  const [accountabilityPopupOpen, setAccountabilityPopupOpen] = useState(false);
+  const [messageType, setMessageType] = useState<'phase-complete' | 'issue-report'>('phase-complete');
   
   // Editing state
   const [editingStep, setEditingStep] = useState<string | null>(null);
@@ -151,9 +154,40 @@ export default function EditableUserView({ onBackToAdmin }: EditableUserViewProp
     return step.outputs.every(output => stepOutputs.has(output.id));
   };
 
+  // Helper functions for phase completion check
+  const getCurrentPhase = () => {
+    if (!currentStep || !currentProject) return null;
+    
+    for (const phase of currentProject.phases) {
+      for (const operation of phase.operations) {
+        if (operation.steps.some(step => step.id === currentStep.id)) {
+          return phase;
+        }
+      }
+    }
+    return null;
+  };
+
+  const getAllStepsInPhase = (phase: any) => {
+    if (!phase) return [];
+    return phase.operations.flatMap((operation: any) => operation.steps);
+  };
+
   const handleComplete = () => {
     if (currentStep && areAllOutputsCompleted(currentStep)) {
       setCompletedSteps(prev => new Set([...prev, currentStep.id]));
+      
+      // Check if this completes a phase
+      const currentPhase = getCurrentPhase();
+      const phaseSteps = getAllStepsInPhase(currentPhase);
+      const newCompletedSteps = new Set([...completedSteps, currentStep.id]);
+      const isPhaseComplete = phaseSteps.every(step => newCompletedSteps.has(step.id));
+      
+      if (isPhaseComplete) {
+        setMessageType('phase-complete');
+        setAccountabilityPopupOpen(true);
+      }
+      
       if (currentStepIndex < allSteps.length - 1) {
         handleNext();
       }
@@ -605,6 +639,17 @@ export default function EditableUserView({ onBackToAdmin }: EditableUserViewProp
                       Complete Step
                     </Button>
                   )}
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setMessageType('issue-report');
+                      setAccountabilityPopupOpen(true);
+                    }}
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Report Issue
+                  </Button>
                 </div>
 
                 <Button
@@ -632,6 +677,15 @@ export default function EditableUserView({ onBackToAdmin }: EditableUserViewProp
           }}
         />
       )}
+
+      {/* Accountability Partner Message Popup */}
+      <AccountabilityMessagePopup
+        isOpen={accountabilityPopupOpen}
+        onClose={() => setAccountabilityPopupOpen(false)}
+        messageType={messageType}
+        progress={progress}
+        projectName={currentProject?.name}
+      />
     </div>
   );
 }

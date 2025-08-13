@@ -13,6 +13,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { Output } from '@/interfaces/Project';
 import ProjectListing from './ProjectListing';
 import { OutputDetailPopup } from './OutputDetailPopup';
+import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 interface UserViewProps {
   resetToListing?: boolean;
   onProjectSelected?: () => void;
@@ -47,6 +48,8 @@ export default function UserView({
   const [reportComments, setReportComments] = useState("");
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
   const [outputPopupOpen, setOutputPopupOpen] = useState(false);
+  const [accountabilityPopupOpen, setAccountabilityPopupOpen] = useState(false);
+  const [messageType, setMessageType] = useState<'phase-complete' | 'issue-report'>('phase-complete');
 
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
@@ -160,14 +163,49 @@ export default function UserView({
   const handleComplete = () => {
     if (currentStep && areAllOutputsCompleted(currentStep)) {
       setCompletedSteps(prev => new Set([...prev, currentStep.id]));
+      
+      // Check if this completes a phase
+      const currentPhase = getCurrentPhase();
+      const phaseSteps = getAllStepsInPhase(currentPhase);
+      const newCompletedSteps = new Set([...completedSteps, currentStep.id]);
+      const isPhaseComplete = phaseSteps.every(step => newCompletedSteps.has(step.id));
+      
+      if (isPhaseComplete) {
+        setMessageType('phase-complete');
+        setAccountabilityPopupOpen(true);
+      }
+      
       if (currentStepIndex < allSteps.length - 1) {
         handleNext();
       }
     }
   };
 
+  // Helper functions for phase completion check
+  const getCurrentPhase = () => {
+    if (!currentStep || !activeProject) return null;
+    
+    for (const phase of activeProject.phases) {
+      for (const operation of phase.operations) {
+        if (operation.steps.some(step => step.id === currentStep.id)) {
+          return phase;
+        }
+      }
+    }
+    return null;
+  };
+
+  const getAllStepsInPhase = (phase: any) => {
+    if (!phase) return [];
+    return phase.operations.flatMap((operation: any) => operation.steps);
+  };
+
   // Handle issue report submission
   const handleReportSubmit = () => {
+    // Show accountability partner message
+    setMessageType('issue-report');
+    setAccountabilityPopupOpen(true);
+
     // Log the issue report (in a real app, this would be sent to a backend)
     console.log("Issue Report:", {
       stepId: currentStep?.id,
@@ -586,5 +624,14 @@ export default function UserView({
           }}
         />
       )}
+
+      {/* Accountability Partner Message Popup */}
+      <AccountabilityMessagePopup
+        isOpen={accountabilityPopupOpen}
+        onClose={() => setAccountabilityPopupOpen(false)}
+        messageType={messageType}
+        progress={progress}
+        projectName={activeProject?.name}
+      />
     </div>;
 }
