@@ -48,7 +48,7 @@ export default function EditableUserView({ onBackToAdmin }: EditableUserViewProp
   ) || [];
 
   const currentStep = allSteps[currentStepIndex];
-  const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
+  const progress = allSteps.length > 0 ? completedSteps.size / allSteps.length * 100 : 0;
 
   const handleNext = () => {
     if (currentStepIndex < allSteps.length - 1) {

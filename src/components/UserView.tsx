@@ -83,22 +83,23 @@ export default function UserView({
     }
   }, [resetToListing]);
   const currentStep = allSteps[currentStepIndex];
-  const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
+  const progress = allSteps.length > 0 ? completedSteps.size / allSteps.length * 100 : 0;
   
-  // Update project run progress whenever currentStepIndex changes
+  // Update project run progress whenever completed steps change
   useEffect(() => {
     if (currentProjectRun && allSteps.length > 0) {
-      const calculatedProgress = (currentStepIndex + 1) / allSteps.length * 100;
+      const calculatedProgress = completedSteps.size / allSteps.length * 100;
       if (Math.abs(calculatedProgress - (currentProjectRun.progress || 0)) > 0.1) {
         const updatedProjectRun = {
           ...currentProjectRun,
           progress: calculatedProgress,
+          completedSteps: Array.from(completedSteps),
           updatedAt: new Date()
         };
         updateProjectRun(updatedProjectRun);
       }
     }
-  }, [currentStepIndex, currentProjectRun, allSteps.length, updateProjectRun]);
+  }, [completedSteps, currentProjectRun, allSteps.length, updateProjectRun]);
   const handleNext = () => {
     if (currentStepIndex < allSteps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
