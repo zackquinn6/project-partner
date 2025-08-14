@@ -390,7 +390,7 @@ export default function UserView({
           {/* Materials, Tools, and Outputs */}
           {currentStep && (currentStep.materials?.length > 0 || currentStep.tools?.length > 0 || currentStep.outputs?.length > 0) && <Card className="gradient-card border-0 shadow-card">
               <CardContent className="p-6">
-                <Accordion type="multiple" className="w-full">
+                <Accordion type="multiple" defaultValue={["materials", "tools", "outputs"]} className="w-full">
                   {/* Materials */}
                   {currentStep.materials?.length > 0 && (() => {
                     const stepMaterials = checkedMaterials[currentStep.id] || new Set();
