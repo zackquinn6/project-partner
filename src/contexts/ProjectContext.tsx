@@ -23,6 +23,9 @@ import paintApplicationImage from '@/assets/painting/paint-application.jpg';
 import cuttingInImage from '@/assets/painting/cutting-in.jpg';
 import cleanupImage from '@/assets/painting/cleanup.jpg';
 import beforeAfterImage from '@/assets/painting/before-after.jpg';
+import poorPrimerCoverageImage from '@/assets/painting/poor-primer-coverage.jpg';
+import poorSurfacePrepImage from '@/assets/painting/poor-surface-prep.jpg';
+import poorPaintCoverageImage from '@/assets/painting/poor-paint-coverage.jpg';
 
 interface ProjectContextType {
   projects: Project[];
@@ -98,7 +101,17 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
                     { id: 'tp1', name: 'Screwdriver Set', description: 'For removing outlet covers', category: 'Hand Tool', required: true }
                   ],
                   outputs: [
-                    { id: 'op1', name: 'Protected Room', description: 'Room cleared and protected for painting', type: 'performance-durability' }
+                    { 
+                      id: 'op1', 
+                      name: 'Protected Room', 
+                      description: 'Room cleared and protected for painting', 
+                      type: 'performance-durability',
+                      requirement: 'All furniture removed or properly covered, floors protected with drop cloths, outlet covers and switch plates removed',
+                      potentialEffects: 'Paint splatters on furniture and floors, damaged belongings, difficult cleanup, unprofessional appearance',
+                      photosOfEffects: 'Images of paint damage on unprotected surfaces',
+                      keyInputs: ['Drop cloth quality', 'Tape adhesion', 'Furniture weight', 'Room traffic'],
+                      qualityChecks: 'Visual inspection - no exposed furniture or flooring, all hardware stored safely'
+                    }
                   ]
                 },
                 {
@@ -116,7 +129,18 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
                   ],
                   tools: [],
                   outputs: [
-                    { id: 'op2', name: 'Clean Surfaces', description: 'Walls and trim clean and ready for painting', type: 'performance-durability', mustGetRight: 'All dirt, grease, and loose material removed' }
+                    { 
+                      id: 'op2', 
+                      name: 'Clean Surfaces', 
+                      description: 'Walls and trim clean and ready for painting', 
+                      type: 'performance-durability', 
+                      mustGetRight: 'All dirt, grease, and loose material removed',
+                      requirement: 'All surfaces free of dust, grease, crayon marks, and mildew with smooth, clean finish',
+                      potentialEffects: 'Poor paint adhesion, visible dirt under paint, uneven finish, premature paint failure',
+                      photosOfEffects: poorSurfacePrepImage,
+                      keyInputs: ['Surface condition', 'Cleaning solution strength', 'Scrubbing technique', 'Drying time'],
+                      qualityChecks: 'Run hand over surface - should feel smooth with no gritty texture or sticky residue'
+                    }
                   ]
                 }
               ]
@@ -144,7 +168,18 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
                     { id: 'tp3', name: 'Sanding Block', description: 'For smooth finish', category: 'Hand Tool', required: true }
                   ],
                   outputs: [
-                    { id: 'op3', name: 'Smooth Surfaces', description: 'All holes and cracks filled and sanded smooth', type: 'major-aesthetics', mustGetRight: 'No visible imperfections after priming' }
+                    { 
+                      id: 'op3', 
+                      name: 'Smooth Surfaces', 
+                      description: 'All holes and cracks filled and sanded smooth', 
+                      type: 'major-aesthetics', 
+                      mustGetRight: 'No visible imperfections after priming',
+                      requirement: 'All nail holes, cracks, and dents completely filled, sanded flush, and invisible to touch',
+                      potentialEffects: 'Visible holes and cracks show through paint, textured appearance, unprofessional finish',
+                      photosOfEffects: poorSurfacePrepImage,
+                      keyInputs: ['Spackling compound quality', 'Sanding grit', 'Fill depth', 'Cure time'],
+                      qualityChecks: 'Run hand over repaired areas - should feel perfectly smooth and flush with surrounding surface'
+                    }
                   ]
                 }
               ]
@@ -179,7 +214,18 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
                     { id: 'tp6', name: 'Extension Pole', description: '2-4 foot adjustable pole', category: 'Hand Tool', required: true }
                   ],
                   outputs: [
-                    { id: 'op4', name: 'Primed Surfaces', description: 'All surfaces evenly primed and ready for paint', type: 'performance-durability', mustGetRight: 'Complete, uniform coverage with no missed spots' }
+                    { 
+                      id: 'op4', 
+                      name: 'Primed Surfaces', 
+                      description: 'All surfaces evenly primed and ready for paint', 
+                      type: 'performance-durability', 
+                      mustGetRight: 'Complete, uniform coverage with no missed spots',
+                      requirement: 'Even primer coverage on all surfaces with no thin spots, streaks, or missed areas',
+                      potentialEffects: 'Poor paint adhesion, color bleeding through, uneven final appearance, reduced durability',
+                      photosOfEffects: poorPrimerCoverageImage,
+                      keyInputs: ['Primer quality', 'Application technique', 'Coverage rate', 'Environmental conditions'],
+                      qualityChecks: 'Inspect under angled lighting - uniform sheen and color with no visible substrate showing through'
+                    }
                   ]
                 }
               ]
@@ -208,7 +254,17 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
                   ],
                   tools: [],
                   outputs: [
-                    { id: 'op5', name: 'First Coat Complete', description: 'First coat applied with good coverage', type: 'major-aesthetics' }
+                    { 
+                      id: 'op5', 
+                      name: 'First Coat Complete', 
+                      description: 'First coat applied with good coverage', 
+                      type: 'major-aesthetics',
+                      requirement: 'Uniform first coat coverage with no drips, runs, or missed areas',
+                      potentialEffects: 'Visible brush marks, uneven coverage in final coat, need for additional coats',
+                      photosOfEffects: poorPaintCoverageImage,
+                      keyInputs: ['Paint quality', 'Brush/roller technique', 'Loading amount', 'Application speed'],
+                      qualityChecks: 'View from multiple angles under room lighting - should see consistent color with no substrate showing'
+                    }
                   ]
                 }
               ]
@@ -228,7 +284,18 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
                   materials: [],
                   tools: [],
                   outputs: [
-                    { id: 'op6', name: 'Completed Paint Job', description: 'Professional-quality painted surfaces', type: 'major-aesthetics', mustGetRight: 'Even coverage, clean lines, no visible defects' }
+                    { 
+                      id: 'op6', 
+                      name: 'Completed Paint Job', 
+                      description: 'Professional-quality painted surfaces', 
+                      type: 'major-aesthetics', 
+                      mustGetRight: 'Even coverage, clean lines, no visible defects',
+                      requirement: 'Perfect final coat with uniform coverage, crisp cut-in lines, and flawless finish',
+                      potentialEffects: 'Uneven color, visible lap marks, poor durability, unprofessional appearance',
+                      photosOfEffects: poorPaintCoverageImage,
+                      keyInputs: ['Paint quality', 'Application technique', 'Environmental conditions', 'Surface preparation'],
+                      qualityChecks: 'Inspect entire room under various lighting conditions - should show consistent color and sheen with crisp, straight lines'
+                    }
                   ]
                 }
               ]
@@ -257,7 +324,17 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
                   ],
                   tools: [],
                   outputs: [
-                    { id: 'op7', name: 'Completed Room', description: 'Room fully painted and restored to use', type: 'major-aesthetics' }
+                    { 
+                      id: 'op7', 
+                      name: 'Completed Room', 
+                      description: 'Room fully painted and restored to use', 
+                      type: 'major-aesthetics',
+                      requirement: 'Room completely cleaned, furniture returned, all materials properly stored',
+                      potentialEffects: 'Messy appearance, damaged belongings, wasted materials, unsafe conditions',
+                      photosOfEffects: 'Images of cluttered, unprofessional project completion',
+                      keyInputs: ['Cleanup thoroughness', 'Material storage', 'Tool maintenance', 'Safety procedures'],
+                      qualityChecks: 'Final walkthrough - room ready for immediate use with no visible project debris or materials'
+                    }
                   ]
                 }
               ]

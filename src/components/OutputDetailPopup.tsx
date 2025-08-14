@@ -109,7 +109,15 @@ export const OutputDetailPopup: React.FC<OutputDetailPopupProps> = ({
                   <Eye className="w-4 h-4" />
                   Photos of Potential Effects
                 </h4>
-                <p className="text-muted-foreground italic">{output.photosOfEffects}</p>
+                {output.photosOfEffects.startsWith('http') || output.photosOfEffects.startsWith('/') || output.photosOfEffects.includes('.jpg') || output.photosOfEffects.includes('.png') ? (
+                  <img 
+                    src={output.photosOfEffects} 
+                    alt="Example of potential effects" 
+                    className="w-full max-w-md rounded-lg shadow-sm"
+                  />
+                ) : (
+                  <p className="text-muted-foreground italic">{output.photosOfEffects}</p>
+                )}
               </CardContent>
             </Card>
           )}
