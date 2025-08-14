@@ -123,6 +123,49 @@ export default function Home({
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-6">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold">
+              How It <span className="text-primary">Works</span>
+            </h2>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+                1
+              </div>
+              <h3 className="text-xl font-semibold">Select a project</h3>
+              <p className="text-muted-foreground">
+                Choose from our library of proven home improvement projects designed for DIY success.
+              </p>
+            </div>
+            
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+                2
+              </div>
+              <h3 className="text-xl font-semibold">Build your DIY profile & customize your project</h3>
+              <p className="text-muted-foreground">
+                Answer a few questions to tailor the project to your skill level, tools, and specific needs.
+              </p>
+            </div>
+            
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+                3
+              </div>
+              <h3 className="text-xl font-semibold">Build!</h3>
+              <p className="text-muted-foreground">
+                The easiest step-by-step instructions ever with accountability to be sure you hit the finish line.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20">
         <div className="container mx-auto px-6">
