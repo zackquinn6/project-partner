@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
@@ -6,7 +5,6 @@ import { Shield, Users, ArrowRight, CheckCircle, Route, Target, TrendingUp } fro
 import { useNavigate } from "react-router-dom";
 import generalDiyImage from "@/assets/general-diy.png";
 import Autoplay from "embla-carousel-autoplay";
-import DIYSurveyPopup from "./DIYSurveyPopup";
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
@@ -14,7 +12,6 @@ export default function Home({
   onViewChange
 }: HomeProps) {
   const navigate = useNavigate();
-  const [showSurvey, setShowSurvey] = useState(true);
   const projects = ["Interior painting", "Tile flooring", "LVP flooring", "Tile backsplash", "Landscaping", "Power washing", "Smart home", "Drywall", "Lighting", "Home maintenance"];
   // Triple projects for seamless infinite scroll
   const infiniteProjects = [...projects, ...projects, ...projects];
@@ -147,10 +144,5 @@ export default function Home({
           </Card>
         </div>
       </section>
-      
-      <DIYSurveyPopup 
-        open={showSurvey} 
-        onOpenChange={setShowSurvey} 
-      />
     </div>;
 }
