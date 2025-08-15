@@ -96,12 +96,8 @@ export default function Home({
       <section className="py-20 bg-card/30">
         <div className="container mx-auto px-6">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold">
-              Custom-Fit From the First Step
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Beyond videos — the whole playbook. Built‑in accountability.
-            </p>
+            <h2 className="text-3xl lg:text-4xl font-bold">Personalized from Step One</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">The whole playbook - backed every step of the way</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -171,11 +167,7 @@ export default function Home({
           <Card className="gradient-card border-0 shadow-card">
             <CardContent className="py-16 text-center">
               <div className="flex flex-col items-center space-y-6">
-                <img 
-                  src="/lovable-uploads/682ce2ee-7a0b-483e-b97a-472ce801a4ee.png" 
-                  alt="Toolio" 
-                  className="h-16 w-auto"
-                />
+                <img src="/lovable-uploads/682ce2ee-7a0b-483e-b97a-472ce801a4ee.png" alt="Toolio" className="h-16 w-auto" />
                 <div className="space-y-4">
                   <h2 className="text-3xl lg:text-4xl font-bold">
                     <span className="text-primary">Project-based</span> Tool Rentals
@@ -187,12 +179,7 @@ export default function Home({
                     Get professional-grade tools delivered right to your door. Our partnership with Toolio ensures you have everything you need to complete your project successfully.
                   </p>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="mt-6"
-                  onClick={() => window.open('https://toolio.us', '_blank')}
-                >
+                <Button variant="outline" size="lg" className="mt-6" onClick={() => window.open('https://toolio.us', '_blank')}>
                   Browse Tool Rentals
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
