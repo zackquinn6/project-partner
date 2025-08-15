@@ -44,12 +44,182 @@ export type Database = {
         }
         Relationships: []
       }
+      project_runs: {
+        Row: {
+          accountability_partner: string | null
+          category: string | null
+          completed_steps: Json
+          created_at: string
+          current_operation_id: string | null
+          current_phase_id: string | null
+          current_step_id: string | null
+          custom_project_name: string | null
+          description: string | null
+          difficulty: string | null
+          end_date: string | null
+          estimated_time: string | null
+          id: string
+          name: string
+          phases: Json
+          plan_end_date: string
+          progress: number
+          project_leader: string | null
+          start_date: string
+          status: string
+          template_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accountability_partner?: string | null
+          category?: string | null
+          completed_steps?: Json
+          created_at?: string
+          current_operation_id?: string | null
+          current_phase_id?: string | null
+          current_step_id?: string | null
+          custom_project_name?: string | null
+          description?: string | null
+          difficulty?: string | null
+          end_date?: string | null
+          estimated_time?: string | null
+          id?: string
+          name: string
+          phases?: Json
+          plan_end_date?: string
+          progress?: number
+          project_leader?: string | null
+          start_date?: string
+          status?: string
+          template_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accountability_partner?: string | null
+          category?: string | null
+          completed_steps?: Json
+          created_at?: string
+          current_operation_id?: string | null
+          current_phase_id?: string | null
+          current_step_id?: string | null
+          custom_project_name?: string | null
+          description?: string | null
+          difficulty?: string | null
+          end_date?: string | null
+          estimated_time?: string | null
+          id?: string
+          name?: string
+          phases?: Json
+          plan_end_date?: string
+          progress?: number
+          project_leader?: string | null
+          start_date?: string
+          status?: string
+          template_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_runs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          difficulty: string | null
+          effort_level: string | null
+          end_date: string | null
+          estimated_time: string | null
+          id: string
+          image: string | null
+          name: string
+          phases: Json
+          plan_end_date: string
+          publish_status: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string | null
+          effort_level?: string | null
+          end_date?: string | null
+          estimated_time?: string | null
+          id?: string
+          image?: string | null
+          name: string
+          phases?: Json
+          plan_end_date?: string
+          publish_status?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string | null
+          effort_level?: string | null
+          end_date?: string | null
+          estimated_time?: string | null
+          id?: string
+          image?: string | null
+          name?: string
+          phases?: Json
+          plan_end_date?: string
+          publish_status?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
