@@ -17,13 +17,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Eye, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-
 interface EditingState {
   type: 'phase' | 'operation' | 'step' | null;
   id: string | null;
   data: any;
 }
-
 interface TableRow {
   type: 'phase' | 'operation' | 'step';
   id: string;
@@ -31,9 +29,12 @@ interface TableRow {
   parentId?: string;
   level: number;
 }
-
 export const AdminView: React.FC = () => {
-  const { currentProject, updateProject, projects } = useProject();
+  const {
+    currentProject,
+    updateProject,
+    projects
+  } = useProject();
   const [currentView, setCurrentView] = useState<'table' | 'editWorkflow' | 'userWorkflow' | 'userRoles'>('table');
   const [editing, setEditing] = useState<EditingState>({
     type: null,
@@ -520,10 +521,7 @@ export const AdminView: React.FC = () => {
     }
   };
   // Helper to get all steps for the edit workflow view
-  const allSteps = currentProject?.phases.flatMap(phase => 
-    phase.operations.flatMap(operation => operation.steps)
-  ) || [];
-
+  const allSteps = currentProject?.phases.flatMap(phase => phase.operations.flatMap(operation => operation.steps)) || [];
   if (!currentProject) {
     console.log('AdminView - no currentProject, showing project selector');
     return <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -532,10 +530,7 @@ export const AdminView: React.FC = () => {
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground">Manage projects, workflows, and user permissions</p>
           </div>
-          <Button 
-            onClick={() => setCurrentView('userRoles')} 
-            variant="outline"
-          >
+          <Button onClick={() => setCurrentView('userRoles')} variant="outline">
             <Shield className="w-4 h-4 mr-2" />
             User Roles
           </Button>
@@ -553,41 +548,29 @@ export const AdminView: React.FC = () => {
   if (currentView === 'userWorkflow') {
     return <EditableUserView onBackToAdmin={() => setCurrentView('table')} isAdminEditing={true} />;
   }
-
   if (currentView === 'editWorkflow') {
     return <EditWorkflowView onBackToAdmin={() => setCurrentView('table')} />;
   }
-
   if (currentView === 'userRoles') {
     console.log('AdminView - showing user roles view');
-    return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+    return <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">User Role Management</h1>
-          <Button 
-            onClick={() => setCurrentView('table')} 
-            variant="outline"
-          >
+          <Button onClick={() => setCurrentView('table')} variant="outline">
             Back to Projects
           </Button>
         </div>
         <UserRoleManager />
-      </div>
-    );
+      </div>;
   }
-
   const tableRows = buildTableRows();
-
   return <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <p className="text-muted-foreground">Manage projects, workflows, and user permissions</p>
         </div>
-        <Button 
-          onClick={() => setCurrentView('userRoles')} 
-          variant="outline"
-        >
+        <Button onClick={() => setCurrentView('userRoles')} variant="outline">
           <Shield className="w-4 h-4 mr-2" />
           User Roles
         </Button>
@@ -599,15 +582,11 @@ export const AdminView: React.FC = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Admin Dashboard</CardTitle>
+              <CardTitle>Workflow Management</CardTitle>
               <CardDescription>Manage projects, workflows, and user permissions</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button
-                onClick={() => setCurrentView('userWorkflow')} 
-                variant="outline"
-                disabled={!currentProject || allSteps.length === 0}
-              >
+              <Button onClick={() => setCurrentView('userWorkflow')} variant="outline" disabled={!currentProject || allSteps.length === 0}>
                 <Eye className="w-4 h-4 mr-2" />
                 View and edit workflow
               </Button>
