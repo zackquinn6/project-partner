@@ -20,15 +20,6 @@ export const HelpPopup: React.FC<HelpPopupProps> = ({ isOpen, onClose }) => {
         </VisuallyHidden>
         
         <div className="relative">
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="icon"
-            className="absolute -top-2 -right-2 z-10"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-          
           <div className="p-6">
             <h2 className="text-2xl font-bold text-center mb-2">Stuck? Get Help</h2>
             <p className="text-muted-foreground text-center mb-8">
