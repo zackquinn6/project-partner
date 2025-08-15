@@ -332,7 +332,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
               <span className="font-medium">Document</span>
             </div>
             <div className="prose max-w-none bg-muted/20 p-6 rounded-lg border">
-              <div className="whitespace-pre-wrap text-foreground leading-relaxed">
+              <div className="whitespace-pre-wrap text-foreground leading-relaxed text-sm">
                 {step.content}
               </div>
             </div>
