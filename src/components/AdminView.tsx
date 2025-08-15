@@ -565,6 +565,20 @@ export const AdminView: React.FC = () => {
   const tableRows = buildTableRows();
 
   return <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Manage projects, workflows, and user permissions</p>
+        </div>
+        <Button 
+          onClick={() => setCurrentView('userRoles')} 
+          variant="outline"
+        >
+          <Shield className="w-4 h-4 mr-2" />
+          User Roles
+        </Button>
+      </div>
+      
       <ProjectSelector isAdminMode={true} />
 
       <Card>
@@ -575,14 +589,7 @@ export const AdminView: React.FC = () => {
               <CardDescription>Manage projects, workflows, and user permissions</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button 
-                onClick={() => setCurrentView('userRoles')} 
-                variant="outline"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                User Roles
-              </Button>
-              <Button 
+              <Button
                 onClick={() => setCurrentView('userWorkflow')} 
                 variant="outline"
                 disabled={!currentProject || allSteps.length === 0}
