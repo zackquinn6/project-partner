@@ -16,17 +16,17 @@ export default function Home({
   // Triple projects for seamless infinite scroll
   const infiniteProjects = [...projects, ...projects, ...projects];
   const features = [{
-    icon: Shield,
-    title: "Build with Confidence",
-    description: "Never wonder if you're doing it right. Our proven processes ensure professional-quality results every time."
+    icon: Target,
+    title: "Your Project, Your Way — From Day One",
+    description: "The first move is tailoring every detail to your exact job. Swap, tweak, and adapt your plan before lifting a tool. Millions of pros and DIYers have already paid the tuition in mistakes — you don't have to. And when the inevitable curveball shows up, your plan flexes with you, not against you."
   }, {
-    icon: Route,
-    title: "Clear Step-by-Step Guidance",
-    description: "Follow our detailed guides with videos, photos, and pro tips that make complex projects manageable."
+    icon: CheckCircle,
+    title: "More Than \"How-To,\" It's \"What-Works\"",
+    description: "Tech tips and how-to clips are just fragments. Overconfidence thrives in the gaps between them. This is the most complete real‑world knowledge base you'll find — aggregated from countless builds, fixes, and rescues — turning scattered advice into one friction‑free, detail‑rich sequence built for finishing, not floundering."
   }, {
-    icon: TrendingUp,
-    title: "Track Your Progress",
-    description: "Stay motivated and on track with built-in progress tracking and quality checkpoints."
+    icon: Users,
+    title: "Finish Strong — Or Get Backup Fast",
+    description: "Progress is visible in real‑time, so you know exactly where you stand. Stay tethered to a partner who can nudge, check, or jump in when you're stuck. It's not just a \"project tracker\" — it's a pressure‑release valve and a safety net, all in one."
   }];
   return <div className="min-h-screen">
       {/* Hero Section */}
@@ -97,11 +97,10 @@ export default function Home({
         <div className="container mx-auto px-6">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold">
-              Everything You Need for{" "}
-              <span className="text-primary">Home Improvement Success</span>
+              Custom-Fit From the First Step
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Professional guidance and tools that give you confidence to tackle any home project.
+              Beyond videos — the whole playbook. Built‑in accountability.
             </p>
           </div>
           
