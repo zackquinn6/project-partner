@@ -500,7 +500,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                 <CardDescription>Choose a project to manage its workflow, materials, and tools</CardDescription>
               </CardHeader>
               <CardContent>
-                <ProjectSelector />
+                <ProjectSelector isAdminMode={true} />
               </CardContent>
             </Card>
           </div>
