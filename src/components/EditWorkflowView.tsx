@@ -27,17 +27,19 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   const [outputEditOpen, setOutputEditOpen] = useState(false);
 
   // Flatten all steps from all phases and operations for navigation
-  const allSteps = currentProject?.phases.flatMap(phase => 
-    phase.operations.flatMap(operation => 
-      operation.steps.map(step => ({
-        ...step,
-        phaseName: phase.name,
-        operationName: operation.name,
-        phaseId: phase.id,
-        operationId: operation.id
-      }))
-    )
-  ) || [];
+  const allSteps = (currentProject?.phases && Array.isArray(currentProject.phases)) 
+    ? currentProject.phases.flatMap(phase => 
+        phase.operations.flatMap(operation => 
+          operation.steps.map(step => ({
+            ...step,
+            phaseName: phase.name,
+            operationName: operation.name,
+            phaseId: phase.id,
+            operationId: operation.id
+          }))
+        )
+      ) 
+    : [];
 
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
@@ -218,13 +220,15 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   };
 
   // Group steps by phase and operation for sidebar navigation
-  const groupedSteps = currentProject?.phases.reduce((acc, phase) => {
-    acc[phase.name] = phase.operations.reduce((opAcc, operation) => {
-      opAcc[operation.name] = operation.steps;
-      return opAcc;
-    }, {} as Record<string, any[]>);
-    return acc;
-  }, {} as Record<string, Record<string, any[]>>) || {};
+  const groupedSteps = (currentProject?.phases && Array.isArray(currentProject.phases)) 
+    ? currentProject.phases.reduce((acc, phase) => {
+        acc[phase.name] = phase.operations.reduce((opAcc, operation) => {
+          opAcc[operation.name] = operation.steps;
+          return opAcc;
+        }, {} as Record<string, any[]>);
+        return acc;
+      }, {} as Record<string, Record<string, any[]>>) 
+    : {};
 
   if (!currentProject) {
     return (
