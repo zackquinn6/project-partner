@@ -48,7 +48,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
     if (!newProjectForm.name.trim()) return;
 
     const newProject: Project = {
-      id: isAdminMode ? `template-${Date.now()}` : Date.now().toString(),
+      id: crypto.randomUUID(),
       name: newProjectForm.name,
       description: newProjectForm.description,
       createdAt: new Date(),

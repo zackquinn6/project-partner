@@ -71,8 +71,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
   // Use only published projects from context - remove hardcoded templates
 
-  // Filter projects to show only published templates or all templates in admin mode
-  const publishedProjects = projects.filter(project => project.id.startsWith('template-') && (project.publishStatus === 'published' || isAdminMode));
+  // Filter projects to show published projects or all projects in admin mode
+  const publishedProjects = projects.filter(project => (project.publishStatus === 'published' || isAdminMode));
 
   // Get unique filter options
   const availableCategories = useMemo(() => 
@@ -180,9 +180,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   };
   const handleSelectProject = (project: any) => {
     if (isAdminMode) {
-      // In admin mode, create a new template project with template- prefix
+      // In admin mode, create a new template project
       const newProject = {
-        id: `template-${Date.now()}`,
+        id: crypto.randomUUID(),
         name: project.name,
         description: project.description,
         createdAt: new Date(),
