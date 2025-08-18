@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Play, Trash2, Plus } from "lucide-react";
+import { Play, Trash2, Plus, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { ProjectSelector } from '@/components/ProjectSelector';
+import ProfileManager from '@/components/ProfileManager';
+import { useState } from "react";
 
 interface ProjectListingProps {
   onProjectSelect?: (project: Project | null | 'workflow') => void;
@@ -18,6 +20,7 @@ interface ProjectListingProps {
 export default function ProjectListing({ onProjectSelect }: ProjectListingProps) {
   const { projectRuns, currentProjectRun, setCurrentProjectRun, deleteProjectRun } = useProject();
   const navigate = useNavigate();
+  const [showProfileManager, setShowProfileManager] = useState(false);
 
   const calculateProgress = (projectRun: ProjectRun) => {
     return projectRun.progress || 0;
@@ -70,13 +73,23 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 View and manage your project portfolio
               </CardDescription>
             </div>
-            <Button 
-              onClick={() => navigate('/projects')}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Start a New Project
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setShowProfileManager(true)}
+                className="flex items-center gap-2"
+              >
+                <User className="w-4 h-4" />
+                My Profile
+              </Button>
+              <Button 
+                onClick={() => navigate('/projects')}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Start a New Project
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -165,6 +178,11 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
           </Table>
         </CardContent>
       </Card>
+      
+      <ProfileManager 
+        open={showProfileManager} 
+        onOpenChange={setShowProfileManager} 
+      />
     </div>
   );
 }
