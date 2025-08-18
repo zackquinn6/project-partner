@@ -139,7 +139,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     
     console.log('Adding phase - current phases:', currentProject.phases);
     
-    // Ensure phases is an array
+    // Ensure phases is an array and get current phases
     const currentPhases = Array.isArray(currentProject.phases) ? currentProject.phases : [];
     
     const newPhase: Phase = {
@@ -150,13 +150,17 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     };
     
     console.log('New phase created:', newPhase);
+    console.log('Current phases array:', currentPhases);
+    
+    const updatedPhases = [...currentPhases, newPhase];
+    console.log('Updated phases array:', updatedPhases);
     
     const updatedProject = {
       ...currentProject,
-      phases: [...currentPhases, newPhase]
+      phases: updatedPhases
     };
     
-    console.log('Updated project phases:', updatedProject.phases);
+    console.log('Final updated project phases:', updatedProject.phases);
     updateProjectData(updatedProject);
     setEditing({
       type: 'phase',
