@@ -124,10 +124,6 @@ export const UserRoleManager: React.FC = () => {
         role: newUserRole
       });
       if (error) throw error;
-      toast({
-        title: "Role added successfully",
-        description: `${newUserRole} role added for ${newUserEmail}`
-      });
       setNewUserEmail('');
       setNewUserRole('user');
       await loadUserRoles();
@@ -146,10 +142,6 @@ export const UserRoleManager: React.FC = () => {
         error
       } = await supabase.from('user_roles').delete().eq('id', roleId);
       if (error) throw error;
-      toast({
-        title: "Role removed successfully",
-        description: `${role} role removed from ${userEmail}`
-      });
       await loadUserRoles();
     } catch (error) {
       console.error('Error removing user role:', error);

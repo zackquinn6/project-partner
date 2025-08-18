@@ -101,7 +101,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
 
     updateProject(updatedProject);
     setEditMode(false);
-    toast.success('Step updated successfully');
   };
 
   const handleEditOutput = (output: Output, stepId: string) => {
@@ -131,7 +130,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     updatedProject.updatedAt = new Date();
     updateProject(updatedProject);
     setEditingOutput(null);
-    toast.success('Output updated successfully');
   };
 
   const updateEditingStep = (field: keyof WorkflowStep, value: any) => {
@@ -157,7 +155,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     };
     
     updateProject(updatedProject);
-    toast.success('Phase added successfully');
   };
 
   const addOperation = (phaseId: string) => {
@@ -181,7 +178,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     };
     
     updateProject(updatedProject);
-    toast.success('Operation added successfully');
   };
 
   const addStep = (phaseId: string, operationId: string) => {
@@ -216,7 +212,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     };
     
     updateProject(updatedProject);
-    toast.success('Step added successfully');
   };
 
   const updatePhase = (updatedPhase: Phase) => {
@@ -232,7 +227,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     
     updateProject(updatedProject);
     setEditingPhase(null);
-    toast.success('Phase updated successfully');
   };
 
   const updateOperation = (phaseId: string, updatedOperation: Operation) => {
@@ -255,7 +249,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     
     updateProject(updatedProject);
     setEditingOperation(null);
-    toast.success('Operation updated successfully');
   };
 
   const updateStructureStep = (phaseId: string, operationId: string, updatedStep: WorkflowStep) => {
@@ -285,7 +278,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     
     updateProject(updatedProject);
     setEditingStructureStep(null);
-    toast.success('Step updated successfully');
   };
 
   const deletePhase = (phaseId: string) => {
@@ -298,7 +290,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     };
     
     updateProject(updatedProject);
-    toast.success('Phase deleted successfully');
   };
 
   const deleteOperation = (phaseId: string, operationId: string) => {
@@ -318,7 +309,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     };
     
     updateProject(updatedProject);
-    toast.success('Operation deleted successfully');
   };
 
   const deleteStep = (phaseId: string, operationId: string, stepId: string) => {
@@ -342,7 +332,6 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     };
     
     updateProject(updatedProject);
-    toast.success('Step deleted successfully');
   };
 
   const renderContent = (step: typeof currentStep) => {

@@ -107,7 +107,6 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
     updateProject(updatedProject);
     setEditingStep(null);
     setEditData({});
-    toast.success('Step updated successfully');
   };
 
   // Cancel editing
@@ -343,7 +342,6 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                 <SignatureCapture
                   onSignatureComplete={(signature) => {
                     setSignatures(prev => ({ ...prev, [step.id]: signature }));
-                    toast.success('Signature captured successfully');
                   }}
                   onClear={() => {
                     setSignatures(prev => {

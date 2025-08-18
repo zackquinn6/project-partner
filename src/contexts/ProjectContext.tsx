@@ -263,10 +263,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       if (error) throw error;
 
       await fetchProjects();
-      toast({
-        title: "Success",
-        description: "Project created successfully",
-      });
     } catch (error) {
       console.error('Error adding project:', error);
       toast({
@@ -311,10 +307,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       if (error) throw error;
 
       await fetchProjectRuns();
-      toast({
-        title: "Success",
-        description: "Project run created successfully",
-      });
     } catch (error) {
       console.error('Error adding project run:', error);
       toast({
@@ -368,11 +360,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       if (currentProject?.id === project.id) {
         setCurrentProject(project);
       }
-
-      toast({
-        title: "Success",
-        description: "Project updated successfully",
-      });
     } catch (error) {
       console.error('Error updating project:', error);
       toast({
@@ -415,10 +402,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       if (error) throw error;
 
       await fetchProjectRuns();
-      toast({
-        title: "Success",
-        description: "Project run updated successfully",
-      });
     } catch (error) {
       console.error('Error updating project run:', error);
       toast({
@@ -452,10 +435,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       }
 
       await fetchProjects();
-      toast({
-        title: "Success",
-        description: "Project deleted successfully",
-      });
     } catch (error) {
       console.error('Error deleting project:', error);
       toast({
@@ -483,10 +462,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       }
 
       await fetchProjectRuns();
-      toast({
-        title: "Success",
-        description: "Project run deleted successfully",
-      });
     } catch (error) {
       console.error('Error deleting project run:', error);
       toast({
