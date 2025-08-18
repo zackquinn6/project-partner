@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
-import { WorkflowStep, Material, Tool, Output, Phase, Operation } from '@/interfaces/Project';
+import { WorkflowStep, Material, Tool, Output, Phase, Operation, Project } from '@/interfaces/Project';
 import { ProjectSelector } from '@/components/ProjectSelector';
 import ProjectRollup from '@/components/ProjectRollup';
 import EditWorkflowView from '@/components/EditWorkflowView';
@@ -39,8 +39,38 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   const {
     currentProject,
     updateProject,
-    projects
+    projects,
+    addProject
   } = useProject();
+
+  const createBlankProjects = async () => {
+    const categories = ['Interior Painting', 'Flooring', 'Landscaping', 'Electrical', 'Plumbing', 'Drywall', 'Kitchen', 'Bathroom', 'Outdoor', 'Smart Home'];
+    
+    for (let i = 1; i <= 10; i++) {
+      const newProject: Project = {
+        id: `blank-project-${Date.now()}-${i}`,
+        name: `Sample Project ${i}`,
+        description: `This is a sample project ${i} for demonstration purposes.`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        startDate: new Date(),
+        planEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        status: 'not-started' as const,
+        publishStatus: 'published' as const,
+        category: categories[i - 1],
+        difficulty: i <= 3 ? 'Beginner' as const : i <= 7 ? 'Intermediate' as const : 'Advanced' as const,
+        effortLevel: i <= 4 ? 'Low' as const : i <= 8 ? 'Medium' as const : 'High' as const,
+        estimatedTime: `${i * 2}-${i * 3} hours`,
+        phases: []
+      };
+      
+      await addProject(newProject);
+      // Small delay to avoid overwhelming the database
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    toast("Created 10 blank projects successfully");
+  };
   
   const [currentView, setCurrentView] = useState<'table' | 'editWorkflow'>('table');
   const [editing, setEditing] = useState<EditingState>({
@@ -500,7 +530,12 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                 <CardDescription>Choose a project to manage its workflow, materials, and tools</CardDescription>
               </CardHeader>
               <CardContent>
-                <ProjectSelector isAdminMode={true} />
+                <div className="space-y-4">
+                  <ProjectSelector isAdminMode={true} />
+                  <Button onClick={createBlankProjects} variant="outline" className="w-full">
+                    Create 10 Sample Projects
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
