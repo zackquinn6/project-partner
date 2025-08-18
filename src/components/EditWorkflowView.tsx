@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Image, Video, Edit, Save, X, ArrowLeft, Settings } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Image, Video, Edit, Save, X, ArrowLeft, Settings, Plus, Trash2, FolderPlus, FileText, List } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
-import { WorkflowStep, Material, Tool, Output } from '@/interfaces/Project';
+import { WorkflowStep, Material, Tool, Output, Phase, Operation } from '@/interfaces/Project';
 import { OutputEditForm } from './OutputEditForm';
 import { toast } from 'sonner';
 
@@ -20,11 +21,18 @@ interface EditWorkflowViewProps {
 
 export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProps) {
   const { currentProject, updateProject } = useProject();
+  const [viewMode, setViewMode] = useState<'steps' | 'structure'>('steps');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editingOutput, setEditingOutput] = useState<{ output: Output; stepId: string } | null>(null);
   const [outputEditOpen, setOutputEditOpen] = useState(false);
+  
+  // Structure editing state
+  const [editingPhase, setEditingPhase] = useState<Phase | null>(null);
+  const [editingOperation, setEditingOperation] = useState<Operation | null>(null);
+  const [editingStructureStep, setEditingStructureStep] = useState<WorkflowStep | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState<{ type: 'phase' | 'operation' | 'step'; parentId?: string } | null>(null);
 
   // Flatten all steps from all phases and operations for navigation
   const allSteps = (currentProject?.phases && Array.isArray(currentProject.phases)) 
@@ -131,6 +139,212 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     setEditingStep({ ...editingStep, [field]: value });
   };
 
+  // Structure management functions
+  const addPhase = () => {
+    if (!currentProject) return;
+    
+    const newPhase: Phase = {
+      id: `phase-${Date.now()}`,
+      name: 'New Phase',
+      description: '',
+      operations: []
+    };
+    
+    const updatedProject = {
+      ...currentProject,
+      phases: [...currentProject.phases, newPhase],
+      updatedAt: new Date()
+    };
+    
+    updateProject(updatedProject);
+    toast.success('Phase added successfully');
+  };
+
+  const addOperation = (phaseId: string) => {
+    if (!currentProject) return;
+    
+    const newOperation: Operation = {
+      id: `operation-${Date.now()}`,
+      name: 'New Operation',
+      description: '',
+      steps: []
+    };
+    
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase => 
+        phase.id === phaseId 
+          ? { ...phase, operations: [...phase.operations, newOperation] }
+          : phase
+      ),
+      updatedAt: new Date()
+    };
+    
+    updateProject(updatedProject);
+    toast.success('Operation added successfully');
+  };
+
+  const addStep = (phaseId: string, operationId: string) => {
+    if (!currentProject) return;
+    
+    const newStep: WorkflowStep = {
+      id: `step-${Date.now()}`,
+      step: 'New Step',
+      description: '',
+      contentType: 'text',
+      content: '',
+      materials: [],
+      tools: [],
+      outputs: []
+    };
+    
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase => 
+        phase.id === phaseId 
+          ? {
+              ...phase,
+              operations: phase.operations.map(operation =>
+                operation.id === operationId
+                  ? { ...operation, steps: [...operation.steps, newStep] }
+                  : operation
+              )
+            }
+          : phase
+      ),
+      updatedAt: new Date()
+    };
+    
+    updateProject(updatedProject);
+    toast.success('Step added successfully');
+  };
+
+  const updatePhase = (updatedPhase: Phase) => {
+    if (!currentProject) return;
+    
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase => 
+        phase.id === updatedPhase.id ? updatedPhase : phase
+      ),
+      updatedAt: new Date()
+    };
+    
+    updateProject(updatedProject);
+    setEditingPhase(null);
+    toast.success('Phase updated successfully');
+  };
+
+  const updateOperation = (phaseId: string, updatedOperation: Operation) => {
+    if (!currentProject) return;
+    
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase => 
+        phase.id === phaseId 
+          ? {
+              ...phase,
+              operations: phase.operations.map(operation =>
+                operation.id === updatedOperation.id ? updatedOperation : operation
+              )
+            }
+          : phase
+      ),
+      updatedAt: new Date()
+    };
+    
+    updateProject(updatedProject);
+    setEditingOperation(null);
+    toast.success('Operation updated successfully');
+  };
+
+  const updateStructureStep = (phaseId: string, operationId: string, updatedStep: WorkflowStep) => {
+    if (!currentProject) return;
+    
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase => 
+        phase.id === phaseId 
+          ? {
+              ...phase,
+              operations: phase.operations.map(operation =>
+                operation.id === operationId
+                  ? {
+                      ...operation,
+                      steps: operation.steps.map(step =>
+                        step.id === updatedStep.id ? updatedStep : step
+                      )
+                    }
+                  : operation
+              )
+            }
+          : phase
+      ),
+      updatedAt: new Date()
+    };
+    
+    updateProject(updatedProject);
+    setEditingStructureStep(null);
+    toast.success('Step updated successfully');
+  };
+
+  const deletePhase = (phaseId: string) => {
+    if (!currentProject) return;
+    
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.filter(phase => phase.id !== phaseId),
+      updatedAt: new Date()
+    };
+    
+    updateProject(updatedProject);
+    toast.success('Phase deleted successfully');
+  };
+
+  const deleteOperation = (phaseId: string, operationId: string) => {
+    if (!currentProject) return;
+    
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase => 
+        phase.id === phaseId 
+          ? {
+              ...phase,
+              operations: phase.operations.filter(operation => operation.id !== operationId)
+            }
+          : phase
+      ),
+      updatedAt: new Date()
+    };
+    
+    updateProject(updatedProject);
+    toast.success('Operation deleted successfully');
+  };
+
+  const deleteStep = (phaseId: string, operationId: string, stepId: string) => {
+    if (!currentProject) return;
+    
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(phase => 
+        phase.id === phaseId 
+          ? {
+              ...phase,
+              operations: phase.operations.map(operation =>
+                operation.id === operationId
+                  ? { ...operation, steps: operation.steps.filter(step => step.id !== stepId) }
+                  : operation
+              )
+            }
+          : phase
+      ),
+      updatedAt: new Date()
+    };
+    
+    updateProject(updatedProject);
+    toast.success('Step deleted successfully');
+  };
+
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
 
@@ -230,6 +444,182 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
       }, {} as Record<string, Record<string, any[]>>) 
     : {};
 
+  // Structure view rendering
+  const renderStructureView = () => {
+    if (!currentProject) return null;
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Project Structure</h2>
+          <Button onClick={addPhase} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add Phase
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          {currentProject.phases.map((phase, phaseIndex) => (
+            <Card key={phase.id} className="border-2">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    {editingPhase?.id === phase.id ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={editingPhase.name}
+                          onChange={(e) => setEditingPhase({ ...editingPhase, name: e.target.value })}
+                          className="text-xl font-bold"
+                        />
+                        <Textarea
+                          value={editingPhase.description}
+                          onChange={(e) => setEditingPhase({ ...editingPhase, description: e.target.value })}
+                          placeholder="Phase description..."
+                        />
+                        <div className="flex gap-2">
+                          <Button onClick={() => updatePhase(editingPhase)} size="sm">Save</Button>
+                          <Button onClick={() => setEditingPhase(null)} variant="outline" size="sm">Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <CardTitle className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-primary/10 text-primary">Phase {phaseIndex + 1}</Badge>
+                          {phase.name}
+                        </CardTitle>
+                        {phase.description && <CardDescription>{phase.description}</CardDescription>}
+                      </>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => addOperation(phase.id)} size="sm" variant="outline">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Operation
+                    </Button>
+                    <Button onClick={() => setEditingPhase(phase)} size="sm" variant="ghost">
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button onClick={() => deletePhase(phase.id)} size="sm" variant="ghost" className="text-destructive">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {phase.operations.map((operation, operationIndex) => (
+                    <Card key={operation.id} className="ml-4">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            {editingOperation?.id === operation.id ? (
+                              <div className="space-y-2">
+                                <Input
+                                  value={editingOperation.name}
+                                  onChange={(e) => setEditingOperation({ ...editingOperation, name: e.target.value })}
+                                  className="font-medium"
+                                />
+                                <Textarea
+                                  value={editingOperation.description}
+                                  onChange={(e) => setEditingOperation({ ...editingOperation, description: e.target.value })}
+                                  placeholder="Operation description..."
+                                />
+                                <div className="flex gap-2">
+                                  <Button onClick={() => updateOperation(phase.id, editingOperation)} size="sm">Save</Button>
+                                  <Button onClick={() => setEditingOperation(null)} variant="outline" size="sm">Cancel</Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                  <Badge variant="secondary">Op {operationIndex + 1}</Badge>
+                                  {operation.name}
+                                </CardTitle>
+                                {operation.description && <CardDescription>{operation.description}</CardDescription>}
+                              </>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button onClick={() => addStep(phase.id, operation.id)} size="sm" variant="outline">
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Step
+                            </Button>
+                            <Button onClick={() => setEditingOperation(operation)} size="sm" variant="ghost">
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button onClick={() => deleteOperation(phase.id, operation.id)} size="sm" variant="ghost" className="text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {operation.steps.map((step, stepIndex) => (
+                            <div key={step.id} className="ml-4 p-3 border rounded-lg bg-muted/20">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  {editingStructureStep?.id === step.id ? (
+                                    <div className="space-y-2">
+                                      <Input
+                                        value={editingStructureStep.step}
+                                        onChange={(e) => setEditingStructureStep({ ...editingStructureStep, step: e.target.value })}
+                                        className="font-medium"
+                                      />
+                                      <Textarea
+                                        value={editingStructureStep.description}
+                                        onChange={(e) => setEditingStructureStep({ ...editingStructureStep, description: e.target.value })}
+                                        placeholder="Step description..."
+                                      />
+                                      <div className="flex gap-2">
+                                        <Button onClick={() => updateStructureStep(phase.id, operation.id, editingStructureStep)} size="sm">Save</Button>
+                                        <Button onClick={() => setEditingStructureStep(null)} variant="outline" size="sm">Cancel</Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="font-medium flex items-center gap-2">
+                                        <Badge variant="outline">Step {stepIndex + 1}</Badge>
+                                        {step.step}
+                                      </div>
+                                      {step.description && <div className="text-sm text-muted-foreground">{step.description}</div>}
+                                    </>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button onClick={() => setEditingStructureStep(step)} size="sm" variant="ghost">
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button onClick={() => deleteStep(phase.id, operation.id, step.id)} size="sm" variant="ghost" className="text-destructive">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          {operation.steps.length === 0 && (
+                            <div className="text-center py-4 text-muted-foreground">
+                              No steps added yet
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {phase.operations.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No operations added yet
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   if (!currentProject) {
     return (
       <div className="container mx-auto px-6 py-8">
@@ -242,20 +632,87 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     );
   }
 
-  if (allSteps.length === 0) {
+  if (viewMode === 'structure') {
     return (
       <div className="container mx-auto px-6 py-8">
-        <div className="flex items-center gap-4 mb-6">
+        {/* Header with Back Button and View Toggle */}
+        <div className="flex items-center justify-between mb-6">
           <Button variant="ghost" onClick={onBackToAdmin} className="flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back to Project Manager
           </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setViewMode('steps')} 
+                variant={'outline'}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Step Editor
+              </Button>
+              <Button 
+                onClick={() => setViewMode('structure')} 
+                variant={'default'}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <List className="w-4 h-4" />
+                Structure Manager
+              </Button>
+            </div>
+            <Badge variant="outline" className="bg-blue-100 text-blue-800">
+              Structure Mode
+            </Badge>
+          </div>
+        </div>
+
+        {renderStructureView()}
+      </div>
+    );
+  }
+
+  if (allSteps.length === 0) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" onClick={onBackToAdmin} className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Project Manager
+          </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setViewMode('steps')} 
+                variant={'outline'}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Step Editor
+              </Button>
+              <Button 
+                onClick={() => setViewMode('structure')} 
+                variant={'default'}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <List className="w-4 h-4" />
+                Structure Manager
+              </Button>
+            </div>
+          </div>
         </div>
         <Card>
           <CardContent className="text-center py-8">
-            <p className="text-muted-foreground">
-              This project has no workflow steps. Add some steps in the admin view first.
+            <p className="text-muted-foreground mb-4">
+              This project has no workflow steps. Use Structure Manager to add phases, operations, and steps.
             </p>
+            <Button onClick={() => setViewMode('structure')} className="flex items-center gap-2">
+              <List className="w-4 h-4" />
+              Go to Structure Manager
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -264,15 +721,35 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
 
   return (
     <div className="container mx-auto px-6 py-8">
-      {/* Header with Back Button */}
+      {/* Header with Back Button and View Toggle */}
       <div className="flex items-center justify-between mb-6">
         <Button variant="ghost" onClick={onBackToAdmin} className="flex items-center gap-2">
           <ArrowLeft className="w-4 h-4" />
           Back to Project Manager
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setViewMode('steps')} 
+              variant={'default'}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              Step Editor
+            </Button>
+            <Button 
+              onClick={() => setViewMode('structure')} 
+              variant={'outline'}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <List className="w-4 h-4" />
+              Structure Manager
+            </Button>
+          </div>
           <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
-            Edit Mode
+            Step Edit Mode
           </Badge>
         </div>
       </div>
