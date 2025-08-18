@@ -90,26 +90,41 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
         return;
       }
 
-      const transformedProjects: Project[] = data.map(project => ({
-        id: project.id,
-        name: project.name,
-        description: project.description || '',
-        image: project.image,
-        createdAt: new Date(project.created_at),
-        updatedAt: new Date(project.updated_at),
-        startDate: new Date(project.start_date),
-        planEndDate: new Date(project.plan_end_date),
-        endDate: project.end_date ? new Date(project.end_date) : undefined,
-        status: project.status as 'not-started' | 'in-progress' | 'complete',
-        publishStatus: project.publish_status as 'draft' | 'published',
-        category: project.category,
-        difficulty: project.difficulty as Project['difficulty'],
-        effortLevel: project.effort_level as Project['effortLevel'],
-        estimatedTime: project.estimated_time,
-        estimatedTimePerUnit: project.estimated_time_per_unit,
-        scalingUnit: project.scaling_unit as Project['scalingUnit'],
-        phases: (project.phases as any) || []
-      }));
+      const transformedProjects: Project[] = data.map(project => {
+        // Properly parse phases JSON data
+        let phases = [];
+        if (project.phases) {
+          try {
+            phases = typeof project.phases === 'string' 
+              ? JSON.parse(project.phases) 
+              : project.phases;
+          } catch (e) {
+            console.error('Failed to parse phases JSON:', e);
+            phases = [];
+          }
+        }
+        
+        return {
+          id: project.id,
+          name: project.name,
+          description: project.description || '',
+          image: project.image,
+          createdAt: new Date(project.created_at),
+          updatedAt: new Date(project.updated_at),
+          startDate: new Date(project.start_date),
+          planEndDate: new Date(project.plan_end_date),
+          endDate: project.end_date ? new Date(project.end_date) : undefined,
+          status: project.status as 'not-started' | 'in-progress' | 'complete',
+          publishStatus: project.publish_status as 'draft' | 'published',
+          category: project.category,
+          difficulty: project.difficulty as Project['difficulty'],
+          effortLevel: project.effort_level as Project['effortLevel'],
+          estimatedTime: project.estimated_time,
+          estimatedTimePerUnit: project.estimated_time_per_unit,
+          scalingUnit: project.scaling_unit as Project['scalingUnit'],
+          phases: Array.isArray(phases) ? phases : []
+        };
+      });
 
       setProjects(transformedProjects);
     } catch (error) {
@@ -316,7 +331,16 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
 
       if (error) throw error;
 
-      await fetchProjects();
+      // Update local state immediately instead of re-fetching
+      setProjects(prevProjects => 
+        prevProjects.map(p => p.id === project.id ? project : p)
+      );
+      
+      // Update currentProject if it's the one being updated
+      if (currentProject?.id === project.id) {
+        setCurrentProject(project);
+      }
+
       toast({
         title: "Success",
         description: "Project updated successfully",

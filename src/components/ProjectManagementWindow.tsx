@@ -53,9 +53,11 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
 
-  const updateProjectData = (updatedProject: typeof currentProject) => {
+  const updateProjectData = async (updatedProject: typeof currentProject) => {
     if (updatedProject) {
-      updateProject({
+      console.log('updateProjectData called with project:', updatedProject);
+      console.log('Project phases being updated:', updatedProject.phases);
+      await updateProject({
         ...updatedProject,
         updatedAt: new Date()
       });
