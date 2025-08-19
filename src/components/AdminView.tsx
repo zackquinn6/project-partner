@@ -22,68 +22,68 @@ export const AdminView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setProjectManagementOpen(true)}>
-            <CardHeader className="text-center">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setProjectManagementOpen(true)}>
+            <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Settings className="w-6 h-6 text-primary" />
               </div>
               <CardTitle>Project Management</CardTitle>
-              <CardDescription>
+              <CardDescription className="min-h-[3rem] flex items-center justify-center">
                 Manage project workflows, materials, tools, and rollups
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="mt-auto">
               <Button className="w-full" onClick={() => setProjectManagementOpen(true)}>
-                project management
+                Project Management
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setAnalyticsOpen(true)}>
-            <CardHeader className="text-center">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setAnalyticsOpen(true)}>
+            <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <BarChart3 className="w-6 h-6 text-primary" />
               </div>
               <CardTitle>Project Analytics</CardTitle>
-              <CardDescription>
+              <CardDescription className="min-h-[3rem] flex items-center justify-center">
                 View project metrics, completion rates, and performance data
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="mt-auto">
               <Button className="w-full" onClick={() => setAnalyticsOpen(true)}>
                 Open Analytics
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setUserRolesOpen(true)}>
-            <CardHeader className="text-center">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setUserRolesOpen(true)}>
+            <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Shield className="w-6 h-6 text-primary" />
               </div>
               <CardTitle>User Roles</CardTitle>
-              <CardDescription>
+              <CardDescription className="min-h-[3rem] flex items-center justify-center">
                 Manage user permissions and access control
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="mt-auto">
               <Button className="w-full" onClick={() => setUserRolesOpen(true)}>
                 Manage User Roles
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setToolsMaterialsOpen(true)}>
-            <CardHeader className="text-center">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setToolsMaterialsOpen(true)}>
+            <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Wrench className="w-6 h-6 text-primary" />
               </div>
               <CardTitle>Tools & Materials Library</CardTitle>
-              <CardDescription>
+              <CardDescription className="min-h-[3rem] flex items-center justify-center">
                 Manage reusable tools and materials for projects
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="mt-auto">
               <Button className="w-full" onClick={() => setToolsMaterialsOpen(true)}>
                 Open Library
               </Button>
