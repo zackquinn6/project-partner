@@ -64,7 +64,6 @@ export function ToolsLibrary() {
       if (error) throw error;
       
       setTools(tools.filter(tool => tool.id !== toolId));
-      toast.success('Tool deleted successfully');
     } catch (error) {
       console.error('Error deleting tool:', error);
       toast.error('Failed to delete tool');

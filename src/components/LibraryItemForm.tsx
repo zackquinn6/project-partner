@@ -110,7 +110,6 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
           .eq('id', item.id);
         
         if (error) throw error;
-        toast.success(`${type === 'tool' ? 'Tool' : 'Material'} updated successfully`);
       } else {
         // Create new item
         const { error } = await supabase
@@ -124,7 +123,6 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
           }
           throw error;
         }
-        toast.success(`${type === 'tool' ? 'Tool' : 'Material'} added successfully`);
       }
 
       onSave();

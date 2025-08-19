@@ -200,7 +200,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     });
     setExpandedPhases(prev => new Set([...prev, phaseId]));
     setExpandedOperations(prev => new Set([...prev, newOperation.id]));
-    toast.success('Operation added');
   };
 
   const addStep = (phaseId: string, operationId: string) => {
@@ -237,7 +236,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     });
     setExpandedPhases(prev => new Set([...prev, phaseId]));
     setExpandedOperations(prev => new Set([...prev, operationId]));
-    toast.success('Step added');
   };
 
   // Update functions
@@ -298,7 +296,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       }));
     }
     updateProjectData(updatedProject);
-    toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`);
   };
 
   const startEdit = (type: EditingState['type'], id: string, data: any) => {
@@ -309,7 +306,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     if (!editing.type || !editing.id || !editing.data) return;
     updateItem(editing.type, editing.id, editing.data);
     setEditing({ type: null, id: null, data: null });
-    toast.success('Changes saved');
   };
 
   const cancelEdit = () => {

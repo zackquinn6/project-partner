@@ -64,7 +64,6 @@ export function MaterialsLibrary() {
       if (error) throw error;
       
       setMaterials(materials.filter(material => material.id !== materialId));
-      toast.success('Material deleted successfully');
     } catch (error) {
       console.error('Error deleting material:', error);
       toast.error('Failed to delete material');
