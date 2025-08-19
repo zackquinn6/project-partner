@@ -638,7 +638,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Estimated Time Per Unit</label>
+                <label className="text-sm font-medium">Estimated Time Per Unit (hours)</label>
                 <Input 
                   type="number"
                   step="0.1"
@@ -650,22 +650,18 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               </div>
               <div>
                 <label className="text-sm font-medium">Scaling Unit</label>
-                <Select 
-                  value={currentProject.scalingUnit || 'none'} 
-                  onValueChange={(value) => updateProjectData({...currentProject, scalingUnit: value === 'none' ? undefined : value as any})}
+                <select 
+                  value={currentProject.scalingUnit || ''} 
+                  onChange={(e) => updateProjectData({...currentProject, scalingUnit: e.target.value as any || undefined})}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <SelectTrigger className="mt-1 bg-background">
-                    <SelectValue placeholder="Select scaling unit" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-lg z-50">
-                    <SelectItem value="none">No scaling unit</SelectItem>
-                    <SelectItem value="per square foot">per square foot</SelectItem>
-                    <SelectItem value="per 10x10 room">per 10x10 room</SelectItem>
-                    <SelectItem value="per linear foot">per linear foot</SelectItem>
-                    <SelectItem value="per cubic yard">per cubic yard</SelectItem>
-                    <SelectItem value="per item">per item</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="">No scaling unit</option>
+                  <option value="per square foot">per square foot</option>
+                  <option value="per 10x10 room">per 10x10 room</option>
+                  <option value="per linear foot">per linear foot</option>
+                  <option value="per cubic yard">per cubic yard</option>
+                  <option value="per item">per item</option>
+                </select>
               </div>
             </div>
             <div className="flex gap-2 pt-2">
