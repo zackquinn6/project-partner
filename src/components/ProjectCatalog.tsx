@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '@/contexts/ProjectContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,8 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 interface ProjectTemplate {
   id: string;
   name: string;
@@ -40,6 +43,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   isAdminMode = false
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     setCurrentProject,
     addProject,
@@ -47,6 +51,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     projects
   } = useProject();
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
+  const [isDIYSurveyOpen, setIsDIYSurveyOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
   const [projectSetupForm, setProjectSetupForm] = useState({
     customProjectName: '',
@@ -65,6 +70,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   React.useEffect(() => {
     if (isAdminMode) {
       setIsProjectSetupOpen(false);
+      setIsDIYSurveyOpen(false);
       setSelectedTemplate(null);
     }
   }, [isAdminMode]);
@@ -178,7 +184,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         return Hammer;
     }
   };
-  const handleSelectProject = (project: any) => {
+  const handleSelectProject = async (project: any) => {
     if (isAdminMode) {
       // In admin mode, create a new template project
       const newProject = {
@@ -204,13 +210,58 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         }
       });
     } else {
-      // In user mode, show the setup dialog
-      setSelectedTemplate(project);
-      setProjectSetupForm(prev => ({
-        ...prev,
-        customProjectName: project.name
-      }));
+      // In user mode, check if DIY survey is completed first
+      try {
+        if (!user) return;
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('survey_completed_at')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const surveyCompleted = data && data.survey_completed_at;
+        
+        setSelectedTemplate(project);
+        setProjectSetupForm(prev => ({
+          ...prev,
+          customProjectName: project.name
+        }));
+
+        if (!surveyCompleted) {
+          // Show DIY survey first
+          setIsDIYSurveyOpen(true);
+        } else {
+          // Show project setup directly
+          setIsProjectSetupOpen(true);
+        }
+      } catch (error) {
+        console.error('Error checking profile:', error);
+        // On error, proceed with project setup
+        setSelectedTemplate(project);
+        setProjectSetupForm(prev => ({
+          ...prev,
+          customProjectName: project.name
+        }));
+        setIsProjectSetupOpen(true);
+      }
+    }
+  };
+
+  const handleDIYSurveyComplete = (surveyCompleted: boolean = true) => {
+    setIsDIYSurveyOpen(false);
+    if (surveyCompleted) {
+      // After DIY survey completion, show project setup
       setIsProjectSetupOpen(true);
+    } else {
+      // If survey was cancelled, reset everything
+      setSelectedTemplate(null);
+      setProjectSetupForm({
+        customProjectName: '',
+        projectLeader: '',
+        accountabilityPartner: '',
+        targetEndDate: ''
+      });
     }
   };
   const handleProjectSetupComplete = () => {
@@ -594,6 +645,18 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
             </DialogContent>
           </Dialog>}
+
+        {/* DIY Survey Dialog - Only show in user mode */}
+        {!isAdminMode && <DIYSurveyPopup 
+          open={isDIYSurveyOpen} 
+          onOpenChange={(open) => {
+            if (!open) {
+              // Check if survey was completed by verifying if profile was updated
+              handleDIYSurveyComplete(true);
+            }
+          }}
+          isNewUser={false}
+        />}
       </div>
     </div>;
 };
