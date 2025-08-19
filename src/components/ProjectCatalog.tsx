@@ -185,6 +185,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     }
   };
   const handleSelectProject = async (project: any) => {
+    console.log('handleSelectProject called with:', project);
+    console.log('isAdminMode:', isAdminMode);
+    console.log('user:', user);
+    
     if (isAdminMode) {
       // In admin mode, create a new template project
       const newProject = {
@@ -211,8 +215,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       });
     } else {
       // In user mode, check if DIY survey is completed first
+      console.log('User mode - checking DIY survey status');
+      
+      if (!user) {
+        console.log('No user found - redirecting to auth');
+        navigate('/auth');
+        return;
+      }
+      
       try {
-        if (!user) return;
+        console.log('Querying profile for user:', user.id);
         
         const { data, error } = await supabase
           .from('profiles')
@@ -220,7 +232,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           .eq('user_id', user.id)
           .maybeSingle();
 
+        console.log('Profile query result:', { data, error });
+
         const surveyCompleted = data && data.survey_completed_at;
+        console.log('Survey completed:', surveyCompleted);
         
         setSelectedTemplate(project);
         setProjectSetupForm(prev => ({
@@ -230,31 +245,37 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
         if (!surveyCompleted) {
           // Show DIY survey first
+          console.log('Showing DIY survey');
           setIsDIYSurveyOpen(true);
         } else {
           // Show project setup directly
+          console.log('Showing project setup directly');
           setIsProjectSetupOpen(true);
         }
       } catch (error) {
         console.error('Error checking profile:', error);
-        // On error, proceed with project setup
+        // On error, show DIY survey to be safe
+        console.log('Error occurred - showing DIY survey as fallback');
         setSelectedTemplate(project);
         setProjectSetupForm(prev => ({
           ...prev,
           customProjectName: project.name
         }));
-        setIsProjectSetupOpen(true);
+        setIsDIYSurveyOpen(true);
       }
     }
   };
 
   const handleDIYSurveyComplete = (surveyCompleted: boolean = true) => {
+    console.log('handleDIYSurveyComplete called with:', surveyCompleted);
     setIsDIYSurveyOpen(false);
     if (surveyCompleted) {
       // After DIY survey completion, show project setup
+      console.log('Survey completed - showing project setup');
       setIsProjectSetupOpen(true);
     } else {
       // If survey was cancelled, reset everything
+      console.log('Survey cancelled - resetting');
       setSelectedTemplate(null);
       setProjectSetupForm({
         customProjectName: '',
@@ -647,16 +668,28 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           </Dialog>}
 
         {/* DIY Survey Dialog - Only show in user mode */}
-        {!isAdminMode && <DIYSurveyPopup 
-          open={isDIYSurveyOpen} 
-          onOpenChange={(open) => {
-            if (!open) {
-              // Check if survey was completed by verifying if profile was updated
-              handleDIYSurveyComplete(true);
-            }
-          }}
-          isNewUser={false}
-        />}
+        {!isAdminMode && (
+          <>
+            {/* Debug info */}
+            <div className="fixed top-0 right-0 bg-black text-white p-2 text-xs z-50">
+              DIY Survey: {isDIYSurveyOpen ? 'OPEN' : 'CLOSED'}<br/>
+              Project Setup: {isProjectSetupOpen ? 'OPEN' : 'CLOSED'}<br/>
+              Selected: {selectedTemplate?.name || 'None'}
+            </div>
+            
+            <DIYSurveyPopup 
+              open={isDIYSurveyOpen} 
+              onOpenChange={(open) => {
+                console.log('DIYSurveyPopup onOpenChange called with:', open);
+                if (!open) {
+                  // Check if survey was completed by verifying if profile was updated
+                  handleDIYSurveyComplete(true);
+                }
+              }}
+              isNewUser={false}
+            />
+          </>
+        )}
       </div>
     </div>;
 };
