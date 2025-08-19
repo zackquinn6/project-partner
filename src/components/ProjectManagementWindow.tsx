@@ -15,6 +15,7 @@ import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrenc
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface EditingState {
@@ -688,13 +689,13 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   if (!currentProject) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Project Management</DialogTitle>
           </DialogHeader>
-          <div className="overflow-y-auto max-h-[80vh] p-6">
+          <ScrollArea className="max-h-[85vh] p-6">
             {renderProjectSelector()}
-          </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     );
@@ -761,13 +762,13 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Project Management</DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto max-h-[80vh] p-6">
+        <ScrollArea className="max-h-[85vh] p-6">
           {renderView()}
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
