@@ -549,7 +549,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               <label className="text-sm font-medium text-muted-foreground">Description</label>
               <p className="mt-1 text-sm">{currentProject.description || 'No description'}</p>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Difficulty</label>
                 <p className="mt-1 text-sm">{currentProject.difficulty || 'Not set'}</p>
@@ -557,10 +557,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Effort Level</label>
                 <p className="mt-1 text-sm">{currentProject.effortLevel || 'Not set'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Estimated Time</label>
-                <p className="mt-1 text-sm">{currentProject.estimatedTime || 'Not set'}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
