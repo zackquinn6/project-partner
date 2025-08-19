@@ -53,6 +53,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
   const [isDIYSurveyOpen, setIsDIYSurveyOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [surveyMode, setSurveyMode] = useState<'new' | 'verify'>('new');
   const [projectSetupForm, setProjectSetupForm] = useState({
     customProjectName: '',
     projectLeader: '',
@@ -214,8 +216,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         }
       });
     } else {
-      // In user mode, check if DIY survey is completed first
-      console.log('User mode - checking DIY survey status');
+      // In user mode, fetch profile data and show DIY survey with appropriate mode
+      console.log('User mode - fetching profile and showing DIY survey');
       
       if (!user) {
         console.log('No user found - redirecting to auth');
@@ -223,46 +225,46 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         return;
       }
       
+      setSelectedTemplate(project);
+      setProjectSetupForm(prev => ({
+        ...prev,
+        customProjectName: project.name
+      }));
+
+      // Fetch user profile to determine DIY survey mode
       try {
-        console.log('Querying profile for user:', user.id);
-        
         const { data, error } = await supabase
           .from('profiles')
-          .select('survey_completed_at')
+          .select('skill_level, avoid_projects, physical_capability, space_type, current_goal, survey_completed_at')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        console.log('Profile query result:', { data, error });
+        console.log('Profile fetch result:', { data, error });
 
-        const surveyCompleted = data && data.survey_completed_at;
-        console.log('Survey completed:', surveyCompleted);
-        
-        setSelectedTemplate(project);
-        setProjectSetupForm(prev => ({
-          ...prev,
-          customProjectName: project.name
-        }));
-
-        if (!surveyCompleted) {
-          // Show DIY survey first
-          console.log('Showing DIY survey');
-          setIsDIYSurveyOpen(true);
+        if (data && data.survey_completed_at) {
+          // User has completed survey before - show verify mode
+          setSurveyMode('verify');
+          setUserProfile({
+            skillLevel: data.skill_level,
+            avoidProjects: data.avoid_projects || [],
+            physicalCapability: data.physical_capability,
+            spaceType: data.space_type,
+            currentGoal: data.current_goal
+          });
         } else {
-          // Show project setup directly
-          console.log('Showing project setup directly');
-          setIsProjectSetupOpen(true);
+          // New user - show new mode
+          setSurveyMode('new');
+          setUserProfile(null);
         }
       } catch (error) {
-        console.error('Error checking profile:', error);
-        // On error, show DIY survey to be safe
-        console.log('Error occurred - showing DIY survey as fallback');
-        setSelectedTemplate(project);
-        setProjectSetupForm(prev => ({
-          ...prev,
-          customProjectName: project.name
-        }));
-        setIsDIYSurveyOpen(true);
+        console.error('Error fetching profile:', error);
+        // On error, default to new survey
+        setSurveyMode('new');
+        setUserProfile(null);
       }
+      
+      // Always show DIY survey
+      setIsDIYSurveyOpen(true);
     }
   };
 
@@ -669,26 +671,17 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
         {/* DIY Survey Dialog - Only show in user mode */}
         {!isAdminMode && (
-          <>
-            {/* Debug info */}
-            <div className="fixed top-0 right-0 bg-black text-white p-2 text-xs z-50">
-              DIY Survey: {isDIYSurveyOpen ? 'OPEN' : 'CLOSED'}<br/>
-              Project Setup: {isProjectSetupOpen ? 'OPEN' : 'CLOSED'}<br/>
-              Selected: {selectedTemplate?.name || 'None'}
-            </div>
-            
-            <DIYSurveyPopup 
-              open={isDIYSurveyOpen} 
-              onOpenChange={(open) => {
-                console.log('DIYSurveyPopup onOpenChange called with:', open);
-                if (!open) {
-                  // Check if survey was completed by verifying if profile was updated
-                  handleDIYSurveyComplete(true);
-                }
-              }}
-              isNewUser={false}
-            />
-          </>
+          <DIYSurveyPopup 
+            open={isDIYSurveyOpen} 
+            onOpenChange={(open) => {
+              console.log('DIYSurveyPopup onOpenChange called with:', open);
+              if (!open) {
+                handleDIYSurveyComplete(true);
+              }
+            }}
+            mode={surveyMode}
+            initialData={userProfile}
+          />
         )}
       </div>
     </div>;

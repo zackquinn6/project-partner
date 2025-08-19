@@ -13,25 +13,44 @@ import { useToast } from "@/hooks/use-toast";
 interface DIYSurveyPopupProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  isNewUser?: boolean;
+  mode?: 'new' | 'verify';
+  initialData?: {
+    skillLevel?: string;
+    avoidProjects?: string[];
+    physicalCapability?: string;
+    spaceType?: string;
+    currentGoal?: string;
+  };
 }
 
-export default function DIYSurveyPopup({ open, onOpenChange, isNewUser = false }: DIYSurveyPopupProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initialData }: DIYSurveyPopupProps) {
+  const [currentStep, setCurrentStep] = useState(mode === 'verify' ? 0 : 1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
   const [answers, setAnswers] = useState({
-    skillLevel: "",
-    avoidProjects: [] as string[],
-    physicalCapability: "",
-    spaceType: "",
-    currentGoal: ""
+    skillLevel: initialData?.skillLevel || "",
+    avoidProjects: initialData?.avoidProjects || [] as string[],
+    physicalCapability: initialData?.physicalCapability || "",
+    spaceType: initialData?.spaceType || "",
+    currentGoal: initialData?.currentGoal || ""
   });
 
-  const totalSteps = 5;
+  const totalSteps = mode === 'verify' ? 6 : 5;
   const progress = (currentStep / totalSteps) * 100;
 
   const handleNext = async () => {
+    if (mode === 'verify' && currentStep === 0) {
+      if (isEditing) {
+        setCurrentStep(1);
+        setIsEditing(false);
+      } else {
+        // User clicked "Looks Good" - proceed without changes
+        onOpenChange(false);
+      }
+      return;
+    }
+    
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -81,8 +100,16 @@ export default function DIYSurveyPopup({ open, onOpenChange, isNewUser = false }
     }
   };
 
+  const handleEdit = () => {
+    setIsEditing(true);
+    setCurrentStep(1);
+  };
+
   const handleBack = () => {
-    if (currentStep > 1) {
+    if (mode === 'verify' && currentStep === 1) {
+      setCurrentStep(0);
+      setIsEditing(false);
+    } else if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -103,6 +130,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, isNewUser = false }
 
   const canProceed = () => {
     switch (currentStep) {
+      case 0: return true; // Verify step
       case 1: return answers.skillLevel !== "";
       case 2: return true; // Can proceed even with no selections
       case 3: return answers.physicalCapability !== "";
@@ -114,6 +142,37 @@ export default function DIYSurveyPopup({ open, onOpenChange, isNewUser = false }
 
   const renderStep = () => {
     switch (currentStep) {
+      case 0:
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-4">
+              <h3 className="text-2xl font-bold">🔍 Verify Your DIY Profile</h3>
+              <p className="text-muted-foreground">Here's what we have on file. Look good?</p>
+            </div>
+            
+            <div className="space-y-4">
+              <Card className="p-4">
+                <div className="space-y-3">
+                  <div><strong>Skill Level:</strong> {answers.skillLevel || 'Not specified'}</div>
+                  <div><strong>Projects to Avoid:</strong> {answers.avoidProjects.length > 0 ? answers.avoidProjects.join(', ') : 'None specified'}</div>
+                  <div><strong>Physical Capability:</strong> {answers.physicalCapability || 'Not specified'}</div>
+                  <div><strong>Living Situation:</strong> {answers.spaceType || 'Not specified'}</div>
+                  <div><strong>Current Goal:</strong> {answers.currentGoal || 'Not specified'}</div>
+                </div>
+              </Card>
+            </div>
+
+            <div className="flex gap-4 justify-center">
+              <Button variant="outline" onClick={handleEdit}>
+                Edit Profile
+              </Button>
+              <Button onClick={handleNext} className="gradient-primary text-white">
+                Looks Good!
+              </Button>
+            </div>
+          </div>
+        );
+
       case 1:
         return (
           <div className="space-y-6">
@@ -319,42 +378,46 @@ export default function DIYSurveyPopup({ open, onOpenChange, isNewUser = false }
           <div className="flex items-center justify-center space-x-2">
             <Sparkles className="w-6 h-6 text-primary" />
             <DialogTitle className="text-2xl font-bold gradient-text">
-              {isNewUser ? "Let's get to know ya" : "Update Your Profile"}
+              {mode === 'verify' ? "Verify Your Profile" : "Let's get to know ya"}
             </DialogTitle>
             <Sparkles className="w-6 h-6 text-primary" />
           </div>
-          <div className="space-y-2">
-            <Progress value={progress} className="w-full" />
-            <p className="text-sm text-muted-foreground">
-              Step {currentStep} of {totalSteps}
-            </p>
-          </div>
+          {currentStep > 0 && (
+            <div className="space-y-2">
+              <Progress value={progress} className="w-full" />
+              <p className="text-sm text-muted-foreground">
+                Step {currentStep} of {mode === 'verify' ? totalSteps - 1 : totalSteps}
+              </p>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="py-6">
           {renderStep()}
         </div>
 
-        <div className="flex justify-between pt-6 border-t">
-          <Button 
-            variant="outline" 
-            onClick={handleBack} 
-            disabled={currentStep === 1}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
-          </Button>
-          
-          <Button 
-            onClick={handleNext} 
-            disabled={!canProceed() || isSubmitting}
-            className="flex items-center space-x-2 gradient-primary text-white"
-          >
-            <span>{isSubmitting ? "Saving..." : currentStep === totalSteps ? "Complete" : "Next"}</span>
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
+        {currentStep > 0 && (
+          <div className="flex justify-between pt-6 border-t">
+            <Button 
+              variant="outline" 
+              onClick={handleBack} 
+              disabled={(mode === 'new' && currentStep === 1) || (mode === 'verify' && currentStep === 1 && !isEditing)}
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </Button>
+            
+            <Button 
+              onClick={handleNext} 
+              disabled={!canProceed() || isSubmitting}
+              className="flex items-center space-x-2 gradient-primary text-white"
+            >
+              <span>{isSubmitting ? "Saving..." : (mode === 'verify' ? (currentStep === totalSteps - 1 ? "Complete" : "Next") : (currentStep === totalSteps ? "Complete" : "Next"))}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
