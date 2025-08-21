@@ -143,11 +143,18 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
           </div>
 
-          {!isCompleted && (
-            <Button onClick={onComplete} className="w-full mt-6">
+          {!isCompleted && !isEditing && (
+            <Button onClick={onComplete} className="w-full mt-6 bg-green-600 hover:bg-green-700">
               <CheckCircle className="w-4 h-4 mr-2" />
-              Complete Project Overview
+              Mark Project Overview Complete
             </Button>
+          )}
+          
+          {isCompleted && (
+            <div className="w-full mt-6 p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+              <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-2" />
+              <p className="text-green-800 font-medium">Project Overview Completed ✓</p>
+            </div>
           )}
         </CardContent>
       </Card>

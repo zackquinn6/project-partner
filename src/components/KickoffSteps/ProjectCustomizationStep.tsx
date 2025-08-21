@@ -134,14 +134,19 @@ export const ProjectCustomizationStep: React.FC<ProjectCustomizationStepProps> =
   const handleSaveCustomization = async () => {
     if (!currentProjectRun) return;
 
+    console.log("ProjectCustomizationStep - Saving customization and calling onComplete");
+
     // Combine kickoff phase with selected phases
     const kickoffPhase = currentProjectRun.phases.find(phase => phase.name === 'Kickoff');
     const updatedPhases = kickoffPhase ? [kickoffPhase, ...selectedPhases] : selectedPhases;
+    
     await updateProjectRun({
       ...currentProjectRun,
       phases: updatedPhases,
       updatedAt: new Date()
     });
+    
+    console.log("ProjectCustomizationStep - Project updated, completing step");
     onComplete();
   };
   const hasManualPhases = selectedPhases.some(phase => phase.id.startsWith('manual-'));
@@ -344,10 +349,19 @@ export const ProjectCustomizationStep: React.FC<ProjectCustomizationStepProps> =
                 </AlertDescription>
               </Alert>}
 
-            {!isCompleted && <Button onClick={handleSaveCustomization} className="w-full mt-4">
+            {!isCompleted && (
+              <Button onClick={handleSaveCustomization} className="w-full mt-4 bg-green-600 hover:bg-green-700">
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Save Project Customization
-              </Button>}
+                Complete Project Customization
+              </Button>
+            )}
+            
+            {isCompleted && (
+              <div className="w-full mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+                <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-2" />
+                <p className="text-green-800 font-medium">Project Customization Completed ✓</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

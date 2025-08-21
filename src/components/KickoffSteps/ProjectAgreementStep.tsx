@@ -86,6 +86,8 @@ Date: ${new Date().toLocaleDateString()}
     setSignedAgreement(agreement);
     setIsSignatureDialogOpen(false);
     
+    console.log("ProjectAgreementStep - Agreement signed, calling onComplete");
+    
     // Store the agreement in the project run
     if (currentProjectRun) {
       updateProjectRun({
@@ -96,6 +98,12 @@ Date: ${new Date().toLocaleDateString()}
         updatedAt: new Date()
       });
     }
+    
+    // Automatically complete this step when agreement is signed
+    setTimeout(() => {
+      console.log("ProjectAgreementStep - Auto-completing step after agreement");
+      onComplete();
+    }, 500);
   };
 
   const generatePDF = () => {
@@ -172,10 +180,17 @@ Date: ${new Date().toLocaleDateString()}
                   Download Agreement
                 </Button>
                 {!isCompleted && (
-                  <Button onClick={onComplete}>
+                  <Button onClick={onComplete} className="bg-green-600 hover:bg-green-700">
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Complete Agreement Step
+                    Mark Agreement Complete
                   </Button>
+                )}
+                
+                {isCompleted && (
+                  <div className="p-3 bg-green-100 border border-green-200 rounded-lg text-center">
+                    <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-2" />
+                    <p className="text-green-800 font-medium">Agreement Step Completed ✓</p>
+                  </div>
                 )}
               </div>
             </div>
