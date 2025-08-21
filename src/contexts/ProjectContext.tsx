@@ -385,6 +385,13 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     if (!user) return;
 
     try {
+      console.log("🔄 ProjectContext - Updating project run:", {
+        id: projectRun.id,
+        completedSteps: projectRun.completedSteps,
+        status: projectRun.status,
+        progress: projectRun.progress
+      });
+
       const { error } = await supabase
         .from('project_runs')
         .update({
@@ -412,9 +419,22 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
 
       if (error) throw error;
 
+      // Update local state immediately for better UX
+      setProjectRuns(prevRuns => 
+        prevRuns.map(run => run.id === projectRun.id ? projectRun : run)
+      );
+      
+      // Update currentProjectRun if it's the one being updated
+      if (currentProjectRun?.id === projectRun.id) {
+        setCurrentProjectRun(projectRun);
+      }
+
+      console.log("✅ ProjectContext - Project run updated successfully");
+      
+      // Also fetch fresh data to ensure consistency
       await fetchProjectRuns();
     } catch (error) {
-      console.error('Error updating project run:', error);
+      console.error('❌ Error updating project run:', error);
       toast({
         title: "Error",
         description: "Failed to update project run",

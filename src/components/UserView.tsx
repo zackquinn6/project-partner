@@ -371,29 +371,46 @@ export default function UserView({
     isKickoffComplete
   });
   
-  // FIRST: If explicitly requesting listing mode or no projects selected, show project listing
-  if (resetToListing || viewMode === 'listing' || (!currentProject && !currentProjectRun)) {
+  // FIRST PRIORITY: If explicitly requesting listing mode, always show project listing
+  if (resetToListing) {
+    console.log("🔄 PRIORITY: Showing listing due to resetToListing=true");
     return <ProjectListing 
       onProjectSelect={project => {
-        console.log("Project selected:", project);
+        console.log("Project selected from resetToListing mode:", project);
         if (project === null) {
-          // Force stay in listing mode (e.g., after deletion)
           setViewMode('listing');
           return;
         }
         if (project === 'workflow') {
-          // Signal from ProjectListing to switch to workflow mode
           setViewMode('workflow');
           return;
         }
-        // Only change to workflow mode if user explicitly selects a project
         setViewMode('workflow');
         onProjectSelected?.();
       }} 
     />;
   }
   
-  // SECOND: If project run exists and kickoff is not complete, show kickoff workflow
+  // SECOND: If no projects selected or explicitly in listing mode, show project listing
+  if (viewMode === 'listing' || (!currentProject && !currentProjectRun)) {
+    return <ProjectListing 
+      onProjectSelect={project => {
+        console.log("Project selected:", project);
+        if (project === null) {
+          setViewMode('listing');
+          return;
+        }
+        if (project === 'workflow') {
+          setViewMode('workflow');
+          return;
+        }
+        setViewMode('workflow');
+        onProjectSelected?.();
+      }} 
+    />;
+  }
+  
+  // THIRD: If project run exists and kickoff is not complete, show kickoff workflow
   if (currentProjectRun && !isKickoffComplete && viewMode === 'workflow') {
     // Fix missing kickoff steps if user has progressed past them
     const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];

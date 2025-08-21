@@ -88,41 +88,50 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
       newCompletedSteps.push(stepId);
     }
 
-    // Update completed kickoff steps state
+    // Update completed kickoff steps state immediately
     const newCompletedKickoffSteps = new Set(completedKickoffSteps);
     newCompletedKickoffSteps.add(stepIndex);
     setCompletedKickoffSteps(newCompletedKickoffSteps);
 
     console.log("KickoffWorkflow - Updating project run with steps:", newCompletedSteps);
 
-    // Update project run with completed step - WAIT for completion
-    const updatedProjectRun = {
-      ...currentProjectRun,
-      completedSteps: newCompletedSteps,
-      progress: Math.round((newCompletedSteps.length / getTotalStepsCount()) * 100),
-      updatedAt: new Date()
-    };
-    
-    await updateProjectRun(updatedProjectRun);
+    try {
+      // Update project run with completed step - WAIT for completion
+      const updatedProjectRun = {
+        ...currentProjectRun,
+        completedSteps: newCompletedSteps,
+        progress: Math.round((newCompletedSteps.length / getTotalStepsCount()) * 100),
+        updatedAt: new Date()
+      };
+      
+      // Wait for database update to complete
+      await updateProjectRun(updatedProjectRun);
+      
+      console.log("✅ Database update completed");
 
-    console.log("KickoffWorkflow - Checking if all kickoff complete:", {
-      completedKickoffStepsSize: newCompletedKickoffSteps.size,
-      totalKickoffSteps: kickoffSteps.length,
-      allComplete: newCompletedKickoffSteps.size === kickoffSteps.length,
-      actualCompletedSteps: newCompletedSteps
-    });
+      console.log("KickoffWorkflow - Checking if all kickoff complete:", {
+        completedKickoffStepsSize: newCompletedKickoffSteps.size,
+        totalKickoffSteps: kickoffSteps.length,
+        allComplete: newCompletedKickoffSteps.size === kickoffSteps.length,
+        actualCompletedSteps: newCompletedSteps
+      });
 
-    // Check if all kickoff steps are complete
-    if (newCompletedKickoffSteps.size === kickoffSteps.length) {
-      console.log("KickoffWorkflow - All steps complete, calling onKickoffComplete with updated data");
-      // Mark kickoff phase as complete and allow access to other phases
-      onKickoffComplete();
-    } else {
-      console.log("KickoffWorkflow - Moving to next step");
-      // Move to next step if not already there
-      if (stepIndex === currentKickoffStep && stepIndex < kickoffSteps.length - 1) {
-        setCurrentKickoffStep(stepIndex + 1);
+      // Check if all kickoff steps are complete
+      if (newCompletedKickoffSteps.size === kickoffSteps.length) {
+        console.log("🎉 KickoffWorkflow - All steps complete, calling onKickoffComplete");
+        // Small delay to ensure state propagation
+        setTimeout(() => {
+          onKickoffComplete();
+        }, 100);
+      } else {
+        console.log("KickoffWorkflow - Moving to next step");
+        // Move to next step if not already there
+        if (stepIndex === currentKickoffStep && stepIndex < kickoffSteps.length - 1) {
+          setCurrentKickoffStep(stepIndex + 1);
+        }
       }
+    } catch (error) {
+      console.error("❌ Error updating project run:", error);
     }
   };
 
