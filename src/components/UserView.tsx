@@ -14,7 +14,9 @@ import { Output } from '@/interfaces/Project';
 import ProjectListing from './ProjectListing';
 import { OutputDetailPopup } from './OutputDetailPopup';
 import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
+import { PhaseRatingPopup } from './PhaseRatingPopup';
 import { HelpPopup } from './HelpPopup';
+import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { KickoffWorkflow } from './KickoffWorkflow';
 import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 interface UserViewProps {
@@ -44,9 +46,16 @@ export default function UserView({
   // Issue report state
   const [issueReportOpen, setIssueReportOpen] = useState(false);
   const [reportIssues, setReportIssues] = useState({
-    toolsMaterials: false,
-    extraWork: false,
-    instructionsUnclear: false
+    instructionsNotClear: false,
+    missingTools: false,
+    toolMalfunction: false,
+    missingWrongMaterials: false,
+    defectiveMaterials: false,
+    unplannedWork: false,
+    mistakeMade: false,
+    injuryNearMiss: false,
+    partnerDelay: false,
+    weatherDelay: false
   });
   const [reportComments, setReportComments] = useState("");
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
@@ -54,6 +63,11 @@ export default function UserView({
   const [helpPopupOpen, setHelpPopupOpen] = useState(false);
   const [accountabilityPopupOpen, setAccountabilityPopupOpen] = useState(false);
   const [messageType, setMessageType] = useState<'phase-complete' | 'issue-report'>('phase-complete');
+
+  // Phase rating state
+  const [phaseRatingOpen, setPhaseRatingOpen] = useState(false);
+  const [currentCompletedPhaseName, setCurrentCompletedPhaseName] = useState<string>("");
+  const [phaseCompletionOpen, setPhaseCompletionOpen] = useState(false);
 
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
@@ -175,8 +189,8 @@ export default function UserView({
       const isPhaseComplete = phaseSteps.every(step => newCompletedSteps.has(step.id));
       
       if (isPhaseComplete) {
-        setMessageType('phase-complete');
-        setAccountabilityPopupOpen(true);
+        setCurrentCompletedPhaseName(currentPhase.name);
+        setPhaseCompletionOpen(true);
       }
       
       if (currentStepIndex < allSteps.length - 1) {
@@ -204,7 +218,35 @@ export default function UserView({
     return phase.operations.flatMap((operation: any) => operation.steps);
   };
 
-  // Handle issue report submission
+  // Handle phase rating submission
+  const handlePhaseRatingSubmit = async (rating: number) => {
+    if (!currentProjectRun) return;
+
+    // Log rating data (would save to database in real implementation)
+    const ratingData = {
+      phaseId: getCurrentPhase()?.id,
+      phaseName: currentCompletedPhaseName,
+      rating,
+      projectRunId: currentProjectRun.id,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log("Phase Rating:", ratingData);
+    
+    // TODO: Save to database once schema is updated
+    // This would be something like:
+    // await supabase.from('phase_ratings').insert(ratingData);
+    
+    // Show accountability partner message after rating
+    setMessageType('phase-complete');
+    setAccountabilityPopupOpen(true);
+  };
+
+  // Handle issue report from phase rating
+  const handleReportIssueFromRating = () => {
+    setPhaseRatingOpen(false);
+    setIssueReportOpen(true);
+  };
   const handleReportSubmit = () => {
     // Show accountability partner message
     setMessageType('issue-report');
@@ -220,9 +262,16 @@ export default function UserView({
     
     // Reset form and close dialog
     setReportIssues({
-      toolsMaterials: false,
-      extraWork: false,
-      instructionsUnclear: false
+      instructionsNotClear: false,
+      missingTools: false,
+      toolMalfunction: false,
+      missingWrongMaterials: false,
+      defectiveMaterials: false,
+      unplannedWork: false,
+      mistakeMade: false,
+      injuryNearMiss: false,
+      partnerDelay: false,
+      weatherDelay: false
     });
     setReportComments("");
     setIssueReportOpen(false);
@@ -583,35 +632,112 @@ export default function UserView({
                         <div className="space-y-3">
                           <div className="flex items-center space-x-2">
                             <Checkbox 
-                              id="tools-materials"
-                              checked={reportIssues.toolsMaterials}
+                              id="instructions-not-clear"
+                              checked={reportIssues.instructionsNotClear}
                               onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, toolsMaterials: !!checked }))
+                                setReportIssues(prev => ({ ...prev, instructionsNotClear: !!checked }))
                               }
                             />
-                            <Label htmlFor="tools-materials">Issues with tools/materials</Label>
+                            <Label htmlFor="instructions-not-clear">Instructions not clear — missing steps, measurements, or sequence confusion</Label>
                           </div>
                           
                           <div className="flex items-center space-x-2">
                             <Checkbox 
-                              id="extra-work"
-                              checked={reportIssues.extraWork}
+                              id="missing-tools"
+                              checked={reportIssues.missingTools}
                               onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, extraWork: !!checked }))
+                                setReportIssues(prev => ({ ...prev, missingTools: !!checked }))
                               }
                             />
-                            <Label htmlFor="extra-work">Extra work needed, not in instructions</Label>
+                            <Label htmlFor="missing-tools">Missing tools — item not delivered or misplaced before use</Label>
                           </div>
-                          
+
                           <div className="flex items-center space-x-2">
                             <Checkbox 
-                              id="instructions-unclear"
-                              checked={reportIssues.instructionsUnclear}
+                              id="tool-malfunction"
+                              checked={reportIssues.toolMalfunction}
                               onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, instructionsUnclear: !!checked }))
+                                setReportIssues(prev => ({ ...prev, toolMalfunction: !!checked }))
                               }
                             />
-                            <Label htmlFor="instructions-unclear">Instructions not clear</Label>
+                            <Label htmlFor="tool-malfunction">Tool malfunction — breaks or operates incorrectly during project</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="missing-wrong-materials"
+                              checked={reportIssues.missingWrongMaterials}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, missingWrongMaterials: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="missing-wrong-materials">Missing / wrong materials — absent, wrong type, or wrong quantity</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="defective-materials"
+                              checked={reportIssues.defectiveMaterials}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, defectiveMaterials: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="defective-materials">Defective materials — damaged, expired, or unsafe to use</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="unplanned-work"
+                              checked={reportIssues.unplannedWork}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, unplannedWork: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="unplanned-work">Unplanned work discovered — hidden damage, compliance surprises, new tasks needed</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="mistake-made"
+                              checked={reportIssues.mistakeMade}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, mistakeMade: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="mistake-made">Mistake made / materials damaged — user error that requires fix or replacement</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="injury-near-miss"
+                              checked={reportIssues.injuryNearMiss}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, injuryNearMiss: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="injury-near-miss">Injury or near‑miss — any safety incident needing immediate attention</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="partner-delay"
+                              checked={reportIssues.partnerDelay}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, partnerDelay: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="partner-delay">Partner delay — delivery, pickup, or on‑site support arrives late/no‑show</Label>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="weather-delay"
+                              checked={reportIssues.weatherDelay}
+                              onCheckedChange={(checked) => 
+                                setReportIssues(prev => ({ ...prev, weatherDelay: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="weather-delay">Weather delay — wind, rain, freeze, or other environmental hazard</Label>
                           </div>
                         </div>
                         
@@ -663,6 +789,27 @@ export default function UserView({
         messageType={messageType}
         progress={progress}
         projectName={activeProject?.name}
+      />
+      {/* Phase Completion Popup */}
+      <PhaseCompletionPopup
+        open={phaseCompletionOpen}
+        onOpenChange={setPhaseCompletionOpen}
+        phase={getCurrentPhase()}
+        checkedOutputs={checkedOutputs}
+        onOutputToggle={toggleOutputCheck}
+        onPhaseComplete={() => {
+          setPhaseCompletionOpen(false);
+          setPhaseRatingOpen(true);
+        }}
+      />
+
+      {/* Phase Rating Popup */}
+      <PhaseRatingPopup
+        open={phaseRatingOpen}
+        onOpenChange={setPhaseRatingOpen}
+        phaseName={currentCompletedPhaseName}
+        onRatingSubmit={handlePhaseRatingSubmit}
+        onReportIssue={handleReportIssueFromRating}
       />
       
       {/* Help Popup */}
