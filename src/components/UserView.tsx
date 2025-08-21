@@ -551,18 +551,64 @@ export default function UserView({
               return newOutputs;
             });
             
-            // Update project status to in-progress with all steps
-            await updateProjectRun({
-              ...currentProjectRun,
-              completedSteps: allSteps,
-              status: 'in-progress',
-              progress: Math.round((allSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
-                return total + phase.operations.reduce((opTotal, operation) => {
-                  return opTotal + operation.steps.length;
-                }, 0);
-              }, 0))) * 100),
-              updatedAt: new Date()
+            // Mark individual completed steps for the main workflow tracking
+            setCompletedSteps(prev => {
+              const newCompletedSteps = new Set(prev);
+              kickoffStepIds.forEach(stepId => {
+                newCompletedSteps.add(stepId);
+              });
+              console.log("✅ Kickoff steps marked in completedSteps state:", newCompletedSteps);
+              return newCompletedSteps;
             });
+            
+            // Mark the entire kickoff phase as complete
+            console.log("🎯 Marking kickoff phase as complete...");
+            const kickoffPhase = currentProjectRun.phases.find(phase => phase.name === 'Kickoff');
+            if (kickoffPhase) {
+              setCurrentCompletedPhaseName(kickoffPhase.name);
+              
+              // Add phase rating for kickoff phase
+              const kickoffRating = {
+                phaseId: kickoffPhase.id,
+                phaseName: kickoffPhase.name,
+                rating: 5, // Auto-rate kickoff as excellent since user completed setup
+                timestamp: new Date().toISOString()
+              };
+              
+              const updatedPhaseRatings = [
+                ...(currentProjectRun.phase_ratings || []),
+                kickoffRating
+              ];
+              
+              console.log("✅ Auto-rating kickoff phase:", kickoffRating);
+              
+              // Update project status to in-progress with all steps and phase rating
+              await updateProjectRun({
+                ...currentProjectRun,
+                completedSteps: allSteps,
+                status: 'in-progress',
+                phase_ratings: updatedPhaseRatings,
+                progress: Math.round((allSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
+                  return total + phase.operations.reduce((opTotal, operation) => {
+                    return opTotal + operation.steps.length;
+                  }, 0);
+                }, 0))) * 100),
+                updatedAt: new Date()
+              });
+            } else {
+              // Fallback if kickoff phase not found
+              await updateProjectRun({
+                ...currentProjectRun,
+                completedSteps: allSteps,
+                status: 'in-progress',
+                progress: Math.round((allSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
+                  return total + phase.operations.reduce((opTotal, operation) => {
+                    return opTotal + operation.steps.length;
+                  }, 0);
+                }, 0))) * 100),
+                updatedAt: new Date()
+              });
+            }
             
             console.log("✅ Kickoff completed - proceeding to main workflow");
           }
