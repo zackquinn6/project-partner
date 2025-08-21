@@ -90,16 +90,18 @@ export default function UserView({
     }
   }, [projectRunId, projectRuns, setCurrentProjectRun]);
 
-  // Auto-switch to workflow view when a project or project run is selected
+  // Auto-switch to workflow view when a project or project run is selected (but respect resetToListing)
   useEffect(() => {
-    if (currentProject || currentProjectRun) {
+    if ((currentProject || currentProjectRun) && !resetToListing) {
+      console.log("Auto-switching to workflow mode");
       setViewMode('workflow');
     }
-  }, [currentProject, currentProjectRun]);
+  }, [currentProject, currentProjectRun, resetToListing]);
 
   // Reset to listing view when projects view is requested
   useEffect(() => {
     if (resetToListing) {
+      console.log("Resetting to listing mode due to resetToListing prop");
       setViewMode('listing');
     }
   }, [resetToListing]);
@@ -360,14 +362,39 @@ export default function UserView({
   // Check if kickoff phase is complete for project runs
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
   
-  console.log("Kickoff debug:", {
+  console.log("UserView debug:", {
+    resetToListing,
+    viewMode,
     currentProjectRun: !!currentProjectRun,
+    currentProject: !!currentProject,
     completedSteps: currentProjectRun?.completedSteps,
     isKickoffComplete
   });
   
-  // If project run exists and kickoff is not complete, show kickoff workflow
-  if (currentProjectRun && !isKickoffComplete) {
+  // FIRST: If explicitly requesting listing mode or no projects selected, show project listing
+  if (resetToListing || viewMode === 'listing' || (!currentProject && !currentProjectRun)) {
+    return <ProjectListing 
+      onProjectSelect={project => {
+        console.log("Project selected:", project);
+        if (project === null) {
+          // Force stay in listing mode (e.g., after deletion)
+          setViewMode('listing');
+          return;
+        }
+        if (project === 'workflow') {
+          // Signal from ProjectListing to switch to workflow mode
+          setViewMode('workflow');
+          return;
+        }
+        // Only change to workflow mode if user explicitly selects a project
+        setViewMode('workflow');
+        onProjectSelected?.();
+      }} 
+    />;
+  }
+  
+  // SECOND: If project run exists and kickoff is not complete, show kickoff workflow
+  if (currentProjectRun && !isKickoffComplete && viewMode === 'workflow') {
     return (
       <KickoffWorkflow 
         onKickoffComplete={async () => {
@@ -389,8 +416,13 @@ export default function UserView({
                 updatedAt: new Date()
               });
               
-              // Force re-render by updating view mode
+              console.log("Project status updated to in-progress, forcing re-render");
+              // Force component to re-render and show main workflow by updating state
               setViewMode('workflow');
+              // Small delay to ensure state update is processed
+              setTimeout(() => {
+                console.log("Forced re-render completed");
+              }, 100);
             } else {
               console.warn("Not all kickoff steps are complete, cannot proceed to workflow");
             }
@@ -398,27 +430,6 @@ export default function UserView({
         }} 
       />
     );
-  }
-
-  // If no current project or project run selected, or explicitly viewing listing mode, show project listing
-  if ((!currentProject && !currentProjectRun) || viewMode === 'listing') {
-    return <ProjectListing 
-      onProjectSelect={project => {
-        if (project === null) {
-          // Force stay in listing mode (e.g., after deletion)
-          setViewMode('listing');
-          return;
-        }
-        if (project === 'workflow') {
-          // Signal from ProjectListing to switch to workflow mode
-          setViewMode('workflow');
-          return;
-        }
-        // Only change to workflow mode if user explicitly selects a project
-        setViewMode('workflow');
-        onProjectSelected?.();
-      }} 
-    />;
   }
 
   // If current project has no workflow steps
