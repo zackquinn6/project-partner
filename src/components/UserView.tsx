@@ -419,22 +419,15 @@ export default function UserView({
     projectRunsIds: projectRuns.map(pr => pr.id)
   });
   
-  // FIRST PRIORITY: If explicitly requesting listing mode, always show project listing
-  // This should ALWAYS take precedence over everything else when "My Projects" is clicked
+  // PRIORITY: Handle My Projects button clicks - prevent auto-switching to workflow
   if (resetToListing) {
-    console.log("🔄 PRIORITY: resetToListing=true, forcing project listing view and clearing invalid state");
-    
-    // Clear any invalid projectRunId from location state when going to listing
-    if (projectRunId) {
-      console.log("🧹 Clearing invalid projectRunId from location state");
-      window.history.replaceState({ view: 'user' }, document.title, window.location.pathname);
-    }
+    console.log("🔄 PRIORITY: My Projects clicked - showing project listing");
     
     return (
       <div className="min-h-screen">
         <ProjectListing 
           onProjectSelect={project => {
-            console.log("Project selected from resetToListing mode:", project);
+            console.log("Project selected from My Projects:", project);
             if (project === null) {
               setViewMode('listing');
               return;
@@ -450,8 +443,6 @@ export default function UserView({
       </div>
     );
   }
-  
-  // SECOND: If we have a projectRunId but no currentProjectRun loaded yet, show loading or error
   if (projectRunId && !currentProjectRun && projectRuns.length > 0) {
     console.log("❌ UserView: Have projectRunId but currentProjectRun not found in loaded runs");
     console.log("Available project run IDs:", projectRuns.map(pr => pr.id));

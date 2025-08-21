@@ -28,9 +28,33 @@ interface EditableUserViewProps {
 }
 
 export default function EditableUserView({ onBackToAdmin, isAdminEditing = false }: EditableUserViewProps) {
-  const { currentProject, updateProject } = useProject();
+  const { currentProject, currentProjectRun, updateProject } = useProject();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  
+  // Initialize completed steps from project run data and prevent duplicates
+  useEffect(() => {
+    if (currentProjectRun?.completedSteps) {
+      // Parse the JSON data and create a unique Set to prevent duplicates
+      let steps: string[] = [];
+      try {
+        if (typeof currentProjectRun.completedSteps === 'string') {
+          steps = JSON.parse(currentProjectRun.completedSteps);
+        } else if (Array.isArray(currentProjectRun.completedSteps)) {
+          steps = currentProjectRun.completedSteps;
+        }
+        // Create Set to eliminate duplicates, then convert back to Set
+        const uniqueSteps = [...new Set(steps)];
+        console.log('Loading unique completed steps:', uniqueSteps.length, 'unique steps from', steps.length, 'total');
+        setCompletedSteps(new Set(uniqueSteps));
+      } catch (error) {
+        console.error('Error parsing completed steps:', error);
+        setCompletedSteps(new Set());
+      }
+    } else {
+      setCompletedSteps(new Set());
+    }
+  }, [currentProjectRun?.id]);  // Only depend on project run ID to prevent loops
   const [checkedMaterials, setCheckedMaterials] = useState<Record<string, Set<string>>>({});
   const [checkedTools, setCheckedTools] = useState<Record<string, Set<string>>>({});
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
@@ -438,21 +462,24 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8">
-        {/* Sidebar */}
+        {/* Sidebar - Move Help button to top */}
         <Card className="lg:col-span-1 gradient-card border-0 shadow-card">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">Workflow Progress</CardTitle>
-                <CardDescription>
-                  Step {currentStepIndex + 1} of {allSteps.length}
-                </CardDescription>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Workflow Progress</CardTitle>
+                  <CardDescription>
+                    Step {currentStepIndex + 1} of {allSteps.length}
+                  </CardDescription>
+                </div>
               </div>
+              
+              {/* Help button prominently at top */}
               <Button 
                 variant="outline" 
-                size="sm"
                 onClick={() => setHelpPopupOpen(true)}
-                className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                className="w-full bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
               >
                 Stuck? Get Help
               </Button>
@@ -517,12 +544,12 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                                    className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast ${
                                      step.id === currentStep?.id ? 'bg-primary/10 text-primary border border-primary/20' : 
                                      completedSteps.has(step.id) ? 'bg-green-50 text-green-700 border border-green-200' : 
-                                     'hover:bg-muted/50'
+                                     'hover:bg-muted/50 border border-transparent hover:border-muted-foreground/20'
                                    }`} 
                                    onClick={() => {
+                                     console.log('Step clicked:', step.step, 'stepIndex:', stepIndex);
                                      if (stepIndex >= 0) {
                                        setCurrentStepIndex(stepIndex);
-                                       // Scroll to top when navigating to a different step
                                        window.scrollTo({ top: 0, behavior: 'smooth' });
                                      }
                                    }}
@@ -602,16 +629,40 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                   </Button>
 
                   {/* Show ordering button for ordering steps */}
-                  {currentStep && (currentStep.step === 'Tool & Material Ordering' || 
-                   currentStep.phaseName === 'Ordering') && (
+                  {currentStep && (
+                    currentStep.step === 'Tool & Material Ordering' || 
+                    currentStep.phaseName === 'Ordering' ||
+                    currentStep.id === 'ordering-step-1'
+                  ) && (
                     <Button 
-                      onClick={() => setOrderingWindowOpen(true)}
+                      onClick={() => {
+                        console.log('Opening ordering window for step:', currentStep.step);
+                        setOrderingWindowOpen(true);
+                      }}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       <ShoppingCart className="w-4 h-4 mr-2" />
                       Shop Online
                     </Button>
                   )}
+                  
+                  {/* Debug button to always show ordering - remove after testing */}
+                  <Button 
+                    onClick={() => {
+                      console.log('Debug: Current step details:', {
+                        id: currentStep?.id,
+                        step: currentStep?.step,
+                        phaseName: currentStep?.phaseName,
+                        operationName: currentStep?.operationName
+                      });
+                      setOrderingWindowOpen(true);
+                    }}
+                    variant="outline"
+                    className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Debug Shop
+                  </Button>
                 </div>
               </div>
             </CardHeader>
