@@ -39,7 +39,17 @@ interface ProjectProviderProps {
 }
 
 export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
-  const { user } = useAuth();
+  // Add error boundary for useAuth hook
+  let authData;
+  try {
+    authData = useAuth();
+  } catch (error) {
+    console.error('ProjectProvider: useAuth hook failed:', error);
+    // Fallback to empty state if auth context is not available
+    authData = { user: null };
+  }
+  
+  const { user } = authData;
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectRuns, setProjectRuns] = useState<ProjectRun[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);

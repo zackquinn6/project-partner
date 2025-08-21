@@ -16,7 +16,21 @@ export default function Navigation({
   onAdminAccess,
   onProjectsView
 }: NavigationProps) {
-  const { projectRuns, currentProjectRun, setCurrentProjectRun } = useProject();
+  // Add error boundary for useProject hook
+  let projectData;
+  try {
+    projectData = useProject();
+  } catch (error) {
+    console.error('Navigation: useProject hook failed:', error);
+    // Fallback to empty state if context is not available
+    projectData = {
+      projectRuns: [],
+      currentProjectRun: null,
+      setCurrentProjectRun: () => {}
+    };
+  }
+  
+  const { projectRuns, currentProjectRun, setCurrentProjectRun } = projectData;
   const { signOut } = useAuth();
   
   // Filter to show only project runs that are not completed (progress < 100%)
