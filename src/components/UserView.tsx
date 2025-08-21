@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Info, ShoppingCart } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
 import { Output } from '@/interfaces/Project';
@@ -17,8 +17,9 @@ import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { PhaseRatingPopup } from './PhaseRatingPopup';
 import { HelpPopup } from './HelpPopup';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
+import { OrderingWindow } from './OrderingWindow';
 import { KickoffWorkflow } from './KickoffWorkflow';
-import { isKickoffPhaseComplete } from '@/utils/projectUtils';
+import { isKickoffPhaseComplete, addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 interface UserViewProps {
   resetToListing?: boolean;
   onProjectSelected?: () => void;
@@ -61,6 +62,9 @@ export default function UserView({
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
   const [outputPopupOpen, setOutputPopupOpen] = useState(false);
   const [helpPopupOpen, setHelpPopupOpen] = useState(false);
+  const [phaseCompletionPopupOpen, setPhaseCompletionPopupOpen] = useState(false);
+  const [selectedPhase, setSelectedPhase] = useState<any>(null);
+  const [orderingWindowOpen, setOrderingWindowOpen] = useState(false);
   const [accountabilityPopupOpen, setAccountabilityPopupOpen] = useState(false);
   const [messageType, setMessageType] = useState<'phase-complete' | 'issue-report'>('phase-complete');
 
@@ -75,12 +79,16 @@ export default function UserView({
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
   
-  // Flatten all steps from all phases and operations for navigation
-  const allSteps = activeProject?.phases.flatMap(phase => phase.operations.flatMap(operation => operation.steps.map(step => ({
-    ...step,
-    phaseName: phase.name,
-    operationName: operation.name
-  })))) || [];
+  // Flatten all steps with standard phases included
+  const allSteps = currentProject ? addStandardPhasesToProjectRun(currentProject.phases).flatMap(phase => 
+    phase.operations.flatMap(operation => 
+      operation.steps.map(step => ({
+        ...step,
+        phaseName: phase.name,
+        operationName: operation.name
+      }))
+    )
+  ) : [];
   
   // Initialize completed steps from project run data
   useEffect(() => {
@@ -419,9 +427,9 @@ export default function UserView({
     projectRunsIds: projectRuns.map(pr => pr.id)
   });
   
-  // PRIORITY: Handle My Projects button clicks - prevent auto-switching to workflow
+  // Fix My Projects navigation - STOP auto-switching when resetToListing is true
   if (resetToListing) {
-    console.log("🔄 PRIORITY: My Projects clicked - showing project listing");
+    console.log("🔄 My Projects clicked - showing project listing");
     
     return (
       <div className="min-h-screen">
@@ -433,7 +441,7 @@ export default function UserView({
               return;
             }
             if (project === 'workflow') {
-              setViewMode('workflow');
+              setViewMode('workflow'); 
               return;
             }
             setViewMode('workflow');
@@ -643,13 +651,26 @@ export default function UserView({
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="grid lg:grid-cols-4 gap-8">
-        {/* Sidebar */}
+        {/* Sidebar - Move Help button to top */}
         <Card className="lg:col-span-1 gradient-card border-0 shadow-card">
           <CardHeader>
-            <CardTitle className="text-lg">Workflow Progress</CardTitle>
-            <CardDescription>
-              Step {currentStepIndex + 1} of {allSteps.length}
-            </CardDescription>
+            <div className="space-y-4">
+              <div>
+                <CardTitle className="text-lg">Workflow Progress</CardTitle>
+                <CardDescription>
+                  Step {currentStepIndex + 1} of {allSteps.length}
+                </CardDescription>
+              </div>
+              
+              {/* Help button prominently at top */}
+              <Button 
+                variant="outline" 
+                onClick={() => setHelpPopupOpen(true)}
+                className="w-full bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+              >
+                Stuck? Get Help
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -667,7 +688,19 @@ export default function UserView({
                       <h5 className="text-sm font-medium text-muted-foreground">{operation}</h5>
                       {opSteps.map(step => {
                   const stepIndex = allSteps.findIndex(s => s.id === step.id);
-                  return <div key={step.id} className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast ${step.id === currentStep?.id ? 'bg-primary/10 text-primary border border-primary/20' : completedSteps.has(step.id) ? 'bg-green-50 text-green-700 border border-green-200' : 'hover:bg-muted/50'}`} onClick={() => setCurrentStepIndex(stepIndex)}>
+                   return <div key={step.id} 
+                     className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast border ${
+                       step.id === currentStep?.id ? 'bg-primary/10 text-primary border-primary/20' : 
+                       completedSteps.has(step.id) ? 'bg-green-50 text-green-700 border-green-200' : 
+                       'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                     }`} 
+                     onClick={() => {
+                       console.log('Step clicked:', step.step, 'index:', stepIndex);
+                       if (stepIndex >= 0) {
+                         setCurrentStepIndex(stepIndex);
+                         window.scrollTo({ top: 0, behavior: 'smooth' });
+                       }
+                     }}>
                             <div className="flex items-center gap-2">
                               {completedSteps.has(step.id) && <CheckCircle className="w-4 h-4" />}
                               <span className="truncate">{step.step}</span>
@@ -682,33 +715,46 @@ export default function UserView({
 
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Header with Help Button */}
-          <div className="flex justify-between items-start gap-4">
-            <Card className="gradient-card border-0 shadow-card flex-1">
+          {/* Header */}
+          <Card className="gradient-card border-0 shadow-card">
             <CardHeader>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                  {currentStep?.phaseName}
-                </Badge>
-                <span className="text-muted-foreground">→</span>
-                <Badge variant="outline">
-                  {currentStep?.operationName}
-                </Badge>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                      {currentStep?.phaseName}
+                    </Badge>
+                    <span className="text-muted-foreground">→</span>
+                    <Badge variant="outline">
+                      {currentStep?.operationName}
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-2xl">{currentStep?.step}</CardTitle>
+                  {currentStep?.description && <CardDescription className="text-base">
+                      {currentStep.description}
+                     </CardDescription>}
+                </div>
+                
+                {/* Show ordering button for ordering steps */}
+                {currentStep && (
+                  currentStep.step === 'Tool & Material Ordering' || 
+                  currentStep.phaseName === 'Ordering' ||
+                  currentStep.id === 'ordering-step-1'
+                ) && (
+                  <Button 
+                    onClick={() => {
+                      console.log('Opening ordering window for step:', currentStep.step);
+                      setOrderingWindowOpen(true);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Shop Online
+                  </Button>
+                )}
               </div>
-              <CardTitle className="text-2xl">{currentStep?.step}</CardTitle>
-              {currentStep?.description && <CardDescription className="text-base">
-                  {currentStep.description}
-                 </CardDescription>}
             </CardHeader>
           </Card>
-          <Button 
-            variant="outline" 
-            onClick={() => setHelpPopupOpen(true)}
-            className="whitespace-nowrap bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-          >
-            Stuck? Get Help
-          </Button>
-          </div>
 
           {/* Content */}
           <Card className="gradient-card border-0 shadow-card">
@@ -1094,6 +1140,21 @@ export default function UserView({
         phaseName={currentCompletedPhaseName}
         onRatingSubmit={handlePhaseRatingSubmit}
         onReportIssue={handleReportIssueFromRating}
+      />
+      
+      {/* Ordering Window */}
+      <OrderingWindow
+        open={orderingWindowOpen}
+        onOpenChange={setOrderingWindowOpen}
+        project={currentProject}
+        userOwnedTools={[]}
+        onOrderingComplete={() => {
+          // Mark the ordering step as complete
+          if (currentStep?.id === 'ordering-step-1' || currentStep?.step === 'Tool & Material Ordering') {
+            setCompletedSteps(prev => new Set([...prev, currentStep.id]));
+          }
+          setOrderingWindowOpen(false);
+        }}
       />
       
       {/* Help Popup */}
