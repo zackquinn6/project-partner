@@ -105,6 +105,11 @@ export default function UserView({
 
   // Reset to listing view when projects view is requested
   useEffect(() => {
+    console.log('🔄 UserView: resetToListing useEffect triggered:', { 
+      resetToListing, 
+      currentProjectRun: !!currentProjectRun 
+    });
+    
     if (resetToListing) {
       console.log("🔄 UserView: Resetting to listing mode due to resetToListing prop");
       setViewMode('listing');

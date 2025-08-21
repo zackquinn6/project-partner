@@ -49,12 +49,17 @@ const Index = () => {
   const handleProjectsView = () => {
     console.log('🔄 Index: "My Projects" clicked - clearing navigation state and resetting to listing');
     
-    // ALWAYS reset to listing when "My Projects" is clicked, regardless of current state
-    setResetUserView(true);
-    setTimeout(() => setResetUserView(false), 100);
-    
-    // ALWAYS clear the location state when "My Projects" is clicked to ensure navigation works
+    // Clear the location state first to ensure clean navigation
     window.history.replaceState({}, document.title, window.location.pathname);
+    
+    // Force reset to listing when "My Projects" is clicked
+    setResetUserView(true);
+    
+    // Keep the reset state active longer to ensure it takes effect
+    setTimeout(() => {
+      console.log('🔄 Index: Clearing resetUserView after delay');
+      setResetUserView(false);
+    }, 200);
   };
 
   // Listen for edit workflow navigation event
@@ -91,11 +96,15 @@ const Index = () => {
         console.log('🎯 Index: Rendering UserView with state:', {
           resetToListing: resetUserView,
           projectRunId: location.state?.projectRunId,
-          hasProjectRunId: !!location.state?.projectRunId
+          hasProjectRunId: !!location.state?.projectRunId,
+          currentView: currentView
         });
         return <UserView 
           resetToListing={resetUserView} 
-          onProjectSelected={() => setCurrentView('user')} 
+          onProjectSelected={() => {
+            console.log('🎯 Index: onProjectSelected called');
+            setCurrentView('user');
+          }} 
           projectRunId={location.state?.projectRunId} 
         />;
       case 'editWorkflow':
