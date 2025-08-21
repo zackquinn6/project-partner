@@ -381,7 +381,10 @@ export default function UserView({
     currentProjectRun: !!currentProjectRun,
     currentProject: !!currentProject,
     completedSteps: currentProjectRun?.completedSteps,
-    isKickoffComplete
+    isKickoffComplete,
+    projectRunId,
+    projectRunsCount: projectRuns.length,
+    projectRunsIds: projectRuns.map(pr => pr.id)
   });
   
   // FIRST PRIORITY: If explicitly requesting listing mode, always show project listing
@@ -405,8 +408,24 @@ export default function UserView({
     />;
   }
   
-  // SECOND: If no projects selected or explicitly in listing mode, show project listing
-  if (viewMode === 'listing' || (!currentProject && !currentProjectRun)) {
+  // SECOND: If we have a projectRunId but no currentProjectRun loaded yet, show loading
+  if (projectRunId && !currentProjectRun) {
+    console.log("⏳ UserView: Have projectRunId but currentProjectRun not loaded yet, showing loading...");
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p>Loading your project...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // THIRD: If no projects selected or explicitly in listing mode, show project listing
+  if (viewMode === 'listing' || (!currentProject && !currentProjectRun && !projectRunId)) {
+    console.log("📋 UserView: Showing project listing (no project selected)");
     return <ProjectListing 
       onProjectSelect={project => {
         console.log("Project selected:", project);
@@ -424,7 +443,7 @@ export default function UserView({
     />;
   }
   
-  // THIRD: If project run exists and kickoff is not complete, show kickoff workflow
+  // FOURTH: If project run exists and kickoff is not complete, show kickoff workflow
   if (currentProjectRun && !isKickoffComplete && viewMode === 'workflow') {
     // Fix missing kickoff steps if user has progressed past them
     const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
