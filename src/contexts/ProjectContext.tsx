@@ -277,6 +277,12 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     if (!user) return;
 
     try {
+      // Import the utility function to add kickoff phase
+      const { addKickoffPhaseToProjectRun } = await import('@/utils/projectUtils');
+      
+      // Add kickoff phase to the project run phases
+      const phasesWithKickoff = addKickoffPhaseToProjectRun(projectRunData.phases);
+
       const { data, error } = await supabase
         .from('project_runs')
         .insert({
@@ -296,7 +302,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
           current_step_id: projectRunData.currentStepId,
           completed_steps: JSON.stringify(projectRunData.completedSteps),
           progress: projectRunData.progress,
-          phases: JSON.stringify(projectRunData.phases),
+          phases: JSON.stringify(phasesWithKickoff),
           category: projectRunData.category,
           difficulty: projectRunData.difficulty,
           estimated_time: projectRunData.estimatedTime
@@ -307,11 +313,16 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       if (error) throw error;
 
       await fetchProjectRuns();
+      
+      toast({
+        title: "Success",
+        description: "Project run created successfully",
+      });
     } catch (error) {
       console.error('Error adding project run:', error);
       toast({
         title: "Error",
-        description: "Failed to create project run",
+        description: "Failed to add project run",
         variant: "destructive",
       });
     }

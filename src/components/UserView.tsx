@@ -15,6 +15,8 @@ import ProjectListing from './ProjectListing';
 import { OutputDetailPopup } from './OutputDetailPopup';
 import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { HelpPopup } from './HelpPopup';
+import { KickoffWorkflow } from './KickoffWorkflow';
+import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 interface UserViewProps {
   resetToListing?: boolean;
   onProjectSelected?: () => void;
@@ -278,6 +280,21 @@ export default function UserView({
     }, {} as Record<string, any[]>);
     return acc;
   }, {} as Record<string, Record<string, any[]>>) || {};
+  // Check if kickoff phase is complete for project runs
+  const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
+  
+  // If project run exists and kickoff is not complete, show kickoff workflow
+  if (currentProjectRun && !isKickoffComplete) {
+    return (
+      <KickoffWorkflow 
+        onKickoffComplete={() => {
+          // Force re-render by updating view mode
+          setViewMode('workflow');
+        }} 
+      />
+    );
+  }
+
   // If no current project or project run selected, or explicitly viewing listing mode, show project listing
   if ((!currentProject && !currentProjectRun) || viewMode === 'listing') {
     return <ProjectListing 
