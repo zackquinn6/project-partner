@@ -57,6 +57,10 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     deleteProjectRun(projectRunId);
     // Ensure we don't auto-select another project run after deletion
     setCurrentProjectRun(null);
+    // Clear projectRunId from URL if this was the current one
+    if (currentProjectRun?.id === projectRunId) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
     // Communicate to parent component that we want to stay in listing mode
     onProjectSelect?.(null as any);
   };
@@ -106,74 +110,92 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
               </TableRow>
             </TableHeader>
             <TableBody>
-              {projectRuns.map((projectRun) => {
-                const progress = calculateProgress(projectRun);
-                
-                return (
-                  <TableRow key={projectRun.id}>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div className="font-semibold">{projectRun.customProjectName || projectRun.name}</div>
-                        <div className="text-sm text-muted-foreground">{projectRun.description}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatDate(projectRun.startDate)}</TableCell>
-                    <TableCell>{formatDate(projectRun.planEndDate)}</TableCell>
-                    <TableCell className="w-32">
-                      <div className="space-y-1">
-                        <Progress value={progress} className="h-2" />
-                        <div className="text-xs text-muted-foreground text-center">
-                          {Math.round(progress)}%
+              {projectRuns.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <p className="text-muted-foreground">No projects yet.</p>
+                      <Button 
+                        onClick={() => navigate('/projects')}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Start Your First Project
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                projectRuns.map((projectRun) => {
+                  const progress = calculateProgress(projectRun);
+                  
+                  return (
+                    <TableRow key={projectRun.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <div className="font-semibold">{projectRun.customProjectName || projectRun.name}</div>
+                          <div className="text-sm text-muted-foreground">{projectRun.description}</div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(projectRun.status)}>
-                        {projectRun.status.replace('-', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {projectRun.endDate ? formatDate(projectRun.endDate) : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {projectRun.status !== 'complete' && (
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleOpenProjectRun(projectRun)}
-                            className="transition-fast"
-                          >
-                            <Play className="w-4 h-4 mr-2" />
-                            Continue
-                          </Button>
-                        )}
-                        
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" className="transition-fast">
-                              <Trash2 className="w-4 h-4" />
+                      </TableCell>
+                      <TableCell>{formatDate(projectRun.startDate)}</TableCell>
+                      <TableCell>{formatDate(projectRun.planEndDate)}</TableCell>
+                      <TableCell className="w-32">
+                        <div className="space-y-1">
+                          <Progress value={progress} className="h-2" />
+                          <div className="text-xs text-muted-foreground text-center">
+                            {Math.round(progress)}%
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(projectRun.status)}>
+                          {projectRun.status.replace('-', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {projectRun.endDate ? formatDate(projectRun.endDate) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {projectRun.status !== 'complete' && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleOpenProjectRun(projectRun)}
+                              className="transition-fast"
+                            >
+                              <Play className="w-4 h-4 mr-2" />
+                              Continue
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Project Run</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{projectRun.customProjectName || projectRun.name}"? This will only delete your personal project instance, not the original template.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteProjectRun(projectRun.id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                          )}
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm" className="transition-fast">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Project Run</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{projectRun.customProjectName || projectRun.name}"? This will only delete your personal project instance, not the original template.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteProjectRun(projectRun.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </CardContent>

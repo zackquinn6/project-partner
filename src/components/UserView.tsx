@@ -69,6 +69,9 @@ export default function UserView({
   const [currentCompletedPhaseName, setCurrentCompletedPhaseName] = useState<string>("");
   const [phaseCompletionOpen, setPhaseCompletionOpen] = useState(false);
 
+  // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
+  const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
+  
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
   
@@ -78,6 +81,26 @@ export default function UserView({
     phaseName: phase.name,
     operationName: operation.name
   })))) || [];
+  
+  // Initialize completed steps from project run data
+  useEffect(() => {
+    if (currentProjectRun?.completedSteps) {
+      setCompletedSteps(new Set(currentProjectRun.completedSteps));
+    }
+  }, [currentProjectRun?.completedSteps]);
+  
+  // Navigate to first incomplete step when workflow opens
+  useEffect(() => {
+    if (viewMode === 'workflow' && allSteps.length > 0 && isKickoffComplete) {
+      const firstIncompleteIndex = allSteps.findIndex(step => !completedSteps.has(step.id));
+      if (firstIncompleteIndex !== -1 && firstIncompleteIndex !== currentStepIndex) {
+        console.log("🎯 Navigating to first incomplete step:", firstIncompleteIndex, allSteps[firstIncompleteIndex]?.step);
+        setCurrentStepIndex(firstIncompleteIndex);
+        // Scroll to top of page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }, [viewMode, allSteps.length, isKickoffComplete, completedSteps, currentStepIndex]);
 
   // Load project run if projectRunId is provided
   useEffect(() => {
@@ -118,9 +141,6 @@ export default function UserView({
     }
   }, [resetToListing, setCurrentProjectRun]);
   
-  // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
-  const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
-  
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? completedSteps.size / allSteps.length * 100 : 0;
   
@@ -140,7 +160,7 @@ export default function UserView({
         
         const updatedProjectRun = {
           ...currentProjectRun,
-          progress: calculatedProgress,
+          progress: Math.round(calculatedProgress),
           completedSteps: [...preservedKickoffSteps, ...Array.from(completedSteps)],
           updatedAt: new Date()
         };
@@ -526,16 +546,12 @@ export default function UserView({
         onKickoffComplete={async () => {
           console.log("onKickoffComplete called - forcing completion");
           
-          if (currentProjectRun && updateProjectRun) {
-            // Ensure ALL kickoff steps are marked complete
-            const allSteps = [...(currentProjectRun.completedSteps || [])];
-            kickoffStepIds.forEach(id => {
-              if (!allSteps.includes(id)) {
-                allSteps.push(id);
-              }
-            });
-            
-            console.log("✅ Marking all kickoff steps complete:", allSteps);
+            if (currentProjectRun && updateProjectRun) {
+             // Ensure ALL kickoff steps are marked complete (prevent duplicates)
+             const existingSteps = currentProjectRun.completedSteps || [];
+             const uniqueSteps = [...new Set([...existingSteps, ...kickoffStepIds])];
+             
+             console.log("✅ Marking all kickoff steps complete:", uniqueSteps);
             
             // Automatically mark kickoff outputs as complete
             console.log("📝 Marking kickoff outputs as complete...");
@@ -585,10 +601,10 @@ export default function UserView({
               // Update project status to in-progress with all steps and phase rating
               await updateProjectRun({
                 ...currentProjectRun,
-                completedSteps: allSteps,
+                completedSteps: uniqueSteps,
                 status: 'in-progress',
                 phase_ratings: updatedPhaseRatings,
-                progress: Math.round((allSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
+                progress: Math.round((uniqueSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
                   return total + phase.operations.reduce((opTotal, operation) => {
                     return opTotal + operation.steps.length;
                   }, 0);
@@ -599,9 +615,9 @@ export default function UserView({
               // Fallback if kickoff phase not found
               await updateProjectRun({
                 ...currentProjectRun,
-                completedSteps: allSteps,
+                completedSteps: uniqueSteps,
                 status: 'in-progress',
-                progress: Math.round((allSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
+                progress: Math.round((uniqueSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
                   return total + phase.operations.reduce((opTotal, operation) => {
                     return opTotal + operation.steps.length;
                   }, 0);
@@ -848,7 +864,27 @@ export default function UserView({
           <Card className="gradient-card border-0 shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                
+                <div className="flex items-center gap-3">
+                  <Button 
+                    onClick={handlePrevious} 
+                    disabled={currentStepIndex === 0}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleNext} 
+                    disabled={currentStepIndex === allSteps.length - 1}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
 
                 <div className="flex items-center gap-3">
                   {currentStep && !completedSteps.has(currentStep.id) && (
