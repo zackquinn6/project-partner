@@ -231,22 +231,32 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
   };
 
   const handleComplete = () => {
-    if (currentStep && areAllOutputsCompleted(currentStep)) {
-      setCompletedSteps(prev => new Set([...prev, currentStep.id]));
-      
-      // Check if this completes a phase
-      const currentPhase = getCurrentPhase();
-      const phaseSteps = getAllStepsInPhase(currentPhase);
+    if (currentStep) {
+      // Create a Set to prevent duplicates, then convert back to array
       const newCompletedSteps = new Set([...completedSteps, currentStep.id]);
-      const isPhaseComplete = phaseSteps.every(step => newCompletedSteps.has(step.id));
+      setCompletedSteps(newCompletedSteps);
       
-      if (isPhaseComplete) {
-        setMessageType('phase-complete');
-        setAccountabilityPopupOpen(true);
+      // Update phase ratings and check for phase completion
+      const currentPhase = getCurrentPhase();
+      if (currentPhase) {
+        const allPhaseSteps = getAllStepsInPhase(currentPhase);
+        const completedPhaseSteps = allPhaseSteps.filter(step => 
+          newCompletedSteps.has(step.id) || step.id === currentStep.id
+        );
+
+        if (completedPhaseSteps.length === allPhaseSteps.length) {
+          // Phase is complete - show phase completion popup
+          setSelectedPhase(currentPhase);
+          setPhaseCompletionPopupOpen(true);
+        }
       }
       
+      // Auto-advance to next step
       if (currentStepIndex < allSteps.length - 1) {
-        handleNext();
+        setTimeout(() => {
+          setCurrentStepIndex(currentStepIndex + 1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 500);
       }
     }
   };
@@ -431,10 +441,22 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
         {/* Sidebar */}
         <Card className="lg:col-span-1 gradient-card border-0 shadow-card">
           <CardHeader>
-            <CardTitle className="text-lg">Workflow Progress</CardTitle>
-            <CardDescription>
-              Step {currentStepIndex + 1} of {allSteps.length}
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Workflow Progress</CardTitle>
+                <CardDescription>
+                  Step {currentStepIndex + 1} of {allSteps.length}
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setHelpPopupOpen(true)}
+                className="bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+              >
+                Stuck? Get Help
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -525,9 +547,8 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
 
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Header with Help Button */}
-          <div className="flex justify-between items-start gap-4">
-            <Card className="gradient-card border-0 shadow-card flex-1">
+          {/* Content Header */}
+          <Card className="gradient-card border-0 shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -565,48 +586,36 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                     </>
                   )}
                 </div>
+                <div className="flex items-center gap-2">
                 <Button 
-                  onClick={() => startEditing(currentStep)} 
+                  onClick={() => {
+                    if (currentStep) {
+                      startEditing(currentStep.id);
+                    }
+                  }} 
                   variant="outline" 
                   size="sm"
                   disabled={editingStep === currentStep?.id}
                 >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Step
-                </Button>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Step
+                  </Button>
+
+                  {/* Show ordering button for ordering steps */}
+                  {currentStep && (currentStep.step === 'Tool & Material Ordering' || 
+                   currentStep.phaseName === 'Ordering') && (
+                    <Button 
+                      onClick={() => setOrderingWindowOpen(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Shop Online
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
           </Card>
-          <div className="flex gap-2 flex-wrap">
-            <Button 
-              variant="outline" 
-              onClick={() => setHelpPopupOpen(true)}
-              className="whitespace-nowrap bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-            >
-              Stuck? Get Help
-            </Button>
-            
-            {/* Show ordering button if current step is the ordering step */}
-            {(currentStep?.id === 'ordering-step-1' || currentStep?.step === 'Tool & Material Ordering') && (
-              <Button 
-                onClick={() => setOrderingWindowOpen(true)}
-                className="whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Shop Online
-              </Button>
-            )}
-            
-            {/* Always show for testing - remove this after debugging */}
-            <Button 
-              onClick={() => setOrderingWindowOpen(true)}
-              className="whitespace-nowrap bg-green-600 hover:bg-green-700 text-white"
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Test Shopping (Debug)
-            </Button>
-          </div>
-          </div>
 
           {/* Content */}
           <Card className="gradient-card border-0 shadow-card">

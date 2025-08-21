@@ -28,7 +28,7 @@ export default function UserView({
   resetToListing,
   onProjectSelected,
   projectRunId
-}: UserViewProps = {}) {
+}: UserViewProps) {
   const {
     currentProject,
     currentProjectRun,
@@ -430,21 +430,25 @@ export default function UserView({
       window.history.replaceState({ view: 'user' }, document.title, window.location.pathname);
     }
     
-    return <ProjectListing 
-      onProjectSelect={project => {
-        console.log("Project selected from resetToListing mode:", project);
-        if (project === null) {
-          setViewMode('listing');
-          return;
-        }
-        if (project === 'workflow') {
-          setViewMode('workflow');
-          return;
-        }
-        setViewMode('workflow');
-        onProjectSelected?.();
-      }} 
-    />;
+    return (
+      <div className="min-h-screen">
+        <ProjectListing 
+          onProjectSelect={project => {
+            console.log("Project selected from resetToListing mode:", project);
+            if (project === null) {
+              setViewMode('listing');
+              return;
+            }
+            if (project === 'workflow') {
+              setViewMode('workflow');
+              return;
+            }
+            setViewMode('workflow');
+            onProjectSelected?.();
+          }}
+        />
+      </div>
+    );
   }
   
   // SECOND: If we have a projectRunId but no currentProjectRun loaded yet, show loading or error
@@ -645,7 +649,8 @@ export default function UserView({
         </Card>
       </div>;
   }
-  return <div className="container mx-auto px-6 py-8">
+  return (
+    <div className="container mx-auto px-6 py-8">
       <div className="grid lg:grid-cols-4 gap-8">
         {/* Sidebar */}
         <Card className="lg:col-span-1 gradient-card border-0 shadow-card">
@@ -1105,5 +1110,6 @@ export default function UserView({
         isOpen={helpPopupOpen}
         onClose={() => setHelpPopupOpen(false)}
       />
-    </div>;
+    </div>
+  );
 }
