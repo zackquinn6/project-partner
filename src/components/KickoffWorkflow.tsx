@@ -41,9 +41,17 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
       const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
       const completedIndices = new Set<number>();
       
+      console.log("KickoffWorkflow - Initializing from project run:", {
+        completedSteps: currentProjectRun.completedSteps,
+        kickoffStepIds
+      });
+      
       kickoffStepIds.forEach((stepId, index) => {
         if (currentProjectRun.completedSteps.includes(stepId)) {
           completedIndices.add(index);
+          console.log(`KickoffWorkflow - Step ${index} (${stepId}) is complete`);
+        } else {
+          console.log(`KickoffWorkflow - Step ${index} (${stepId}) is NOT complete`);
         }
       });
       
@@ -54,8 +62,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
         !currentProjectRun.completedSteps.includes(stepId)
       );
       if (firstIncomplete !== -1) {
+        console.log("KickoffWorkflow - Setting current step to first incomplete:", firstIncomplete);
         setCurrentKickoffStep(firstIncomplete);
       } else {
+        console.log("KickoffWorkflow - All steps complete, showing last step");
         setCurrentKickoffStep(2); // All complete, show last step
       }
     }
@@ -67,6 +77,13 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
     const stepId = kickoffSteps[stepIndex].id;
     const newCompletedSteps = [...currentProjectRun.completedSteps];
     
+    console.log("KickoffWorkflow - Completing step:", {
+      stepIndex,
+      stepId,
+      currentCompletedSteps: currentProjectRun.completedSteps,
+      alreadyCompleted: newCompletedSteps.includes(stepId)
+    });
+    
     if (!newCompletedSteps.includes(stepId)) {
       newCompletedSteps.push(stepId);
     }
@@ -76,6 +93,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
     newCompletedKickoffSteps.add(stepIndex);
     setCompletedKickoffSteps(newCompletedKickoffSteps);
 
+    console.log("KickoffWorkflow - Updating project run with steps:", newCompletedSteps);
+
     // Update project run with completed step
     await updateProjectRun({
       ...currentProjectRun,
@@ -84,11 +103,19 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
       updatedAt: new Date()
     });
 
+    console.log("KickoffWorkflow - Checking if all kickoff complete:", {
+      completedKickoffStepsSize: newCompletedKickoffSteps.size,
+      totalKickoffSteps: kickoffSteps.length,
+      allComplete: newCompletedKickoffSteps.size === kickoffSteps.length
+    });
+
     // Check if all kickoff steps are complete
     if (newCompletedKickoffSteps.size === kickoffSteps.length) {
+      console.log("KickoffWorkflow - All steps complete, calling onKickoffComplete");
       // Mark kickoff phase as complete and allow access to other phases
       onKickoffComplete();
     } else {
+      console.log("KickoffWorkflow - Moving to next step");
       // Move to next step if not already there
       if (stepIndex === currentKickoffStep && stepIndex < kickoffSteps.length - 1) {
         setCurrentKickoffStep(stepIndex + 1);
