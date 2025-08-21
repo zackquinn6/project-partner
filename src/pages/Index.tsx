@@ -27,7 +27,14 @@ const Index = () => {
     
     // Check if we're returning from project catalog with a view state
     if (location.state?.view) {
+      console.log('🚀 Index: Navigating from project catalog with state:', location.state);
       setCurrentView(location.state.view);
+      
+      // DON'T reset to listing if we have a projectRunId - user should go directly to workflow
+      if (location.state?.projectRunId) {
+        console.log('📦 Index: Has projectRunId, NOT resetting to listing');
+        setResetUserView(false);
+      }
     }
   }, [user, loading, navigate, location.state]);
 
@@ -40,8 +47,14 @@ const Index = () => {
   };
 
   const handleProjectsView = () => {
-    setResetUserView(true);
-    setTimeout(() => setResetUserView(false), 100); // Reset after a brief moment
+    // Only reset to listing if NOT coming from project setup flow
+    if (!location.state?.projectRunId) {
+      console.log('🔄 Index: Resetting to project listing (no projectRunId in state)');
+      setResetUserView(true);
+      setTimeout(() => setResetUserView(false), 100);
+    } else {
+      console.log('🚫 Index: NOT resetting to listing - maintaining project workflow');
+    }
   };
 
   // Listen for edit workflow navigation event
@@ -75,7 +88,16 @@ const Index = () => {
       case 'admin':
         return <AdminView />;
       case 'user':
-        return <UserView resetToListing={resetUserView} onProjectSelected={() => setCurrentView('user')} projectRunId={location.state?.projectRunId} />;
+        console.log('🎯 Index: Rendering UserView with state:', {
+          resetToListing: resetUserView,
+          projectRunId: location.state?.projectRunId,
+          hasProjectRunId: !!location.state?.projectRunId
+        });
+        return <UserView 
+          resetToListing={resetUserView} 
+          onProjectSelected={() => setCurrentView('user')} 
+          projectRunId={location.state?.projectRunId} 
+        />;
       case 'editWorkflow':
         return <EditWorkflowView onBackToAdmin={() => setCurrentView('admin')} />;
       default:

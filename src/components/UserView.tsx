@@ -82,18 +82,23 @@ export default function UserView({
   // Load project run if projectRunId is provided
   useEffect(() => {
     if (projectRunId) {
+      console.log('🎯 UserView: Loading project run with ID:', projectRunId);
       const projectRun = projectRuns.find(run => run.id === projectRunId);
       if (projectRun) {
+        console.log('✅ UserView: Found and setting project run:', projectRun.name);
         setCurrentProjectRun(projectRun);
         setViewMode('workflow');
+      } else {
+        console.log('❌ UserView: Project run not found with ID:', projectRunId);
       }
     }
   }, [projectRunId, projectRuns, setCurrentProjectRun]);
 
   // Auto-switch to workflow view when a project or project run is selected (but respect resetToListing)
   useEffect(() => {
-    if ((currentProject || currentProjectRun) && !resetToListing) {
-      console.log("Auto-switching to workflow mode");
+    // DON'T auto-switch if we're being told to reset to listing
+    if (!resetToListing && (currentProject || currentProjectRun)) {
+      console.log("🔄 UserView: Auto-switching to workflow mode");
       setViewMode('workflow');
     }
   }, [currentProject, currentProjectRun, resetToListing]);
@@ -101,7 +106,7 @@ export default function UserView({
   // Reset to listing view when projects view is requested
   useEffect(() => {
     if (resetToListing) {
-      console.log("Resetting to listing mode due to resetToListing prop");
+      console.log("🔄 UserView: Resetting to listing mode due to resetToListing prop");
       setViewMode('listing');
     }
   }, [resetToListing]);
@@ -372,8 +377,9 @@ export default function UserView({
   });
   
   // FIRST PRIORITY: If explicitly requesting listing mode, always show project listing
-  if (resetToListing) {
-    console.log("🔄 PRIORITY: Showing listing due to resetToListing=true");
+  // EXCEPT if we have a projectRunId (coming from project setup flow)
+  if (resetToListing && !projectRunId) {
+    console.log("🔄 PRIORITY: Showing listing due to resetToListing=true (no projectRunId)");
     return <ProjectListing 
       onProjectSelect={project => {
         console.log("Project selected from resetToListing mode:", project);
