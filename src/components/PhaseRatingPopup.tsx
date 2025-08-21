@@ -60,7 +60,7 @@ export function PhaseRatingPopup({
             How'd {phaseName} go?
           </DialogTitle>
           <DialogDescription className="text-center">
-            Rate your experience with this phase
+            Rate your experience with this phase (1-5 scale)
           </DialogDescription>
         </DialogHeader>
 

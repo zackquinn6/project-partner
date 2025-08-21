@@ -360,13 +360,41 @@ export default function UserView({
   // Check if kickoff phase is complete for project runs
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
   
+  console.log("Kickoff debug:", {
+    currentProjectRun: !!currentProjectRun,
+    completedSteps: currentProjectRun?.completedSteps,
+    isKickoffComplete
+  });
+  
   // If project run exists and kickoff is not complete, show kickoff workflow
   if (currentProjectRun && !isKickoffComplete) {
     return (
       <KickoffWorkflow 
-        onKickoffComplete={() => {
-          // Force re-render by updating view mode
-          setViewMode('workflow');
+        onKickoffComplete={async () => {
+          console.log("onKickoffComplete called");
+          // Ensure kickoff phase is properly marked as complete
+          if (currentProjectRun && updateProjectRun) {
+            const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
+            const allKickoffStepsComplete = kickoffStepIds.every(id => 
+              currentProjectRun.completedSteps.includes(id)
+            );
+            
+            console.log("All kickoff steps complete:", allKickoffStepsComplete);
+            
+            if (allKickoffStepsComplete) {
+              // Update project status to in-progress
+              await updateProjectRun({
+                ...currentProjectRun,
+                status: 'in-progress',
+                updatedAt: new Date()
+              });
+              
+              // Force re-render by updating view mode
+              setViewMode('workflow');
+            } else {
+              console.warn("Not all kickoff steps are complete, cannot proceed to workflow");
+            }
+          }
         }} 
       />
     );
