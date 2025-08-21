@@ -537,6 +537,20 @@ export default function UserView({
             
             console.log("✅ Marking all kickoff steps complete:", allSteps);
             
+            // Automatically mark kickoff outputs as complete
+            console.log("📝 Marking kickoff outputs as complete...");
+            setCheckedOutputs(prev => {
+              const newOutputs = { ...prev };
+              
+              // Mark outputs for each kickoff step
+              newOutputs['kickoff-step-1'] = new Set(['overview-output']);
+              newOutputs['kickoff-step-2'] = new Set(['agreement-output']);
+              newOutputs['kickoff-step-3'] = new Set(['planning-output']);
+              
+              console.log("✅ Kickoff outputs marked complete:", newOutputs);
+              return newOutputs;
+            });
+            
             // Update project status to in-progress with all steps
             await updateProjectRun({
               ...currentProjectRun,
@@ -554,7 +568,7 @@ export default function UserView({
           }
         }}
       />
-     );
+    );
   }
   
   // If current project has no workflow steps
@@ -759,7 +773,7 @@ export default function UserView({
                                 />
                                  <div className="flex-1">
                                    <div className="flex items-center gap-2">
-                                     <div className="font-medium">Project Overview</div>
+                                     <div className="font-medium">{output.name}</div>
                                      <Badge variant="outline" className="text-xs capitalize">{output.type}</Badge>
                                      <button
                                        onClick={() => {
