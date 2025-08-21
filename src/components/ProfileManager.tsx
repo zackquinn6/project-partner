@@ -88,10 +88,6 @@ export default function ProfileManager({
   const handleSurveyComplete = () => {
     setShowSurveyEditor(false);
     loadExistingProfile(); // Reload the profile data
-    toast({
-      title: "Profile updated",
-      description: "Your DIY profile has been updated successfully."
-    });
   };
 
   const renderProfileView = () => {
@@ -221,7 +217,7 @@ export default function ProfileManager({
             handleSurveyComplete();
           }
         }}
-        mode="verify"
+        mode="new"
         initialData={{
           skillLevel: existingProfile?.skill_level || "",
           avoidProjects: existingProfile?.avoid_projects || [],

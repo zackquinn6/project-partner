@@ -45,7 +45,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     ownedTools: initialData?.ownedTools || [] as any[]
   });
 
-  const totalSteps = mode === 'verify' ? 6 : 5;
+  const totalSteps = mode === 'verify' ? 7 : 6;
   const progress = (currentStep / totalSteps) * 100;
 
   const usStates = [
@@ -175,6 +175,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       case 3: return answers.physicalCapability !== "";
       case 4: return answers.homeOwnership !== "";
       case 5: return answers.preferredLearningMethods.length > 0;
+      case 6: return true; // Owned tools is optional
       default: return false;
     }
   };
@@ -185,7 +186,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         return (
           <div className="space-y-6">
             <div className="text-center space-y-4">
-              <h3 className="text-2xl font-bold">🔍 Verify Your DIY Profile</h3>
+              <h3 className="text-2xl font-bold">🔍 Update Your DIY Profile</h3>
               <p className="text-muted-foreground">Here's what we have on file. Look good?</p>
             </div>
             
@@ -219,7 +220,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h3 className="text-2xl font-bold">🧠 What's your DIY skill level?</h3>
+              <h3 className="text-2xl font-bold">🧠 What's your builder profile?</h3>
               <p className="text-muted-foreground">Select one:</p>
             </div>
             <RadioGroup value={answers.skillLevel} onValueChange={(value) => setAnswers(prev => ({ ...prev, skillLevel: value }))}>
@@ -268,6 +269,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
             <div className="text-center space-y-2">
               <h3 className="text-2xl font-bold">🚫 What types of projects do you avoid (for now)?</h3>
               <p className="text-muted-foreground">Check all that apply:</p>
+              <p className="text-sm text-muted-foreground">This helps us get a feel for what you aren't so comfortable with. We'll use this while helping you plan out your projects</p>
             </div>
             <div className="space-y-3">
               {[
@@ -278,8 +280,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                 "Plumbing",
                 "Precision & high patience: tiling, trim",
                 "Permit-required stuff",
-                "High heights / ladders",
-                "Open to anything!"
+                "High heights / ladders"
               ].map((project) => (
                 <Card key={project} className="hover:border-primary/50 transition-colors">
                   <CardContent className="p-4">
@@ -451,10 +452,20 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                 </Card>
               ))}
             </div>
+          </div>
+        );
 
-            <div className="mt-6">
+      case 6:
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-bold">🔧 Your owned tools</h3>
+              <p className="text-muted-foreground">Let us know what tools you already have</p>
+            </div>
+            
+            <div className="space-y-4">
               <div className="flex items-center justify-between mb-3">
-                <Label className="text-base font-semibold">Your owned tools</Label>
+                <Label className="text-base font-semibold">Tool Library</Label>
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -504,7 +515,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
             <div className="flex items-center justify-center space-x-2">
               <Sparkles className="w-6 h-6 text-primary" />
               <DialogTitle className="text-2xl font-bold gradient-text">
-                {mode === 'verify' ? "Verify Your Profile" : "Build Your Profile"}
+                {mode === 'verify' ? "Update Your Profile" : "Build Your Profile"}
               </DialogTitle>
               <Sparkles className="w-6 h-6 text-primary" />
             </div>
