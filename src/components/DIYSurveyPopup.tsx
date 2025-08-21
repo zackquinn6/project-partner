@@ -45,7 +45,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     ownedTools: initialData?.ownedTools || [] as any[]
   });
 
-  const totalSteps = mode === 'verify' ? 7 : 6;
+  const totalSteps = mode === 'verify' ? 6 : 5;
   const progress = (currentStep / totalSteps) * 100;
 
   const usStates = [
@@ -170,12 +170,11 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   const canProceed = () => {
     switch (currentStep) {
       case 0: return true; // Verify step
-      case 1: return answers.skillLevel !== "";
+      case 1: return answers.skillLevel !== "" && answers.physicalCapability !== "";
       case 2: return true; // Can proceed even with no selections
-      case 3: return answers.physicalCapability !== "";
-      case 4: return answers.homeOwnership !== "";
-      case 5: return answers.preferredLearningMethods.length > 0;
-      case 6: return true; // Owned tools is optional
+      case 3: return answers.homeOwnership !== "";
+      case 4: return answers.preferredLearningMethods.length > 0;
+      case 5: return true; // Owned tools is optional
       default: return false;
     }
   };
@@ -218,48 +217,99 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
 
       case 1:
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="text-center space-y-2">
-              <h3 className="text-2xl font-bold">🧠 What's your builder profile?</h3>
-              <p className="text-muted-foreground">Select one:</p>
+              <h3 className="text-2xl font-bold">🧠 Experience & Capabilities</h3>
+              <p className="text-muted-foreground">Help us understand your background</p>
             </div>
-            <RadioGroup value={answers.skillLevel} onValueChange={(value) => setAnswers(prev => ({ ...prev, skillLevel: value }))}>
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="newbie" id="newbie" />
-                    <Label htmlFor="newbie" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">🔰 Newbie</div>
-                      <div className="text-sm text-muted-foreground">I'm just getting started—teach me everything.</div>
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="confident" id="confident" />
-                    <Label htmlFor="confident" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">🧰 Confident-ish</div>
-                      <div className="text-sm text-muted-foreground">I've done a few projects and want to level up.</div>
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="hero" id="hero" />
-                    <Label htmlFor="hero" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">🛠️ Hands-on Hero</div>
-                      <div className="text-sm text-muted-foreground">I've tackled big stuff and want to go further.</div>
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
-            </RadioGroup>
+            
+            {/* Experience Level */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <h4 className="text-lg font-semibold">What's your experience level?</h4>
+              </div>
+              <RadioGroup value={answers.skillLevel} onValueChange={(value) => setAnswers(prev => ({ ...prev, skillLevel: value }))}>
+                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="newbie" id="newbie" />
+                      <Label htmlFor="newbie" className="flex-1 cursor-pointer">
+                        <div className="font-semibold">🔰 Newbie</div>
+                        <div className="text-sm text-muted-foreground">I'm just getting started—teach me everything.</div>
+                      </Label>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="confident" id="confident" />
+                      <Label htmlFor="confident" className="flex-1 cursor-pointer">
+                        <div className="font-semibold">🧰 Confident-ish</div>
+                        <div className="text-sm text-muted-foreground">I've done a few projects and want to level up.</div>
+                      </Label>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="hero" id="hero" />
+                      <Label htmlFor="hero" className="flex-1 cursor-pointer">
+                        <div className="font-semibold">🛠️ Hands-on Hero</div>
+                        <div className="text-sm text-muted-foreground">I've tackled big stuff and want to go further.</div>
+                      </Label>
+                    </div>
+                  </CardContent>
+                </Card>
+              </RadioGroup>
+            </div>
+
+            {/* Physical Capability */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <h4 className="text-lg font-semibold">What's your physical capability?</h4>
+              </div>
+              <RadioGroup value={answers.physicalCapability} onValueChange={(value) => setAnswers(prev => ({ ...prev, physicalCapability: value }))}>
+                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="light" id="light" />
+                      <Label htmlFor="light" className="flex-1 cursor-pointer">
+                        <div className="font-semibold">Light-duty only</div>
+                        <div className="text-sm text-muted-foreground">I prefer short sessions - but hey every improvement counts!</div>
+                      </Label>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="medium" id="medium" />
+                      <Label htmlFor="medium" className="flex-1 cursor-pointer">
+                        <div className="font-semibold">Medium-duty</div>
+                        <div className="text-sm text-muted-foreground">I can lift 60lb+ and enough stamina for 1/2-day projects</div>
+                      </Label>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="heavy" id="heavy" />
+                      <Label htmlFor="heavy" className="flex-1 cursor-pointer">
+                        <div className="font-semibold">Heavy-duty</div>
+                        <div className="text-sm text-muted-foreground">I can run full-day projects with heavy lifting</div>
+                      </Label>
+                    </div>
+                  </CardContent>
+                </Card>
+              </RadioGroup>
+            </div>
           </div>
         );
 
@@ -271,7 +321,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               <p className="text-muted-foreground">Check all that apply:</p>
               <p className="text-sm text-muted-foreground">This helps us get a feel for what you aren't so comfortable with. We'll use this while helping you plan out your projects</p>
             </div>
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 "Demo & heavy lifting",
                 "Drywall finishing",
@@ -283,14 +333,14 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                 "High heights / ladders"
               ].map((project) => (
                 <Card key={project} className="hover:border-primary/50 transition-colors">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3">
                     <div className="flex items-center space-x-3">
                       <Checkbox 
                         id={project}
                         checked={answers.avoidProjects.includes(project)}
                         onCheckedChange={(checked) => handleAvoidProjectChange(project, checked as boolean)}
                       />
-                      <Label htmlFor={project} className="cursor-pointer font-medium">
+                      <Label htmlFor={project} className="cursor-pointer font-medium text-sm">
                         {project}
                       </Label>
                     </div>
@@ -302,53 +352,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         );
 
       case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h3 className="text-2xl font-bold">💪 What's your physical capability?</h3>
-              <p className="text-muted-foreground">Select one:</p>
-            </div>
-            <RadioGroup value={answers.physicalCapability} onValueChange={(value) => setAnswers(prev => ({ ...prev, physicalCapability: value }))}>
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="light" id="light" />
-                    <Label htmlFor="light" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Light-duty only</div>
-                      <div className="text-sm text-muted-foreground">I prefer short sessions - but hey every improvement counts!</div>
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="medium" id="medium" />
-                    <Label htmlFor="medium" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Medium-duty</div>
-                      <div className="text-sm text-muted-foreground">I can lift 60lb+ and enough stamina for 1/2-day projects</div>
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="heavy" id="heavy" />
-                    <Label htmlFor="heavy" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Heavy-duty</div>
-                      <div className="text-sm text-muted-foreground">I can run full-day projects with heavy lifting</div>
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
-            </RadioGroup>
-          </div>
-        );
-
-      case 4:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -423,7 +426,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
         );
 
-      case 5:
+      case 4:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -455,7 +458,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
         );
 
-      case 6:
+      case 5:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
