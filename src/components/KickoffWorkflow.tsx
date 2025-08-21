@@ -80,7 +80,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
     await updateProjectRun({
       ...currentProjectRun,
       completedSteps: newCompletedSteps,
-      progress: (newCompletedSteps.length / getTotalStepsCount()) * 100,
+      progress: Math.round((newCompletedSteps.length / getTotalStepsCount()) * 100),
       updatedAt: new Date()
     });
 
@@ -238,7 +238,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
               Kickoff Complete! 🎉
             </h3>
             <p className="text-green-700 mb-4">
-              Great job! You've completed all the kickoff steps. You can now access the full project workflow.
+              Nice work — you've wrapped up all your kickoff steps! Your full project workflow is ready and waiting for you to dive in.
             </p>
             <Button onClick={onKickoffComplete} className="bg-green-600 hover:bg-green-700">
               Start Project Workflow
