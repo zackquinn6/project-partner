@@ -64,6 +64,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
     });
+    
+    // Log failed login attempts
+    if (error) {
+      try {
+        await supabase.rpc('log_failed_login', {
+          user_email: email,
+          ip_addr: null, // Browser can't access IP
+          user_agent_string: navigator.userAgent
+        });
+      } catch (logError) {
+        console.warn('Failed to log login attempt:', logError);
+      }
+    }
+    
     return { error };
   };
 
