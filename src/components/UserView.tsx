@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Info, ShoppingCart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Info, ShoppingCart, Plus, Award } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
 import { Output } from '@/interfaces/Project';
@@ -19,6 +19,9 @@ import { HelpPopup } from './HelpPopup';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { OrderingWindow } from './OrderingWindow';
 import { KickoffWorkflow } from './KickoffWorkflow';
+import { UnplannedWorkWindow } from './UnplannedWorkWindow';
+import { CompletionCertificate } from './CompletionCertificate';
+import { ProjectSurvey } from './ProjectSurvey';
 import { isKickoffPhaseComplete, addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 interface UserViewProps {
   resetToListing?: boolean;
@@ -74,6 +77,11 @@ export default function UserView({
   const [phaseRatingOpen, setPhaseRatingOpen] = useState(false);
   const [currentCompletedPhaseName, setCurrentCompletedPhaseName] = useState<string>("");
   const [phaseCompletionOpen, setPhaseCompletionOpen] = useState(false);
+
+  // New windows state
+  const [unplannedWorkOpen, setUnplannedWorkOpen] = useState(false);
+  const [completionCertificateOpen, setCompletionCertificateOpen] = useState(false);
+  const [projectSurveyOpen, setProjectSurveyOpen] = useState(false);
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
@@ -232,6 +240,63 @@ export default function UserView({
         newSet.add(outputId);
       }
       return { ...prev, [stepId]: newSet };
+    });
+  };
+
+  // Time tracking functions
+  const startTimeTracking = async (type: 'phase' | 'operation' | 'step', id: string) => {
+    if (!currentProjectRun) return;
+    
+    const now = new Date().toISOString();
+    const timeTracking = currentProjectRun.time_tracking || {};
+    
+    const updatedTimeTracking = {
+      ...timeTracking,
+      [type + 's']: {
+        ...timeTracking[type + 's' as keyof typeof timeTracking],
+        [id]: {
+          ...timeTracking[type + 's' as keyof typeof timeTracking]?.[id],
+          startTime: now
+        }
+      }
+    };
+    
+    await updateProjectRun({
+      ...currentProjectRun,
+      time_tracking: updatedTimeTracking,
+      updatedAt: new Date()
+    });
+  };
+
+  const endTimeTracking = async (type: 'phase' | 'operation' | 'step', id: string) => {
+    if (!currentProjectRun) return;
+    
+    const now = new Date().toISOString();
+    const timeTracking = currentProjectRun.time_tracking || {};
+    const currentEntry = timeTracking[type + 's' as keyof typeof timeTracking]?.[id];
+    
+    if (!currentEntry?.startTime) return;
+    
+    const startTime = new Date(currentEntry.startTime);
+    const endTime = new Date(now);
+    const totalTime = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)); // in minutes
+    
+    const updatedTimeTracking = {
+      ...timeTracking,
+      [type + 's']: {
+        ...timeTracking[type + 's' as keyof typeof timeTracking],
+        [id]: {
+          ...currentEntry,
+          endTime: now,
+          totalTime
+        }
+      }
+    };
+    
+    await updateProjectRun({
+      ...currentProjectRun,
+      time_tracking: updatedTimeTracking,
+      updatedAt: new Date()
     });
   };
 
@@ -673,10 +738,22 @@ export default function UserView({
               <Button 
                 variant="outline" 
                 onClick={() => setHelpPopupOpen(true)}
-                className="w-full bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                className="w-full bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
               >
                 Stuck? Get Help
               </Button>
+              
+              {/* Add unplanned work button */}
+              {isKickoffComplete && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setUnplannedWorkOpen(true)}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Unplanned Work
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -1161,6 +1238,37 @@ export default function UserView({
         isOpen={helpPopupOpen}
         onClose={() => setHelpPopupOpen(false)}
       />
+      
+      {/* Unplanned Work Window */}
+      <UnplannedWorkWindow
+        isOpen={unplannedWorkOpen}
+        onClose={() => setUnplannedWorkOpen(false)}
+      />
+      
+      {/* Completion Certificate */}
+      {currentProjectRun && (
+        <CompletionCertificate
+          isOpen={completionCertificateOpen}
+          onClose={() => setCompletionCertificateOpen(false)}
+          projectName={currentProjectRun.name}
+          startDate={currentProjectRun.startDate}
+          endDate={currentProjectRun.endDate || new Date()}
+          projectLeader={currentProjectRun.projectLeader}
+        />
+      )}
+      
+      {/* Project Survey */}
+      {currentProjectRun && (
+        <ProjectSurvey
+          isOpen={projectSurveyOpen}
+          onClose={() => setProjectSurveyOpen(false)}
+          projectName={currentProjectRun.name}
+          onComplete={() => {
+            // Survey completed, project fully finished
+            console.log('Project survey completed');
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -46,4 +46,31 @@ export interface ProjectRun {
     comments: string;
     timestamp: string;
   }>;
+  
+  // Time tracking data
+  time_tracking?: {
+    phases?: Record<string, {
+      startTime?: string;
+      endTime?: string;
+      totalTime?: number; // in minutes
+    }>;
+    operations?: Record<string, {
+      startTime?: string;
+      endTime?: string;
+      totalTime?: number; // in minutes
+    }>;
+    steps?: Record<string, {
+      startTime?: string;
+      endTime?: string;
+      totalTime?: number; // in minutes
+    }>;
+  };
+  
+  // Survey data
+  survey_data?: {
+    satisfaction: number; // 1-5
+    confidenceChallenges: string;
+    improvementSuggestions: string;
+    submittedAt: string;
+  };
 }
