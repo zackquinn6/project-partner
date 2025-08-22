@@ -77,6 +77,9 @@ export default function UserView({
   const [phaseRatingOpen, setPhaseRatingOpen] = useState(false);
   const [currentCompletedPhaseName, setCurrentCompletedPhaseName] = useState<string>("");
   const [phaseCompletionOpen, setPhaseCompletionOpen] = useState(false);
+  
+  // CRITICAL FIX: Store the completed phase object before navigation changes currentStep
+  const [completedPhase, setCompletedPhase] = useState<any>(null);
 
   // New windows state
   const [unplannedWorkOpen, setUnplannedWorkOpen] = useState(false);
@@ -457,7 +460,11 @@ export default function UserView({
         
         if (isPhaseComplete) {
           console.log("🎯 Phase completed:", currentPhase.name);
+          
+          // CRITICAL FIX: Store completed phase BEFORE navigation changes currentStep
+          setCompletedPhase(currentPhase);
           setCurrentCompletedPhaseName(currentPhase.name);
+          
           // End time tracking for phase
           endTimeTracking('phase', currentPhase.id);
           setPhaseCompletionOpen(true);
@@ -876,6 +883,8 @@ export default function UserView({
             console.log("🎯 Marking kickoff phase as complete...");
             const kickoffPhase = currentProjectRun.phases.find(phase => phase.name === 'Kickoff');
             if (kickoffPhase) {
+              // CRITICAL FIX: Store completed phase for popup
+              setCompletedPhase(kickoffPhase);
               setCurrentCompletedPhaseName(kickoffPhase.name);
               
               // Add phase rating for kickoff phase
@@ -1435,15 +1444,25 @@ export default function UserView({
         progress={progress}
         projectName={activeProject?.name}
       />
-      {/* Phase Completion Popup */}
+      {/* Phase Completion Popup - FIXED: Use stored completedPhase instead of getCurrentPhase() */}
       <PhaseCompletionPopup
         open={phaseCompletionOpen}
-        onOpenChange={setPhaseCompletionOpen}
-        phase={getCurrentPhase()}
+        onOpenChange={(open) => {
+          console.log("🔧 PHASE COMPLETION POPUP:", {
+            opening: open,
+            completedPhase: completedPhase?.name,
+            currentStepAfterNav: currentStep?.step,
+            currentStepPhaseAfterNav: currentStep?.phaseName
+          });
+          setPhaseCompletionOpen(open);
+        }}
+        phase={completedPhase}
         checkedOutputs={checkedOutputs}
         onOutputToggle={toggleOutputCheck}
         onPhaseComplete={() => {
+          console.log("🎯 Phase completion confirmed for:", completedPhase?.name);
           setPhaseCompletionOpen(false);
+          setCompletedPhase(null); // Clear stored phase
           setPhaseRatingOpen(true);
         }}
       />
@@ -1479,6 +1498,9 @@ export default function UserView({
               
               if (isPhaseComplete) {
                 console.log("Ordering phase completed, triggering phase completion");
+                
+                // CRITICAL FIX: Store completed phase BEFORE any navigation
+                setCompletedPhase(currentPhase);
                 setCurrentCompletedPhaseName(currentPhase.name);
                 setPhaseCompletionOpen(true);
               }
