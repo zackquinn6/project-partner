@@ -6,7 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink, Globe } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Project, Material, Tool } from "@/interfaces/Project";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,10 +35,30 @@ const SHOPPING_SITES: ShoppingSite[] = [
 
 export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, onOrderingComplete }: OrderingWindowProps) {
   const [currentUrl, setCurrentUrl] = useState<string>(SHOPPING_SITES[0].url);
+  const [urlInput, setUrlInput] = useState<string>("");
   const [checklistVisible, setChecklistVisible] = useState(true);
   const [orderedTools, setOrderedTools] = useState<Set<string>>(new Set());
   const [orderedMaterials, setOrderedMaterials] = useState<Set<string>>(new Set());
   const [userProfile, setUserProfile] = useState<any>(null);
+
+  const handleNavigateToUrl = () => {
+    let url = urlInput.trim();
+    if (!url) return;
+    
+    // Add https:// if no protocol is specified
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
+    setCurrentUrl(url);
+    setUrlInput("");
+  };
+
+  const handleUrlKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleNavigateToUrl();
+    }
+  };
 
   // Fetch user profile to get owned tools
   useEffect(() => {
@@ -198,7 +219,7 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
               </div>
               
               {/* Shopping Site Buttons */}
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap mb-4">
                 {SHOPPING_SITES.map((site) => (
                   <div key={site.name} className="flex gap-1">
                     <Button
@@ -218,6 +239,26 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
                     </Button>
                   </div>
                 ))}
+              </div>
+              
+              {/* Custom URL Input */}
+              <div className="flex gap-2 items-center">
+                <Globe className="w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Enter any website URL (e.g., homedepot.com)"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  onKeyPress={handleUrlKeyPress}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleNavigateToUrl}
+                  variant="outline"
+                  size="sm"
+                  disabled={!urlInput.trim()}
+                >
+                  Go
+                </Button>
               </div>
             </div>
             
