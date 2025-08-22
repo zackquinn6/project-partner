@@ -78,10 +78,12 @@ export type Database = {
           created_at: string
           display_name: string | null
           email: string | null
+          full_name: string | null
           home_build_year: string | null
           home_ownership: string | null
           home_state: string | null
           id: string
+          nickname: string | null
           owned_tools: Json | null
           physical_capability: string | null
           preferred_learning_methods: string[] | null
@@ -97,10 +99,12 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          full_name?: string | null
           home_build_year?: string | null
           home_ownership?: string | null
           home_state?: string | null
           id?: string
+          nickname?: string | null
           owned_tools?: Json | null
           physical_capability?: string | null
           preferred_learning_methods?: string[] | null
@@ -116,10 +120,12 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          full_name?: string | null
           home_build_year?: string | null
           home_ownership?: string | null
           home_state?: string | null
           id?: string
+          nickname?: string | null
           owned_tools?: Json | null
           physical_capability?: string | null
           preferred_learning_methods?: string[] | null

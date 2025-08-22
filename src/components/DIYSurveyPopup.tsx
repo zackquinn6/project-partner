@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, ArrowLeft, Sparkles, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 import OwnedToolsEditor from "./OwnedToolsEditor";
 
 interface DIYSurveyPopupProps {
@@ -25,6 +26,8 @@ interface DIYSurveyPopupProps {
     homeState?: string;
     preferredLearningMethods?: string[];
     ownedTools?: any[];
+    fullName?: string;
+    nickname?: string;
   };
 }
 
@@ -42,10 +45,12 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     homeBuildYear: initialData?.homeBuildYear || "",
     homeState: initialData?.homeState || "",
     preferredLearningMethods: initialData?.preferredLearningMethods || [] as string[],
-    ownedTools: initialData?.ownedTools || [] as any[]
+    ownedTools: initialData?.ownedTools || [] as any[],
+    fullName: initialData?.fullName || "",
+    nickname: initialData?.nickname || ""
   });
 
-  const totalSteps = mode === 'verify' ? 6 : 5;
+  const totalSteps = mode === 'verify' ? 7 : 6;
   const progress = (currentStep / totalSteps) * 100;
 
   const usStates = [
@@ -84,6 +89,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           const { error } = await supabase
             .from('profiles')
             .update({
+              full_name: answers.fullName,
+              nickname: answers.nickname,
               skill_level: answers.skillLevel,
               avoid_projects: answers.avoidProjects,
               physical_capability: answers.physicalCapability,
@@ -170,11 +177,12 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   const canProceed = () => {
     switch (currentStep) {
       case 0: return true; // Verify step
-      case 1: return answers.skillLevel !== "" && answers.physicalCapability !== "";
-      case 2: return true; // Can proceed even with no selections
-      case 3: return answers.homeOwnership !== "";
-      case 4: return answers.preferredLearningMethods.length > 0;
-      case 5: return true; // Owned tools is optional
+      case 1: return answers.fullName.trim() !== ""; // Name step - require full name
+      case 2: return answers.skillLevel !== "" && answers.physicalCapability !== "";
+      case 3: return true; // Can proceed even with no selections
+      case 4: return answers.homeOwnership !== "";
+      case 5: return answers.preferredLearningMethods.length > 0;
+      case 6: return true; // Owned tools is optional
       default: return false;
     }
   };
@@ -216,6 +224,43 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         );
 
       case 1:
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-bold">👋 Tell us about yourself!</h3>
+              <p className="text-muted-foreground">Let's start with the basics</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="fullName" className="text-base font-semibold">Full Name *</Label>
+                <Input
+                  id="fullName"
+                  value={answers.fullName}
+                  onChange={(e) => setAnswers(prev => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Enter your full name"
+                  className="mt-2"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="nickname" className="text-base font-semibold">Project Nickname</Label>
+                <Input
+                  id="nickname"
+                  value={answers.nickname}
+                  onChange={(e) => setAnswers(prev => ({ ...prev, nickname: e.target.value }))}
+                  placeholder="Choose a fun name like 'The Great One' or 'Prime Time'"
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  💡 Choose a fun project name like "The Great One" or "Prime Time" to make your DIY journey more exciting!
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
         return (
           <div className="space-y-8">
             <div className="text-center space-y-2">
@@ -313,7 +358,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
         );
 
-      case 2:
+      case 3:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -351,7 +396,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -426,7 +471,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -458,7 +503,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
         );
 
-      case 5:
+      case 6:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
