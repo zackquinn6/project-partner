@@ -80,7 +80,7 @@ export default function UserView({
   const activeProject = currentProjectRun || currentProject;
   
   // Flatten all steps with standard phases included
-  const allSteps = currentProject ? addStandardPhasesToProjectRun(currentProject.phases).flatMap(phase => 
+  const allSteps = activeProject ? addStandardPhasesToProjectRun(activeProject.phases).flatMap(phase => 
     phase.operations.flatMap(operation => 
       operation.steps.map(step => ({
         ...step,
