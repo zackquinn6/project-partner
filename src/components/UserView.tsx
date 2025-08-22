@@ -420,13 +420,17 @@ export default function UserView({
       return null;
     }
     
+    // Use the same processed phases as allSteps to ensure consistency
+    const processedPhases = addStandardPhasesToProjectRun(activeProject.phases);
+    
     console.log("🔍 getCurrentPhase: Searching for step", {
       stepId: currentStep.id,
       stepName: currentStep.step,
-      totalPhases: activeProject.phases.length
+      totalPhases: processedPhases.length,
+      phaseNames: processedPhases.map(p => p.name)
     });
     
-    for (const phase of activeProject.phases) {
+    for (const phase of processedPhases) {
       console.log("🔍 Checking phase:", phase.name, "with", phase.operations?.length || 0, "operations");
       for (const operation of phase.operations || []) {
         console.log("🔍 Checking operation:", operation.name, "with", operation.steps?.length || 0, "steps");
@@ -577,14 +581,23 @@ export default function UserView({
     }
   };
 
-  // Group steps by phase and operation for sidebar navigation
-  const groupedSteps = activeProject?.phases.reduce((acc, phase) => {
+  // Group steps by phase and operation for sidebar navigation - FIXED: Use processed phases with standard phases
+  const processedPhases = activeProject ? addStandardPhasesToProjectRun(activeProject.phases) : [];
+  const groupedSteps = processedPhases.reduce((acc, phase) => {
     acc[phase.name] = phase.operations.reduce((opAcc, operation) => {
       opAcc[operation.name] = operation.steps;
       return opAcc;
     }, {} as Record<string, any[]>);
     return acc;
   }, {} as Record<string, Record<string, any[]>>) || {};
+  
+  console.log("🔍 Debug phase structure:", {
+    originalPhases: activeProject?.phases.length || 0,
+    processedPhases: processedPhases.length,
+    phaseNames: processedPhases.map(p => p.name),
+    currentStepId: currentStep?.id,
+    currentStepName: currentStep?.step
+  });
   
   console.log("UserView debug:", {
     resetToListing,
