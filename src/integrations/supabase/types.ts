@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      failed_login_attempts: {
+        Row: {
+          attempt_time: string
+          email: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+        }
+        Insert: {
+          attempt_time?: string
+          email: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+        }
+        Update: {
+          attempt_time?: string
+          email?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           created_at: string
@@ -265,6 +289,42 @@ export type Database = {
         }
         Relationships: []
       }
+      role_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          role: string
+          target_user_email: string | null
+          target_user_id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          role: string
+          target_user_email?: string | null
+          target_user_id: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          role?: string
+          target_user_email?: string | null
+          target_user_id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tools: {
         Row: {
           created_at: string
@@ -319,6 +379,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          id: string
+          ip_address: unknown | null
+          is_active: boolean
+          session_end: string | null
+          session_start: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          session_end?: string | null
+          session_start?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          session_end?: string | null
+          session_start?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -328,9 +418,29 @@ export type Database = {
         Args: { user_email: string }
         Returns: string
       }
+      cleanup_old_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      delete_user_data: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
+      export_user_data: {
+        Args: { user_uuid: string }
+        Returns: Json
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      log_failed_login: {
+        Args: {
+          ip_addr?: string
+          user_agent_string?: string
+          user_email: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
