@@ -8,43 +8,43 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 40 100% 99%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 100%;
+    --foreground: 218 72% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 218 72% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 218 72% 14%;
 
-    --primary: 20 95% 58%;
+    --primary: 218 72% 14%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 35 100% 75%;
+    --primary-glow: 218 72% 24%;
 
-    --secondary: 40 100% 96%;
-    --secondary-foreground: 20 80% 40%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 218 72% 14%;
 
-    --muted: 42 50% 96%;
+    --muted: 0 0% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 35 100% 95%;
-    --accent-foreground: 20 80% 40%;
+    --accent: 25 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 42 30% 91%;
-    --input: 42 30% 94%;
-    --ring: 20 95% 58%;
+    --border: 0 0% 91%;
+    --input: 0 0% 94%;
+    --ring: 25 100% 50%;
 
-    /* Custom design tokens - Orange theme */
-    --gradient-primary: linear-gradient(135deg, hsl(20 95% 58%) 0%, hsl(35 100% 75%) 100%);
-    --gradient-subtle: linear-gradient(135deg, hsl(40 100% 99%) 0%, hsl(42 50% 96%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(42 50% 98%) 100%);
+    /* Custom design tokens - Sports DIY theme */
+    --gradient-primary: linear-gradient(135deg, hsl(218 72% 14%) 0%, hsl(25 100% 50%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 96%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
     
-    --shadow-elegant: 0 10px 30px -10px hsl(20 95% 58% / 0.3);
-    --shadow-card: 0 4px 20px -4px hsl(20 95% 58% / 0.15);
-    --shadow-soft: 0 2px 10px -2px hsl(42 30% 70% / 0.2);
+    --shadow-elegant: 0 10px 30px -10px hsl(25 100% 50% / 0.3);
+    --shadow-card: 0 4px 20px -4px hsl(25 100% 50% / 0.15);
+    --shadow-soft: 0 2px 10px -2px hsl(0 0% 70% / 0.2);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -78,9 +78,9 @@ All colors MUST be HSL.
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 35 100% 75%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --primary-glow: 35 100% 85%;
+    --primary: 218 72% 14%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 218 72% 24%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -88,23 +88,23 @@ All colors MUST be HSL.
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 25 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 35 100% 75%;
+    --ring: 25 100% 50%;
 
-    /* Dark mode custom tokens - Orange theme */
-    --gradient-primary: linear-gradient(135deg, hsl(35 100% 75%) 0%, hsl(20 95% 65%) 100%);
+    /* Dark mode custom tokens - Sports DIY theme */
+    --gradient-primary: linear-gradient(135deg, hsl(218 72% 14%) 0%, hsl(25 100% 50%) 100%);
     --gradient-subtle: linear-gradient(135deg, hsl(222.2 84% 4.9%) 0%, hsl(217.2 32.6% 17.5%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(222.2 84% 4.9%) 0%, hsl(217.2 32.6% 15%) 100%);
     
-    --shadow-elegant: 0 10px 30px -10px hsl(35 100% 75% / 0.4);
-    --shadow-card: 0 4px 20px -4px hsl(35 100% 75% / 0.2);
+    --shadow-elegant: 0 10px 30px -10px hsl(25 100% 50% / 0.4);
+    --shadow-card: 0 4px 20px -4px hsl(25 100% 50% / 0.2);
     --shadow-soft: 0 2px 10px -2px hsl(0 0% 0% / 0.3);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;

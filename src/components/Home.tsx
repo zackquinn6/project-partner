@@ -1,214 +1,511 @@
+import { ArrowRight, CheckCircle, Target, Wrench, Trophy, Users, Gamepad2, ShieldCheck, Clock, Star, Zap, MapPin, Play, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Shield, Users, ArrowRight, CheckCircle, Route, Target, TrendingUp } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import generalDiyImage from "@/assets/general-diy.png";
-import Autoplay from "embla-carousel-autoplay";
+import { Badge } from "@/components/ui/badge";
+
+// Import placeholder images
+import generalDiy from "@/assets/general-diy.png";
+import interiorPainting from "@/assets/interior-painting-placeholder.jpg";
+import landscaping from "@/assets/landscaping-placeholder.jpg";
+import lighting from "@/assets/lighting-placeholder.jpg";
+import lvpFlooring from "@/assets/lvp-flooring-placeholder.jpg";
+import tilBacksplash from "@/assets/tile-backsplash-placeholder.jpg";
+import heroWorkflow from "@/assets/hero-workflow.jpg";
+
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
-export default function Home({
-  onViewChange
-}: HomeProps) {
-  const navigate = useNavigate();
-  const projects = ["Interior painting", "Tile flooring", "LVP flooring", "Tile backsplash", "Landscaping", "Power washing", "Smart home", "Drywall", "Lighting", "Home maintenance"];
-  // Triple projects for seamless infinite scroll
-  const infiniteProjects = [...projects, ...projects, ...projects];
-  const features = [{
+
+const projectImages = [
+  { src: interiorPainting, alt: "Interior Painting Project" },
+  { src: landscaping, alt: "Landscaping Project" },
+  { src: lighting, alt: "Lighting Installation" },
+  { src: lvpFlooring, alt: "LVP Flooring Installation" },
+  { src: tilBacksplash, alt: "Tile Backsplash Installation" },
+  { src: generalDiy, alt: "General DIY Projects" },
+];
+
+const features = [
+  {
     icon: Target,
-    title: "Your Project, Your Way — From Day One",
-    description: "The first move is tailoring every detail to your exact job. Swap, tweak, and adapt your plan before lifting a tool. Millions of pros and DIYers have already paid the tuition in mistakes — you don't have to. And when the inevitable curveball shows up, your plan flexes with you, not against you."
-  }, {
-    icon: CheckCircle,
-    title: "More Than \"How-To,\" It's \"What-Works\"",
-    description: "Tech tips and how-to clips are just fragments. Overconfidence thrives in the gaps between them. This is the most complete real‑world knowledge base you'll find — aggregated from countless builds, fixes, and rescues — turning scattered advice into one friction‑free, detail‑rich sequence built for finishing, not floundering."
-  }, {
-    icon: Users,
-    title: "Finish Strong — Or Get Backup Fast",
-    description: "Progress is visible in real‑time, so you know exactly where you stand. Stay tethered to a partner who can nudge, check, or jump in when you're stuck. It's not just a \"project tracker\" — it's a pressure‑release valve and a safety net, all in one."
-  }];
-  return <div className="min-h-screen">
+    title: "Every Champion Starts with a Gameplan",
+    description: "DIY Profile: Understand your skills, tools, and time. Project Profile: Define scope, budget, and risk factors. Step-by-Step Plan: Clear plays to follow, no guesswork."
+  },
+  {
+    icon: Wrench,
+    title: "Gear Up and Get It Done",
+    description: "The Right Tools: Rent or source exactly what you need. Materials in Hand: No wasted trips to the store. Know-How at Your Fingertips: Clear instructions, pro tips, and safety guidance."
+  },
+  {
+    icon: Trophy,
+    title: "Cross the Finish Line Like a Pro",
+    description: "Stay Motivated: Progress tracking and quick wins. Overcome Roadblocks: Fast answers and problem-solving. Final Touches: Ensure quality and safety before you call it done."
+  }
+];
+
+const userTypes = [
+  {
+    icon: "🐣",
+    title: "Newbies",
+    description: "Start small, learn the ropes, and build confidence with guided, low risk projects."
+  },
+  {
+    icon: "🚀", 
+    title: "Intermediate DIYers",
+    description: "Ready for bigger challenges but missing a few tools or tricks? We fill the gaps so you can take on advanced builds with confidence."
+  },
+  {
+    icon: "🏆",
+    title: "Advanced DIYers", 
+    description: "You've got the skills, but even pros benefit from structured plans, the right gear, and a partner to keep momentum high."
+  }
+];
+
+const roadblocks = [
+  {
+    icon: Target,
+    title: "Shaky Project Quality",
+    description: "No more \"good enough.\" We guide you to pro‑level results you can be proud of."
+  },
+  {
+    icon: Wrench,
+    title: "Missing the Right Tools",
+    description: "Stop improvising with the wrong gear. We make sure you've got exactly what the job needs."
+  },
+  {
+    icon: MapPin,
+    title: "Endless Store Runs",
+    description: "Plan once, shop once. We help you get everything in hand before you start."
+  },
+  {
+    icon: ShieldCheck,
+    title: "Unwelcome Surprises",
+    description: "We can't erase every curveball, but our prep means you'll face far fewer than most DIYers."
+  },
+  {
+    icon: Clock,
+    title: "Losing Momentum",
+    description: "Stay on track with progress check‑ins, quick wins, and a clear finish line."
+  }
+];
+
+const howItWorksSteps = [
+  {
+    step: "1",
+    title: "Gameplan",
+    description: "We create your DIY and project profiles, then map your step-by-step plan."
+  },
+  {
+    step: "2", 
+    title: "Execute",
+    description: "Get the right tools, materials, and know-how exactly when you need them."
+  },
+  {
+    step: "3",
+    title: "Finish Strong", 
+    description: "Stay on track, solve problems fast, and wrap up with confidence."
+  }
+];
+
+const Home = ({ onViewChange }: HomeProps) => {
+  const handleScrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleStartGameplan = () => {
+    onViewChange('user');
+  };
+
+  return (
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="container mx-auto px-6 py-20">
+      <section className="relative overflow-hidden bg-gradient-primary py-20 md:py-32">
+        <div className="absolute inset-0 bg-primary/90" />
+        <div className="relative container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
-                  Confidently Get {" "}
-                  <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">
-                    Results You Want
-                  </span>
-                </h1>
-                <h2 className="text-2xl lg:text-3xl font-semibold text-muted-foreground mb-4">
-                  A Guided Home Improvement Experience
-                </h2>
-                <p className="text-xl text-muted-foreground max-w-2xl">Expert-designed processes + digital tools + accountability—confidently finish every home improvement project. </p>
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-accent/20 text-accent-foreground px-4 py-2 rounded-full mb-6">
+                <Trophy className="h-5 w-5" />
+                <span className="text-sm font-medium">Project Partner</span>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button onClick={() => navigate('/projects')} size="lg" className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth">
-                  <Target className="w-5 h-5 mr-2" />
-                  Start My Project
-                  <ArrowRight className="w-5 h-5 ml-2" />
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6">
+                🏆 Win the Game of DIY
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">
+                Your home projects aren't just tasks — they're challenges to conquer. Project Partner is your coach, teammate, and gear manager in one. From gameplan to strong finish, we help you play smarter, not harder.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Button 
+                  size="lg" 
+                  variant="secondary"
+                  onClick={handleStartGameplan}
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-4 text-lg"
+                >
+                  Start Your Gameplan
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => handleScrollToSection('how-it-works')}
+                  className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8 py-4 text-lg"
+                >
+                  <Eye className="mr-2 h-5 w-5" />
+                  See How It Works
+                </Button>
               </div>
-
+            </div>
+            
+            <div className="relative">
+              <img 
+                src={heroWorkflow} 
+                alt="DIY Project Workflow" 
+                className="rounded-xl shadow-elegant w-full"
+              />
             </div>
           </div>
         </div>
-        
-        {/* Projects Carousel - Full Width */}
-        <div className="w-full bg-gradient-to-r from-card/20 to-card/40 py-8">
-          <Carousel className="w-full" opts={{
-          align: "start",
-          loop: true,
-          skipSnaps: true,
-          dragFree: true,
-          duration: 10000
-        }} plugins={[Autoplay({
-          delay: 1500,
-          stopOnInteraction: false,
-          stopOnMouseEnter: true,
-          stopOnFocusIn: false,
-          playOnInit: true
-        })]}>
-            <CarouselContent className="-ml-1">
-              {infiniteProjects.map((project, index) => <CarouselItem key={`${project}-${index}`} className="pl-1 basis-1/4 md:basis-1/5 lg:basis-1/6">
-                  <div className="p-1">
-                    <Card className="border-primary/20 bg-card/70 hover:bg-card transition-smooth">
-                      <CardContent className="flex items-center justify-center p-4">
-                        <span className="text-sm font-medium text-center leading-tight">
-                          {project}
-                        </span>
-                      </CardContent>
-                    </Card>
+      </section>
+
+      {/* Project Carousel */}
+      <section className="py-16 bg-secondary">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Ready to Tackle Your Next Challenge?
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              From simple fixes to major transformations
+            </p>
+          </div>
+          
+          <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide">
+            {projectImages.map((image, index) => (
+              <div key={index} className="flex-shrink-0 w-80">
+                <Card className="overflow-hidden hover:shadow-card transition-all duration-300 hover:scale-105">
+                  <div className="aspect-video overflow-hidden">
+                    <img
+                      src={image.src}
+                      alt={image.alt}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                </CarouselItem>)}
-            </CarouselContent>
-          </Carousel>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-lg">{image.alt}</h3>
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-card/30">
-        <div className="container mx-auto px-6">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold">Personalized from Step One</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">The whole playbook - backed every step of the way</p>
+      {/* The Playbook: Features */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 text-primary border-primary">
+              📋 The Playbook 
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
+              Every Champion Starts with a Gameplan
+            </h2>
+            <p className="text-xl text-muted-foreground italic">
+              "A good plan turns a weekend warrior into a project MVP."
+            </p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-smooth">
-                <CardHeader className="text-center">
-                  <div className="w-16 h-16 gradient-primary rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <feature.icon className="w-8 h-8 text-white" />
+            {features.map((feature, index) => (
+              <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <feature.icon className="h-8 w-8 text-primary-foreground" />
                   </div>
                   <CardTitle className="text-xl">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-center text-base">
+                  <CardDescription className="text-center text-base leading-relaxed">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
-              </Card>)}
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-20 bg-muted/20">
-        <div className="container mx-auto px-6">
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold">
-              How It <span className="text-primary">Works</span>
+      {/* On the Field Quote */}
+      <section className="py-16 bg-accent/5">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+            🔧 On the Field: Execution
+          </h2>
+          <p className="text-xl text-muted-foreground italic">
+            "Confidence comes from knowing you've got the right gear and the right moves."
+          </p>
+        </div>
+      </section>
+
+      {/* Strong Finish Quote */}
+      <section className="py-16">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+            🏁 The Strong Finish
+          </h2>
+          <p className="text-xl text-muted-foreground italic">
+            "Finishing strong means no loose ends — just results you're proud of."
+          </p>
+        </div>
+      </section>
+
+      {/* Personalized Projects */}
+      <section className="py-20 bg-secondary">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 text-accent border-accent">
+              🎯 Your Project, Your Playbook
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
+              Why Personalized Projects Win
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
+              Generic advice leads to generic results. Project Partner tailors every step to your skill level and learning style, available tools and workspace, budget and timeline, and your home's unique quirks and risks.
+            </p>
+            <p className="text-xl text-accent font-semibold mt-6 italic">
+              "Personalization means fewer mistakes, faster progress, and a better final score."
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Who It's For */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
+              🙌 Every DIYer Has a Place on the Team
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
+              Whether you're picking up a hammer for the first time or you've been building for years, Project Partner meets you where you are — and helps you level up.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {userTypes.map((userType, index) => (
+              <Card key={index} className="text-center gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
+                <CardHeader>
+                  <div className="text-4xl mb-4">{userType.icon}</div>
+                  <CardTitle className="text-xl">{userType.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base leading-relaxed">
+                    {userType.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          
+          <div className="text-center">
+            <p className="text-xl text-accent font-semibold italic">
+              "No matter your starting point, we help you finish stronger."
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 5 Biggest Roadblocks */}
+      <section className="py-20 bg-accent/5">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 text-destructive border-destructive">
+              💥 Roadblock Crusher
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
+              🚫 We Take the Frustration Out of DIY
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
+              Every DIYer hits the same walls — but with Project Partner, you'll break through them faster and with fewer headaches.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {roadblocks.map((roadblock, index) => (
+              <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
+                <CardHeader className="pb-4">
+                  <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mb-3">
+                    <roadblock.icon className="h-6 w-6 text-accent-foreground" />
+                  </div>
+                  <CardTitle className="text-lg">{roadblock.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base leading-relaxed">
+                    {roadblock.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 text-primary border-primary">
+              📈 The Process
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
+              From Kickoff to Victory in 3 Steps
             </h2>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
-                1
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            {howItWorksSteps.map((step, index) => (
+              <div key={index} className="text-center">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
+                  <span className="text-2xl font-bold text-primary-foreground">{step.step}</span>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4">{step.title}</h3>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  {step.description}
+                </p>
               </div>
-              <h3 className="text-xl font-semibold">Select a project</h3>
-              <p className="text-muted-foreground">
-                Choose from our library of proven home improvement projects designed for DIY success.
+            ))}
+          </div>
+
+          {/* Tools and Materials Info */}
+          <div className="bg-secondary rounded-xl p-8 mb-8">
+            <h3 className="text-xl font-bold text-foreground mb-4">
+              Where do tools and materials come from?
+            </h3>
+            <p className="text-lg text-muted-foreground mb-6">
+              Our partner network with your favorite retailers and tool rental agencies.
+            </p>
+            
+            <div className="bg-accent/10 rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-foreground mb-3">
+                Why Not Just Use YouTube?
+              </h4>
+              <p className="text-muted-foreground mb-4">
+                Sure, most internet content is free — but it's also a maze. Project Partner blends AI smarts with real‑world contractor expertise to hand‑pick the best content from across the web.
+              </p>
+              <ul className="space-y-2 text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
+                  When there's a great video out there, we'll include it.
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
+                  When there isn't, we'll fill the gap with clear, field‑tested guidance.
+                </li>
+              </ul>
+              <p className="text-accent font-semibold mt-4">
+                Our mission is to keep you on the field with a winning gameplan — not stuck on the sidelines searching for hours to find the details that matter.
               </p>
             </div>
-            
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
-                2
-              </div>
-              <h3 className="text-xl font-semibold">Build your DIY profile & customize your project</h3>
-              <p className="text-muted-foreground">
-                Answer a few questions to tailor the project to your skill level, tools, and specific needs.
+          </div>
+
+          <div className="text-center">
+            <p className="text-lg text-muted-foreground mb-6">
+              Video-calls with experts are one of our most popular features
+            </p>
+            <Button 
+              size="lg" 
+              onClick={handleStartGameplan}
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-4 text-lg"
+            >
+              Start Your Gameplan Today
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* About Us */}
+      <section className="py-20 bg-primary/5">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
+              About Project Partner
+            </h2>
+            <div className="max-w-4xl mx-auto">
+              <p className="text-xl text-muted-foreground mb-6 leading-relaxed">
+                Project Partner was created by a team of aerospace engineers with a passion for DIY. We're on a mission to make projects more accessible and with higher success.
               </p>
-            </div>
-            
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
-                3
+              <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+                <strong>How?</strong> By taking techniques used for building aircraft and applying a sports-like experience of winning, we enable DIYers to achieve consistent success.
+              </p>
+              
+              <div className="grid md:grid-cols-3 gap-8 mb-8">
+                <div className="text-center">
+                  <Users className="h-12 w-12 text-accent mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Serving Customers</h3>
+                  <p className="text-muted-foreground">We deeply value our customers and their success</p>
+                </div>
+                <div className="text-center">
+                  <Zap className="h-12 w-12 text-accent mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Sustainability</h3>
+                  <p className="text-muted-foreground">Better projects = lower waste</p>
+                </div>
+                <div className="text-center">
+                  <Target className="h-12 w-12 text-accent mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Crushing Challenges</h3>
+                  <p className="text-muted-foreground">We help you overcome every obstacle</p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold">Build!</h3>
-              <p className="text-muted-foreground">
-                The easiest step-by-step instructions ever with accountability to be sure you hit the finish line.
+              
+              <p className="text-xl font-semibold text-accent">
+                Get started with us today!
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Tool Rentals Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
-          <Card className="gradient-card border-0 shadow-card">
-            <CardContent className="py-16 text-center">
-              <div className="flex flex-col items-center space-y-6">
-                <img src="/lovable-uploads/682ce2ee-7a0b-483e-b97a-472ce801a4ee.png" alt="Toolio" className="h-16 w-auto" />
-                <div className="space-y-4">
-                  <h2 className="text-3xl lg:text-4xl font-bold">
-                    <span className="text-primary">Project-based</span> Tool Rentals
-                  </h2>
-                  <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                    Seamless integration to equip your project
-                  </p>
-                  <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                    Get professional-grade tools delivered right to your door. Our partnership with Toolio ensures you have everything you need to complete your project successfully.
-                  </p>
-                </div>
-                <Button variant="outline" size="lg" className="mt-6" onClick={() => window.open('https://toolio.us', '_blank')}>
-                  Browse Tool Rentals
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Final CTA */}
+      <section className="py-20 bg-gradient-primary">
+        <div className="absolute inset-0 bg-primary/90" />
+        <div className="relative container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-6">
+            🏆 Your Next DIY Win Starts Here
+          </h2>
+          <p className="text-xl text-primary-foreground/90 mb-8 max-w-3xl mx-auto">
+            Don't just start a project — win it. With Project Partner, you'll have the strategy, support, and tools to make every project a victory.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              size="lg" 
+              variant="secondary"
+              onClick={handleStartGameplan}
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-4 text-lg"
+            >
+              Get Started Free
+              <Play className="ml-2 h-5 w-5" />
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={handleStartGameplan}
+              className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8 py-4 text-lg"
+            >
+              See Example Gameplans
+              <Star className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </section>
+    </div>
+  );
+};
 
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
-          <Card className="gradient-primary border-0 text-white text-center shadow-elegant">
-            <CardContent className="py-16">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-                Ready to Tackle Your Next Home Project?
-              </h2>
-              <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-                Join thousands of homeowners who've successfully completed their projects with confidence using Project Partner's guided approach.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={() => navigate('/projects')} variant="secondary" size="lg" className="bg-white text-primary hover:bg-white/90 transition-smooth">
-                  Start My First Project
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-    </div>;
-}
+export default Home;
