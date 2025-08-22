@@ -68,9 +68,24 @@ export const ProjectAgreementsWindow: React.FC<ProjectAgreementsWindowProps> = (
 
       // Get user IDs from project runs that have signed agreements
       const projectRunsWithAgreements = projectRuns?.filter(run => {
-        const phases = run.phases as any[];
-        const kickoffPhase = phases?.find(p => p.id === 'kickoff-phase');
-        const agreementStep = kickoffPhase?.operations?.[0]?.steps?.find(s => s.id === 'kickoff-step-2');
+        // Handle phases - could be string, array, or null
+        let phases;
+        try {
+          if (typeof run.phases === 'string') {
+            phases = JSON.parse(run.phases);
+          } else if (Array.isArray(run.phases)) {
+            phases = run.phases;
+          } else {
+            return false; // No valid phases data
+          }
+        } catch {
+          return false; // Invalid JSON
+        }
+
+        if (!Array.isArray(phases)) return false;
+        
+        const kickoffPhase = phases.find(p => p?.id === 'kickoff-phase');
+        const agreementStep = kickoffPhase?.operations?.[0]?.steps?.find(s => s?.id === 'kickoff-step-2');
         return agreementStep?.outputs?.[0]?.agreement;
       }) || [];
 
@@ -90,9 +105,22 @@ export const ProjectAgreementsWindow: React.FC<ProjectAgreementsWindowProps> = (
 
       // Process project runs to extract signed agreements and merge with profiles
       const agreementsWithSignatures = projectRunsWithAgreements.map(run => {
-        const phases = run.phases as any[];
-        const kickoffPhase = phases?.find(p => p.id === 'kickoff-phase');
-        const agreementStep = kickoffPhase?.operations?.[0]?.steps?.find(s => s.id === 'kickoff-step-2');
+        // Handle phases - could be string, array, or null
+        let phases;
+        try {
+          if (typeof run.phases === 'string') {
+            phases = JSON.parse(run.phases);
+          } else if (Array.isArray(run.phases)) {
+            phases = run.phases;
+          } else {
+            phases = [];
+          }
+        } catch {
+          phases = [];
+        }
+
+        const kickoffPhase = Array.isArray(phases) ? phases.find(p => p?.id === 'kickoff-phase') : null;
+        const agreementStep = kickoffPhase?.operations?.[0]?.steps?.find(s => s?.id === 'kickoff-step-2');
         const agreement = agreementStep?.outputs?.[0]?.agreement;
         const profile = profiles?.find(p => p.user_id === run.user_id);
         
