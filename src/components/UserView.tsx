@@ -974,12 +974,11 @@ export default function UserView({
               {/* Add unplanned work button */}
               {isKickoffComplete && (
                 <Button 
-                  variant="outline" 
+                  variant="destructive" 
                   onClick={() => setUnplannedWorkOpen(true)}
                   className="w-full"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Unplanned Work
+                  ❗ Add Unplanned Work
                 </Button>
               )}
             </div>
