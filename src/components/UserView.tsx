@@ -175,16 +175,19 @@ export default function UserView({
       if (Math.abs(calculatedProgress - (currentProjectRun.progress || 0)) > 0.1) {
         console.log("📊 UserView: Updating progress for workflow steps (NOT during kickoff)");
         
-        // NEVER overwrite kickoff step completion data
+        // NEVER overwrite kickoff step completion data - FIX: Properly deduplicate
         const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
         const preservedKickoffSteps = currentProjectRun.completedSteps.filter(stepId => 
           kickoffStepIds.includes(stepId)
         );
         
+        // Create unique array without duplicates
+        const uniqueCompletedSteps = [...new Set([...preservedKickoffSteps, ...Array.from(completedSteps)])];
+        
         const updatedProjectRun = {
           ...currentProjectRun,
           progress: Math.round(calculatedProgress),
-          completedSteps: [...preservedKickoffSteps, ...Array.from(completedSteps)],
+          completedSteps: uniqueCompletedSteps,
           updatedAt: new Date()
         };
         updateProjectRun(updatedProjectRun);
@@ -309,7 +312,11 @@ export default function UserView({
 
   const handleComplete = () => {
     if (currentStep && areAllOutputsCompleted(currentStep)) {
+      console.log("Completing step:", currentStep.step);
       setCompletedSteps(prev => new Set([...prev, currentStep.id]));
+      
+      // End time tracking for current step
+      endTimeTracking('step', currentStep.id);
       
       // Check if this completes a phase
       const currentPhase = getCurrentPhase();
@@ -317,14 +324,25 @@ export default function UserView({
       const newCompletedSteps = new Set([...completedSteps, currentStep.id]);
       const isPhaseComplete = phaseSteps.every(step => newCompletedSteps.has(step.id));
       
-      if (isPhaseComplete) {
+      if (isPhaseComplete && currentPhase) {
+        console.log("Phase completed:", currentPhase.name);
         setCurrentCompletedPhaseName(currentPhase.name);
+        // End time tracking for phase
+        endTimeTracking('phase', currentPhase.id);
         setPhaseCompletionOpen(true);
       }
       
+      // Move to next step
       if (currentStepIndex < allSteps.length - 1) {
+        console.log("Moving to next step");
         handleNext();
+      } else {
+        console.log("All steps completed! Project finished.");
+        // Trigger completion certificate and survey
+        setCompletionCertificateOpen(true);
       }
+    } else {
+      console.log("Cannot complete step - not all outputs are completed");
     }
   };
 
@@ -513,7 +531,9 @@ export default function UserView({
               return;
             }
             if (project === 'workflow') {
+              console.log("Switching to workflow mode from Continue button");
               setViewMode('workflow'); 
+              onProjectSelected?.();
               return;
             }
             setViewMode('workflow');
@@ -736,9 +756,8 @@ export default function UserView({
               
               {/* Help button prominently at top */}
               <Button 
-                variant="outline" 
                 onClick={() => setHelpPopupOpen(true)}
-                className="w-full bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Stuck? Get Help
               </Button>
@@ -780,11 +799,16 @@ export default function UserView({
                      }`} 
                      onClick={() => {
                        console.log('Step clicked:', step.step, 'index:', stepIndex);
-                       // Allow clicking on any step during workflow (not during kickoff)
-                       if (stepIndex >= 0 && isKickoffComplete) {
-                         setCurrentStepIndex(stepIndex);
-                         window.scrollTo({ top: 0, behavior: 'smooth' });
-                       }
+                        // Allow clicking on any step after kickoff is complete
+                        if (stepIndex >= 0 && isKickoffComplete) {
+                          console.log('Navigating to step:', stepIndex, step.step);
+                          setCurrentStepIndex(stepIndex);
+                          // Start time tracking for the new step
+                          startTimeTracking('step', step.id);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else {
+                          console.log('Step navigation blocked - kickoff not complete or invalid index');
+                        }
                      }}>
                             <div className="flex items-center gap-2">
                               {completedSteps.has(step.id) && <CheckCircle className="w-4 h-4" />}
@@ -1225,9 +1249,31 @@ export default function UserView({
         project={currentProject}
         userOwnedTools={[]}
         onOrderingComplete={() => {
+          console.log("Ordering window completed for step:", currentStep?.step);
           // Mark the ordering step as complete
-          if (currentStep?.id === 'ordering-step-1' || currentStep?.step === 'Tool & Material Ordering') {
+          if (currentStep && (currentStep.id === 'ordering-step-1' || currentStep.step === 'Tool & Material Ordering' || currentStep.phaseName === 'Ordering')) {
+            console.log("Marking ordering step as complete:", currentStep.id);
             setCompletedSteps(prev => new Set([...prev, currentStep.id]));
+            
+            // Check if this completes the ordering phase
+            const currentPhase = getCurrentPhase();
+            if (currentPhase && currentPhase.name === 'Ordering') {
+              const phaseSteps = getAllStepsInPhase(currentPhase);
+              const newCompletedSteps = new Set([...completedSteps, currentStep.id]);
+              const isPhaseComplete = phaseSteps.every(step => newCompletedSteps.has(step.id));
+              
+              if (isPhaseComplete) {
+                console.log("Ordering phase completed, triggering phase completion");
+                setCurrentCompletedPhaseName(currentPhase.name);
+                setPhaseCompletionOpen(true);
+              }
+            }
+            
+            // Move to next step if not at the end
+            if (currentStepIndex < allSteps.length - 1) {
+              console.log("Moving to next step after ordering completion");
+              handleNext();
+            }
           }
           setOrderingWindowOpen(false);
         }}
