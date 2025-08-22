@@ -23,6 +23,8 @@ interface ProfileData {
   preferred_learning_methods?: string[];
   owned_tools?: any[];
   survey_completed_at?: string;
+  full_name?: string;
+  nickname?: string;
 }
 
 export default function ProfileManager({
@@ -55,7 +57,9 @@ export default function ProfileManager({
           home_state, 
           preferred_learning_methods, 
           owned_tools, 
-          survey_completed_at
+          survey_completed_at,
+          full_name,
+          nickname
         `)
         .eq('user_id', user?.id)
         .maybeSingle();
@@ -110,6 +114,17 @@ export default function ProfileManager({
           <Card>
             <CardContent className="p-4">
               <div className="space-y-3">
+                <div>
+                  <h4 className="font-semibold">Personal Info</h4>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p><strong>Full Name:</strong> {existingProfile.full_name || "Not specified"}</p>
+                    <p><strong>Nickname:</strong> {existingProfile.nickname || "Not specified"}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    💡 Choose a fun project name like "The Great One" or "Prime Time" to make your DIY journey more exciting!
+                  </p>
+                </div>
+                
                 <div>
                   <h4 className="font-semibold">Skill Level</h4>
                   <p className="text-sm text-muted-foreground capitalize">
@@ -226,7 +241,9 @@ export default function ProfileManager({
           homeBuildYear: existingProfile?.home_build_year || "",
           homeState: existingProfile?.home_state || "",
           preferredLearningMethods: existingProfile?.preferred_learning_methods || [],
-          ownedTools: existingProfile?.owned_tools || []
+          ownedTools: existingProfile?.owned_tools || [],
+          fullName: existingProfile?.full_name || "",
+          nickname: existingProfile?.nickname || ""
         }}
       />
     </>

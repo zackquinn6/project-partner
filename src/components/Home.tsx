@@ -122,17 +122,17 @@ const Home = ({ onViewChange }: HomeProps) => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-primary py-20 md:py-32">
+      <section className="relative overflow-hidden bg-primary py-20 md:py-32">
         <div className="relative container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
               
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary mb-6">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6">
                 🏆 Win the Game of DIY
               </h1>
               
-              <p className="text-xl md:text-2xl text-primary/90 mb-8 leading-relaxed">
-                Your home projects aren't just tasks — they're challenges to conquer. Project Partner is your coach, teammate, and gear manager in one. From gameplan to strong finish, we help you play smarter, not harder.
+              <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">
+                Your home projects aren't just tasks — they're challenges to conquer.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -149,7 +149,7 @@ const Home = ({ onViewChange }: HomeProps) => {
                   size="lg" 
                   variant="outline"
                   onClick={() => handleScrollToSection('how-it-works')}
-                  className="border-primary/20 text-primary hover:bg-primary/10 px-8 py-4 text-lg"
+                  className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8 py-4 text-lg"
                 >
                   <Eye className="mr-2 h-5 w-5" />
                   See How It Works
@@ -377,6 +377,37 @@ const Home = ({ onViewChange }: HomeProps) => {
             ))}
           </div>
 
+          {/* Additional How It Works Features */}
+          <div className="grid md:grid-cols-2 gap-8 mb-16">
+            <Card className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
+              <CardHeader className="text-center pb-4">
+                <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="h-8 w-8 text-accent-foreground" />
+                </div>
+                <CardTitle className="text-xl">Team Mate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center text-base leading-relaxed">
+                  Automated texting alerts throughout the project allows you to seamlessly share your progress and feel the comfort of a team on your side.
+                </CardDescription>
+              </CardContent>
+            </Card>
+            
+            <Card className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
+              <CardHeader className="text-center pb-4">
+                <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Gamepad2 className="h-8 w-8 text-accent-foreground" />
+                </div>
+                <CardTitle className="text-xl">Calls with Coach</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center text-base leading-relaxed">
+                  If you just want to talk to a pro or you get stuck mid-project, we offer a video-call service.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Tools and Materials Info */}
           <div className="bg-secondary rounded-xl p-8 mb-8">
             <h3 className="text-xl font-bold text-foreground mb-4">
@@ -490,7 +521,7 @@ const Home = ({ onViewChange }: HomeProps) => {
               size="lg" 
               variant="outline"
               onClick={handleStartGameplan}
-              className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8 py-4 text-lg"
+              className="bg-primary-foreground text-primary border-primary-foreground/20 hover:bg-primary-foreground/90 hover:text-primary-foreground px-8 py-4 text-lg"
             >
               See Example Gameplans
               <Star className="ml-2 h-5 w-5" />
