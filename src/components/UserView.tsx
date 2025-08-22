@@ -125,16 +125,7 @@ export default function UserView({
     }
   }, [projectRunId, projectRuns, setCurrentProjectRun]);
 
-  // Auto-switch to workflow view when a project or project run is selected (but respect resetToListing)
-  useEffect(() => {
-    // DON'T auto-switch if we're being told to reset to listing
-    if (!resetToListing && (currentProject || currentProjectRun)) {
-      console.log("🔄 UserView: Auto-switching to workflow mode");
-      setViewMode('workflow');
-    }
-  }, [currentProject, currentProjectRun, resetToListing]);
-
-  // Reset to listing view when projects view is requested
+  // Reset to listing view when projects view is requested - PRIORITY OVERRIDE
   useEffect(() => {
     console.log('🔄 UserView: resetToListing useEffect triggered:', { 
       resetToListing, 
@@ -148,6 +139,20 @@ export default function UserView({
       setCurrentProjectRun(null);
     }
   }, [resetToListing, setCurrentProjectRun]);
+
+  // Auto-switch to workflow view when a project or project run is selected (but respect resetToListing)
+  useEffect(() => {
+    // CRITICAL: DON'T auto-switch if we're being told to reset to listing
+    if (resetToListing) {
+      console.log("🚫 UserView: Blocking auto-switch due to resetToListing");
+      return;
+    }
+    
+    if (currentProject || currentProjectRun) {
+      console.log("🔄 UserView: Auto-switching to workflow mode");
+      setViewMode('workflow');
+    }
+  }, [currentProject, currentProjectRun, resetToListing]);
   
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? completedSteps.size / allSteps.length * 100 : 0;
