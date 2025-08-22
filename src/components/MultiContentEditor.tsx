@@ -12,6 +12,8 @@ interface ContentSection {
   type: 'text' | 'image' | 'video' | 'link';
   content: string;
   title?: string;
+  width?: 'full' | 'half' | 'third' | 'two-thirds';
+  alignment?: 'left' | 'center' | 'right';
 }
 
 interface MultiContentEditorProps {
@@ -124,6 +126,43 @@ export function MultiContentEditor({ sections, onChange }: MultiContentEditorPro
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Layout Controls */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div>
+                  <Label>Width</Label>
+                  <Select 
+                    value={section.width || 'full'} 
+                    onValueChange={(value) => updateSection(section.id, { width: value as ContentSection['width'] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full">Full Width</SelectItem>
+                      <SelectItem value="two-thirds">Two Thirds</SelectItem>
+                      <SelectItem value="half">Half Width</SelectItem>
+                      <SelectItem value="third">One Third</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Alignment</Label>
+                  <Select 
+                    value={section.alignment || 'left'} 
+                    onValueChange={(value) => updateSection(section.id, { alignment: value as ContentSection['alignment'] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="left">Left</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                      <SelectItem value="right">Right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               {section.type === 'text' && (
                 <>
                   <div>

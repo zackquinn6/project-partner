@@ -62,6 +62,15 @@ export interface Output {
   mustGetRight?: string;
 }
 
+export interface ContentSection {
+  id: string;
+  type: 'text' | 'image' | 'video' | 'link';
+  content: string;
+  title?: string;
+  width?: 'full' | 'half' | 'third' | 'two-thirds';
+  alignment?: 'left' | 'center' | 'right';
+}
+
 export interface WorkflowStep {
   id: string;
   step: string;
@@ -72,6 +81,7 @@ export interface WorkflowStep {
   materials: Material[];
   tools: Tool[];
   outputs: Output[];
+  contentSections?: ContentSection[];
 }
 
 export interface Operation {

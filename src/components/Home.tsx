@@ -131,11 +131,11 @@ const Home = ({ onViewChange }: HomeProps) => {
                 <span className="text-sm font-medium">Project Partner</span>
               </div>
               
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary mb-6">
                 🏆 Win the Game of DIY
               </h1>
               
-              <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">
+              <p className="text-xl md:text-2xl text-primary/90 mb-8 leading-relaxed">
                 Your home projects aren't just tasks — they're challenges to conquer. Project Partner is your coach, teammate, and gear manager in one. From gameplan to strong finish, we help you play smarter, not harder.
               </p>
               
@@ -153,7 +153,7 @@ const Home = ({ onViewChange }: HomeProps) => {
                   size="lg" 
                   variant="outline"
                   onClick={() => handleScrollToSection('how-it-works')}
-                  className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8 py-4 text-lg"
+                  className="border-primary/20 text-primary hover:bg-primary/10 px-8 py-4 text-lg"
                 >
                   <Eye className="mr-2 h-5 w-5" />
                   See How It Works

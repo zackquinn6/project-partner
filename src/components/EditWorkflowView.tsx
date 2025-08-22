@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Image, Video, Edit, Save, X, ArrowLeft, Settings, Plus, Trash2, FolderPlus, FileText, List } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
-import { WorkflowStep, Material, Tool, Output, Phase, Operation } from '@/interfaces/Project';
+import { WorkflowStep, Material, Tool, Output, Phase, Operation, ContentSection } from '@/interfaces/Project';
 import { OutputEditForm } from './OutputEditForm';
 import { MultiContentEditor } from './MultiContentEditor';
+import { MultiContentRenderer } from './MultiContentRenderer';
 import { toast } from 'sonner';
 
 interface EditWorkflowViewProps {
@@ -339,39 +340,54 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
     if (!step) return null;
 
     if (editMode && editingStep) {
+      // Parse existing content sections or create default
+      let contentSections: ContentSection[] = [];
+      try {
+        if (editingStep.contentSections) {
+          contentSections = editingStep.contentSections;
+        } else if (editingStep.content) {
+          // Migrate existing content to new format
+          contentSections = [{
+            id: `section-${Date.now()}`,
+            type: 'text',
+            content: editingStep.content,
+            title: '',
+            width: 'full',
+            alignment: 'left'
+          }];
+        }
+      } catch (e) {
+        contentSections = [];
+      }
+
       return (
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="step-content">Step Content</Label>
+        <div className="space-y-6">
+          <MultiContentEditor 
+            sections={contentSections}
+            onChange={(sections) => updateEditingStep('contentSections', sections)}
+          />
+          
+          {/* Legacy content field for backward compatibility */}
+          <div className="border-t pt-4">
+            <Label htmlFor="legacy-content">Legacy Content (for backward compatibility)</Label>
             <Textarea
-              id="step-content"
+              id="legacy-content"
               value={editingStep.content}
               onChange={(e) => updateEditingStep('content', e.target.value)}
-              className="min-h-[200px]"
-              placeholder="Enter step content..."
+              className="min-h-[100px]"
+              placeholder="Legacy text content..."
             />
-          </div>
-          <div>
-            <Label htmlFor="content-type">Content Type</Label>
-            <Select 
-              value={editingStep.contentType} 
-              onValueChange={(value) => updateEditingStep('contentType', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="text">Text</SelectItem>
-                <SelectItem value="video">Video</SelectItem>
-                <SelectItem value="image">Image</SelectItem>
-                <SelectItem value="document">Document</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
       );
     }
 
+    // Render multi-content sections if available, otherwise fallback to legacy
+    if (step.contentSections && step.contentSections.length > 0) {
+      return <MultiContentRenderer sections={step.contentSections} />;
+    }
+
+    // Legacy content rendering for backward compatibility
     switch (step.contentType) {
       case 'document':
         return (
