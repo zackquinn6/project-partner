@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +36,27 @@ export default function Auth() {
     
     if (error) {
       setError(error.message);
+      
+      // Log failed login attempt
+      try {
+        await supabase.rpc('log_failed_login', {
+          user_email: email,
+          ip_addr: null, // Client-side doesn't have direct access to IP
+          user_agent_string: navigator.userAgent
+        });
+      } catch (logError) {
+        console.error('Failed to log failed login attempt:', logError);
+      }
+    } else {
+      // Create user session on successful login
+      try {
+        await supabase.from('user_sessions').insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_agent: navigator.userAgent
+        });
+      } catch (sessionError) {
+        console.error('Failed to create session log:', sessionError);
+      }
     }
     
     setIsLoading(false);

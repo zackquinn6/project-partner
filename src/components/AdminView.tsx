@@ -3,15 +3,18 @@ import { ProjectManagementWindow } from '@/components/ProjectManagementWindow';
 import { ProjectAnalyticsWindow } from '@/components/ProjectAnalyticsWindow';
 import { UserRolesWindow } from '@/components/UserRolesWindow';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
+import { SecurityDashboard } from '@/components/SecurityDashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings, BarChart3, Shield, Wrench } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Settings, BarChart3, Shield, Wrench, Lock } from 'lucide-react';
 
 export const AdminView: React.FC = () => {
   const [projectManagementOpen, setProjectManagementOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [userRolesOpen, setUserRolesOpen] = useState(false);
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
+  const [securityDashboardOpen, setSecurityDashboardOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -21,7 +24,7 @@ export const AdminView: React.FC = () => {
           <p className="text-lg text-muted-foreground">Manage projects, analytics, and user permissions</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setProjectManagementOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -89,6 +92,23 @@ export const AdminView: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setSecurityDashboardOpen(true)}>
+            <CardHeader className="text-center flex-1">
+              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-primary" />
+              </div>
+              <CardTitle>Security Dashboard</CardTitle>
+              <CardDescription className="min-h-[3rem] flex items-center justify-center">
+                Monitor security, audit logs, and failed login attempts
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-auto">
+              <Button className="w-full" onClick={() => setSecurityDashboardOpen(true)}>
+                Security Dashboard
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <ProjectManagementWindow 
@@ -110,6 +130,15 @@ export const AdminView: React.FC = () => {
           open={toolsMaterialsOpen} 
           onOpenChange={setToolsMaterialsOpen} 
         />
+        
+        <Dialog open={securityDashboardOpen} onOpenChange={setSecurityDashboardOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Security Dashboard</DialogTitle>
+            </DialogHeader>
+            <SecurityDashboard />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
