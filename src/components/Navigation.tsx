@@ -43,7 +43,7 @@ export default function Navigation({
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <img src="/lovable-uploads/db337d38-dc79-4685-8256-8feea6df49be.png" alt="Project Partner Logo" className="h-10 w-auto" />
+            <img src="/lovable-uploads/dd8a6549-c627-436d-954c-e8c38a53fbee.png" alt="Project Partner Logo" className="h-11 w-auto" />
             
           </div>
           
