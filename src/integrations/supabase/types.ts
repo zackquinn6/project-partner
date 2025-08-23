@@ -38,6 +38,152 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_revisions: {
+        Row: {
+          affected_users: number | null
+          applied_at: string
+          change_type: string
+          created_at: string
+          created_by: string | null
+          data_source: string
+          id: string
+          impact_score: number
+          original_content: string
+          project_type: string
+          revised_content: string
+          source_id: string | null
+          step_id: string
+          summary: string
+        }
+        Insert: {
+          affected_users?: number | null
+          applied_at?: string
+          change_type: string
+          created_at?: string
+          created_by?: string | null
+          data_source: string
+          id?: string
+          impact_score: number
+          original_content: string
+          project_type: string
+          revised_content: string
+          source_id?: string | null
+          step_id: string
+          summary: string
+        }
+        Update: {
+          affected_users?: number | null
+          applied_at?: string
+          change_type?: string
+          created_at?: string
+          created_by?: string | null
+          data_source?: string
+          id?: string
+          impact_score?: number
+          original_content?: string
+          project_type?: string
+          revised_content?: string
+          source_id?: string | null
+          step_id?: string
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_revisions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_sources: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          last_scrape_at: string
+          name: string
+          source_type: string
+          status: string
+          trust_score: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_scrape_at?: string
+          name: string
+          source_type: string
+          status?: string
+          trust_score?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_scrape_at?: string
+          name?: string
+          source_type?: string
+          status?: string
+          trust_score?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      knowledge_updates: {
+        Row: {
+          content: string
+          created_at: string
+          discovered_at: string
+          id: string
+          project_types: string[]
+          relevance_score: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          discovered_at?: string
+          id?: string
+          project_types: string[]
+          relevance_score: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          discovered_at?: string
+          id?: string
+          project_types?: string[]
+          relevance_score?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           created_at: string
@@ -67,6 +213,45 @@ export type Database = {
           item?: string
           photo_url?: string | null
           unit_size?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      optimization_insights: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string
+          frequency: number
+          id: string
+          impact: string
+          projects_affected: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          frequency: number
+          id?: string
+          impact: string
+          projects_affected: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          frequency?: number
+          id?: string
+          impact?: string
+          projects_affected?: string[]
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -412,6 +597,72 @@ export type Database = {
           session_start?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      workflow_optimizations: {
+        Row: {
+          affected_steps: string[]
+          applied: boolean
+          applied_date: string | null
+          average_time_after: number | null
+          average_time_before: number | null
+          confidence: number
+          created_at: string
+          created_by: string | null
+          description: string
+          effort_reduction: number
+          feedback_score: number | null
+          id: string
+          optimization_type: string
+          project_types: string[]
+          status: string
+          time_savings: number
+          title: string
+          updated_at: string
+          user_completions: number | null
+        }
+        Insert: {
+          affected_steps: string[]
+          applied?: boolean
+          applied_date?: string | null
+          average_time_after?: number | null
+          average_time_before?: number | null
+          confidence: number
+          created_at?: string
+          created_by?: string | null
+          description: string
+          effort_reduction?: number
+          feedback_score?: number | null
+          id?: string
+          optimization_type: string
+          project_types: string[]
+          status?: string
+          time_savings?: number
+          title: string
+          updated_at?: string
+          user_completions?: number | null
+        }
+        Update: {
+          affected_steps?: string[]
+          applied?: boolean
+          applied_date?: string | null
+          average_time_after?: number | null
+          average_time_before?: number | null
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          effort_reduction?: number
+          feedback_score?: number | null
+          id?: string
+          optimization_type?: string
+          project_types?: string[]
+          status?: string
+          time_savings?: number
+          title?: string
+          updated_at?: string
+          user_completions?: number | null
         }
         Relationships: []
       }
