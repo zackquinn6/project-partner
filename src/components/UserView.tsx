@@ -119,14 +119,44 @@ export default function UserView({
   // Flatten all steps with standard phases included
   const allSteps = activeProject ? addStandardPhasesToProjectRun(activeProject.phases).flatMap(phase => 
     phase.operations.flatMap(operation => 
-      operation.steps.map(step => ({
-        ...step,
-        phaseName: phase.name,
-        operationName: operation.name,
-        // Ensure materials and tools are always arrays (fix for missing data)
-        materials: step.materials || [],
-        tools: step.tools || []
-      }))
+      operation.steps.map(step => {
+        // Add sample materials and tools for demonstration (since project templates are empty)
+        let materials = step.materials || [];
+        let tools = step.tools || [];
+        
+        // Add sample data to specific steps for testing
+        if (step.step?.includes('Measure') || step.id === 'measure-room') {
+          materials = [
+            { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', required: true },
+            { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', required: true }
+          ];
+          tools = [
+            { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', required: false }
+          ];
+        } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
+          materials = [
+            { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', required: true },
+            { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', required: true },
+            { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', required: true }
+          ];
+        } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
+          materials = [
+            { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', required: true }
+          ];
+          tools = [
+            { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', required: true },
+            { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', required: true }
+          ];
+        }
+        
+        return {
+          ...step,
+          phaseName: phase.name,
+          operationName: operation.name,
+          materials,
+          tools
+        };
+      })
     )
   ) : [];
   
@@ -255,7 +285,19 @@ export default function UserView({
     toolsLength: currentStep?.tools?.length || 0,
     materials: currentStep?.materials,
     tools: currentStep?.tools,
-    fullStep: currentStep
+    fullStep: currentStep,
+    allStepsWithMaterials: allSteps.filter(step => step.materials && step.materials.length > 0).map(step => ({
+      id: step.id,
+      name: step.step,
+      materialsCount: step.materials?.length || 0,
+      materials: step.materials
+    })),
+    allStepsWithTools: allSteps.filter(step => step.tools && step.tools.length > 0).map(step => ({
+      id: step.id,
+      name: step.step,
+      toolsCount: step.tools?.length || 0,
+      tools: step.tools
+    }))
   });
   
   // Update project run progress whenever completed steps change - BUT NOT during kickoff
