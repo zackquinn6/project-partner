@@ -1,7 +1,31 @@
-import { ArrowRight, CheckCircle, Target, Wrench, Trophy, Users, Gamepad2, ShieldCheck, Clock, Star, Zap, MapPin, Play, Eye, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  Calendar, 
+  Clock, 
+  Users, 
+  Target, 
+  TrendingUp, 
+  BookOpen, 
+  Wrench, 
+  Home as HomeIcon, 
+  Star,
+  ArrowRight,
+  CheckCircle2,
+  Play,
+  LogIn,
+  Trophy,
+  MapPin,
+  ShieldCheck,
+  Zap,
+  CheckCircle,
+  Eye
+} from 'lucide-react';
 
 // Import placeholder images
 import generalDiy from "@/assets/general-diy.png";
@@ -110,7 +134,8 @@ const howItWorksSteps = [
   }
 ];
 
-const Home = ({ onViewChange }: HomeProps) => {
+export const Home = () => {
+  const { user } = useAuth();
   const handleScrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -118,14 +143,34 @@ const Home = ({ onViewChange }: HomeProps) => {
     }
   };
 
-  const handleStartGameplan = () => {
-    onViewChange('user');
-  };
-
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
       <section className="relative overflow-hidden bg-primary py-20 md:py-32">
+        <nav className="flex items-center justify-between p-6">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <HomeIcon className="h-6 w-6" />
+              <span className="text-xl font-bold">ProjectPartner</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost">About</Button>
+            <Button variant="ghost">Features</Button>
+            <Button variant="ghost">Pricing</Button>
+            {user ? (
+              <Button asChild>
+                <Link to="/projects">My Projects</Link>
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link to="/auth">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </Link>
+              </Button>
+            )}
+          </div>
+        </nav>
         <div className="relative container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
@@ -139,23 +184,24 @@ const Home = ({ onViewChange }: HomeProps) => {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button 
-                  size="lg" 
-                  variant="secondary"
-                  onClick={handleStartGameplan}
-                  className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-4 text-lg"
-                >
-                  Start Your Project
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  onClick={() => handleScrollToSection('how-it-works')}
-                  className="border-primary-foreground/20 text-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
-                >
-                  <Eye className="mr-2 h-5 w-5" />
-                  See How It Works
+                {user ? (
+                  <Button size="lg" className="px-8" asChild>
+                    <Link to="/projects">
+                      Go to My Projects
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button size="lg" className="px-8" asChild>
+                    <Link to="/projects">
+                      Browse Projects
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
+                <Button variant="outline" size="lg" className="px-8">
+                  <Play className="mr-2 h-4 w-4" />
+                  Watch Demo
                 </Button>
               </div>
             </div>

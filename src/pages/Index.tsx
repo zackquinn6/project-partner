@@ -12,8 +12,8 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
-  const { user, loading } = useAuth();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const { setCurrentProject, setCurrentProjectRun } = useProject();
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,25 +21,10 @@ const Index = () => {
   const [resetUserView, setResetUserView] = useState(false);
   const [forceListingMode, setForceListingMode] = useState(false);
 
-  useEffect(() => {
-    // Redirect to auth if not logged in
-    if (!loading && !user) {
-      navigate('/auth');
-      return;
-    }
-    
-    // Check if we're returning from project catalog with a view state
-    if (location.state?.view) {
-      console.log('🚀 Index: Navigating from project catalog with state:', location.state);
-      setCurrentView(location.state.view);
-      
-      // DON'T reset to listing if we have a projectRunId - user should go directly to workflow
-      if (location.state?.projectRunId) {
-        console.log('📦 Index: Has projectRunId, NOT resetting to listing');
-        setResetUserView(false);
-      }
-    }
-  }, [user, loading, navigate, location.state]);
+  // Show public home page if not logged in
+  if (!user) {
+    return <Home />;
+  }
 
   const handleAdminAccess = () => {
     if (isAdmin) {
@@ -101,19 +86,6 @@ const Index = () => {
     };
   }, [navigate]);
 
-  if (loading || roleLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-
   const renderView = () => {
     console.log('Index renderView - currentView:', currentView);
     switch (currentView) {
@@ -140,7 +112,7 @@ const Index = () => {
       case 'editWorkflow':
         return <EditWorkflowView onBackToAdmin={() => setCurrentView('admin')} />;
       default:
-        return <Home onViewChange={setCurrentView} />;
+        return <Home />;
     }
   };
 
