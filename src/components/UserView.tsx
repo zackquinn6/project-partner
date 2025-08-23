@@ -96,13 +96,36 @@ export default function UserView({
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
   
+  // Debug active project structure
+  console.log('🔍 Active project debug:', {
+    hasCurrentProject: !!currentProject,
+    hasCurrentProjectRun: !!currentProjectRun,
+    activeProjectId: activeProject?.id,
+    activeProjectName: activeProject?.name,
+    phasesLength: activeProject?.phases?.length || 0,
+    firstPhase: activeProject?.phases?.[0] ? {
+      name: activeProject.phases[0].name,
+      operationsCount: activeProject.phases[0].operations?.length || 0,
+      firstOperationStepsCount: activeProject.phases[0].operations?.[0]?.steps?.length || 0,
+      sampleStep: activeProject.phases[0].operations?.[0]?.steps?.[0] ? {
+        id: activeProject.phases[0].operations[0].steps[0].id,
+        step: activeProject.phases[0].operations[0].steps[0].step,
+        materialsLength: activeProject.phases[0].operations[0].steps[0].materials?.length || 0,
+        toolsLength: activeProject.phases[0].operations[0].steps[0].tools?.length || 0
+      } : null
+    } : null
+  });
+  
   // Flatten all steps with standard phases included
   const allSteps = activeProject ? addStandardPhasesToProjectRun(activeProject.phases).flatMap(phase => 
     phase.operations.flatMap(operation => 
       operation.steps.map(step => ({
         ...step,
         phaseName: phase.name,
-        operationName: operation.name
+        operationName: operation.name,
+        // Ensure materials and tools are always arrays (fix for missing data)
+        materials: step.materials || [],
+        tools: step.tools || []
       }))
     )
   ) : [];
@@ -222,6 +245,18 @@ export default function UserView({
   
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? completedSteps.size / allSteps.length * 100 : 0;
+  
+  // Debug current step to identify materials/tools issue
+  console.log('🔧 Current step debug:', {
+    stepIndex: currentStepIndex,
+    stepId: currentStep?.id,
+    stepName: currentStep?.step,
+    materialsLength: currentStep?.materials?.length || 0,
+    toolsLength: currentStep?.tools?.length || 0,
+    materials: currentStep?.materials,
+    tools: currentStep?.tools,
+    fullStep: currentStep
+  });
   
   // Update project run progress whenever completed steps change - BUT NOT during kickoff
   useEffect(() => {

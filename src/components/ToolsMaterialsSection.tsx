@@ -24,7 +24,11 @@ export function ToolsMaterialsSection({
 }: ToolsMaterialsSectionProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  if (!currentStep || (!currentStep.materials?.length && !currentStep.tools?.length)) {
+  // Ensure we have valid arrays and at least one has items
+  const hasMaterials = Array.isArray(currentStep?.materials) && currentStep.materials.length > 0;
+  const hasTools = Array.isArray(currentStep?.tools) && currentStep.tools.length > 0;
+
+  if (!currentStep || (!hasMaterials && !hasTools)) {
     return null;
   }
 
