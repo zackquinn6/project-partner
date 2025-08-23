@@ -1,4 +1,4 @@
-import { ProjectCatalog } from '@/components/ProjectCatalog';
+import ProjectCatalog from '@/components/ProjectCatalog';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 const ProjectCatalogPage = () => {

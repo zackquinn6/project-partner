@@ -136,11 +136,17 @@ const howItWorksSteps = [
 
 export const Home = () => {
   const { user } = useAuth();
+  
   const handleScrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleStartGameplan = () => {
+    // Navigate to projects page for both logged in and non-logged in users
+    window.location.href = '/projects';
   };
 
   return (

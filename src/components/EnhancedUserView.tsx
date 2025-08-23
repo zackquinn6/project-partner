@@ -60,10 +60,7 @@ export const EnhancedUserView: React.FC<EnhancedUserViewProps> = (props) => {
       )}
 
       {/* Main UserView */}
-      <UserView 
-        {...props}
-        onProjectRunChange={handleProjectRunChange}
-      />
+      <UserView {...props} />
 
       {/* Weather Planning Dialog */}
       {currentProjectRun && (
