@@ -121,7 +121,11 @@ export const HelpPopup: React.FC<HelpPopupProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                   
-                  <Button className="w-full" variant="outline" onClick={() => {}}>
+                  <Button 
+                    className="w-full" 
+                    variant="outline" 
+                    onClick={() => window.open('https://calendar.app.google/7cfDpEjfM32niEQu5', '_blank')}
+                  >
                     Schedule Call
                   </Button>
                 </CardContent>
