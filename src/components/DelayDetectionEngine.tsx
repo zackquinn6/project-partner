@@ -169,26 +169,90 @@ export const DelayDetectionEngine: React.FC<DelayDetectionEngineProps> = ({
   };
 
   const checkWeatherAlerts = async () => {
-    // Simulated weather alerts - would integrate with weather API
-    const alerts: WeatherAlert[] = [
-      {
-        id: 'weather-1',
-        projectId: projectRun.id,
-        weatherType: 'rain',
-        severity: 'warning',
-        startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-        affectedPhases: ['exterior-work', 'painting'],
-        recommendations: [
-          'Complete exterior prep work before Thursday',
-          'Move painting to interior areas',
-          'Ensure materials are covered and dry'
-        ],
-        created: new Date().toISOString()
+    try {
+      // Use Open-Meteo API (free, no API key required)
+      // For demo purposes, using a fixed location - in production, get user's location
+      const lat = 40.7128; // NYC coordinates as example
+      const lon = -74.0060;
+      
+      const response = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code&timezone=auto&forecast_days=7`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Weather API request failed');
       }
-    ];
-
-    setWeatherAlerts(alerts);
+      
+      const data = await response.json();
+      const alerts: WeatherAlert[] = [];
+      
+      // Check current and forecast conditions
+      const current = data.current;
+      const daily = data.daily;
+      
+      // Check for rain (weather codes 61, 63, 65, 80, 81, 82)
+      const rainCodes = [61, 63, 65, 80, 81, 82];
+      if (rainCodes.includes(current.weather_code) || current.precipitation > 0) {
+        alerts.push({
+          id: 'weather-rain',
+          projectId: projectRun.id,
+          weatherType: 'rain',
+          severity: current.precipitation > 5 ? 'warning' : 'advisory',
+          startTime: new Date().toISOString(),
+          endTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          affectedPhases: ['exterior-work', 'painting', 'landscaping'],
+          recommendations: [
+            'Delay exterior painting until dry conditions return',
+            'Cover outdoor materials and equipment',
+            'Consider indoor tasks during rain period'
+          ],
+          created: new Date().toISOString()
+        });
+      }
+      
+      // Check for extreme temperatures
+      if (current.temperature_2m < 0) {
+        alerts.push({
+          id: 'weather-cold',
+          projectId: projectRun.id,
+          weatherType: 'extreme-cold',
+          severity: 'advisory',
+          startTime: new Date().toISOString(),
+          endTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          affectedPhases: ['exterior-work', 'concrete-work'],
+          recommendations: [
+            'Avoid painting in freezing temperatures',
+            'Allow extra time for materials to reach working temperature',
+            'Consider postponing concrete work'
+          ],
+          created: new Date().toISOString()
+        });
+      }
+      
+      if (current.temperature_2m > 35) {
+        alerts.push({
+          id: 'weather-heat',
+          projectId: projectRun.id,
+          weatherType: 'extreme-heat',
+          severity: 'advisory',
+          startTime: new Date().toISOString(),
+          endTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          affectedPhases: ['exterior-work', 'roofing'],
+          recommendations: [
+            'Work during cooler morning/evening hours',
+            'Take frequent breaks and stay hydrated',
+            'Paint may dry too quickly in extreme heat'
+          ],
+          created: new Date().toISOString()
+        });
+      }
+      
+      setWeatherAlerts(alerts);
+    } catch (error) {
+      console.error('Failed to fetch weather data:', error);
+      // Fallback to empty alerts if weather API fails
+      setWeatherAlerts([]);
+    }
   };
 
   const hasOutdoorWork = (projectRun: ProjectRun): boolean => {
