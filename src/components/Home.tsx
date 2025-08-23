@@ -11,6 +11,9 @@ import lighting from "@/assets/lighting-placeholder.jpg";
 import lvpFlooring from "@/assets/lvp-flooring-placeholder.jpg";
 import tilBacksplash from "@/assets/tile-backsplash-placeholder.jpg";
 import heroWorkflow from "@/assets/hero-workflow.jpg";
+import projectPartnerLogo from "@/assets/project-partner-logo.png";
+import iphoneMessage from "@/assets/iphone-accountability-message.jpg";
+import videoCallContractor from "@/assets/video-call-contractor.jpg";
 
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
@@ -142,14 +145,14 @@ const Home = ({ onViewChange }: HomeProps) => {
                   onClick={handleStartGameplan}
                   className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-4 text-lg"
                 >
-                  Start Your Gameplan
+                  Start Your Project
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
                 <Button 
                   size="lg" 
                   variant="outline"
                   onClick={() => handleScrollToSection('how-it-works')}
-                  className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8 py-4 text-lg"
+                  className="border-primary-foreground/20 text-foreground hover:bg-primary-foreground hover:text-primary px-8 py-4 text-lg"
                 >
                   <Eye className="mr-2 h-5 w-5" />
                   See How It Works
@@ -157,11 +160,12 @@ const Home = ({ onViewChange }: HomeProps) => {
               </div>
             </div>
             
-            <div className="relative">
+            <div className="relative flex justify-center items-center">
               <img 
-                src={heroWorkflow} 
-                alt="DIY Project Workflow" 
-                className="rounded-xl shadow-elegant w-full"
+                src={projectPartnerLogo} 
+                alt="Project Partner Logo" 
+                className="w-full max-w-md h-auto"
+                style={{ transform: 'scale(1.15)' }}
               />
             </div>
           </div>
@@ -377,12 +381,22 @@ const Home = ({ onViewChange }: HomeProps) => {
             ))}
           </div>
 
-          {/* Additional How It Works Features */}
+          {/* Gametime Enablers */}
+          <div className="text-center mb-12">
+            <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-8">
+              Gametime Enablers
+            </h3>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-8 mb-16">
             <Card className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="h-8 w-8 text-accent-foreground" />
+                <div className="mb-4">
+                  <img 
+                    src={iphoneMessage} 
+                    alt="iPhone accountability text message" 
+                    className="w-32 h-32 object-cover rounded-lg mx-auto shadow-md"
+                  />
                 </div>
                 <CardTitle className="text-xl">Team Mate</CardTitle>
               </CardHeader>
@@ -395,8 +409,12 @@ const Home = ({ onViewChange }: HomeProps) => {
             
             <Card className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Gamepad2 className="h-8 w-8 text-accent-foreground" />
+                <div className="mb-4">
+                  <img 
+                    src={videoCallContractor} 
+                    alt="Video call with professional contractor" 
+                    className="w-32 h-32 object-cover rounded-lg mx-auto shadow-md"
+                  />
                 </div>
                 <CardTitle className="text-xl">Calls with Coach</CardTitle>
               </CardHeader>
@@ -510,18 +528,9 @@ const Home = ({ onViewChange }: HomeProps) => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              variant="secondary"
-              onClick={handleStartGameplan}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-4 text-lg"
-            >
-              Get Started Free
-              <Play className="ml-2 h-5 w-5" />
-            </Button>
-            <Button 
-              size="lg" 
               variant="outline"
               onClick={handleStartGameplan}
-              className="bg-primary-foreground text-primary border-primary-foreground/20 hover:bg-primary-foreground/90 hover:text-primary-foreground px-8 py-4 text-lg"
+              className="bg-primary-foreground text-primary border-primary-foreground/20 hover:bg-primary hover:text-primary-foreground px-8 py-4 text-lg"
             >
               See Example Gameplans
               <Star className="ml-2 h-5 w-5" />
