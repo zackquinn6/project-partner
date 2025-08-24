@@ -54,7 +54,7 @@ const Index = () => {
   // Show project catalog as pre-sign-in landing page with loading state
   if (!user) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background relative z-50">
         <PreSignInNavigation />
         <div className="pt-16">
           <React.Suspense fallback={
@@ -139,9 +139,11 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative z-10">
       {user && <Navigation currentView={currentView} onViewChange={setCurrentView} onAdminAccess={handleAdminAccess} onProjectsView={handleProjectsView} onProjectSelected={handleProjectSelected} />}
-      {renderView()}
+      <div className="w-full h-full">
+        {renderView()}
+      </div>
     </div>
   );
 };
