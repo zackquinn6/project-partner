@@ -5,6 +5,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import Navigation from "@/components/Navigation";
 import Home from "@/components/Home";
+import { PostAuthLanding } from "@/components/PostAuthLanding";
 import { AdminView } from "@/components/AdminView";
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import EditWorkflowView from "@/components/EditWorkflowView";
@@ -51,25 +52,9 @@ const Index = () => {
   }, [navigate]);
 
   // CONDITIONAL LOGIC AFTER ALL HOOKS
-  // Show project catalog as pre-sign-in landing page with loading state
+  // Show Home component as landing page for non-authenticated users
   if (!user) {
-    return (
-      <div className="min-h-screen bg-background relative z-50">
-        <PreSignInNavigation />
-        <div className="pt-16">
-          <React.Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="text-center space-y-4">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                <p className="text-muted-foreground">Loading projects...</p>
-              </div>
-            </div>
-          }>
-            <ProjectCatalog />
-          </React.Suspense>
-        </div>
-      </div>
-    );
+    return <Home />;
   }
 
   const handleAdminAccess = () => {
@@ -134,7 +119,7 @@ const Index = () => {
       case 'editWorkflow':
         return <EditWorkflowView onBackToAdmin={() => setCurrentView('admin')} />;
       default:
-        return <Home />;
+        return <PostAuthLanding />;
     }
   };
 
