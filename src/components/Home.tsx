@@ -155,13 +155,12 @@ export const Home = () => {
         {/* Fixed header navigation bar */}
         <nav className="fixed top-0 left-0 right-0 bg-primary/95 backdrop-blur-sm z-50 border-b border-primary-foreground/20">
           <div className="container mx-auto px-4 flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center">
               <img 
                 src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" 
                 alt="Project Partner Logo" 
                 className="h-8 w-auto"
               />
-              <span className="text-xl font-bold text-primary-foreground hidden sm:inline">ProjectPartner</span>
             </div>
             
             <div className="flex items-center space-x-1 sm:space-x-2">
