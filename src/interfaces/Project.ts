@@ -109,7 +109,7 @@ export interface Project {
   planEndDate: Date;
   endDate?: Date;
   status: 'not-started' | 'in-progress' | 'complete';
-  publishStatus: 'draft' | 'published';
+  publishStatus: 'draft' | 'published' | 'beta-testing';
   category?: string;
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
   effortLevel?: 'Low' | 'Medium' | 'High';

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -136,6 +136,7 @@ const howItWorksSteps = [
 
 export const Home = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   const handleScrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -184,17 +185,17 @@ export const Home = () => {
                 variant="ghost"
                 size="sm"
                 className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-sm"
-                asChild
+                onClick={() => navigate('/auth')}
               >
-                <Link to="/auth">Sign In</Link>
+                Sign In
               </Button>
               <Button 
                 variant="secondary"
                 size="sm"
                 className="ml-1"
-                asChild
+                onClick={() => navigate('/auth?mode=signup')}
               >
-                <Link to="/auth?mode=signup">Sign Up</Link>
+                Sign Up
               </Button>
             </div>
           </div>

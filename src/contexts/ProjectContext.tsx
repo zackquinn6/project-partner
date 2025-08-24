@@ -126,7 +126,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
           planEndDate: new Date(project.plan_end_date),
           endDate: project.end_date ? new Date(project.end_date) : undefined,
           status: project.status as 'not-started' | 'in-progress' | 'complete',
-          publishStatus: project.publish_status as 'draft' | 'published',
+          publishStatus: project.publish_status as 'draft' | 'published' | 'beta-testing',
           category: project.category,
           difficulty: project.difficulty as Project['difficulty'],
           effortLevel: project.effort_level as Project['effortLevel'],

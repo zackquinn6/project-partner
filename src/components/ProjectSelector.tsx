@@ -41,7 +41,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
     difficulty: '',
     effortLevel: '',
     image: '',
-    publishStatus: 'draft' as 'draft' | 'published'
+    publishStatus: 'draft' as 'draft' | 'published' | 'beta-testing'
   });
 
   const handleCreateProject = () => {
@@ -189,7 +189,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
               <SelectContent>
                 {projects
                   .filter(project => {
-                    const shouldInclude = isAdminMode ? true : project.publishStatus === 'published';
+                    const shouldInclude = isAdminMode ? true : (project.publishStatus === 'published' || project.publishStatus === 'beta-testing');
                     console.log('Project filter:', project.name, 'publishStatus:', project.publishStatus, 'include:', shouldInclude);
                     return shouldInclude;
                   })
@@ -354,7 +354,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                           <Label htmlFor="edit-status">Publish Status</Label>
                           <Select 
                             value={editingForm.publishStatus} 
-                            onValueChange={(value) => setEditingForm(prev => ({ ...prev, publishStatus: value as 'draft' | 'published' }))}
+                            onValueChange={(value) => setEditingForm(prev => ({ ...prev, publishStatus: value as 'draft' | 'published' | 'beta-testing' }))}
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -362,6 +362,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                             <SelectContent>
                               <SelectItem value="draft">Draft</SelectItem>
                               <SelectItem value="published">Published</SelectItem>
+                              <SelectItem value="beta-testing">Beta Testing</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

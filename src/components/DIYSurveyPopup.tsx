@@ -11,7 +11,7 @@ import { ArrowRight, ArrowLeft, Sparkles, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import OwnedToolsEditor from "./OwnedToolsEditor";
+import OwnedToolsEditor from "./EnhancedOwnedToolsEditor";
 
 interface DIYSurveyPopupProps {
   open: boolean;
