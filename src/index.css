@@ -157,4 +157,27 @@ All colors MUST be HSL.
   .transition-fast {
     transition: var(--transition-fast);
   }
+
+  /* Hide scrollbars but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer utilities {
+  /* Mobile improvements */
+  @media (max-width: 768px) {
+    .container {
+      @apply px-4;
+    }
+    
+    .text-responsive {
+      @apply text-base md:text-lg;
+    }
+  }
 }

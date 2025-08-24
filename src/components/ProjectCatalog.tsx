@@ -387,15 +387,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   };
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/')} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </Button>
-          </div>
-        </div>
+            <div className="flex items-center gap-4 mb-6">
+              <Button
+                variant="ghost"
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+            </div>
 
         <div className="text-center mb-8">
           <h1 className="text-4xl lg:text-5xl font-bold mb-4">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
 export default function Auth() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
   const { user, signIn, signUp, signInWithGoogle, loading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -19,6 +22,12 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Update form when URL changes
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    setIsSignUp(mode === 'signup');
+  }, [location.search]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -116,7 +125,11 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs value={isSignUp ? "signup" : "signin"} onValueChange={(value) => {
+            const newMode = value === 'signup' ? 'signup' : 'signin';
+            setIsSignUp(value === 'signup');
+            navigate(`/auth?mode=${newMode}`, { replace: true });
+          }} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
