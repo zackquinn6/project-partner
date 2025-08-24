@@ -9,7 +9,7 @@ import { AdminView } from "@/components/AdminView";
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import EditWorkflowView from "@/components/EditWorkflowView";
 import UserView from "@/components/UserView";
-import ProjectCatalogPage from "./ProjectCatalog";
+import ProjectCatalog from "@/components/ProjectCatalog";
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -57,7 +57,7 @@ const Index = () => {
       <div className="min-h-screen bg-background">
         <PreSignInNavigation />
         <div className="pt-16">
-          <ProjectCatalogPage />
+          <ProjectCatalog />
         </div>
       </div>
     );

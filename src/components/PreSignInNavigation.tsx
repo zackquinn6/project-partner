@@ -5,6 +5,16 @@ import { LogIn, UserPlus } from 'lucide-react';
 export const PreSignInNavigation = () => {
   const navigate = useNavigate();
 
+  const handleSignIn = () => {
+    console.log('Sign In clicked');
+    navigate('/auth');
+  };
+
+  const handleSignUp = () => {
+    console.log('Sign Up clicked');
+    navigate('/auth?mode=signup');
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-sm z-50 border-b border-border">
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
@@ -21,7 +31,7 @@ export const PreSignInNavigation = () => {
             variant="ghost" 
             size="sm"
             className="text-foreground hover:bg-muted"
-            onClick={() => navigate('/auth')}
+            onClick={handleSignIn}
           >
             <LogIn className="mr-2 h-4 w-4" />
             Sign In
@@ -29,7 +39,7 @@ export const PreSignInNavigation = () => {
           <Button 
             variant="default"
             size="sm"
-            onClick={() => navigate('/auth?mode=signup')}
+            onClick={handleSignUp}
           >
             <UserPlus className="mr-2 h-4 w-4" />
             Sign Up
