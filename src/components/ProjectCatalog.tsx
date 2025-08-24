@@ -392,7 +392,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             <div className="flex items-center gap-4 mb-6">
               <Button
                 variant="ghost"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate('/')}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />

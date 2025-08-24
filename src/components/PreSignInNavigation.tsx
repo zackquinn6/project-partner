@@ -22,7 +22,16 @@ export const PreSignInNavigation = () => {
           <img 
             src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" 
             alt="Project Partner Logo" 
-            className="h-10 w-auto"
+            className="h-10 w-auto transition-opacity duration-300"
+            loading="lazy"
+            onLoad={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+            onError={(e) => {
+              console.warn('Logo failed to load');
+              e.currentTarget.style.display = 'none';
+            }}
+            style={{ opacity: 0 }}
           />
         </div>
         
