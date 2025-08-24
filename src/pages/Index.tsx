@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
+  // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const { setCurrentProject, setCurrentProjectRun } = useProject();
@@ -21,6 +22,33 @@ const Index = () => {
   const [resetUserView, setResetUserView] = useState(false);
   const [forceListingMode, setForceListingMode] = useState(false);
 
+  // Listen for edit workflow navigation event
+  useEffect(() => {
+    const handleEditWorkflowNavigation = () => {
+      setCurrentView('editWorkflow');
+    };
+
+    const handleKickoffNavigation = (event: CustomEvent) => {
+      const { projectRunId } = event.detail;
+      console.log("🎯 Index: Received kickoff navigation event:", projectRunId);
+      navigate('/', {
+        state: {
+          view: 'user',
+          projectRunId: projectRunId
+        }
+      });
+    };
+
+    window.addEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
+    window.addEventListener('navigate-to-kickoff', handleKickoffNavigation as EventListener);
+    
+    return () => {
+      window.removeEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
+      window.removeEventListener('navigate-to-kickoff', handleKickoffNavigation as EventListener);
+    };
+  }, [navigate]);
+
+  // CONDITIONAL LOGIC AFTER ALL HOOKS
   // Show public home page if not logged in
   if (!user) {
     return <Home />;
@@ -60,31 +88,7 @@ const Index = () => {
     setResetUserView(false); // Also clear reset flag when project is selected
   };
 
-  // Listen for edit workflow navigation event
-  useEffect(() => {
-    const handleEditWorkflowNavigation = () => {
-      setCurrentView('editWorkflow');
-    };
-
-    const handleKickoffNavigation = (event: CustomEvent) => {
-      const { projectRunId } = event.detail;
-      console.log("🎯 Index: Received kickoff navigation event:", projectRunId);
-      navigate('/', {
-        state: {
-          view: 'user',
-          projectRunId: projectRunId
-        }
-      });
-    };
-
-    window.addEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
-    window.addEventListener('navigate-to-kickoff', handleKickoffNavigation as EventListener);
-    
-    return () => {
-      window.removeEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
-      window.removeEventListener('navigate-to-kickoff', handleKickoffNavigation as EventListener);
-    };
-  }, [navigate]);
+  // This useEffect is now at the top with other hooks
 
   const renderView = () => {
     console.log('Index renderView - currentView:', currentView);
