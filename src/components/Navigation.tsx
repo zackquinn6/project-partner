@@ -40,7 +40,7 @@ export default function Navigation({
     run.status !== 'complete' && run.progress < 100
   );
   return <nav className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-6 py-4">
+      <div className="container mx-auto px-6 py-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img src="/lovable-uploads/dd8a6549-c627-436d-954c-e8c38a53fbee.png" alt="Project Partner Logo" className="h-11 w-auto" />
