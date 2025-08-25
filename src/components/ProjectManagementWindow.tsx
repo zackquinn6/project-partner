@@ -68,11 +68,21 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     }
   };
 
-  // Build flat table structure from hierarchical data
+  // Build flat table structure from hierarchical data - FIXED: Use processed phases with standard phases
   const buildTableRows = (): TableRow[] => {
     if (!currentProject || !Array.isArray(currentProject.phases)) return [];
+    
+    // Import and use the addStandardPhasesToProjectRun function to show the actual runtime structure
+    const { addStandardPhasesToProjectRun } = require('@/utils/projectUtils');
+    const processedPhases = addStandardPhasesToProjectRun(currentProject.phases);
+    
+    console.log('Admin view: Building table rows with processed phases:', {
+      originalPhases: currentProject.phases.map(p => p.name),
+      processedPhases: processedPhases.map(p => p.name)
+    });
+    
     const rows: TableRow[] = [];
-    currentProject.phases.forEach(phase => {
+    processedPhases.forEach(phase => {
       rows.push({
         type: 'phase',
         id: phase.id,
@@ -636,7 +646,38 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
+              <div>
+                <label className="text-sm font-medium">Publish Status</label>
+                <Select 
+                  value={currentProject.publishStatus || 'draft'} 
+                  onValueChange={(value) => updateProjectData({...currentProject, publishStatus: value as any})}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                        Draft (Admin Only)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="beta-testing">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                        Beta Testing
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="published">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        Published
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <label className="text-sm font-medium">Difficulty</label>
                 <select 
@@ -722,6 +763,10 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   <CardDescription>Manage the workflow structure</CardDescription>
                 </div>
                 <div className="flex gap-2">
+                  <Button onClick={() => setCurrentView('editWorkflow')} variant="outline">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Workflow Content
+                  </Button>
                   <Button onClick={() => setShowImport(true)} variant="outline">
                     <Import className="w-4 h-4 mr-2" />
                     Import Content

@@ -88,7 +88,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
     }
   }, [open]);
 
-  // Extract all tools and materials from project using rollup logic
+  // Extract all tools and materials from project using rollup logic with proper aggregation
   const projectRollup = React.useMemo(() => {
     const activeProject = project || projectRun;
     if (!activeProject) {
@@ -104,7 +104,9 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
       isProject: !!project
     });
     
+    // For materials: count total quantity needed (sum across all steps)
     const materialsMap = new Map<string, any>();
+    // For tools: track max quantity needed in any single step
     const toolsMap = new Map<string, any>();
     
     // Ensure phases is an array before iterating
@@ -115,6 +117,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
     
     activeProject.phases.forEach((phase, phaseIndex) => {
       console.log(`OrderingWindow: Processing phase ${phaseIndex}:`, {
+        phaseName: phase.name,
         hasOperations: !!phase.operations,
         operationsLength: phase.operations?.length
       });
@@ -126,6 +129,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
       
       phase.operations.forEach((operation, opIndex) => {
         console.log(`OrderingWindow: Processing operation ${opIndex}:`, {
+          operationName: operation.name,
           hasSteps: !!operation.steps,
           stepsLength: operation.steps?.length
         });
@@ -137,39 +141,58 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
         
         operation.steps.forEach((step, stepIndex) => {
           console.log(`OrderingWindow: Processing step ${stepIndex}:`, {
+            stepName: step.step,
             hasMaterials: !!step.materials,
             materialsLength: step.materials?.length,
             hasTools: !!step.tools,
             toolsLength: step.tools?.length
           });
           
-          // Process materials
+          // Process materials - add quantities (materials are consumed per step)
           if (step.materials && Array.isArray(step.materials)) {
             step.materials.forEach(material => {
               const key = material.id;
-              if (!materialsMap.has(key)) {
+              if (materialsMap.has(key)) {
+                // Material already exists, increment quantity
+                const existing = materialsMap.get(key);
+                existing.totalQuantity = (existing.totalQuantity || 1) + 1;
+                existing.usedInSteps.push(step.step);
+              } else {
+                // New material
                 materialsMap.set(key, {
                   id: material.id,
                   name: material.name,
                   description: material.description,
                   category: material.category,
-                  required: material.required
+                  required: material.required,
+                  totalQuantity: 1,
+                  usedInSteps: [step.step]
                 });
               }
             });
           }
 
-          // Process tools
+          // Process tools - track max quantity needed in any single step (tools are reused)
           if (step.tools && Array.isArray(step.tools)) {
             step.tools.forEach(tool => {
               const key = tool.id;
-              if (!toolsMap.has(key)) {
+              const toolQuantity = 1; // Default quantity per step
+              
+              if (toolsMap.has(key)) {
+                // Tool already exists, update max quantity if needed
+                const existing = toolsMap.get(key);
+                existing.maxQuantity = Math.max(existing.maxQuantity || 1, toolQuantity);
+                existing.usedInSteps.push(step.step);
+              } else {
+                // New tool
                 toolsMap.set(key, {
                   id: tool.id,
                   name: tool.name,
                   description: tool.description,
                   category: tool.category,
-                  required: tool.required
+                  required: tool.required,
+                  maxQuantity: toolQuantity,
+                  usedInSteps: [step.step]
                 });
               }
             });
@@ -186,8 +209,18 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
     console.log('OrderingWindow: Final rollup result:', {
       materialsCount: result.materials.length,
       toolsCount: result.tools.length,
-      sampleMaterials: result.materials.slice(0, 3).map(m => ({ name: m.name, id: m.id })),
-      sampleTools: result.tools.slice(0, 3).map(t => ({ name: t.name, id: t.id }))
+      sampleMaterials: result.materials.slice(0, 3).map(m => ({ 
+        name: m.name, 
+        id: m.id, 
+        totalQuantity: m.totalQuantity,
+        usedInSteps: m.usedInSteps?.length 
+      })),
+      sampleTools: result.tools.slice(0, 3).map(t => ({ 
+        name: t.name, 
+        id: t.id, 
+        maxQuantity: t.maxQuantity,
+        usedInSteps: t.usedInSteps?.length 
+      }))
     });
     
     return result;
@@ -421,13 +454,23 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                                 className="mt-1"
                               />
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <p className="font-medium text-sm">{tool.name}</p>
+                                  {tool.maxQuantity > 1 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Qty: {tool.maxQuantity}
+                                    </Badge>
+                                  )}
                                   {(userProfile?.owned_tools || []).some((ownedTool: any) => 
                                     ownedTool.tool === tool.name || ownedTool.name === tool.name
                                   ) && (
                                     <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                                       Owned
+                                    </Badge>
+                                  )}
+                                  {tool.required && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Required
                                     </Badge>
                                   )}
                                 </div>
@@ -436,10 +479,11 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                                     {tool.description}
                                   </p>
                                 )}
-                                {tool.required && (
-                                  <Badge variant="destructive" className="text-xs mt-1">
-                                    Required
-                                  </Badge>
+                                {tool.usedInSteps && tool.usedInSteps.length > 0 && (
+                                  <p className="text-xs text-blue-600 mt-1">
+                                    Used in: {tool.usedInSteps.slice(0, 2).join(', ')}
+                                    {tool.usedInSteps.length > 2 && ` +${tool.usedInSteps.length - 2} more`}
+                                  </p>
                                 )}
                               </div>
                             </div>
@@ -477,16 +521,29 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                                className="mt-1"
                              />
                              <div className="flex-1 min-w-0">
-                               <p className="font-medium text-sm">{material.name}</p>
+                               <div className="flex items-center gap-2 flex-wrap">
+                                 <p className="font-medium text-sm">{material.name}</p>
+                                 {material.totalQuantity > 1 && (
+                                   <Badge variant="secondary" className="text-xs">
+                                     Total Qty: {material.totalQuantity}
+                                   </Badge>
+                                 )}
+                                 {material.required && (
+                                   <Badge variant="destructive" className="text-xs">
+                                     Required
+                                   </Badge>
+                                 )}
+                               </div>
                                {material.description && (
                                  <p className="text-xs text-muted-foreground mt-1">
                                    {material.description}
                                  </p>
                                )}
-                               {material.required && (
-                                 <Badge variant="destructive" className="text-xs mt-1">
-                                   Required
-                                 </Badge>
+                               {material.usedInSteps && material.usedInSteps.length > 0 && (
+                                 <p className="text-xs text-purple-600 mt-1">
+                                   Used in: {material.usedInSteps.slice(0, 2).join(', ')}
+                                   {material.usedInSteps.length > 2 && ` +${material.usedInSteps.length - 2} more`}
+                                 </p>
                                )}
                              </div>
                            </div>
