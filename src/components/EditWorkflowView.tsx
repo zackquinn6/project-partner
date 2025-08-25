@@ -87,7 +87,17 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   };
 
   const handleSaveEdit = () => {
-    if (!editingStep || !currentProject) return;
+    if (!editingStep || !currentProject) {
+      console.error('SaveEdit: Missing data', { editingStep: !!editingStep, currentProject: !!currentProject });
+      return;
+    }
+
+    console.log('SaveEdit: Starting save with:', { 
+      stepId: editingStep.id, 
+      stepName: editingStep.step,
+      contentSections: editingStep.contentSections?.length || 0,
+      hasContent: !!editingStep.content
+    });
 
     // Update only custom phases (standard phases are generated dynamically)
     const updatedProject = {
@@ -104,8 +114,10 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
       updatedAt: new Date()
     };
 
+    console.log('SaveEdit: Calling updateProject');
     updateProject(updatedProject);
     setEditMode(false);
+    console.log('SaveEdit: Completed successfully');
   };
 
   const handleEditOutput = (output: Output, stepId: string) => {
@@ -138,7 +150,11 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   };
 
   const updateEditingStep = (field: keyof WorkflowStep, value: any) => {
-    if (!editingStep) return;
+    if (!editingStep) {
+      console.error('updateEditingStep: No editingStep found');
+      return;
+    }
+    console.log('updateEditingStep:', { field, valueType: typeof value, hasValue: !!value });
     setEditingStep({ ...editingStep, [field]: value });
   };
 
