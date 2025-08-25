@@ -1,10 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
+import { PricingWindow } from '@/components/PricingWindow';
 import { 
   Calendar, 
   Clock, 
@@ -24,7 +26,8 @@ import {
   ShieldCheck,
   Zap,
   CheckCircle,
-  Eye
+  Eye,
+  DollarSign
 } from 'lucide-react';
 
 // Import placeholder images
@@ -134,10 +137,11 @@ const howItWorksSteps = [
   }
 ];
 
-export const Home = () => {
+export default function Home({ onViewChange }: HomeProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
+
   const handleScrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -180,6 +184,15 @@ export const Home = () => {
                 onClick={() => handleScrollToSection('about-project-partner')}
               >
                 About
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-sm"
+                onClick={() => setIsPricingOpen(true)}
+              >
+                <DollarSign className="mr-1 h-3 w-3" />
+                Pricing
               </Button>
               <Button 
                 variant="ghost"
@@ -685,6 +698,9 @@ export const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Pricing Window */}
+      <PricingWindow open={isPricingOpen} onOpenChange={setIsPricingOpen} />
     </div>
   );
 };
