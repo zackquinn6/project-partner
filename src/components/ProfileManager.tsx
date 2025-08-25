@@ -120,9 +120,6 @@ export default function ProfileManager({
                     <p><strong>Full Name:</strong> {existingProfile.full_name || "Not specified"}</p>
                     <p><strong>Nickname:</strong> {existingProfile.nickname || "Not specified"}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2 italic">
-                    💡 Choose a fun project name like "The Great One" or "Prime Time" to make your DIY journey more exciting!
-                  </p>
                 </div>
                 
                 <div>

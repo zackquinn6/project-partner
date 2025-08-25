@@ -191,7 +191,6 @@ export default function Home({ onViewChange }: HomeProps) {
                 className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-sm"
                 onClick={() => setIsPricingOpen(true)}
               >
-                <DollarSign className="mr-1 h-3 w-3" />
                 Pricing
               </Button>
               <Button 

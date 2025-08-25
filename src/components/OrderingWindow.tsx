@@ -6,8 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink, Globe } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink, Globe, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Project, Material, Tool } from "@/interfaces/Project";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -88,54 +89,104 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
 
   // Extract all tools and materials from project using rollup logic
   const projectRollup = React.useMemo(() => {
-    if (!project) return { materials: [], tools: [] };
+    if (!project) {
+      console.log('OrderingWindow: No project provided');
+      return { materials: [], tools: [] };
+    }
+    
+    console.log('OrderingWindow: Project structure:', {
+      hasPhases: !!project.phases,
+      phasesLength: project.phases?.length,
+      phases: project.phases
+    });
     
     const materialsMap = new Map<string, any>();
     const toolsMap = new Map<string, any>();
     
     // Ensure phases is an array before iterating
     if (!project.phases || !Array.isArray(project.phases)) {
+      console.log('OrderingWindow: No valid phases array');
       return { materials: [], tools: [] };
     }
     
-    project.phases.forEach(phase => {
-      phase.operations.forEach(operation => {
-        operation.steps.forEach(step => {
-          // Process materials
-          step.materials.forEach(material => {
-            const key = material.id;
-            if (!materialsMap.has(key)) {
-              materialsMap.set(key, {
-                id: material.id,
-                name: material.name,
-                description: material.description,
-                category: material.category,
-                required: material.required
-              });
-            }
+    project.phases.forEach((phase, phaseIndex) => {
+      console.log(`OrderingWindow: Processing phase ${phaseIndex}:`, {
+        hasOperations: !!phase.operations,
+        operationsLength: phase.operations?.length
+      });
+      
+      if (!phase.operations || !Array.isArray(phase.operations)) {
+        console.log(`OrderingWindow: Phase ${phaseIndex} has no valid operations`);
+        return;
+      }
+      
+      phase.operations.forEach((operation, opIndex) => {
+        console.log(`OrderingWindow: Processing operation ${opIndex}:`, {
+          hasSteps: !!operation.steps,
+          stepsLength: operation.steps?.length
+        });
+        
+        if (!operation.steps || !Array.isArray(operation.steps)) {
+          console.log(`OrderingWindow: Operation ${opIndex} has no valid steps`);
+          return;
+        }
+        
+        operation.steps.forEach((step, stepIndex) => {
+          console.log(`OrderingWindow: Processing step ${stepIndex}:`, {
+            hasMaterials: !!step.materials,
+            materialsLength: step.materials?.length,
+            hasTools: !!step.tools,
+            toolsLength: step.tools?.length
           });
+          
+          // Process materials
+          if (step.materials && Array.isArray(step.materials)) {
+            step.materials.forEach(material => {
+              const key = material.id;
+              if (!materialsMap.has(key)) {
+                materialsMap.set(key, {
+                  id: material.id,
+                  name: material.name,
+                  description: material.description,
+                  category: material.category,
+                  required: material.required
+                });
+              }
+            });
+          }
 
           // Process tools
-          step.tools.forEach(tool => {
-            const key = tool.id;
-            if (!toolsMap.has(key)) {
-              toolsMap.set(key, {
-                id: tool.id,
-                name: tool.name,
-                description: tool.description,
-                category: tool.category,
-                required: tool.required
-              });
-            }
-          });
+          if (step.tools && Array.isArray(step.tools)) {
+            step.tools.forEach(tool => {
+              const key = tool.id;
+              if (!toolsMap.has(key)) {
+                toolsMap.set(key, {
+                  id: tool.id,
+                  name: tool.name,
+                  description: tool.description,
+                  category: tool.category,
+                  required: tool.required
+                });
+              }
+            });
+          }
         });
       });
     });
     
-    return {
+    const result = {
       materials: Array.from(materialsMap.values()),
       tools: Array.from(toolsMap.values())
     };
+    
+    console.log('OrderingWindow: Final rollup result:', {
+      materialCount: result.materials.length,
+      toolCount: result.tools.length,
+      materials: result.materials,
+      tools: result.tools
+    });
+    
+    return result;
   }, [project]);
 
   const uniqueTools = projectRollup.tools;
@@ -182,7 +233,7 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden p-0">
+      <DialogContent className="max-w-full max-h-full w-screen h-screen overflow-hidden p-0 m-0 rounded-none border-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
@@ -190,7 +241,7 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex h-[calc(95vh-120px)]">
+        <div className="flex h-[calc(100vh-120px)]">
           {/* Main Browser Area */}
           <div className="flex-1 flex flex-col border-r">
             {/* Navigation Bar */}
@@ -200,10 +251,9 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
                   variant="outline"
                   size="sm"
                   onClick={() => setChecklistVisible(!checklistVisible)}
-                  className="flex items-center gap-2"
+                  className="h-8 px-2 flex items-center gap-1"
                 >
-                  {checklistVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  {checklistVisible ? 'Hide' : 'Show'} Checklist
+                  {checklistVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                 </Button>
                 
                 <div className="flex-1" />
@@ -211,9 +261,11 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
                 {allItemsOrdered && onOrderingComplete && (
                   <Button
                     onClick={onOrderingComplete}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="h-8 px-3 bg-green-600 hover:bg-green-700 text-sm"
+                    size="sm"
                   >
-                    Complete Ordering
+                    <Check className="w-3 h-3 mr-1" />
+                    Complete
                   </Button>
                 )}
               </div>
@@ -224,7 +276,7 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
                   <div key={site.name} className="flex gap-1">
                     <Button
                       onClick={() => setCurrentUrl(site.url)}
-                      className={`${site.color} text-white flex items-center gap-2`}
+                      className={`${site.color} text-white flex items-center gap-2 h-8 px-3 text-sm`}
                       size="sm"
                     >
                       {site.name}
@@ -233,9 +285,9 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
                       variant="outline"
                       size="sm"
                       onClick={() => window.open(site.url, '_blank')}
-                      className="px-2"
+                      className="h-8 w-8 p-0"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-3 h-3" />
                     </Button>
                   </div>
                 ))}
@@ -264,10 +316,19 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
             
             {/* Browser iframe */}
             <div className="flex-1 bg-white flex flex-col">
-              <div className="p-4 bg-muted/50 border-b text-sm text-muted-foreground">
-                Note: Some websites may not load in embedded view due to security restrictions. 
-                Click the site buttons to open in new tabs if needed.
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-2 bg-muted/50 border-b text-xs text-muted-foreground cursor-help">
+                      ℹ️ Some websites may not load due to security restrictions
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p>Some websites may not load in embedded view due to security restrictions. 
+                    Click the external link buttons to open sites in new tabs if needed.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <div className="flex-1 relative">
                 <iframe
                   src={currentUrl}
@@ -285,11 +346,51 @@ export function OrderingWindow({ open, onOpenChange, project, userOwnedTools, on
           {/* Checklist Sidebar */}
           {checklistVisible && (
             <div className="w-80 flex flex-col bg-background border-l">
-              <div className="p-4 border-b">
-                <h3 className="font-semibold text-lg">Shopping Checklist</h3>
-                <p className="text-sm text-muted-foreground">
-                  Check off items as you order them
-                </p>
+              <div className="p-2 border-b flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-lg">Shopping Checklist</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Check off items as you order them
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setChecklistVisible(false)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <EyeOff className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Hide checklist</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  {allItemsOrdered && onOrderingComplete && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={onOrderingComplete}
+                            size="sm"
+                            className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Complete ordering</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
               </div>
               
               <ScrollArea className="flex-1">

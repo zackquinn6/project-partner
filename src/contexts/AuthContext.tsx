@@ -94,13 +94,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/`
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+      
+      if (error) {
+        // Show user-friendly error message and recommend direct signup
+        const userFriendlyError = { 
+          message: 'Google sign-up is currently experiencing issues. Please try signing up directly with your email and password instead.' 
+        };
+        return { error: userFriendlyError };
       }
-    });
-    return { error };
+      
+      return { error };
+    } catch (err) {
+      // Fallback error for any unexpected issues
+      return { 
+        error: { 
+          message: 'Google sign-up is currently experiencing issues. Please try signing up directly with your email and password instead.' 
+        } 
+      };
+    }
   };
 
   const signOut = async () => {
