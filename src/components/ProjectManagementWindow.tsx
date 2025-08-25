@@ -16,7 +16,6 @@ import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrenc
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DragDropAdminView } from '@/components/DragDropAdminView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
@@ -785,7 +784,9 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       case 'editWorkflow':
         return <EditWorkflowView onBackToAdmin={() => setCurrentView('table')} />;
       case 'dragdrop':
-        return <DragDropAdminView onBack={() => setCurrentView('table')} />;
+        // Drag & Drop functionality has been moved to Structure Manager
+        // Redirect to Edit Workflow instead
+        return <EditWorkflowView onBackToAdmin={() => setCurrentView('table')} />;
       default:
         return (
           <div className="space-y-6">

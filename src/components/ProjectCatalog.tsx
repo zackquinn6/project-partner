@@ -21,10 +21,11 @@ import {
   DropdownMenuCheckboxItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter } from 'lucide-react';
+import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import ProfileManager from '@/components/ProfileManager';
+import { BetaProjectWarning } from '@/components/BetaProjectWarning';
 interface ProjectTemplate {
   id: string;
   name: string;
@@ -54,6 +55,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
   const [isDIYSurveyOpen, setIsDIYSurveyOpen] = useState(false);
   const [isProfileManagerOpen, setIsProfileManagerOpen] = useState(false);
+  const [isBetaWarningOpen, setIsBetaWarningOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [surveyMode, setSurveyMode] = useState<'new' | 'verify'>('new');
@@ -82,8 +84,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
   // Use only published projects from context - remove hardcoded templates
 
-  // Filter projects to show published projects or all projects in admin mode
-  const publishedProjects = projects.filter(project => (project.publishStatus === 'published' || isAdminMode));
+  // Filter projects to show published and beta projects or all projects in admin mode
+  const publishedProjects = projects.filter(project => (
+    project.publishStatus === 'published' || 
+    project.publishStatus === 'beta-testing' || 
+    isAdminMode
+  ));
 
   // Get unique filter options
   const availableCategories = useMemo(() => 
@@ -219,13 +225,18 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         }
       });
     } else {
-      // In user mode, show project setup dialog first
+      // In user mode, check if project is beta and show warning first
+      if (project.publishStatus === 'beta-testing') {
+        setSelectedTemplate(project);
+        setIsBetaWarningOpen(true);
+        return;
+      }
+      
+      // For published projects, proceed normally
       console.log('User mode - showing project setup');
       
       if (!user) {
         console.log('No user found - showing sign in dialog');
-        // Instead of redirecting immediately, we could show a sign-in dialog
-        // For now, redirect to auth with a return parameter
         navigate('/auth?return=projects');
         return;
       }
@@ -386,6 +397,19 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         }
       });
     });
+  };
+
+  const handleBetaAccept = () => {
+    // After accepting beta warning, proceed with normal project setup flow
+    if (!selectedTemplate || !user) return;
+    
+    setProjectSetupForm(prev => ({
+      ...prev,
+      customProjectName: selectedTemplate.name
+    }));
+    
+    // Show project setup dialog
+    setIsProjectSetupOpen(true);
   };
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto px-6 py-8">
@@ -574,13 +598,22 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     <div className="absolute bottom-4 left-4 text-white">
                       <IconComponent className="w-8 h-8" />
                     </div>
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-4 right-4 flex gap-2">
                       <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                         {project.category}
                       </Badge>
-                      {isAdminMode && <Badge variant="secondary" className={`ml-2 ${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+                      {/* Beta badge for beta-testing projects */}
+                      {project.publishStatus === 'beta-testing' && (
+                        <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          BETA
+                        </Badge>
+                      )}
+                      {isAdminMode && (
+                        <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
                           {project.publishStatus}
-                        </Badge>}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   
@@ -703,6 +736,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                 handleProfileManagerComplete();
               }
             }}
+          />
+        )}
+
+        {/* Beta Project Warning Dialog - Only show in user mode */}
+        {!isAdminMode && selectedTemplate && (
+          <BetaProjectWarning
+            projectName={selectedTemplate.name}
+            open={isBetaWarningOpen}
+            onOpenChange={setIsBetaWarningOpen}
+            onAccept={handleBetaAccept}
           />
         )}
       </div>
