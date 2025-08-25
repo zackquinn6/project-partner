@@ -5,13 +5,14 @@ import { ProjectSelector } from '@/components/ProjectSelector';
 import ProjectRollup from '@/components/ProjectRollup';
 import EditWorkflowView from '@/components/EditWorkflowView';
 import EditableUserView from '@/components/EditableUserView';
+import { ProjectContentImport } from '@/components/ProjectContentImport';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput } from 'lucide-react';
+import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import } from 'lucide-react';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -53,6 +54,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   const [editingProject, setEditingProject] = useState(false);
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
+  const [showImport, setShowImport] = useState(false);
 
   const updateProjectData = async (updatedProject: typeof currentProject) => {
     if (updatedProject) {
@@ -297,6 +299,29 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       }));
     }
     updateProjectData(updatedProject);
+  };
+
+  const handleImportContent = (importedPhases: Phase[]) => {
+    if (!currentProject) return;
+    
+    // Merge imported phases with existing ones
+    const currentPhases = Array.isArray(currentProject.phases) ? currentProject.phases : [];
+    const updatedProject = {
+      ...currentProject,
+      phases: [...currentPhases, ...importedPhases]
+    };
+    
+    updateProjectData(updatedProject);
+    
+    // Expand all imported phases for visibility
+    const newExpandedPhases = new Set([...expandedPhases]);
+    importedPhases.forEach(phase => {
+      newExpandedPhases.add(phase.id);
+      phase.operations.forEach(op => {
+        setExpandedOperations(prev => new Set([...prev, op.id]));
+      });
+    });
+    setExpandedPhases(newExpandedPhases);
   };
 
   const startEdit = (type: EditingState['type'], id: string, data: any) => {
@@ -748,10 +773,16 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   <CardTitle>Phases, Operations, and Steps</CardTitle>
                   <CardDescription>Manage the workflow structure</CardDescription>
                 </div>
-                <Button onClick={addPhase}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Phase
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={() => setShowImport(true)} variant="outline">
+                    <Import className="w-4 h-4 mr-2" />
+                    Import Content
+                  </Button>
+                  <Button onClick={addPhase}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Phase
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -774,6 +805,12 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
             </Card>
             
             <ProjectRollup />
+            
+            <ProjectContentImport
+              open={showImport}
+              onOpenChange={setShowImport}
+              onImport={handleImportContent}
+            />
           </div>
         );
     }
