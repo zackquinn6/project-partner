@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DragDropAdminView } from '@/components/DragDropAdminView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 
 interface EditingState {
   type: 'phase' | 'operation' | 'step' | null;
@@ -72,8 +73,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   const buildTableRows = (): TableRow[] => {
     if (!currentProject || !Array.isArray(currentProject.phases)) return [];
     
-    // Import and use the addStandardPhasesToProjectRun function to show the actual runtime structure
-    const { addStandardPhasesToProjectRun } = require('@/utils/projectUtils');
+    // Use the imported addStandardPhasesToProjectRun function to show the actual runtime structure
     const processedPhases = addStandardPhasesToProjectRun(currentProject.phases);
     
     console.log('Admin view: Building table rows with processed phases:', {
