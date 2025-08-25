@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 export default function Auth() {
@@ -22,6 +23,7 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showGoogleErrorDialog, setShowGoogleErrorDialog] = useState(false);
 
   // Update form when URL changes
   useEffect(() => {
@@ -107,7 +109,11 @@ export default function Auth() {
     const { error } = await signInWithGoogle();
     
     if (error) {
-      setError(error.message);
+      if (error.message.includes('provider is not enabled') || error.message.includes('Unsupported provider')) {
+        setShowGoogleErrorDialog(true);
+      } else {
+        setError(error.message);
+      }
     }
     
     setIsLoading(false);
@@ -297,6 +303,23 @@ export default function Auth() {
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Home
       </Button>
+
+      {/* Google Error Dialog */}
+      <Dialog open={showGoogleErrorDialog} onOpenChange={setShowGoogleErrorDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Google Login Unavailable</DialogTitle>
+            <DialogDescription>
+              Google login not available right now. Try creating an account directly instead.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button onClick={() => setShowGoogleErrorDialog(false)}>
+              OK
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
