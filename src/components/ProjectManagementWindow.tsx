@@ -335,6 +335,34 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     setExpandedPhases(newExpandedPhases);
   };
 
+  const createNewRevision = async () => {
+    if (!currentProject) return;
+    
+    const revisionNotes = window.prompt('Enter revision notes (optional):');
+    if (revisionNotes === null) return; // User cancelled
+    
+    try {
+      const newRevision = {
+        ...currentProject,
+        id: `${Date.now()}`, // Generate new ID
+        name: `${currentProject.name} (Rev ${(currentProject.revisionNumber || 1) + 1})`,
+        parentProjectId: currentProject.parentProjectId || currentProject.id, // Root project ID
+        revisionNumber: (currentProject.revisionNumber || 1) + 1,
+        revisionNotes: revisionNotes || '',
+        createdFromRevision: currentProject.revisionNumber || 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        publishStatus: 'draft' as const // New revisions start as draft
+      };
+      
+      await updateProject(newRevision);
+      toast.success(`Created revision ${newRevision.revisionNumber}`);
+    } catch (error) {
+      console.error('Error creating revision:', error);
+      toast.error('Failed to create revision');
+    }
+  };
+
   const startEdit = (type: EditingState['type'], id: string, data: any) => {
     setEditing({ type, id, data: { ...data } });
   };
@@ -714,16 +742,23 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                 />
               </div>
             </div>
-            <div className="flex gap-2 pt-2">
-              <Button onClick={() => setEditingProject(false)} variant="outline">
-                <Check className="w-4 h-4 mr-2" />
-                Done Editing
-              </Button>
-              <Button onClick={() => setEditingProject(false)} variant="ghost">
-                <X className="w-4 h-4 mr-2" />
-                Cancel
-              </Button>
-            </div>
+            {currentProject && (
+              <div className="flex gap-2 mt-4 pt-4 border-t">
+                <Button onClick={() => setEditingProject(false)} variant="outline">
+                  <Check className="w-4 h-4 mr-2" />
+                  Done Editing
+                </Button>
+                <Button onClick={() => setEditingProject(false)} variant="ghost">
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <div className="flex-1" />
+                <Button onClick={() => createNewRevision()} variant="secondary">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Revision
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

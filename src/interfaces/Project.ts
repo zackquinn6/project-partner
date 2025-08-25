@@ -117,4 +117,9 @@ export interface Project {
   estimatedTimePerUnit?: number;
   scalingUnit?: 'per square foot' | 'per 10x10 room' | 'per linear foot' | 'per cubic yard' | 'per item';
   phases: Phase[];
+  // Revision tracking fields
+  revisionNumber?: number;
+  parentProjectId?: string;
+  revisionNotes?: string;
+  createdFromRevision?: number;
 }
