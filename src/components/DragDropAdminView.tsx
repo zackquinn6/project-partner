@@ -11,6 +11,7 @@ import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, P
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { OutputEditForm } from './OutputEditForm';
+import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 
 interface DragDropAdminViewProps {
   onBack: () => void;
@@ -26,6 +27,9 @@ export const DragDropAdminView: React.FC<DragDropAdminViewProps> = ({ onBack }) 
     return <div>No project selected</div>;
   }
 
+  // Get processed phases including standard phases (kickoff, planning, ordering)
+  const displayPhases = addStandardPhasesToProjectRun(currentProject.phases || []);
+
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination || !currentProject) return;
 
@@ -38,10 +42,20 @@ export const DragDropAdminView: React.FC<DragDropAdminViewProps> = ({ onBack }) 
     const updatedProject = { ...currentProject };
     
     if (type === 'phases') {
-      const newPhases = Array.from(updatedProject.phases);
-      const [reorderedPhase] = newPhases.splice(source.index, 1);
-      newPhases.splice(destination.index, 0, reorderedPhase);
-      updatedProject.phases = newPhases;
+      // Only allow reordering of non-standard phases (after index 2: kickoff, planning, ordering)
+      const standardPhaseCount = 3;
+      if (source.index >= standardPhaseCount && destination.index >= standardPhaseCount) {
+        const newPhases = Array.from(updatedProject.phases);
+        const sourcePhaseIndex = source.index - standardPhaseCount;
+        const destPhaseIndex = destination.index - standardPhaseCount;
+        const [reorderedPhase] = newPhases.splice(sourcePhaseIndex, 1);
+        newPhases.splice(destPhaseIndex, 0, reorderedPhase);
+        updatedProject.phases = newPhases;
+        toast.success('Phase reordered successfully');
+      } else {
+        toast.warning('Standard phases (Kickoff, Planning, Ordering) cannot be reordered');
+        return;
+      }
     } else if (type === 'operations') {
       const phaseId = source.droppableId.replace('operations-', '');
       const phase = updatedProject.phases.find(p => p.id === phaseId);
@@ -216,6 +230,13 @@ export const DragDropAdminView: React.FC<DragDropAdminViewProps> = ({ onBack }) 
   const deleteItem = (type: 'phase' | 'operation' | 'step', id: string, phaseId?: string, operationId?: string) => {
     if (!currentProject) return;
 
+    // Check if trying to delete a standard phase
+    const standardPhaseIds = ['kickoff-phase', 'planning-phase', 'ordering-phase'];
+    if (type === 'phase' && standardPhaseIds.includes(id)) {
+      toast.warning('Standard phases (Kickoff, Planning, Ordering) cannot be deleted');
+      return;
+    }
+
     let updatedProject = { ...currentProject };
 
     if (type === 'phase') {
@@ -343,7 +364,9 @@ export const DragDropAdminView: React.FC<DragDropAdminViewProps> = ({ onBack }) 
         <Droppable droppableId="phases" type="phases">
           {(provided) => (
             <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-              {currentProject.phases.map((phase, phaseIndex) => (
+              {displayPhases.map((phase, phaseIndex) => {
+                const isStandardPhase = phaseIndex < 3; // First 3 are standard phases
+                return (
                 <Draggable key={phase.id} draggableId={phase.id} index={phaseIndex}>
                   {(provided) => (
                     <Card
@@ -377,23 +400,26 @@ export const DragDropAdminView: React.FC<DragDropAdminViewProps> = ({ onBack }) 
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex-1">
-                                <CardTitle className="flex items-center gap-2">
-                                  <Badge variant="outline">Phase {phaseIndex + 1}</Badge>
-                                  {phase.name}
-                                </CardTitle>
-                                {phase.description && <p className="text-sm text-muted-foreground">{phase.description}</p>}
-                              </div>
+                          <div className="flex-1">
+                            <CardTitle className="flex items-center gap-2">
+                              <Badge variant={isStandardPhase ? "default" : "outline"}>
+                                Phase {phaseIndex + 1}
+                              </Badge>
+                              {phase.name}
+                              {isStandardPhase && <Badge variant="secondary" className="text-xs">Standard</Badge>}
+                            </CardTitle>
+                            {phase.description && <p className="text-sm text-muted-foreground">{phase.description}</p>}
+                          </div>
                             )}
                           </div>
                           <div className="flex gap-2">
                             <Button size="sm" onClick={() => addOperation(phase.id)}>
                               <Plus className="w-4 h-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setEditingItem({ type: 'phase', id: phase.id, data: { ...phase } })}>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingItem({ type: 'phase', id: phase.id, data: { ...phase } })} disabled={isStandardPhase}>
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => deleteItem('phase', phase.id)}>
+                            <Button size="sm" variant="ghost" onClick={() => deleteItem('phase', phase.id)} disabled={isStandardPhase}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -565,7 +591,8 @@ export const DragDropAdminView: React.FC<DragDropAdminViewProps> = ({ onBack }) 
                     </Card>
                   )}
                 </Draggable>
-              ))}
+              );
+              })}
               {provided.placeholder}
             </div>
           )}

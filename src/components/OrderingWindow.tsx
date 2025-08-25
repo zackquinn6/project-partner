@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Project, Material, Tool } from "@/interfaces/Project";
 import { supabase } from "@/integrations/supabase/client";
+import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 
 interface OrderingWindowProps {
   open: boolean;
@@ -96,10 +97,13 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
       return { materials: [], tools: [] };
     }
     
-    console.log('OrderingWindow: Project structure:', {
-      hasPhases: !!activeProject.phases,
-      phasesLength: activeProject.phases?.length,
-      phases: activeProject.phases,
+    // Get processed phases including standard phases for complete tool/material list
+    const processedPhases = addStandardPhasesToProjectRun(activeProject.phases || []);
+    
+    console.log('OrderingWindow: Project structure with processed phases:', {
+      originalPhasesLength: activeProject.phases?.length || 0,
+      processedPhasesLength: processedPhases.length,
+      phaseNames: processedPhases.map(p => p.name),
       isProjectRun: !!projectRun,
       isProject: !!project
     });
@@ -109,13 +113,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
     // For tools: track max quantity needed in any single step
     const toolsMap = new Map<string, any>();
     
-    // Ensure phases is an array before iterating
-    if (!activeProject.phases || !Array.isArray(activeProject.phases)) {
-      console.log('OrderingWindow: No valid phases array');
-      return { materials: [], tools: [] };
-    }
-    
-    activeProject.phases.forEach((phase, phaseIndex) => {
+    processedPhases.forEach((phase, phaseIndex) => {
       console.log(`OrderingWindow: Processing phase ${phaseIndex}:`, {
         phaseName: phase.name,
         hasOperations: !!phase.operations,

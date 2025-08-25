@@ -16,6 +16,7 @@ import { OutputEditForm } from './OutputEditForm';
 import { MultiContentEditor } from './MultiContentEditor';
 import { MultiContentRenderer } from './MultiContentRenderer';
 import { toast } from 'sonner';
+import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 
 interface EditWorkflowViewProps {
   onBackToAdmin: () => void;
@@ -36,20 +37,21 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   const [editingStructureStep, setEditingStructureStep] = useState<WorkflowStep | null>(null);
   const [showAddDialog, setShowAddDialog] = useState<{ type: 'phase' | 'operation' | 'step'; parentId?: string } | null>(null);
 
+  // Get processed phases including standard phases
+  const displayPhases = currentProject ? addStandardPhasesToProjectRun(currentProject.phases || []) : [];
+  
   // Flatten all steps from all phases and operations for navigation
-  const allSteps = (currentProject?.phases && Array.isArray(currentProject.phases)) 
-    ? currentProject.phases.flatMap(phase => 
-        phase.operations.flatMap(operation => 
-          operation.steps.map(step => ({
-            ...step,
-            phaseName: phase.name,
-            operationName: operation.name,
-            phaseId: phase.id,
-            operationId: operation.id
-          }))
-        )
-      ) 
-    : [];
+  const allSteps = displayPhases.flatMap(phase => 
+    phase.operations.flatMap(operation => 
+      operation.steps.map(step => ({
+        ...step,
+        phaseName: phase.name,
+        operationName: operation.name,
+        phaseId: phase.id,
+        operationId: operation.id
+      }))
+    )
+  );
 
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
@@ -87,6 +89,7 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   const handleSaveEdit = () => {
     if (!editingStep || !currentProject) return;
 
+    // Update only custom phases (standard phases are generated dynamically)
     const updatedProject = {
       ...currentProject,
       phases: currentProject.phases.map(phase => ({
@@ -440,15 +443,13 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   };
 
   // Group steps by phase and operation for sidebar navigation
-  const groupedSteps = (currentProject?.phases && Array.isArray(currentProject.phases)) 
-    ? currentProject.phases.reduce((acc, phase) => {
-        acc[phase.name] = phase.operations.reduce((opAcc, operation) => {
-          opAcc[operation.name] = operation.steps;
-          return opAcc;
-        }, {} as Record<string, any[]>);
-        return acc;
-      }, {} as Record<string, Record<string, any[]>>) 
-    : {};
+  const groupedSteps = displayPhases.reduce((acc, phase) => {
+    acc[phase.name] = phase.operations.reduce((opAcc, operation) => {
+      opAcc[operation.name] = operation.steps;
+      return opAcc;
+    }, {} as Record<string, any[]>);
+    return acc;
+  }, {} as Record<string, Record<string, any[]>>);
 
   // Structure view rendering
   const renderStructureView = () => {
@@ -465,7 +466,9 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
         </div>
 
         <div className="space-y-4">
-          {currentProject.phases.map((phase, phaseIndex) => (
+          {displayPhases.map((phase, phaseIndex) => {
+            const isStandardPhase = phaseIndex < 3; // First 3 are standard phases
+            return (
             <Card key={phase.id} className="border-2">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -620,7 +623,8 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
                 </div>
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
         </div>
       </div>
     );
