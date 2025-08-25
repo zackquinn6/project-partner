@@ -572,44 +572,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       </CardHeader>
       <CardContent>
         <ProjectSelector isAdminMode={true} />
-        {currentProject && !editingProject && (
-          <div className="mt-4 space-y-4 border-t pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Project Name</label>
-                <p className="mt-1 text-sm">{currentProject.name}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Category</label>
-                <p className="mt-1 text-sm">{currentProject.category || 'Not set'}</p>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Description</label>
-              <p className="mt-1 text-sm">{currentProject.description || 'No description'}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Difficulty</label>
-                <p className="mt-1 text-sm">{currentProject.difficulty || 'Not set'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Effort Level</label>
-                <p className="mt-1 text-sm">{currentProject.effortLevel || 'Not set'}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Estimated Time Per Unit</label>
-                <p className="mt-1 text-sm">{currentProject.estimatedTimePerUnit ? `${currentProject.estimatedTimePerUnit} hours` : 'Not set'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Scaling Unit</label>
-                <p className="mt-1 text-sm">{currentProject.scalingUnit || 'Not set'}</p>
-              </div>
-            </div>
-          </div>
-        )}
         {currentProject && editingProject && (
           <div className="mt-4 space-y-4 border-t pt-4">
             <div className="grid grid-cols-2 gap-4">
