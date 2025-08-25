@@ -103,20 +103,8 @@ export default function Auth() {
   };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    const { error } = await signInWithGoogle();
-    
-    if (error) {
-      if (error.message.includes('provider is not enabled') || error.message.includes('Unsupported provider')) {
-        setShowGoogleErrorDialog(true);
-      } else {
-        setError(error.message);
-      }
-    }
-    
-    setIsLoading(false);
+    // Google provider is not configured, show error dialog
+    setShowGoogleErrorDialog(true);
   };
 
   if (loading) {
