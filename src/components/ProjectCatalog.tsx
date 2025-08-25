@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,6 +52,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     addProjectRun,
     projects
   } = useProject();
+
+  // State for published projects when not authenticated
+  const [publicProjects, setPublicProjects] = useState<any[]>([]);
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
   const [isDIYSurveyOpen, setIsDIYSurveyOpen] = useState(false);
   const [isProfileManagerOpen, setIsProfileManagerOpen] = useState(false);
@@ -82,14 +85,35 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     }
   }, [isAdminMode]);
 
-  // Use only published projects from context - remove hardcoded templates
+  // Fetch published projects for unauthenticated users
+  useEffect(() => {
+    if (!user && !isAdminMode) {
+      const fetchPublicProjects = async () => {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .in('publish_status', ['published', 'beta-testing']);
+        
+        if (data && !error) {
+          setPublicProjects(data);
+        }
+      };
+      
+      fetchPublicProjects();
+    }
+  }, [user, isAdminMode]);
 
+  // Use appropriate projects based on authentication status
+  const availableProjects = user ? projects : publicProjects;
+  
   // Filter projects to show published and beta projects or all projects in admin mode
-  const publishedProjects = projects.filter(project => (
-    project.publishStatus === 'published' || 
-    project.publishStatus === 'beta-testing' || 
-    isAdminMode
-  ));
+  const publishedProjects = user 
+    ? projects.filter(project => (
+        project.publishStatus === 'published' || 
+        project.publishStatus === 'beta-testing' || 
+        isAdminMode
+      ))
+    : publicProjects;
 
   // Get unique filter options
   const availableCategories = useMemo(() => 
