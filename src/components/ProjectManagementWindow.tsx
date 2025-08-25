@@ -12,10 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import } from 'lucide-react';
+import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DragDropAdminView } from '@/components/DragDropAdminView';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -45,7 +46,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     projects
   } = useProject();
   
-  const [currentView, setCurrentView] = useState<'table' | 'editWorkflow'>('table');
+  const [currentView, setCurrentView] = useState<'table' | 'editWorkflow' | 'dragdrop'>('table');
   const [editing, setEditing] = useState<EditingState>({
     type: null,
     id: null,
@@ -553,21 +554,20 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                 : "Choose a project to manage and edit its details"}
             </CardDescription>
           </div>
-          {currentProject && !editingProject && (
-            <div className="flex flex-col items-end gap-2">
-              <Button onClick={() => setEditingProject(true)} size="lg" className="bg-primary hover:bg-primary/90">
+          <div className="flex gap-2">
+            {currentProject && !editingProject && (
+              <Button onClick={() => setEditingProject(true)} size="sm" className="bg-primary hover:bg-primary/90">
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Project Details
               </Button>
-              <p className="text-xs text-muted-foreground">Click to edit time & scale settings</p>
-            </div>
-          )}
-          {currentProject && editingProject && (
-            <div className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-md">
-              <Edit className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Edit Mode Active</span>
-            </div>
-          )}
+            )}
+            {currentProject && editingProject && (
+              <div className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-md">
+                <Edit className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Edit Mode Active</span>
+              </div>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -749,23 +749,12 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     switch (currentView) {
       case 'editWorkflow':
         return <EditWorkflowView onBackToAdmin={() => setCurrentView('table')} />;
+      case 'dragdrop':
+        return <DragDropAdminView onBack={() => setCurrentView('table')} />;
       default:
         return (
           <div className="space-y-6">
             {renderProjectSelector()}
-            
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Project Structure</h2>
-              <div className="flex gap-2">
-                <Button onClick={() => {
-                  onOpenChange(false);
-                  // Navigate to edit workflow in full screen
-                  window.dispatchEvent(new CustomEvent('navigate-to-edit-workflow'));
-                }}>
-                  Edit Workflow
-                </Button>
-              </div>
-            </div>
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -777,6 +766,10 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   <Button onClick={() => setShowImport(true)} variant="outline">
                     <Import className="w-4 h-4 mr-2" />
                     Import Content
+                  </Button>
+                  <Button onClick={() => setCurrentView('dragdrop')} variant="outline">
+                    <GripVertical className="w-4 h-4 mr-2" />
+                    Drag & Drop Editor
                   </Button>
                   <Button onClick={addPhase}>
                     <Plus className="w-4 h-4 mr-2" />
@@ -803,8 +796,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                 </Table>
               </CardContent>
             </Card>
-            
-            <ProjectRollup />
             
             <ProjectContentImport
               open={showImport}

@@ -55,10 +55,10 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
 
   useEffect(() => {
-    if (currentStep) {
+    if (currentStep && (!editingStep || editingStep.id !== currentStep.id)) {
       setEditingStep({ ...currentStep });
     }
-  }, [currentStep]);
+  }, [currentStep?.id]);
 
   const handleNext = () => {
     if (currentStepIndex < allSteps.length - 1) {

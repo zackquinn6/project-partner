@@ -70,19 +70,39 @@ export function MultiContentEditor({ sections, onChange }: MultiContentEditorPro
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Step Content</h3>
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => addSection('text')} variant="outline">
+          <Button 
+            size="sm" 
+            onClick={() => addSection('text')} 
+            variant="outline"
+            type="button"
+          >
             <FileText className="w-4 h-4 mr-2" />
             Add Text
           </Button>
-          <Button size="sm" onClick={() => addSection('image')} variant="outline">
+          <Button 
+            size="sm" 
+            onClick={() => addSection('image')} 
+            variant="outline"
+            type="button"
+          >
             <Image className="w-4 h-4 mr-2" />
             Add Image
           </Button>
-          <Button size="sm" onClick={() => addSection('video')} variant="outline">
+          <Button 
+            size="sm" 
+            onClick={() => addSection('video')} 
+            variant="outline"
+            type="button"
+          >
             <Video className="w-4 h-4 mr-2" />
             Add Video
           </Button>
-          <Button size="sm" onClick={() => addSection('link')} variant="outline">
+          <Button 
+            size="sm" 
+            onClick={() => addSection('link')} 
+            variant="outline"
+            type="button"
+          >
             <ExternalLink className="w-4 h-4 mr-2" />
             Add Link
           </Button>
