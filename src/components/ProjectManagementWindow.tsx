@@ -555,12 +555,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            {currentProject && !editingProject && (
-              <Button onClick={() => setEditingProject(true)} size="sm" className="bg-primary hover:bg-primary/90">
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Project Details
-              </Button>
-            )}
             {currentProject && editingProject && (
               <div className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-md">
                 <Edit className="w-4 h-4 text-primary" />
@@ -571,7 +565,10 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
         </div>
       </CardHeader>
       <CardContent>
-        <ProjectSelector isAdminMode={true} />
+        <ProjectSelector 
+          isAdminMode={true} 
+          onEditProjectDetails={() => setEditingProject(true)}
+        />
         {currentProject && editingProject && (
           <div className="mt-4 space-y-4 border-t pt-4">
             <div className="grid grid-cols-2 gap-4">
@@ -721,7 +718,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Phases, Operations, and Steps</CardTitle>
+                  <CardTitle>Workflow Structure</CardTitle>
                   <CardDescription>Manage the workflow structure</CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -731,7 +728,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   </Button>
                   <Button onClick={() => setCurrentView('dragdrop')} variant="outline">
                     <GripVertical className="w-4 h-4 mr-2" />
-                    Drag & Drop Editor
+                    Workflow Structure Editor
                   </Button>
                   <Button onClick={addPhase}>
                     <Plus className="w-4 h-4 mr-2" />

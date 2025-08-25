@@ -9,14 +9,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, FolderOpen } from 'lucide-react';
+import { Plus, FolderOpen, Edit } from 'lucide-react';
 
 interface ProjectSelectorProps {
   isAdminMode?: boolean;
   onProjectSelected?: () => void;
+  onEditProjectDetails?: () => void;
 }
 
-export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = false, onProjectSelected }) => {
+export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = false, onProjectSelected, onEditProjectDetails }) => {
   const { projects, currentProject, setCurrentProject, addProject, updateProject, deleteProject } = useProject();
   
   // Debug logging
@@ -145,50 +146,65 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
             </Select>
           </div>
           
-          <Dialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                New Project
+          <div className="flex gap-2">
+            <Dialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  New Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Project</DialogTitle>
+                  <DialogDescription>
+                    Add a new project to organize your workflows
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="project-name">Project Name</Label>
+                    <Input
+                      id="project-name"
+                      placeholder="Enter project name"
+                      value={newProjectForm.name}
+                      onChange={(e) => setNewProjectForm(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="project-description">Description</Label>
+                    <Textarea
+                      id="project-description"
+                      placeholder="Enter project description"
+                      value={newProjectForm.description}
+                      onChange={(e) => setNewProjectForm(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setIsNewProjectOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateProject} disabled={!newProjectForm.name.trim()}>
+                      Create Project
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            {/* Edit Project Details button moved from ProjectManagementWindow */}
+            {isAdminMode && currentProject && (
+              <Button 
+                onClick={onEditProjectDetails}
+                size="sm" 
+                variant="outline" 
+                className="flex items-center gap-2"
+              >
+                <Edit className="w-4 h-4" />
+                Edit Project Details
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Project</DialogTitle>
-                <DialogDescription>
-                  Add a new project to organize your workflows
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="project-name">Project Name</Label>
-                  <Input
-                    id="project-name"
-                    placeholder="Enter project name"
-                    value={newProjectForm.name}
-                    onChange={(e) => setNewProjectForm(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="project-description">Description</Label>
-                  <Textarea
-                    id="project-description"
-                    placeholder="Enter project description"
-                    value={newProjectForm.description}
-                    onChange={(e) => setNewProjectForm(prev => ({ ...prev, description: e.target.value }))}
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setIsNewProjectOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateProject} disabled={!newProjectForm.name.trim()}>
-                    Create Project
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+            )}
+          </div>
         </div>
 
         {currentProject && (
