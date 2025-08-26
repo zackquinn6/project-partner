@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import OwnedToolsEditor from "./EnhancedOwnedToolsEditor";
+import { useTempQuiz } from "@/contexts/TempQuizContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DIYSurveyPopupProps {
   open: boolean;
@@ -59,6 +61,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   const [personalityAnswers, setPersonalityAnswers] = useState<number[]>(Array(10).fill(0));
   const [personalityProfile, setPersonalityProfile] = useState<PersonalityProfile | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { saveTempPersonalityProfile, saveTempProfileAnswers } = useTempQuiz();
   const [answers, setAnswers] = useState({
     skillLevel: initialData?.skillLevel || "",
     avoidProjects: initialData?.avoidProjects || [] as string[],
@@ -342,8 +346,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       // Save personality profile and close
       setIsSubmitting(true);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
         if (user && personalityProfile) {
+          // User is signed in - save to database
           const { error } = await supabase
             .from('profiles')
             .upsert({
@@ -359,17 +363,24 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               description: "Please try again later.",
               variant: "destructive"
             });
+            setIsSubmitting(false);
             return;
           }
 
           toast({
-            title: "Profile Complete! 🎉",
-            description: "Your DIY Builder Profile has been saved.",
+            title: "Profile Saved!",
+            description: "Your DIY Builder Profile has been saved to your account.",
+          });
+        } else if (personalityProfile) {
+          // User is not signed in - save temporarily
+          saveTempPersonalityProfile(personalityProfile);
+          toast({
+            title: "Quiz Results Saved!",
+            description: "Your DIY Builder Profile has been saved. Sign in to keep it permanently!",
           });
         }
-        onOpenChange(false);
       } catch (error) {
-        console.error('Error completing personality quiz:', error);
+        console.error('Error saving personality profile:', error);
         toast({
           title: "Error saving profile",
           description: "Please try again later.",
@@ -377,6 +388,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         });
       } finally {
         setIsSubmitting(false);
+        onOpenChange(false);
       }
       return;
     }
@@ -396,8 +408,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     } else {
       setIsSubmitting(true);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // User is signed in - save to database
           const { error } = await supabase
             .from('profiles')
             .update({
@@ -428,6 +440,13 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           toast({
             title: "Thanks for sharing!",
             description: "Your preferences have been saved.",
+          });
+        } else {
+          // User is not signed in - save temporarily
+          saveTempProfileAnswers(answers);
+          toast({
+            title: "Profile Saved!",
+            description: "Your profile has been saved. Sign in to keep it permanently!",
           });
         }
         onOpenChange(false);

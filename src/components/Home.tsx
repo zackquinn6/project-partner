@@ -146,16 +146,12 @@ export default function Home({ onViewChange }: HomeProps) {
 
   useEffect(() => {
     const handleOpenQuiz = () => {
-      if (user) {
-        setIsDIYQuizOpen(true);
-      } else {
-        navigate('/auth?mode=signup');
-      }
+      setIsDIYQuizOpen(true);
     };
 
     window.addEventListener('open-diy-quiz', handleOpenQuiz);
     return () => window.removeEventListener('open-diy-quiz', handleOpenQuiz);
-  }, [user, navigate]);
+  }, []);
 
   const handleScrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -336,21 +332,24 @@ export default function Home({ onViewChange }: HomeProps) {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
-                <CardHeader className="text-center pb-4">
-                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <feature.icon className="h-8 w-8 text-primary-foreground" />
-                  </div>
-                  <CardTitle className="text-lg sm:text-xl">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
+            {features.map((feature, index) => {
+              const isFirstFeature = index === 0;
+              return (
+                <Card key={index} className={`gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 ${isFirstFeature ? 'bg-orange-50 dark:bg-orange-950/20' : ''}`}>
+                  <CardHeader className="text-center pb-4">
+                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                      <feature.icon className="h-8 w-8 text-primary-foreground" />
+                    </div>
+                    <CardTitle className="text-lg sm:text-xl">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
+                      {feature.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
