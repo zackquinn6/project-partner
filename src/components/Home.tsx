@@ -172,7 +172,7 @@ export default function Home({ onViewChange }: HomeProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-sm"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3"
                 onClick={() => handleScrollToSection('features')}
               >
                 Features
@@ -180,7 +180,7 @@ export default function Home({ onViewChange }: HomeProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-sm"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3"
                 onClick={() => handleScrollToSection('about-project-partner')}
               >
                 About
@@ -188,7 +188,7 @@ export default function Home({ onViewChange }: HomeProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-sm"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3"
                 onClick={() => setIsPricingOpen(true)}
               >
                 Pricing
@@ -196,7 +196,7 @@ export default function Home({ onViewChange }: HomeProps) {
               <Button 
                 variant="ghost"
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-sm"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3"
                 onClick={() => navigate('/auth')}
               >
                 Sign In
@@ -204,7 +204,7 @@ export default function Home({ onViewChange }: HomeProps) {
               <Button 
                 variant="secondary"
                 size="sm"
-                className="ml-1"
+                className="ml-1 text-xs sm:text-sm px-2 sm:px-3"
                 onClick={() => navigate('/auth?mode=signup')}
               >
                 Sign Up
@@ -265,9 +265,9 @@ export default function Home({ onViewChange }: HomeProps) {
             </p>
           </div>
           
-          <div className="flex overflow-x-auto gap-4 md:gap-6 pb-4 scrollbar-hide">
+          <div className="flex flex-col sm:flex-row gap-4 md:gap-6 pb-4 sm:overflow-x-auto sm:scrollbar-hide">
             {projectImages.map((image, index) => (
-              <div key={index} className="flex-shrink-0 w-72 md:w-80">
+              <div key={index} className="flex-shrink-0 w-full sm:w-72 md:w-80">
                 <Card className="overflow-hidden hover:shadow-card transition-all duration-300 hover:scale-105 cursor-pointer"
                       onClick={() => navigate('/projects')}>
                   <div className="aspect-video overflow-hidden">
@@ -315,17 +315,17 @@ export default function Home({ onViewChange }: HomeProps) {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
                 <CardHeader className="text-center pb-4">
                   <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
                     <feature.icon className="h-8 w-8 text-primary-foreground" />
                   </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-center text-base leading-relaxed">
+                  <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
@@ -374,16 +374,16 @@ export default function Home({ onViewChange }: HomeProps) {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12">
             <Card className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
               <CardHeader className="text-center pb-4">
                 <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
                   <Target className="h-8 w-8 text-accent-foreground" />
                 </div>
-                <CardTitle className="text-xl">Adaptive Guidance Engine</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Adaptive Guidance Engine</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-center text-base leading-relaxed">
+                <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
                   Instructions match your skill and pace in real time. Novice tilers get extra visuals; experienced builders get tight checklists—both finish faster.
                 </CardDescription>
               </CardContent>
@@ -394,10 +394,10 @@ export default function Home({ onViewChange }: HomeProps) {
                 <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
                   <Clock className="h-8 w-8 text-accent-foreground" />
                 </div>
-                <CardTitle className="text-xl">Proactive Delay Prevention</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Proactive Delay Prevention</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-center text-base leading-relaxed">
+                <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
                   Avoid project frustration with early warnings and recovery plans. Weather sensing included: "Rain in 2 days—seal deck today, paint after."
                 </CardDescription>
               </CardContent>
@@ -408,10 +408,10 @@ export default function Home({ onViewChange }: HomeProps) {
                 <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
                   <TrendingUp className="h-8 w-8 text-accent-foreground" />
                 </div>
-                <CardTitle className="text-xl">Auto-Optimization</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Auto-Optimization</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-center text-base leading-relaxed">
+                <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
                   Each project is smoother than the last because the system learns from your feedback and others'. Step order changes to reduce tool swaps, saving 20% time.
                 </CardDescription>
               </CardContent>

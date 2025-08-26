@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserRoleManager } from '@/components/UserRoleManager';
-import { ProjectAgreementsWindow } from '@/components/ProjectAgreementsWindow';
+import { ProjectAgreementsList } from '@/components/ProjectAgreementsList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -28,10 +28,7 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({ open
           </TabsContent>
           
           <TabsContent value="agreements" className="mt-6">
-            <div className="space-y-4">
-              {/* We'll embed the ProjectAgreementsWindow content here */}
-              <ProjectAgreementsWindow open={false} onOpenChange={() => {}} />
-            </div>
+            <ProjectAgreementsList />
           </TabsContent>
         </Tabs>
       </DialogContent>

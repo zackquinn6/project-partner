@@ -436,17 +436,8 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                     </Button>
                   </>
                 ) : (
-                  <>
-                    <Button size="sm" variant="ghost" onClick={() => addOperation(phase.id)}>
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => deleteItem('phase', phase.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </>
+                  <></>
+                
                 )}
               </div>
             </TableCell>
@@ -501,17 +492,8 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                     </Button>
                   </>
                 ) : (
-                  <>
-                    <Button size="sm" variant="ghost" onClick={() => addStep(row.parentId!, operation.id)}>
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => startEdit('operation', operation.id, operation)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => deleteItem('operation', operation.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </>
+                  <></>
+                
                 )}
               </div>
             </TableCell>
@@ -562,14 +544,8 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                     </Button>
                   </>
                 ) : (
-                  <>
-                    <Button size="sm" variant="ghost" onClick={() => startEdit('step', step.id, step)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => deleteItem('step', step.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </>
+                  <></>
+                
                 )}
               </div>
             </TableCell>
@@ -744,7 +720,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
             </div>
             {currentProject && (
               <div className="flex gap-2 mt-4 pt-4 border-t">
-                <Button onClick={() => setEditingProject(false)} variant="outline">
+                <Button onClick={() => setEditingProject(false)} className="bg-green-600 hover:bg-green-700 text-white">
                   <Check className="w-4 h-4 mr-2" />
                   Done Editing
                 </Button>
@@ -817,21 +793,8 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   <CardDescription>Manage the workflow structure</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => setCurrentView('editWorkflow')} variant="outline">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Workflow Content
-                  </Button>
-                  <Button onClick={() => setShowImport(true)} variant="outline">
-                    <Import className="w-4 h-4 mr-2" />
-                    Import Content
-                  </Button>
-                  <Button onClick={() => setCurrentView('dragdrop')} variant="outline">
-                    <GripVertical className="w-4 h-4 mr-2" />
-                    Workflow Structure Editor
-                  </Button>
-                  <Button onClick={addPhase}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Phase
+                  <Button className="w-full" variant="outline" onClick={() => setCurrentView('dragdrop')}>
+                    Workflow Editor
                   </Button>
                 </div>
               </CardHeader>

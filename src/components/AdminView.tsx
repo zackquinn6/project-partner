@@ -160,14 +160,14 @@ export const AdminView: React.FC = () => {
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Cog className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle>Process Design & PFMEA</CardTitle>
+              <CardTitle>Process Design</CardTitle>
               <CardDescription className="min-h-[3rem] flex items-center justify-center">
                 Process design and failure modes & effects analysis management
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-auto">
               <Button className="w-full" onClick={() => setProcessDesignOpen(true)}>
-                Process Design & PFMEA
+                Process Design
               </Button>
             </CardContent>
           </Card>
@@ -223,7 +223,7 @@ export const AdminView: React.FC = () => {
         <Dialog open={processDesignOpen} onOpenChange={setProcessDesignOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Process Design & PFMEA</DialogTitle>
+              <DialogTitle>Process Design</DialogTitle>
             </DialogHeader>
             <div className="p-6 text-center space-y-4">
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center">
