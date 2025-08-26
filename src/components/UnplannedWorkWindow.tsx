@@ -89,7 +89,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
       
       setSelectedPhases(newPhases);
     } else if (draggedItem) {
-      // Adding new phase from library - this will be inserted in the project at the target position
+      // Adding new phase from library - insert into the project at the specified position
       const newPhase: Phase = {
         id: `${draggedItem.id}-${Date.now()}`,
         name: draggedItem.name,
@@ -97,8 +97,30 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
         operations: draggedItem.operations
       };
       
-      // Add to selectedPhases list (these will be inserted at the end when confirmed)
-      setSelectedPhases(prev => [...prev, newPhase]);
+      if (targetIndex !== undefined && currentProjectRun) {
+        // Calculate valid insertion positions (after standard phases, before Close Project)
+        const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering'];
+        const standardPhaseCount = standardPhaseNames.filter(name => 
+          currentProjectRun.phases.some((p: any) => p.name === name)
+        ).length;
+        
+        const closeProjectIndex = currentProjectRun.phases.findIndex((p: any) => p.name === 'Close Project');
+        const validInsertIndex = Math.max(standardPhaseCount, Math.min(targetIndex, closeProjectIndex >= 0 ? closeProjectIndex : currentProjectRun.phases.length));
+        
+        // Insert directly into project run phases
+        const updatedPhases = [...currentProjectRun.phases];
+        updatedPhases.splice(validInsertIndex, 0, newPhase);
+        
+        // Update the project run immediately
+        updateProjectRun({
+          ...currentProjectRun,
+          phases: updatedPhases,
+          updatedAt: new Date()
+        });
+      } else {
+        // Add to selectedPhases list (these will be inserted at the end when confirmed)
+        setSelectedPhases(prev => [...prev, newPhase]);
+      }
     }
     
     setDraggedItem(null);
@@ -134,8 +156,13 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
   const handleAddUnplannedWork = async () => {
     if (!currentProjectRun || selectedPhases.length === 0) return;
 
-    // Add the selected phases to the current project run
-    const updatedPhases = [...currentProjectRun.phases, ...selectedPhases];
+    // Calculate insert position (before Close Project if it exists)
+    const closeProjectIndex = currentProjectRun.phases.findIndex((p: any) => p.name === 'Close Project');
+    const insertIndex = closeProjectIndex >= 0 ? closeProjectIndex : currentProjectRun.phases.length;
+
+    // Insert the selected phases at the calculated position
+    const updatedPhases = [...currentProjectRun.phases];
+    updatedPhases.splice(insertIndex, 0, ...selectedPhases);
     
     await updateProjectRun({
       ...currentProjectRun,
@@ -289,51 +316,95 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                 onDragEnd={handleDragEnd}
               >
                 {/* Show current project phases with drop zones */}
-                {currentProjectRun && currentProjectRun.phases.map((phase: any, index: number) => (
-                  <div key={phase.id}>
-                    {/* Drop Zone before each existing phase */}
-                    <div 
-                      className={`h-2 ${dropZoneIndex === index ? 'bg-blue-200 border-2 border-dashed border-blue-400' : ''} rounded transition-all duration-200`}
-                      onDragOver={e => handleDragOver(e, index)}
-                      onDrop={e => handleDrop(e, index)}
-                    >
-                      {dropZoneIndex === index && (
-                        <div className="text-xs text-blue-600 text-center py-1">Drop new phase here</div>
+                {currentProjectRun && currentProjectRun.phases.map((phase: any, index: number) => {
+                  const isStandardPhase = ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(phase.name);
+                  const canDropBefore = !(['Kickoff', 'Planning', 'Ordering'].includes(phase.name));
+                  const canDropAfter = !(phase.name === 'Close Project');
+                  
+                  return (
+                    <div key={`phase-${phase.id}-${phase.name}-${index}`}>
+                      {/* Drop Zone before each phase (only if allowed) */}
+                      {canDropBefore && (
+                        <div 
+                          className={`h-2 ${dropZoneIndex === index ? 'bg-blue-200 border-2 border-dashed border-blue-400' : 'border border-dashed border-muted-foreground/20'} rounded transition-all duration-200`}
+                          onDragOver={e => handleDragOver(e, index)}
+                          onDrop={e => handleDrop(e, index)}
+                        >
+                          {dropZoneIndex === index && (
+                            <div className="text-xs text-blue-600 text-center py-1">Drop new phase here</div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Existing Phase */}
+                      <Card className={`border ${isStandardPhase ? 'border-blue-200 bg-blue-50' : 'border-muted bg-muted/50'}`}>
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={isStandardPhase ? "default" : "secondary"} className="text-xs">
+                              {index + 1}
+                            </Badge>
+                            <span className="font-medium text-sm">{phase.name}</span>
+                            {isStandardPhase && (
+                              <Badge variant="outline" className="text-xs border-blue-300 text-blue-700">
+                                Standard
+                              </Badge>
+                            )}
+                            <div className="text-xs text-muted-foreground ml-auto">
+                              {phase.operations?.length || 0} operation(s)
+                            </div>
+                          </div>
+                          {phase.description && (
+                            <p className="text-xs text-muted-foreground mt-1 truncate">
+                              {phase.description}
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Drop Zone after each phase (only if allowed) */}
+                      {canDropAfter && (
+                        <div 
+                          className={`h-2 ${dropZoneIndex === index + 1 ? 'bg-blue-200 border-2 border-dashed border-blue-400' : 'border border-dashed border-muted-foreground/20'} rounded transition-all duration-200`}
+                          onDragOver={e => handleDragOver(e, index + 1)}
+                          onDrop={e => handleDrop(e, index + 1)}
+                        >
+                          {dropZoneIndex === index + 1 && (
+                            <div className="text-xs text-blue-600 text-center py-1">Drop new phase here</div>
+                          )}
+                        </div>
                       )}
                     </div>
+                  )
+                })}
 
-                    {/* Existing Phase */}
-                    <Card className="border border-muted bg-muted/50">
-                      <CardContent className="p-3">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">{index + 1}</Badge>
-                          <span className="font-medium text-sm">{phase.name}</span>
-                          <div className="text-xs text-muted-foreground ml-auto">
-                            {phase.operations?.length || 0} operation(s)
-                          </div>
+                {/* Final drop zone at the end (before Close Project if it exists) */}
+                {currentProjectRun && (
+                  <div 
+                    className={`h-4 ${dropZoneIndex === (currentProjectRun?.phases?.length || 0) ? 'bg-blue-200 border-2 border-dashed border-blue-400' : 'border border-dashed border-muted-foreground/30'} rounded transition-all duration-200`}
+                    onDragOver={e => {
+                      const closeProjectIndex = currentProjectRun.phases.findIndex((p: any) => p.name === 'Close Project');
+                      const targetIndex = closeProjectIndex >= 0 ? closeProjectIndex : currentProjectRun.phases.length;
+                      handleDragOver(e, targetIndex);
+                    }}
+                    onDrop={e => {
+                      const closeProjectIndex = currentProjectRun.phases.findIndex((p: any) => p.name === 'Close Project');
+                      const targetIndex = closeProjectIndex >= 0 ? closeProjectIndex : currentProjectRun.phases.length;
+                      handleDrop(e, targetIndex);
+                    }}
+                  >
+                    {(() => {
+                      const closeProjectIndex = currentProjectRun.phases.findIndex((p: any) => p.name === 'Close Project');
+                      const targetIndex = closeProjectIndex >= 0 ? closeProjectIndex : currentProjectRun.phases.length;
+                      return dropZoneIndex === targetIndex ? (
+                        <div className="text-xs text-blue-600 text-center py-2">Drop new phase here</div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground text-center py-2">
+                          {closeProjectIndex >= 0 ? 'Add phases before Close Project' : 'Add phases to the end'}
                         </div>
-                        {phase.description && (
-                          <p className="text-xs text-muted-foreground mt-1 truncate">
-                            {phase.description}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
+                      );
+                    })()}
                   </div>
-                ))}
-
-                {/* Drop Zone at the end */}
-                <div 
-                  className={`h-4 ${dropZoneIndex === (currentProjectRun?.phases?.length || 0) ? 'bg-blue-200 border-2 border-dashed border-blue-400' : 'border border-dashed border-muted-foreground/30'} rounded transition-all duration-200`}
-                  onDragOver={e => handleDragOver(e, currentProjectRun?.phases?.length || 0)}
-                  onDrop={e => handleDrop(e, currentProjectRun?.phases?.length || 0)}
-                >
-                  {dropZoneIndex === (currentProjectRun?.phases?.length || 0) ? (
-                    <div className="text-xs text-blue-600 text-center py-2">Drop new phase here</div>
-                  ) : (
-                    <div className="text-xs text-muted-foreground text-center py-2">Add phases to the end</div>
-                  )}
-                </div>
+                )}
 
                 {/* Show selected/new phases that will be added */}
                 {selectedPhases.length > 0 && (

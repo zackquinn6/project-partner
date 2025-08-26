@@ -152,16 +152,19 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
           
           // Process materials - add quantities (materials are consumed per step)
           if (step.materials && Array.isArray(step.materials) && step.materials.length > 0) {
-            step.materials.forEach(material => {
-              const key = material.id || material.name || `material-${Date.now()}`;
+            console.log(`OrderingWindow: Found ${step.materials.length} materials in step:`, step.materials);
+            step.materials.forEach((material, materialIndex) => {
+              console.log(`OrderingWindow: Processing material ${materialIndex}:`, material);
+              const key = material.id || material.name || `material-${materialIndex}-${Date.now()}`;
               if (materialsMap.has(key)) {
                 // Material already exists, increment quantity
                 const existing = materialsMap.get(key);
                 existing.totalQuantity = (existing.totalQuantity || 1) + 1;
                 existing.usedInSteps.push(step.step);
+                console.log(`OrderingWindow: Updated existing material:`, existing);
               } else {
                 // New material
-                materialsMap.set(key, {
+                const newMaterial = {
                   id: material.id || key,
                   name: material.name,
                   description: material.description || '',
@@ -169,15 +172,19 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                   required: material.required !== false,
                   totalQuantity: 1,
                   usedInSteps: [step.step]
-                });
+                };
+                materialsMap.set(key, newMaterial);
+                console.log(`OrderingWindow: Added new material:`, newMaterial);
               }
             });
           }
 
           // Process tools - track max quantity needed in any single step (tools are reused)
           if (step.tools && Array.isArray(step.tools) && step.tools.length > 0) {
-            step.tools.forEach(tool => {
-              const key = tool.id || tool.name || `tool-${Date.now()}`;
+            console.log(`OrderingWindow: Found ${step.tools.length} tools in step:`, step.tools);
+            step.tools.forEach((tool, toolIndex) => {
+              console.log(`OrderingWindow: Processing tool ${toolIndex}:`, tool);
+              const key = tool.id || tool.name || `tool-${toolIndex}-${Date.now()}`;
               const toolQuantity = 1; // Default quantity per step
               
               if (toolsMap.has(key)) {
@@ -185,9 +192,10 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                 const existing = toolsMap.get(key);
                 existing.maxQuantity = Math.max(existing.maxQuantity || 1, toolQuantity);
                 existing.usedInSteps.push(step.step);
+                console.log(`OrderingWindow: Updated existing tool:`, existing);
               } else {
                 // New tool
-                toolsMap.set(key, {
+                const newTool = {
                   id: tool.id || key,
                   name: tool.name,
                   description: tool.description || '',
@@ -195,7 +203,9 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                   required: tool.required !== false,
                   maxQuantity: toolQuantity,
                   usedInSteps: [step.step]
-                });
+                };
+                toolsMap.set(key, newTool);
+                console.log(`OrderingWindow: Added new tool:`, newTool);
               }
             });
           }
@@ -211,6 +221,8 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
     console.log('OrderingWindow: Final rollup result:', {
       materialsCount: result.materials.length,
       toolsCount: result.tools.length,
+      materials: result.materials,
+      tools: result.tools,
       sampleMaterials: result.materials.slice(0, 3).map(m => ({ 
         name: m.name, 
         id: m.id, 
