@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, Shield, Activity, Download, Trash2 } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
+import { AlertTriangle, Shield, Activity, Download, Trash2, AlertCircle } from 'lucide-react';
 
 interface AuditLog {
   id: string;
@@ -37,6 +39,7 @@ interface UserSession {
 }
 
 export const SecurityDashboard: React.FC = () => {
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [failedLogins, setFailedLogins] = useState<FailedLogin[]>([]);
   const [userSessions, setUserSessions] = useState<UserSession[]>([]);
@@ -92,11 +95,26 @@ export const SecurityDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    loadSecurityData();
-  }, []);
+    if (!roleLoading && isAdmin) {
+      loadSecurityData();
+    } else if (!roleLoading && !isAdmin) {
+      setLoading(false);
+    }
+  }, [roleLoading, isAdmin]);
 
-  if (loading) {
+  if (roleLoading || loading) {
     return <div>Loading security dashboard...</div>;
+  }
+
+  if (!isAdmin) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          You need administrator privileges to access the security dashboard.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   const recentFailedLogins = failedLogins.filter(login => 
