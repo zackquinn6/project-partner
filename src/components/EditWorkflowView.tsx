@@ -723,7 +723,7 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
               <div className="flex gap-2">
                 <Button 
                   onClick={() => setViewMode('steps')} 
-                  variant={viewMode === 'steps' ? 'default' : 'outline'}
+                  variant="default"
                   size="sm"
                   className="flex items-center gap-2"
                 >
@@ -732,7 +732,7 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
                 </Button>
                 <Button 
                   onClick={() => setViewMode('structure')} 
-                  variant={viewMode === 'structure' ? 'default' : 'outline'}
+                  variant="outline"
                   size="sm"
                   className="flex items-center gap-2"
                 >
