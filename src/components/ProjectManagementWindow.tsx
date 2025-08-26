@@ -773,59 +773,55 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     );
   }
 
+  // Render EditWorkflowView full-screen outside the Dialog when in workflow editing mode
+  if (currentView === 'editWorkflow' || currentView === 'dragdrop') {
+    return <EditWorkflowView onBackToAdmin={() => setCurrentView('table')} />;
+  }
+
   const renderView = () => {
-    switch (currentView) {
-      case 'editWorkflow':
-        return <EditWorkflowView onBackToAdmin={() => setCurrentView('table')} />;
-      case 'dragdrop':
-        // Drag & Drop functionality has been moved to Structure Manager
-        // Redirect to Edit Workflow instead
-        return <EditWorkflowView onBackToAdmin={() => setCurrentView('table')} />;
-      default:
-        return (
-          <div className="space-y-6">
-            {renderProjectSelector()}
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Workflow Structure</CardTitle>
-                  <CardDescription>Manage the workflow structure</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button className="w-full" variant="outline" onClick={() => setCurrentView('dragdrop')}>
-                    Workflow Editor
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="w-[150px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {buildTableRows().map((row) => (
-                      <TableRow key={`${row.type}-${row.id}`}>
-                        {renderRowContent(row)}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-            
-            <ProjectContentImport
-              open={showImport}
-              onOpenChange={setShowImport}
-              onImport={handleImportContent}
-            />
-          </div>
-        );
-    }
+    return (
+      <div className="space-y-6">
+        {renderProjectSelector()}
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Workflow Structure</CardTitle>
+              <CardDescription>Manage the workflow structure</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button className="w-full" variant="outline" onClick={() => setCurrentView('dragdrop')}>
+                Workflow Editor
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="w-[150px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {buildTableRows().map((row) => (
+                  <TableRow key={`${row.type}-${row.id}`}>
+                    {renderRowContent(row)}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+        
+        <ProjectContentImport
+          open={showImport}
+          onOpenChange={setShowImport}
+          onImport={handleImportContent}
+        />
+      </div>
+    );
   };
 
   return (
