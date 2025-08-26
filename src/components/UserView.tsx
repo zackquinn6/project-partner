@@ -1048,6 +1048,7 @@ export default function UserView({
       <div className={`grid gap-8 ${workflowProgressVisible ? 'lg:grid-cols-4' : 'lg:grid-cols-1'}`}>
         {/* Sidebar - Collapsible Workflow Progress */}
         {workflowProgressVisible && (
+          <>
           <Card className="lg:col-span-1 gradient-card border-0 shadow-card">
           <CardHeader>
             <div className="space-y-4">
@@ -1156,6 +1157,8 @@ export default function UserView({
 
         {/* Flow Type Legend */}
         <FlowTypeLegend compact={true} showDescriptions={false} />
+        </>
+        )}
 
         {/* Main Content */}
         <div className={`space-y-6 ${workflowProgressVisible ? 'lg:col-span-3' : 'lg:col-span-1'}`}>
