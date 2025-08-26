@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Sparkles, Wrench } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, Wrench, CheckCircle2, Trophy, Target, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import OwnedToolsEditor from "./EnhancedOwnedToolsEditor";
 interface DIYSurveyPopupProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode?: 'new' | 'verify';
+  mode?: 'new' | 'verify' | 'personality';
   initialData?: {
     skillLevel?: string;
     avoidProjects?: string[];
@@ -31,11 +31,33 @@ interface DIYSurveyPopupProps {
   };
 }
 
+interface PersonalityTraits {
+  planner: number;
+  improviser: number;
+  outcome: number;
+  process: number;
+  highRisk: number;
+  lowRisk: number;
+  perfectionist: number;
+  functionFirst: number;
+  solo: number;
+  social: number;
+}
+
+interface PersonalityProfile {
+  name: string;
+  tagline: string;
+  description: string;
+  traits: PersonalityTraits;
+}
+
 export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initialData }: DIYSurveyPopupProps) {
-  const [currentStep, setCurrentStep] = useState(mode === 'verify' ? 0 : 1);
+  const [currentStep, setCurrentStep] = useState(mode === 'verify' ? 0 : (mode === 'personality' ? -1 : 1));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showOwnedToolsEditor, setShowOwnedToolsEditor] = useState(false);
+  const [personalityAnswers, setPersonalityAnswers] = useState<number[]>(Array(10).fill(0));
+  const [personalityProfile, setPersonalityProfile] = useState<PersonalityProfile | null>(null);
   const { toast } = useToast();
   const [answers, setAnswers] = useState({
     skillLevel: initialData?.skillLevel || "",
@@ -50,8 +72,10 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     nickname: initialData?.nickname || ""
   });
 
-  const totalSteps = mode === 'verify' ? 7 : 6;
-  const progress = (currentStep / totalSteps) * 100;
+  const totalSteps = mode === 'verify' ? 7 : (mode === 'personality' ? 12 : 6);
+  const progress = mode === 'personality' && currentStep >= 0 ? 
+    ((currentStep + 1) / (totalSteps - 1)) * 100 : 
+    (currentStep / totalSteps) * 100;
 
   const usStates = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", 
@@ -68,7 +92,295 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     "1970-1979", "1960-1969", "1950-1959", "1940-1949", "Pre-1940", "Not Available"
   ];
 
+  const personalityQuestions = [
+    {
+      question: "When starting a new project, I typically:",
+      options: [
+        "Sketch out a detailed plan or make a step-by-step list",
+        "Look for similar projects online for inspiration",
+        "Ask friends or family for advice first",
+        "Just jump in and figure it out as I go"
+      ]
+    },
+    {
+      question: "If I'm missing a part mid-project, I usually:",
+      options: [
+        "Stop and buy the exact part I need",
+        "Find something else that might work instead",
+        "Rework my plan to work around the missing piece",
+        "Ask online communities for quick solutions"
+      ]
+    },
+    {
+      question: "What makes me most proud about my DIY projects:",
+      options: [
+        "Saving money compared to hiring someone",
+        "Learning new skills along the way", 
+        "Finishing faster than I expected",
+        "Getting compliments from others who see it"
+      ]
+    },
+    {
+      question: "When I encounter a new tool I've never used:",
+      options: [
+        "I'm cautious and research it thoroughly first",
+        "I'm confident I can figure it out myself",
+        "I get excited about learning something new",
+        "I feel nervous and prefer sticking to tools I know"
+      ]
+    },
+    {
+      question: "I prefer projects that involve:",
+      options: [
+        "Fixing something that's broken",
+        "Creating something entirely new",
+        "A mix of both fixing and creating",
+        "Modifying existing things to work better"
+      ]
+    },
+    {
+      question: "When I need to learn a new technique, I prefer to:",
+      options: [
+        "Try different approaches until something works",
+        "Ask someone experienced to show me",
+        "Watch video tutorials step-by-step",
+        "Follow detailed written instructions"
+      ]
+    },
+    {
+      question: "How important is it that my projects look perfect when finished:",
+      options: [
+        "Very important - I want it to look professional",
+        "Somewhat important - it should look good",
+        "Depends on who's going to see it",
+        "Not as important as it working properly"
+      ]
+    },
+    {
+      question: "I prefer to schedule my project work:",
+      options: [
+        "In longer weekend or evening sessions",
+        "A little bit each day consistently",
+        "Whenever I feel inspired to work on it",
+        "Around my regular work schedule"
+      ]
+    },
+    {
+      question: "When working on projects, I prefer to:",
+      options: [
+        "Work alone and maintain full control",
+        "Collaborate with friends or family",
+        "Depends on the project complexity",
+        "Ask for help only when I get stuck"
+      ]
+    },
+    {
+      question: "When project instructions are unclear, I:",
+      options: [
+        "Improvise and make my best guess",
+        "Figure it out through trial and error",
+        "Search for clearer instructions elsewhere",
+        "Get frustrated and sometimes stop"
+      ]
+    }
+  ];
+
+  const calculatePersonalityProfile = (answers: number[]): PersonalityProfile => {
+    const traits: PersonalityTraits = {
+      planner: 0, improviser: 0, outcome: 0, process: 0, highRisk: 0,
+      lowRisk: 0, perfectionist: 0, functionFirst: 0, solo: 0, social: 0
+    };
+
+    // Q1 - Project start approach
+    if (answers[0] === 0) traits.planner += 1;
+    if (answers[0] === 1) traits.planner += 1; 
+    if (answers[0] === 2) { traits.planner += 1; traits.social += 1; }
+    if (answers[0] === 3) traits.improviser += 1;
+
+    // Q2 - Missing part scenario
+    if (answers[1] === 0) traits.planner += 1;
+    if (answers[1] === 1) { traits.improviser += 1; traits.highRisk += 1; }
+    if (answers[1] === 2) { traits.planner += 1; traits.improviser += 1; }
+    if (answers[1] === 3) { traits.improviser += 1; traits.social += 1; }
+
+    // Q3 - Pride source  
+    if (answers[2] === 0) traits.outcome += 1;
+    if (answers[2] === 1) traits.process += 1;
+    if (answers[2] === 2) traits.outcome += 1;
+    if (answers[2] === 3) { traits.outcome += 1; traits.social += 1; }
+
+    // Q4 - New tool comfort
+    if (answers[3] === 0) traits.lowRisk += 1;
+    if (answers[3] === 1) traits.highRisk += 1;
+    if (answers[3] === 2) { traits.highRisk += 1; traits.process += 1; }
+    if (answers[3] === 3) traits.lowRisk += 1;
+
+    // Q5 - Fix vs create
+    if (answers[4] === 0) traits.outcome += 1;
+    if (answers[4] === 1) traits.process += 1;
+    if (answers[4] === 2) { traits.outcome += 1; traits.process += 1; }
+    if (answers[4] === 3) traits.process += 1;
+
+    // Q6 - Learning style
+    if (answers[5] === 0) { traits.improviser += 1; traits.highRisk += 1; }
+    if (answers[5] === 1) { traits.planner += 1; traits.social += 1; }
+    if (answers[5] === 2) traits.planner += 1;
+    if (answers[5] === 3) traits.planner += 1;
+
+    // Q7 - Finish importance
+    if (answers[6] === 0) traits.perfectionist += 1;
+    if (answers[6] === 1) traits.perfectionist += 1;
+    if (answers[6] === 2) { traits.perfectionist += 1; traits.functionFirst += 1; }
+    if (answers[6] === 3) traits.functionFirst += 1;
+
+    // Q8 - Scheduling style
+    if (answers[7] === 0) traits.planner += 1;
+    if (answers[7] === 1) traits.planner += 1;
+    if (answers[7] === 2) traits.improviser += 1;
+    if (answers[7] === 3) traits.planner += 1;
+
+    // Q9 - Work alone or with others
+    if (answers[8] === 0) traits.solo += 1;
+    if (answers[8] === 1) traits.social += 1;
+    if (answers[8] === 2) { traits.social += 1; traits.solo += 1; }
+    if (answers[8] === 3) traits.social += 1;
+
+    // Q10 - Unclear instructions
+    if (answers[9] === 0) { traits.improviser += 1; traits.highRisk += 1; }
+    if (answers[9] === 1) traits.highRisk += 1;
+    if (answers[9] === 2) traits.planner += 1;
+    if (answers[9] === 3) traits.lowRisk += 1;
+
+    // Determine dominant traits
+    const plannerScore = traits.planner;
+    const improviserScore = traits.improviser;
+    const outcomeScore = traits.outcome;
+    const processScore = traits.process;
+    const highRiskScore = traits.highRisk;
+    const lowRiskScore = traits.lowRisk;
+    const perfectionistScore = traits.perfectionist;
+    const functionFirstScore = traits.functionFirst;
+    const soloScore = traits.solo;
+    const socialScore = traits.social;
+
+    const isPlanner = plannerScore >= improviserScore;
+    const isOutcome = outcomeScore >= processScore;
+    const isHighRisk = highRiskScore >= lowRiskScore;
+    const isPerfectionist = perfectionistScore >= functionFirstScore;
+    const isSocial = socialScore >= soloScore;
+
+    // Determine profile
+    let profile = { name: "", tagline: "", description: "" };
+    
+    if (isPlanner && isPerfectionist && !isSocial) {
+      profile = {
+        name: "Precision Planner",
+        tagline: "Every cut measured twice, every detail dialed in.",
+        description: "Methodical, detail-oriented, prefers control and careful execution."
+      };
+    } else if (!isPlanner && isHighRisk && isSocial) {
+      profile = {
+        name: "Bold Innovator", 
+        tagline: "Turns challenges into creative wins with friends.",
+        description: "Thrives on spontaneity, embraces challenges, and loves collaboration."
+      };
+    } else if (isPlanner && !isOutcome && isSocial) {
+      profile = {
+        name: "Collaborative Maker",
+        tagline: "Loves the journey, thrives in shared builds.",
+        description: "Enjoys learning and building with others, values the process as much as the result."
+      };
+    } else if (!isPlanner && isOutcome && !isSocial) {
+      profile = {
+        name: "Practical Doer",
+        tagline: "Gets it done fast, no fuss, no frills.",
+        description: "Focused on efficiency and results, works independently, adapts quickly."
+      };
+    } else if (isHighRisk && isPerfectionist && isOutcome) {
+      profile = {
+        name: "Fearless Finisher",
+        tagline: "Takes on anything, delivers pro-level results.",
+        description: "Confident with tools, driven to achieve high-quality outcomes under pressure."
+      };
+    } else {
+      // Default balanced profile
+      profile = {
+        name: "Balanced Builder",
+        tagline: "Adapts approach to match the project needs.",
+        description: "Flexible in style, balances planning with improvisation based on what works best."
+      };
+    }
+
+    return { ...profile, traits };
+  };
+
+  const handlePersonalityAnswer = (questionIndex: number, answerIndex: number) => {
+    const newAnswers = [...personalityAnswers];
+    newAnswers[questionIndex] = answerIndex;
+    setPersonalityAnswers(newAnswers);
+  };
+
   const handleNext = async () => {
+    if (mode === 'personality' && currentStep === -1) {
+      setCurrentStep(0);
+      return;
+    }
+
+    if (mode === 'personality' && currentStep >= 0 && currentStep <= 9) {
+      if (currentStep === 9) {
+        // Calculate personality profile
+        const profile = calculatePersonalityProfile(personalityAnswers);
+        setPersonalityProfile(profile);
+        setCurrentStep(10);
+      } else {
+        setCurrentStep(currentStep + 1);
+      }
+      return;
+    }
+
+    if (mode === 'personality' && currentStep === 10) {
+      // Save personality profile and close
+      setIsSubmitting(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && personalityProfile) {
+          const { error } = await supabase
+            .from('profiles')
+            .upsert({
+              user_id: user.id,
+              personality_profile: personalityProfile,
+              updated_at: new Date().toISOString()
+            });
+
+          if (error) {
+            console.error('Error saving personality profile:', error);
+            toast({
+              title: "Error saving profile",
+              description: "Please try again later.",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          toast({
+            title: "Profile Complete! 🎉",
+            description: "Your DIY Builder Profile has been saved.",
+          });
+        }
+        onOpenChange(false);
+      } catch (error) {
+        console.error('Error completing personality quiz:', error);
+        toast({
+          title: "Error saving profile",
+          description: "Please try again later.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     if (mode === 'verify' && currentStep === 0) {
       if (isEditing) {
         setCurrentStep(1);
@@ -138,7 +450,11 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   };
 
   const handleBack = () => {
-    if (mode === 'verify' && currentStep === 1) {
+    if (mode === 'personality' && currentStep === 0) {
+      setCurrentStep(-1);
+    } else if (mode === 'personality' && currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    } else if (mode === 'verify' && currentStep === 1) {
       setCurrentStep(0);
       setIsEditing(false);
     } else if (currentStep > 1) {
@@ -175,6 +491,15 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   };
 
   const canProceed = () => {
+    if (mode === 'personality') {
+      if (currentStep === -1) return true; // Opener screen
+      if (currentStep >= 0 && currentStep <= 9) {
+        return personalityAnswers[currentStep] !== 0 || currentStep === 0;
+      }
+      if (currentStep === 10) return true; // Results screen
+      return false;
+    }
+    
     switch (currentStep) {
       case 0: return true; // Verify step
       case 1: return answers.fullName.trim() !== ""; // Name step - require full name
@@ -188,6 +513,150 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   };
 
   const renderStep = () => {
+    if (mode === 'personality') {
+      if (currentStep === -1) {
+        return (
+          <div className="space-y-8 text-center">
+            <div className="space-y-4">
+              <h3 className="text-3xl font-bold">Find Your DIY Builder Profile 🛠️</h3>
+              <div className="max-w-2xl mx-auto space-y-4 text-left">
+                <p className="text-lg text-muted-foreground">
+                  Take our quick 2‑minute quiz to discover your unique DIY personality — how you plan, problem‑solve, and bring projects to life.
+                </p>
+                
+                <div className="bg-secondary/50 rounded-lg p-6 space-y-3">
+                  <h4 className="font-semibold text-lg">Your results unlock:</h4>
+                  <ul className="space-y-2 text-muted-foreground">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                      <span>Tailored tool recommendations that match your style and skill</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                      <span>Project tips designed for how you actually work</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                      <span>Exclusive starter perks to kick off your next build with confidence</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <p className="text-muted-foreground italic">
+                  Whether you're a precision planner, bold improviser, or somewhere in between, you'll walk away with insights (and offers) that make your next project smoother, faster, and more fun.
+                </p>
+              </div>
+            </div>
+            
+            <div>
+              <Button size="lg" onClick={handleNext} className="px-8 py-4 text-lg">
+                Start the Quiz — Build Smarter
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        );
+      }
+      
+      if (currentStep >= 0 && currentStep <= 9) {
+        const question = personalityQuestions[currentStep];
+        return (
+          <div className="space-y-8">
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Sparkles className="w-6 h-6 text-primary" />
+                <h3 className="text-2xl font-bold">DIY Builder Quiz</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">Question {currentStep + 1} of 10</p>
+            </div>
+            
+            <div className="space-y-6">
+              <h4 className="text-lg font-semibold text-center">{question.question}</h4>
+              
+              <div className="space-y-3">
+                {question.options.map((option, index) => (
+                  <Card 
+                    key={index} 
+                    className={`cursor-pointer transition-all hover:border-primary/50 ${
+                      personalityAnswers[currentStep] === index ? 'border-primary bg-primary/5' : ''
+                    }`}
+                    onClick={() => handlePersonalityAnswer(currentStep, index)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-4 h-4 rounded-full border-2 mt-1 flex-shrink-0 ${
+                          personalityAnswers[currentStep] === index 
+                            ? 'bg-primary border-primary' 
+                            : 'border-muted-foreground'
+                        }`} />
+                        <span className="text-sm">{option}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      if (currentStep === 10 && personalityProfile) {
+        return (
+          <div className="space-y-8 text-center">
+            <div className="space-y-4">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Trophy className="w-8 h-8 text-primary" />
+                <h3 className="text-3xl font-bold">Your DIY Builder Profile</h3>
+              </div>
+              
+              <Card className="max-w-2xl mx-auto bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+                <CardContent className="p-8 space-y-6">
+                  <div className="space-y-2">
+                    <h4 className="text-2xl font-bold text-primary">{personalityProfile.name}</h4>
+                    <p className="text-lg italic text-muted-foreground">"{personalityProfile.tagline}"</p>
+                  </div>
+                  
+                  <p className="text-base leading-relaxed">{personalityProfile.description}</p>
+                  
+                  <div className="space-y-3 text-left">
+                    <h5 className="font-semibold">Your Trait Breakdown:</h5>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div>Planning: {personalityProfile.traits.planner} | Improvising: {personalityProfile.traits.improviser}</div>
+                      <div>Outcome-Focused: {personalityProfile.traits.outcome} | Process-Focused: {personalityProfile.traits.process}</div>
+                      <div>High Risk Tolerance: {personalityProfile.traits.highRisk} | Low Risk: {personalityProfile.traits.lowRisk}</div>
+                      <div>Perfectionist: {personalityProfile.traits.perfectionist} | Function-First: {personalityProfile.traits.functionFirst}</div>
+                      <div>Solo Worker: {personalityProfile.traits.solo} | Social Builder: {personalityProfile.traits.social}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <div className="bg-secondary/50 rounded-lg p-6 max-w-2xl mx-auto">
+                <h5 className="font-semibold mb-3">🎁 Your Profile Unlocks:</h5>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <Wrench className="w-6 h-6 text-primary mx-auto" />
+                    <p className="font-medium">Custom Tool Recs</p>
+                    <p className="text-muted-foreground">Gear that fits your style</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Target className="w-6 h-6 text-primary mx-auto" />
+                    <p className="font-medium">Tailored Tips</p>
+                    <p className="text-muted-foreground">Guidance for how you work</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Star className="w-6 h-6 text-primary mx-auto" />
+                    <p className="font-medium">Starter Perks</p>
+                    <p className="text-muted-foreground">Exclusive project offers</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+
     switch (currentStep) {
       case 0:
         return (
@@ -558,20 +1027,23 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="text-center space-y-4">
             <div className="flex items-center justify-center space-x-2">
               <Sparkles className="w-6 h-6 text-primary" />
               <DialogTitle className="text-2xl font-bold gradient-text">
-                {mode === 'verify' ? "Update Your Profile" : "Build Your Profile"}
+                {mode === 'verify' ? "Update Your Profile" : (mode === 'personality' ? 'DIY Builder Profile' : "Build Your Profile")}
               </DialogTitle>
               <Sparkles className="w-6 h-6 text-primary" />
             </div>
-            {currentStep > 0 && (
+            {(currentStep > 0 || (mode === 'personality' && currentStep >= 0)) && (
               <div className="space-y-2">
                 <Progress value={progress} className="w-full" />
                 <p className="text-sm text-muted-foreground">
-                  Step {currentStep} of {mode === 'verify' ? totalSteps - 1 : totalSteps}
+                  {mode === 'personality' && currentStep >= 0 ? 
+                    `Question ${currentStep + 1} of 10` : 
+                    `Step ${currentStep} of ${mode === 'verify' ? totalSteps - 1 : totalSteps}`
+                  }
                 </p>
               </div>
             )}
@@ -581,26 +1053,34 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
             {renderStep()}
           </div>
 
-          {currentStep > 0 && (
+          {(currentStep > 0 || (mode === 'personality' && currentStep >= 0)) && (
             <div className="flex justify-between pt-6 border-t">
-              <Button 
-                variant="outline" 
-                onClick={handleBack} 
-                disabled={(mode === 'new' && currentStep === 1) || (mode === 'verify' && currentStep === 1 && !isEditing)}
-                className="flex items-center space-x-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
-              </Button>
+              {((currentStep > 1 && mode !== 'verify') || (mode === 'personality' && currentStep >= 0) || (mode === 'verify' && currentStep === 1)) && (
+                <Button variant="outline" onClick={handleBack}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  {mode === 'verify' && currentStep === 1 ? 'Back to Overview' : 'Back'}
+                </Button>
+              )}
               
-              <Button 
-                onClick={handleNext} 
-                disabled={!canProceed() || isSubmitting}
-                className="flex items-center space-x-2 gradient-primary text-white"
-              >
-                <span>{isSubmitting ? "Saving..." : (mode === 'verify' ? (currentStep === totalSteps - 1 ? "Complete" : "Next") : (currentStep === totalSteps ? "Complete" : "Next"))}</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
+              <div className="flex-1 flex justify-end">
+                <Button 
+                  onClick={handleNext} 
+                  disabled={!canProceed() || isSubmitting}
+                  className="flex items-center space-x-2 gradient-primary text-white"
+                >
+                  <span>
+                    {isSubmitting ? "Saving..." : (
+                      mode === 'personality' && currentStep === 10 ? "Save Profile" :
+                      mode === 'personality' && currentStep === -1 ? "Start Quiz" :
+                      mode === 'verify' ? (currentStep === totalSteps - 1 ? "Complete" : "Next") :
+                      (currentStep === totalSteps ? "Complete" : "Next")
+                    )}
+                  </span>
+                  {!isSubmitting && !(mode === 'personality' && currentStep === 10) && (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { PricingWindow } from '@/components/PricingWindow';
+import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import { 
   Calendar, 
   Clock, 
@@ -141,6 +142,20 @@ export default function Home({ onViewChange }: HomeProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isPricingOpen, setIsPricingOpen] = useState(false);
+  const [isDIYQuizOpen, setIsDIYQuizOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenQuiz = () => {
+      if (user) {
+        setIsDIYQuizOpen(true);
+      } else {
+        navigate('/auth?mode=signup');
+      }
+    };
+
+    window.addEventListener('open-diy-quiz', handleOpenQuiz);
+    return () => window.removeEventListener('open-diy-quiz', handleOpenQuiz);
+  }, [user, navigate]);
 
   const handleScrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -234,9 +249,14 @@ export default function Home({ onViewChange }: HomeProps) {
                 <Button 
                   size="lg" 
                   className="px-6 md:px-8 text-base md:text-lg bg-accent hover:bg-accent/90 text-accent-foreground border-accent"
+                  onClick={() => {
+                    // This will trigger the DIY personality quiz
+                    const event = new CustomEvent('open-diy-quiz');
+                    window.dispatchEvent(event);
+                  }}
                 >
-                  <Play className="mr-2 h-4 w-4" />
-                  Watch Demo
+                  <Wrench className="mr-2 h-4 w-4" />
+                  Take the DIY Quiz
                 </Button>
               </div>
             </div>
@@ -700,6 +720,13 @@ export default function Home({ onViewChange }: HomeProps) {
 
       {/* Pricing Window */}
       <PricingWindow open={isPricingOpen} onOpenChange={setIsPricingOpen} />
+
+      {/* DIY Personality Quiz */}
+      <DIYSurveyPopup
+        open={isDIYQuizOpen}
+        onOpenChange={setIsDIYQuizOpen}
+        mode="personality"
+      />
     </div>
   );
 }
