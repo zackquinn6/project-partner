@@ -9,6 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Info, ShoppingCart, Plus, Award, Eye, EyeOff } from "lucide-react";
 import { FlowTypeLegend, getStepIndicator } from './FlowTypeLegend';
+import { WorkflowSidebar } from './WorkflowSidebar';
+import {
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
 import { Output } from '@/interfaces/Project';
@@ -99,9 +104,6 @@ export default function UserView({
   const [unplannedWorkOpen, setUnplannedWorkOpen] = useState(false);
   const [completionCertificateOpen, setCompletionCertificateOpen] = useState(false);
   const [projectSurveyOpen, setProjectSurveyOpen] = useState(false);
-  
-  // Workflow progress visibility state
-  const [workflowProgressVisible, setWorkflowProgressVisible] = useState(true);
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
@@ -1044,140 +1046,52 @@ export default function UserView({
       </div>;
   }
   return (
-    <div className="container mx-auto px-6 py-8">
-      <div className={`grid gap-8 ${workflowProgressVisible ? 'lg:grid-cols-4' : 'lg:grid-cols-1'}`}>
-        {/* Sidebar - Collapsible Workflow Progress */}
-        {workflowProgressVisible && (
-          <>
-          <Card className="lg:col-span-1 gradient-card border-0 shadow-card">
-          <CardHeader>
-            <div className="space-y-4">
-              {/* Hide Workflow Button */}
-              <div className="flex justify-start">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setWorkflowProgressVisible(!workflowProgressVisible)}
-                  className="flex items-center gap-2"
-                >
-                  <EyeOff className="w-4 h-4" />
-                  Hide Workflow
-                </Button>
-              </div>
+    <>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <WorkflowSidebar
+            allSteps={allSteps}
+            currentStep={currentStep}
+            currentStepIndex={currentStepIndex}
+            completedSteps={completedSteps}
+            progress={progress}
+            groupedSteps={groupedSteps}
+            isKickoffComplete={isKickoffComplete}
+            onStepClick={(stepIndex, step) => {
+              console.log('🎯 Step clicked:', {
+                stepName: step.step,
+                stepIndex,
+                stepId: step.id,
+                isKickoffComplete,
+                currentStepIndex
+              });
               
-              <div>
-                <CardTitle className="text-lg">Workflow Progress</CardTitle>
-                <CardDescription>
-                  Step {currentStepIndex + 1} of {allSteps.length}
-                </CardDescription>
-              </div>
-              
-              {/* Help button prominently at top */}
-              <Button 
-                onClick={() => setHelpPopupOpen(true)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 text-center"
-              >
-                <div className="text-sm font-semibold">Call the Coach</div>
-              </Button>
-              
-              {/* Add unplanned work button */}
-              {isKickoffComplete && (
-                <Button 
-                  variant="destructive" 
-                  onClick={() => setUnplannedWorkOpen(true)}
-                  className="w-full py-2 px-4 text-center"
-                >
-                  <div className="text-sm font-semibold">❗ Call an audible</div>
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Progress</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
+              if (stepIndex >= 0 && isKickoffComplete) {
+                console.log('🎯 Navigating to step:', {
+                  newIndex: stepIndex,
+                  stepName: step.step,
+                  stepId: step.id
+                });
+                setCurrentStepIndex(stepIndex);
+                startTimeTracking('step', step.id);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                console.log('❌ Step navigation blocked:', {
+                  reason: stepIndex < 0 ? 'Invalid step index' : 'Kickoff not complete',
+                  stepIndex,
+                  isKickoffComplete
+                });
+              }
+            }}
+            onHelpClick={() => setHelpPopupOpen(true)}
+            onUnplannedWorkClick={() => setUnplannedWorkOpen(true)}
+          />
 
-            <div className="space-y-4">
-              {Object.entries(groupedSteps).map(([phase, operations]) => <div key={phase} className="space-y-2">
-                  <h4 className="font-semibold text-primary">{phase}</h4>
-                  {Object.entries(operations).map(([operation, opSteps]) => <div key={operation} className="ml-2 space-y-1">
-                      <h5 className="text-sm font-medium text-muted-foreground">{operation}</h5>
-                      {opSteps.map(step => {
-                  const stepIndex = allSteps.findIndex(s => s.id === step.id);
-                   return <div key={step.id} 
-                     className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast border ${
-                       step.id === currentStep?.id ? 'bg-primary/10 text-primary border-primary/20' : 
-                       completedSteps.has(step.id) ? 'bg-green-50 text-green-700 border-green-200' : 
-                       'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
-                     }`} 
-                      onClick={() => {
-                        console.log('🎯 Step clicked:', {
-                          stepName: step.step,
-                          stepIndex,
-                          stepId: step.id,
-                          isKickoffComplete,
-                          currentStepIndex
-                        });
-                        
-                        // FIXED: Allow clicking on any step after kickoff is complete (no progression restriction)
-                        if (stepIndex >= 0 && isKickoffComplete) {
-                          console.log('🎯 Navigating to step:', {
-                            newIndex: stepIndex,
-                            stepName: step.step,
-                            stepId: step.id
-                          });
-                          setCurrentStepIndex(stepIndex);
-                          // Start time tracking for the new step
-                          startTimeTracking('step', step.id);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        } else {
-                          console.log('❌ Step navigation blocked:', {
-                            reason: stepIndex < 0 ? 'Invalid step index' : 'Kickoff not complete',
-                            stepIndex,
-                            isKickoffComplete
-                          });
-                        }
-                      }}>
-                            <div className="flex items-center gap-2">
-                              {getStepIndicator(step.flowType)}
-                              {completedSteps.has(step.id) && <CheckCircle className="w-4 h-4" />}
-                              <span className="truncate">{step.step}</span>
-                            </div>
-                          </div>;
-                })}
-                    </div>)}
-                </div>)}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Flow Type Legend */}
-        <FlowTypeLegend compact={true} showDescriptions={false} />
-        </>
-        )}
-
-        {/* Main Content */}
-        <div className={`space-y-6 ${workflowProgressVisible ? 'lg:col-span-3' : 'lg:col-span-1'}`}>
-          {/* Show Workflow Button - Only show when workflow is hidden */}
-          {!workflowProgressVisible && (
-            <div className="flex justify-start mb-6">
-              <Button
-                variant="outline" 
-                size="sm"
-                onClick={() => setWorkflowProgressVisible(true)}
-                className="flex items-center gap-2"
-              >
-                <Eye className="w-4 h-4" />
-                Show Workflow
-              </Button>
-            </div>
-          )}
-          {/* Header */}
-          <Card className="gradient-card border-0 shadow-card">
+          <main className="flex-1 overflow-auto">
+            <div className="container mx-auto px-6 py-8">
+              <div className="space-y-6">
+              {/* Header */}
+              <Card className="gradient-card border-0 shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -1500,9 +1414,18 @@ export default function UserView({
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
 
+                {/* Flow Type Legend - At bottom of workflow */}
+                <div className="mt-8 pt-6 border-t border-muted">
+                  <FlowTypeLegend compact={false} showDescriptions={true} />
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </SidebarProvider>
+
+      {/* Popups and Dialogs - Outside of sidebar */}
       {/* Output Detail Popup */}
       {selectedOutput && (
         <OutputDetailPopup
@@ -1632,6 +1555,6 @@ export default function UserView({
           }}
         />
       )}
-    </div>
+    </>
   );
 }
