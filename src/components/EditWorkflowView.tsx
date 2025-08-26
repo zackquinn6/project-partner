@@ -502,8 +502,9 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
                   </CardContent>
                 </Card>
 
-                {/* Tools, Materials, and Time Estimation */}
+                {/* Tools, Materials, and Outputs */}
                 <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Tools & Materials Card */}
                   <Card className="bg-muted/30 border shadow-sm">
                     <CardHeader>
                       <CardTitle>Tools & Materials</CardTitle>
@@ -518,7 +519,15 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
                             onClick={() => setToolsLibraryOpen(true)}
                           >
                             <Wrench className="w-4 h-4 mr-2" />
-                            Select from Library
+                            Select Tools from Library
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setMaterialsLibraryOpen(true)}
+                          >
+                            <Package className="w-4 h-4 mr-2" />
+                            Select Materials from Library
                           </Button>
                         </div>
                         
@@ -714,13 +723,122 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
                     </CardContent>
                   </Card>
 
-                  {/* Time Estimation */}
-                  <StepTimeEstimation
-                    step={editingStep}
-                    scalingUnit={currentProject?.scalingUnit}
-                    onChange={(timeEstimation) => updateEditingStep('timeEstimation', timeEstimation)}
-                  />
+                  {/* Outputs Card */}
+                  <Card className="bg-muted/30 border shadow-sm">
+                    <CardHeader>
+                      <CardTitle>Step Outputs</CardTitle>
+                      <CardDescription>Manage outputs produced by this step</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            const newOutput: Output = {
+                              id: `output-${Date.now()}-${Math.random()}`,
+                              name: 'New Output',
+                              description: '',
+                              type: 'none'
+                            };
+                            updateEditingStep('outputs', [...(editingStep?.outputs || []), newOutput]);
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Output
+                        </Button>
+                        
+                        {editingStep.outputs && editingStep.outputs.length > 0 && (
+                          <Accordion type="multiple" defaultValue={["outputs"]} className="w-full">
+                            <AccordionItem value="outputs">
+                              <AccordionTrigger className="text-base font-semibold">
+                                Outputs ({editingStep.outputs.length})
+                              </AccordionTrigger>
+                              <AccordionContent>
+                                <div className="space-y-3 pt-2">
+                                  {editingStep.outputs.map((output, index) => (
+                                    <div key={output.id} className="p-3 bg-background/50 rounded-lg border">
+                                      <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                          <div>
+                                            <Label>Name</Label>
+                                            <Input
+                                              value={output.name}
+                                              onChange={(e) => {
+                                                const updatedOutputs = [...editingStep.outputs];
+                                                updatedOutputs[index] = { ...output, name: e.target.value };
+                                                updateEditingStep('outputs', updatedOutputs);
+                                              }}
+                                              placeholder="Output name"
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label>Type</Label>
+                                            <Select 
+                                              value={output.type} 
+                                              onValueChange={(value) => {
+                                                const updatedOutputs = [...editingStep.outputs];
+                                                updatedOutputs[index] = { ...output, type: value as Output['type'] };
+                                                updateEditingStep('outputs', updatedOutputs);
+                                              }}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="none">None</SelectItem>
+                                                <SelectItem value="major-aesthetics">Major Aesthetics</SelectItem>
+                                                <SelectItem value="performance-durability">Performance/Durability</SelectItem>
+                                                <SelectItem value="safety">Safety</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <Label>Description</Label>
+                                          <Textarea
+                                            value={output.description}
+                                            onChange={(e) => {
+                                              const updatedOutputs = [...editingStep.outputs];
+                                              updatedOutputs[index] = { ...output, description: e.target.value };
+                                              updateEditingStep('outputs', updatedOutputs);
+                                            }}
+                                            placeholder="Output description"
+                                            rows={2}
+                                          />
+                                        </div>
+                                        <div className="flex justify-end">
+                                          <Button 
+                                            onClick={() => {
+                                              const updatedOutputs = editingStep.outputs.filter((_, i) => i !== index);
+                                              updateEditingStep('outputs', updatedOutputs);
+                                            }}
+                                            size="sm" 
+                                            variant="ghost"
+                                            className="text-destructive hover:text-destructive"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
+
+                {/* Time Estimation */}
+                <StepTimeEstimation
+                  step={editingStep}
+                  scalingUnit={currentProject?.scalingUnit}
+                  onChange={(timeEstimation) => updateEditingStep('timeEstimation', timeEstimation)}
+                />
 
                 {/* Navigation */}
                 <div className="flex justify-between">

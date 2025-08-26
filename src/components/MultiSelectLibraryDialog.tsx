@@ -45,9 +45,14 @@ export function MultiSelectLibraryDialog({
   const fetchItems = async () => {
     setLoading(true);
     try {
-      // For now, return empty array as the library tables don't exist yet
-      setItems([]);
-      toast.error(`${type} library not yet implemented`);
+      const { data, error } = await supabase
+        .from(type)
+        .select('*')
+        .order('item');
+      
+      if (error) throw error;
+      
+      setItems(data || []);
     } catch (error) {
       console.error(`Error fetching ${type}:`, error);
       toast.error(`Failed to load ${type}`);
