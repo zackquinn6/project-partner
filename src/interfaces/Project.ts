@@ -83,6 +83,18 @@ export interface WorkflowStep {
   outputs: Output[];
   contentSections?: ContentSection[];
   flowType?: 'prime' | 'repeat' | 'inspection' | 'alternate' | 'if-necessary';
+  timeEstimation?: {
+    variableTime?: {
+      low: number; // hours per scaling unit
+      medium: number;
+      high: number;
+    };
+    lagTime?: {
+      low: number; // hours
+      medium: number;
+      high: number;
+    };
+  };
 }
 
 export interface Operation {

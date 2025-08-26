@@ -7,6 +7,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
 import { ProjectAgreementStep } from './KickoffSteps/ProjectAgreementStep';
 import { ProjectCustomizationStep } from './KickoffSteps/ProjectCustomizationStep';
+import { ProjectSizingQuestionnaire } from './ProjectSizingQuestionnaire';
 
 interface KickoffWorkflowProps {
   onKickoffComplete: () => void;
@@ -24,7 +25,12 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
       description: 'Review and customize your project details'
     },
     {
-      id: 'kickoff-step-2', 
+      id: 'kickoff-step-2',
+      title: 'Project Sizing',
+      description: 'Define project scope and working capacity for accurate timing'
+    },
+    {
+      id: 'kickoff-step-3', 
       title: 'Project Partner Agreement',
       description: 'Review and sign the project agreement'
     }
@@ -61,7 +67,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
         setCurrentKickoffStep(firstIncomplete);
       } else {
         console.log("KickoffWorkflow - All steps complete, showing last step");
-        setCurrentKickoffStep(2); // All complete, show last step
+        setCurrentKickoffStep(3); // All complete, show last step
       }
     }
   }, [currentProjectRun]);
@@ -166,6 +172,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
       case 0:
         return <ProjectOverviewStep {...stepProps} />;
       case 1:
+        return <ProjectSizingQuestionnaire {...stepProps} />;
+      case 2:
         return <ProjectAgreementStep {...stepProps} />;
       default:
         return null;

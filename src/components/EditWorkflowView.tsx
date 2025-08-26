@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Image, Video, Edit, Save, X, ArrowLeft, Settings, Plus, Trash2, FolderPlus, FileText, List, Wrench, Package, Upload } from "lucide-react";
 import { FlowTypeSelector } from './FlowTypeSelector';
+import { StepTimeEstimation } from './StepTimeEstimation';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Material, Tool, Output, Phase, Operation, ContentSection } from '@/interfaces/Project';
@@ -714,7 +715,7 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   }
 
   return (
-    <div className="fixed inset-0 bg-background overflow-auto">
+    <div className="fixed inset-0 bg-background overflow-auto z-50">
       {/* Header with Project Name and Controls */}
       <div className="sticky top-0 z-10 bg-background border-b">
         <div className="container mx-auto px-6 py-4">
@@ -1211,6 +1212,15 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
               </Accordion>
             </CardContent>
           </Card>
+
+          {/* Time Estimation */}
+          {editMode && editingStep && (
+            <StepTimeEstimation
+              step={editingStep}
+              scalingUnit={currentProject?.scalingUnit}
+              onChange={(timeEstimation) => updateEditingStep('timeEstimation', timeEstimation)}
+            />
+          )}
 
           {/* Navigation */}
           <div className="flex justify-between">

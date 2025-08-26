@@ -83,6 +83,16 @@ export interface ProjectRun {
     preferredGuidanceLevel: 'minimal' | 'standard' | 'detailed' | 'comprehensive';
   };
 
+  // Project Sizing Data
+  projectSize?: string;
+  scalingFactor?: number;
+  scalingUnit?: string;
+  complexityAdjustments?: string;
+  skillLevelMultiplier?: number;
+  availableHoursPerDay?: number;
+  workingDaysPerWeek?: number;
+  specialConsiderations?: string;
+
   delay_detection?: {
     riskLevel: 'low' | 'medium' | 'high' | 'critical';
     predictedDelay: number; // days
