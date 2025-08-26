@@ -1096,12 +1096,13 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
         onOpenChange={setToolsLibraryOpen}
         type="tools"
         onSelect={(selectedItems) => {
-          const newTools: Tool[] = selectedItems.map(item => ({
+          const newTools: StepTool[] = selectedItems.map(item => ({
             id: `tool-${Date.now()}-${Math.random()}`,
             name: item.item,
             description: item.description || '',
             category: 'Hand Tool',
-            required: false
+            required: false,
+            quantity: item.quantity
           }));
           
           updateEditingStep('tools', [...(editingStep?.tools || []), ...newTools]);
@@ -1113,12 +1114,13 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
         onOpenChange={setMaterialsLibraryOpen}
         type="materials"
         onSelect={(selectedItems) => {
-          const newMaterials: Material[] = selectedItems.map(item => ({
+          const newMaterials: StepMaterial[] = selectedItems.map(item => ({
             id: `material-${Date.now()}-${Math.random()}`,
             name: item.item,
             description: item.description || '',
             category: 'Consumable',
-            required: false
+            required: false,
+            quantity: item.quantity
           }));
           
           updateEditingStep('materials', [...(editingStep?.materials || []), ...newMaterials]);
