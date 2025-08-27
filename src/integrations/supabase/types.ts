@@ -727,6 +727,7 @@ export type Database = {
       variation_attribute_values: {
         Row: {
           attribute_id: string
+          core_item_id: string | null
           created_at: string
           display_value: string
           id: string
@@ -736,6 +737,7 @@ export type Database = {
         }
         Insert: {
           attribute_id: string
+          core_item_id?: string | null
           created_at?: string
           display_value: string
           id?: string
@@ -745,6 +747,7 @@ export type Database = {
         }
         Update: {
           attribute_id?: string
+          core_item_id?: string | null
           created_at?: string
           display_value?: string
           id?: string
@@ -798,6 +801,7 @@ export type Database = {
           id: string
           item_type: string
           name: string
+          photo_url: string | null
           sku: string | null
           updated_at: string
         }
@@ -809,6 +813,7 @@ export type Database = {
           id?: string
           item_type: string
           name: string
+          photo_url?: string | null
           sku?: string | null
           updated_at?: string
         }
@@ -820,6 +825,7 @@ export type Database = {
           id?: string
           item_type?: string
           name?: string
+          photo_url?: string | null
           sku?: string | null
           updated_at?: string
         }

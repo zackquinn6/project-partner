@@ -30,6 +30,7 @@ interface VariationAttributeValue {
   value: string;
   display_value: string;
   sort_order: number;
+  core_item_id?: string;
 }
 
 interface VariationInstance {
@@ -39,6 +40,7 @@ interface VariationInstance {
   name: string;
   description?: string;
   sku?: string;
+  photo_url?: string;
   attributes: Record<string, string>;
 }
 
@@ -53,14 +55,13 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
   const [attributes, setAttributes] = useState<VariationAttribute[]>([]);
   const [variations, setVariations] = useState<VariationInstance[]>([]);
   const [newAttributeName, setNewAttributeName] = useState('');
-  const [newAttributeDisplayName, setNewAttributeDisplayName] = useState('');
   const [selectedAttributeId, setSelectedAttributeId] = useState<string>('');
   const [newValueText, setNewValueText] = useState('');
-  const [newValueDisplay, setNewValueDisplay] = useState('');
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [variationName, setVariationName] = useState('');
   const [variationDescription, setVariationDescription] = useState('');
   const [variationSku, setVariationSku] = useState('');
+  const [variationPhotoUrl, setVariationPhotoUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [showAttributeDialog, setShowAttributeDialog] = useState(false);
   const [showValueDialog, setShowValueDialog] = useState(false);
@@ -77,8 +78,9 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
         .from('variation_attributes')
         .select(`
           *,
-          variation_attribute_values (*)
+          variation_attribute_values!inner (*)
         `)
+        .eq('variation_attribute_values.core_item_id', coreItemId)
         .order('display_name');
 
       if (error) throw error;
@@ -119,8 +121,8 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
   };
 
   const handleCreateAttribute = async () => {
-    if (!newAttributeName.trim() || !newAttributeDisplayName.trim()) {
-      toast.error('Attribute name and display name are required');
+    if (!newAttributeName.trim()) {
+      toast.error('Attribute name is required');
       return;
     }
 
@@ -130,7 +132,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
         .from('variation_attributes')
         .insert({
           name: newAttributeName.toLowerCase().replace(/\s+/g, '_'),
-          display_name: newAttributeDisplayName,
+          display_name: newAttributeName,
           attribute_type: 'text'
         });
 
@@ -138,7 +140,6 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
 
       toast.success('Attribute created successfully');
       setNewAttributeName('');
-      setNewAttributeDisplayName('');
       setShowAttributeDialog(false);
       fetchAttributes();
     } catch (error) {
@@ -150,8 +151,8 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
   };
 
   const handleCreateAttributeValue = async () => {
-    if (!selectedAttributeId || !newValueText.trim() || !newValueDisplay.trim()) {
-      toast.error('Please select an attribute and provide both value and display name');
+    if (!selectedAttributeId || !newValueText.trim()) {
+      toast.error('Please select an attribute and provide a value');
       return;
     }
 
@@ -162,15 +163,15 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
         .insert({
           attribute_id: selectedAttributeId,
           value: newValueText.toLowerCase().replace(/\s+/g, '_'),
-          display_value: newValueDisplay,
-          sort_order: 0
+          display_value: newValueText,
+          sort_order: 0,
+          core_item_id: coreItemId
         });
 
       if (error) throw error;
 
       toast.success('Attribute value created successfully');
       setNewValueText('');
-      setNewValueDisplay('');
       setSelectedAttributeId('');
       setShowValueDialog(false);
       fetchAttributes();
@@ -198,6 +199,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
           name: variationName,
           description: variationDescription || null,
           sku: variationSku || null,
+          photo_url: variationPhotoUrl || null,
           attributes: selectedAttributes
         });
 
@@ -207,6 +209,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
       setVariationName('');
       setVariationDescription('');
       setVariationSku('');
+      setVariationPhotoUrl('');
       setSelectedAttributes({});
       setShowVariationDialog(false);
       fetchVariations();
@@ -239,6 +242,88 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
     }
   };
 
+  const handleDeleteAttribute = async (attributeId: string) => {
+    if (!confirm('Are you sure you want to delete this attribute? This will also delete all its values.')) return;
+
+    try {
+      // Delete values first
+      await supabase
+        .from('variation_attribute_values')
+        .delete()
+        .eq('attribute_id', attributeId)
+        .eq('core_item_id', coreItemId);
+
+      // Then delete attribute if no other core items use it
+      const { data: otherValues } = await supabase
+        .from('variation_attribute_values')
+        .select('id')
+        .eq('attribute_id', attributeId)
+        .neq('core_item_id', coreItemId);
+
+      if (!otherValues || otherValues.length === 0) {
+        await supabase
+          .from('variation_attributes')
+          .delete()
+          .eq('id', attributeId);
+      }
+
+      toast.success('Attribute deleted successfully');
+      fetchAttributes();
+    } catch (error) {
+      console.error('Error deleting attribute:', error);
+      toast.error('Failed to delete attribute');
+    }
+  };
+
+  const handleDeleteAttributeValue = async (valueId: string) => {
+    if (!confirm('Are you sure you want to delete this attribute value?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('variation_attribute_values')
+        .delete()
+        .eq('id', valueId);
+
+      if (error) throw error;
+
+      toast.success('Attribute value deleted successfully');
+      fetchAttributes();
+    } catch (error) {
+      console.error('Error deleting attribute value:', error);
+      toast.error('Failed to delete attribute value');
+    }
+  };
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${coreItemId}-${Date.now()}.${fileExt}`;
+      const filePath = `variations/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('library-photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('library-photos')
+        .getPublicUrl(filePath);
+
+      setVariationPhotoUrl(publicUrl);
+      toast.success('Photo uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast.error('Failed to upload photo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const generateVariationName = () => {
     const attributeStrings = Object.entries(selectedAttributes).map(([attrName, valueKey]) => {
       const attribute = attributes.find(a => a.name === attrName);
@@ -249,6 +334,30 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
     const generatedName = `${attributeStrings.join(' ')} ${coreItemName}`;
     setVariationName(generatedName);
   };
+
+  // Get all global attributes for the add value dialog
+  const [globalAttributes, setGlobalAttributes] = useState<VariationAttribute[]>([]);
+
+  const fetchGlobalAttributes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('variation_attributes')
+        .select('*')
+        .order('display_name');
+
+      if (error) throw error;
+      setGlobalAttributes((data || []).map(attr => ({
+        ...attr,
+        values: []
+      })));
+    } catch (error) {
+      console.error('Error fetching global attributes:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchGlobalAttributes();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -271,20 +380,11 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="attr-name">Attribute Name (internal)</Label>
+                      <Label htmlFor="attr-name">Attribute Name</Label>
                       <Input
                         id="attr-name"
                         value={newAttributeName}
                         onChange={(e) => setNewAttributeName(e.target.value)}
-                        placeholder="e.g., blade_size"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="attr-display">Display Name</Label>
-                      <Input
-                        id="attr-display"
-                        value={newAttributeDisplayName}
-                        onChange={(e) => setNewAttributeDisplayName(e.target.value)}
                         placeholder="e.g., Blade Size"
                       />
                     </div>
@@ -319,7 +419,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                           <SelectValue placeholder="Select attribute" />
                         </SelectTrigger>
                         <SelectContent>
-                          {attributes.map(attr => (
+                          {globalAttributes.map(attr => (
                             <SelectItem key={attr.id} value={attr.id}>
                               {attr.display_name}
                             </SelectItem>
@@ -328,20 +428,11 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="value-text">Value (internal)</Label>
+                      <Label htmlFor="value-text">Value</Label>
                       <Input
                         id="value-text"
                         value={newValueText}
                         onChange={(e) => setNewValueText(e.target.value)}
-                        placeholder="e.g., 10_inch"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="value-display">Display Value</Label>
-                      <Input
-                        id="value-display"
-                        value={newValueDisplay}
-                        onChange={(e) => setNewValueDisplay(e.target.value)}
                         placeholder="e.g., 10 inch"
                       />
                     </div>
@@ -363,12 +454,32 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {attributes.map(attr => (
               <div key={attr.id} className="border rounded-lg p-3">
-                <div className="font-medium mb-2">{attr.display_name}</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-medium">{attr.display_name}</div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteAttribute(attr.id)}
+                    className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-1">
                   {attr.values.map(value => (
-                    <Badge key={value.id} variant="secondary" className="text-xs">
-                      {value.display_value}
-                    </Badge>
+                    <div key={value.id} className="flex items-center">
+                      <Badge variant="secondary" className="text-xs">
+                        {value.display_value}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteAttributeValue(value.id)}
+                        className="h-4 w-4 p-0 ml-1 text-destructive hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
                   ))}
                   {attr.values.length === 0 && (
                     <span className="text-sm text-muted-foreground">No values yet</span>
@@ -400,7 +511,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                   {/* Attribute Selection */}
                   <div className="space-y-3">
                     <Label>Select Attributes</Label>
-                    {attributes.map(attr => (
+                    {attributes.filter(attr => attr.values.length > 0).map(attr => (
                       <div key={attr.id} className="space-y-2">
                         <Label className="text-sm font-medium">{attr.display_name}</Label>
                         <Select
@@ -425,6 +536,11 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                         </Select>
                       </div>
                     ))}
+                    {attributes.filter(attr => attr.values.length > 0).length === 0 && (
+                      <div className="text-sm text-muted-foreground">
+                        No attributes with values available. Create attribute values first.
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -462,6 +578,35 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                     />
                   </div>
 
+                  <div>
+                    <Label htmlFor="var-photo">Photo (Optional)</Label>
+                    <div className="space-y-2">
+                      <Input
+                        id="var-photo"
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        disabled={loading}
+                      />
+                      {variationPhotoUrl && (
+                        <div className="flex items-center space-x-2">
+                          <img
+                            src={variationPhotoUrl}
+                            alt="Variation preview"
+                            className="h-16 w-16 object-cover rounded-md"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setVariationPhotoUrl('')}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex justify-end space-x-2">
                     <Button variant="outline" onClick={() => setShowVariationDialog(false)}>
                       Cancel
@@ -478,32 +623,41 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
         <CardContent>
           <div className="space-y-3">
             {variations.map(variation => (
-              <div key={variation.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex-1">
-                  <div className="font-medium">{variation.name}</div>
-                  {variation.description && (
-                    <div className="text-sm text-muted-foreground">{variation.description}</div>
+              <div key={variation.id} className="flex items-start justify-between p-3 border rounded-lg">
+                <div className="flex flex-1 space-x-3">
+                  {variation.photo_url && (
+                    <img
+                      src={variation.photo_url}
+                      alt={variation.name}
+                      className="h-16 w-16 object-cover rounded-md flex-shrink-0"
+                    />
                   )}
-                  {variation.sku && (
-                    <div className="text-xs text-muted-foreground">SKU: {variation.sku}</div>
-                  )}
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {Object.entries(variation.attributes).map(([key, value]) => {
-                      const attr = attributes.find(a => a.name === key);
-                      const attrValue = attr?.values.find(v => v.value === value);
-                      return (
-                        <Badge key={key} variant="outline" className="text-xs">
-                          {attr?.display_name}: {attrValue?.display_value || value}
-                        </Badge>
-                      );
-                    })}
+                  <div className="flex-1">
+                    <div className="font-medium">{variation.name}</div>
+                    {variation.description && (
+                      <div className="text-sm text-muted-foreground">{variation.description}</div>
+                    )}
+                    {variation.sku && (
+                      <div className="text-xs text-muted-foreground">SKU: {variation.sku}</div>
+                    )}
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Object.entries(variation.attributes).map(([key, value]) => {
+                        const attr = attributes.find(a => a.name === key);
+                        const attrValue = attr?.values.find(v => v.value === value);
+                        return (
+                          <Badge key={key} variant="outline" className="text-xs">
+                            {attr?.display_name}: {attrValue?.display_value || value}
+                          </Badge>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleDeleteVariation(variation.id)}
-                  className="ml-2"
+                  className="ml-2 text-destructive hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
