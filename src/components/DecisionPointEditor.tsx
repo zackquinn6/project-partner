@@ -235,14 +235,14 @@ export const DecisionPointEditor: React.FC<DecisionPointEditorProps> = ({
                         <div className="space-y-2">
                           <Label>Next Step (Primary Path)</Label>
                           <Select
-                            value={option.nextStepId || ''}
-                            onValueChange={(value) => updateOption(index, 'nextStepId', value)}
+                            value={option.nextStepId === 'none' ? '' : option.nextStepId || ''}
+                            onValueChange={(value) => updateOption(index, 'nextStepId', value === 'none' ? undefined : value)}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select next step..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No specific next step</SelectItem>
+                              <SelectItem value="none">No specific next step</SelectItem>
                               {availableSteps.map((availableStep) => (
                                 <SelectItem key={availableStep.id} value={availableStep.id}>
                                   {availableStep.name}
@@ -254,14 +254,14 @@ export const DecisionPointEditor: React.FC<DecisionPointEditorProps> = ({
                         <div className="space-y-2">
                           <Label>Alternate Step</Label>
                           <Select
-                            value={option.alternateStepId || ''}
-                            onValueChange={(value) => updateOption(index, 'alternateStepId', value)}
+                            value={option.alternateStepId === 'none' ? '' : option.alternateStepId || ''}
+                            onValueChange={(value) => updateOption(index, 'alternateStepId', value === 'none' ? undefined : value)}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select alternate step..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No alternate step</SelectItem>
+                              <SelectItem value="none">No alternate step</SelectItem>
                               {availableSteps.map((availableStep) => (
                                 <SelectItem key={availableStep.id} value={availableStep.id}>
                                   {availableStep.name}
