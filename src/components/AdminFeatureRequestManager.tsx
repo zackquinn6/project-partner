@@ -254,7 +254,7 @@ export const AdminFeatureRequestManager: React.FC<AdminFeatureRequestManagerProp
           </Card>
         </div>
 
-        {/* Response Form */}
+        {/* Response Form Dialog */}
         <Dialog open={showResponseForm} onOpenChange={setShowResponseForm}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
