@@ -169,9 +169,9 @@ export default function Home({ onViewChange }: HomeProps) {
 
   return (
     <div className="min-h-screen">
-      <section className="relative overflow-hidden bg-primary pt-20 pb-20 md:pt-24 md:pb-32">
+      <section className="relative overflow-hidden gradient-hero pt-20 pb-20 md:pt-24 md:pb-32">
         {/* Fixed header navigation bar */}
-        <nav className="fixed top-0 left-0 right-0 bg-primary/95 backdrop-blur-sm z-50 border-b border-primary-foreground/20">
+        <nav className="fixed top-0 left-0 right-0 bg-primary/95 backdrop-blur-md z-50 border-b border-primary-foreground/10 shadow-elegant">
           <div className="container mx-auto px-4 flex items-center justify-between h-16">
             <div className="flex items-center">
               <img 
@@ -185,7 +185,7 @@ export default function Home({ onViewChange }: HomeProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3 transition-fast"
                 onClick={() => handleScrollToSection('features')}
               >
                 Features
@@ -193,7 +193,7 @@ export default function Home({ onViewChange }: HomeProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3 transition-fast"
                 onClick={() => handleScrollToSection('about-project-partner')}
               >
                 About
@@ -201,7 +201,7 @@ export default function Home({ onViewChange }: HomeProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3 transition-fast"
                 onClick={() => setIsPricingOpen(true)}
               >
                 Pricing
@@ -209,13 +209,13 @@ export default function Home({ onViewChange }: HomeProps) {
               <Button 
                 variant="ghost"
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3 transition-fast"
                 onClick={() => navigate('/auth')}
               >
                 Sign In
               </Button>
               <Button 
-                variant="secondary"
+                variant="accent"
                 size="sm"
                 className="ml-1 text-xs sm:text-sm px-2 sm:px-3"
                 onClick={() => navigate('/auth?mode=signup')}
@@ -229,11 +229,11 @@ export default function Home({ onViewChange }: HomeProps) {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
               
-              <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6">
+              <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6">
                 🏆 Win the Game of DIY
               </h1>
               
-              <div className="bg-primary-foreground/10 rounded-lg border border-primary-foreground/20 p-4 md:p-6 mb-8">
+              <div className="card-premium bg-primary-foreground/10 backdrop-blur-sm border-primary-foreground/20 mb-8">
                 <p className="text-lg sm:text-xl text-primary-foreground font-medium text-center italic">
                   "Project Partner turns repeat‑DIY chaos into a clear, winning playbook — combining planning, shopping, execution, on-demand guidance, and community spirit into one simple, sports‑themed system that gets projects done smarter every time."
                 </p>
@@ -244,15 +244,16 @@ export default function Home({ onViewChange }: HomeProps) {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button size="lg" className="px-6 md:px-8 text-base md:text-lg" asChild>
+                <Button variant="premium" size="lg" className="px-6 md:px-8 text-base md:text-lg" asChild>
                   <Link to="/projects">
                     {user ? "View Projects" : "View Projects"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button 
+                  variant="accent" 
                   size="lg" 
-                  className="px-6 md:px-8 text-base md:text-lg bg-accent hover:bg-accent/90 text-accent-foreground border-accent"
+                  className="px-6 md:px-8 text-base md:text-lg"
                   onClick={() => {
                     // This will trigger the DIY personality quiz
                     const event = new CustomEvent('open-diy-quiz');
@@ -277,50 +278,31 @@ export default function Home({ onViewChange }: HomeProps) {
         </div>
       </section>
 
-      {/* AI-Powered Project Search */}
+      {/* Project Search */}
       <section className="py-20 bg-gradient-to-br from-secondary via-secondary to-accent/5">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <Sparkles className="w-4 h-4" />
-              AI-Powered Search
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8">
               From repairs to remodels — start here
             </h2>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Our smart search understands what you mean, not just what you type. Find the perfect project with natural language and intelligent matching.
-            </p>
           </div>
           
           <div className="flex justify-center">
             <ProjectSearch />
           </div>
           
-          <div className="mt-12 text-center">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto text-sm text-muted-foreground">
-              <div className="flex items-center justify-center gap-2">
-                <Target className="w-4 h-4 text-primary" />
-                <span>Semantic matching</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <Zap className="w-4 h-4 text-primary" />
-                <span>Typo tolerance</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span>Confidence scoring</span>
-              </div>
-            </div>
+          {/* Separator */}
+          <div className="mt-16">
+            <Separator className="max-w-4xl mx-auto" />
           </div>
         </div>
       </section>
 
       {/* Project Carousel */}
-      <section className="py-16 bg-secondary">
+      <section className="py-16 gradient-card">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
               Ready to Tackle Your Next Challenge?
             </h2>
             <p className="text-xl text-muted-foreground">
@@ -331,13 +313,13 @@ export default function Home({ onViewChange }: HomeProps) {
           <div className="flex flex-col sm:flex-row gap-4 md:gap-6 pb-4 sm:overflow-x-auto sm:scrollbar-hide">
             {projectImages.map((image, index) => (
               <div key={index} className="flex-shrink-0 w-full sm:w-72 md:w-80">
-                <Card className="overflow-hidden hover:shadow-card transition-all duration-300 hover:scale-105 cursor-pointer"
+                <Card className="card-feature overflow-hidden hover:shadow-elegant transition-smooth hover:scale-105 cursor-pointer"
                       onClick={() => navigate('/projects')}>
                   <div className="aspect-video overflow-hidden">
                     <img
                       src={image.src}
                       alt={image.alt}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-smooth hover:scale-110"
                     />
                   </div>
                   <CardContent className="p-4">
@@ -352,6 +334,7 @@ export default function Home({ onViewChange }: HomeProps) {
           {/* Start Your Gameplan Button */}
           <div className="text-center mt-12">
             <Button 
+              variant="premium" 
               size="lg" 
               className="px-8 py-4 text-lg font-semibold"
               onClick={() => navigate('/projects')}

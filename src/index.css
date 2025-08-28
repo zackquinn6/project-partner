@@ -8,112 +8,130 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 218 72% 14%;
+    /* Professional Navy & Orange Sports DIY Palette */
+    --background: 250 100% 99%;
+    --foreground: 220 30% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 218 72% 14%;
+    --card-foreground: 220 30% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 218 72% 14%;
+    --popover-foreground: 220 30% 15%;
 
-    --primary: 218 72% 14%;
+    /* Navy primary with orange accent */
+    --primary: 220 85% 18%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 218 72% 24%;
+    --primary-variant: 220 75% 25%;
+    --primary-light: 220 45% 35%;
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 218 72% 14%;
+    /* Sophisticated grays */
+    --secondary: 220 15% 96%;
+    --secondary-foreground: 220 30% 20%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 20% 95%;
+    --muted-foreground: 220 15% 45%;
 
-    --accent: 25 100% 50%;
+    /* Vibrant orange accent */
+    --accent: 20 95% 55%;
     --accent-foreground: 0 0% 100%;
+    --accent-light: 20 85% 65%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 80% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 91%;
-    --input: 0 0% 94%;
-    --ring: 25 100% 50%;
+    /* Refined borders and inputs */
+    --border: 220 25% 88%;
+    --input: 220 30% 94%;
+    --ring: 20 95% 55%;
 
-    /* Custom design tokens - Sports DIY theme */
-    --gradient-primary: linear-gradient(135deg, hsl(218 72% 14%) 0%, hsl(25 100% 50%) 100%);
-    --gradient-subtle: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 96%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+    /* Professional gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(220 85% 18%) 0%, hsl(220 75% 25%) 50%, hsl(20 95% 55%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(220 85% 18%) 0%, hsl(220 70% 22%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(220 30% 98%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(250 100% 99%) 0%, hsl(220 20% 96%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(20 95% 55%) 0%, hsl(25 90% 60%) 100%);
     
-    --shadow-elegant: 0 10px 30px -10px hsl(25 100% 50% / 0.3);
-    --shadow-card: 0 4px 20px -4px hsl(25 100% 50% / 0.15);
-    --shadow-soft: 0 2px 10px -2px hsl(0 0% 70% / 0.2);
+    /* Sophisticated shadows */
+    --shadow-elegant: 0 20px 40px -12px hsl(220 85% 18% / 0.25);
+    --shadow-card: 0 8px 30px -8px hsl(220 85% 18% / 0.12);
+    --shadow-soft: 0 4px 20px -4px hsl(220 50% 50% / 0.08);
+    --shadow-accent: 0 12px 35px -10px hsl(20 95% 55% / 0.3);
+    --shadow-float: 0 5px 15px -3px hsl(220 85% 18% / 0.1);
     
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Smooth micro-interactions */
+    --transition-smooth: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-fast: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Professional sidebar tokens */
+    --sidebar-background: 220 20% 96%;
+    --sidebar-foreground: 220 30% 20%;
+    --sidebar-primary: 220 85% 18%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 92%;
+    --sidebar-accent-foreground: 220 30% 20%;
+    --sidebar-border: 220 25% 88%;
+    --sidebar-ring: 20 95% 55%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Professional Dark Navy & Orange */
+    --background: 220 40% 8%;
+    --foreground: 220 15% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 35% 10%;
+    --card-foreground: 220 15% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 35% 10%;
+    --popover-foreground: 220 15% 92%;
 
-    --primary: 218 72% 14%;
+    --primary: 220 85% 18%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 218 72% 24%;
+    --primary-variant: 220 75% 25%;
+    --primary-light: 220 45% 35%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 220 15% 85%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 25% 12%;
+    --muted-foreground: 220 15% 60%;
 
-    --accent: 25 100% 50%;
+    --accent: 20 95% 55%;
     --accent-foreground: 0 0% 100%;
+    --accent-light: 20 85% 65%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 25 100% 50%;
+    --border: 220 30% 18%;
+    --input: 220 30% 16%;
+    --ring: 20 95% 55%;
 
-    /* Dark mode custom tokens - Sports DIY theme */
-    --gradient-primary: linear-gradient(135deg, hsl(218 72% 14%) 0%, hsl(25 100% 50%) 100%);
-    --gradient-subtle: linear-gradient(135deg, hsl(222.2 84% 4.9%) 0%, hsl(217.2 32.6% 17.5%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(222.2 84% 4.9%) 0%, hsl(217.2 32.6% 15%) 100%);
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(220 85% 18%) 0%, hsl(220 75% 25%) 50%, hsl(20 95% 55%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(220 40% 8%) 0%, hsl(220 35% 10%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(220 35% 10%) 0%, hsl(220 30% 12%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(220 40% 8%) 0%, hsl(220 25% 12%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(20 95% 55%) 0%, hsl(25 90% 60%) 100%);
     
-    --shadow-elegant: 0 10px 30px -10px hsl(25 100% 50% / 0.4);
-    --shadow-card: 0 4px 20px -4px hsl(25 100% 50% / 0.2);
-    --shadow-soft: 0 2px 10px -2px hsl(0 0% 0% / 0.3);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    /* Dark mode shadows */
+    --shadow-elegant: 0 20px 40px -12px hsl(0 0% 0% / 0.4);
+    --shadow-card: 0 8px 30px -8px hsl(0 0% 0% / 0.25);
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.15);
+    --shadow-accent: 0 12px 35px -10px hsl(20 95% 55% / 0.4);
+    --shadow-float: 0 5px 15px -3px hsl(0 0% 0% / 0.2);
+    
+    /* Dark sidebar tokens */
+    --sidebar-background: 220 35% 10%;
+    --sidebar-foreground: 220 15% 85%;
+    --sidebar-primary: 220 85% 18%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 220 25% 12%;
+    --sidebar-accent-foreground: 220 15% 85%;
+    --sidebar-border: 220 30% 18%;
+    --sidebar-ring: 20 95% 55%;
   }
 }
 
@@ -126,22 +144,54 @@ All colors MUST be HSL.
     @apply bg-background text-foreground antialiased;
     background: var(--gradient-subtle);
     min-height: 100vh;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-feature-settings: "liga" 1, "kern" 1;
+    letter-spacing: -0.01em;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    @apply font-bold;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  h1 {
+    @apply text-4xl md:text-6xl;
+    font-weight: 800;
+  }
+
+  h2 {
+    @apply text-2xl md:text-4xl;
+    font-weight: 700;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl;
+    font-weight: 600;
   }
 }
 
 @layer components {
+  /* Professional gradient utilities */
   .gradient-primary {
     background: var(--gradient-primary);
   }
   
-  .gradient-card {
-    background: var(--gradient-card);
+  .gradient-hero {
+    background: var(--gradient-hero);
   }
   
+  .gradient-card {
+    background: var(--gradient-card);
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  /* Professional shadow system */
   .shadow-elegant {
     box-shadow: var(--shadow-elegant);
   }
@@ -150,12 +200,65 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-card);
   }
   
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-accent {
+    box-shadow: var(--shadow-accent);
+  }
+  
+  .shadow-float {
+    box-shadow: var(--shadow-float);
+  }
+  
+  /* Advanced transitions */
   .transition-smooth {
     transition: var(--transition-smooth);
   }
   
   .transition-fast {
     transition: var(--transition-fast);
+  }
+  
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+
+  /* Professional interactive elements */
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-variant text-primary-foreground font-semibold;
+    @apply shadow-card hover:shadow-elegant transition-smooth;
+    @apply rounded-lg px-6 py-3;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium;
+    @apply shadow-soft hover:shadow-card transition-smooth;
+    @apply rounded-lg px-6 py-3 border border-border;
+  }
+  
+  .btn-accent {
+    @apply gradient-accent text-accent-foreground font-semibold;
+    @apply shadow-accent hover:shadow-elegant transition-smooth hover:scale-105;
+    @apply rounded-lg px-6 py-3;
+  }
+
+  /* Professional card variants */
+  .card-premium {
+    @apply gradient-card shadow-card hover:shadow-elegant transition-smooth;
+    @apply rounded-xl p-6 border border-border/50;
+  }
+  
+  .card-feature {
+    @apply bg-card/80 backdrop-blur-sm shadow-soft hover:shadow-card transition-smooth;
+    @apply rounded-xl p-6 border border-border/30;
+  }
+
+  /* Professional form elements */
+  .input-premium {
+    @apply bg-background/80 backdrop-blur-sm border-border/50 focus:border-primary;
+    @apply rounded-lg px-4 py-3 shadow-soft focus:shadow-card transition-smooth;
   }
 
   /* Hide scrollbars but keep functionality */
