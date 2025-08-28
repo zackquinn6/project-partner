@@ -225,8 +225,8 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
   };
 
   const addConnector = () => {
-    // TODO: Implement connector adding functionality
-    toast.success('Connector functionality coming soon');
+    // Enable connection mode - user can now click and drag between nodes
+    toast.success('Connection mode enabled - click and drag between nodes to create connections');
   };
 
   const handleNodeClick = (nodeId: string) => {

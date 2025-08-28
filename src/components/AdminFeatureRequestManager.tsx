@@ -255,11 +255,12 @@ export const AdminFeatureRequestManager: React.FC<AdminFeatureRequestManagerProp
         </div>
 
         {/* Response Form Dialog */}
-        <Dialog open={showResponseForm} onOpenChange={setShowResponseForm}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Respond to Feature Request</DialogTitle>
-            </DialogHeader>
+        {showResponseForm && (
+          <Dialog open={showResponseForm} onOpenChange={setShowResponseForm}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Respond to Feature Request</DialogTitle>
+              </DialogHeader>
             {selectedRequest && (
               <div className="space-y-4">
                 {/* Request Details */}
@@ -325,8 +326,9 @@ export const AdminFeatureRequestManager: React.FC<AdminFeatureRequestManagerProp
                 </div>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Info, ShoppingCart, Plus, Award, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Info, ShoppingCart, Plus, Award, Eye, EyeOff, HelpCircle } from "lucide-react";
 import { getStepIndicator } from './FlowTypeLegend';
 import { WorkflowSidebar } from './WorkflowSidebar';
 import {
@@ -30,6 +30,7 @@ import { CompletionCertificate } from './CompletionCertificate';
 import { ProjectSurvey } from './ProjectSurvey';
 import { ToolsMaterialsSection } from './ToolsMaterialsSection';
 import ProfileManager from './ProfileManager';
+import { DecisionRollupWindow } from './DecisionRollupWindow';
 import { isKickoffPhaseComplete, addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 interface UserViewProps {
   resetToListing?: boolean;
@@ -103,6 +104,8 @@ export default function UserView({
   const [unplannedWorkOpen, setUnplannedWorkOpen] = useState(false);
   const [completionCertificateOpen, setCompletionCertificateOpen] = useState(false);
   const [projectSurveyOpen, setProjectSurveyOpen] = useState(false);
+  const [decisionRollupOpen, setDecisionRollupOpen] = useState(false);
+  const [decisionRollupMode, setDecisionRollupMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work'>('initial-plan');
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
@@ -1083,7 +1086,10 @@ export default function UserView({
               }
             }}
             onHelpClick={() => setHelpPopupOpen(true)}
-            onUnplannedWorkClick={() => setUnplannedWorkOpen(true)}
+            onUnplannedWorkClick={() => {
+              setDecisionRollupMode('unplanned-work');
+              setDecisionRollupOpen(true);
+            }}
           />
 
           <main className="flex-1 overflow-auto">
@@ -1118,6 +1124,44 @@ export default function UserView({
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     Shop Online
+                  </Button>
+                )}
+
+                {/* Show decision rollup button for planning phases */}
+                {currentStep && (
+                  currentStep.phaseName === 'Planning' ||
+                  currentStep.step?.includes('Plan') ||
+                  currentStep.id?.includes('plan')
+                ) && (
+                  <Button 
+                    onClick={() => {
+                      setDecisionRollupMode('initial-plan');
+                      setDecisionRollupOpen(true);
+                    }}
+                    variant="outline"
+                    className="mr-2"
+                  >
+                    <HelpCircle className="w-4 h-4 mr-2" />
+                    Review Decisions
+                  </Button>
+                )}
+
+                {/* Show final plan decision rollup for assessment/review phases */}
+                {currentStep && (
+                  currentStep.phaseName?.includes('Review') ||
+                  currentStep.step?.includes('Final') ||
+                  currentStep.step?.includes('Assessment')
+                ) && (
+                  <Button 
+                    onClick={() => {
+                      setDecisionRollupMode('final-plan');
+                      setDecisionRollupOpen(true);
+                    }}
+                    variant="outline"
+                    className="mr-2"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Finalize Decisions
                   </Button>
                 )}
               </div>
@@ -1511,6 +1555,30 @@ export default function UserView({
         onClose={() => setUnplannedWorkOpen(false)}
       />
       
+      {/* Decision Rollup Window */}
+      {activeProject && (
+        <DecisionRollupWindow
+          open={decisionRollupOpen}
+          onOpenChange={setDecisionRollupOpen}
+          phases={activeProject.phases || []}
+          onPhasesUpdate={(updatedPhases) => {
+            if (currentProjectRun) {
+              updateProjectRun({
+                ...currentProjectRun,
+                phases: updatedPhases,
+                updatedAt: new Date()
+              });
+            }
+          }}
+          mode={decisionRollupMode}
+          title={
+            decisionRollupMode === 'initial-plan' ? 'Initial Planning Decisions' :
+            decisionRollupMode === 'final-plan' ? 'Final Planning Assessment' :
+            'Unplanned Work Decisions'
+          }
+        />
+      )}
+
       {/* Completion Certificate */}
       {currentProjectRun && (
         <CompletionCertificate
