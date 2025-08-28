@@ -71,6 +71,24 @@ export interface ContentSection {
   alignment?: 'left' | 'center' | 'right';
 }
 
+// Decision point interface for workflow branching
+export interface DecisionPoint {
+  id: string;
+  question: string;
+  description?: string;
+  options: DecisionOption[];
+  allowFreeText?: boolean;
+  stage: 'initial-planning' | 'final-planning' | 'execution';
+}
+
+export interface DecisionOption {
+  id: string;
+  label: string;
+  value: string;
+  nextStepId?: string;
+  alternateStepId?: string;
+}
+
 export interface WorkflowStep {
   id: string;
   step: string;
@@ -83,6 +101,11 @@ export interface WorkflowStep {
   outputs: Output[];
   contentSections?: ContentSection[];
   flowType?: 'prime' | 'repeat' | 'inspection' | 'alternate' | 'if-necessary';
+  // Decision tree fields
+  isDecisionPoint?: boolean;
+  decisionPoint?: DecisionPoint;
+  alternateStepId?: string; // For alternate flowType steps
+  condition?: string; // Condition that must be met for this step to be executed
   timeEstimation?: {
     variableTime?: {
       low: number; // hours per scaling unit

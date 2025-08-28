@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { OutputEditForm } from './OutputEditForm';
 import { MultiContentEditor } from './MultiContentEditor';
 import { MultiContentRenderer } from './MultiContentRenderer';
+import { DecisionTreeFlowchart } from './DecisionTreeFlowchart';
+import { DecisionPointEditor } from './DecisionPointEditor';
 import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 
 interface StructureManagerProps {
@@ -33,6 +35,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   const [showOutputEdit, setShowOutputEdit] = useState<{ stepId: string; output?: Output } | null>(null);
   const [showToolsMaterialsEdit, setShowToolsMaterialsEdit] = useState<{ stepId: string; type: 'tools' | 'materials' } | null>(null);
   const [showStepContentEdit, setShowStepContentEdit] = useState<{ stepId: string; step: WorkflowStep } | null>(null);
+  const [showDecisionTreeView, setShowDecisionTreeView] = useState(false);
+  const [showDecisionEditor, setShowDecisionEditor] = useState<{ step: WorkflowStep } | null>(null);
   const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
 
   if (!currentProject) {
@@ -319,6 +323,64 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     toast.success(`${editingItem.type.charAt(0).toUpperCase() + editingItem.type.slice(1)} updated`);
   };
 
+  // Get all available steps for decision point linking
+  const getAllAvailableSteps = () => {
+    const steps: { id: string; name: string; phaseId: string; operationId: string }[] = [];
+    displayPhases.forEach((phase) => {
+      phase.operations.forEach((operation) => {
+        operation.steps.forEach((step) => {
+          steps.push({
+            id: step.id,
+            name: step.step,
+            phaseId: phase.id,
+            operationId: operation.id,
+          });
+        });
+      });
+    });
+    return steps;
+  };
+
+  const handleDecisionEditorSave = (updatedStep: WorkflowStep) => {
+    if (!currentProject) return;
+
+    const updatedProject = { ...currentProject };
+    
+    // Find and update the step
+    for (const phase of updatedProject.phases) {
+      for (const operation of phase.operations) {
+        const stepIndex = operation.steps.findIndex(s => s.id === updatedStep.id);
+        if (stepIndex !== -1) {
+          operation.steps[stepIndex] = updatedStep;
+          updatedProject.updatedAt = new Date();
+          updateProject(updatedProject);
+          return;
+        }
+      }
+    }
+  };
+
+  if (showDecisionTreeView) {
+    return (
+      <DecisionTreeFlowchart
+        phases={displayPhases}
+        onBack={() => setShowDecisionTreeView(false)}
+        onUpdatePhases={(updatedPhases) => {
+          if (currentProject) {
+            // Filter out standard phases and update only user phases
+            const userPhases = updatedPhases.slice(3);
+            const updatedProject = {
+              ...currentProject,
+              phases: userPhases,
+              updatedAt: new Date(),
+            };
+            updateProject(updatedProject);
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-background overflow-auto">
       {/* Header */}
@@ -336,6 +398,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   {clipboard.type} copied
                 </Badge>
               )}
+              <Button
+                variant="outline"
+                onClick={() => setShowDecisionTreeView(true)}
+                className="flex items-center gap-2"
+              >
+                🔀 Decision Tree
+              </Button>
               <Button onClick={addPhase} className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Add Phase
@@ -665,13 +734,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                   
                                                                   {!isStandardPhase && (
                                                                     <>
-                                                                      <Button
-                                                                        size="sm"
-                                                                        variant="ghost"
-                                                                        onClick={() => setShowStepContentEdit({ stepId: step.id, step })}
-                                                                      >
-                                                                        <Edit className="w-3 h-3" />
-                                                                      </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setShowDecisionEditor({ step })}
+                            title="Configure decision point"
+                          >
+                            🔀
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setShowStepContentEdit({ stepId: step.id, step })}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
                                                                       
                                                                       <Button
                                                                         size="sm"
@@ -762,6 +839,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Decision Point Editor Dialog */}
+      {showDecisionEditor && (
+        <DecisionPointEditor
+          open={!!showDecisionEditor}
+          onOpenChange={() => setShowDecisionEditor(null)}
+          step={showDecisionEditor.step}
+          availableSteps={getAllAvailableSteps()}
+          onSave={handleDecisionEditorSave}
+        />
       )}
     </div>
     </div>

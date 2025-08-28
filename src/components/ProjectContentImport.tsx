@@ -154,10 +154,8 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Materials,Materia
           type: (rowData.output_type as Output['type']) || 'none'
         };
         
-        // Check if output already exists to avoid duplicates
-        if (!step.outputs.some(o => o.name === output.name)) {
-          step.outputs.push(output);
-        }
+        // Allow multiple outputs with same name from different rows
+        step.outputs.push(output);
       }
 
       // Add tool if provided
@@ -170,10 +168,8 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Materials,Materia
           required: true
         };
         
-        // Check if tool already exists to avoid duplicates
-        if (!step.tools.some(t => t.name === tool.name)) {
-          step.tools.push(tool);
-        }
+        // Allow multiple tools with same name from different rows
+        step.tools.push(tool);
       }
 
       // Add material if provided
@@ -186,10 +182,8 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Materials,Materia
           required: true
         };
         
-        // Check if material already exists to avoid duplicates
-        if (!step.materials.some(m => m.name === material.name)) {
-          step.materials.push(material);
-        }
+        // Allow multiple materials with same name from different rows
+        step.materials.push(material);
       }
     }
 
