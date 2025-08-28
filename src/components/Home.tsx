@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { PricingWindow } from '@/components/PricingWindow';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
+import { ProjectSearch } from '@/components/ProjectSearch';
 import { 
   Calendar, 
   Clock, 
@@ -28,7 +29,8 @@ import {
   Zap,
   CheckCircle,
   Eye,
-  DollarSign
+  DollarSign,
+  Sparkles
 } from 'lucide-react';
 
 // Import placeholder images
@@ -270,6 +272,45 @@ export default function Home({ onViewChange }: HomeProps) {
                 className="w-full max-w-md h-auto rounded-lg shadow-lg"
                 style={{ transform: 'scale(1.15)' }}
               />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI-Powered Project Search */}
+      <section className="py-20 bg-gradient-to-br from-secondary via-secondary to-accent/5">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Sparkles className="w-4 h-4" />
+              AI-Powered Search
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              From repairs to remodels — start here
+            </h2>
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Our smart search understands what you mean, not just what you type. Find the perfect project with natural language and intelligent matching.
+            </p>
+          </div>
+          
+          <div className="flex justify-center">
+            <ProjectSearch />
+          </div>
+          
+          <div className="mt-12 text-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto text-sm text-muted-foreground">
+              <div className="flex items-center justify-center gap-2">
+                <Target className="w-4 h-4 text-primary" />
+                <span>Semantic matching</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <Zap className="w-4 h-4 text-primary" />
+                <span>Typo tolerance</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span>Confidence scoring</span>
+              </div>
             </div>
           </div>
         </div>

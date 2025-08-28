@@ -75,6 +75,17 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [selectedEffortLevels, setSelectedEffortLevels] = useState<string[]>([]);
 
+  // Check for search parameter from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam) {
+      setSearchTerm(searchParam);
+      // Clear the URL parameter to keep it clean
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   // Reset dialog state when switching to admin mode
   React.useEffect(() => {
     if (isAdminMode) {
