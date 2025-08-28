@@ -418,393 +418,392 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8">{/* ... rest of content ... */}
-
+      {/* Main Content */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="phases" type="phases">
-          {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-              {displayPhases.map((phase, phaseIndex) => {
-                const isStandardPhase = phaseIndex < 3;
-                const isEditing = editingItem?.type === 'phase' && editingItem.id === phase.id;
+        <div className="container mx-auto px-6 py-8">
+          <Droppable droppableId="phases" type="phases">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                {displayPhases.map((phase, phaseIndex) => {
+                  const isStandardPhase = phaseIndex < 3;
+                  const isCloseProjectPhase = phase.name === 'Close Project';
+                  const isEditing = editingItem?.type === 'phase' && editingItem.id === phase.id;
                 
-                return (
-                  <Draggable key={phase.id} draggableId={phase.id} index={phaseIndex} isDragDisabled={isStandardPhase}>
-                    {(provided, snapshot) => (
-                      <Card 
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        className={`border-2 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/30' : ''}`}
-                      >
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 flex-1">
-                              {!isStandardPhase && (
-                                <div {...provided.dragHandleProps}>
-                                  <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
-                                </div>
-                              )}
-                              {isStandardPhase && <div className="w-5" />}
+                  return (
+                    <Draggable key={phase.id} draggableId={phase.id} index={phaseIndex} isDragDisabled={isStandardPhase || isCloseProjectPhase}>
+                      {(provided, snapshot) => (
+                        <Card 
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`border-2 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/30' : ''} ${isCloseProjectPhase ? 'bg-green-50 border-green-200' : ''}`}
+                        >
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 flex-1">
+                                {!isStandardPhase && !isCloseProjectPhase && (
+                                  <div {...provided.dragHandleProps}>
+                                    <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
+                                  </div>
+                                )}
+                                {(isStandardPhase || isCloseProjectPhase) && <div className="w-5" />}
+                                
+                                {isEditing ? (
+                                  <div className="flex-1 space-y-2">
+                                    <Input
+                                      value={editingItem.data.name}
+                                      onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
+                                      placeholder="Phase name"
+                                    />
+                                    <Textarea
+                                      value={editingItem.data.description}
+                                      onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
+                                      placeholder="Phase description"
+                                      rows={2}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="flex-1">
+                                    <CardTitle className="flex items-center gap-2">
+                                      {phase.name}
+                                      {isStandardPhase && <Badge variant="secondary" className="text-xs">Standard</Badge>}
+                                      {isCloseProjectPhase && <Badge variant="default" className="text-xs bg-green-600">Locked Final</Badge>}
+                                    </CardTitle>
+                                    <p className="text-muted-foreground text-sm">{phase.description}</p>
+                                  </div>
+                                )}
+                              </div>
                               
-                              {isEditing ? (
-                                <div className="flex-1 space-y-2">
-                                  <Input
-                                    value={editingItem.data.name}
-                                    onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
-                                    placeholder="Phase name"
-                                  />
-                                  <Textarea
-                                    value={editingItem.data.description}
-                                    onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
-                                    placeholder="Phase description"
-                                    rows={2}
-                                  />
-                                </div>
-                              ) : (
-                                <div className="flex-1">
-                                  <CardTitle className="flex items-center gap-2">
-                                    {phase.name}
-                                    {isStandardPhase && <Badge variant="secondary" className="text-xs">Standard</Badge>}
-                                  </CardTitle>
-                                  <p className="text-muted-foreground text-sm">{phase.description}</p>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">{phase.operations.length} operations</Badge>
-                              
-                              {!isStandardPhase && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => copyItem('phase', phase)}
-                                  >
-                                    <Copy className="w-4 h-4" />
-                                  </Button>
-                                  
-                                  {clipboard?.type === 'phase' && (
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">{phase.operations.length} operations</Badge>
+                                
+                                {!isStandardPhase && !isCloseProjectPhase && (
+                                  <>
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      onClick={() => pasteItem('phase')}
+                                      onClick={() => copyItem('phase', phase)}
                                     >
-                                      <Clipboard className="w-4 h-4" />
+                                      <Copy className="w-4 h-4" />
                                     </Button>
-                                  )}
-                                  
-                                  {isEditing ? (
-                                    <>
-                                      <Button size="sm" onClick={saveEdit}>
-                                        <Check className="w-4 h-4" />
+                                    
+                                    {clipboard?.type === 'phase' && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => pasteItem('phase')}
+                                      >
+                                        <Clipboard className="w-4 h-4" />
                                       </Button>
-                                      <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
-                                        <X className="w-4 h-4" />
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
-                                        <Edit className="w-4 h-4" />
-                                      </Button>
-                                      <Button size="sm" variant="ghost" onClick={() => deletePhase(phase.id)}>
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    </>
-                                  )}
-                                </>
-                              )}
+                                    )}
+                                    
+                                    {isEditing ? (
+                                      <>
+                                        <Button size="sm" onClick={saveEdit}>
+                                          <Check className="w-4 h-4" />
+                                        </Button>
+                                        <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
+                                          <X className="w-4 h-4" />
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
+                                          <Edit className="w-4 h-4" />
+                                        </Button>
+                                        
+                                        <Button size="sm" variant="ghost" onClick={() => deletePhase(phase.id)}>
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </>
+                                )}
+                                
+                                {/* Close Project phase - read only display */}
+                                {isCloseProjectPhase && (
+                                  <Badge variant="outline" className="text-green-700">Final Phase</Badge>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </CardHeader>
-                        
-                        <CardContent>
-                          {!isStandardPhase && (
-                            <div className="flex items-center gap-2 mb-4">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => addOperation(phase.id)}
-                                className="flex items-center gap-1"
-                              >
-                                <Plus className="w-3 h-3" />
-                                Add Operation
-                              </Button>
-                            </div>
-                          )}
+                          </CardHeader>
                           
-                          <Droppable droppableId={`operations-${phase.id}`} type="operations">
-                            {(provided) => (
-                              <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                                {phase.operations.map((operation, operationIndex) => {
-                                  const isOperationEditing = editingItem?.type === 'operation' && editingItem.id === operation.id;
-                                  
-                                  return (
-                                    <Draggable 
-                                      key={operation.id} 
-                                      draggableId={operation.id} 
-                                      index={operationIndex}
-                                      isDragDisabled={isStandardPhase}
-                                    >
-                                      {(provided, snapshot) => (
-                                        <Card 
-                                          ref={provided.innerRef}
-                                          {...provided.draggableProps}
-                                          className={`ml-6 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/20' : ''}`}
-                                        >
-                                          <CardHeader className="pb-3">
-                                            <div className="flex items-center justify-between">
-                                              <div className="flex items-center gap-3 flex-1">
-                                                {!isStandardPhase && (
-                                                  <div {...provided.dragHandleProps}>
-                                                    <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
-                                                  </div>
-                                                )}
+                          <CardContent>
+                            {!isCloseProjectPhase && (
+                              <div className="flex items-center gap-2 mb-4">
+                                <Button onClick={() => addOperation(phase.id)} className="flex items-center gap-2">
+                                  <Plus className="w-3 h-3" />
+                                  Add Operation
+                                </Button>
+                              </div>
+                            )}
+                            
+                            <Droppable droppableId={`operations-${phase.id}`} type="operations">
+                              {(provided) => (
+                                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                                  {phase.operations.map((operation, operationIndex) => {
+                                    const isOperationEditing = editingItem?.type === 'operation' && editingItem.id === operation.id;
+                                    
+                                    return (
+                                      <Draggable key={operation.id} draggableId={operation.id} index={operationIndex} isDragDisabled={isStandardPhase || isCloseProjectPhase}>
+                                        {(provided, snapshot) => (
+                                          <Card 
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            className={`ml-6 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/20' : ''}`}
+                                          >
+                                            <CardHeader className="pb-3">
+                                              <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3 flex-1">
+                                                  {!isStandardPhase && !isCloseProjectPhase && (
+                                                    <div {...provided.dragHandleProps}>
+                                                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
+                                                    </div>
+                                                  )}
+                                                  
+                                                  {isOperationEditing ? (
+                                                    <div className="flex-1 space-y-2">
+                                                      <Input
+                                                        value={editingItem.data.name}
+                                                        onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
+                                                        placeholder="Operation name"
+                                                        className="text-sm"
+                                                      />
+                                                      <Textarea
+                                                        value={editingItem.data.description}
+                                                        onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
+                                                        placeholder="Operation description"
+                                                        rows={1}
+                                                        className="text-sm"
+                                                      />
+                                                    </div>
+                                                  ) : (
+                                                    <div className="flex-1">
+                                                      <h4 className="font-medium text-sm">{operation.name}</h4>
+                                                      <p className="text-muted-foreground text-xs">{operation.description}</p>
+                                                    </div>
+                                                  )}
+                                                </div>
                                                 
-                                                {isOperationEditing ? (
-                                                  <div className="flex-1 space-y-2">
-                                                    <Input
-                                                      value={editingItem.data.name}
-                                                      onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
-                                                      placeholder="Operation name"
-                                                      className="text-sm"
-                                                    />
-                                                    <Textarea
-                                                      value={editingItem.data.description}
-                                                      onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
-                                                      placeholder="Operation description"
-                                                      rows={1}
-                                                      className="text-sm"
-                                                    />
-                                                  </div>
-                                                ) : (
-                                                  <div className="flex-1">
-                                                    <h4 className="font-medium text-sm">{operation.name}</h4>
-                                                    <p className="text-muted-foreground text-xs">{operation.description}</p>
-                                                  </div>
-                                                )}
-                                              </div>
-                                              
-                                              <div className="flex items-center gap-1">
-                                                <Badge variant="outline" className="text-xs">{operation.steps.length} steps</Badge>
-                                                
-                                                {!isStandardPhase && (
-                                                  <>
-                                                    <Button
-                                                      size="sm"
-                                                      variant="ghost"
-                                                      onClick={() => copyItem('operation', operation)}
-                                                    >
-                                                      <Copy className="w-3 h-3" />
-                                                    </Button>
-                                                    
-                                                    {clipboard?.type === 'operation' && (
+                                                <div className="flex items-center gap-1">
+                                                  <Badge variant="outline" className="text-xs">{operation.steps.length} steps</Badge>
+                                                  
+                                                  {!isStandardPhase && !isCloseProjectPhase && (
+                                                    <>
                                                       <Button
                                                         size="sm"
                                                         variant="ghost"
-                                                        onClick={() => pasteItem('operation', { phaseId: phase.id })}
+                                                        onClick={() => copyItem('operation', operation)}
                                                       >
-                                                        <Clipboard className="w-3 h-3" />
+                                                        <Copy className="w-3 h-3" />
                                                       </Button>
-                                                    )}
-                                                    
-                                                    {isOperationEditing ? (
-                                                      <>
-                                                        <Button size="sm" onClick={saveEdit}>
-                                                          <Check className="w-3 h-3" />
+                                                      
+                                                      {clipboard?.type === 'operation' && (
+                                                        <Button
+                                                          size="sm"
+                                                          variant="ghost"
+                                                          onClick={() => pasteItem('operation', { phaseId: phase.id })}
+                                                        >
+                                                          <Clipboard className="w-3 h-3" />
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
-                                                          <X className="w-3 h-3" />
-                                                        </Button>
-                                                      </>
-                                                    ) : (
-                                                      <>
-                                                        <Button size="sm" variant="ghost" onClick={() => startEdit('operation', operation.id, operation)}>
-                                                          <Edit className="w-3 h-3" />
-                                                        </Button>
-                                                        <Button size="sm" variant="ghost" onClick={() => deleteOperation(phase.id, operation.id)}>
-                                                          <Trash2 className="w-3 h-3" />
-                                                        </Button>
-                                                      </>
-                                                    )}
-                                                  </>
-                                                )}
+                                                      )}
+                                                      
+                                                      {isOperationEditing ? (
+                                                        <>
+                                                          <Button size="sm" onClick={saveEdit}>
+                                                            <Check className="w-3 h-3" />
+                                                          </Button>
+                                                          <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
+                                                            <X className="w-3 h-3" />
+                                                          </Button>
+                                                        </>
+                                                      ) : (
+                                                        <>
+                                                          <Button size="sm" variant="ghost" onClick={() => startEdit('operation', operation.id, operation)}>
+                                                            <Edit className="w-3 h-3" />
+                                                          </Button>
+                                                          <Button size="sm" variant="ghost" onClick={() => deleteOperation(phase.id, operation.id)}>
+                                                            <Trash2 className="w-3 h-3" />
+                                                          </Button>
+                                                        </>
+                                                      )}
+                                                    </>
+                                                  )}
+                                                </div>
                                               </div>
-                                            </div>
-                                          </CardHeader>
-                                          
-                                          <CardContent className="pt-0">
-                                            {!isStandardPhase && (
-                                              <div className="flex items-center gap-2 mb-3">
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  onClick={() => addStep(phase.id, operation.id)}
-                                                  className="flex items-center gap-1 text-xs"
-                                                >
-                                                  <Plus className="w-3 h-3" />
-                                                  Add Step
-                                                </Button>
-                                              </div>
-                                            )}
+                                            </CardHeader>
                                             
-                                            <Droppable droppableId={`steps-${phase.id}-${operation.id}`} type="steps">
-                                              {(provided) => (
-                                                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                                                  {operation.steps.map((step, stepIndex) => {
-                                                    const isStepEditing = editingItem?.type === 'step' && editingItem.id === step.id;
-                                                    
-                                                    return (
-                                                      <Draggable 
-                                                        key={step.id} 
-                                                        draggableId={step.id} 
-                                                        index={stepIndex}
-                                                        isDragDisabled={isStandardPhase}
-                                                      >
-                                                        {(provided, snapshot) => (
-                                                          <Card 
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                            className={`ml-4 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/10' : ''}`}
-                                                          >
-                                                            <CardContent className="p-3">
-                                                              <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-2 flex-1">
-                                                                  {!isStandardPhase && (
-                                                                    <div {...provided.dragHandleProps}>
-                                                                      <GripVertical className="w-3 h-3 text-muted-foreground cursor-grab" />
-                                                                    </div>
-                                                                  )}
-                                                                  
-                                                                   {isStepEditing ? (
-                                                                     <div className="flex-1 space-y-2">
-                                                                       <Input
-                                                                         value={editingItem.data.step}
-                                                                         onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, step: e.target.value } })}
-                                                                         placeholder="Step name"
-                                                                         className="text-xs"
-                                                                       />
-                                                                       <Textarea
-                                                                         value={editingItem.data.description}
-                                                                         onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
-                                                                         placeholder="Step description"
-                                                                         rows={1}
-                                                                         className="text-xs"
-                                                                       />
-                                                                       <div className="text-xs">
-                                                                         <FlowTypeSelector
-                                                                           value={editingItem.data.flowType}
-                                                                           onValueChange={(value) => setEditingItem({ ...editingItem, data: { ...editingItem.data, flowType: value } })}
+                                            <CardContent className="pt-0">
+                                              {!isStandardPhase && !isCloseProjectPhase && (
+                                                <div className="flex items-center gap-2 mb-3">
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => addStep(phase.id, operation.id)}
+                                                    className="flex items-center gap-1 text-xs"
+                                                  >
+                                                    <Plus className="w-3 h-3" />
+                                                    Add Step
+                                                  </Button>
+                                                </div>
+                                              )}
+                                              
+                                              <Droppable droppableId={`steps-${phase.id}-${operation.id}`} type="steps">
+                                                {(provided) => (
+                                                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                                                    {operation.steps.map((step, stepIndex) => {
+                                                      const isStepEditing = editingItem?.type === 'step' && editingItem.id === step.id;
+                                                      
+                                                      return (
+                                                        <Draggable 
+                                                          key={step.id} 
+                                                          draggableId={step.id} 
+                                                          index={stepIndex}
+                                                          isDragDisabled={isStandardPhase || isCloseProjectPhase}
+                                                        >
+                                                          {(provided, snapshot) => (
+                                                            <Card 
+                                                              ref={provided.innerRef}
+                                                              {...provided.draggableProps}
+                                                              className={`ml-4 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/10' : ''}`}
+                                                            >
+                                                              <CardContent className="p-3">
+                                                                <div className="flex items-center justify-between">
+                                                                  <div className="flex items-center gap-2 flex-1">
+                                                                    {!isStandardPhase && !isCloseProjectPhase && (
+                                                                      <div {...provided.dragHandleProps}>
+                                                                        <GripVertical className="w-3 h-3 text-muted-foreground cursor-grab" />
+                                                                      </div>
+                                                                    )}
+                                                                    
+                                                                     {isStepEditing ? (
+                                                                       <div className="flex-1 space-y-2">
+                                                                         <Input
+                                                                           value={editingItem.data.step}
+                                                                           onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, step: e.target.value } })}
+                                                                           placeholder="Step name"
+                                                                           className="text-xs"
                                                                          />
+                                                                         <Textarea
+                                                                           value={editingItem.data.description}
+                                                                           onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
+                                                                           placeholder="Step description"
+                                                                           rows={1}
+                                                                           className="text-xs"
+                                                                         />
+                                                                         <div className="text-xs">
+                                                                           <FlowTypeSelector
+                                                                             value={editingItem.data.flowType}
+                                                                             onValueChange={(value) => setEditingItem({ ...editingItem, data: { ...editingItem.data, flowType: value } })}
+                                                                           />
+                                                                         </div>
                                                                        </div>
-                                                                     </div>
-                                                                   ) : (
-                                                                     <div className="flex-1">
-                                                                       <div className="flex items-center gap-2">
-                                                                         <p className="font-medium text-xs">{step.step}</p>
-                                                                         {getFlowTypeBadge(step.flowType)}
+                                                                     ) : (
+                                                                       <div className="flex-1">
+                                                                         <div className="flex items-center gap-2">
+                                                                           <p className="font-medium text-xs">{step.step}</p>
+                                                                           {getFlowTypeBadge(step.flowType)}
+                                                                         </div>
+                                                                         <p className="text-muted-foreground text-xs">{step.description}</p>
                                                                        </div>
-                                                                       <p className="text-muted-foreground text-xs">{step.description}</p>
-                                                                     </div>
-                                                                  )}
-                                                                </div>
-                                                                
-                                                                 <div className="flex items-center gap-1">
-                                                                   <div className="flex items-center gap-1">
-                                                                     {step.tools?.length > 0 && (
-                                                                       <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                                                         <Wrench className="w-2 h-2" />
-                                                                         {step.tools.length}
-                                                                       </Badge>
-                                                                     )}
-                                                                     {step.materials?.length > 0 && (
-                                                                       <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                                                         <Package className="w-2 h-2" />
-                                                                         {step.materials.length}
-                                                                       </Badge>
-                                                                     )}
-                                                                     {step.outputs?.length > 0 && (
-                                                                       <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                                                         <FileOutput className="w-2 h-2" />
-                                                                         {step.outputs.length}
-                                                                       </Badge>
-                                                                     )}
-                                                                   </div>
+                                                                    )}
+                                                                  </div>
                                                                   
-                                                                  {!isStandardPhase && (
-                                                                    <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setShowDecisionEditor({ step })}
-                            title="Configure decision point"
-                          >
-                            🔀
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setShowStepContentEdit({ stepId: step.id, step })}
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                                                                      
-                                                                      <Button
-                                                                        size="sm"
-                                                                        variant="ghost"
-                                                                        onClick={() => copyItem('step', step)}
-                                                                      >
-                                                                        <Copy className="w-3 h-3" />
-                                                                      </Button>
-                                                                      
-                                                                      {clipboard?.type === 'step' && (
+                                                                   <div className="flex items-center gap-1">
+                                                                     <div className="flex items-center gap-1">
+                                                                       {step.tools?.length > 0 && (
+                                                                         <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                                                           <Wrench className="w-2 h-2" />
+                                                                           {step.tools.length}
+                                                                         </Badge>
+                                                                       )}
+                                                                       {step.materials?.length > 0 && (
+                                                                         <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                                                           <Package className="w-2 h-2" />
+                                                                           {step.materials.length}
+                                                                         </Badge>
+                                                                       )}
+                                                                       {step.outputs?.length > 0 && (
+                                                                         <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                                                           <FileOutput className="w-2 h-2" />
+                                                                           {step.outputs.length}
+                                                                         </Badge>
+                                                                       )}
+                                                                     </div>
+                                                                    
+                                                                    {!isStandardPhase && !isCloseProjectPhase && (
+                                                                      <>
                                                                         <Button
                                                                           size="sm"
                                                                           variant="ghost"
-                                                                          onClick={() => pasteItem('step', { phaseId: phase.id, operationId: operation.id })}
+                                                                          onClick={() => setShowDecisionEditor({ step })}
+                                                                          title="Configure decision point"
                                                                         >
-                                                                          <Clipboard className="w-3 h-3" />
+                                                                          🔀
                                                                         </Button>
-                                                                      )}
-                                                                      
-                                                                      <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)}>
-                                                                        <Trash2 className="w-3 h-3" />
-                                                                      </Button>
-                                                                    </>
-                                                                  )}
+                                                                        <Button
+                                                                          size="sm"
+                                                                          variant="ghost"
+                                                                          onClick={() => setShowStepContentEdit({ stepId: step.id, step })}
+                                                                        >
+                                                                          <Edit className="w-3 h-3" />
+                                                                        </Button>
+                                                                        
+                                                                        <Button
+                                                                          size="sm"
+                                                                          variant="ghost"
+                                                                          onClick={() => copyItem('step', step)}
+                                                                        >
+                                                                          <Copy className="w-3 h-3" />
+                                                                        </Button>
+                                                                        
+                                                                        {clipboard?.type === 'step' && (
+                                                                          <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            onClick={() => pasteItem('step', { phaseId: phase.id, operationId: operation.id })}
+                                                                          >
+                                                                            <Clipboard className="w-3 h-3" />
+                                                                          </Button>
+                                                                        )}
+                                                                        
+                                                                        <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)}>
+                                                                          <Trash2 className="w-3 h-3" />
+                                                                        </Button>
+                                                                      </>
+                                                                    )}
+                                                                  </div>
                                                                 </div>
-                                                              </div>
-                                                            </CardContent>
-                                                          </Card>
-                                                        )}
-                                                      </Draggable>
-                                                    );
-                                                  })}
-                                                  {provided.placeholder}
-                                                </div>
-                                              )}
-                                            </Droppable>
-                                          </CardContent>
-                                        </Card>
-                                      )}
-                                    </Draggable>
-                                  );
-                                })}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </Draggable>
-                );
-              })}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
+                                                              </CardContent>
+                                                            </Card>
+                                                          )}
+                                                        </Draggable>
+                                                      );
+                                                    })}
+                                                    {provided.placeholder}
+                                                  </div>
+                                                )}
+                                              </Droppable>
+                                            </CardContent>
+                                          </Card>
+                                        )}
+                                      </Draggable>
+                                    );
+                                  })}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </div>
       </DragDropContext>
 
       {/* Step Content Edit Dialog */}
@@ -851,7 +850,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           onSave={handleDecisionEditorSave}
         />
       )}
-    </div>
     </div>
   );
 };

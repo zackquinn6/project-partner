@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink, Globe, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink, Globe, Check, Maximize } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Project, Material, Tool } from "@/interfaces/Project";
@@ -43,6 +43,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
   const [orderedTools, setOrderedTools] = useState<Set<string>>(new Set());
   const [orderedMaterials, setOrderedMaterials] = useState<Set<string>>(new Set());
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [fullScreenMode, setFullScreenMode] = useState(false);
 
   const handleNavigateToUrl = () => {
     let url = urlInput.trim();
@@ -405,6 +406,26 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                   </p>
                 </div>
                 <div className="flex gap-1">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setChecklistVisible(false);
+                            setFullScreenMode(true);
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Maximize className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Full Screen Mode</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>

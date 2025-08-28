@@ -198,45 +198,48 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
   );
 
   const addDecisionPoint = () => {
-    // Add a new decision point to the first phase/operation for simplicity
-    if (phases.length > 0 && phases[0].operations.length > 0) {
-      const newDecisionPoint: DecisionPoint = {
-        id: `decision-${Date.now()}`,
-        question: 'New Decision Point',
-        description: 'Describe the decision to be made',
-        options: [
-          {
-            id: `option-1-${Date.now()}`,
-            label: 'Option A',
-            value: 'option-a',
-          },
-          {
-            id: `option-2-${Date.now()}`,
-            label: 'Option B',
-            value: 'option-b',
-          },
-        ],
-        allowFreeText: true,
-        stage: 'execution',
-      };
+    // Create a decision point that can be added to any step
+    if (phases.length > 3) { // Skip standard phases
+      const targetPhase = phases[3]; // First user phase
+      if (targetPhase.operations.length > 0) {
+        const newDecisionPoint: DecisionPoint = {
+          id: `decision-${Date.now()}`,
+          question: 'Decision Required',
+          description: 'Choose how to proceed',
+          options: [
+            {
+              id: `option-1-${Date.now()}`,
+              label: 'Continue',
+              value: 'continue',
+            },
+            {
+              id: `option-2-${Date.now()}`,
+              label: 'Skip',
+              value: 'skip',
+            },
+          ],
+          allowFreeText: false,
+          stage: 'execution',
+        };
 
-      const newStep: WorkflowStep = {
-        id: `step-${Date.now()}`,
-        step: 'Decision Point',
-        description: 'Make a decision about how to proceed',
-        contentType: 'text',
-        content: '',
-        materials: [],
-        tools: [],
-        outputs: [],
-        flowType: 'prime',
-        isDecisionPoint: true,
-        decisionPoint: newDecisionPoint,
-      };
+        const newStep: WorkflowStep = {
+          id: `step-${Date.now()}`,
+          step: 'Decision Point',
+          description: 'Make a decision about how to proceed',
+          contentType: 'text',
+          content: '',
+          materials: [],
+          tools: [],
+          outputs: [],
+          flowType: 'prime',
+          isDecisionPoint: true,
+          decisionPoint: newDecisionPoint,
+        };
 
-      const updatedPhases = [...phases];
-      updatedPhases[0].operations[0].steps.push(newStep);
-      onUpdatePhases(updatedPhases);
+        const updatedPhases = [...phases];
+        updatedPhases[3].operations[0].steps.push(newStep);
+        onUpdatePhases(updatedPhases);
+      }
     }
   };
 

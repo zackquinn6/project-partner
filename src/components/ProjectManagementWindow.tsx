@@ -6,13 +6,14 @@ import ProjectRollup from '@/components/ProjectRollup';
 import EditWorkflowView from '@/components/EditWorkflowView';
 import EditableUserView from '@/components/EditableUserView';
 import { ProjectContentImport } from '@/components/ProjectContentImport';
+import { RevisionHistoryWindow } from '@/components/RevisionHistoryWindow';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical } from 'lucide-react';
+import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -57,6 +58,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
   const [showImport, setShowImport] = useState(false);
+  const [showRevisionHistory, setShowRevisionHistory] = useState(false);
 
   const updateProjectData = async (updatedProject: typeof currentProject) => {
     if (updatedProject) {
@@ -345,7 +347,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       const newRevision = {
         ...currentProject,
         id: `${Date.now()}`, // Generate new ID
-        name: `${currentProject.name} (Rev ${(currentProject.revisionNumber || 1) + 1})`,
+        name: `${currentProject.name.replace(/ \(Rev \d+\)/, '')} (Rev ${(currentProject.revisionNumber || 1) + 1})`,
         parentProjectId: currentProject.parentProjectId || currentProject.id, // Root project ID
         revisionNumber: (currentProject.revisionNumber || 1) + 1,
         revisionNotes: revisionNotes || '',
@@ -560,14 +562,23 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     <Card className="mb-6">
       <CardHeader>
         <div className="flex justify-between items-start">
-          <div>
-            <CardTitle>Project Selection & Details</CardTitle>
-            <CardDescription>
-              {editingProject 
-                ? "Editing project details - make your changes below" 
-                : "Choose a project to manage and edit its details"}
-            </CardDescription>
-          </div>
+            <div>
+              <CardTitle>Project Selection & Details</CardTitle>
+              {currentProject && (
+                <div className="flex items-center gap-2 mt-1">
+                  <CardDescription>
+                    {editingProject 
+                      ? "Editing project details - make your changes below" 
+                      : "Choose a project to manage and edit its details"}
+                  </CardDescription>
+                  {currentProject.revisionNumber && (
+                    <Badge variant="outline" className="text-xs">
+                      Rev {currentProject.revisionNumber}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
           <div className="flex gap-2">
             {currentProject && editingProject && (
               <div className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-md">
@@ -733,6 +744,10 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   <Plus className="w-4 h-4 mr-2" />
                   Create New Revision
                 </Button>
+                <Button onClick={() => setShowRevisionHistory(true)} variant="outline">
+                  <History className="w-4 h-4 mr-2" />
+                  Revision History
+                </Button>
                 <Button 
                   onClick={async () => {
                     if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
@@ -823,6 +838,11 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
           open={showImport}
           onOpenChange={setShowImport}
           onImport={handleImportContent}
+        />
+        
+        <RevisionHistoryWindow
+          open={showRevisionHistory}
+          onOpenChange={setShowRevisionHistory}
         />
       </div>
     );
