@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -17,7 +17,10 @@ import { WorkflowStep, DecisionPoint, Phase, Operation } from '@/interfaces/Proj
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Save } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DecisionTreeEditor } from './DecisionTreeEditor';
+import { ArrowLeft, Plus, Save, Settings, Link } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface DecisionTreeFlowchartProps {
   phases: Phase[];
@@ -96,6 +99,9 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
   onBack,
   onUpdatePhases,
 }) => {
+  const [showDecisionEditor, setShowDecisionEditor] = useState(false);
+  const [editingDecision, setEditingDecision] = useState<DecisionPoint | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string>('');
   // Convert workflow steps to React Flow nodes and edges
   const { initialNodes, initialEdges } = useMemo(() => {
     const nodes: Node[] = [];
@@ -197,35 +203,86 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
     [setEdges],
   );
 
-  const addDecisionPoint = () => {
-    // Create a decision point that can be added to any step
-    if (phases.length > 3) { // Skip standard phases
-      const targetPhase = phases[3]; // First user phase
-      if (targetPhase.operations.length > 0) {
-        const newDecisionPoint: DecisionPoint = {
-          id: `decision-${Date.now()}`,
-          question: 'Decision Required',
-          description: 'Choose how to proceed',
-          options: [
-            {
-              id: `option-1-${Date.now()}`,
-              label: 'Continue',
-              value: 'continue',
-            },
-            {
-              id: `option-2-${Date.now()}`,
-              label: 'Skip',
-              value: 'skip',
-            },
-          ],
-          allowFreeText: false,
-          stage: 'execution',
-        };
+  // Get all available steps for decision linking
+  const getAllAvailableSteps = () => {
+    const steps: { id: string; name: string }[] = [];
+    phases.forEach((phase) => {
+      phase.operations.forEach((operation) => {
+        operation.steps.forEach((step) => {
+          steps.push({
+            id: step.id,
+            name: step.step,
+          });
+        });
+      });
+    });
+    return steps;
+  };
 
+  const addDecisionPoint = () => {
+    setEditingDecision(null);
+    setShowDecisionEditor(true);
+  };
+
+  const addConnector = () => {
+    // TODO: Implement connector adding functionality
+    toast.success('Connector functionality coming soon');
+  };
+
+  const handleNodeClick = (nodeId: string) => {
+    // Find the step/decision point for editing
+    let foundStep: WorkflowStep | null = null;
+    
+    for (const phase of phases) {
+      for (const operation of phase.operations) {
+        const step = operation.steps.find(s => s.id === nodeId);
+        if (step) {
+          foundStep = step;
+          break;
+        }
+      }
+      if (foundStep) break;
+    }
+    
+    if (foundStep?.isDecisionPoint && foundStep.decisionPoint) {
+      setEditingDecision(foundStep.decisionPoint);
+      setSelectedNodeId(nodeId);
+      setShowDecisionEditor(true);
+    }
+  };
+
+  const saveDecisionPoint = (decisionPoint: DecisionPoint) => {
+    if (selectedNodeId) {
+      // Update existing decision point
+      const updatedPhases = [...phases];
+      let updated = false;
+      
+      for (const phase of updatedPhases) {
+        for (const operation of phase.operations) {
+          const stepIndex = operation.steps.findIndex(s => s.id === selectedNodeId);
+          if (stepIndex !== -1) {
+            operation.steps[stepIndex] = {
+              ...operation.steps[stepIndex],
+              decisionPoint,
+              isDecisionPoint: true
+            };
+            updated = true;
+            break;
+          }
+        }
+        if (updated) break;
+      }
+      
+      if (updated) {
+        onUpdatePhases(updatedPhases);
+      }
+    } else {
+      // Create new decision point in first available user phase
+      if (phases.length > 3 && phases[3].operations.length > 0) {
         const newStep: WorkflowStep = {
           id: `step-${Date.now()}`,
-          step: 'Decision Point',
-          description: 'Make a decision about how to proceed',
+          step: decisionPoint.question,
+          description: decisionPoint.description || 'Decision point',
           contentType: 'text',
           content: '',
           materials: [],
@@ -233,7 +290,7 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
           outputs: [],
           flowType: 'prime',
           isDecisionPoint: true,
-          decisionPoint: newDecisionPoint,
+          decisionPoint,
         };
 
         const updatedPhases = [...phases];
@@ -241,6 +298,9 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
         onUpdatePhases(updatedPhases);
       }
     }
+    
+    setSelectedNodeId('');
+    setEditingDecision(null);
   };
 
   return (
@@ -261,10 +321,24 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={addDecisionPoint} className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Add Decision Point
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Element
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-background z-50">
+                <DropdownMenuItem onClick={addDecisionPoint}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Add Decision Point
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={addConnector}>
+                  <Link className="w-4 h-4 mr-2" />
+                  Add Connector
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={onBack} variant="outline">
               <Save className="w-4 h-4 mr-2" />
               Save & Exit
@@ -307,6 +381,7 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeClick={(event, node) => handleNodeClick(node.id)}
           nodeTypes={nodeTypes}
           fitView
           style={{ backgroundColor: '#f8fafc' }}
@@ -315,6 +390,14 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
           <MiniMap />
           <Background />
         </ReactFlow>
+        
+        <DecisionTreeEditor
+          open={showDecisionEditor}
+          onOpenChange={setShowDecisionEditor}
+          decisionPoint={editingDecision || undefined}
+          onSave={saveDecisionPoint}
+          availableSteps={getAllAvailableSteps()}
+        />
       </div>
     </div>
   );

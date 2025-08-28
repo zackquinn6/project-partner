@@ -25,6 +25,8 @@ interface ProjectRevision {
   createdAt: Date;
   updatedAt: Date;
   publishStatus: 'draft' | 'published' | 'beta-testing';
+  author?: string;
+  changesSummary?: string;
 }
 
 export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
@@ -63,7 +65,9 @@ export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
         createdFromRevision: project.createdFromRevision || 1,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
-        publishStatus: project.publishStatus
+        publishStatus: project.publishStatus,
+        author: 'Admin', // TODO: Get actual author from auth context
+        changesSummary: project.revisionNotes || 'No changes noted'
       }))
       .sort((a, b) => b.revisionNumber - a.revisionNumber);
     
@@ -183,12 +187,13 @@ export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Revision</TableHead>
+                    <TableHead>Rev #</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Updated</TableHead>
+                    <TableHead>Changes</TableHead>
+                    <TableHead>Author</TableHead>
+                    <TableHead>Created Date</TableHead>
+                    <TableHead>Updated Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -217,8 +222,14 @@ export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs truncate text-sm text-muted-foreground">
-                          {revision.revisionNotes || 'No notes'}
+                        <div className="max-w-xs truncate text-sm">
+                          {revision.changesSummary || 'No changes noted'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sm">
+                          <User className="w-3 h-3" />
+                          {revision.author || 'Unknown'}
                         </div>
                       </TableCell>
                       <TableCell>

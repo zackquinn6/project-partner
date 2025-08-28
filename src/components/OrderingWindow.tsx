@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink, Globe, Check, Maximize } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Project, Material, Tool } from "@/interfaces/Project";
 import { supabase } from "@/integrations/supabase/client";
@@ -279,6 +280,86 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
       return newSet;
     });
   };
+
+  // Render shopping checklist content
+  const renderShoppingChecklist = () => (
+    <ScrollArea className="h-full">
+      <div className="space-y-4">
+        {uniqueMaterials.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>No materials to order for this project</p>
+          </div>
+        ) : (
+          uniqueMaterials.map((material, index) => (
+            <div key={`${material.id}-${index}`} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={orderedMaterials.has(material.id)}
+                      onChange={() => handleMaterialToggle(material.id)}
+                      className="rounded"
+                    />
+                    <h4 className="font-medium text-sm truncate">{material.name}</h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {material.description}
+                  </p>
+                  {material.totalQuantity && (
+                    <Badge variant="secondary" className="text-xs mt-2">
+                      Qty: {material.totalQuantity}
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(currentUrl, '_blank')}
+                  className="ml-2 flex-shrink-0"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </ScrollArea>
+  );
+
+  if (fullScreenMode) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
+          <div className="h-[90vh] flex flex-col">
+            <div className="p-4 border-b flex items-center justify-between bg-muted/30">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold">Shopping Checklist</h2>
+                <Badge variant="secondary">{uniqueMaterials.length} items total</Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFullScreenMode(false)}
+                  className="flex items-center gap-1"
+                >
+                  <Eye className="w-4 h-4" />
+                  Show Browser
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex-1 p-4 overflow-auto">
+              {renderShoppingChecklist()}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const allItemsOrdered = uniqueTools.every(tool => orderedTools.has(tool.id)) &&
                           uniqueMaterials.every(material => orderedMaterials.has(material.id));

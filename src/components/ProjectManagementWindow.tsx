@@ -340,25 +340,36 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   const createNewRevision = async () => {
     if (!currentProject) return;
     
-    const revisionNotes = window.prompt('Enter revision notes (optional):');
+    const revisionNotes = window.prompt('Enter revision notes and summary of changes:');
     if (revisionNotes === null) return; // User cancelled
     
     try {
+      // Save current version with archived status
+      const archivedVersion = {
+        ...currentProject,
+        id: `${currentProject.id}-archived-${Date.now()}`,
+        name: `${currentProject.name} (Archived Rev ${currentProject.revisionNumber || 1})`,
+        publishStatus: 'draft' as const,
+        revisionNotes: `Archived version ${currentProject.revisionNumber || 1}`
+      };
+      
+      // Create new revision that replaces current
       const newRevision = {
         ...currentProject,
-        id: `${Date.now()}`, // Generate new ID
         name: `${currentProject.name.replace(/ \(Rev \d+\)/, '')} (Rev ${(currentProject.revisionNumber || 1) + 1})`,
-        parentProjectId: currentProject.parentProjectId || currentProject.id, // Root project ID
+        parentProjectId: currentProject.parentProjectId || currentProject.id,
         revisionNumber: (currentProject.revisionNumber || 1) + 1,
         revisionNotes: revisionNotes || '',
         createdFromRevision: currentProject.revisionNumber || 1,
-        createdAt: new Date(),
         updatedAt: new Date(),
-        publishStatus: 'draft' as const // New revisions start as draft
+        publishStatus: 'draft' as const
       };
       
+      // Save archived version first, then update current
+      await updateProject(archivedVersion);
       await updateProject(newRevision);
-      toast.success(`Created revision ${newRevision.revisionNumber}`);
+      
+      toast.success(`Created revision ${newRevision.revisionNumber} and archived previous version`);
     } catch (error) {
       console.error('Error creating revision:', error);
       toast.error('Failed to create revision');

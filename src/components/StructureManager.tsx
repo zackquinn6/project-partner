@@ -527,15 +527,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                             </div>
                           </CardHeader>
                           
-                          <CardContent>
-                            {!isCloseProjectPhase && (
+                            <CardContent>
                               <div className="flex items-center gap-2 mb-4">
                                 <Button onClick={() => addOperation(phase.id)} className="flex items-center gap-2">
                                   <Plus className="w-3 h-3" />
                                   Add Operation
                                 </Button>
+                                {isCloseProjectPhase && (
+                                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                                    Final phase - position locked
+                                  </Badge>
+                                )}
                               </div>
-                            )}
                             
                             <Droppable droppableId={`operations-${phase.id}`} type="operations">
                               {(provided) => (
@@ -621,9 +624,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                           <Button size="sm" variant="ghost" onClick={() => startEdit('operation', operation.id, operation)}>
                                                             <Edit className="w-3 h-3" />
                                                           </Button>
-                                                          <Button size="sm" variant="ghost" onClick={() => deleteOperation(phase.id, operation.id)}>
-                                                            <Trash2 className="w-3 h-3" />
-                                                          </Button>
+                                                          {!isCloseProjectPhase && (
+                                                            <Button size="sm" variant="ghost" onClick={() => deleteOperation(phase.id, operation.id)}>
+                                                              <Trash2 className="w-3 h-3" />
+                                                            </Button>
+                                                          )}
                                                         </>
                                                       )}
                                                     </>
@@ -633,7 +638,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                             </CardHeader>
                                             
                                             <CardContent className="pt-0">
-                                              {!isStandardPhase && !isCloseProjectPhase && (
+                                              {!isStandardPhase && (
                                                 <div className="flex items-center gap-2 mb-3">
                                                   <Button
                                                     size="sm"
@@ -730,47 +735,49 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                        )}
                                                                      </div>
                                                                     
-                                                                    {!isStandardPhase && !isCloseProjectPhase && (
-                                                                      <>
-                                                                        <Button
-                                                                          size="sm"
-                                                                          variant="ghost"
-                                                                          onClick={() => setShowDecisionEditor({ step })}
-                                                                          title="Configure decision point"
-                                                                        >
-                                                                          🔀
-                                                                        </Button>
-                                                                        <Button
-                                                                          size="sm"
-                                                                          variant="ghost"
-                                                                          onClick={() => setShowStepContentEdit({ stepId: step.id, step })}
-                                                                        >
-                                                                          <Edit className="w-3 h-3" />
-                                                                        </Button>
-                                                                        
-                                                                        <Button
-                                                                          size="sm"
-                                                                          variant="ghost"
-                                                                          onClick={() => copyItem('step', step)}
-                                                                        >
-                                                                          <Copy className="w-3 h-3" />
-                                                                        </Button>
-                                                                        
-                                                                        {clipboard?.type === 'step' && (
-                                                                          <Button
-                                                                            size="sm"
-                                                                            variant="ghost"
-                                                                            onClick={() => pasteItem('step', { phaseId: phase.id, operationId: operation.id })}
-                                                                          >
-                                                                            <Clipboard className="w-3 h-3" />
-                                                                          </Button>
-                                                                        )}
-                                                                        
-                                                                        <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)}>
-                                                                          <Trash2 className="w-3 h-3" />
-                                                                        </Button>
-                                                                      </>
-                                                                    )}
+                                                    {!isStandardPhase && (
+                                                      <>
+                                                        <Button
+                                                          size="sm"
+                                                          variant="ghost"
+                                                          onClick={() => setShowDecisionEditor({ step })}
+                                                          title="Configure decision point"
+                                                        >
+                                                          🔀
+                                                        </Button>
+                                                        <Button
+                                                          size="sm"
+                                                          variant="ghost"
+                                                          onClick={() => setShowStepContentEdit({ stepId: step.id, step })}
+                                                        >
+                                                          <Edit className="w-3 h-3" />
+                                                        </Button>
+                                                        
+                                                        <Button
+                                                          size="sm"
+                                                          variant="ghost"
+                                                          onClick={() => copyItem('step', step)}
+                                                        >
+                                                          <Copy className="w-3 h-3" />
+                                                        </Button>
+                                                        
+                                                        {clipboard?.type === 'step' && (
+                                                          <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => pasteItem('step', { phaseId: phase.id, operationId: operation.id })}
+                                                          >
+                                                            <Clipboard className="w-3 h-3" />
+                                                          </Button>
+                                                        )}
+                                                        
+                                                        {!isCloseProjectPhase && (
+                                                          <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)}>
+                                                            <Trash2 className="w-3 h-3" />
+                                                          </Button>
+                                                        )}
+                                                      </>
+                                                    )}
                                                                   </div>
                                                                 </div>
                                                               </CardContent>
