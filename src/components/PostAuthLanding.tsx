@@ -172,19 +172,16 @@ export const PostAuthLanding = () => {
               className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer group"
               onClick={action.action}
             >
-              <CardHeader className="text-center pb-3 md:pb-4">
-                <div className={`w-12 h-12 md:w-16 md:h-16 ${action.color} rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform`}>
-                  <action.icon className={`h-6 w-6 md:h-8 md:w-8 ${action.textColor}`} />
+              <CardHeader className="text-center pb-2 md:pb-3">
+                <div className={`w-6 h-6 md:w-8 md:h-8 ${action.color} rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3 group-hover:scale-110 transition-transform`}>
+                  <action.icon className={`h-4 w-4 md:h-5 md:w-5 ${action.textColor}`} />
                 </div>
-                <CardTitle className="text-lg md:text-xl group-hover:text-primary transition-colors">{action.title}</CardTitle>
+                <CardTitle className="text-base md:text-lg group-hover:text-primary transition-colors">{action.title}</CardTitle>
               </CardHeader>
-              <CardContent className="text-center px-4 md:px-6">
-                <CardDescription className="text-sm md:text-base leading-relaxed mb-3 md:mb-4">
+              <CardContent className="text-center px-3 md:px-4">
+                <CardDescription className="text-xs md:text-sm leading-relaxed">
                   {action.description}
                 </CardDescription>
-                <Button variant="ghost" size="sm" className="group-hover:bg-accent group-hover:text-accent-foreground text-xs md:text-sm">
-                  Get Started <ArrowRight className="ml-2 h-3 w-3 md:h-4 md:w-4" />
-                </Button>
               </CardContent>
             </Card>
           ))}

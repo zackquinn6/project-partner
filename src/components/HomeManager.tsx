@@ -52,6 +52,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
     state: '',
     home_type: '',
     build_year: '',
+    home_ownership: '',
     is_primary: false
   });
 
@@ -132,6 +133,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
         state: '',
         home_type: '',
         build_year: '',
+        home_ownership: '',
         is_primary: false
       });
       fetchHomes();
@@ -150,6 +152,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       state: home.state || '',
       home_type: home.home_type || '',
       build_year: home.build_year || '',
+      home_ownership: '',
       is_primary: home.is_primary
     });
     setShowForm(true);
@@ -415,6 +418,23 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="home_ownership">Rent or Own *</Label>
+                <Select 
+                  value={formData.home_ownership} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, home_ownership: value }))}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select ownership status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="own">Own</SelectItem>
+                    <SelectItem value="rent">Rent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="address">Address</Label>
                 <Input
@@ -436,13 +456,27 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  value={formData.state}
-                  onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
-                  placeholder="State"
-                />
+                <Label htmlFor="state">State *</Label>
+                <Select 
+                  value={formData.state} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, state: value }))}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 
+                      'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 
+                      'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 
+                      'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 
+                      'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 
+                      'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 
+                      'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'].map(state => (
+                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
