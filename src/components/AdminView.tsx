@@ -9,10 +9,11 @@ import { WorkflowOptimizationEngine } from '@/components/WorkflowOptimizationEng
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Settings, BarChart3, Shield, Wrench, Lock, Brain, TrendingUp, Users, Cog, Scroll, MapPin } from 'lucide-react';
+import { Settings, BarChart3, Shield, Wrench, Lock, Brain, TrendingUp, Users, Cog, Scroll, MapPin, FileText } from 'lucide-react';
 import { StructureManager } from './StructureManager';
 import { AdminRoadmapManager } from './AdminRoadmapManager';
 import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
+import { AppDescriptionDialog } from './AppDescriptionDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export const AdminView: React.FC = () => {
@@ -26,6 +27,7 @@ export const AdminView: React.FC = () => {
   const [processDesignOpen, setProcessDesignOpen] = useState(false);
   const [roadmapManagerOpen, setRoadmapManagerOpen] = useState(false);
   const [featureRequestManagerOpen, setFeatureRequestManagerOpen] = useState(false);
+  const [appDescriptionOpen, setAppDescriptionOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'admin' | 'structure-manager'>('admin');
 
   if (currentView === 'structure-manager') {
@@ -36,7 +38,18 @@ export const AdminView: React.FC = () => {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-primary">Administration Panel</h1>
+          <div className="flex items-center justify-center gap-4">
+            <h1 className="text-4xl font-bold text-primary">Administration Panel</h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAppDescriptionOpen(true)}
+              className="text-xs"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              App Guide
+            </Button>
+          </div>
           <p className="text-lg text-muted-foreground">Manage projects, analytics, and user permissions</p>
         </div>
 
@@ -250,6 +263,11 @@ export const AdminView: React.FC = () => {
         <AdminFeatureRequestManager
           open={featureRequestManagerOpen}
           onOpenChange={setFeatureRequestManagerOpen}
+        />
+
+        <AppDescriptionDialog
+          open={appDescriptionOpen}
+          onOpenChange={setAppDescriptionOpen}
         />
 
         <Dialog open={processDesignOpen} onOpenChange={setProcessDesignOpen}>

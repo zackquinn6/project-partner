@@ -695,6 +695,40 @@ export const createTileInstallationProject = (): Project => {
           description: 'All transitions properly installed and secured',
           type: 'safety' as const
         }]
+      },
+      {
+        id: 'final-planning-step',
+        step: 'Final Project Assessment',
+        description: 'Review project completion and finalize decisions',
+        contentType: 'text' as const,
+        content: 'Conduct final quality review and complete project documentation.',
+        contentSections: [
+          {
+            id: 'final-assessment-content-1',
+            type: 'text',
+            content: 'Inspect all tile work for proper alignment, level surfaces, and complete grout coverage.'
+          },
+          {
+            id: 'final-review-decisions-content',
+            type: 'text',
+            content: 'Make decisions on project customization by selecting the "Review Decisions" button',
+            title: 'Final Project Decisions'
+          },
+          {
+            id: 'final-assessment-content-2',
+            type: 'text',
+            content: 'Document any maintenance requirements and care instructions for future reference.',
+            title: 'Project Documentation'
+          }
+        ],
+        materials: [],
+        tools: [],
+        outputs: [{
+          id: 'project-completed-output',
+          name: 'Project Assessment Complete',
+          description: 'Final project review and documentation completed',
+          type: 'performance-durability' as const
+        }]
       }
     ]
   };

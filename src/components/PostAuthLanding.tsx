@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [userNickname, setUserNickname] = useState<string>('');
   const [stats, setStats] = useState([
     { label: "Active Projects", value: "0", icon: Target },
     { label: "Completed", value: "0", icon: Trophy }, 
@@ -52,18 +53,19 @@ export const PostAuthLanding = () => {
     };
   }, [navigate]);
 
-  // Fetch user stats
+  // Fetch user stats and profile
   useEffect(() => {
-    const fetchUserStats = async () => {
+    const fetchUserData = async () => {
       if (!user) return;
       
       try {
-        const { data: projectRuns, error } = await supabase
+        // Fetch project stats
+        const { data: projectRuns, error: projectError } = await supabase
           .from('project_runs')
           .select('status, progress')
           .eq('user_id', user.id);
 
-        if (error) throw error;
+        if (projectError) throw projectError;
 
         const activeProjects = projectRuns?.filter(run => 
           run.status !== 'complete' && run.progress < 100
@@ -81,12 +83,25 @@ export const PostAuthLanding = () => {
           { label: "Completed", value: completedProjects.toString(), icon: Trophy }, 
           { label: "Hours Saved", value: hoursSaved.toString(), icon: Zap }
         ]);
+
+        // Fetch user profile for nickname
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('nickname')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error fetching profile:', profileError);
+        } else if (profile?.nickname) {
+          setUserNickname(profile.nickname);
+        }
       } catch (error) {
-        console.error('Error fetching user stats:', error);
+        console.error('Error fetching user data:', error);
       }
     };
 
-    fetchUserStats();
+    fetchUserData();
   }, [user]);
 
   const quickActions = [
@@ -94,7 +109,11 @@ export const PostAuthLanding = () => {
       icon: FolderOpen,
       title: "My Projects",
       description: "Continue working on your active projects and track progress",
-      action: () => window.dispatchEvent(new CustomEvent('navigate-to-projects')),
+      action: () => {
+        navigate('/', { 
+          state: { view: 'user', forceListingMode: true } 
+        });
+      },
       color: "bg-primary",
       textColor: "text-primary-foreground"
     },
@@ -110,7 +129,15 @@ export const PostAuthLanding = () => {
       icon: User,
       title: "My Profile",
       description: "Manage your account settings and DIY preferences",
-      action: () => navigate('/', { state: { view: 'user', showProfile: true } }),
+      action: () => {
+        navigate('/', { 
+          state: { view: 'user' } 
+        });
+        // Dispatch event to show profile after navigation
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('show-profile'));
+        }, 100);
+      },
       color: "bg-secondary",
       textColor: "text-secondary-foreground"
     }
@@ -123,7 +150,7 @@ export const PostAuthLanding = () => {
         {/* Welcome Header */}
         <div className="text-center mb-12">
           <Badge variant="outline" className="mb-4 text-primary border-primary">
-            🏆 Welcome Back, Champion!
+            🏆 Welcome Back{userNickname ? `, ${userNickname}` : ', Champion'}!
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
             Ready to Build Something Great?

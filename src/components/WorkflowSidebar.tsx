@@ -87,18 +87,10 @@ export function WorkflowSidebar({
                     </Button>
                   )}
 
-                  {/* Step Types Info Button */}
-                  <Button 
-                    variant="outline"
-                    onClick={() => setShowStepTypesInfo(true)}
-                    className="w-full py-2 px-4 text-sm"
-                  >
-                    ℹ️ Step Types Info
-                  </Button>
                 </div>
 
                 {/* Step Navigation */}
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto">
                   {Object.entries(groupedSteps).map(([phase, operations]) => (
                     <div key={phase} className="space-y-2">
                       <h4 className="font-semibold text-primary text-sm">{phase}</h4>
@@ -133,6 +125,17 @@ export function WorkflowSidebar({
                       ))}
                     </div>
                   ))}
+                </div>
+
+                {/* Step Types Button - Moved to Bottom */}
+                <div className="mt-4 pt-4 border-t border-border">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowStepTypesInfo(true)}
+                    className="w-full py-2 px-4 text-sm"
+                  >
+                    ℹ️ Step Types
+                  </Button>
                 </div>
               </div>
             )}
