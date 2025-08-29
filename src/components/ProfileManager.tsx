@@ -25,6 +25,11 @@ interface ProfileData {
   survey_completed_at?: string;
   full_name?: string;
   nickname?: string;
+  primary_home?: {
+    name: string;
+    city?: string;
+    state?: string;
+  };
 }
 
 export default function ProfileManager({
@@ -46,7 +51,8 @@ export default function ProfileManager({
   const loadExistingProfile = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // First fetch profile data
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select(`
           skill_level, 
@@ -64,19 +70,37 @@ export default function ProfileManager({
         .eq('user_id', user?.id)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error loading profile:', error);
+      if (profileError) {
+        console.error('Error loading profile:', profileError);
         setExistingProfile(null);
-      } else if (data && data.survey_completed_at) {
-        // Cast owned_tools from Json to array
-        const profileData = {
-          ...data,
-          owned_tools: Array.isArray(data.owned_tools) ? data.owned_tools : []
-        };
-        setExistingProfile(profileData);
-      } else {
-        setExistingProfile(null);
+        return;
       }
+
+      if (!profileData || !profileData.survey_completed_at) {
+        setExistingProfile(null);
+        return;
+      }
+
+      // Then fetch primary home data
+      const { data: homeData, error: homeError } = await supabase
+        .from('homes')
+        .select('name, city, state')
+        .eq('user_id', user?.id)
+        .eq('is_primary', true)
+        .maybeSingle();
+
+      if (homeError && homeError.code !== 'PGRST116') {
+        console.error('Error loading primary home:', homeError);
+      }
+
+      // Combine profile and home data
+      const completeProfile = {
+        ...profileData,
+        owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
+        primary_home: homeData || undefined
+      };
+
+      setExistingProfile(completeProfile);
     } catch (error) {
       console.error('Error loading profile:', error);
       setExistingProfile(null);
@@ -147,15 +171,12 @@ export default function ProfileManager({
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold">Home Details</h4>
+                  <h4 className="font-semibold">Primary Home</h4>
                   <p className="text-sm text-muted-foreground">
-                    {existingProfile.home_ownership ? (
-                      <>
-                        {existingProfile.home_ownership}
-                        {existingProfile.home_build_year && ` • Built ${existingProfile.home_build_year}`}
-                        {existingProfile.home_state && ` • ${existingProfile.home_state}`}
-                      </>
-                    ) : "Not specified"}
+                    {existingProfile.primary_home ? 
+                      `${existingProfile.primary_home.name}${existingProfile.primary_home.city && existingProfile.primary_home.state ? ` • ${existingProfile.primary_home.city}, ${existingProfile.primary_home.state}` : ''}` 
+                      : "No primary home set"
+                    }
                   </p>
                 </div>
 

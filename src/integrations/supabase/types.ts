@@ -172,6 +172,7 @@ export type Database = {
           build_year: string | null
           city: string | null
           created_at: string
+          home_ownership: string | null
           home_type: string | null
           id: string
           is_primary: boolean | null
@@ -185,6 +186,7 @@ export type Database = {
           build_year?: string | null
           city?: string | null
           created_at?: string
+          home_ownership?: string | null
           home_type?: string | null
           id?: string
           is_primary?: boolean | null
@@ -198,6 +200,7 @@ export type Database = {
           build_year?: string | null
           city?: string | null
           created_at?: string
+          home_ownership?: string | null
           home_type?: string | null
           id?: string
           is_primary?: boolean | null

@@ -19,7 +19,7 @@ const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
-  const { setCurrentProject, setCurrentProjectRun } = useProject();
+  const { setCurrentProject, setCurrentProjectRun, currentProject, currentProjectRun } = useProject();
   const navigate = useNavigate();
   const location = useLocation();
   const [currentView, setCurrentView] = useState<'home' | 'admin' | 'user' | 'editWorkflow'>('user'); // Default to 'user' for authenticated users
@@ -50,11 +50,15 @@ const Index = () => {
 
     const handleProjectsNavigation = () => {
       console.log('🔄 Index: "My Projects" clicked from PostAuthLanding');
+      console.log('🔄 Index: Current view before switch:', currentView);
+      console.log('🔄 Index: Current project before clear:', currentProject?.name);
+      console.log('🔄 Index: Current project run before clear:', currentProjectRun?.name);
       handleProjectsView();
     };
 
     const handleProfileNavigation = () => {
       console.log('🔄 Index: "My Profile" clicked from PostAuthLanding');
+      console.log('🔄 Index: Setting view to user and showProfile true');
       setCurrentView('user');
       // Navigate with show profile state
       navigate('/', { 
@@ -93,6 +97,7 @@ const Index = () => {
 
   const handleProjectsView = () => {
     console.log('🔄 Index: "My Projects" clicked - forcing listing mode');
+    console.log('🔄 Index: Current state - currentProject:', currentProject?.name, 'currentProjectRun:', currentProjectRun?.name);
     
     // Clear the location state first to ensure clean navigation
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -105,9 +110,12 @@ const Index = () => {
     setForceListingMode(true);
     setResetUserView(true);
     
+    console.log('🔄 Index: Set forceListingMode=true, resetUserView=true');
+    
     // Clear the resetUserView quickly but keep forceListingMode active
     setTimeout(() => {
       setResetUserView(false);
+      console.log('🔄 Index: Reset resetUserView to false after timeout');
     }, 100);
   };
 

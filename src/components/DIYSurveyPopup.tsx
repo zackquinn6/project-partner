@@ -682,9 +682,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                   <div><strong>Skill Level:</strong> {answers.skillLevel || 'Not specified'}</div>
                   <div><strong>Projects to Avoid:</strong> {answers.avoidProjects.length > 0 ? answers.avoidProjects.join(', ') : 'None specified'}</div>
                   <div><strong>Physical Capability:</strong> {answers.physicalCapability || 'Not specified'}</div>
-                  <div><strong>Home Ownership:</strong> {answers.homeOwnership || 'Not specified'}</div>
-                  <div><strong>Home Build Year:</strong> {answers.homeBuildYear || 'Not specified'}</div>
-                  <div><strong>Home State:</strong> {answers.homeState || 'Not specified'}</div>
                   <div><strong>Learning Methods:</strong> {answers.preferredLearningMethods.length > 0 ? answers.preferredLearningMethods.join(', ') : 'None specified'}</div>
                   <div><strong>Owned Tools:</strong> {answers.ownedTools.length} tools</div>
                 </div>
@@ -879,81 +876,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h3 className="text-2xl font-bold">🏡 Home details</h3>
-              <p className="text-muted-foreground">Help us provide personalized guidance</p>
-            </div>
-            
-            <div className="space-y-4">
-              {/* Rent vs Own */}
-              <div>
-                <Label className="text-base font-semibold">Do you rent or own?</Label>
-                <RadioGroup 
-                  value={answers.homeOwnership} 
-                  onValueChange={(value) => setAnswers(prev => ({ ...prev, homeOwnership: value }))}
-                  className="mt-3"
-                >
-                  <div className="flex gap-4">
-                    <Card className="flex-1 hover:border-primary/50 transition-colors cursor-pointer">
-                      <CardContent className="p-3">
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="rent" id="rent" />
-                          <Label htmlFor="rent" className="cursor-pointer font-medium">Rent</Label>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="flex-1 hover:border-primary/50 transition-colors cursor-pointer">
-                      <CardContent className="p-3">
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="own" id="own" />
-                          <Label htmlFor="own" className="cursor-pointer font-medium">Own</Label>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {/* Home Build Year */}
-              <div>
-                <Label className="text-base font-semibold">Home build year</Label>
-                <Select value={answers.homeBuildYear} onValueChange={(value) => setAnswers(prev => ({ ...prev, homeBuildYear: value }))}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select build year range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {buildYears.map(year => (
-                      <SelectItem key={year} value={year}>{year}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Home State */}
-              <div>
-                <Label className="text-base font-semibold">Home state</Label>
-                <Select value={answers.homeState} onValueChange={(value) => setAnswers(prev => ({ ...prev, homeState: value }))}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select your state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usStates.map(state => (
-                      <SelectItem key={state} value={state}>{state}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-              Home details enable personalized guidance for building regulations and warnings for project conditions like hazardous materials. Home build years can be found by searching on sites like Zillow.
-            </div>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
               <h3 className="text-2xl font-bold">📚 How do you prefer to learn?</h3>
               <p className="text-muted-foreground">Check all that apply:</p>
             </div>
@@ -982,7 +904,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
         );
 
-      case 6:
+      case 5:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">

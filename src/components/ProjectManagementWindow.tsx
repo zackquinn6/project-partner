@@ -765,7 +765,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                       try {
                         await deleteProject(currentProject.id);
                         setEditingProject(false);
-                        onOpenChange(false); // Close the window after deletion
+                        // Keep the project management window open after deletion
                       } catch (error) {
                         console.error('Error deleting project:', error);
                       }
