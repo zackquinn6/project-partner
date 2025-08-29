@@ -113,6 +113,14 @@ export default function Navigation({
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                <Button 
+                  variant="ghost" 
+                  className="transition-fast text-xs sm:text-sm px-2 sm:px-3"
+                  onClick={() => window.dispatchEvent(new CustomEvent('show-help-popup'))}
+                >
+                  <span>Call a Coach</span>
+                </Button>
                 
                 <Button variant="ghost" size="icon" onClick={onAdminAccess} className="transition-fast p-1 sm:p-2">
                   <Settings className="w-3 h-3 sm:w-4 sm:h-4" />

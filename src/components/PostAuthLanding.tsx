@@ -110,6 +110,7 @@ export const PostAuthLanding = () => {
       title: "My Projects",
       description: "Continue working on your active projects and track progress",
       action: () => {
+        console.log('Navigating to My Projects');
         navigate('/', { 
           state: { view: 'user', forceListingMode: true } 
         });
@@ -130,6 +131,7 @@ export const PostAuthLanding = () => {
       title: "My Profile",
       description: "Manage your account settings and DIY preferences",
       action: () => {
+        console.log('Navigating to My Profile');
         navigate('/', { 
           state: { view: 'user' } 
         });

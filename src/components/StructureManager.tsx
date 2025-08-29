@@ -168,6 +168,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   const addOperation = (phaseId: string) => {
     if (!currentProject) return;
     
+    // Check if this is a standard phase (kickoff, planning, ordering)
+    const standardPhaseIds = ['kickoff-phase', 'planning-phase', 'ordering-phase'];
+    const isStandardPhase = standardPhaseIds.includes(phaseId);
+    
+    if (isStandardPhase) {
+      toast.error('Cannot add operations to standard phases. Operations are predefined for kickoff, planning, and ordering phases.');
+      return;
+    }
+    
     const newOperation: Operation = {
       id: `operation-${Date.now()}`,
       name: 'New Operation',
@@ -186,6 +195,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     };
     
     updateProject(updatedProject);
+    toast.success('Operation added successfully');
   };
 
   const addStep = (phaseId: string, operationId: string) => {

@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
+import { createTileInstallationProject } from '@/utils/tileInstallationProject';
 
 interface ProjectContextType {
   projects: Project[];
@@ -136,6 +137,14 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
           phases: Array.isArray(phases) ? phases : []
         };
       });
+
+      // Add the tile installation project to the list if not already present
+      const tileProject = createTileInstallationProject();
+      const hasTileProject = transformedProjects.some(p => p.id === tileProject.id);
+      
+      if (!hasTileProject) {
+        transformedProjects.push(tileProject);
+      }
 
       setProjects(transformedProjects);
     } catch (error) {

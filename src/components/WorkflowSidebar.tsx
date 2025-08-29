@@ -72,18 +72,23 @@ export function WorkflowSidebar({
                 <div className="space-y-2">
                   <Button 
                     onClick={onHelpClick}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 text-sm"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2 px-4 text-sm"
                   >
-                    Call the Coach
+                    <div className="text-center">
+                      <div>Call the Coach</div>
+                      <div className="text-xs opacity-90">Stuck, Get Expert Help</div>
+                    </div>
                   </Button>
                   
                   {isKickoffComplete && (
                     <Button 
-                      variant="destructive" 
                       onClick={onUnplannedWorkClick}
-                      className="w-full py-2 px-4 text-sm"
+                      className="w-full py-2 px-4 text-sm bg-red-800 hover:bg-red-900 text-white"
                     >
-                      ❗ Call an audible
+                      <div className="text-center">
+                        <div>❗ Call an audible</div>
+                        <div className="text-xs opacity-90">Update project plan</div>
+                      </div>
                     </Button>
                   )}
 
@@ -134,7 +139,7 @@ export function WorkflowSidebar({
                     onClick={() => setShowStepTypesInfo(true)}
                     className="w-full py-2 px-4 text-sm"
                   >
-                    ℹ️ Step Types
+                    Step Types
                   </Button>
                 </div>
               </div>
