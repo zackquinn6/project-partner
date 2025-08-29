@@ -139,14 +139,6 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
         };
       });
 
-      // Add the tile installation project to the list if not already present
-      const tileProject = createTileInstallationProject();
-      const hasTileProject = transformedProjects.some(p => p.id === tileProject.id);
-      
-      if (!hasTileProject) {
-        transformedProjects.push(tileProject);
-      }
-
       setProjects(transformedProjects);
     } catch (error) {
       console.error('Error fetching projects:', error);
