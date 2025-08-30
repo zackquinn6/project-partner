@@ -5,7 +5,7 @@ import { UserManagementWindow } from '@/components/UserManagementWindow';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
 import { SecurityDashboard } from '@/components/SecurityDashboard';
 import { KnowledgeIngestionSystem } from '@/components/KnowledgeIngestionSystem';
-import { WorkflowOptimizationEngine } from '@/components/WorkflowOptimizationEngine';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -23,7 +23,7 @@ export const AdminView: React.FC = () => {
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
   const [securityDashboardOpen, setSecurityDashboardOpen] = useState(false);
   const [knowledgeSystemOpen, setKnowledgeSystemOpen] = useState(false);
-  const [workflowOptimizationOpen, setWorkflowOptimizationOpen] = useState(false);
+  
   const [processDesignOpen, setProcessDesignOpen] = useState(false);
   const [roadmapManagerOpen, setRoadmapManagerOpen] = useState(false);
   const [featureRequestManagerOpen, setFeatureRequestManagerOpen] = useState(false);
@@ -156,22 +156,6 @@ export const AdminView: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setWorkflowOptimizationOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <TrendingUp className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Process Optimization</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                AI-powered workflow improvements and process optimization
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setWorkflowOptimizationOpen(true)}>
-                Process Optimization
-              </Button>
-            </CardContent>
-          </Card>
 
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setRoadmapManagerOpen(true)}>
             <CardHeader className="text-center flex-1">
@@ -246,14 +230,6 @@ export const AdminView: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={workflowOptimizationOpen} onOpenChange={setWorkflowOptimizationOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Process Optimization Engine</DialogTitle>
-            </DialogHeader>
-            <WorkflowOptimizationEngine />
-          </DialogContent>
-        </Dialog>
 
         <AdminRoadmapManager
           open={roadmapManagerOpen}

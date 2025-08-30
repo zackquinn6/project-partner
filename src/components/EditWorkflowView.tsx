@@ -20,7 +20,8 @@ import { MultiSelectLibraryDialog } from '@/components/MultiSelectLibraryDialog'
 import { StructureManager } from '@/components/StructureManager';
 import { OutputEditForm } from '@/components/OutputEditForm';
 import { ProjectContentImport } from '@/components/ProjectContentImport';
-import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2 } from 'lucide-react';
+import { ProcessImprovementEngine } from '@/components/ProcessImprovementEngine';
+import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain } from 'lucide-react';
 import { toast } from 'sonner';
 import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 
@@ -52,6 +53,7 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
   const [toolsLibraryOpen, setToolsLibraryOpen] = useState(false);
   const [materialsLibraryOpen, setMaterialsLibraryOpen] = useState(false);
   const [showStructureManager, setShowStructureManager] = useState(false);
+  const [processImprovementOpen, setProcessImprovementOpen] = useState(false);
   
   // Structure editing state
   const [editingPhase, setEditingPhase] = useState<Phase | null>(null);
@@ -413,6 +415,15 @@ export default function EditWorkflowView({ onBackToAdmin }: EditWorkflowViewProp
                     >
                       <Upload className="w-4 h-4" />
                       Import
+                    </Button>
+                    <Button 
+                      onClick={() => setProcessImprovementOpen(true)} 
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Brain className="w-4 h-4" />
+                      Process Improvement
                     </Button>
                   </>
                 )}
