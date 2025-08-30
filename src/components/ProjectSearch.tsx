@@ -307,10 +307,9 @@ export const ProjectSearch: React.FC = () => {
                     <Target className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 
-                          className="font-semibold text-sm"
-                          dangerouslySetInnerHTML={{ __html: bestResult.highlightedName }}
-                        />
+                        <h4 className="font-semibold text-sm">
+                          {bestResult.name}
+                        </h4>
                         <Badge variant="outline" className="text-xs">
                           {Math.round(bestResult.confidence * 100)}% match
                         </Badge>
@@ -336,10 +335,9 @@ export const ProjectSearch: React.FC = () => {
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 
-                            className="font-medium text-sm"
-                            dangerouslySetInnerHTML={{ __html: result.highlightedName }}
-                          />
+                          <h4 className="font-medium text-sm">
+                            {result.name}
+                          </h4>
                           <Badge variant="outline" className="text-xs">
                             {Math.round(result.confidence * 100)}%
                           </Badge>

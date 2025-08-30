@@ -360,7 +360,9 @@ export const AdaptiveGuidanceEngine: React.FC<AdaptiveGuidanceEngineProps> = ({
                 ))}
               </div>
             ) : (
-              <div dangerouslySetInnerHTML={{ __html: adaptedInstructions.content.replace(/\n/g, '<br>') }} />
+              <div className="whitespace-pre-line">
+                {adaptedInstructions.content}
+              </div>
             )}
           </div>
 
