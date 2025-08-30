@@ -1149,13 +1149,13 @@ export default function UserView({
               
               {/* Decision Buttons for Planning Steps */}
               {currentStep && (
-                currentStep.step?.toLowerCase().includes('initial planning') ||
-                currentStep.step?.toLowerCase().includes('final planning')
+                (currentStep.step?.toLowerCase().includes('initial') && currentStep.step?.toLowerCase().includes('plan')) ||
+                (currentStep.step?.toLowerCase().includes('finalize') && currentStep.step?.toLowerCase().includes('plan'))
               ) && (
                 <div className="mt-6 pt-6 border-t border-border">
                   <div className="flex gap-3 justify-center">
                     {/* Show Review Decisions button for Initial Planning */}
-                    {currentStep.step?.toLowerCase().includes('initial planning') && (
+                    {(currentStep.step?.toLowerCase().includes('initial') && currentStep.step?.toLowerCase().includes('plan')) && (
                       <Button 
                         onClick={() => {
                           setDecisionRollupMode('initial-plan');
@@ -1170,7 +1170,7 @@ export default function UserView({
                     )}
 
                     {/* Show Finalize Decisions button for Final Planning */}
-                    {currentStep.step?.toLowerCase().includes('final planning') && (
+                    {(currentStep.step?.toLowerCase().includes('finalize') && currentStep.step?.toLowerCase().includes('plan')) && (
                       <Button 
                         onClick={() => {
                           setDecisionRollupMode('final-plan');
