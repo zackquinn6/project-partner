@@ -1011,6 +1011,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Json
       }
+      get_security_headers: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: string
@@ -1026,6 +1030,19 @@ export type Database = {
           user_email: string
         }
         Returns: undefined
+      }
+      log_security_event: {
+        Args: {
+          event_description: string
+          event_type: string
+          ip_addr?: string
+          user_email?: string
+        }
+        Returns: undefined
+      }
+      validate_admin_action: {
+        Args: { action_type: string }
+        Returns: boolean
       }
     }
     Enums: {
