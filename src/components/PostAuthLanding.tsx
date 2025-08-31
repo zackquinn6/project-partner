@@ -197,85 +197,28 @@ export const PostAuthLanding = () => {
           </div>
         </div>
 
-        {/* Quick Actions - Organized in Sections */}
-        <div className="space-y-8 mb-8 md:mb-12 px-4 md:px-0">
-          
-          {/* Section 1: My Work */}
-          <div className="bg-muted/20 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">My Work</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {myWorkActions.map((action, index) => (
-                <Card 
-                  key={index} 
-                  className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer group"
-                  onClick={action.action}
-                >
-                  <CardHeader className="text-center pb-2 md:pb-3">
-                    <div className={`w-6 h-6 md:w-8 md:h-8 ${action.color} rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3 group-hover:scale-110 transition-transform`}>
-                      <action.icon className={`h-4 w-4 md:h-5 md:w-5 ${action.textColor}`} />
-                    </div>
-                    <CardTitle className="text-base md:text-lg group-hover:text-primary transition-colors">{action.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center px-3 md:px-4">
-                    <CardDescription className="text-xs md:text-sm leading-relaxed">
-                      {action.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 2: Explore */}
-          <div className="bg-muted/30 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">Explore</h3>
-            <div className="grid grid-cols-1 gap-6">
-              {exploreActions.map((action, index) => (
-                <Card 
-                  key={index} 
-                  className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer group max-w-md mx-auto"
-                  onClick={action.action}
-                >
-                  <CardHeader className="text-center pb-2 md:pb-3">
-                    <div className={`w-6 h-6 md:w-8 md:h-8 ${action.color} rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3 group-hover:scale-110 transition-transform`}>
-                      <action.icon className={`h-4 w-4 md:h-5 md:w-5 ${action.textColor}`} />
-                    </div>
-                    <CardTitle className="text-base md:text-lg group-hover:text-primary transition-colors">{action.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center px-3 md:px-4">
-                    <CardDescription className="text-xs md:text-sm leading-relaxed">
-                      {action.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 3: Account */}
-          <div className="bg-muted/40 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">Account</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {accountActions.map((action, index) => (
-                <Card 
-                  key={index} 
-                  className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer group"
-                  onClick={action.action}
-                >
-                  <CardHeader className="text-center pb-2 md:pb-3">
-                    <div className={`w-6 h-6 md:w-8 md:h-8 ${action.color} rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3 group-hover:scale-110 transition-transform`}>
-                      <action.icon className={`h-4 w-4 md:h-5 md:w-5 ${action.textColor}`} />
-                    </div>
-                    <CardTitle className="text-base md:text-lg group-hover:text-primary transition-colors">{action.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center px-3 md:px-4">
-                    <CardDescription className="text-xs md:text-sm leading-relaxed">
-                      {action.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+        {/* Quick Actions - Single Row */}
+        <div className="mb-8 md:mb-12 px-4 md:px-0">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+            {[...myWorkActions, ...exploreActions, ...accountActions].map((action, index) => (
+              <Card 
+                key={index} 
+                className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer group"
+                onClick={action.action}
+              >
+                <CardHeader className="text-center pb-1 px-2 pt-3">
+                  <div className={`w-5 h-5 ${action.color} rounded-full flex items-center justify-center mx-auto mb-1 group-hover:scale-110 transition-transform`}>
+                    <action.icon className={`h-3 w-3 ${action.textColor}`} />
+                  </div>
+                  <CardTitle className="text-xs group-hover:text-primary transition-colors leading-tight">{action.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center px-2 pb-3">
+                  <CardDescription className="text-xs leading-tight line-clamp-2">
+                    {action.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
 
