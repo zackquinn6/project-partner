@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { Project } from '@/interfaces/Project';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,10 +22,11 @@ import {
   DropdownMenuCheckboxItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import ProfileManager from '@/components/ProfileManager';
+import { HomeManager } from '@/components/HomeManager';
 import { BetaProjectWarning } from '@/components/BetaProjectWarning';
 interface ProjectTemplate {
   id: string;
@@ -59,14 +61,17 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [isDIYSurveyOpen, setIsDIYSurveyOpen] = useState(false);
   const [isProfileManagerOpen, setIsProfileManagerOpen] = useState(false);
   const [isBetaWarningOpen, setIsBetaWarningOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<Project | null>(null);
   const [surveyMode, setSurveyMode] = useState<'new' | 'verify'>('new');
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [homes, setHomes] = useState<any[]>([]);
+  const [showHomeManager, setShowHomeManager] = useState(false);
   const [projectSetupForm, setProjectSetupForm] = useState({
     customProjectName: '',
     projectLeader: '',
-    accountabilityPartner: '',
-    targetEndDate: ''
+    teamMate: '',
+    targetEndDate: '',
+    selectedHomeId: ''
   });
 
   // Filter states
@@ -322,7 +327,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       status: 'not-started' as const,
       // User customization data
       projectLeader: projectSetupForm.projectLeader,
-      accountabilityPartner: projectSetupForm.accountabilityPartner,
+      teamMate: projectSetupForm.teamMate,
       customProjectName: projectSetupForm.customProjectName,
       // Runtime data
       completedSteps: [],
@@ -347,15 +352,42 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     });
   };
 
+  const fetchHomes = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('homes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setHomes(data || []);
+      
+      // Auto-select primary home if exists
+      const primaryHome = data?.find(home => home.is_primary);
+      if (primaryHome) {
+        setProjectSetupForm(prev => ({ ...prev, selectedHomeId: primaryHome.id }));
+      }
+    } catch (error) {
+      console.error('Error fetching homes:', error);
+    }
+  };
+
   const resetProjectState = () => {
     setProjectSetupForm({
       customProjectName: '',
       projectLeader: '',
-      accountabilityPartner: '',
-      targetEndDate: ''
+      teamMate: '',
+      targetEndDate: '',
+      selectedHomeId: ''
     });
     setSelectedTemplate(null);
     setUserProfile(null);
+    setHomes([]);
   };
   const handleProjectSetupComplete = async () => {
     if (!selectedTemplate || !user) return;
@@ -419,8 +451,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       setProjectSetupForm({
         customProjectName: '',
         projectLeader: '',
-        accountabilityPartner: '',
-        targetEndDate: ''
+        teamMate: '',
+        targetEndDate: '',
+        selectedHomeId: ''
       });
       setIsProjectSetupOpen(false);
       setSelectedTemplate(null);
@@ -722,11 +755,39 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               }))} />
                 </div>
                 <div>
-                  <Label htmlFor="accountability-partner">Accountability Partner</Label>
-                  <Input id="accountability-partner" placeholder="Who's keeping you on track?" value={projectSetupForm.accountabilityPartner} onChange={e => setProjectSetupForm(prev => ({
+                  <Label htmlFor="team-mate">Team Mate</Label>
+                  <Input id="team-mate" placeholder="Who's helping you with this project?" value={projectSetupForm.teamMate} onChange={e => setProjectSetupForm(prev => ({
                 ...prev,
-                accountabilityPartner: e.target.value
+                teamMate: e.target.value
               }))} />
+                </div>
+                <div>
+                  <Label htmlFor="home-select">Select Home</Label>
+                  <div className="flex gap-2">
+                    <Select 
+                      value={projectSetupForm.selectedHomeId} 
+                      onValueChange={(value) => setProjectSetupForm(prev => ({ ...prev, selectedHomeId: value }))}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Choose a home for this project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {homes.map((home) => (
+                          <SelectItem key={home.id} value={home.id}>
+                            {home.name} {home.is_primary ? '(Primary)' : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowHomeManager(true)}
+                      className="px-3"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="target-end-date">Target End Date</Label>

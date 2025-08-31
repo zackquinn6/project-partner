@@ -65,7 +65,7 @@ By signing below, both parties agree to these terms and conditions.
 
 Project: ${currentProjectRun?.name || 'N/A'}
 Project Leader: ${currentProjectRun?.projectLeader || 'Not specified'}
-Accountability Partner: ${currentProjectRun?.accountabilityPartner || 'Not specified'}
+Team Mate: ${currentProjectRun?.accountabilityPartner || 'Not specified'}
 Date: ${new Date().toLocaleDateString()}
 `;
 

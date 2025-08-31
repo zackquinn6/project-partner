@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Project } from '@/interfaces/Project';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, FolderOpen, Edit } from 'lucide-react';
+import { Plus, FolderOpen, Edit, Home } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { HomeManager } from '@/components/HomeManager';
 
 interface ProjectSelectorProps {
   isAdminMode?: boolean;
@@ -19,6 +22,7 @@ interface ProjectSelectorProps {
 
 export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = false, onProjectSelected, onEditProjectDetails }) => {
   const { projects, currentProject, setCurrentProject, addProject, updateProject, deleteProject } = useProject();
+  const { user } = useAuth();
   
   // Debug logging
   console.log('ProjectSelector - projects count:', projects.length, 'isAdminMode:', isAdminMode);
@@ -31,9 +35,12 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   });
   const [projectSetupForm, setProjectSetupForm] = useState({
     projectLeader: '',
-    accountabilityPartner: '',
-    targetEndDate: ''
+    teamMate: '',
+    targetEndDate: '',
+    selectedHomeId: ''
   });
+  const [homes, setHomes] = useState<any[]>([]);
+  const [showHomeManager, setShowHomeManager] = useState(false);
 
   const handleCreateProject = () => {
     if (!newProjectForm.name.trim()) return;
@@ -61,7 +68,21 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
     }
   };
 
-  const handleProjectSelect = (value: string) => {
+  const handleProjectSelect = (project: Project) => {
+    console.log('handleProjectSelect called with project:', project.name, 'ID:', project.id);
+    console.log('Current project:', currentProject?.name, 'ID:', currentProject?.id);
+    
+    if (project && project.id !== currentProject?.id) {
+      setCurrentProject(project);
+      // Only open setup dialog in user mode, not admin mode
+      if (!isAdminMode) {
+        fetchHomes(); // Fetch homes when setup dialog opens
+        setIsProjectSetupOpen(true);
+      }
+    }
+  };
+
+  const handleProjectSelect2 = (value: string) => {
     // Don't auto-select if value is empty (happens when current project is deleted)
     if (!value) return;
     
@@ -70,8 +91,34 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       setCurrentProject(project);
       // Only open setup dialog in user mode, not admin mode
       if (!isAdminMode) {
+        fetchHomes(); // Fetch homes when setup dialog opens
         setIsProjectSetupOpen(true);
       }
+    }
+  };
+
+  const fetchHomes = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('homes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setHomes(data || []);
+      
+      // Auto-select primary home if exists
+      const primaryHome = data?.find(home => home.is_primary);
+      if (primaryHome) {
+        setProjectSetupForm(prev => ({ ...prev, selectedHomeId: primaryHome.id }));
+      }
+    } catch (error) {
+      console.error('Error fetching homes:', error);
     }
   };
 
@@ -79,8 +126,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
     // Here you could save the setup data to the project or context
     setProjectSetupForm({
       projectLeader: '',
-      accountabilityPartner: '',
-      targetEndDate: ''
+      teamMate: '',
+      targetEndDate: '',
+      selectedHomeId: ''
     });
     setIsProjectSetupOpen(false);
     // Navigate to workflow view
@@ -116,7 +164,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
             <Label htmlFor="project-select">Current Project</Label>
             <Select 
               value={currentProject?.id || ''} 
-              onValueChange={handleProjectSelect}
+              onValueChange={handleProjectSelect2}
             >
               <SelectTrigger id="project-select">
                 <SelectValue placeholder="Select a project" />
@@ -288,13 +336,41 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                 />
               </div>
               <div>
-                <Label htmlFor="accountability-partner">Accountability Partner</Label>
+                <Label htmlFor="team-mate">Team Mate</Label>
                 <Input
-                  id="accountability-partner"
-                  placeholder="Who's keeping you on track?"
-                  value={projectSetupForm.accountabilityPartner}
-                  onChange={(e) => setProjectSetupForm(prev => ({ ...prev, accountabilityPartner: e.target.value }))}
+                  id="team-mate"
+                  placeholder="Who's helping you with this project?"
+                  value={projectSetupForm.teamMate}
+                  onChange={(e) => setProjectSetupForm(prev => ({ ...prev, teamMate: e.target.value }))}
                 />
+              </div>
+              <div>
+                <Label htmlFor="home-select">Select Home</Label>
+                <div className="flex gap-2">
+                  <Select 
+                    value={projectSetupForm.selectedHomeId} 
+                    onValueChange={(value) => setProjectSetupForm(prev => ({ ...prev, selectedHomeId: value }))}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Choose a home for this project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {homes.map((home) => (
+                        <SelectItem key={home.id} value={home.id}>
+                          {home.name} {home.is_primary ? '(Primary)' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowHomeManager(true)}
+                    className="px-3"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               <div>
                 <Label htmlFor="target-end-date">Target End Date</Label>
@@ -317,6 +393,12 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
             </DialogContent>
           </Dialog>
         )}
+
+        {/* Home Manager Dialog */}
+        <HomeManager 
+          open={showHomeManager}
+          onOpenChange={setShowHomeManager}
+        />
       </CardContent>
     </Card>
   );

@@ -75,7 +75,7 @@ export function AccountabilityMessagePopup({
                     <span className="text-sm text-gray-600">👤</span>
                   </div>
                   <div>
-                    <div className="font-semibold">Alex (Accountability Partner)</div>
+                    <div className="font-semibold">Alex (Team Mate)</div>
                     <div className="text-xs opacity-90">Active now</div>
                   </div>
                 </div>
