@@ -282,16 +282,18 @@ export default function UserView({
   // Auto-switch to workflow view when a project or project run is selected (but respect resetToListing and forceListingMode)
   useEffect(() => {
     // CRITICAL: DON'T auto-switch if we're being told to reset to listing OR if we're in force listing mode
-    if (resetToListing || forceListingMode) {
-      console.log("🚫 UserView: Blocking auto-switch due to resetToListing or forceListingMode");
+    // OR if user is already in listing mode (respect user choice)
+    if (resetToListing || forceListingMode || viewMode === 'listing') {
+      console.log("🚫 UserView: Blocking auto-switch - resetToListing:", resetToListing, "forceListingMode:", forceListingMode, "viewMode:", viewMode);
       return;
     }
     
-    if (currentProject || currentProjectRun) {
-      console.log("🔄 UserView: Auto-switching to workflow mode");
+    // Only auto-switch if explicitly navigating to a project via projectRunId or direct selection
+    if (projectRunId && (currentProject || currentProjectRun)) {
+      console.log("🔄 UserView: Auto-switching to workflow mode for projectRunId:", projectRunId);
       setViewMode('workflow');
     }
-  }, [currentProject, currentProjectRun, resetToListing, forceListingMode]);
+  }, [currentProject, currentProjectRun, resetToListing, forceListingMode, projectRunId, viewMode]);
   
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? completedSteps.size / allSteps.length * 100 : 0;
@@ -1033,6 +1035,10 @@ export default function UserView({
             
             console.log("✅ Kickoff completed - proceeding to main workflow");
           }
+        }}
+        onExit={() => {
+          console.log("🚪 Exit kickoff - returning to project listing");
+          setViewMode('listing');
         }}
       />
     );

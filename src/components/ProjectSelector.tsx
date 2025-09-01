@@ -136,6 +136,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   };
 
   const handleSkipSetup = () => {
+    // Don't allow skipping if no home is selected
+    if (!projectSetupForm.selectedHomeId) {
+      return;
+    }
     setIsProjectSetupOpen(false);
     // Navigate to workflow view
     onProjectSelected?.();
@@ -382,7 +386,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                 />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={handleSkipSetup}>
+                <Button 
+                  variant="outline" 
+                  onClick={handleSkipSetup}
+                  disabled={!projectSetupForm.selectedHomeId}
+                >
                   Skip for now
                 </Button>
                 <Button 
@@ -400,7 +408,13 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
         {/* Home Manager Dialog */}
         <HomeManager 
           open={showHomeManager}
-          onOpenChange={setShowHomeManager}
+          onOpenChange={(open) => {
+            setShowHomeManager(open);
+            // Refresh homes list when dialog closes
+            if (!open) {
+              fetchHomes();
+            }
+          }}
         />
       </CardContent>
     </Card>

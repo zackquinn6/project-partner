@@ -115,19 +115,12 @@ const Index = () => {
   };
 
   const handleProjectsView = () => {
-    console.log('🔄 Index: "My Projects" clicked - showing project listing');
-    
-    // Clear the location state to ensure clean navigation
-    window.history.replaceState({}, document.title, window.location.pathname);
-    
-    // Clear any project selections
-    setCurrentProject(null);
-    setCurrentProjectRun(null);
-    
-    // Set view to user and clear any conflicting flags
+    console.log('🔄 Index: handleProjectsView called');
+    setResetUserView(true);
+    setForceListingMode(true);
     setCurrentView('user');
-    setForceListingMode(false);
-    setResetUserView(false);
+    // Clear projectRunId by replacing location state
+    navigate('/', { replace: true, state: {} });
   };
 
   const handleProjectSelected = () => {

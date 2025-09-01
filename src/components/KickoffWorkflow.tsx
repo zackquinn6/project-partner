@@ -10,9 +10,10 @@ import { ProjectCustomizationStep } from './KickoffSteps/ProjectCustomizationSte
 
 interface KickoffWorkflowProps {
   onKickoffComplete: () => void;
+  onExit?: () => void; // Add optional exit handler
 }
 
-export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffComplete }) => {
+export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffComplete, onExit }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
   const [currentKickoffStep, setCurrentKickoffStep] = useState(0);
   const [completedKickoffSteps, setCompletedKickoffSteps] = useState<Set<number>>(new Set());
@@ -187,11 +188,18 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
                 Complete these essential steps before starting your project
               </CardDescription>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground mb-1">
-                Step {currentKickoffStep + 1} of {kickoffSteps.length}
+            <div className="flex items-center gap-4">
+              {onExit && (
+                <Button variant="outline" onClick={onExit}>
+                  Exit Kickoff
+                </Button>
+              )}
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground mb-1">
+                  Step {currentKickoffStep + 1} of {kickoffSteps.length}
+                </div>
+                <Progress value={progress} className="w-32" />
               </div>
-              <Progress value={progress} className="w-32" />
             </div>
           </div>
         </CardHeader>
