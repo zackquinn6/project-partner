@@ -72,9 +72,8 @@ const Index = () => {
     };
 
     const handleToolLibraryNavigation = () => {
-      console.log('🔧 Index: Tool Library clicked - opening tools window');
-      const event = new CustomEvent('show-tools-materials');
-      window.dispatchEvent(event);
+      console.log('🔧 Index: Tool Library navigation - dispatching show-tools-materials');
+      // Don't re-dispatch the same event - just let Navigation handle it
     };
 
     window.addEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
@@ -82,7 +81,6 @@ const Index = () => {
     window.addEventListener('navigate-to-projects', handleProjectsNavigation);
     window.addEventListener('show-profile', handleProfileNavigation);
     window.addEventListener('show-help-popup', handleShowHelpPopup);
-    window.addEventListener('show-tools-materials', handleToolLibraryNavigation);
     
     return () => {
       window.removeEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
@@ -90,7 +88,6 @@ const Index = () => {
       window.removeEventListener('show-help-popup', handleShowHelpPopup);
       window.removeEventListener('navigate-to-projects', handleProjectsNavigation);
       window.removeEventListener('show-profile', handleProfileNavigation);
-      window.removeEventListener('show-tools-materials', handleToolLibraryNavigation);
     };
   }, [navigate]);
 

@@ -10,7 +10,9 @@ import {
   ArrowRight,
   Trophy,
   Target,
-  Zap
+  Zap,
+  Wrench,
+  Home
 } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -100,7 +102,6 @@ export const PostAuthLanding = () => {
     {
       icon: FolderOpen,
       title: "My Projects",
-      description: "Continue working on your active projects and track progress",
       action: () => {
         console.log('🔄 PostAuthLanding: My Projects button clicked - dispatching event');
         const event = new CustomEvent('navigate-to-projects');
@@ -111,9 +112,8 @@ export const PostAuthLanding = () => {
       textColor: "text-primary-foreground"
     },
     {
-      icon: Target,
+      icon: Wrench,
       title: "My Tool Library",
-      description: "View and manage your tool collection",
       action: () => {
         console.log('🔧 PostAuthLanding: My Tool Library clicked - dispatching event');
         const event = new CustomEvent('show-tools-materials');
@@ -129,7 +129,6 @@ export const PostAuthLanding = () => {
     {
       icon: BookOpen,
       title: "Project Catalog", 
-      description: "Browse and start new DIY projects from our library",
       action: () => navigate('/projects'),
       color: "bg-accent",
       textColor: "text-accent-foreground"
@@ -141,7 +140,6 @@ export const PostAuthLanding = () => {
     {
       icon: User,
       title: "My Profile",
-      description: "Manage your account settings and DIY preferences",
       action: () => {
         console.log('🔄 PostAuthLanding: My Profile button clicked - dispatching event');
         const event = new CustomEvent('show-profile');
@@ -152,9 +150,8 @@ export const PostAuthLanding = () => {
       textColor: "text-secondary-foreground"
     },
     {
-      icon: Trophy,
+      icon: Home,
       title: "My Homes",
-      description: "Manage your properties and home details",
       action: () => {
         console.log('🏠 PostAuthLanding: My Homes clicked - dispatching event');
         const event = new CustomEvent('show-home-manager');
@@ -206,17 +203,12 @@ export const PostAuthLanding = () => {
                 className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer group"
                 onClick={action.action}
               >
-                <CardHeader className="text-center pb-1 px-2 pt-3">
-                  <div className={`w-5 h-5 ${action.color} rounded-full flex items-center justify-center mx-auto mb-1 group-hover:scale-110 transition-transform`}>
-                    <action.icon className={`h-3 w-3 ${action.textColor}`} />
+                <CardHeader className="text-center pb-2 px-2 pt-4">
+                  <div className={`w-6 h-6 ${action.color} rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform`}>
+                    <action.icon className={`h-4 w-4 ${action.textColor}`} />
                   </div>
-                  <CardTitle className="text-xs group-hover:text-primary transition-colors leading-tight">{action.title}</CardTitle>
+                  <CardTitle className="text-sm group-hover:text-primary transition-colors leading-tight">{action.title}</CardTitle>
                 </CardHeader>
-                <CardContent className="text-center px-2 pb-3">
-                  <CardDescription className="text-xs leading-tight line-clamp-2">
-                    {action.description}
-                  </CardDescription>
-                </CardContent>
               </Card>
             ))}
           </div>
