@@ -165,16 +165,20 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       if (selectedFiles.length > 0 && homeId) {
         photoUrls = await uploadPhotos(homeId);
         
-            // Update home with photo URLs if any were uploaded
-            if (photoUrls.length > 0) {
-              const existingPhotos = editingHome?.photos || [];
-              const allPhotos = [...existingPhotos, ...photoUrls];
-              
-              await supabase
-                .from('homes')
-                .update({ photos: allPhotos } as any) // Type assertion for new column
-                .eq('id', homeId);
-            }
+        // Update home with photo URLs
+        if (photoUrls.length > 0) {
+          const existingPhotos = (editingHome as any)?.photos || [];
+          const allPhotos = [...existingPhotos, ...photoUrls];
+          
+          const { error: updateError } = await supabase
+            .from('homes')
+            .update({ photos: allPhotos } as any)
+            .eq('id', homeId);
+            
+          if (updateError) {
+            console.error('Error updating photos:', updateError);
+          }
+        }
       }
 
       // If this is being set as primary, update other homes
@@ -219,6 +223,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       home_ownership: '',
       is_primary: home.is_primary
     });
+    setSelectedFiles([]);
     setShowForm(true);
   };
 
