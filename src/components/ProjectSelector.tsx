@@ -374,17 +374,19 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                       ))}
                     </SelectContent>
                   </Select>
-                   <Button 
-                     variant="outline" 
-                     size="sm" 
-                     onClick={() => {
-                       console.log('🏠 ProjectSelector: Add Home button clicked');
-                       setShowHomeManager(true);
-                     }}
-                     className="px-3"
-                   >
-                     <Plus className="w-4 h-4" />
-                   </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log('🏠 ProjectSelector: Add Home button clicked');
+                        setShowHomeManager(true);
+                      }}
+                      className="px-3"
+                      type="button"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                 </div>
               </div>
               <div>
@@ -397,21 +399,33 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                 />
               </div>
               <div className="flex gap-2 justify-end">
-                 <Button 
-                   variant="outline" 
-                   onClick={handleSkipSetup}
-                   disabled={!projectSetupForm.selectedHomeId}
-                   className={!projectSetupForm.selectedHomeId ? 'opacity-50 cursor-not-allowed' : ''}
-                 >
-                   Skip for now
-                 </Button>
-                 <Button 
-                   onClick={handleProjectSetupComplete}
-                   disabled={!projectSetupForm.selectedHomeId}
-                   className={!projectSetupForm.selectedHomeId ? 'opacity-50 cursor-not-allowed' : ''}
-                 >
-                   Let's do this!
-                 </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!projectSetupForm.selectedHomeId) {
+                        toast.error('Please select a home before proceeding. A home selection is required for this project.');
+                        return;
+                      }
+                      handleSkipSetup();
+                    }}
+                    className={!projectSetupForm.selectedHomeId ? 'opacity-50 cursor-not-allowed' : ''}
+                  >
+                    Skip for now
+                  </Button>
+                  <Button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!projectSetupForm.selectedHomeId) {
+                        toast.error('Please select a home before proceeding. A home selection is required for this project.');
+                        return;
+                      }
+                      handleProjectSetupComplete();
+                    }}
+                    className={!projectSetupForm.selectedHomeId ? 'opacity-50 cursor-not-allowed' : ''}
+                  >
+                    Let's do this!
+                  </Button>
               </div>
             </div>
             </DialogContent>

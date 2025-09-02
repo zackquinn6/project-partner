@@ -275,9 +275,12 @@ export default function UserView({
     if (resetToListing && !showProfile) {
       console.log("🔄 UserView: Resetting to listing mode due to resetToListing prop");
       setViewMode('listing');
+      setShowProfileManager(false); // Ensure profile manager is closed when switching to listing
       // DON'T clear project run - this was causing the Continue button issue
     } else if (showProfile) {
       console.log("🔄 UserView: Profile mode requested - keeping current view");
+      // Don't switch to workflow if profile should be shown
+      setViewMode('listing');
     }
   }, [resetToListing, showProfile]);
 

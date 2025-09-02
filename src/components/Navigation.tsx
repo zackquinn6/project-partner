@@ -49,15 +49,24 @@ export default function Navigation({
   const { signOut } = useAuth();
 
   useEffect(() => {
-    const handleHomeManagerEvent = () => {
+    const handleHomeManagerEvent = (event: Event) => {
       console.log('🏠 Navigation: Home manager event received');
+      event.stopPropagation();
       setIsHomeManagerOpen(true);
     };
 
+    const handleToolsLibraryEvent = (event: Event) => {
+      console.log('🔧 Navigation: Tools library event received');
+      event.stopPropagation();
+      setIsToolsLibraryOpen(true);
+    };
+
     window.addEventListener('show-home-manager', handleHomeManagerEvent);
+    window.addEventListener('show-tools-materials', handleToolsLibraryEvent);
     
     return () => {
       window.removeEventListener('show-home-manager', handleHomeManagerEvent);
+      window.removeEventListener('show-tools-materials', handleToolsLibraryEvent);
     };
   }, []);
   

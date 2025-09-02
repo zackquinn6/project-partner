@@ -78,9 +78,11 @@ const Index = () => {
       });
     };
 
-    const handleToolLibraryNavigation = () => {
-      console.log('🔧 Index: Tool Library navigation - dispatching show-tools-materials');
-      // Don't re-dispatch the same event - just let Navigation handle it
+    const handleToolLibraryNavigation = (event: Event) => {
+      console.log('🔧 Index: Tool Library navigation received');
+      event.stopPropagation();
+      // Set the view to user to ensure the Navigation component can handle it
+      setCurrentView('user');
     };
 
     window.addEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
@@ -89,6 +91,7 @@ const Index = () => {
     window.addEventListener('show-profile', handleProfileNavigation);
     window.addEventListener('show-help-popup', handleShowHelpPopup);
     window.addEventListener('show-home-manager', handleShowHomeManager);
+    window.addEventListener('show-tools-materials', handleToolLibraryNavigation);
     
     return () => {
       window.removeEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
@@ -97,6 +100,7 @@ const Index = () => {
       window.removeEventListener('navigate-to-projects', handleProjectsNavigation);
       window.removeEventListener('show-profile', handleProfileNavigation);
       window.removeEventListener('show-home-manager', handleShowHomeManager);
+      window.removeEventListener('show-tools-materials', handleToolLibraryNavigation);
     };
   }, [navigate]);
 
