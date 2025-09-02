@@ -123,6 +123,12 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   };
 
   const handleProjectSetupComplete = () => {
+    // Validate home selection is required
+    if (!projectSetupForm.selectedHomeId) {
+      alert('Please select a home before proceeding.');
+      return;
+    }
+    
     // Here you could save the setup data to the project or context
     setProjectSetupForm({
       projectLeader: '',
@@ -136,8 +142,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   };
 
   const handleSkipSetup = () => {
-    // Don't allow skipping if no home is selected
+    // Validate home selection is required
     if (!projectSetupForm.selectedHomeId) {
+      alert('Please select a home before proceeding.');
       return;
     }
     setIsProjectSetupOpen(false);
@@ -366,14 +373,17 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setShowHomeManager(true)}
-                    className="px-3"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
+                   <Button 
+                     variant="outline" 
+                     size="sm" 
+                     onClick={() => {
+                       console.log('🏠 ProjectSelector: Add Home button clicked');
+                       setShowHomeManager(true);
+                     }}
+                     className="px-3"
+                   >
+                     <Plus className="w-4 h-4" />
+                   </Button>
                 </div>
               </div>
               <div>
@@ -386,19 +396,21 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                 />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button 
-                  variant="outline" 
-                  onClick={handleSkipSetup}
-                  disabled={!projectSetupForm.selectedHomeId}
-                >
-                  Skip for now
-                </Button>
-                <Button 
-                  onClick={handleProjectSetupComplete}
-                  disabled={!projectSetupForm.selectedHomeId}
-                >
-                  Let's do this!
-                </Button>
+                 <Button 
+                   variant="outline" 
+                   onClick={handleSkipSetup}
+                   disabled={!projectSetupForm.selectedHomeId}
+                   className={!projectSetupForm.selectedHomeId ? 'opacity-50 cursor-not-allowed' : ''}
+                 >
+                   Skip for now
+                 </Button>
+                 <Button 
+                   onClick={handleProjectSetupComplete}
+                   disabled={!projectSetupForm.selectedHomeId}
+                   className={!projectSetupForm.selectedHomeId ? 'opacity-50 cursor-not-allowed' : ''}
+                 >
+                   Let's do this!
+                 </Button>
               </div>
             </div>
             </DialogContent>

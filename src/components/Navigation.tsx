@@ -8,6 +8,7 @@ import { DataPrivacyManager } from './DataPrivacyManager';
 import ProfileManager from './ProfileManager';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { HomeManager } from './HomeManager';
+import { ToolsMaterialsWindow } from './ToolsMaterialsWindow';
 
 interface NavigationProps {
   currentView: 'home' | 'admin' | 'user' | 'editWorkflow';
@@ -28,6 +29,7 @@ export default function Navigation({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [isHomeManagerOpen, setIsHomeManagerOpen] = useState(false);
+  const [isToolsLibraryOpen, setIsToolsLibraryOpen] = useState(false);
   
   // Add error boundary for useProject hook
   let projectData;
@@ -131,6 +133,15 @@ export default function Navigation({
 
                 <Button 
                   variant="ghost" 
+                  className="transition-fast text-xs sm:text-sm px-2 sm:px-3"
+                  onClick={() => setIsToolsLibraryOpen(true)}
+                >
+                  <span className="hidden sm:inline">My Tool Library</span>
+                  <span className="sm:hidden">Tools</span>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
                   className="transition-fast text-xs sm:text-sm px-2 sm:px-3 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
                   onClick={() => window.dispatchEvent(new CustomEvent('show-help-popup'))}
                 >
@@ -155,7 +166,10 @@ export default function Navigation({
                       <TrendingUp className="w-4 h-4 mr-2" />
                       Feature Roadmap
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsHomeManagerOpen(true)}>
+                    <DropdownMenuItem onClick={() => {
+                      console.log('🏠 Navigation: Manage Homes clicked from dropdown');
+                      setIsHomeManagerOpen(true);
+                    }}>
                       <Home className="w-4 h-4 mr-2" />
                       Manage Homes
                     </DropdownMenuItem>
@@ -175,7 +189,14 @@ export default function Navigation({
       <DataPrivacyManager open={isPrivacyOpen} onOpenChange={setIsPrivacyOpen} />
       <ProfileManager open={isProfileOpen} onOpenChange={setIsProfileOpen} />
       <FeatureRoadmapWindow open={isRoadmapOpen} onOpenChange={setIsRoadmapOpen} />
-      <HomeManager open={isHomeManagerOpen} onOpenChange={setIsHomeManagerOpen} />
+      <HomeManager 
+        open={isHomeManagerOpen} 
+        onOpenChange={(open) => {
+          console.log('🏠 Navigation: HomeManager state change:', open);
+          setIsHomeManagerOpen(open);
+        }} 
+      />
+      <ToolsMaterialsWindow open={isToolsLibraryOpen} onOpenChange={setIsToolsLibraryOpen} />
     </>
   );
 }

@@ -80,12 +80,14 @@ export default function UserView({
   const [helpPopupOpen, setHelpPopupOpen] = useState(false);
   const [showProfileManager, setShowProfileManager] = useState(false);
 
-  // Handle showProfile prop
+  // Handle showProfile prop - don't switch to workflow if profile should be shown
   useEffect(() => {
-    if (showProfile) {
+    console.log('🔍 UserView: showProfile effect triggered:', { showProfile, showProfileManager });
+    if (showProfile && !showProfileManager) {
+      console.log('👤 UserView: Opening profile manager due to showProfile prop');
       setShowProfileManager(true);
     }
-  }, [showProfile]);
+  }, [showProfile, showProfileManager]);
   const [phaseCompletionPopupOpen, setPhaseCompletionPopupOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<any>(null);
   const [orderingWindowOpen, setOrderingWindowOpen] = useState(false);
@@ -282,9 +284,9 @@ export default function UserView({
   // Auto-switch to workflow view when a project or project run is selected (but respect resetToListing and forceListingMode)
   useEffect(() => {
     // CRITICAL: DON'T auto-switch if we're being told to reset to listing OR if we're in force listing mode
-    // OR if user is already in listing mode (respect user choice)
-    if (resetToListing || forceListingMode || viewMode === 'listing') {
-      console.log("🚫 UserView: Blocking auto-switch - resetToListing:", resetToListing, "forceListingMode:", forceListingMode, "viewMode:", viewMode);
+    // OR if user is already in listing mode (respect user choice) OR if profile should be shown
+    if (resetToListing || forceListingMode || viewMode === 'listing' || showProfile) {
+      console.log("🚫 UserView: Blocking auto-switch - resetToListing:", resetToListing, "forceListingMode:", forceListingMode, "viewMode:", viewMode, "showProfile:", showProfile);
       return;
     }
     
@@ -293,7 +295,7 @@ export default function UserView({
       console.log("🔄 UserView: Auto-switching to workflow mode for projectRunId:", projectRunId);
       setViewMode('workflow');
     }
-  }, [currentProject, currentProjectRun, resetToListing, forceListingMode, projectRunId, viewMode]);
+  }, [currentProject, currentProjectRun, resetToListing, forceListingMode, projectRunId, viewMode, showProfile]);
   
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? completedSteps.size / allSteps.length * 100 : 0;

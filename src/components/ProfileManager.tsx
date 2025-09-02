@@ -208,7 +208,8 @@ export default function ProfileManager({
           <Button 
             variant="outline" 
             onClick={() => {
-              console.log('🏠 ProfileManager: Opening Home Manager');
+              console.log('🏠 ProfileManager: Opening Home Manager and closing profile');
+              onOpenChange(false); // Close profile manager
               window.dispatchEvent(new CustomEvent('show-home-manager'));
             }}
             className="flex items-center gap-2"
