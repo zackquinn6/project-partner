@@ -446,6 +446,7 @@ export type Database = {
           home_state: string | null
           id: string
           nickname: string | null
+          owned_materials: Json | null
           owned_tools: Json | null
           physical_capability: string | null
           preferred_learning_methods: string[] | null
@@ -468,6 +469,7 @@ export type Database = {
           home_state?: string | null
           id?: string
           nickname?: string | null
+          owned_materials?: Json | null
           owned_tools?: Json | null
           physical_capability?: string | null
           preferred_learning_methods?: string[] | null
@@ -490,6 +492,7 @@ export type Database = {
           home_state?: string | null
           id?: string
           nickname?: string | null
+          owned_materials?: Json | null
           owned_tools?: Json | null
           physical_capability?: string | null
           preferred_learning_methods?: string[] | null
