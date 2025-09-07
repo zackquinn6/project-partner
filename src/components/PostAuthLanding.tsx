@@ -207,17 +207,17 @@ export const PostAuthLanding = () => {
 
         {/* My Apps - App Icons Row */}
         <div className="mb-8 md:mb-12 px-4 md:px-0">
-          <div className="flex justify-center items-center gap-6 md:gap-8 overflow-x-auto pb-2">
+          <div className="flex justify-center items-center gap-4 md:gap-6 lg:gap-8 overflow-x-auto pb-2 scrollbar-hide">
             {[...myWorkActions, ...exploreActions, ...accountActions].map((action, index) => (
               <div 
                 key={index} 
-                className="flex flex-col items-center cursor-pointer group min-w-0"
+                className="flex flex-col items-center cursor-pointer group flex-shrink-0"
                 onClick={action.action}
               >
-                <div className={`w-12 h-12 md:w-14 md:h-14 ${action.color} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-all duration-300 shadow-sm group-hover:shadow-md`}>
-                  <action.icon className={`h-6 w-6 md:h-7 md:w-7 ${action.textColor}`} />
+                <div className={`w-14 h-14 md:w-16 md:h-16 ${action.color} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-all duration-300 shadow-sm group-hover:shadow-md`}>
+                  <action.icon className={`h-7 w-7 md:h-8 md:w-8 ${action.textColor}`} />
                 </div>
-                <span className="text-xs text-muted-foreground text-center leading-tight h-8 flex items-center justify-center max-w-16 group-hover:text-foreground transition-colors">{action.title}</span>
+                <span className="text-xs text-muted-foreground text-center leading-tight w-20 group-hover:text-foreground transition-colors whitespace-normal">{action.title}</span>
               </div>
             ))}
           </div>
