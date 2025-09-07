@@ -177,9 +177,17 @@ export const HelpPopup: React.FC<HelpPopupProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                   
-                  <Button className="w-full mt-auto" variant="outline" onClick={handleScheduleCall}>
-                    Schedule Call
-                  </Button>
+                  <div className="w-full mt-auto">
+                    <iframe 
+                      src="https://app.acuityscheduling.com/schedule.php?owner=36845722&ref=embedded_csp" 
+                      title="Schedule Appointment" 
+                      width="100%" 
+                      height="300" 
+                      frameBorder="0" 
+                      allow="payment"
+                      className="rounded-lg border"
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </div>

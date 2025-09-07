@@ -15,39 +15,67 @@ export const PricingWindow = ({ open, onOpenChange }: PricingWindowProps) => {
       name: "Free",
       price: "Free",
       period: "",
-      description: "Get the big steps of a project with project planning tools",
+      description: "Essential DIY tools and project management features",
       popular: false,
       features: [
-        "High-level \"Major Steps\" plan for their project (clear, visual, and not intimidating)",
-        "Light tips + common pitfalls"
+        "Project management dashboard",
+        "Home maintenance tracking",
+        "Step-by-step instructions",
+        "Basic project tracking",
+        "Continuous improvement tips",
+        "Tool and material lists",
+        "Project completion certificates",
+        "Basic workflow guidance",
+        "Community access",
+        "Mobile-friendly interface"
       ]
     },
     {
-      name: "Basic Guidance Plan",
-      price: "$9.99",
-      period: "/project/year",
-      altPrice: "$17.99/year unlimited projects",
-      description: "Unlock a community approach - with a team",
+      name: "Project Planning",
+      price: "$29",
+      period: "/project",
+      altPrice: "$99/year unlimited projects",
+      description: "Advanced planning and detailed project guidance",
+      popular: false,
+      features: [
+        "Everything in Free tier",
+        "Detailed project customization",
+        "Advanced scheduling tools",
+        "Weather-based planning",
+        "Risk assessment",
+        "Budget optimization"
+      ]
+    },
+    {
+      name: "Road Block Resolutions",
+      price: "$49",
+      period: "/project",
+      altPrice: "$149/year unlimited projects", 
+      description: "Expert help when you encounter challenges",
       popular: true,
       features: [
-        "Detailed step-by-step build plan (custom to your inputs)",
-        "Complete, optimized tools + materials list",
-        "Coaching & support process",
-        "Access to live human guidance via chat during project"
+        "Everything in Project Planning",
+        "Priority chat support",
+        "Problem diagnosis assistance",
+        "Alternative solution recommendations",
+        "24/7 expert guidance access",
+        "Video troubleshooting sessions"
       ]
     },
     {
-      name: "Expert Access Plan",
-      price: "$49",
-      period: "/15min",
-      altPrice: "$149/project - unlimited calls, 60 min total",
-      description: "Video call with an expert at any point during the project",
+      name: "End-to-End Coaching",
+      price: "$149",
+      period: "/project",
+      altPrice: "$399/year unlimited projects",
+      description: "Complete project coaching from start to finish",
       popular: false,
       features: [
-        "Everything in Basic Guidance Plan",
-        "Video call with expert at any point",
-        "15-minute expert consultations",
-        "Unlimited calls per project (60 min total)"
+        "Everything in Road Block Resolutions",
+        "Personal project coach assignment",
+        "Weekly progress check-ins",
+        "Unlimited video consultations",
+        "Quality assurance reviews",
+        "Post-project follow-up support"
       ]
     }
   ];
@@ -102,23 +130,23 @@ export const PricingWindow = ({ open, onOpenChange }: PricingWindowProps) => {
                   ))}
                 </ul>
                 
-                <Button 
-                  className={`w-full ${plan.popular ? 'bg-primary hover:bg-primary/90' : ''}`}
-                  variant={plan.popular ? 'default' : 'outline'}
-                >
-                  {plan.name === 'Free' ? 'Get Started Free' : 
-                   plan.name === 'Expert Access Plan' ? (
-                     <>
-                       <Phone className="w-4 h-4 mr-2" />
-                       Book Expert Call
-                     </>
-                   ) : (
-                     <>
-                       <MessageCircle className="w-4 h-4 mr-2" />
-                       Start Basic Plan
-                     </>
-                   )}
-                </Button>
+                 <Button 
+                   className={`w-full ${plan.popular ? 'bg-primary hover:bg-primary/90' : ''}`}
+                   variant={plan.popular ? 'default' : 'outline'}
+                 >
+                   {plan.name === 'Free' ? 'Get Started Free' : 
+                    plan.name === 'End-to-End Coaching' ? (
+                      <>
+                        <Phone className="w-4 h-4 mr-2" />
+                        Book Full Coaching
+                      </>
+                    ) : (
+                      <>
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Choose Plan
+                      </>
+                    )}
+                 </Button>
               </CardContent>
             </Card>
           ))}
