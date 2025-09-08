@@ -85,9 +85,23 @@ export function useDataFetch<T = any>({
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setError(err);
+        
+        // Provide more helpful error messages based on the error type
+        let errorDescription = `Failed to load ${table}`;
+        
+        if (err.message === 'Failed to fetch') {
+          errorDescription = 'Network connection issue. Please check your internet connection and try again.';
+        } else if (err.message.includes('JWT')) {
+          errorDescription = 'Authentication expired. Please sign in again.';
+        } else if (err.message.includes('permission')) {
+          errorDescription = 'Access denied. You may not have permission to view this data.';
+        } else {
+          errorDescription = `${errorDescription}: ${err.message}`;
+        }
+        
         toast({
-          title: "Error",
-          description: `Failed to fetch ${table}: ${err.message}`,
+          title: "Connection Error",
+          description: errorDescription,
           variant: "destructive",
         });
       }
