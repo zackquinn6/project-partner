@@ -311,8 +311,6 @@ export default function Home({ onViewChange }: HomeProps) {
             </p>
           </div>
           
-          </div>
-          
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {coreFeatures.map((feature, index) => (
               <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 p-8 h-full">
@@ -366,21 +364,21 @@ export default function Home({ onViewChange }: HomeProps) {
               Explore Project Templates
             </Button>
           </div>
-         </div>
-       </section>
-       </>
-       )}
+        </div>
+      </section>
+      </>
+      )}
 
-       {/* Modals */}
-       <PricingWindow 
-         open={isPricingOpen}
-         onOpenChange={(open) => setIsPricingOpen(open)}
-       />
-       
-       <DIYSurveyPopup 
-         open={isDIYQuizOpen}
-         onOpenChange={(open) => setIsDIYQuizOpen(open)}
-       />
-     </div>
-   );
- }
+      {/* Modals */}
+      <PricingWindow 
+        open={isPricingOpen}
+        onOpenChange={(open) => setIsPricingOpen(open)}
+      />
+      
+      <DIYSurveyPopup 
+        open={isDIYQuizOpen}
+        onOpenChange={(open) => setIsDIYQuizOpen(open)}
+      />
+    </div>
+  );
+}
