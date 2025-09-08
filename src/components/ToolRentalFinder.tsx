@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Phone, ExternalLink, Search, Filter, Star } from 'lucide-react';
+import { MapPin, Phone, ExternalLink, Search, Filter, Star, Smartphone } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
+import { ToolRentalAppsWindow } from './ToolRentalAppsWindow';
 
 interface AccessCenter {
   id: string;
@@ -49,6 +50,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
   const [accessCenters, setAccessCenters] = useState<AccessCenter[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [showAppsWindow, setShowAppsWindow] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -59,7 +61,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       setAccessCenters([]);
       setHasSearched(false);
     }
-  }, [debouncedSearchQuery, radius, generalTools, heavyEquipment, automotiveTools, libraries, makerspaces, rentalApps, rentalCenters, retailers]);
+  }, [debouncedSearchQuery, radius, generalTools, heavyEquipment, automotiveTools, libraries, makerspaces, rentalCenters, retailers]);
 
   const performSearch = async () => {
     setLoading(true);
@@ -513,8 +515,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
         const matchesAccessType = (rentalCenters && center.isRentalCenter) ||
                                  (retailers && center.isRetailer) ||
                                  (libraries && center.isLibrary) ||
-                                 (makerspaces && center.isMakerspace) ||
-                                 (rentalApps && center.isRentalApp);
+                                 (makerspaces && center.isMakerspace);
         
         return withinRadius && matchesToolType && matchesAccessType;
       }).sort((a, b) => a.distance - b.distance);
@@ -528,10 +529,18 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
     setLoading(false);
   };
 
-  const getScaleRating = (rating: number) => {
-    if (rating <= 2) return { text: 'Low', color: 'text-red-600 dark:text-red-400' };
-    if (rating <= 3) return { text: 'Med', color: 'text-yellow-600 dark:text-yellow-400' };
-    return { text: 'High', color: 'text-green-600 dark:text-green-400' };
+  const getScaleRating = (rating: number, type: 'cost' | 'quality' | 'options') => {
+    if (type === 'cost') {
+      // For cost: Low is good (green), High is bad (red)
+      if (rating <= 2) return { text: 'Low', color: 'text-green-600 dark:text-green-400' };
+      if (rating <= 3) return { text: 'Med', color: 'text-yellow-600 dark:text-yellow-400' };
+      return { text: 'High', color: 'text-red-600 dark:text-red-400' };
+    } else {
+      // For quality and options: Low is bad (red), High is good (green)
+      if (rating <= 2) return { text: 'Low', color: 'text-red-600 dark:text-red-400' };
+      if (rating <= 3) return { text: 'Med', color: 'text-yellow-600 dark:text-yellow-400' };
+      return { text: 'High', color: 'text-green-600 dark:text-green-400' };
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -685,15 +694,16 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
                     Makerspaces
                   </label>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="rental-apps"
-                    checked={rentalApps}
-                    onCheckedChange={(checked) => setRentalApps(checked === true)}
-                  />
-                  <label htmlFor="rental-apps" className="text-sm">
-                    Rental Apps
-                  </label>
+                <div className="mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowAppsWindow(true)}
+                    className="w-full flex items-center gap-2"
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    Tool Rental Apps
+                  </Button>
                 </div>
               </div>
             </div>
@@ -760,20 +770,20 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div className="text-center">
                         <div className="text-xs text-muted-foreground mb-1">Cost</div>
-                        <div className={`text-sm font-medium ${getScaleRating(center.cost).color}`}>
-                          {getScaleRating(center.cost).text}
+                        <div className={`text-sm font-medium ${getScaleRating(center.cost, 'cost').color}`}>
+                          {getScaleRating(center.cost, 'cost').text}
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="text-xs text-muted-foreground mb-1">Quality</div>
-                        <div className={`text-sm font-medium ${getScaleRating(center.quality).color}`}>
-                          {getScaleRating(center.quality).text}
+                        <div className={`text-sm font-medium ${getScaleRating(center.quality, 'quality').color}`}>
+                          {getScaleRating(center.quality, 'quality').text}
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="text-xs text-muted-foreground mb-1">Options/Scope</div>
-                        <div className={`text-sm font-medium ${getScaleRating(center.options).color}`}>
-                          {getScaleRating(center.options).text}
+                        <div className={`text-sm font-medium ${getScaleRating(center.options, 'options').color}`}>
+                          {getScaleRating(center.options, 'options').text}
                         </div>
                       </div>
                       <div className="text-center">
@@ -822,6 +832,11 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
           </Card>
         )}
       </div>
+
+      <ToolRentalAppsWindow 
+        open={showAppsWindow} 
+        onClose={() => setShowAppsWindow(false)} 
+      />
     </div>
   );
 }
