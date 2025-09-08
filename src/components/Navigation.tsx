@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, TrendingUp, Shield, Lock } from "lucide-react";
+import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, TrendingUp, Shield, Lock, HelpCircle } from "lucide-react";
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { FeedbackDialog } from './FeedbackDialog';
 import { useState, useEffect } from "react";
 import { DataPrivacyManager } from './DataPrivacyManager';
 import ProfileManager from './ProfileManager';
@@ -37,6 +38,7 @@ export default function Navigation({
   const [isUserToolsLibraryOpen, setIsUserToolsLibraryOpen] = useState(false);
   const [isNewToolsLibraryOpen, setIsNewToolsLibraryOpen] = useState(false);
   const [isHomeMaintenanceOpen, setIsHomeMaintenanceOpen] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   
   // Add error boundary for useProject hook
   let projectData;
@@ -212,6 +214,16 @@ export default function Navigation({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Feedback Button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="transition-fast p-1 sm:p-2"
+                  onClick={() => setShowFeedback(true)}
+                >
+                  <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -231,6 +243,7 @@ export default function Navigation({
       <UserToolsMaterialsWindow open={isUserToolsLibraryOpen} onOpenChange={setIsUserToolsLibraryOpen} />
       <ToolsMaterialsLibraryView open={isNewToolsLibraryOpen} onOpenChange={setIsNewToolsLibraryOpen} />
       <HomeMaintenanceWindow open={isHomeMaintenanceOpen} onOpenChange={setIsHomeMaintenanceOpen} />
+      <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} />
     </>
   );
 }

@@ -13,8 +13,7 @@ import {
   Zap,
   Wrench,
   Home,
-  Shield,
-  MessageCircle
+  Shield
 } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -179,23 +178,7 @@ export const PostAuthLanding = () => {
 
 
   return (
-    <div className="min-h-screen bg-background pt-16 md:pt-20 pb-8 md:pb-12">
-      {/* Feedback Button - Fixed Position */}
-      <div className="fixed top-20 right-4 z-50">
-        <Button
-          variant="outline"
-          size="sm"
-          className="bg-background/80 backdrop-blur-sm border-muted-foreground/20 hover:bg-accent/50"
-          onClick={() => {
-            const event = new CustomEvent('show-feedback-dialog');
-            window.dispatchEvent(event);
-          }}
-        >
-          <MessageCircle className="w-4 h-4 mr-2" />
-          Feedback
-        </Button>
-      </div>
-      
+    <div className="min-h-screen bg-background pt-16 md:pt-20 pb-8 md:pb-12">      
       <div className="container mx-auto px-2 md:px-4 max-w-6xl">
         {/* Welcome Header */}
         <div className="text-center mb-8 md:mb-12 px-4">
