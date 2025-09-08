@@ -14,6 +14,7 @@ interface RentalCenter {
   address: string;
   city: string;
   state: string;
+  zipCode: string;
   phone: string;
   website?: string;
   distance: number;
@@ -46,6 +47,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       address: '123 Main St',
       city: 'Boston',
       state: 'MA',
+      zipCode: '02101',
       phone: '(617) 555-0123',
       website: 'https://homedepot.com/toolrental',
       distance: 2.3,
@@ -60,6 +62,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       address: '456 Industrial Ave',
       city: 'Cambridge',
       state: 'MA',
+      zipCode: '02139',
       phone: '(617) 555-0456',
       website: 'https://unitedrentals.com',
       distance: 3.7,
@@ -74,6 +77,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       address: '789 Workshop Rd',
       city: 'Somerville',
       state: 'MA',
+      zipCode: '02143',
       phone: '(617) 555-0789',
       distance: 4.1,
       rating: 4.0,
@@ -87,6 +91,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       address: '321 Commerce St',
       city: 'Brookline',
       state: 'MA',
+      zipCode: '02446',
       phone: '(617) 555-0321',
       website: 'https://proequipment.com',
       distance: 5.2,
@@ -101,9 +106,54 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       address: '654 Thrifty Lane',
       city: 'Newton',
       state: 'MA',
+      zipCode: '02458',
       phone: '(617) 555-0654',
       distance: 8.9,
       rating: 3.8,
+      hasGeneralTools: true,
+      hasHeavyEquipment: false,
+      priceRange: 'budget'
+    },
+    {
+      id: '6',
+      name: 'NYC Tool Rental Hub',
+      address: '100 Broadway',
+      city: 'New York',
+      state: 'NY',
+      zipCode: '10038',
+      phone: '(212) 555-0100',
+      website: 'https://nyctoolrental.com',
+      distance: 15.2,
+      rating: 4.3,
+      hasGeneralTools: true,
+      hasHeavyEquipment: true,
+      priceRange: 'mid'
+    },
+    {
+      id: '7',
+      name: 'Chicago Equipment Co',
+      address: '500 Michigan Ave',
+      city: 'Chicago',
+      state: 'IL',
+      zipCode: '60611',
+      phone: '(312) 555-0500',
+      website: 'https://chicagoequip.com',
+      distance: 25.8,
+      rating: 4.6,
+      hasGeneralTools: true,
+      hasHeavyEquipment: true,
+      priceRange: 'premium'
+    },
+    {
+      id: '8',
+      name: 'Austin Tool Co',
+      address: '200 Congress Ave',
+      city: 'Austin',
+      state: 'TX',
+      zipCode: '78701',
+      phone: '(512) 555-0200',
+      distance: 45.1,
+      rating: 4.1,
       hasGeneralTools: true,
       hasHeavyEquipment: false,
       priceRange: 'budget'
@@ -111,7 +161,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
   ];
 
   useEffect(() => {
-    if (debouncedSearchQuery.length >= 3) {
+    if (debouncedSearchQuery.length >= 2) {
       performSearch();
     } else if (debouncedSearchQuery.length === 0 && hasSearched) {
       setRentalCenters([]);
@@ -128,9 +178,11 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
     
     // Filter mock data based on criteria
     let filteredCenters = mockRentalCenters.filter(center => {
-      const matchesLocation = center.city.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                             center.state.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                             debouncedSearchQuery.match(/^\d{5}$/); // ZIP code format
+      const query = debouncedSearchQuery.toLowerCase();
+      const matchesLocation = center.city.toLowerCase().includes(query) ||
+                             center.state.toLowerCase().includes(query) ||
+                             center.zipCode.includes(debouncedSearchQuery) ||
+                             center.name.toLowerCase().includes(query);
       
       const withinRadius = center.distance <= parseInt(radius);
       
@@ -182,7 +234,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
               Location (City, State or ZIP Code)
             </label>
             <Input
-              placeholder="e.g., Boston, MA or 02101"
+              placeholder="e.g., Boston, MA, 02101, or Home Depot"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full"
