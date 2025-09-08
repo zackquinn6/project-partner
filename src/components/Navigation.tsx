@@ -15,6 +15,9 @@ import { UserToolsMaterialsWindow } from './UserToolsMaterialsWindow';
 import { ToolsMaterialsLibraryView } from './ToolsMaterialsLibraryView';
 import { HomeMaintenanceWindow } from './HomeMaintenanceWindow';
 import { CommunityPostsWindow } from './CommunityPostsWindow';
+import { ToolRentalsWindow } from './ToolRentalsWindow';
+import { RapidProjectAssessment } from './RapidProjectAssessment';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface NavigationProps {
   currentView: 'home' | 'admin' | 'user' | 'editWorkflow';
@@ -41,6 +44,8 @@ export default function Navigation({
   const [isHomeMaintenanceOpen, setIsHomeMaintenanceOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCommunityPostsOpen, setIsCommunityPostsOpen] = useState(false);
+  const [isToolRentalsOpen, setIsToolRentalsOpen] = useState(false);
+  const [isRapidAssessmentOpen, setIsRapidAssessmentOpen] = useState(false);
   
   // Add error boundary for useProject hook
   let projectData;
@@ -97,12 +102,26 @@ export default function Navigation({
       setIsCommunityPostsOpen(true);
     };
 
+    const handleToolRentalsEvent = (event: Event) => {
+      console.log('🔨 Navigation: Tool rentals event received');
+      event.stopPropagation();
+      setIsToolRentalsOpen(true);
+    };
+
+    const handleRapidAssessmentEvent = (event: Event) => {
+      console.log('📊 Navigation: Rapid assessment event received');
+      event.stopPropagation();
+      setIsRapidAssessmentOpen(true);
+    };
+
     window.addEventListener('show-home-manager', handleHomeManagerEvent);
     window.addEventListener('show-tools-materials', handleToolsLibraryEvent);
     window.addEventListener('show-user-tools-materials', handleUserToolsLibraryEvent);
     window.addEventListener('show-home-maintenance', handleHomeMaintenanceEvent);
     window.addEventListener('open-profile-manager', handleProfileManagerEvent);
     window.addEventListener('show-community-posts', handleCommunityPostsEvent);
+    window.addEventListener('show-tool-rentals', handleToolRentalsEvent);
+    window.addEventListener('show-rapid-assessment', handleRapidAssessmentEvent);
     
     return () => {
       window.removeEventListener('show-home-manager', handleHomeManagerEvent);
@@ -111,6 +130,8 @@ export default function Navigation({
       window.removeEventListener('show-home-maintenance', handleHomeMaintenanceEvent);
       window.removeEventListener('open-profile-manager', handleProfileManagerEvent);
       window.removeEventListener('show-community-posts', handleCommunityPostsEvent);
+      window.removeEventListener('show-tool-rentals', handleToolRentalsEvent);
+      window.removeEventListener('show-rapid-assessment', handleRapidAssessmentEvent);
     };
   }, []);
   
@@ -289,6 +310,22 @@ export default function Navigation({
           open={isCommunityPostsOpen}
           onOpenChange={setIsCommunityPostsOpen}
         />
+
+        <ToolRentalsWindow 
+          isOpen={isToolRentalsOpen}
+          onClose={() => setIsToolRentalsOpen(false)}
+        />
+
+        <Dialog open={isRapidAssessmentOpen} onOpenChange={setIsRapidAssessmentOpen}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>Rapid Project Assessment</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
+              <RapidProjectAssessment />
+            </div>
+          </DialogContent>
+        </Dialog>
     </>
   );
 }

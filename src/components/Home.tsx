@@ -102,26 +102,29 @@ export default function Home({ onViewChange }: HomeProps) {
             </p>
             
             {/* Stats */}
-            <div className="flex justify-center gap-8 mb-8">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">1</span>
+            <div className="border-t border-border pt-6 mb-6">
+              <div className="flex justify-center gap-8">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">1</span>
+                  </div>
+                  <span className="text-muted-foreground">Active Projects</span>
                 </div>
-                <span className="text-muted-foreground">Active Projects</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                  <span className="text-muted-foreground font-bold text-sm">0</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                    <span className="text-muted-foreground font-bold text-sm">0</span>
+                  </div>
+                  <span className="text-muted-foreground">Completed</span>
                 </div>
-                <span className="text-muted-foreground">Completed</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">2</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">2</span>
+                  </div>
+                  <span className="text-muted-foreground">Hours Saved</span>
                 </div>
-                <span className="text-muted-foreground">Hours Saved</span>
               </div>
             </div>
+            <div className="border-b border-border pb-6 mb-8"></div>
             
             {/* Apps Grid */}
             <div className="grid grid-cols-5 gap-6 max-w-5xl mx-auto mb-8">
@@ -132,11 +135,11 @@ export default function Home({ onViewChange }: HomeProps) {
                 <span className="text-sm font-medium text-gray-700">My Projects</span>
               </div>
               
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))}>
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-rapid-assessment'))}>
                 <div className="w-20 h-20 bg-blue-500 rounded-3xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
                   <Calculator className="w-10 h-10 text-white" />
                 </div>
-                <span className="text-sm font-medium text-blue-600">Rapid Assessment</span>
+                <span className="text-sm font-medium text-blue-600">Rapid Plan</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}>
@@ -153,7 +156,7 @@ export default function Home({ onViewChange }: HomeProps) {
                 <span className="text-sm font-medium text-gray-700">My Tool Library</span>
               </div>
               
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tools-materials'))}>
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
                 <div className="w-20 h-20 bg-orange-500 rounded-3xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
                   <Hammer className="w-10 h-10 text-white" />
                 </div>

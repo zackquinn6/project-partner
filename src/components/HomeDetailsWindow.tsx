@@ -428,6 +428,28 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
                     </div>
                   )}
 
+                  {home.purchase_date && (
+                    <div>
+                      <span className="font-medium">Time in Home: </span>
+                      <span>
+                        {(() => {
+                          const purchaseDate = new Date(home.purchase_date);
+                          const now = new Date();
+                          const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                          const years = Math.floor(diffDays / 365);
+                          const months = Math.floor((diffDays % 365) / 30);
+                          
+                          if (years > 0) {
+                            return `${years} year${years > 1 ? 's' : ''} ${months > 0 ? `and ${months} month${months > 1 ? 's' : ''}` : ''}`;
+                          } else {
+                            return `${months} month${months > 1 ? 's' : ''}`;
+                          }
+                        })()}
+                      </span>
+                    </div>
+                  )}
+
                   <Separator className="my-4" />
                   
                   {/* Home Notes Section */}
