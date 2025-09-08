@@ -94,7 +94,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
   };
 
   const uploadPhotos = async (homeId: string): Promise<string[]> => {
-    if (selectedFiles.length === 0) return [];
+    if (selectedFiles.length === 0 || !user) return [];
     
     setUploading(true);
     const uploadedUrls: string[] = [];
@@ -102,16 +102,16 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
     try {
       for (const file of selectedFiles) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${homeId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const fileName = `${user.id}/${homeId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
-          .from('project-photos')
+          .from('home-photos')
           .upload(fileName, file);
           
         if (uploadError) throw uploadError;
         
         const { data: { publicUrl } } = supabase.storage
-          .from('project-photos')
+          .from('home-photos')
           .getPublicUrl(fileName);
           
         uploadedUrls.push(publicUrl);
