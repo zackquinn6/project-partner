@@ -12,6 +12,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+  enhancedSanitizeFormData, 
+  sanitizeNumericInput, 
+  initializeCSRFProtection, 
+  validateFormSubmission,
+  checkOperationRateLimit,
+  recordOperationAttempt 
+} from "@/utils/enhancedInputSanitization";
+import { logAdminAction, logInputValidationFailure, logRateLimitExceeded, getClientInfo } from "@/utils/securityLogger";
 
 interface LineItem {
   id: string;
@@ -59,6 +68,7 @@ export function RapidProjectAssessment() {
   const [currentView, setCurrentView] = useState<'list' | 'edit'>('list');
   const [savedProjects, setSavedProjects] = useState<SavedProjectPlan[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string>('');
 
   // Current project state
   const [project, setProject] = useState<ProjectPlan>({
@@ -71,10 +81,13 @@ export function RapidProjectAssessment() {
     state: ''
   });
 
-  // Load saved projects on component mount
+  // Load saved projects and initialize CSRF protection on component mount
   useEffect(() => {
     if (user) {
       loadSavedProjects();
+      // Initialize CSRF protection
+      const token = initializeCSRFProtection();
+      setCsrfToken(token);
     }
   }, [user]);
 
@@ -108,8 +121,35 @@ export function RapidProjectAssessment() {
   };
 
   const saveProject = async () => {
-    if (!user || !project.name.trim()) {
-      toast({ title: "Error", description: "Please enter a project name", variant: "destructive" });
+    if (!user) return;
+
+    // Validate form submission with CSRF and rate limiting
+    const validation = validateFormSubmission(csrfToken, user.id);
+    if (!validation.isValid) {
+      toast({ title: "Security Error", description: validation.error, variant: "destructive" });
+      return;
+    }
+
+    // Sanitize all input data
+    const sanitizedProject = enhancedSanitizeFormData({
+      name: project.name,
+      description: project.description,
+      notes: project.notes,
+      state: project.state
+    });
+
+    // Sanitize line items
+    const sanitizedLineItems = project.lineItems.map(item => ({
+      ...item,
+      item: enhancedSanitizeFormData({ item: item.item }).item,
+      lowCost: sanitizeNumericInput(item.lowCost, 0, 1000000),
+      highCost: sanitizeNumericInput(item.highCost, 0, 1000000),
+      units: sanitizeNumericInput(item.units, 0.1, 10000)
+    }));
+
+    // Basic validation
+    if (!sanitizedProject.name.trim()) {
+      toast({ title: "Validation Error", description: "Project name is required", variant: "destructive" });
       return;
     }
 
@@ -117,13 +157,13 @@ export function RapidProjectAssessment() {
     try {
       const projectData = {
         user_id: user.id,
-        name: project.name,
-        description: project.description,
-        notes: project.notes,
-        line_items: project.lineItems as any,
-        contingency_percent: project.contingencyPercent,
-        sales_tax_percent: project.salesTaxPercent,
-        state: project.state
+        name: sanitizedProject.name,
+        description: sanitizedProject.description,
+        notes: sanitizedProject.notes,
+        state: sanitizedProject.state,
+        line_items: sanitizedLineItems,
+        contingency_percent: sanitizeNumericInput(project.contingencyPercent, 0, 100),
+        sales_tax_percent: sanitizeNumericInput(project.salesTaxPercent, 0, 50)
       };
 
       let result;
@@ -148,13 +188,28 @@ export function RapidProjectAssessment() {
 
       toast({ title: "Success", description: `Project ${project.id ? 'updated' : 'saved'} successfully` });
       
+      // Log admin action if user has admin privileges
+      if (user) {
+        await logAdminAction(user.id, project.id ? 'update_project' : 'create_project', sanitizedProject.name);
+      }
+      
       // Update project with returned ID
       setProject(prev => ({ ...prev, id: result.data.id }));
       
       // Reload saved projects list
       await loadSavedProjects();
+      
+      // Generate new CSRF token for next operation
+      const newToken = initializeCSRFProtection();
+      setCsrfToken(newToken);
     } catch (error) {
       console.error('Error saving project:', error);
+      
+      // Log input validation failure if it's a validation error
+      if (user && error instanceof Error && (error.message.includes('validation') || error.message.includes('constraint'))) {
+        await logInputValidationFailure('project_form', error.message, user.id);
+      }
+      
       toast({ title: "Error", description: "Failed to save project", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -236,24 +291,48 @@ export function RapidProjectAssessment() {
   };
 
   const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
+    let sanitizedValue = value;
+    
+    // Sanitize based on field type
+    if (field === 'item' && typeof value === 'string') {
+      sanitizedValue = enhancedSanitizeFormData({ item: value }).item;
+    } else if ((field === 'lowCost' || field === 'highCost') && typeof value === 'number') {
+      sanitizedValue = sanitizeNumericInput(value, 0, 1000000);
+    } else if (field === 'units' && typeof value === 'number') {
+      sanitizedValue = sanitizeNumericInput(value, 0.1, 10000);
+    }
+    
     setProject(prev => ({
       ...prev,
       lineItems: prev.lineItems.map(item =>
-        item.id === id ? { ...item, [field]: value } : item
+        item.id === id ? { ...item, [field]: sanitizedValue } : item
       )
     }));
   };
 
   const updateProject = (field: keyof ProjectPlan, value: string | number) => {
-    if (field === 'state' && typeof value === 'string') {
-      const taxRate = US_STATES_TAX_RATES[value as keyof typeof US_STATES_TAX_RATES] || 0;
+    let sanitizedValue = value;
+    
+    // Sanitize based on field type
+    if (typeof value === 'string') {
+      sanitizedValue = enhancedSanitizeFormData({ [field]: value })[field];
+    } else if (typeof value === 'number') {
+      if (field === 'contingencyPercent') {
+        sanitizedValue = sanitizeNumericInput(value, 0, 100);
+      } else if (field === 'salesTaxPercent') {
+        sanitizedValue = sanitizeNumericInput(value, 0, 50);
+      }
+    }
+    
+    if (field === 'state' && typeof sanitizedValue === 'string') {
+      const taxRate = US_STATES_TAX_RATES[sanitizedValue as keyof typeof US_STATES_TAX_RATES] || 0;
       setProject(prev => ({
         ...prev,
-        [field]: value,
+        [field]: sanitizedValue,
         salesTaxPercent: taxRate
       }));
     } else {
-      setProject(prev => ({ ...prev, [field]: value }));
+      setProject(prev => ({ ...prev, [field]: sanitizedValue }));
     }
   };
 

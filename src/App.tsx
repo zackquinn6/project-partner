@@ -8,6 +8,7 @@ import { ProjectDataProvider } from '@/contexts/ProjectDataContext';
 import { ProjectActionsProvider } from '@/contexts/ProjectActionsContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SecurityMaintenanceProvider } from '@/components/SecurityMaintenanceProvider';
+import { SecurityHeadersProvider } from '@/components/SecurityHeadersProvider';
 import Index from "./pages/Index";
 import ProjectCatalogPage from "./pages/ProjectCatalog";
 import Auth from "./pages/Auth";
@@ -18,27 +19,29 @@ const queryClient = new QueryClient();
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SecurityMaintenanceProvider>
-          <ProjectDataProvider>
-            <ProjectActionsProvider>
-              <ProjectProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/projects" element={<ProjectCatalogPage />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </ProjectProvider>
-            </ProjectActionsProvider>
-          </ProjectDataProvider>
-        </SecurityMaintenanceProvider>
-      </AuthProvider>
+      <SecurityHeadersProvider>
+        <AuthProvider>
+          <SecurityMaintenanceProvider>
+            <ProjectDataProvider>
+              <ProjectActionsProvider>
+                <ProjectProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/projects" element={<ProjectCatalogPage />} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+                </ProjectProvider>
+              </ProjectActionsProvider>
+            </ProjectDataProvider>
+          </SecurityMaintenanceProvider>
+        </AuthProvider>
+      </SecurityHeadersProvider>
     </QueryClientProvider>
   );
 };
