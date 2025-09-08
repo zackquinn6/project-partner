@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDebounce } from "@/hooks/useDebounce";
 import { VariationViewer } from "./VariationViewer";
 
 interface Tool {
@@ -45,12 +46,22 @@ export function UserToolsEditor() {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Debounce user tools for auto-save
+  const debouncedUserTools = useDebounce(userTools, 2000);
+
   useEffect(() => {
     if (user) {
       fetchAvailableTools();
       fetchUserTools();
     }
   }, [user]);
+
+  // Auto-save when tools change (debounced)
+  useEffect(() => {
+    if (user && debouncedUserTools.length > 0) {
+      autoSaveTools();
+    }
+  }, [debouncedUserTools, user]);
 
   const fetchAvailableTools = async () => {
     try {
@@ -141,6 +152,22 @@ export function UserToolsEditor() {
       setUploadingPhoto(null);
     }
   };
+
+  const autoSaveTools = useCallback(async () => {
+    if (!user || userTools.length === 0) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ owned_tools: userTools as any })
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error auto-saving tools:', error);
+      toast({ title: "Auto-save failed", description: "Changes may not be saved", variant: "destructive" });
+    }
+  }, [user, userTools, toast]);
 
   const saveTools = async () => {
     if (!user) return;

@@ -3,13 +3,15 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FolderOpen, BookOpen, User, ArrowRight, Trophy, Target, Zap, Wrench, Home, Shield, Hammer, HelpCircle } from 'lucide-react';
+import { FolderOpen, BookOpen, User, ArrowRight, Trophy, Target, Zap, Wrench, Home, Shield, Hammer, HelpCircle, Calculator } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
 import { HelpPopup } from '@/components/HelpPopup';
+import { SimpleProjectPlanning } from '@/components/SimpleProjectPlanning';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
   const {
@@ -21,6 +23,7 @@ export const PostAuthLanding = () => {
   const [userNickname, setUserNickname] = useState<string>('');
   const [showToolRentals, setShowToolRentals] = useState(false);
   const [showHelpPopup, setShowHelpPopup] = useState(false);
+  const [showProjectPlanning, setShowProjectPlanning] = useState(false);
   const [stats, setStats] = useState([{
     label: "Active Projects",
     value: "0",
@@ -112,6 +115,12 @@ export const PostAuthLanding = () => {
     color: "bg-primary",
     textColor: "text-primary-foreground"
   }, {
+    icon: Calculator,
+    title: "Project Planning",
+    action: () => setShowProjectPlanning(true),
+    color: "bg-blue-600",
+    textColor: "text-white"
+  }, {
     icon: Home,
     title: "My Home Maintenance",
     action: () => {
@@ -137,12 +146,6 @@ export const PostAuthLanding = () => {
     action: () => setShowToolRentals(true),
     color: "bg-orange-600",
     textColor: "text-white"
-  }, {
-    icon: HelpCircle,
-    title: "Expert Help",
-    action: () => setShowHelpPopup(true),
-    color: "bg-green-600",
-    textColor: "text-white"
   }];
 
   // Section 2: Explore
@@ -152,6 +155,12 @@ export const PostAuthLanding = () => {
     action: () => navigate('/projects'),
     color: "bg-accent",
     textColor: "text-accent-foreground"
+  }, {
+    icon: HelpCircle,
+    title: "Expert Help",
+    action: () => setShowHelpPopup(true),
+    color: "bg-green-600",
+    textColor: "text-white"
   }];
 
   // Section 3: Account
@@ -236,6 +245,17 @@ Pick up where you left off or start your next winning project.</p>
         <ToolRentalsWindow isOpen={showToolRentals} onClose={() => setShowToolRentals(false)} />
         
         <HelpPopup isOpen={showHelpPopup} onClose={() => setShowHelpPopup(false)} />
+        
+        <Dialog open={showProjectPlanning} onOpenChange={setShowProjectPlanning}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>Project Planning</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
+              <SimpleProjectPlanning />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>;
 };
