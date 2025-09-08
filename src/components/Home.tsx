@@ -173,7 +173,7 @@ export default function Home({ onViewChange }: HomeProps) {
               </h1>
               
               <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">
-                Everything you need to plan, execute, and complete home projects like a pro. From home tracking to tool rentals - all in one powerful platform.
+                The Homeowners App: Everything you need to manage your home - including maintenance, projects, tools, and more.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">

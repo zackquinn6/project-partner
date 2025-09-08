@@ -166,6 +166,39 @@ export type Database = {
         }
         Relationships: []
       }
+      home_risk_mitigations: {
+        Row: {
+          created_at: string
+          home_id: string
+          id: string
+          is_mitigated: boolean
+          mitigation_notes: string | null
+          risk_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          home_id: string
+          id?: string
+          is_mitigated?: boolean
+          mitigation_notes?: string | null
+          risk_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          home_id?: string
+          id?: string
+          is_mitigated?: boolean
+          mitigation_notes?: string | null
+          risk_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       home_risks: {
         Row: {
           created_at: string

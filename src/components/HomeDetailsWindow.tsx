@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { Home, Calendar, CheckCircle, Camera, MapPin, Star, X, AlertTriangle, Info, AlertCircle, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -58,6 +59,13 @@ interface HomeRisk {
   risk_level: 'low' | 'medium' | 'high' | 'critical';
 }
 
+interface HomeRiskMitigation {
+  id: string;
+  risk_id: string;
+  is_mitigated: boolean;
+  mitigation_notes?: string;
+}
+
 interface HomeDetailsWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -101,17 +109,20 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
   const [completedProjects, setCompletedProjects] = useState<ProjectRun[]>([]);
   const [completedMaintenance, setCompletedMaintenance] = useState<CompletedMaintenance[]>([]);
   const [homeRisks, setHomeRisks] = useState<HomeRisk[]>([]);
+  const [riskMitigations, setRiskMitigations] = useState<HomeRiskMitigation[]>([]);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     if (open && home && user) {
       fetchHomeData();
       fetchHomeRisks();
+      fetchRiskMitigations();
       setNotesValue(home.notes || '');
     }
-  }, [open, home, user]);
+  }, [open, home, user, refreshTrigger]);
 
   const fetchHomeData = async () => {
     if (!home || !user) return;
@@ -184,6 +195,23 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
     }
   };
 
+  const fetchRiskMitigations = async () => {
+    if (!home || !user) return;
+    
+    try {
+      const { data: mitigations, error } = await supabase
+        .from('home_risk_mitigations')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('home_id', home.id);
+
+      if (error) throw error;
+      setRiskMitigations(mitigations || []);
+    } catch (error) {
+      console.error('Error fetching risk mitigations:', error);
+    }
+  };
+
   const handleNotesUpdate = async () => {
     if (!home || !user) return;
     
@@ -216,8 +244,9 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
 
       if (error) throw error;
       
-      // Update the home object locally
+      // Update the home object locally and trigger re-render
       Object.assign(home, { photos: updatedPhotos });
+      setRefreshTrigger(prev => prev + 1);
       toast.success('Photo deleted successfully');
     } catch (error) {
       console.error('Error deleting photo:', error);
@@ -258,8 +287,9 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
 
       if (error) throw error;
       
-      // Update the home object locally
+      // Update the home object locally and trigger re-render
       Object.assign(home, { photos: updatedPhotos });
+      setRefreshTrigger(prev => prev + 1);
       toast.success('Photos uploaded successfully');
     } catch (error) {
       console.error('Error uploading photos:', error);
@@ -269,7 +299,9 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
     }
   };
 
-  const getRiskIcon = (level: string) => {
+  const getRiskIcon = (level: string, isMitigated?: boolean) => {
+    if (isMitigated) return <CheckCircle className="w-4 h-4 text-green-500" />;
+    
     switch (level) {
       case 'critical': return <AlertCircle className="w-4 h-4 text-red-500" />;
       case 'high': return <AlertTriangle className="w-4 h-4 text-orange-500" />;
@@ -278,12 +310,49 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
     }
   };
 
-  const getRiskColor = (level: string) => {
+  const getRiskColor = (level: string, isMitigated?: boolean) => {
+    if (isMitigated) return 'bg-green-50 border-green-200';
+    
     switch (level) {
       case 'critical': return 'bg-red-50 border-red-200';
       case 'high': return 'bg-orange-50 border-orange-200';
       case 'medium': return 'bg-yellow-50 border-yellow-200';
       default: return 'bg-blue-50 border-blue-200';
+    }
+  };
+
+  const handleRiskMitigation = async (riskId: string, isMitigated: boolean, notes?: string) => {
+    if (!home || !user) return;
+    
+    try {
+      const existingMitigation = riskMitigations.find(m => m.risk_id === riskId);
+      
+      if (existingMitigation) {
+        const { error } = await supabase
+          .from('home_risk_mitigations')
+          .update({ is_mitigated: isMitigated, mitigation_notes: notes })
+          .eq('id', existingMitigation.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('home_risk_mitigations')
+          .insert({
+            user_id: user.id,
+            home_id: home.id,
+            risk_id: riskId,
+            is_mitigated: isMitigated,
+            mitigation_notes: notes
+          });
+        
+        if (error) throw error;
+      }
+      
+      fetchRiskMitigations();
+      toast.success('Risk mitigation updated successfully');
+    } catch (error) {
+      console.error('Error updating risk mitigation:', error);
+      toast.error('Failed to update risk mitigation');
     }
   };
 
@@ -306,11 +375,10 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="details">Details & Photos</TabsTrigger>
-            <TabsTrigger value="notes">Notes</TabsTrigger>
-            <TabsTrigger value="projects">Completed Projects</TabsTrigger>
-            <TabsTrigger value="maintenance">Completed Maintenance</TabsTrigger>
+            <TabsTrigger value="projects">Home Projects</TabsTrigger>
+            <TabsTrigger value="maintenance">Home Maintenance</TabsTrigger>
             <TabsTrigger value="risks">Home Risks</TabsTrigger>
           </TabsList>
 
@@ -359,6 +427,50 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
                       <span>{new Date(home.purchase_date).toLocaleDateString()}</span>
                     </div>
                   )}
+
+                  <Separator className="my-4" />
+                  
+                  {/* Home Notes Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold">Home Notes</h4>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingNotes(!editingNotes)}
+                      >
+                        {editingNotes ? 'Cancel' : 'Edit'}
+                      </Button>
+                    </div>
+                    
+                    {editingNotes ? (
+                      <div className="space-y-4">
+                        <Textarea
+                          value={notesValue}
+                          onChange={(e) => setNotesValue(e.target.value)}
+                          placeholder="Add notes about this home..."
+                          rows={4}
+                        />
+                        <div className="flex gap-2">
+                          <Button onClick={handleNotesUpdate}>Save Notes</Button>
+                          <Button variant="outline" onClick={() => {
+                            setNotesValue(home.notes || '');
+                            setEditingNotes(false);
+                          }}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="min-h-[60px]">
+                        {home.notes ? (
+                          <p className="whitespace-pre-wrap text-sm">{home.notes}</p>
+                        ) : (
+                          <p className="text-muted-foreground italic text-sm">No notes added yet</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 
@@ -420,51 +532,6 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="notes" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Home Notes
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingNotes(!editingNotes)}
-                  >
-                    {editingNotes ? 'Cancel' : 'Edit'}
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {editingNotes ? (
-                  <div className="space-y-4">
-                    <Textarea
-                      value={notesValue}
-                      onChange={(e) => setNotesValue(e.target.value)}
-                      placeholder="Add notes about this home..."
-                      rows={6}
-                    />
-                    <div className="flex gap-2">
-                      <Button onClick={handleNotesUpdate}>Save Notes</Button>
-                      <Button variant="outline" onClick={() => {
-                        setNotesValue(home.notes || '');
-                        setEditingNotes(false);
-                      }}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="min-h-[100px]">
-                    {home.notes ? (
-                      <p className="whitespace-pre-wrap">{home.notes}</p>
-                    ) : (
-                      <p className="text-muted-foreground italic">No notes added yet</p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="risks" className="space-y-4">
             <Card>
@@ -475,30 +542,78 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {homeRisks.length > 0 ? (
-                  <div className="space-y-4">
-                    {homeRisks.map((risk) => (
-                      <Card key={risk.id} className={`border ${getRiskColor(risk.risk_level)}`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            {getRiskIcon(risk.risk_level)}
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-semibold">{risk.material_name}</h4>
-                                <Badge variant={risk.risk_level === 'critical' ? 'destructive' : 'secondary'}>
-                                  {risk.risk_level.toUpperCase()}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                Common in homes built {risk.start_year}
-                                {risk.end_year ? `-${risk.end_year}` : '+'}
-                              </p>
-                              <p className="text-sm">{risk.description}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                 {homeRisks.length > 0 ? (
+                   <div className="space-y-4">
+                     {homeRisks.map((risk) => {
+                       const mitigation = riskMitigations.find(m => m.risk_id === risk.id);
+                       const isMitigated = mitigation?.is_mitigated || false;
+                       
+                       return (
+                         <Card key={risk.id} className={`border ${getRiskColor(risk.risk_level, isMitigated)}`}>
+                           <CardContent className="p-4">
+                             <div className="flex items-start gap-3">
+                               {getRiskIcon(risk.risk_level, isMitigated)}
+                               <div className="flex-1">
+                                 <div className="flex items-center justify-between mb-2">
+                                   <h4 className="font-semibold">{risk.material_name}</h4>
+                                   <div className="flex items-center gap-2">
+                                     {isMitigated && (
+                                       <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                         MITIGATED
+                                       </Badge>
+                                     )}
+                                     <Badge variant={risk.risk_level === 'critical' ? 'destructive' : 'secondary'}>
+                                       {risk.risk_level.toUpperCase()}
+                                     </Badge>
+                                   </div>
+                                 </div>
+                                 <p className="text-sm text-muted-foreground mb-2">
+                                   Common in homes built {risk.start_year}
+                                   {risk.end_year ? `-${risk.end_year}` : '+'}
+                                 </p>
+                                 <p className="text-sm mb-3">{risk.description}</p>
+                                 
+                                 {isMitigated && mitigation?.mitigation_notes && (
+                                   <div className="mb-3 p-2 bg-green-50 rounded border-l-2 border-green-200">
+                                     <p className="text-sm font-medium text-green-800 mb-1">Mitigation Notes:</p>
+                                     <p className="text-sm text-green-700">{mitigation.mitigation_notes}</p>
+                                   </div>
+                                 )}
+                                 
+                                 <div className="flex gap-2">
+                                   <Button
+                                     variant={isMitigated ? "outline" : "default"}
+                                     size="sm"
+                                     onClick={() => {
+                                       const notes = prompt(
+                                         isMitigated 
+                                           ? 'Update mitigation notes:' 
+                                           : 'Add notes about how this risk was mitigated:',
+                                         mitigation?.mitigation_notes || ''
+                                       );
+                                       if (notes !== null) {
+                                         handleRiskMitigation(risk.id, true, notes);
+                                       }
+                                     }}
+                                   >
+                                     {isMitigated ? 'Update Mitigation' : 'Mark as Mitigated'}
+                                   </Button>
+                                   {isMitigated && (
+                                     <Button
+                                       variant="outline"
+                                       size="sm"
+                                       onClick={() => handleRiskMitigation(risk.id, false)}
+                                     >
+                                       Remove Mitigation
+                                     </Button>
+                                   )}
+                                 </div>
+                               </div>
+                             </div>
+                           </CardContent>
+                         </Card>
+                       );
+                      })}
                   </div>
                 ) : home.build_year ? (
                   <div className="text-center py-8">
