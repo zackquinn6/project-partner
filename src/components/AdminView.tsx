@@ -5,11 +5,12 @@ import { UserManagementWindow } from '@/components/UserManagementWindow';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
 import { SecurityDashboard } from '@/components/SecurityDashboard';
 import { KnowledgeIngestionSystem } from '@/components/KnowledgeIngestionSystem';
+import { HomeRiskManager } from '@/components/HomeRiskManager';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Settings, BarChart3, Shield, Wrench, Lock, Brain, TrendingUp, Users, Cog, Scroll, MapPin, FileText } from 'lucide-react';
+import { Settings, BarChart3, Shield, Wrench, Lock, Brain, TrendingUp, Users, Cog, Scroll, MapPin, FileText, AlertTriangle } from 'lucide-react';
 import { StructureManager } from './StructureManager';
 import { AdminRoadmapManager } from './AdminRoadmapManager';
 import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
@@ -23,6 +24,7 @@ export const AdminView: React.FC = () => {
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
   const [securityDashboardOpen, setSecurityDashboardOpen] = useState(false);
   const [knowledgeSystemOpen, setKnowledgeSystemOpen] = useState(false);
+  const [homeRiskManagerOpen, setHomeRiskManagerOpen] = useState(false);
   
   const [processDesignOpen, setProcessDesignOpen] = useState(false);
   const [roadmapManagerOpen, setRoadmapManagerOpen] = useState(false);
@@ -156,6 +158,23 @@ export const AdminView: React.FC = () => {
             </CardContent>
           </Card>
 
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setHomeRiskManagerOpen(true)}>
+            <CardHeader className="text-center flex-1">
+              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <AlertTriangle className="w-6 h-6 text-primary" />
+              </div>
+              <CardTitle>Home Risks</CardTitle>
+              <CardDescription className="min-h-[3rem] flex items-center justify-center">
+                Manage construction risks based on home build years
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-auto">
+              <Button className="w-full" onClick={() => setHomeRiskManagerOpen(true)}>
+                Home Risks
+              </Button>
+            </CardContent>
+          </Card>
+
 
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setRoadmapManagerOpen(true)}>
             <CardHeader className="text-center flex-1">
@@ -227,6 +246,15 @@ export const AdminView: React.FC = () => {
               <DialogTitle>Knowledge Ingestion System</DialogTitle>
             </DialogHeader>
             <KnowledgeIngestionSystem />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={homeRiskManagerOpen} onOpenChange={setHomeRiskManagerOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Home Risk Management</DialogTitle>
+            </DialogHeader>
+            <HomeRiskManager />
           </DialogContent>
         </Dialog>
 

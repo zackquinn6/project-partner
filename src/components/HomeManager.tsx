@@ -20,6 +20,9 @@ interface Home {
   state?: string;
   home_type?: string;
   build_year?: string;
+  home_ownership?: string;
+  purchase_date?: string;
+  notes?: string;
   is_primary: boolean;
   photos?: string[];
   created_at: string;
@@ -54,6 +57,8 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
     home_type: '',
     build_year: '',
     home_ownership: '',
+    purchase_date: '',
+    notes: '',
     is_primary: false
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -121,6 +126,13 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    
+    // Validate required fields
+    if (!formData.home_ownership) {
+      toast.error('Please select whether you rent or own this home');
+      return;
+    }
+    
     try {
       let homeId = editingHome?.id;
       if (editingHome) {
@@ -183,6 +195,8 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
         home_type: '',
         build_year: '',
         home_ownership: '',
+        purchase_date: '',
+        notes: '',
         is_primary: false
       });
       fetchHomes();
@@ -200,7 +214,9 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       state: home.state || '',
       home_type: home.home_type || '',
       build_year: home.build_year || '',
-      home_ownership: '',
+      home_ownership: home.home_ownership || '',
+      purchase_date: home.purchase_date || '',
+      notes: home.notes || '',
       is_primary: home.is_primary
     });
     setSelectedFiles([]);
@@ -470,6 +486,32 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
               ...prev,
               build_year: e.target.value
             }))} placeholder="e.g., 1985" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="purchase_date">Purchase Date</Label>
+                <Input 
+                  id="purchase_date" 
+                  type="date" 
+                  value={formData.purchase_date} 
+                  onChange={e => setFormData(prev => ({
+                    ...prev,
+                    purchase_date: e.target.value
+                  }))} 
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Input 
+                  id="notes" 
+                  value={formData.notes} 
+                  onChange={e => setFormData(prev => ({
+                    ...prev,
+                    notes: e.target.value
+                  }))} 
+                  placeholder="Additional notes about this home..."
+                />
               </div>
 
               <div className="space-y-2 md:col-span-2">

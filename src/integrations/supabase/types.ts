@@ -166,6 +166,42 @@ export type Database = {
         }
         Relationships: []
       }
+      home_risks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_year: number | null
+          id: string
+          material_name: string
+          risk_level: string
+          start_year: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_year?: number | null
+          id?: string
+          material_name: string
+          risk_level?: string
+          start_year: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_year?: number | null
+          id?: string
+          material_name?: string
+          risk_level?: string
+          start_year?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       homes: {
         Row: {
           address: string | null
@@ -177,7 +213,9 @@ export type Database = {
           id: string
           is_primary: boolean | null
           name: string
+          notes: string | null
           photos: string[] | null
+          purchase_date: string | null
           state: string | null
           updated_at: string
           user_id: string
@@ -192,7 +230,9 @@ export type Database = {
           id?: string
           is_primary?: boolean | null
           name: string
+          notes?: string | null
           photos?: string[] | null
+          purchase_date?: string | null
           state?: string | null
           updated_at?: string
           user_id: string
@@ -207,7 +247,9 @@ export type Database = {
           id?: string
           is_primary?: boolean | null
           name?: string
+          notes?: string | null
           photos?: string[] | null
+          purchase_date?: string | null
           state?: string | null
           updated_at?: string
           user_id?: string
