@@ -23,6 +23,7 @@ interface RentalCenter {
   hasHeavyEquipment: boolean;
   isLibrary: boolean;
   isMakerspace: boolean;
+  isRentalApp: boolean;
   priceRange: 'budget' | 'mid' | 'premium';
 }
 
@@ -37,6 +38,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
   const [heavyEquipment, setHeavyEquipment] = useState(true);
   const [libraries, setLibraries] = useState(true);
   const [makerspaces, setMakerspaces] = useState(true);
+  const [rentalApps, setRentalApps] = useState(true);
   const [rentalCenters, setRentalCenters] = useState<RentalCenter[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -60,6 +62,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: true,
       isLibrary: false,
       isMakerspace: false,
+      isRentalApp: false,
       priceRange: 'mid'
     },
     {
@@ -77,6 +80,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: true,
       isLibrary: false,
       isMakerspace: false,
+      isRentalApp: false,
       priceRange: 'premium'
     },
     {
@@ -93,6 +97,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: false,
       isLibrary: false,
       isMakerspace: false,
+      isRentalApp: false,
       priceRange: 'budget'
     },
     {
@@ -110,6 +115,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: true,
       isLibrary: false,
       isMakerspace: false,
+      isRentalApp: false,
       priceRange: 'premium'
     },
     {
@@ -126,6 +132,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: false,
       isLibrary: false,
       isMakerspace: false,
+      isRentalApp: false,
       priceRange: 'budget'
     },
     {
@@ -143,6 +150,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: false,
       isLibrary: true,
       isMakerspace: false,
+      isRentalApp: false,
       priceRange: 'budget'
     },
     {
@@ -160,6 +168,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: false,
       isLibrary: true,
       isMakerspace: false,
+      isRentalApp: false,
       priceRange: 'budget'
     },
     {
@@ -177,6 +186,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: true,
       isLibrary: false,
       isMakerspace: true,
+      isRentalApp: false,
       priceRange: 'mid'
     },
     {
@@ -194,6 +204,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: false,
       isLibrary: false,
       isMakerspace: true,
+      isRentalApp: false,
       priceRange: 'mid'
     },
     {
@@ -211,7 +222,44 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       hasHeavyEquipment: true,
       isLibrary: false,
       isMakerspace: false,
+      isRentalApp: false,
       priceRange: 'mid'
+    },
+    {
+      id: '11',
+      name: 'ShareShed App',
+      address: 'Peer-to-peer network',
+      city: 'Boston',
+      state: 'MA',
+      zipCode: '02101',
+      phone: 'App-based',
+      website: 'https://shareshed.com',
+      distance: 0.5,
+      rating: 4.2,
+      hasGeneralTools: true,
+      hasHeavyEquipment: false,
+      isLibrary: false,
+      isMakerspace: false,
+      isRentalApp: true,
+      priceRange: 'budget'
+    },
+    {
+      id: '12',
+      name: 'ToolShare Boston',
+      address: 'Community network',
+      city: 'Boston',
+      state: 'MA',
+      zipCode: '02116',
+      phone: 'App messaging',
+      website: 'https://toolshare.boston',
+      distance: 1.0,
+      rating: 4.0,
+      hasGeneralTools: true,
+      hasHeavyEquipment: true,
+      isLibrary: false,
+      isMakerspace: false,
+      isRentalApp: true,
+      priceRange: 'budget'
     }
   ];
 
@@ -222,7 +270,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       setRentalCenters([]);
       setHasSearched(false);
     }
-  }, [debouncedSearchQuery, radius, generalTools, heavyEquipment, libraries, makerspaces]);
+  }, [debouncedSearchQuery, radius, generalTools, heavyEquipment, libraries, makerspaces, rentalApps]);
 
   const performSearch = async () => {
     setLoading(true);
@@ -248,8 +296,9 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
       // Location type filter logic
       const matchesLocationType = (libraries && center.isLibrary) ||
                                  (makerspaces && center.isMakerspace) ||
-                                 (!libraries && !makerspaces && !center.isLibrary && !center.isMakerspace) ||
-                                 (!center.isLibrary && !center.isMakerspace);
+                                 (rentalApps && center.isRentalApp) ||
+                                 (!libraries && !makerspaces && !rentalApps && !center.isLibrary && !center.isMakerspace && !center.isRentalApp) ||
+                                 (!center.isLibrary && !center.isMakerspace && !center.isRentalApp);
       
       return matchesLocation && withinRadius && matchesToolType && matchesLocationType;
     });
@@ -354,9 +403,9 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
               </div>
             </div>
 
-            {/* Location Type Filters */}
+            {/* Tool Access Type Filters */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Location Types</label>
+              <label className="text-sm font-medium mb-2 block">Tool Access Type</label>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -376,6 +425,16 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
                   />
                   <label htmlFor="makerspaces" className="text-sm">
                     Makerspaces
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="rental-apps"
+                    checked={rentalApps}
+                    onCheckedChange={(checked) => setRentalApps(checked === true)}
+                  />
+                  <label htmlFor="rental-apps" className="text-sm">
+                    Rental Apps
                   </label>
                 </div>
               </div>
@@ -461,6 +520,11 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
                     {center.isMakerspace && (
                       <Badge variant="secondary" className="text-xs">
                         Makerspace
+                      </Badge>
+                    )}
+                    {center.isRentalApp && (
+                      <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">
+                        Rental App
                       </Badge>
                     )}
                   </div>

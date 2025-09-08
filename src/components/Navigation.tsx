@@ -204,21 +204,9 @@ export default function Navigation({
                       <User className="w-4 h-4 mr-2 text-blue-500" />
                       My Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => window.dispatchEvent(new CustomEvent('show-home-manager'))}
-                    >
-                      <Home className="w-4 h-4 mr-2 text-green-500" />
-                      My Homes
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsRoadmapOpen(true)}>
                       <TrendingUp className="w-4 h-4 mr-2" />
                       App Improvements & Feedback
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => window.dispatchEvent(new CustomEvent('show-community-posts'))}
-                    >
-                      <Users className="w-4 h-4 mr-2 text-purple-500" />
-                      Community Posts
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsPrivacyOpen(true)}>
                       <Lock className="w-4 h-4 mr-2" />

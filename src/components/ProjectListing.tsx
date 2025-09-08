@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Play, Trash2, Plus, User, Wrench, Home } from "lucide-react";
+import { Play, Trash2, Plus, User, Wrench, Home, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { Project } from '@/interfaces/Project';
@@ -14,6 +14,7 @@ import ProfileManager from '@/components/ProfileManager';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
 import { HomeManager } from '@/components/HomeManager';
 import { useState } from "react";
+import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 
 interface ProjectListingProps {
   onProjectSelect?: (project: Project | null | 'workflow') => void;
@@ -25,6 +26,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const [showProfileManager, setShowProfileManager] = useState(false);
   const [showToolsLibrary, setShowToolsLibrary] = useState(false);
   const [showHomeManager, setShowHomeManager] = useState(false);
+  const [showCommunityPosts, setShowCommunityPosts] = useState(false);
 
   const calculateProgress = (projectRun: ProjectRun) => {
     return projectRun.progress || 0;
@@ -85,37 +87,56 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => setShowProfileManager(true)}
-                className="flex items-center gap-2"
-              >
-                <User className="w-4 h-4" />
-                My Profile
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setShowToolsLibrary(true)}
-                className="flex items-center gap-2"
-              >
-                <Wrench className="w-4 h-4" />
-                My Tool Library
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setShowHomeManager(true)}
-                className="flex items-center gap-2"
-              >
-                <Home className="w-4 h-4" />
-                My Homes
-              </Button>
-              <Button 
-                onClick={() => navigate('/projects')}
-                className="flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Start a New Project
-              </Button>
+              {/* App Cards Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowProfileManager(true)}
+                  className="flex flex-col items-center gap-2 h-20 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:from-blue-100 hover:to-blue-200"
+                >
+                  <User className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm text-blue-800">My Profile</span>
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowHomeManager(true)}
+                  className="flex flex-col items-center gap-2 h-20 bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:from-green-100 hover:to-green-200"
+                >
+                  <Home className="w-5 h-5 text-green-600" />
+                  <span className="text-sm text-green-800">My Homes</span>
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowToolsLibrary(true)}
+                  className="flex flex-col items-center gap-2 h-20 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:from-orange-100 hover:to-orange-200"
+                >
+                  <Wrench className="w-5 h-5 text-orange-600" />
+                  <span className="text-sm text-orange-800">Tools & Materials</span>
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))}
+                  className="flex flex-col items-center gap-2 h-20 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 hover:from-yellow-100 hover:to-yellow-200"
+                >
+                  <Zap className="w-5 h-5 text-yellow-600" />
+                  <span className="text-sm text-yellow-800">Rapid Plan</span>
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowCommunityPosts(true)}
+                  className="flex flex-col items-center gap-2 h-20 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:from-purple-100 hover:to-purple-200"
+                >
+                  <Users className="w-5 h-5 text-purple-600" />
+                  <span className="text-sm text-purple-800">Community</span>
+                </Button>
+                <Button 
+                  onClick={() => navigate('/projects')}
+                  className="flex flex-col items-center gap-2 h-20 bg-gradient-to-br from-primary/10 to-primary/20 border-primary/30 hover:from-primary/20 hover:to-primary/30"
+                >
+                  <Plus className="w-5 h-5 text-primary" />
+                  <span className="text-sm text-primary">Start New Project</span>
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -235,6 +256,10 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
       <HomeManager 
         open={showHomeManager} 
         onOpenChange={setShowHomeManager} 
+      />
+      <CommunityPostsWindow 
+        open={showCommunityPosts} 
+        onOpenChange={setShowCommunityPosts} 
       />
     </div>
   );
