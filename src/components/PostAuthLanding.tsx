@@ -173,18 +173,7 @@ export const PostAuthLanding = () => {
       },
       color: "bg-secondary",
       textColor: "text-secondary-foreground"
-    },
-    ...(isAdmin ? [{
-      icon: Shield,
-      title: "Admin Panel",
-      action: () => {
-        console.log('🛡️ PostAuthLanding: Admin Panel clicked - dispatching event');
-        const event = new CustomEvent('show-admin-panel');
-        window.dispatchEvent(event);
-      },
-      color: "bg-destructive",
-      textColor: "text-destructive-foreground"
-    }] : [])
+    }
   ];
 
 
@@ -219,11 +208,11 @@ export const PostAuthLanding = () => {
           </div>
         </div>
 
-        {/* My Apps - App Icons Grid */}
+        {/* My Apps - App Icons Grid (3x2) */}
         <div className="mb-8 md:mb-12 px-4 md:px-0">
-          <div className="max-w-md mx-auto">
-            {/* My Work Row */}
-            <div className="flex justify-center items-center gap-6 mb-6">
+          <div className="max-w-lg mx-auto">
+            {/* First Row - My Work */}
+            <div className="grid grid-cols-3 gap-8 justify-items-center mb-8">
               {myWorkActions.map((action, index) => (
                 <div 
                   key={index} 
@@ -238,25 +227,9 @@ export const PostAuthLanding = () => {
               ))}
             </div>
             
-            {/* Explore Row */}
-            <div className="flex justify-center items-center gap-6 mb-6">
-              {exploreActions.map((action, index) => (
-                <div 
-                  key={index} 
-                  className="flex flex-col items-center cursor-pointer group"
-                  onClick={action.action}
-                >
-                  <div className={`w-14 h-14 md:w-16 md:h-16 ${action.color} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-all duration-300 shadow-sm group-hover:shadow-md`}>
-                    <action.icon className={`h-7 w-7 md:h-8 md:w-8 ${action.textColor}`} />
-                  </div>
-                  <span className="text-xs text-muted-foreground text-center leading-tight w-20 group-hover:text-foreground transition-colors whitespace-normal">{action.title}</span>
-                </div>
-              ))}
-            </div>
-            
-            {/* Account Row */}
-            <div className="flex justify-center items-center gap-6">
-              {accountActions.map((action, index) => (
+            {/* Second Row - Explore & Account */}
+            <div className="grid grid-cols-3 gap-8 justify-items-center">
+              {[...exploreActions, ...accountActions].map((action, index) => (
                 <div 
                   key={index} 
                   className="flex flex-col items-center cursor-pointer group"

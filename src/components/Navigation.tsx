@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, TrendingUp } from "lucide-react";
+import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, TrendingUp, Shield, Lock } from "lucide-react";
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useState, useEffect } from "react";
 import { DataPrivacyManager } from './DataPrivacyManager';
 import ProfileManager from './ProfileManager';
@@ -53,6 +54,7 @@ export default function Navigation({
   
   const { projectRuns, currentProjectRun, setCurrentProjectRun } = projectData;
   const { signOut } = useAuth();
+  const { isAdmin } = useUserRole();
 
   useEffect(() => {
     const handleHomeManagerEvent = (event: Event) => {
@@ -179,37 +181,33 @@ export default function Navigation({
                   <span>Call a Coach</span>
                 </Button>
                 
-                <Button variant="ghost" size="icon" onClick={onAdminAccess} className="transition-fast p-1 sm:p-2">
-                  <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
-                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="transition-fast p-1 sm:p-2">
-                      <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg z-[60] backdrop-blur-sm">
                     <DropdownMenuItem onClick={() => setIsProfileOpen(true)}>
                       <User className="w-4 h-4 mr-2" />
                       Profile Settings
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsRoadmapOpen(true)}>
                       <TrendingUp className="w-4 h-4 mr-2" />
-                      Feature Roadmap
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.dispatchEvent(new CustomEvent('show-home-manager'));
-                      }}
-                    >
-                      <Home className="w-4 h-4 mr-2" />
-                      My Homes
+                      App Improvements & Feedback
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsPrivacyOpen(true)}>
+                      <Lock className="w-4 h-4 mr-2" />
                       Privacy & Data
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem onClick={onAdminAccess}>
+                        <Shield className="w-4 h-4 mr-2" />
+                        Admin Panel
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={signOut} className="text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
                       Sign Out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
