@@ -238,6 +238,57 @@ export default function Navigation({
             </div>
           </div>
         </nav>
+        
+        {/* Modals and Dialogs */}
+        <FeedbackDialog 
+          open={showFeedback}
+          onOpenChange={setShowFeedback}
+        />
+        
+        <DataPrivacyManager 
+          open={isPrivacyOpen}
+          onOpenChange={setIsPrivacyOpen}
+        />
+        
+        <ProfileManager 
+          open={isProfileOpen}
+          onOpenChange={setIsProfileOpen}
+        />
+        
+        <FeatureRoadmapWindow 
+          open={isRoadmapOpen}
+          onOpenChange={setIsRoadmapOpen}
+        />
+        
+        <HomeManager 
+          open={isHomeManagerOpen}
+          onOpenChange={setIsHomeManagerOpen}
+        />
+        
+        <ToolsMaterialsWindow 
+          open={isToolsLibraryOpen}
+          onOpenChange={setIsToolsLibraryOpen}
+        />
+        
+        <UserToolsMaterialsWindow 
+          open={isUserToolsLibraryOpen}
+          onOpenChange={setIsUserToolsLibraryOpen}
+        />
+        
+        <ToolsMaterialsLibraryView 
+          open={isNewToolsLibraryOpen}
+          onOpenChange={setIsNewToolsLibraryOpen}
+        />
+        
+        <HomeMaintenanceWindow 
+          open={isHomeMaintenanceOpen}
+          onOpenChange={setIsHomeMaintenanceOpen}
+        />
+        
+        <CommunityPostsWindow 
+          open={isCommunityPostsOpen}
+          onOpenChange={setIsCommunityPostsOpen}
+        />
     </>
   );
 }
