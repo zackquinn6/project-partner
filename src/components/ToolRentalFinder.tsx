@@ -163,7 +163,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
   useEffect(() => {
     if (debouncedSearchQuery.length >= 2) {
       performSearch();
-    } else if (debouncedSearchQuery.length === 0 && hasSearched) {
+    } else if (debouncedSearchQuery.length === 0) {
       setRentalCenters([]);
       setHasSearched(false);
     }

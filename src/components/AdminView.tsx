@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { ProjectManagementWindow } from '@/components/ProjectManagementWindow';
 import { ProjectAnalyticsWindow } from '@/components/ProjectAnalyticsWindow';
-import { UserManagementWindow } from '@/components/UserManagementWindow';
+import { UsersSecurityWindow } from '@/components/UsersSecurityWindow';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
-import { SecurityDashboard } from '@/components/SecurityDashboard';
 import { KnowledgeIngestionSystem } from '@/components/KnowledgeIngestionSystem';
 import { HomeRiskManager } from '@/components/HomeRiskManager';
 
@@ -20,9 +19,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export const AdminView: React.FC = () => {
   const [projectManagementOpen, setProjectManagementOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
-  const [userManagementOpen, setUserManagementOpen] = useState(false);
+  const [usersSecurityOpen, setUsersSecurityOpen] = useState(false);
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
-  const [securityDashboardOpen, setSecurityDashboardOpen] = useState(false);
   const [knowledgeSystemOpen, setKnowledgeSystemOpen] = useState(false);
   const [homeRiskManagerOpen, setHomeRiskManagerOpen] = useState(false);
   
@@ -90,19 +88,19 @@ export const AdminView: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setUserManagementOpen(true)}>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setUsersSecurityOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Users className="w-6 h-6 text-primary" />
+                <Shield className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle>User Management</CardTitle>
+              <CardTitle>Users & Security</CardTitle>
               <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Manage user roles, permissions and project agreements
+                Manage user roles, permissions, agreements, and monitor security
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setUserManagementOpen(true)}>
-                User Management
+              <Button className="w-full" onClick={() => setUsersSecurityOpen(true)}>
+                Users & Security
               </Button>
             </CardContent>
           </Card>
@@ -124,22 +122,6 @@ export const AdminView: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setSecurityDashboardOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Lock className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Security Dashboard</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Monitor security, audit logs, and failed login attempts
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setSecurityDashboardOpen(true)}>
-                Security Dashboard
-              </Button>
-            </CardContent>
-          </Card>
 
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setKnowledgeSystemOpen(true)}>
             <CardHeader className="text-center flex-1">
@@ -221,24 +203,15 @@ export const AdminView: React.FC = () => {
           onOpenChange={setAnalyticsOpen} 
         />
         
-        <UserManagementWindow 
-          open={userManagementOpen} 
-          onOpenChange={setUserManagementOpen} 
+        <UsersSecurityWindow 
+          open={usersSecurityOpen} 
+          onOpenChange={setUsersSecurityOpen} 
         />
         
         <ToolsMaterialsWindow 
           open={toolsMaterialsOpen} 
           onOpenChange={setToolsMaterialsOpen} 
         />
-        
-        <Dialog open={securityDashboardOpen} onOpenChange={setSecurityDashboardOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Security Dashboard</DialogTitle>
-            </DialogHeader>
-            <SecurityDashboard />
-          </DialogContent>
-        </Dialog>
 
         <Dialog open={knowledgeSystemOpen} onOpenChange={setKnowledgeSystemOpen}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">

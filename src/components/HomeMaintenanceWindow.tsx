@@ -6,13 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Filter, Trash2 } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Filter, Trash2, FileText } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { AddMaintenanceTaskDialog } from './AddMaintenanceTaskDialog';
 import { TaskCompletionDialog } from './TaskCompletionDialog';
 import { MaintenanceHistoryTab } from './MaintenanceHistoryTab';
+import { MaintenancePdfPrinter } from './MaintenancePdfPrinter';
 interface MaintenanceTask {
   id: string;
   user_id: string;
@@ -35,6 +36,10 @@ interface MaintenanceCompletion {
   completed_at: string;
   notes?: string;
   photo_url?: string;
+  task: {
+    title: string;
+    category: string;
+  };
 }
 interface Home {
   id: string;
@@ -61,6 +66,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [completions, setCompletions] = useState<MaintenanceCompletion[]>([]);
   useEffect(() => {
     if (open && user) {
       fetchHomes();
@@ -69,6 +75,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   useEffect(() => {
     if (selectedHomeId && user) {
       fetchTasks();
+      fetchCompletions();
     }
   }, [selectedHomeId, user]);
   const fetchHomes = async () => {
@@ -105,6 +112,49 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       console.error('Error fetching tasks:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCompletions = async () => {
+    if (!user || !selectedHomeId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('maintenance_completions')
+        .select(`
+          id,
+          task_id,
+          completed_at,
+          notes,
+          photo_url,
+          user_maintenance_tasks!inner (
+            title,
+            category,
+            home_id
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('user_maintenance_tasks.home_id', selectedHomeId)
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform the data structure
+      const transformedData = data?.map(completion => ({
+        id: completion.id,
+        task_id: completion.task_id,
+        completed_at: completion.completed_at,
+        notes: completion.notes,
+        photo_url: completion.photo_url,
+        task: {
+          title: completion.user_maintenance_tasks.title,
+          category: completion.user_maintenance_tasks.category
+        }
+      })) || [];
+
+      setCompletions(transformedData);
+    } catch (error) {
+      console.error('Error fetching completion history:', error);
     }
   };
   const getTaskProgress = (task: MaintenanceTask) => {
@@ -145,6 +195,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   const handleTaskCompleted = () => {
     fetchTasks(); // Refresh tasks after completion
+    fetchCompletions(); // Refresh completions after completion
     setSelectedTask(null);
   };
   const handleDeleteTask = async (taskId: string) => {
@@ -198,10 +249,20 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 </SelectContent>
               </Select>
 
-              <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add Task
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Task
+                </Button>
+                
+                {selectedHomeId && tasks.length > 0 && (
+                  <MaintenancePdfPrinter 
+                    tasks={tasks}
+                    completions={completions}
+                    homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
+                  />
+                )}
+              </div>
             </div>
 
             {selectedHomeId && <Tabs defaultValue="tasks" className="w-full">
