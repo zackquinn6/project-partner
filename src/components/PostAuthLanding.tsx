@@ -10,7 +10,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
 import { HelpPopup } from '@/components/HelpPopup';
-import { SimpleProjectPlanning } from '@/components/SimpleProjectPlanning';
+import { RapidProjectAssessment } from '@/components/RapidProjectAssessment';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
@@ -116,7 +116,7 @@ export const PostAuthLanding = () => {
     textColor: "text-primary-foreground"
   }, {
     icon: Calculator,
-    title: "Project Planning",
+    title: "Rapid Assessment",
     action: () => setShowProjectPlanning(true),
     color: "bg-blue-600",
     textColor: "text-white"
@@ -241,10 +241,10 @@ Pick up where you left off or start your next winning project.</p>
         <Dialog open={showProjectPlanning} onOpenChange={setShowProjectPlanning}>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
             <DialogHeader>
-              <DialogTitle>Project Planning</DialogTitle>
+              <DialogTitle>Rapid Project Assessment</DialogTitle>
             </DialogHeader>
             <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
-              <SimpleProjectPlanning />
+              <RapidProjectAssessment />
             </div>
           </DialogContent>
         </Dialog>

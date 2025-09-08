@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,8 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Calculator, DollarSign } from "lucide-react";
+import { Plus, Trash2, Calculator, DollarSign, Save, FolderOpen, FileText, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface LineItem {
   id: string;
@@ -19,6 +23,7 @@ interface LineItem {
 }
 
 interface ProjectPlan {
+  id?: string;
   name: string;
   description: string;
   notes: string;
@@ -26,6 +31,12 @@ interface ProjectPlan {
   contingencyPercent: number;
   salesTaxPercent: number;
   state: string;
+}
+
+interface SavedProjectPlan extends ProjectPlan {
+  id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const US_STATES_TAX_RATES = {
@@ -40,7 +51,16 @@ const US_STATES_TAX_RATES = {
 
 const CONTINGENCY_OPTIONS = [0, 5, 10, 25, 50, 100];
 
-export function SimpleProjectPlanning() {
+export function RapidProjectAssessment() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // View state
+  const [currentView, setCurrentView] = useState<'list' | 'edit'>('list');
+  const [savedProjects, setSavedProjects] = useState<SavedProjectPlan[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Current project state
   const [project, setProject] = useState<ProjectPlan>({
     name: '',
     description: '',
@@ -50,6 +70,148 @@ export function SimpleProjectPlanning() {
     salesTaxPercent: 0,
     state: ''
   });
+
+  // Load saved projects on component mount
+  useEffect(() => {
+    if (user) {
+      loadSavedProjects();
+    }
+  }, [user]);
+
+  const loadSavedProjects = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('project_plans')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+
+      const projects = (data || []).map(plan => ({
+        ...plan,
+        lineItems: (plan.line_items as any) || [],
+        contingencyPercent: plan.contingency_percent,
+        salesTaxPercent: Number(plan.sales_tax_percent)
+      }));
+
+      setSavedProjects(projects);
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      toast({ title: "Error", description: "Failed to load saved projects", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveProject = async () => {
+    if (!user || !project.name.trim()) {
+      toast({ title: "Error", description: "Please enter a project name", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const projectData = {
+        user_id: user.id,
+        name: project.name,
+        description: project.description,
+        notes: project.notes,
+        line_items: project.lineItems as any,
+        contingency_percent: project.contingencyPercent,
+        sales_tax_percent: project.salesTaxPercent,
+        state: project.state
+      };
+
+      let result;
+      if (project.id) {
+        // Update existing project
+        result = await supabase
+          .from('project_plans')
+          .update(projectData)
+          .eq('id', project.id)
+          .select()
+          .single();
+      } else {
+        // Create new project
+        result = await supabase
+          .from('project_plans')
+          .insert(projectData)
+          .select()
+          .single();
+      }
+
+      if (result.error) throw result.error;
+
+      toast({ title: "Success", description: `Project ${project.id ? 'updated' : 'saved'} successfully` });
+      
+      // Update project with returned ID
+      setProject(prev => ({ ...prev, id: result.data.id }));
+      
+      // Reload saved projects list
+      await loadSavedProjects();
+    } catch (error) {
+      console.error('Error saving project:', error);
+      toast({ title: "Error", description: "Failed to save project", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadProject = (savedProject: SavedProjectPlan) => {
+    setProject({
+      id: savedProject.id,
+      name: savedProject.name,
+      description: savedProject.description || '',
+      notes: savedProject.notes || '',
+      lineItems: savedProject.lineItems,
+      contingencyPercent: savedProject.contingencyPercent,
+      salesTaxPercent: savedProject.salesTaxPercent,
+      state: savedProject.state || ''
+    });
+    setCurrentView('edit');
+  };
+
+  const createNewProject = () => {
+    setProject({
+      name: '',
+      description: '',
+      notes: '',
+      lineItems: [],
+      contingencyPercent: 10,
+      salesTaxPercent: 0,
+      state: ''
+    });
+    setCurrentView('edit');
+  };
+
+  const deleteProject = async (projectId: string) => {
+    if (!user) return;
+
+    if (!confirm('Are you sure you want to delete this project?')) return;
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('project_plans')
+        .delete()
+        .eq('id', projectId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "Project deleted successfully" });
+      await loadSavedProjects();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({ title: "Error", description: "Failed to delete project", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const addLineItem = (type: 'material' | 'labor') => {
     const newItem: LineItem = {
@@ -130,6 +292,88 @@ export function SimpleProjectPlanning() {
     }).format(amount);
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  // Render project list view
+  if (currentView === 'list') {
+    return (
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5" />
+              Rapid Project Assessment
+            </CardTitle>
+            <div className="flex justify-between items-center">
+              <p className="text-muted-foreground">Manage your project cost assessments</p>
+              <Button onClick={createNewProject}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Assessment
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8">Loading projects...</div>
+            ) : savedProjects.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-semibold mb-2">No assessments yet</h3>
+                <p className="text-muted-foreground mb-4">Create your first project cost assessment to get started.</p>
+                <Button onClick={createNewProject}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Assessment
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {savedProjects.map((savedProject) => {
+                  const subtotal = savedProject.lineItems.reduce((acc, item) => {
+                    return acc + (item.lowCost + item.highCost) / 2 * item.units;
+                  }, 0);
+                  
+                  return (
+                    <Card key={savedProject.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1" onClick={() => loadProject(savedProject)}>
+                            <h3 className="font-semibold text-lg">{savedProject.name}</h3>
+                            {savedProject.description && (
+                              <p className="text-muted-foreground text-sm mb-2">{savedProject.description}</p>
+                            )}
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>{savedProject.lineItems.length} items</span>
+                              <span>Est. {formatCurrency(subtotal)}</span>
+                              <span>Updated {formatDate(savedProject.updated_at)}</span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteProject(savedProject.id);
+                            }}
+                            className="text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Render project edit view (existing functionality preserved)
   const subtotal = calculateSubtotal();
   const total = calculateTotal();
   const materialItems = project.lineItems.filter(item => item.type === 'material');
@@ -139,21 +383,33 @@ export function SimpleProjectPlanning() {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="w-5 h-5" />
-            Simple Project Planning
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5" />
+              Rapid Project Assessment
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setCurrentView('list')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to List
+              </Button>
+              <Button onClick={saveProject} disabled={isLoading}>
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? "Saving..." : project.id ? "Update" : "Save"} Assessment
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Project Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="project-name" className="text-sm font-medium">Project Name</Label>
+              <Label htmlFor="project-name" className="text-sm font-medium">Assessment Name *</Label>
               <Input
                 id="project-name"
                 value={project.name}
                 onChange={(e) => updateProject('name', e.target.value)}
-                placeholder="Enter project name"
+                placeholder="Enter assessment name"
                 className="text-sm"
               />
             </div>

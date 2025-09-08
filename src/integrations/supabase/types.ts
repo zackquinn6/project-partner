@@ -706,6 +706,48 @@ export type Database = {
           },
         ]
       }
+      project_plans: {
+        Row: {
+          contingency_percent: number
+          created_at: string
+          description: string | null
+          id: string
+          line_items: Json
+          name: string
+          notes: string | null
+          sales_tax_percent: number
+          state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contingency_percent?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          line_items?: Json
+          name: string
+          notes?: string | null
+          sales_tax_percent?: number
+          state?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contingency_percent?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          line_items?: Json
+          name?: string
+          notes?: string | null
+          sales_tax_percent?: number
+          state?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       project_runs: {
         Row: {
           accountability_partner: string | null
