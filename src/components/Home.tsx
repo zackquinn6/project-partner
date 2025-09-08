@@ -91,8 +91,117 @@ export default function Home({ onViewChange }: HomeProps) {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden gradient-hero pt-20 pb-16 md:pt-24 md:pb-24">
+      {user ? (
+        // Logged-in user sees the DIY Dashboard
+        <div className="container mx-auto px-6 py-8 space-y-6">
+          {/* DIY Dashboard */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-foreground mb-4">Your DIY Homepage</h1>
+            <p className="text-lg text-muted-foreground mb-6">
+              Your DIY journey continues here. Pick up where you left off or start your next winning project.
+            </p>
+            
+            {/* Stats */}
+            <div className="flex justify-center gap-8 mb-8">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">1</span>
+                </div>
+                <span className="text-muted-foreground">Active Projects</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                  <span className="text-muted-foreground font-bold text-sm">0</span>
+                </div>
+                <span className="text-muted-foreground">Completed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">2</span>
+                </div>
+                <span className="text-muted-foreground">Hours Saved</span>
+              </div>
+            </div>
+            
+            {/* Apps Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 max-w-4xl mx-auto mb-8">
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate('/user')}>
+                <div className="w-16 h-16 bg-slate-700 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <Folder className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-slate-800">My Projects</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))}>
+                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <Calculator className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-blue-800">Rapid Assessment</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}>
+                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <HomeIcon className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-green-800">My Home Maintenance</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))}>
+                <div className="w-16 h-16 bg-slate-700 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <Wrench className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-slate-800">My Tool Library</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tools-materials'))}>
+                <div className="w-16 h-16 bg-orange-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <Hammer className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-orange-800">Tool Rentals</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate('/projects')}>
+                <div className="w-16 h-16 bg-orange-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <BookOpen className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-orange-800">New Project Catalog</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-help-popup'))}>
+                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <HelpCircle className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-green-800">Expert Help</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
+                <div className="w-16 h-16 bg-gray-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-gray-800">My Profile</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-community-posts'))}>
+                <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-purple-800">Community</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-manager'))}>
+                <div className="w-16 h-16 bg-slate-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <MapPin className="w-8 h-8 text-white" />
+                </div>
+                <span className="text-sm font-medium text-slate-800">My Homes</span>
+              </div>
+             </div>
+           </div>
+         </div>
+       ) : (
+         // Non-logged-in users see the marketing homepage
+         <>
+       {/* Hero Section */}
+       <section className="relative overflow-hidden gradient-hero pt-20 pb-16 md:pt-24 md:pb-24">
         {/* Fixed header navigation bar */}
         <nav className="fixed top-0 left-0 right-0 bg-primary/95 backdrop-blur-md z-50 border-b border-primary-foreground/10 shadow-elegant">
           <div className="container mx-auto px-4 flex items-center justify-between h-16">
@@ -202,89 +311,6 @@ export default function Home({ onViewChange }: HomeProps) {
             </p>
           </div>
           
-          {/* Apps Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-16">
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
-              <div className="w-20 h-20 bg-slate-700 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <Folder className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-slate-800">My Projects</span>
-            </div>
-            
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
-              <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <Calculator className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-blue-800">Rapid Plan</span>
-            </div>
-            
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
-              <div className="w-20 h-20 bg-green-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <HomeIcon className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-green-800">My Home Maintenance</span>
-            </div>
-            
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
-              <div className="w-20 h-20 bg-slate-700 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <Wrench className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-slate-800">My Tool Library</span>
-            </div>
-            
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
-              <div className="w-20 h-20 bg-orange-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <Hammer className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-orange-800">Tool Rentals</span>
-            </div>
-            
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate('/projects')}>
-              <div className="w-20 h-20 bg-orange-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <BookOpen className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-orange-800">New Project Catalog</span>
-            </div>
-            
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
-              <div className="w-20 h-20 bg-green-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <HelpCircle className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-green-800">Expert Help</span>
-            </div>
-            
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
-              <div className="w-20 h-20 bg-slate-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <User className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-slate-800">My Profile</span>
-            </div>
-            
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
-              <div className="w-20 h-20 bg-purple-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <Users className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-purple-800">Community</span>
-            </div>
-            
-            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
-              <div className="w-20 h-20 bg-slate-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                <MapPin className="w-10 h-10 text-white" />
-              </div>
-              <span className="text-sm font-medium text-slate-800">My Homes</span>
-            </div>
-          </div>
-          
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 text-primary border-primary">
-              🎯 Three Powerful Platforms
-            </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
-              Built on Three Core Technologies
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              From personalized project management to expert consultations and tool rentals - we've built the complete homeowner ecosystem.
-            </p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
@@ -340,19 +366,21 @@ export default function Home({ onViewChange }: HomeProps) {
               Explore Project Templates
             </Button>
           </div>
-        </div>
-      </section>
+         </div>
+       </section>
+       </>
+       )}
 
-      {/* Modals */}
-      <PricingWindow 
-        open={isPricingOpen}
-        onOpenChange={(open) => setIsPricingOpen(open)}
-      />
-      
-      <DIYSurveyPopup 
-        open={isDIYQuizOpen}
-        onOpenChange={(open) => setIsDIYQuizOpen(open)}
-      />
-    </div>
-  );
-}
+       {/* Modals */}
+       <PricingWindow 
+         open={isPricingOpen}
+         onOpenChange={(open) => setIsPricingOpen(open)}
+       />
+       
+       <DIYSurveyPopup 
+         open={isDIYQuizOpen}
+         onOpenChange={(open) => setIsDIYQuizOpen(open)}
+       />
+     </div>
+   );
+ }
