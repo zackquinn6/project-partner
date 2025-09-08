@@ -267,9 +267,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             </div>
 
             {selectedHomeId && <Tabs defaultValue="tasks" className="w-full">
-                <TabsList className="grid grid-cols-2 w-full">
+                <TabsList className="grid grid-cols-3 w-full">
                   <TabsTrigger value="tasks">Active Tasks</TabsTrigger>
                   <TabsTrigger value="history">Completion History</TabsTrigger>
+                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="tasks" className="space-y-4">
@@ -353,6 +354,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
                 <TabsContent value="history">
                   <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
+                </TabsContent>
+
+                <TabsContent value="notifications">
+                  <MaintenanceNotifications selectedHomeId={selectedHomeId} />
                 </TabsContent>
               </Tabs>}
           </div>

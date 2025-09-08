@@ -1286,6 +1286,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_user_notification_settings: {
+        Args: { user_uuid: string }
+        Returns: {
+          created_at: string
+          email_address: string
+          email_enabled: boolean
+          id: string
+          notify_due_date: boolean
+          notify_monthly: boolean
+          notify_weekly: boolean
+          phone_number: string
+          sms_enabled: boolean
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: string
@@ -1313,6 +1329,19 @@ export type Database = {
       }
       sanitize_input: {
         Args: { input_text: string }
+        Returns: string
+      }
+      upsert_notification_settings: {
+        Args: {
+          email_address: string
+          email_enabled: boolean
+          notify_due_date: boolean
+          notify_monthly: boolean
+          notify_weekly: boolean
+          phone_number: string
+          sms_enabled: boolean
+          user_uuid: string
+        }
         Returns: string
       }
       validate_admin_action: {
