@@ -19,7 +19,12 @@ import {
   Star,
   Target,
   Zap,
-  Shield
+  Shield,
+  User,
+  Users,
+  Folder,
+  Calculator,
+  HelpCircle
 } from 'lucide-react';
 
 interface HomeProps {
@@ -187,10 +192,95 @@ export default function Home({ onViewChange }: HomeProps) {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge variant="outline" className="mb-4 text-primary border-primary">
+              🎯 Your Home Management Apps
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
+              Everything You Need in One Place
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Access all your home management tools with beautiful, intuitive apps designed for homeowners.
+            </p>
+          </div>
+          
+          {/* Apps Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-16">
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
+              <div className="w-20 h-20 bg-slate-700 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <Folder className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-slate-800">My Projects</span>
+            </div>
+            
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
+              <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <Calculator className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-blue-800">Rapid Plan</span>
+            </div>
+            
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
+              <div className="w-20 h-20 bg-green-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <HomeIcon className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-green-800">My Home Maintenance</span>
+            </div>
+            
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
+              <div className="w-20 h-20 bg-slate-700 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <Wrench className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-slate-800">My Tool Library</span>
+            </div>
+            
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
+              <div className="w-20 h-20 bg-orange-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <Hammer className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-orange-800">Tool Rentals</span>
+            </div>
+            
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate('/projects')}>
+              <div className="w-20 h-20 bg-orange-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <BookOpen className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-orange-800">New Project Catalog</span>
+            </div>
+            
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
+              <div className="w-20 h-20 bg-green-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <HelpCircle className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-green-800">Expert Help</span>
+            </div>
+            
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
+              <div className="w-20 h-20 bg-slate-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <User className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-slate-800">My Profile</span>
+            </div>
+            
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
+              <div className="w-20 h-20 bg-purple-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <Users className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-purple-800">Community</span>
+            </div>
+            
+            <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate(user ? '/user' : '/auth')}>
+              <div className="w-20 h-20 bg-slate-600 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                <MapPin className="w-10 h-10 text-white" />
+              </div>
+              <span className="text-sm font-medium text-slate-800">My Homes</span>
+            </div>
+          </div>
+          
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 text-primary border-primary">
               🎯 Three Powerful Platforms
             </Badge>
             <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
-              Everything You Need in One App
+              Built on Three Core Technologies
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               From personalized project management to expert consultations and tool rentals - we've built the complete homeowner ecosystem.
