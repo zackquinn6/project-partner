@@ -26,64 +26,39 @@ interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
 
-const coreApps = [
-  {
-    icon: HomeIcon,
-    title: "Home Tracking",
-    description: "Keep detailed records of your home's systems, warranties, and maintenance history."
-  },
-  {
-    icon: Calendar,
-    title: "Maintenance Tracker", 
-    description: "Never miss important home maintenance tasks with intelligent scheduling and reminders."
-  },
-  {
-    icon: Wrench,
-    title: "Tool Library",
-    description: "Catalog your tools, track what you need, and manage your DIY arsenal like a pro."
-  },
+const coreFeatures = [
   {
     icon: Target,
-    title: "Project Tracker",
-    description: "Follow detailed project workflows from planning to completion with step-by-step guidance."
+    title: "Personalized Project Management",
+    description: "DIY + Home Profile and Project Templates for 100+ Home Improvement Projects = First-time Success.",
+    features: [
+      "Home profile tracking & maintenance scheduler",
+      "100+ proven project templates", 
+      "Personalized recommendations based on your skills & tools",
+      "Step-by-step guidance from planning to completion"
+    ]
   },
   {
     icon: Star,
-    title: "Personalized Project System",
-    description: "AI-powered project recommendations tailored to your skills, tools, and home needs."
-  },
-  {
-    icon: BookOpen,
-    title: "Pre-built Project Templates",
-    description: "Access hundreds of proven project templates for common home improvement tasks."
-  },
-  {
-    icon: ShoppingCart,
-    title: "Tool & Material Shopper",
-    description: "Get exact shopping lists and find the best deals on everything you need."
+    title: "Virtual Expert Platform",
+    description: "While our online resources cover a lot - nothing replaces human face-to-face consults with an expert. The ultimate personalization is not AI, it's Human.",
+    features: [
+      "One-on-one video consultations with DIY experts",
+      "Real-time problem solving and guidance", 
+      "Project-specific expert recommendations",
+      "Human expertise when you need it most"
+    ]
   },
   {
     icon: Hammer,
-    title: "Project-Based Tool Rentals",
-    description: "Rent specialized tools only when you need them. Available in Boston, MA."
-  }
-];
-
-const valueProps = [
-  {
-    icon: Zap,
-    title: "Save Time & Money",
-    description: "Stop making multiple store trips and buying the wrong materials. Our planning system gets it right the first time."
-  },
-  {
-    icon: Shield,
-    title: "Reduce Risk",
-    description: "Avoid costly mistakes with detailed planning, safety guidelines, and expert-reviewed project workflows."
-  },
-  {
-    icon: CheckCircle,
-    title: "Guaranteed Success",
-    description: "Our systematic approach ensures every project gets completed to professional standards."
+    title: "Tool Rental Platform",
+    description: "If you're in Boston, MA - a fast, accurate, seamless tool rental process through Toolio Rentals. For all other areas, a tool rental search that helps find the best local options.",
+    features: [
+      "Boston: Direct rental through Toolio Rentals",
+      "Nationwide: Smart tool rental finder",
+      "Project-based tool recommendations",
+      "Never buy tools you'll only use once"
+    ]
   }
 ];
 
@@ -129,7 +104,7 @@ export default function Home({ onViewChange }: HomeProps) {
                 variant="ghost" 
                 size="sm"
                 className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground text-xs sm:text-sm px-2 sm:px-3 transition-fast"
-                onClick={() => handleScrollToSection('core-apps')}
+                onClick={() => handleScrollToSection('features')}
               >
                 Features
               </Button>
@@ -165,11 +140,11 @@ export default function Home({ onViewChange }: HomeProps) {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
               <Badge variant="outline" className="mb-6 text-primary-foreground border-primary-foreground/20 bg-primary-foreground/10">
-                🏠 The Ultimate DIY Platform
+                🏠 The Homeowners App
               </Badge>
               
               <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6">
-                Your One-Stop Shop for DIY Success
+                Everything You Need to Manage Your Home
               </h1>
               
               <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">
@@ -207,93 +182,45 @@ export default function Home({ onViewChange }: HomeProps) {
         </div>
       </section>
 
-      {/* Value Proposition */}
-      <section className="py-16 bg-gradient-to-br from-secondary via-secondary to-accent/5">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
-              Why Choose Project Partner?
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
-              Stop juggling multiple apps, websites, and tools. We've built the complete DIY ecosystem in one integrated platform.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {valueProps.map((prop, index) => (
-              <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
-                <CardHeader className="text-center pb-4">
-                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <prop.icon className="h-8 w-8 text-primary-foreground" />
-                  </div>
-                  <CardTitle className="text-xl">{prop.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center text-base leading-relaxed">
-                    {prop.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Core Apps */}
-      <section id="core-apps" className="py-16">
+      {/* Three Core Features */}
+      <section id="features" className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge variant="outline" className="mb-4 text-primary border-primary">
-              🛠️ Complete Toolkit
+              🎯 Three Powerful Platforms
             </Badge>
             <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
-              Eight Core Apps, One Seamless Experience
+              Everything You Need in One App
             </h2>
-            <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
-              Each app is designed to work together, creating a comprehensive DIY management system that grows with your skills and projects.
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              From personalized project management to expert consultations and tool rentals - we've built the complete homeowner ecosystem.
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {coreApps.map((app, index) => (
-              <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer hover:scale-105">
-                <CardHeader className="text-center pb-4">
-                  <div className="w-14 h-14 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
-                    <app.icon className="h-7 w-7 text-accent-foreground" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {coreFeatures.map((feature, index) => (
+              <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 p-8 h-full">
+                <CardHeader className="text-center pb-6">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <feature.icon className="h-8 w-8 text-primary-foreground" />
                   </div>
-                  <CardTitle className="text-lg">{app.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center text-sm leading-relaxed">
-                    {app.description}
+                  <CardTitle className="text-xl lg:text-2xl font-bold mb-4">{feature.title}</CardTitle>
+                  <CardDescription className="text-base lg:text-lg leading-relaxed text-muted-foreground">
+                    {feature.description}
                   </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <ul className="space-y-3">
+                    {feature.features.map((item, itemIndex) => (
+                      <li key={itemIndex} className="flex items-start">
+                        <CheckCircle className="h-5 w-5 text-primary mr-3 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm lg:text-base text-muted-foreground">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </CardContent>
               </Card>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Special Feature Callout */}
-      <section className="py-16 bg-accent/5">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="flex items-center justify-center mb-4">
-              <MapPin className="h-6 w-6 text-primary mr-2" />
-              <Badge variant="outline" className="text-primary border-primary">
-                Boston Area Exclusive
-              </Badge>
-            </div>
-            <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Project-Based Tool Rentals
-            </h3>
-            <p className="text-lg text-muted-foreground mb-6">
-              Need a specialized tool for just one project? Our Boston-area tool rental service delivers exactly what you need, when you need it. No more buying expensive tools you'll only use once.
-            </p>
-            <Button variant="outline" size="lg" onClick={() => navigate('/auth?mode=signup')}>
-              Learn More About Tool Rentals
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
           </div>
         </div>
       </section>
@@ -302,10 +229,10 @@ export default function Home({ onViewChange }: HomeProps) {
       <section className="py-16 gradient-hero">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-6">
-            Ready to Transform Your DIY Experience?
+            Ready to Transform Your Home Management?
           </h2>
           <p className="text-xl text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of DIYers who've discovered the power of having everything they need in one place.
+            Join thousands of homeowners who've discovered the power of having everything they need in one place.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="premium" size="lg" className="px-8 py-4 text-lg font-semibold" asChild>
@@ -320,7 +247,7 @@ export default function Home({ onViewChange }: HomeProps) {
               className="px-8 py-4 text-lg font-semibold"
               onClick={() => navigate('/projects')}
             >
-              Browse Project Templates
+              Explore Project Templates
             </Button>
           </div>
         </div>

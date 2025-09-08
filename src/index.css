@@ -273,7 +273,7 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
-  /* Mobile improvements */
+  /* Mobile improvements & touch targets */
   @media (max-width: 768px) {
     .container {
       @apply px-4;
@@ -282,5 +282,26 @@ All colors MUST be HSL.
     .text-responsive {
       @apply text-base md:text-lg;
     }
+    
+    /* Ensure minimum touch target size of 44px */
+    button, .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Better spacing for mobile */
+    .mobile-spacing {
+      @apply space-y-4;
+    }
+    
+    /* Larger text inputs on mobile */
+    input[type="text"], input[type="email"], input[type="password"], textarea {
+      font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+  }
+  
+  /* Improved focus states for accessibility */
+  .focus-enhanced:focus-visible {
+    @apply ring-2 ring-primary ring-offset-2 outline-none;
   }
 }
