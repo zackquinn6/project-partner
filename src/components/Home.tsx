@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { PricingWindow } from '@/components/PricingWindow';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
+import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { 
   ArrowRight,
   Home as HomeIcon, 
@@ -24,7 +25,8 @@ import {
   Users,
   Folder,
   Calculator,
-  HelpCircle
+  HelpCircle,
+  Camera
 } from 'lucide-react';
 
 interface HomeProps {
@@ -72,14 +74,24 @@ export default function Home({ onViewChange }: HomeProps) {
   const navigate = useNavigate();
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isDIYQuizOpen, setIsDIYQuizOpen] = useState(false);
+  const [isAIRepairOpen, setIsAIRepairOpen] = useState(false);
 
   useEffect(() => {
     const handleOpenQuiz = () => {
       setIsDIYQuizOpen(true);
     };
 
+    const handleOpenAIRepair = () => {
+      setIsAIRepairOpen(true);
+    };
+
     window.addEventListener('open-diy-quiz', handleOpenQuiz);
-    return () => window.removeEventListener('open-diy-quiz', handleOpenQuiz);
+    window.addEventListener('show-ai-repair', handleOpenAIRepair);
+    
+    return () => {
+      window.removeEventListener('open-diy-quiz', handleOpenQuiz);
+      window.removeEventListener('show-ai-repair', handleOpenAIRepair);
+    };
   }, []);
 
   const handleScrollToSection = (sectionId: string) => {
@@ -196,6 +208,13 @@ export default function Home({ onViewChange }: HomeProps) {
                   <MapPin className="w-10 h-10 text-white" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">My Homes</span>
+              </div>
+
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-ai-repair'))}>
+                <div className="w-20 h-20 bg-indigo-500 rounded-3xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-lg">
+                  <Camera className="w-10 h-10 text-white" />
+                </div>
+                <span className="text-sm font-medium text-indigo-600">AI Repair</span>
               </div>
              </div>
            </div>
@@ -381,6 +400,11 @@ export default function Home({ onViewChange }: HomeProps) {
       <DIYSurveyPopup 
         open={isDIYQuizOpen}
         onOpenChange={(open) => setIsDIYQuizOpen(open)}
+      />
+
+      <AIRepairWindow
+        open={isAIRepairOpen}
+        onOpenChange={(open) => setIsAIRepairOpen(open)}
       />
     </div>
   );
