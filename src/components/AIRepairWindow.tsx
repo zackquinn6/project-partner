@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Camera, Upload, Loader2, CheckCircle, AlertTriangle, Wrench, Clock, DollarSign, AlertCircle } from 'lucide-react';
+import { Camera, Upload, Loader2, CheckCircle, AlertTriangle, Wrench, Clock, DollarSign, AlertCircle, Sparkles } from 'lucide-react';
 
 interface AIRepairWindowProps {
   open: boolean;
@@ -189,42 +190,45 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
       onOpenChange(open);
       if (!open) reset();
     }}>
-      <DialogContent className="w-[95vw] h-[95vh] max-w-none max-h-none p-0 overflow-hidden md:w-[90vw] md:h-[90vh]">
+      <DialogContent className="w-[95vw] h-[95vh] max-w-none max-h-none p-0 overflow-hidden sm:w-[90vw] sm:h-[90vh] lg:w-[80vw] lg:h-[85vh]">
         <div className="h-full flex flex-col">
-          <DialogHeader className="p-4 border-b">
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <Camera className="w-5 h-5 text-primary" />
+          <DialogHeader className="p-4 sm:p-6 border-b">
+            <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
+              <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               AI Repair Analysis
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-            {/* Pricing Alert */}
-            {showPricingAlert && (
-              <div className="bg-yellow-50 border border-yellow-200 p-4 m-4 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-yellow-800">Free Trial During Launch</h4>
-                    <p className="text-sm text-yellow-700">
-                      This feature is free during our initial app launch. Regular pricing will be $1 per photo analyzed.
-                    </p>
+          <ScrollArea className="flex-1">
+            <div className="pb-4">
+              {/* Pricing Alert */}
+              {showPricingAlert && (
+                <div className="bg-gradient-to-r from-orange-50 to-green-50 border border-orange-200 p-4 m-4 rounded-xl shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-full bg-gradient-to-r from-orange-500 to-green-500">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-900 mb-1">Free Trial During Launch</h4>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        This feature is completely free during our initial app launch. Regular pricing will be $1 per photo analyzed.
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowPricingAlert(false)}
+                      className="text-gray-500 hover:text-gray-700 hover:bg-white/50 rounded-full h-8 w-8 p-0"
+                    >
+                      ×
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPricingAlert(false)}
-                    className="text-yellow-600 hover:text-yellow-800"
-                  >
-                    ×
-                  </Button>
                 </div>
-              </div>
-            )}
+              )}
 
-            {!analysis ? (
-              // Upload and Analysis Section
-              <div className="p-4 space-y-6">
+              {!analysis ? (
+                // Upload and Analysis Section
+                <div className="p-4 sm:p-6 space-y-6">
                 {/* Photo Upload */}
                 <Card>
                   <CardHeader>
@@ -310,9 +314,9 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                   )}
                 </Button>
               </div>
-            ) : (
-              // Analysis Results Section
-              <div className="p-4 space-y-4">
+              ) : (
+                // Analysis Results Section
+                <div className="p-4 sm:p-6 space-y-4">
                 {/* Issue Overview */}
                 <Card>
                   <CardHeader>
@@ -329,7 +333,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-muted-foreground" />
                         <span className="font-medium">Time:</span> {analysis.estimated_time}
@@ -404,7 +408,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-4">
+                <div className="flex flex-col sm:flex-row gap-2 pt-4">
                   <Button onClick={reset} variant="outline" className="flex-1">
                     New Analysis
                   </Button>
@@ -416,8 +420,9 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                   </Button>
                 </div>
               </div>
-            )}
-          </div>
+              )}
+            </div>
+          </ScrollArea>
         </div>
       </DialogContent>
     </Dialog>
