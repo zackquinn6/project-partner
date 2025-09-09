@@ -226,19 +226,56 @@ Pick up where you left off or start your next winning project.</p>
           </div>
         </div>
 
-        {/* My Apps - App Icons Grid (4x2) */}
+        {/* My Apps - Organized by Sections */}
         <div className="mb-8 md:mb-12 px-4 md:px-0">
-          <div className="max-w-2xl mx-auto">
-            {/* Responsive Grid for Apps */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6 justify-items-center">
-              {[...myWorkActions, ...exploreActions, ...accountActions].map((action, index) => (
-                <div key={index} className="flex flex-col items-center cursor-pointer group" onClick={action.action}>
-                  <div className={`w-14 h-14 md:w-16 md:h-16 ${action.color} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-all duration-300 shadow-sm group-hover:shadow-md`}>
-                    <action.icon className={`h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 ${action.textColor}`} />
+          <div className="max-w-5xl mx-auto space-y-8">
+            
+            {/* My Work Section */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground mb-4 text-center">My Work</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 sm:gap-6 justify-items-center">
+                {myWorkActions.map((action, index) => (
+                  <div key={index} className="flex flex-col items-center cursor-pointer group" onClick={action.action}>
+                    <div className={`w-14 h-14 md:w-16 md:h-16 ${action.color} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-all duration-300 shadow-sm group-hover:shadow-md`}>
+                      <action.icon className={`h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 ${action.textColor}`} />
+                    </div>
+                    <span className="text-xs text-muted-foreground text-center leading-tight w-16 sm:w-20 group-hover:text-foreground transition-colors whitespace-normal">{action.title}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground text-center leading-tight w-16 sm:w-20 group-hover:text-foreground transition-colors whitespace-normal">{action.title}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Explore & Account Sections */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Explore Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-4 text-center">Explore</h3>
+                <div className="grid grid-cols-2 gap-4 sm:gap-6 justify-items-center">
+                  {exploreActions.map((action, index) => (
+                    <div key={index} className="flex flex-col items-center cursor-pointer group" onClick={action.action}>
+                      <div className={`w-14 h-14 md:w-16 md:h-16 ${action.color} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-all duration-300 shadow-sm group-hover:shadow-md`}>
+                        <action.icon className={`h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 ${action.textColor}`} />
+                      </div>
+                      <span className="text-xs text-muted-foreground text-center leading-tight w-16 sm:w-20 group-hover:text-foreground transition-colors whitespace-normal">{action.title}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Account Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-4 text-center">Account</h3>
+                <div className="grid grid-cols-2 gap-4 sm:gap-6 justify-items-center">
+                  {accountActions.map((action, index) => (
+                    <div key={index} className="flex flex-col items-center cursor-pointer group" onClick={action.action}>
+                      <div className={`w-14 h-14 md:w-16 md:h-16 ${action.color} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-110 transition-all duration-300 shadow-sm group-hover:shadow-md`}>
+                        <action.icon className={`h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 ${action.textColor}`} />
+                      </div>
+                      <span className="text-xs text-muted-foreground text-center leading-tight w-16 sm:w-20 group-hover:text-foreground transition-colors whitespace-normal">{action.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
