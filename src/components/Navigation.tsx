@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle } from "lucide-react";
+import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle } from "lucide-react";
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { DataPrivacyManager } from './DataPrivacyManager';
 import ProfileManager from './ProfileManager';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
+import { AppDocumentationWindow } from './AppDocumentationWindow';
 import { HomeManager } from './HomeManager';
 import { ToolsMaterialsWindow } from './ToolsMaterialsWindow';
 import { UserToolsMaterialsWindow } from './UserToolsMaterialsWindow';
@@ -37,6 +38,7 @@ export default function Navigation({
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
+  const [isDocumentationOpen, setIsDocumentationOpen] = useState(false);
   const [isHomeManagerOpen, setIsHomeManagerOpen] = useState(false);
   const [isToolsLibraryOpen, setIsToolsLibraryOpen] = useState(false);
   const [isUserToolsLibraryOpen, setIsUserToolsLibraryOpen] = useState(false);
@@ -220,41 +222,51 @@ export default function Navigation({
                       <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg z-[60] backdrop-blur-sm">
-                    <DropdownMenuItem onClick={() => setIsProfileOpen(true)}>
-                      <User className="w-4 h-4 mr-2 text-blue-500" />
-                      My Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsRoadmapOpen(true)}>
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      App Improvements & Feedback
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsPrivacyOpen(true)}>
-                      <Lock className="w-4 h-4 mr-2" />
-                      Privacy & Data
-                    </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem onClick={onAdminAccess}>
-                        <Shield className="w-4 h-4 mr-2" />
-                        Admin Panel
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={signOut} className="text-destructive">
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </DropdownMenuItem>
+                   <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg z-[60] backdrop-blur-sm">
+                     <DropdownMenuItem onClick={() => setIsProfileOpen(true)}>
+                       <User className="w-4 h-4 mr-2 text-blue-500" />
+                       My Profile
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => setIsPrivacyOpen(true)}>
+                       <Lock className="w-4 h-4 mr-2" />
+                       Privacy & Data
+                     </DropdownMenuItem>
+                     {isAdmin && (
+                       <DropdownMenuItem onClick={onAdminAccess}>
+                         <Shield className="w-4 h-4 mr-2" />
+                         Admin Panel
+                       </DropdownMenuItem>
+                     )}
+                     <DropdownMenuItem onClick={signOut} className="text-destructive">
+                       <LogOut className="w-4 h-4 mr-2" />
+                       Sign Out
+                     </DropdownMenuItem>
 
-                </DropdownMenuContent>
-                </DropdownMenu>
-                {/* Feedback Button */}
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="transition-fast p-1 sm:p-2"
-                  onClick={() => setShowFeedback(true)}
-                >
-                  <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                </Button>
+                 </DropdownMenuContent>
+                 </DropdownMenu>
+                 
+                 {/* Help & Documentation Dropdown */}
+                 <DropdownMenu>
+                   <DropdownMenuTrigger asChild>
+                     <Button variant="ghost" size="icon" className="transition-fast p-1 sm:p-2">
+                       <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                     </Button>
+                   </DropdownMenuTrigger>
+                   <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg z-[60] backdrop-blur-sm">
+                     <DropdownMenuItem onClick={() => setShowFeedback(true)}>
+                       <MessageCircle className="w-4 h-4 mr-2 text-green-500" />
+                       Give us feedback
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => setIsRoadmapOpen(true)}>
+                       <TrendingUp className="w-4 h-4 mr-2 text-blue-500" />
+                       App Roadmap
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => setIsDocumentationOpen(true)}>
+                       <BookOpen className="w-4 h-4 mr-2 text-purple-500" />
+                       App Documentation
+                     </DropdownMenuItem>
+                   </DropdownMenuContent>
+                 </DropdownMenu>
               </div>
             </div>
           </div>
@@ -276,10 +288,15 @@ export default function Navigation({
           onOpenChange={setIsProfileOpen}
         />
         
-        <FeatureRoadmapWindow 
-          open={isRoadmapOpen}
-          onOpenChange={setIsRoadmapOpen}
-        />
+         <FeatureRoadmapWindow 
+           open={isRoadmapOpen}
+           onOpenChange={setIsRoadmapOpen}
+         />
+         
+         <AppDocumentationWindow
+           open={isDocumentationOpen}
+           onOpenChange={setIsDocumentationOpen}
+         />
         
         <HomeManager 
           open={isHomeManagerOpen}
