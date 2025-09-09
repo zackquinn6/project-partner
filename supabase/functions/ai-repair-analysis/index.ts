@@ -14,21 +14,18 @@ serve(async (req) => {
 
   try {
     const { photos, description } = await req.json();
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
 
-    if (!OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured');
+    if (!GOOGLE_GEMINI_API_KEY) {
+      throw new Error('Google Gemini API key not configured');
     }
 
     if (!photos || !Array.isArray(photos) || photos.length === 0) {
       throw new Error('At least one photo is required');
     }
 
-    // Prepare messages for OpenAI
-    const messages = [
-      {
-        role: "system",
-        content: `You are an expert home repair analyst specializing in bathroom remodeling, tile work, plumbing, and window repairs. 
+    // Prepare content for Gemini Vision API
+    const prompt = `You are an expert home repair analyst specializing in bathroom remodeling, tile work, plumbing, and window repairs. 
 
 Analyze the provided photos and provide a comprehensive repair assessment in the following JSON format:
 
@@ -50,52 +47,69 @@ IMPORTANT:
 - Include safety warnings for electrical/water issues
 - Consider moisture/ventilation concerns for bathroom repairs
 - Suggest when professional help is recommended
-- Provide realistic time and cost estimates`
-      },
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: `Please analyze these home repair photos. ${description ? `Additional context: ${description}` : ''}`
-          },
-          ...photos.map((photo: string) => ({
-            type: "image_url",
-            image_url: {
-              url: photo,
-              detail: "high"
-            }
-          }))
-        ]
-      }
+- Provide realistic time and cost estimates
+
+Please analyze these home repair photos. ${description ? `Additional context: ${description}` : ''}`;
+
+    // Prepare parts for Gemini request
+    const parts = [
+      { text: prompt },
+      ...photos.map((photo: string) => ({
+        inline_data: {
+          mime_type: "image/jpeg",
+          data: photo.split(',')[1] // Remove data:image/jpeg;base64, prefix
+        }
+      }))
     ];
 
-    console.log('Sending request to OpenAI with', photos.length, 'photos');
+    console.log('Sending request to Google Gemini with', photos.length, 'photos');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision-latest:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        messages,
-        max_tokens: 2000,
-        temperature: 0.3,
+        contents: [{
+          parts: parts
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 32,
+          topP: 1,
+          maxOutputTokens: 2048,
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('OpenAI API error:', response.status, errorData);
-      throw new Error(`OpenAI API error: ${response.status} ${errorData}`);
+      console.error('Google Gemini API error:', response.status, errorData);
+      throw new Error(`Google Gemini API error: ${response.status} ${errorData}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI response received');
+    console.log('Google Gemini response received');
 
-    const analysisText = data.choices[0].message.content;
+    const analysisText = data.candidates[0].content.parts[0].text;
     
     // Parse the JSON response
     let analysisResult;
