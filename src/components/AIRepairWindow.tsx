@@ -217,19 +217,19 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                       Upload Photos (1-3 photos)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
                       {photos.map((photo, index) => (
                         <div key={index} className="relative">
                           <img
                             src={URL.createObjectURL(photo)}
                             alt={`Repair photo ${index + 1}`}
-                            className="w-full h-48 object-cover rounded-lg border"
+                            className="w-20 h-20 object-cover rounded-lg border"
                           />
                           <Button
                             variant="destructive"
                             size="sm"
-                            className="absolute top-2 right-2"
+                            className="absolute -top-1 -right-1 h-6 w-6 p-0 rounded-full text-xs"
                             onClick={() => removePhoto(index)}
                           >
                             ×
@@ -240,16 +240,11 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                       {photos.length < 3 && (
                         <Button
                           variant="outline"
-                          className="h-48 border-2 border-dashed"
+                          className="w-20 h-20 border-2 border-dashed flex flex-col items-center justify-center p-1"
                           onClick={() => fileInputRef.current?.click()}
                         >
-                          <div className="text-center">
-                            <Camera className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                            <p className="font-medium">Add Photo</p>
-                            <p className="text-sm text-muted-foreground">
-                              {photos.length === 0 ? "Take or upload photos" : `${3 - photos.length} more photos`}
-                            </p>
-                          </div>
+                          <Camera className="w-4 h-4 text-muted-foreground mb-1" />
+                          <span className="text-xs text-muted-foreground">Add</span>
                         </Button>
                       )}
                     </div>
@@ -284,17 +279,17 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                 <Button
                   onClick={analyzeRepair}
                   disabled={isAnalyzing || photos.length === 0}
-                  className="w-full h-12 text-lg font-semibold"
+                  className="w-full h-10 text-base font-medium"
                 >
                   {isAnalyzing ? (
                     <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Analyzing Photos...
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing...
                     </>
                   ) : (
                     <>
-                      <Camera className="w-5 h-5 mr-2" />
-                      Analyze Repair Issue
+                      <Camera className="w-4 h-4 mr-2" />
+                      Analyze Issue
                     </>
                   )}
                 </Button>
