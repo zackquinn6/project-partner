@@ -67,6 +67,15 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
   };
 
   const analyzeRepair = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to use AI repair analysis.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (photos.length === 0) {
       toast({
         title: "Photos Required",
@@ -106,11 +115,15 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
       const result: AnalysisResult = analysisResult;
       setAnalysis(result);
 
-      // Save to database
+      // Save to database - only if user is authenticated
+      if (!user?.id) {
+        throw new Error('User authentication required to save analysis');
+      }
+
       const { error: dbError } = await supabase
         .from('ai_repair_analyses')
         .insert({
-          user_id: user?.id,
+          user_id: user.id,
           photos: photoUrls.map(url => ({ url, uploaded_at: new Date().toISOString() })),
           analysis_result: result as any,
           issue_category: result.issue_category,
@@ -124,7 +137,10 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
           estimated_time: result.estimated_time
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw new Error(`Failed to save analysis: ${dbError.message}`);
+      }
 
       toast({
         title: "Analysis Complete",
@@ -173,7 +189,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
       onOpenChange(open);
       if (!open) reset();
     }}>
-      <DialogContent className="w-[95vw] h-[95vh] max-w-none max-h-none p-0 overflow-hidden">
+      <DialogContent className="w-[95vw] h-[95vh] max-w-none max-h-none p-0 overflow-hidden md:w-[90vw] md:h-[90vh]">
         <div className="h-full flex flex-col">
           <DialogHeader className="p-4 border-b">
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -182,7 +198,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             {/* Pricing Alert */}
             {showPricingAlert && (
               <div className="bg-yellow-50 border border-yellow-200 p-4 m-4 rounded-lg">

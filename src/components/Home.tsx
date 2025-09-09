@@ -139,82 +139,82 @@ export default function Home({ onViewChange }: HomeProps) {
             <div className="border-b border-border pb-6 mb-8"></div>
             
             {/* Apps Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6 max-w-5xl mx-auto mb-8">
+            <div className="grid grid-cols-4 gap-3 sm:gap-4 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto mb-8 px-2">
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate('/user')}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <Folder className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-slate-600 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <Folder className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">My Projects</span>
+                <span className="text-xs font-medium text-gray-700 text-center leading-tight px-1">My Projects</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-rapid-assessment'))}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <Calculator className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <Calculator className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-blue-600 text-center leading-tight">Rapid Plan</span>
+                <span className="text-xs font-medium text-blue-600 text-center leading-tight px-1">Rapid Plan</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <HomeIcon className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-500 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <HomeIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-green-600 text-center leading-tight">Home Maintenance</span>
+                <span className="text-xs font-medium text-green-600 text-center leading-tight px-1">Home Maintenance</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <Wrench className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-slate-600 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <Wrench className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">Tool Library</span>
+                <span className="text-xs font-medium text-gray-700 text-center leading-tight px-1">Tool Library</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-orange-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <Hammer className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-orange-500 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <Hammer className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-orange-600 text-center leading-tight">Tool Access</span>
+                <span className="text-xs font-medium text-orange-600 text-center leading-tight px-1">Tool Access</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate('/projects')}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-orange-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <BookOpen className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-orange-500 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-orange-600 text-center leading-tight">Project Catalog</span>
+                <span className="text-xs font-medium text-orange-600 text-center leading-tight px-1">Project Catalog</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-help-popup'))}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <HelpCircle className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-500 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <HelpCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-green-600 text-center leading-tight">Expert Help</span>
+                <span className="text-xs font-medium text-green-600 text-center leading-tight px-1">Expert Help</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <User className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-slate-600 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">My Profile</span>
+                <span className="text-xs font-medium text-gray-700 text-center leading-tight px-1">My Profile</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-community-posts'))}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-purple-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <Users className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-purple-500 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-purple-600 text-center leading-tight">Community</span>
+                <span className="text-xs font-medium text-purple-600 text-center leading-tight px-1">Community</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-manager'))}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <MapPin className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-slate-600 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">My Homes</span>
+                <span className="text-xs font-medium text-gray-700 text-center leading-tight px-1">My Homes</span>
               </div>
 
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-ai-repair'))}>
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-indigo-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-105 transition-transform shadow-lg">
-                  <Camera className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-indigo-500 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg">
+                  <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-indigo-600 text-center leading-tight">AI Repair</span>
+                <span className="text-xs font-medium text-indigo-600 text-center leading-tight px-1">AI Repair</span>
               </div>
              </div>
            </div>
