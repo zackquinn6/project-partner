@@ -57,6 +57,10 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
             </p>
           </div>
 
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold">We love these 3 apps</h2>
+          </div>
+
           <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
             {contractorServices.map((service, index) => (
               <Card key={index} className="transition-all duration-300 hover:shadow-lg border-2 hover:border-primary/20">
@@ -69,21 +73,7 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
                     {service.description}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                      Key Features
-                    </h4>
-                    <ul className="space-y-1">
-                      {service.features.map((feature, featureIndex) => (
-                        <li key={featureIndex} className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  
+                <CardContent>
                   <Button 
                     className="w-full" 
                     asChild
@@ -107,19 +97,19 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
           <Card className="bg-muted/50">
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
-                <h3 className="font-semibold text-lg">Pro Tips for Hiring Contractors</h3>
-                <div className="grid gap-3 md:grid-cols-3 text-sm text-muted-foreground">
+                <h3 className="font-semibold text-lg">3 things to get right:</h3>
+                <div className="grid gap-3 text-sm text-muted-foreground">
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Always check licenses and insurance before hiring</span>
+                    <span>Be an officer - license and registration (insurance)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Get multiple quotes to compare pricing and approaches</span>
+                    <span>Get 3+ quotes - think twice on bottom price.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Read reviews and ask for recent project references</span>
+                    <span>Research - Know what you're shopping for. Reviews help - but be cautious of 1 and 5 stars.</span>
                   </div>
                 </div>
               </div>
