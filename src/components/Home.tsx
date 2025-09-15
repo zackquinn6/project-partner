@@ -346,29 +346,32 @@ export default function Home({ onViewChange }: HomeProps) {
                 🏠 The Homeowners App
               </Badge>
               
-              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6">
-                Everything You Need to Manage Your Home
+              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4">
+                Expert in Project Management
               </h1>
+              <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6">
+                + Everything You Need in One Place
+              </h2>
               
               <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">
                 The Homeowners App: Everything you need to manage your home - including maintenance, projects, tools, and more.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button variant="premium" size="lg" className="px-6 md:px-8 text-base md:text-lg" asChild>
+                <Button variant="secondary" size="lg" className="px-6 md:px-8 text-base md:text-lg bg-primary-foreground text-primary hover:bg-primary-foreground/90 border-0 shadow-elegant" asChild>
                   <Link to="/projects">
                     {user ? "View Projects" : "Explore Projects"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button 
-                  variant="accent" 
+                  variant="secondary" 
                   size="lg" 
-                  className="px-6 md:px-8 text-base md:text-lg"
+                  className="px-6 md:px-8 text-base md:text-lg bg-accent text-accent-foreground hover:bg-accent-light border-0 shadow-accent"
                   onClick={() => navigate('/auth?mode=signup')}
                 >
                   <Star className="mr-2 h-4 w-4" />
-                  Get Started Free
+                  Start Your Free Account
                 </Button>
               </div>
             </div>
@@ -395,9 +398,61 @@ export default function Home({ onViewChange }: HomeProps) {
             <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
               Everything You Need in One Place
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
               Access all your home management tools with beautiful, intuitive apps designed for homeowners.
             </p>
+            
+            {/* App List */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-5xl mx-auto mb-12">
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <Folder className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">My Projects</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <Calculator className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">Rapid Plan</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <HomeIcon className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">Maintenance</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <Wrench className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">Tool Library</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <Hammer className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">Tool Access</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <BookOpen className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">Catalog</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <HelpCircle className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">Expert Help</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <User className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">My Profile</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <Users className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">Community</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <MapPin className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">My Homes</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <Camera className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">AI Repair</span>
+              </div>
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+                <Building2 className="h-8 w-8 text-primary mb-2" />
+                <span className="text-sm font-medium text-center">Permits</span>
+              </div>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
@@ -438,16 +493,16 @@ export default function Home({ onViewChange }: HomeProps) {
             Join thousands of homeowners who've discovered the power of having everything they need in one place.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="premium" size="lg" className="px-8 py-4 text-lg font-semibold" asChild>
+            <Button variant="secondary" size="lg" className="px-8 py-4 text-lg font-semibold bg-primary-foreground text-primary hover:bg-primary-foreground/90 border-0 shadow-elegant" asChild>
               <Link to="/auth?mode=signup">
                 Start Your Free Account
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
             <Button 
-              variant="accent" 
+              variant="secondary" 
               size="lg" 
-              className="px-8 py-4 text-lg font-semibold"
+              className="px-8 py-4 text-lg font-semibold bg-accent text-accent-foreground hover:bg-accent-light border-0 shadow-accent"
               onClick={() => navigate('/projects')}
             >
               Explore Project Templates
