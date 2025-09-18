@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { LibraryItemForm } from "./LibraryItemForm";
 import { BulkUpload } from "./BulkUpload";
 import { VariationViewer } from "./VariationViewer";
+import { ToolImporter } from "./ToolImporter";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -30,6 +31,7 @@ export function ToolsLibrary() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [showToolImporter, setShowToolImporter] = useState(false);
   const [viewingVariations, setViewingVariations] = useState<Tool | null>(null);
 
   const fetchTools = async () => {
@@ -108,6 +110,13 @@ export function ToolsLibrary() {
         >
           <Plus className="w-4 h-4 mr-2" />
           Bulk Upload
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setShowToolImporter(true)}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Import Excel
         </Button>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
@@ -237,6 +246,12 @@ export function ToolsLibrary() {
         type="tools"
         open={showBulkUpload}
         onOpenChange={setShowBulkUpload}
+        onSuccess={handleSave}
+      />
+
+      <ToolImporter
+        open={showToolImporter}
+        onOpenChange={setShowToolImporter}
         onSuccess={handleSave}
       />
 

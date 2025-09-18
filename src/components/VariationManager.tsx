@@ -244,7 +244,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { data: variationData, error } = await supabase
         .from('variation_instances')
         .insert({
           core_item_id: coreItemId,
@@ -254,7 +254,9 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
           sku: variationSku || null,
           photo_url: variationPhotoUrl || null,
           attributes: selectedAttributes
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         if (error.code === '23505') {
@@ -264,6 +266,25 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
         throw error;
       }
 
+      // If this is a tool variation, trigger price scraping
+      if (itemType === 'tools' && variationData) {
+        try {
+          await supabase.functions.invoke('scrape-tool-pricing', {
+            body: {
+              variation_id: variationData.id,
+              tool_name: coreItemName,
+              brand: selectedAttributes.brand || selectedAttributes.manufacturer,
+              model: selectedAttributes.model || selectedAttributes.model_number
+            }
+          });
+          toast.success('Variation created and price scraping started');
+        } catch (scrapeError) {
+          console.error('Price scraping failed:', scrapeError);
+          toast.success('Variation created (price scraping failed)');
+        }
+      } else {
+        toast.success('Variation created successfully');
+      }
       
       setVariationName('');
       setVariationDescription('');
