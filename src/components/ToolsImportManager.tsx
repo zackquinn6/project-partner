@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { parseToolListExcel, importToolsToDatabase } from '@/utils/toolParser';
+import { EnhancedToolImporter } from './EnhancedToolImporter';
 
 interface ToolsImportManagerProps {
   open: boolean;
@@ -235,9 +236,10 @@ Saw,Hand saw for cutting wood,Irwin Universal`;
         </DialogHeader>
         
         <Tabs defaultValue="csv" className="w-full overflow-y-auto">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="csv">CSV Import</TabsTrigger>
             <TabsTrigger value="excel">Excel Import</TabsTrigger>
+            <TabsTrigger value="enhanced">Enhanced Import</TabsTrigger>
           </TabsList>
           
           {/* CSV Import Tab */}
@@ -537,6 +539,28 @@ Saw,Hand saw for cutting wood,Irwin Universal`;
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
                 <p>Your Excel file should have columns: Tool Name, Description, Brand, Model, and any attribute columns (Size, Power, etc.)</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Enhanced Import Tab */}
+          <TabsContent value="enhanced" className="space-y-4 overflow-y-auto max-h-[70vh]">
+            <Card>
+              <CardHeader>
+                <CardTitle>Enhanced Tool Import System</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Advanced import system with automatic variant detection, warning flags, pricing scraping, and weight/lifespan estimation.
+                </p>
+                <EnhancedToolImporter
+                  open={true}
+                  onOpenChange={() => {}}
+                  onSuccess={() => {
+                    onSuccess();
+                    resetAll();
+                  }}
+                />
               </CardContent>
             </Card>
           </TabsContent>
