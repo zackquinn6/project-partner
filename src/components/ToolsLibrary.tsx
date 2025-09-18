@@ -7,9 +7,8 @@ import { Search, Plus, Edit, Trash2, Image, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LibraryItemForm } from "./LibraryItemForm";
-import { BulkUpload } from "./BulkUpload";
 import { VariationViewer } from "./VariationViewer";
-import { ToolImporter } from "./ToolImporter";
+import { ToolsImportManager } from "./ToolsImportManager";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -30,8 +29,7 @@ export function ToolsLibrary() {
   const [editingTool, setEditingTool] = useState<Tool | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [showToolImporter, setShowToolImporter] = useState(false);
+  const [showImportManager, setShowImportManager] = useState(false);
   const [viewingVariations, setViewingVariations] = useState<Tool | null>(null);
 
   const fetchTools = async () => {
@@ -106,17 +104,10 @@ export function ToolsLibrary() {
         </div>
         <Button
           variant="outline"
-          onClick={() => setShowBulkUpload(true)}
+          onClick={() => setShowImportManager(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
-          Bulk Upload
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setShowToolImporter(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Import Excel
+          Import Tools
         </Button>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
@@ -202,7 +193,7 @@ export function ToolsLibrary() {
               {tool.example_models && (
                 <div>
                   <Badge variant="secondary" className="text-xs">
-                    Examples: {tool.example_models}
+                    Tool models: {tool.example_models}
                   </Badge>
                 </div>
               )}
@@ -242,16 +233,9 @@ export function ToolsLibrary() {
         </DialogContent>
       </Dialog>
 
-      <BulkUpload
-        type="tools"
-        open={showBulkUpload}
-        onOpenChange={setShowBulkUpload}
-        onSuccess={handleSave}
-      />
-
-      <ToolImporter
-        open={showToolImporter}
-        onOpenChange={setShowToolImporter}
+      <ToolsImportManager
+        open={showImportManager}
+        onOpenChange={setShowImportManager}
         onSuccess={handleSave}
       />
 
