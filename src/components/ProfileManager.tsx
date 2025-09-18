@@ -7,12 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import DIYSurveyPopup from "./DIYSurveyPopup";
-
 interface ProfileManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
 interface ProfileData {
   skill_level?: string;
   avoid_projects?: string[];
@@ -31,7 +29,6 @@ interface ProfileData {
     state?: string;
   };
 }
-
 export default function ProfileManager({
   open,
   onOpenChange
@@ -39,22 +36,25 @@ export default function ProfileManager({
   const [isLoading, setIsLoading] = useState(true);
   const [existingProfile, setExistingProfile] = useState<ProfileData | null>(null);
   const [showSurveyEditor, setShowSurveyEditor] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
-
+  const {
+    toast
+  } = useToast();
+  const {
+    user
+  } = useAuth();
   useEffect(() => {
     if (open && user) {
       loadExistingProfile();
     }
   }, [open, user]);
-
   const loadExistingProfile = async () => {
     setIsLoading(true);
     try {
       // First fetch profile data
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
+      const {
+        data: profileData,
+        error: profileError
+      } = await supabase.from('profiles').select(`
           skill_level, 
           avoid_projects, 
           physical_capability, 
@@ -66,29 +66,22 @@ export default function ProfileManager({
           survey_completed_at,
           full_name,
           nickname
-        `)
-        .eq('user_id', user?.id)
-        .maybeSingle();
-
+        `).eq('user_id', user?.id).maybeSingle();
       if (profileError) {
         console.error('Error loading profile:', profileError);
         setExistingProfile(null);
         return;
       }
-
       if (!profileData || !profileData.survey_completed_at) {
         setExistingProfile(null);
         return;
       }
 
       // Then fetch primary home data
-      const { data: homeData, error: homeError } = await supabase
-        .from('homes')
-        .select('name, city, state')
-        .eq('user_id', user?.id)
-        .eq('is_primary', true)
-        .maybeSingle();
-
+      const {
+        data: homeData,
+        error: homeError
+      } = await supabase.from('homes').select('name, city, state').eq('user_id', user?.id).eq('is_primary', true).maybeSingle();
       if (homeError && homeError.code !== 'PGRST116') {
         console.error('Error loading primary home:', homeError);
       }
@@ -99,7 +92,6 @@ export default function ProfileManager({
         owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
         primary_home: homeData || undefined
       };
-
       setExistingProfile(completeProfile);
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -108,21 +100,16 @@ export default function ProfileManager({
       setIsLoading(false);
     }
   };
-
   const handleStartEdit = () => {
     setShowSurveyEditor(true);
   };
-
   const handleSurveyComplete = () => {
     setShowSurveyEditor(false);
     loadExistingProfile(); // Reload the profile data
   };
-
   const renderProfileView = () => {
     if (!existingProfile) return null;
-
-    return (
-        <div className="space-y-6">
+    return <div className="space-y-6">
           <div className="text-center space-y-2">
             <p className="text-muted-foreground">
               Your profile helps us match you with the right tools, guidance, and partners—
@@ -152,10 +139,7 @@ export default function ProfileManager({
                 <div>
                   <h4 className="font-semibold">Projects to Avoid</h4>
                   <p className="text-sm text-muted-foreground">
-                    {existingProfile.avoid_projects?.length 
-                      ? existingProfile.avoid_projects.join(", ") 
-                      : "Open to anything!"
-                    }
+                    {existingProfile.avoid_projects?.length ? existingProfile.avoid_projects.join(", ") : "Open to anything!"}
                   </p>
                 </div>
                 
@@ -169,30 +153,21 @@ export default function ProfileManager({
                 <div>
                   <h4 className="font-semibold">Primary Home</h4>
                   <p className="text-sm text-muted-foreground">
-                    {existingProfile.primary_home ? 
-                      `${existingProfile.primary_home.name}${existingProfile.primary_home.city && existingProfile.primary_home.state ? ` • ${existingProfile.primary_home.city}, ${existingProfile.primary_home.state}` : ''}` 
-                      : "No primary home set"
-                    }
+                    {existingProfile.primary_home ? `${existingProfile.primary_home.name}${existingProfile.primary_home.city && existingProfile.primary_home.state ? ` • ${existingProfile.primary_home.city}, ${existingProfile.primary_home.state}` : ''}` : "No primary home set"}
                   </p>
                 </div>
 
                 <div>
                   <h4 className="font-semibold">Learning Preferences</h4>
                   <p className="text-sm text-muted-foreground">
-                    {existingProfile.preferred_learning_methods?.length
-                      ? existingProfile.preferred_learning_methods.join(", ")
-                      : "Not specified"
-                    }
+                    {existingProfile.preferred_learning_methods?.length ? existingProfile.preferred_learning_methods.join(", ") : "Not specified"}
                   </p>
                 </div>
 
                 <div>
                   <h4 className="font-semibold">Owned Tools</h4>
                   <p className="text-sm text-muted-foreground">
-                    {existingProfile.owned_tools?.length 
-                      ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library`
-                      : "No tools specified"
-                    }
+                    {existingProfile.owned_tools?.length ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library` : "No tools specified"}
                   </p>
                 </div>
               </div>
@@ -205,39 +180,23 @@ export default function ProfileManager({
             <Edit3 className="w-4 h-4" />
             Edit profile
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              console.log('🏠 ProfileManager: Opening Home Manager and closing profile');
-              onOpenChange(false); // Close profile manager
-              window.dispatchEvent(new CustomEvent('show-home-manager'));
-            }}
-            className="flex items-center gap-2"
-          >
-            🏠 Manage Homes
-          </Button>
+          
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Save Profile
           </Button>
         </div>
-      </div>
-    );
+      </div>;
   };
-
   if (isLoading) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+    return <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl">
           <div className="flex items-center justify-center py-8">
             <div className="text-center">Loading profile...</div>
           </div>
         </DialogContent>
-      </Dialog>
-    );
+      </Dialog>;
   }
-
-  return (
-    <>
+  return <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="text-center">
@@ -249,28 +208,22 @@ export default function ProfileManager({
         </DialogContent>
       </Dialog>
 
-      <DIYSurveyPopup
-        open={showSurveyEditor}
-        onOpenChange={(open) => {
-          setShowSurveyEditor(open);
-          if (!open) {
-            handleSurveyComplete();
-          }
-        }}
-        mode="new"
-        initialData={{
-          skillLevel: existingProfile?.skill_level || "",
-          avoidProjects: existingProfile?.avoid_projects || [],
-          physicalCapability: existingProfile?.physical_capability || "",
-          homeOwnership: existingProfile?.home_ownership || "",
-          homeBuildYear: existingProfile?.home_build_year || "",
-          homeState: existingProfile?.home_state || "",
-          preferredLearningMethods: existingProfile?.preferred_learning_methods || [],
-          ownedTools: existingProfile?.owned_tools || [],
-          fullName: existingProfile?.full_name || "",
-          nickname: existingProfile?.nickname || ""
-        }}
-      />
-    </>
-  );
+      <DIYSurveyPopup open={showSurveyEditor} onOpenChange={open => {
+      setShowSurveyEditor(open);
+      if (!open) {
+        handleSurveyComplete();
+      }
+    }} mode="new" initialData={{
+      skillLevel: existingProfile?.skill_level || "",
+      avoidProjects: existingProfile?.avoid_projects || [],
+      physicalCapability: existingProfile?.physical_capability || "",
+      homeOwnership: existingProfile?.home_ownership || "",
+      homeBuildYear: existingProfile?.home_build_year || "",
+      homeState: existingProfile?.home_state || "",
+      preferredLearningMethods: existingProfile?.preferred_learning_methods || [],
+      ownedTools: existingProfile?.owned_tools || [],
+      fullName: existingProfile?.full_name || "",
+      nickname: existingProfile?.nickname || ""
+    }} />
+    </>;
 }
