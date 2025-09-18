@@ -9,6 +9,7 @@ import { ProjectActionsProvider } from '@/contexts/ProjectActionsContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SecurityMaintenanceProvider } from '@/components/SecurityMaintenanceProvider';
 import { SecurityHeadersProvider } from '@/components/SecurityHeadersProvider';
+import { TempQuizProvider } from '@/contexts/TempQuizContext';
 import Index from "./pages/Index";
 import ProjectCatalogPage from "./pages/ProjectCatalog";
 import Auth from "./pages/Auth";
@@ -22,9 +23,10 @@ const App: React.FC = () => {
       <SecurityHeadersProvider>
         <AuthProvider>
           <SecurityMaintenanceProvider>
-            <ProjectDataProvider>
-              <ProjectActionsProvider>
-                <ProjectProvider>
+            <TempQuizProvider>
+              <ProjectDataProvider>
+                <ProjectActionsProvider>
+                  <ProjectProvider>
                   <Toaster />
                   <Sonner />
                   <BrowserRouter>
@@ -36,9 +38,10 @@ const App: React.FC = () => {
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </BrowserRouter>
-                </ProjectProvider>
-              </ProjectActionsProvider>
-            </ProjectDataProvider>
+                  </ProjectProvider>
+                </ProjectActionsProvider>
+              </ProjectDataProvider>
+            </TempQuizProvider>
           </SecurityMaintenanceProvider>
         </AuthProvider>
       </SecurityHeadersProvider>
