@@ -39,7 +39,7 @@ export const SecurityHeadersProvider: React.FC<{ children: React.ReactNode }> = 
         "form-action 'self'",
         "upgrade-insecure-requests", // Force HTTPS
         "block-all-mixed-content", // Block mixed HTTP/HTTPS content
-        "require-trusted-types-for 'script'" // Prevent DOM XSS
+        // "require-trusted-types-for 'script'" // Commented out - React doesn't support Trusted Types yet
       ].join('; ');
       
       // Prevent MIME type sniffing attacks
