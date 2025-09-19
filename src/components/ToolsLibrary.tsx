@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { clearAllTools } from "@/utils/variationUtils";
 import { EnhancedToolParser, importEnhancedToolsToDatabase } from "@/utils/enhancedToolParser";
 import { toast } from "sonner";
+
 interface Tool {
   id: string;
   item: string;
@@ -22,6 +23,7 @@ interface Tool {
   created_at: string;
   updated_at: string;
 }
+
 export function ToolsLibrary() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,14 +33,16 @@ export function ToolsLibrary() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImportManager, setShowImportManager] = useState(false);
   const [viewingVariations, setViewingVariations] = useState<Tool | null>(null);
+
   const fetchTools = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('tools' as any).select('*').order('item');
+      const { data, error } = await supabase
+        .from('tools' as any)
+        .select('*')
+        .order('item');
+      
       if (error) throw error;
-      setTools(data as unknown as Tool[] || []);
+      setTools((data as unknown as Tool[]) || []);
     } catch (error) {
       console.error('Error fetching tools:', error);
       toast.error('Failed to load tools');
@@ -46,22 +50,32 @@ export function ToolsLibrary() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     fetchTools();
   }, []);
-  const filteredTools = tools.filter(tool => tool.item.toLowerCase().includes(searchTerm.toLowerCase()) || tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const filteredTools = tools.filter(tool => 
+    tool.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   const handleDelete = async (toolId: string) => {
     try {
-      const {
-        error
-      } = await supabase.from('tools' as any).delete().eq('id', toolId);
+      const { error } = await supabase
+        .from('tools' as any)
+        .delete()
+        .eq('id', toolId);
+      
       if (error) throw error;
+      
       setTools(tools.filter(tool => tool.id !== toolId));
     } catch (error) {
       console.error('Error deleting tool:', error);
       toast.error('Failed to delete tool');
     }
   };
+
   const handleSave = () => {
     // Force refresh the tools list twice to ensure data is loaded
     fetchTools();
@@ -72,10 +86,12 @@ export function ToolsLibrary() {
     setShowEditDialog(false);
     setEditingTool(null);
   };
+
   const handleEdit = (tool: Tool) => {
     setEditingTool(tool);
     setShowEditDialog(true);
   };
+
   const handleDeleteAll = async () => {
     try {
       setLoading(true);
@@ -91,14 +107,23 @@ export function ToolsLibrary() {
       setLoading(false);
     }
   };
+
+
   if (loading) {
     return <div className="flex justify-center p-8">Loading tools...</div>;
   }
-  return <div className="space-y-4 h-full">
+
+  return (
+    <div className="space-y-4 h-full">
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input placeholder="Search tools by name or description..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+          <Input
+            placeholder="Search tools by name or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -122,7 +147,12 @@ export function ToolsLibrary() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        <Button variant="outline" size="sm" onClick={() => setShowImportManager(true)} className="text-xs">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowImportManager(true)}
+          className="text-xs"
+        >
           <Plus className="w-4 h-4 mr-1" />
           Import
         </Button>
@@ -137,19 +167,35 @@ export function ToolsLibrary() {
             <DialogHeader>
               <DialogTitle>Add New Tool</DialogTitle>
             </DialogHeader>
-        <LibraryItemForm type="tools" onSave={handleSave} onCancel={() => setShowAddDialog(false)} />
+        <LibraryItemForm
+          type="tools"
+          onSave={handleSave}
+          onCancel={() => setShowAddDialog(false)}
+        />
           </DialogContent>
         </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-        {filteredTools.map(tool => <Card key={tool.id} className="relative cursor-pointer hover:shadow-md transition-shadow" onClick={() => setViewingVariations(tool)}>
+        {filteredTools.map((tool) => (
+          <Card key={tool.id} className="relative cursor-pointer hover:shadow-md transition-shadow" onClick={() => setViewingVariations(tool)}>
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between">
                 <CardTitle className="text-lg capitalize">{tool.item}</CardTitle>
-                <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                  
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(tool)}>
+                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewingVariations(tool)}
+                    title="View Variations"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(tool)}
+                  >
                     <Edit className="w-4 h-4" />
                   </Button>
                   <AlertDialog>
@@ -177,43 +223,78 @@ export function ToolsLibrary() {
               </div>
             </CardHeader>
             <CardContent>
-              {tool.photo_url && <div className="mb-3">
-                  <img src={tool.photo_url} alt={tool.item} className="w-full h-32 object-cover rounded-md" />
-                </div>}
-              {tool.description && <p className="text-sm text-muted-foreground mb-2">
+              {tool.photo_url && (
+                <div className="mb-3">
+                  <img
+                    src={tool.photo_url}
+                    alt={tool.item}
+                    className="w-full h-32 object-cover rounded-md"
+                  />
+                </div>
+              )}
+              {tool.description && (
+                <p className="text-sm text-muted-foreground mb-2">
                   {tool.description}
-                </p>}
-              {tool.example_models && <div>
+                </p>
+              )}
+              {tool.example_models && (
+                <div>
                   <Badge variant="secondary" className="text-xs">
                     Tool models: {tool.example_models}
                   </Badge>
-                </div>}
-              {!tool.photo_url && !tool.description && !tool.example_models && <div className="flex items-center gap-2 text-muted-foreground">
+                </div>
+              )}
+              {!tool.photo_url && !tool.description && !tool.example_models && (
+                <div className="flex items-center gap-2 text-muted-foreground">
                   <Image className="w-4 h-4" />
                   <span className="text-sm">No additional details</span>
-                </div>}
+                </div>
+              )}
             </CardContent>
-          </Card>)}
+          </Card>
+        ))}
       </div>
 
-      {filteredTools.length === 0 && <div className="text-center py-8 text-muted-foreground">
+      {filteredTools.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
           {searchTerm ? 'No tools found matching your search.' : 'No tools in library yet.'}
-        </div>}
+        </div>
+      )}
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Tool</DialogTitle>
           </DialogHeader>
-          {editingTool && <LibraryItemForm type="tools" item={editingTool} onSave={handleSave} onCancel={() => {
-          setShowEditDialog(false);
-          setEditingTool(null);
-        }} />}
+          {editingTool && (
+            <LibraryItemForm
+              type="tools"
+              item={editingTool}
+              onSave={handleSave}
+              onCancel={() => {
+                setShowEditDialog(false);
+                setEditingTool(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
-      <ToolsImportManager open={showImportManager} onOpenChange={setShowImportManager} onSuccess={handleSave} />
+      <ToolsImportManager
+        open={showImportManager}
+        onOpenChange={setShowImportManager}
+        onSuccess={handleSave}
+      />
 
-      {viewingVariations && <VariationViewer open={!!viewingVariations} onOpenChange={open => !open && setViewingVariations(null)} coreItemId={viewingVariations.id} itemType="tools" coreItemName={viewingVariations.item} />}
-    </div>;
+      {viewingVariations && (
+        <VariationViewer
+          open={!!viewingVariations}
+          onOpenChange={(open) => !open && setViewingVariations(null)}
+          coreItemId={viewingVariations.id}
+          itemType="tools"
+          coreItemName={viewingVariations.item}
+        />
+      )}
+    </div>
+  );
 }
