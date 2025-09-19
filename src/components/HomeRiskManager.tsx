@@ -21,6 +21,7 @@ interface HomeRisk {
   risk_level: 'low' | 'medium' | 'high' | 'critical';
   created_at: string;
   updated_at: string;
+  is_mitigated?: boolean;
 }
 
 export const HomeRiskManager: React.FC = () => {
@@ -46,13 +47,29 @@ export const HomeRiskManager: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('home_risks')
-        .select('*');
+        .select(`
+          *,
+          home_risk_mitigations!left(is_mitigated)
+        `);
 
       if (error) throw error;
       
-      // Sort by risk level priority: critical (highest) -> high -> medium -> low (lowest)
-      const sortedData = (data || []).sort((a, b) => {
-        // Define risk priority order (lower number = higher priority)
+      // Process the data to include mitigation status
+      const processedData = (data || []).map((risk: any) => ({
+        ...risk,
+        is_mitigated: Array.isArray(risk.home_risk_mitigations) && 
+                     risk.home_risk_mitigations.length > 0 && 
+                     risk.home_risk_mitigations[0]?.is_mitigated === true
+      }));
+      
+      // Sort by mitigation status first (active risks first), then by risk level, then by start year
+      const sortedData = processedData.sort((a, b) => {
+        // Mitigated risks go to bottom
+        if (a.is_mitigated !== b.is_mitigated) {
+          return a.is_mitigated ? 1 : -1;
+        }
+        
+        // Within same mitigation status, sort by risk priority
         const riskPriority = { 
           critical: 1, 
           high: 2, 
@@ -63,12 +80,11 @@ export const HomeRiskManager: React.FC = () => {
         const aPriority = riskPriority[a.risk_level] || 5;
         const bPriority = riskPriority[b.risk_level] || 5;
         
-        // First sort by risk priority
         if (aPriority !== bPriority) {
           return aPriority - bPriority;
         }
         
-        // Then sort by start year within same risk level
+        // Finally sort by start year
         return a.start_year - b.start_year;
       });
       
@@ -165,7 +181,10 @@ export const HomeRiskManager: React.FC = () => {
     }
   };
 
-  const getRiskColor = (level: string) => {
+  const getRiskColor = (level: string, isMitigated: boolean = false) => {
+    if (isMitigated) {
+      return 'bg-green-50 border-green-200';
+    }
     switch (level) {
       case 'critical': return 'bg-red-50 border-red-200';
       case 'high': return 'bg-orange-50 border-orange-200';
@@ -306,7 +325,7 @@ export const HomeRiskManager: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {risks.map((risk) => (
-              <Card key={risk.id} className={`border ${getRiskColor(risk.risk_level)}`}>
+              <Card key={risk.id} className={`border ${getRiskColor(risk.risk_level, risk.is_mitigated)}`}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1">
@@ -314,8 +333,8 @@ export const HomeRiskManager: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h4 className="font-semibold">{risk.material_name}</h4>
-                          <Badge variant={risk.risk_level === 'critical' ? 'destructive' : 'secondary'}>
-                            {risk.risk_level.toUpperCase()}
+                          <Badge variant={risk.is_mitigated ? 'secondary' : (risk.risk_level === 'critical' ? 'destructive' : 'secondary')}>
+                            {risk.is_mitigated ? 'MITIGATED' : risk.risk_level.toUpperCase()}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">
