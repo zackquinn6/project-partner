@@ -165,7 +165,7 @@ export function MaterialsLibrary() {
 
       <div className="border rounded-lg max-h-[70vh] overflow-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
               <TableHead className="w-12">Photo</TableHead>
               <TableHead>
