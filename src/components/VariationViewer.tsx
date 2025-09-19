@@ -55,11 +55,14 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
         .eq('item_type', itemType);
 
       if (error) throw error;
-      setVariations((data || []).map(item => ({
+      console.log('Raw variations data:', data);
+      const processedData = (data || []).map(item => ({
         ...item,
         item_type: item.item_type as 'tools' | 'materials',
         attributes: item.attributes as Record<string, string>
-      })));
+      }));
+      console.log('Processed variations:', processedData);
+      setVariations(processedData);
     } catch (error) {
       console.error('Error fetching variations:', error);
       toast.error('Failed to fetch variations');
