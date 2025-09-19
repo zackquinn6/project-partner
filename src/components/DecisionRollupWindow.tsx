@@ -51,6 +51,7 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
   const [decisions, setDecisions] = useState<DecisionItem[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [selectedAudibleOption, setSelectedAudibleOption] = useState<string>('');
 
   // Extract all decision points from phases
   useEffect(() => {
@@ -204,6 +205,96 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
 
   const pendingCount = decisions.filter(d => d.status === 'pending').length;
   const answeredCount = decisions.filter(d => d.status === 'answered').length;
+
+  // Handle audible options
+  const handleAudibleOptionSelect = (option: string) => {
+    setSelectedAudibleOption(option);
+    toast.success(`Selected: ${option}. This will help us update your plan accordingly.`);
+    setTimeout(() => onOpenChange(false), 1000);
+  };
+
+  // Render unplanned work options
+  if (mode === 'unplanned-work') {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-center">
+              You learned something new - that's okay! 
+            </DialogTitle>
+            <p className="text-center text-muted-foreground mt-2">
+              Now let's update the plan to keep you moving forward successfully.
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-6">
+            <Card 
+              className="cursor-pointer hover:bg-accent/50 transition-colors border-2 hover:border-primary/50" 
+              onClick={() => handleAudibleOptionSelect('New work needed')}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <HelpCircle className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">New work needed</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Additional tasks or phases discovered during the project
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:bg-accent/50 transition-colors border-2 hover:border-primary/50" 
+              onClick={() => handleAudibleOptionSelect('New materials needed')}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">New materials needed</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Additional supplies or materials required for completion
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="cursor-pointer hover:bg-accent/50 transition-colors border-2 hover:border-primary/50" 
+              onClick={() => handleAudibleOptionSelect('Schedule update needed')}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">Schedule update needed</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Timeline adjustments or deadline changes required
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex justify-center mt-6">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
