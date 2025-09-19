@@ -946,7 +946,7 @@ export default function EditWorkflowView({
       {/* Tools & Materials Library */}
       <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
       
-      <MultiSelectLibraryDialog open={toolsLibraryOpen} onOpenChange={setToolsLibraryOpen} type="tools" onSelect={selectedItems => {
+      <MultiSelectLibraryDialog open={toolsLibraryOpen} onOpenChange={setToolsLibraryOpen} type="tools" availableStepTools={editingStep?.tools?.map(t => ({id: t.id, name: t.name})) || []} onSelect={selectedItems => {
       const newTools: StepTool[] = selectedItems.map(item => ({
         id: `tool-${Date.now()}-${Math.random()}`,
         name: item.item,

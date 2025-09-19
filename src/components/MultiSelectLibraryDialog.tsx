@@ -19,6 +19,7 @@ interface SelectedItem {
   description?: string | null;
   attributes: Record<string, string>;
   isPrime: boolean;
+  alternateToolId?: string;
 }
 
 interface MultiSelectLibraryDialogProps {
@@ -26,13 +27,15 @@ interface MultiSelectLibraryDialogProps {
   onOpenChange: (open: boolean) => void;
   type: 'tools' | 'materials';
   onSelect: (items: SelectedItem[]) => void;
+  availableStepTools?: Array<{id: string; name: string}>;
 }
 
 export function MultiSelectLibraryDialog({
   open,
   onOpenChange,
   type,
-  onSelect
+  onSelect,
+  availableStepTools = []
 }: MultiSelectLibraryDialogProps) {
   const [items, setItems] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
@@ -93,7 +96,8 @@ export function MultiSelectLibraryDialog({
           quantity: 1,
           description: items.find(i => i.id === variation.coreItemId)?.description,
           attributes: variation.attributes,
-          isPrime: variation.isPrime
+          isPrime: variation.isPrime,
+          alternateToolId: variation.alternateToolId
         }];
       }
     });
@@ -153,12 +157,17 @@ export function MultiSelectLibraryDialog({
                     {selectedItems.map(item => (
                       <div key={item.id} className="flex items-center justify-between bg-background p-2 rounded">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{item.item}</span>
-                            <Badge variant={item.isPrime ? "default" : "secondary"} className="text-xs">
-                              {item.isPrime ? "Prime" : "Alternate"}
-                            </Badge>
-                          </div>
+                           <div className="flex items-center gap-2">
+                             <span className="text-sm font-medium">{item.item}</span>
+                             <Badge variant={item.isPrime ? "default" : "secondary"} className="text-xs">
+                               {item.isPrime ? "Prime" : "Alternate"}
+                             </Badge>
+                             {!item.isPrime && item.alternateToolId && (
+                               <Badge variant="outline" className="text-xs">
+                                 Alt for: {availableStepTools.find(t => t.id === item.alternateToolId)?.name || 'Unknown'}
+                               </Badge>
+                             )}
+                           </div>
                           {Object.keys(item.attributes).length > 0 && (
                             <div className="text-xs text-muted-foreground mt-1">
                               {Object.entries(item.attributes).map(([key, value]) => `${key}: ${value}`).join(', ')}
@@ -296,6 +305,7 @@ export function MultiSelectLibraryDialog({
               coreItemName={items.find(i => i.id === selectingVariationFor)?.item || ''}
               onVariationSelect={handleVariationSelect}
               allowPrimeToggle={true}
+              availableAlternateTools={type === 'tools' ? availableStepTools : []}
             />
           )}
         </DialogContent>

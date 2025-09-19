@@ -34,6 +34,7 @@ interface SelectedVariation {
   name: string;
   attributes: Record<string, string>;
   isPrime: boolean;
+  alternateToolId?: string;
 }
 
 interface VariationSelectorProps {
@@ -44,6 +45,7 @@ interface VariationSelectorProps {
   selectedVariation?: SelectedVariation;
   allowPrimeToggle?: boolean;
   compact?: boolean;
+  availableAlternateTools?: Array<{id: string; name: string}>;
 }
 
 export function VariationSelector({ 
@@ -53,13 +55,15 @@ export function VariationSelector({
   onVariationSelect,
   selectedVariation,
   allowPrimeToggle = false,
-  compact = false
+  compact = false,
+  availableAlternateTools = []
 }: VariationSelectorProps) {
   const [attributes, setAttributes] = useState<VariationAttribute[]>([]);
   const [variations, setVariations] = useState<VariationInstance[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [matchingVariation, setMatchingVariation] = useState<VariationInstance | null>(null);
   const [isPrime, setIsPrime] = useState(selectedVariation?.isPrime ?? true);
+  const [selectedAlternateTool, setSelectedAlternateTool] = useState<string>('');
 
   useEffect(() => {
     fetchAttributes();
@@ -89,25 +93,53 @@ export function VariationSelector({
 
   const fetchAttributes = async () => {
     try {
+      // First get all variation instances for this item to see what attributes actually exist
+      const { data: variationsData, error: variationsError } = await supabase
+        .from('variation_instances')
+        .select('attributes')
+        .eq('core_item_id', coreItemId)
+        .eq('item_type', itemType);
+
+      if (variationsError) throw variationsError;
+
+      // Extract unique attribute keys from existing variations
+      const existingAttributeKeys = new Set<string>();
+      (variationsData || []).forEach(variation => {
+        if (variation.attributes) {
+          Object.keys(variation.attributes).forEach(key => {
+            existingAttributeKeys.add(key);
+          });
+        }
+      });
+
+      // Only fetch attributes that actually exist for this item
       const { data: attributesData, error } = await supabase
         .from('variation_attributes')
         .select(`
           *,
           variation_attribute_values (*)
         `)
+        .in('name', Array.from(existingAttributeKeys))
         .order('display_name');
 
       if (error) throw error;
 
-      const formattedAttributes: VariationAttribute[] = attributesData.map(attr => ({
+      const formattedAttributes: VariationAttribute[] = (attributesData || []).map(attr => ({
         id: attr.id,
         name: attr.name,
         display_name: attr.display_name,
-        values: (attr.variation_attribute_values || []).map((v: any) => ({
-          id: v.id,
-          value: v.value,
-          display_value: v.display_value
-        }))
+        values: (attr.variation_attribute_values || [])
+          .filter((v: any) => {
+            // Only show values that exist in variations for this specific item
+            return (variationsData || []).some(variation => 
+              variation.attributes && variation.attributes[attr.name] === v.value
+            );
+          })
+          .map((v: any) => ({
+            id: v.id,
+            value: v.value,
+            display_value: v.display_value
+          }))
       }));
 
       setAttributes(formattedAttributes);
@@ -153,7 +185,8 @@ export function VariationSelector({
       itemType,
       name: matchingVariation?.name || generateVariationName(),
       attributes: selectedAttributes,
-      isPrime
+      isPrime,
+      alternateToolId: !isPrime ? selectedAlternateTool : undefined
     };
     onVariationSelect(variation);
   };
@@ -252,7 +285,7 @@ export function VariationSelector({
         )}
 
         <Button onClick={handleSelectVariation} size="sm" className="w-full">
-          Select {generateVariationName()}
+          Add Tool
         </Button>
       </div>
     );
@@ -355,14 +388,35 @@ export function VariationSelector({
                     Alternate Tool
                   </Button>
                 </div>
+                
+                {/* Alternate Tool Selection */}
+                {!isPrime && availableAlternateTools.length > 0 && (
+                  <div className="mt-2">
+                    <Label className="text-sm">Alternative to:</Label>
+                    <Select
+                      value={selectedAlternateTool}
+                      onValueChange={setSelectedAlternateTool}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select tool this can replace" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableAlternateTools.map(tool => (
+                          <SelectItem key={tool.id} value={tool.id}>
+                            {tool.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Select Button */}
             <div className="mt-4">
               <Button onClick={handleSelectVariation} className="w-full">
-                Select {generateVariationName()}
-                {allowPrimeToggle && (isPrime ? ' (Prime)' : ' (Alternate)')}
+                Add Tool
               </Button>
             </div>
           </div>
