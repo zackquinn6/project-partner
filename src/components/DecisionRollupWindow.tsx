@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { CheckCircle, AlertCircle, Clock, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Phase, WorkflowStep, DecisionPoint } from '@/interfaces/Project';
+import { MaterialsAdjustmentWindow } from './MaterialsAdjustmentWindow';
 
 interface DecisionRollupWindowProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface DecisionRollupWindowProps {
   onPhasesUpdate: (phases: Phase[]) => void;
   mode: 'initial-plan' | 'final-plan' | 'unplanned-work';
   title?: string;
+  onNavigateToStep?: (stepId: string) => void;
 }
 
 interface DecisionItem {
@@ -46,12 +48,14 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
   phases,
   onPhasesUpdate,
   mode,
-  title
+  title,
+  onNavigateToStep
 }) => {
   const [decisions, setDecisions] = useState<DecisionItem[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [selectedAudibleOption, setSelectedAudibleOption] = useState<string>('');
+  const [showMaterialsWindow, setShowMaterialsWindow] = useState(false);
 
   // Extract all decision points from phases
   useEffect(() => {
@@ -209,8 +213,28 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
   // Handle audible options
   const handleAudibleOptionSelect = (option: string) => {
     setSelectedAudibleOption(option);
-    toast.success(`Selected: ${option}. This will help us update your plan accordingly.`);
-    setTimeout(() => onOpenChange(false), 1000);
+    
+    switch (option) {
+      case 'New work needed':
+      case 'Schedule update needed':
+        // Navigate to "Finalize Project Plan" step
+        const finalPlanStepId = 'final-planning-step-1';
+        if (onNavigateToStep) {
+          onNavigateToStep(finalPlanStepId);
+          toast.success(`Navigating to project planning to address: ${option}`);
+          onOpenChange(false);
+        } else {
+          toast.success(`Selected: ${option}. Please navigate to "Finalize Project Plan" step.`);
+          setTimeout(() => onOpenChange(false), 1500);
+        }
+        break;
+      case 'New materials needed':
+        setShowMaterialsWindow(true);
+        break;
+      default:
+        toast.success(`Selected: ${option}. This will help us update your plan accordingly.`);
+        setTimeout(() => onOpenChange(false), 1000);
+    }
   };
 
   // Render unplanned work options
@@ -293,6 +317,23 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+    );
+  }
+
+  // Materials adjustment window
+  if (showMaterialsWindow) {
+    return (
+      <>
+        <MaterialsAdjustmentWindow
+          open={showMaterialsWindow}
+          onOpenChange={setShowMaterialsWindow}
+          onComplete={() => {
+            setShowMaterialsWindow(false);
+            toast.success('Material adjustments completed. Shopping list updated.');
+            onOpenChange(false);
+          }}
+        />
+      </>
     );
   }
 

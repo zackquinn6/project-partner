@@ -57,7 +57,7 @@ export const EnhancedProjectPlanning: React.FC<EnhancedProjectPlanningProps> = (
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="sizing" className="flex items-center gap-2">
                 <Calculator className="w-4 h-4" />
-                Project Sizing
+                Work Scope
                 {sizingComplete && <CheckCircle className="w-3 h-3 text-green-500" />}
               </TabsTrigger>
               <TabsTrigger value="estimation" className="flex items-center gap-2">
@@ -66,7 +66,7 @@ export const EnhancedProjectPlanning: React.FC<EnhancedProjectPlanningProps> = (
               </TabsTrigger>
               <TabsTrigger value="calendar" className="flex items-center gap-2">
                 <CalendarIcon className="w-4 h-4" />
-                Calendar Planning
+                Project Scheduling
                 {calendarPlanningComplete && <CheckCircle className="w-3 h-3 text-green-500" />}
               </TabsTrigger>
             </TabsList>

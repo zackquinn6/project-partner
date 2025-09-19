@@ -724,8 +724,8 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
             <CardContent className="p-8">
               {/* Show Enhanced Project Planning for Planning phase steps */}
               {currentStep?.phaseName === 'Planning' && (
-                currentStep.step.includes('Project Sizing') || 
-                currentStep.step.includes('Time Estimation') ||
+                currentStep.step.includes('Project Work Scope') || 
+                currentStep.step.includes('Project Scheduling') ||
                 currentStep.step.includes('Final Planning')
               ) ? (
                 <EnhancedProjectPlanning

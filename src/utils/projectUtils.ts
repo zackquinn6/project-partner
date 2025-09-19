@@ -55,31 +55,31 @@ export const createPlanningPhase = (): Phase => {
   const planningSteps: WorkflowStep[] = [
     {
       id: 'planning-step-1',
-      step: 'Project Sizing & Time Estimation',
-      description: 'Determine project scope, measurements, and time requirements',
+      step: 'Project Work Scope',
+      description: 'Define project scope, measurements, timing, and customize workflow',
       contentType: 'text' as const,
-      content: 'Complete the project sizing questionnaire to determine the scope, measurements, and estimated time for your project.',
+      content: 'Complete the project sizing questionnaire and customize your project workflow by selecting phases from our library or creating custom phases.',
       materials: [],
       tools: [],
       outputs: [{
-        id: 'sizing-output',
-        name: 'Project Sized',
-        description: 'Project scope and timing determined',
+        id: 'scope-output',
+        name: 'Project Scope Defined',
+        description: 'Project scope, timing, and workflow customized',
         type: 'none' as const
       }]
     },
     {
       id: 'planning-step-2',
-      step: 'Project Planning',
-      description: 'Customize your project workflow by adding phases from our library',
+      step: 'Project Scheduling',
+      description: 'Create project timeline and schedule phases',
       contentType: 'text' as const,
-      content: 'Customize your project by adding additional phases from our library or create custom phases for your specific needs.',
+      content: 'Plan your project timeline by scheduling phases, setting realistic deadlines, and coordinating with your calendar.',
       materials: [],
       tools: [],
       outputs: [{
-        id: 'planning-output',
-        name: 'Project Workflow Customized',
-        description: 'Project phases selected and workflow finalized',
+        id: 'scheduling-output',
+        name: 'Project Scheduled',
+        description: 'Project timeline and schedule established',
         type: 'none' as const
       }]
     }
