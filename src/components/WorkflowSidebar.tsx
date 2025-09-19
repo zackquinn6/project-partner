@@ -26,6 +26,7 @@ interface WorkflowSidebarProps {
   onStepClick: (stepIndex: number, step: any) => void;
   onHelpClick: () => void;
   onUnplannedWorkClick: () => void;
+  onKeysToSuccessClick: () => void;
 }
 
 export function WorkflowSidebar({
@@ -38,7 +39,8 @@ export function WorkflowSidebar({
   isKickoffComplete,
   onStepClick,
   onHelpClick,
-  onUnplannedWorkClick
+  onUnplannedWorkClick,
+  onKeysToSuccessClick
 }: WorkflowSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -79,6 +81,18 @@ export function WorkflowSidebar({
                     <div className="text-center">
                       <div>Expert Virtual Consults</div>
                       <div className="text-[10px] opacity-75">Get Expert Help</div>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    onClick={onKeysToSuccessClick}
+                    variant="outline"
+                    size="sm"
+                    className="px-3 py-1 text-xs bg-green-900/20 hover:bg-green-900/30 text-green-800 hover:text-green-900 border-green-900/30 w-fit"
+                  >
+                    <div className="text-center">
+                      <div>🔑 Keys to Success</div>
+                      <div className="text-[10px] opacity-75">Critical characteristics</div>
                     </div>
                   </Button>
                   

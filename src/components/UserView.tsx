@@ -31,6 +31,7 @@ import { ProjectSurvey } from './ProjectSurvey';
 import { ToolsMaterialsSection } from './ToolsMaterialsSection';
 import ProfileManager from './ProfileManager';
 import { DecisionRollupWindow } from './DecisionRollupWindow';
+import { KeyCharacteristicsWindow } from './KeyCharacteristicsWindow';
 import { isKickoffPhaseComplete, addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 interface UserViewProps {
   resetToListing?: boolean;
@@ -108,6 +109,7 @@ export default function UserView({
   const [projectSurveyOpen, setProjectSurveyOpen] = useState(false);
   const [decisionRollupOpen, setDecisionRollupOpen] = useState(false);
   const [decisionRollupMode, setDecisionRollupMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work'>('initial-plan');
+  const [keyCharacteristicsOpen, setKeyCharacteristicsOpen] = useState(false);
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
@@ -1118,6 +1120,7 @@ export default function UserView({
               setDecisionRollupMode('unplanned-work');
               setDecisionRollupOpen(true);
             }}
+            onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
           />
 
           <main className="flex-1 overflow-auto">
@@ -1619,6 +1622,15 @@ export default function UserView({
             // Survey completed, project fully finished
             console.log('Project survey completed');
           }}
+        />
+      )}
+
+      {/* Key Characteristics Window */}
+      {activeProject && (
+        <KeyCharacteristicsWindow
+          open={keyCharacteristicsOpen}
+          onOpenChange={setKeyCharacteristicsOpen}
+          operations={activeProject.phases?.flatMap(phase => phase.operations) || []}
         />
       )}
     </>
