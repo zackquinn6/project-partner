@@ -10,7 +10,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { SecurityMaintenanceProvider } from '@/components/SecurityMaintenanceProvider';
 import { SecurityHeadersProvider } from '@/components/SecurityHeadersProvider';
 import { TempQuizProvider } from '@/contexts/TempQuizContext';
-import DirectImportTrigger from './components/DirectImportTrigger';
+
 import Index from "./pages/Index";
 import ProjectCatalogPage from "./pages/ProjectCatalog";
 import Auth from "./pages/Auth";
@@ -28,7 +28,6 @@ const App: React.FC = () => {
               <ProjectDataProvider>
                 <ProjectActionsProvider>
                   <ProjectProvider>
-                  <DirectImportTrigger />
                   <Toaster />
                   <Sonner />
                   <BrowserRouter>
