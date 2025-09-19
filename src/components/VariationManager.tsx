@@ -603,7 +603,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
       {/* Create Variation Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between text-sm">
             Variations for {coreItemName}
             <div className="flex items-center space-x-2">
               <Dialog open={showVariationDialog} onOpenChange={setShowVariationDialog}>
