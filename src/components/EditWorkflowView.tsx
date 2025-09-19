@@ -369,15 +369,12 @@ export default function EditWorkflowView({
                       <Upload className="w-4 h-4" />
                       Import
                     </Button>
-                    <Button onClick={() => setProcessImprovementOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
-                      <Brain className="w-4 h-4" />
-                      Process Improvement
-                    </Button>
-                  </>}
-              </div>
-              <Button onClick={onBackToAdmin} size="icon" variant="outline" title="Close Editor">
-                <X className="w-4 h-4" />
-              </Button>
+                     <Button onClick={() => setProcessImprovementOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
+                       <Brain className="w-4 h-4" />
+                       Process Improvement
+                     </Button>
+                   </>}
+               </div>
             </div>
           </div>
         </div>
@@ -387,18 +384,6 @@ export default function EditWorkflowView({
         {editMode ?
       // Full-screen edit mode
       <div className="space-y-6">
-            {/* Progress */}
-            <Card className="gradient-card border-0 shadow-card">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Progress</span>
-                  <span className="text-sm text-muted-foreground">
-                    Step {currentStepIndex + 1} of {allSteps.length}
-                  </span>
-                </div>
-                <Progress value={progress} className="h-2" />
-              </CardContent>
-            </Card>
 
             {/* Step Details */}
             {editingStep && <div className="space-y-6">
@@ -789,13 +774,6 @@ export default function EditWorkflowView({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progress</span>
-                    <span>{Math.round(progress)}%</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                </div>
 
                 <div className="space-y-4">
                   {Object.entries(groupedSteps).map(([phase, operations]) => <div key={phase} className="space-y-2">

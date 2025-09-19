@@ -174,7 +174,18 @@ export function MultiSelectLibraryDialog({
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="text-sm min-w-[20px] text-center">{item.quantity}</span>
+                          <div className="text-sm min-w-[60px] text-center">
+                            {item.quantity}
+                            {/* Show unit size for materials */}
+                            {type === 'materials' && (
+                              <div className="text-xs text-muted-foreground">
+                                {(() => {
+                                  const coreItem = items.find(i => i.id === item.coreItemId);
+                                  return coreItem?.unit_size ? `(${coreItem.unit_size})` : '';
+                                })()}
+                              </div>
+                            )}
+                          </div>
                           <Button
                             size="sm"
                             variant="outline"
