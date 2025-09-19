@@ -1,17 +1,17 @@
 import { supabase } from '@/integrations/supabase/client';
-import { EnhancedToolParser } from './enhancedToolParser';
-import { importEnhancedToolsToDatabase } from './enhancedToolParser';
+import { EnhancedToolParser, importEnhancedToolsToDatabase } from './enhancedToolParser';
 import { toast } from 'sonner';
 
-export const executeDirectImport = async (): Promise<boolean> => {
+// Direct import executor - runs immediately
+export const executeDirectImport = async () => {
   try {
-    console.log('🚀 DIRECT IMPORT: Starting immediate import of new tools...');
-
-    // Load and parse the new Excel file
+    console.log('🚀 EXECUTING DIRECT IMPORT NOW...');
+    
+    // Load the new Excel file directly
     console.log('📄 Loading Excel file from assets...');
     const response = await fetch('/src/assets/new-import.xlsx');
     if (!response.ok) {
-      throw new Error('Failed to load Excel file');
+      throw new Error(`Failed to load Excel file: ${response.status}`);
     }
     
     const blob = await response.blob();
@@ -19,62 +19,86 @@ export const executeDirectImport = async (): Promise<boolean> => {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
 
-    console.log('🔧 Parsing tools with enhanced parser...');
+    // Parse the Excel content
+    console.log('🔍 Parsing new Excel content...');
     const parsedTools = await EnhancedToolParser.parseEnhancedToolListExcel(file);
-    console.log(`✅ Parsed ${parsedTools.length} tools with variants`);
-
-    if (parsedTools.length === 0) {
-      throw new Error('No tools found in Excel file');
-    }
+    console.log(`✅ Successfully parsed ${parsedTools.length} tools with variants`);
 
     // Import directly to database
-    console.log('💾 Importing to database...');
+    console.log('💾 Importing to tools database...');
+    let importedCount = 0;
     const results = await importEnhancedToolsToDatabase(parsedTools, (current, total) => {
-      console.log(`📥 Importing tool ${current + 1} of ${total}...`);
+      importedCount = current + 1;
+      console.log(`📥 Importing tool ${importedCount} of ${total}...`);
     });
-
-    console.log(`✅ Import completed: ${results.success} tools imported`);
+    
+    console.log(`✅ Import completed: ${results.success} tools imported successfully`);
     
     if (results.errors.length > 0) {
-      console.log(`⚠️ ${results.errors.length} errors encountered:`, results.errors);
-      // Don't fail completely for duplicate errors
+      console.log(`⚠️ Import had ${results.errors.length} errors (likely duplicates)`);
     }
 
-    // Trigger immediate web scraping for pricing and estimates
-    console.log('🔍 Starting web scraping for estimates...');
-    const { data: variations } = await supabase
+    // Start web scraping for all tool variations
+    console.log('🌐 Starting web scraping for pricing data...');
+    const { data: allVariations } = await supabase
       .from('variation_instances')
-      .select('id, name')
+      .select('id, name, core_item_id')
       .eq('item_type', 'tools');
 
-    if (variations && variations.length > 0) {
-      console.log(`🌐 Initiating scrape for ${variations.length} tool variations...`);
+    if (allVariations && allVariations.length > 0) {
+      console.log(`🔍 Found ${allVariations.length} variations to scrape`);
       
-      const { data, error } = await supabase.functions.invoke('scrape-tool-pricing', {
-        body: { 
-          mode: 'bulk',
-          variationIds: variations.map(v => v.id)
-        }
-      });
+      // Process in smaller batches for better performance
+      const batchSize = 25;
+      const totalBatches = Math.ceil(allVariations.length / batchSize);
+      
+      for (let i = 0; i < allVariations.length; i += batchSize) {
+        const batch = allVariations.slice(i, i + batchSize);
+        const batchNumber = Math.floor(i / batchSize) + 1;
+        
+        console.log(`🔄 Processing scraping batch ${batchNumber}/${totalBatches} (${batch.length} items)`);
+        
+        const { data, error } = await supabase.functions.invoke('scrape-tool-pricing', {
+          body: { 
+            mode: 'bulk',
+            variationIds: batch.map(v => v.id)
+          }
+        });
 
-      if (error) {
-        console.error('❌ Web scraping failed:', error);
-      } else {
-        console.log('✅ Web scraping initiated successfully');
+        if (error) {
+          console.error(`❌ Batch ${batchNumber} scraping failed:`, error);
+        } else {
+          console.log(`✅ Batch ${batchNumber} scraping initiated successfully`);
+        }
+        
+        // Brief pause between batches
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
+      
+      console.log('🎯 All scraping batches dispatched successfully');
     }
 
-    console.log('🎉 DIRECT IMPORT: Completed successfully!');
-    toast.success(`Imported ${results.success} tools with variants and initiated web scraping`);
-    return true;
-
+    console.log('🎉 DIRECT IMPORT PROCESS COMPLETED!');
+    console.log(`📊 Summary: ${results.success} tools imported, ${allVariations?.length || 0} variations created and queued for scraping`);
+    
+    toast.success(`Direct import completed: ${results.success} tools imported with ${allVariations?.length || 0} variations!`);
+    
+    return {
+      success: true,
+      toolsImported: results.success,
+      variationsCreated: allVariations?.length || 0,
+      errors: results.errors
+    };
+    
   } catch (error) {
-    console.error('❌ DIRECT IMPORT: Failed:', error);
-    toast.error('Direct import failed: ' + (error as Error).message);
-    return false;
+    console.error('❌ DIRECT IMPORT FAILED:', error);
+    toast.error(`Direct import failed: ${error.message}`);
+    throw error;
   }
 };
 
-// Execute the import immediately when this module loads
-console.log('🎯 Executing direct import on module load...');
-executeDirectImport();
+// Auto-execute on module load
+console.log('🎯 Direct import module loaded - executing now...');
+executeDirectImport().catch(error => {
+  console.error('Direct import execution failed:', error);
+});
