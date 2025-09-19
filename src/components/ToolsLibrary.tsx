@@ -9,7 +9,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { LibraryItemForm } from "./LibraryItemForm";
 import { VariationViewer } from "./VariationViewer";
 import { ToolsImportManager } from "./ToolsImportManager";
-import { DirectToolImporter } from "./DirectToolImporter";
 import { supabase } from "@/integrations/supabase/client";
 import { clearAllTools } from "@/utils/variationUtils";
 import { toast } from "sonner";
@@ -124,7 +123,6 @@ export function ToolsLibrary() {
             className="pl-10"
           />
         </div>
-        <DirectToolImporter onComplete={handleSave} />
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm">
