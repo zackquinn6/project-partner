@@ -28,7 +28,8 @@ export interface ProjectRun {
   // Copy of template data at time of creation (for consistency)
   phases: Project['phases'];
   category?: string;
-  difficulty?: Project['difficulty'];
+  effortLevel?: Project['effortLevel'];
+  skillLevel?: Project['skillLevel'];
   estimatedTime?: string;
   
   // Analytics data

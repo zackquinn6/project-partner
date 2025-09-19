@@ -130,8 +130,12 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               <p className="font-medium">{currentProjectRun.category || 'Not specified'}</p>
             </div>
             <div>
-              <Label>Difficulty</Label>
-              <Badge variant="outline">{currentProjectRun.difficulty || 'Not specified'}</Badge>
+              <Label>Effort Level</Label>
+              <Badge variant="outline">{currentProjectRun.effortLevel || 'Not specified'}</Badge>
+            </div>
+            <div>
+              <Label>Skill Level</Label>
+              <Badge variant="outline">{currentProjectRun.skillLevel || 'Not specified'}</Badge>
             </div>
             <div>
               <Label>Estimated Time</Label>

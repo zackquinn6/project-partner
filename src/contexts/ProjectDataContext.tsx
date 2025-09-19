@@ -60,8 +60,8 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         status: project.status as 'not-started' | 'in-progress' | 'complete',
         publishStatus: project.publish_status as 'draft' | 'published' | 'beta-testing',
         category: project.category,
-        difficulty: project.difficulty as Project['difficulty'],
         effortLevel: project.effort_level as Project['effortLevel'],
+        skillLevel: project.skill_level as Project['skillLevel'],
         estimatedTime: project.estimated_time,
         estimatedTimePerUnit: project.estimated_time_per_unit,
         scalingUnit: project.scaling_unit as Project['scalingUnit'],
@@ -118,7 +118,8 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         progress: run.progress,
         phases: Array.isArray(phases) ? phases : [],
         category: run.category,
-        difficulty: run.difficulty as Project['difficulty'],
+        effortLevel: run.effort_level as Project['effortLevel'],
+        skillLevel: run.skill_level as Project['skillLevel'],
         estimatedTime: run.estimated_time
       };
     });

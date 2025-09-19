@@ -289,13 +289,13 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                           <Badge 
                             variant="outline"
                             className={
-                              currentProject.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
-                              currentProject.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                              currentProject.difficulty === 'Advanced' ? 'bg-red-100 text-red-800' :
+                              currentProject.skillLevel === 'Beginner' ? 'bg-green-100 text-green-800' :
+                              currentProject.skillLevel === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                              currentProject.skillLevel === 'Advanced' ? 'bg-red-100 text-red-800' :
                               'bg-gray-100 text-gray-800'
                             }
                           >
-                            {currentProject.difficulty ? `${currentProject.difficulty} Skill` : 'Unset'}
+                            {currentProject.skillLevel ? `${currentProject.skillLevel} Skill` : 'Unset'}
                           </Badge>
                           <Badge 
                             variant="outline"

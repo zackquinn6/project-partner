@@ -77,8 +77,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           status: projectData.status,
           publish_status: projectData.publishStatus,
           category: projectData.category || null,
-          difficulty: projectData.difficulty || null,
           effort_level: projectData.effortLevel || null,
+          skill_level: projectData.skillLevel || null,
           estimated_time: projectData.estimatedTime || null,
           estimated_time_per_unit: projectData.estimatedTimePerUnit || null,
           scaling_unit: projectData.scalingUnit || null,
@@ -125,7 +125,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           progress: 0,
           phases: JSON.stringify(phasesWithKickoff),
           category: project.category,
-          difficulty: project.difficulty,
+          effort_level: project.effortLevel,
+          skill_level: project.skillLevel,
           estimated_time: project.estimatedTime
         })
         .select()
@@ -177,7 +178,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           progress: projectRunData.progress,
           phases: JSON.stringify(phasesWithKickoff),
           category: projectRunData.category,
-          difficulty: projectRunData.difficulty,
+          effort_level: projectRunData.effortLevel,
+          skill_level: projectRunData.skillLevel,
           estimated_time: projectRunData.estimatedTime
         })
         .select()
@@ -229,8 +231,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           status: project.status,
           publish_status: project.publishStatus,
           category: project.category || null,
-          difficulty: project.difficulty || null,
           effort_level: project.effortLevel || null,
+          skill_level: project.skillLevel || null,
           estimated_time: project.estimatedTime || null,
           estimated_time_per_unit: project.estimatedTimePerUnit || null,
           scaling_unit: project.scalingUnit || null,
@@ -308,7 +310,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             progress: safeProgress,
             phases: JSON.stringify(projectRun.phases),
             category: projectRun.category,
-            difficulty: projectRun.difficulty,
+            effort_level: projectRun.effortLevel,
+            skill_level: projectRun.skillLevel,
             estimated_time: projectRun.estimatedTime
           })
           .eq('id', projectRun.id)

@@ -707,8 +707,8 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               <div>
                 <label className="text-sm font-medium">Skill Level</label>
                 <select 
-                  value={currentProject.difficulty || ''} 
-                  onChange={(e) => updateProjectData({...currentProject, difficulty: e.target.value as any})}
+                  value={currentProject.skillLevel || ''} 
+                  onChange={(e) => updateProjectData({...currentProject, skillLevel: e.target.value as any})}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="">Select skill level</option>

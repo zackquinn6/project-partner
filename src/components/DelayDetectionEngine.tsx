@@ -94,7 +94,7 @@ export const DelayDetectionEngine: React.FC<DelayDetectionEngineProps> = ({
 
     // Skill gap factor
     const avgStepTime = getAverageStepTime(projectRun);
-    const expectedStepTime = getExpectedStepTime(projectRun.difficulty || 'Intermediate');
+    const expectedStepTime = getExpectedStepTime(projectRun.skillLevel || 'Intermediate');
     if (avgStepTime > expectedStepTime * 1.5) {
       factors.push({
         type: 'skill-gap',

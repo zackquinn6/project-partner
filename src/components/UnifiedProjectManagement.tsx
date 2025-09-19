@@ -32,7 +32,8 @@ interface Project {
   revision_notes: string | null;
   is_current_version: boolean;
   category: string | null;
-  difficulty: string | null;
+  effort_level: string | null;
+  skill_level: string | null;
   estimated_time: string | null;
   scaling_unit: string | null;
   created_by: string;
@@ -59,14 +60,16 @@ export function UnifiedProjectManagement() {
     name: string;
     description: string;
     category: string;
-    difficulty: string;
+    effort_level: string;
+    skill_level: string;
     estimated_time: string;
     scaling_unit: string;
   }>({
     name: '',
     description: '',
     category: '',
-    difficulty: 'Beginner',
+    effort_level: 'Medium',
+    skill_level: 'Intermediate',
     estimated_time: '',
     scaling_unit: '',
   });
@@ -257,7 +260,8 @@ export function UnifiedProjectManagement() {
           name: newProject.name,
           description: newProject.description || '',
           category: newProject.category || '',
-          difficulty: newProject.difficulty || 'Beginner',
+          effort_level: newProject.effort_level || 'Medium',
+          skill_level: newProject.skill_level || 'Intermediate',
           estimated_time: newProject.estimated_time || '',
           scaling_unit: newProject.scaling_unit || '',
           publish_status: 'draft',
@@ -279,7 +283,8 @@ export function UnifiedProjectManagement() {
         name: '',
         description: '',
         category: '',
-        difficulty: 'Beginner',
+        effort_level: 'Medium',
+        skill_level: 'Intermediate',
         estimated_time: '',
         scaling_unit: '',
       });
@@ -446,11 +451,32 @@ export function UnifiedProjectManagement() {
                           </div>
 
                           <div className="space-y-2">
-                            <Label>Difficulty</Label>
+                            <Label>Effort Level</Label>
                             {editingProject ? (
                               <Select
-                                value={editedProject.difficulty || ''}
-                                onValueChange={(value) => setEditedProject(prev => ({ ...prev, difficulty: value }))}
+                                value={editedProject.effort_level || ''}
+                                onValueChange={(value) => setEditedProject(prev => ({ ...prev, effort_level: value }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Low">Low</SelectItem>
+                                  <SelectItem value="Medium">Medium</SelectItem>
+                                  <SelectItem value="High">High</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="p-2 bg-muted rounded capitalize">{selectedProject.effort_level || 'Not specified'}</div>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Skill Level</Label>
+                            {editingProject ? (
+                              <Select
+                                value={editedProject.skill_level || ''}
+                                onValueChange={(value) => setEditedProject(prev => ({ ...prev, skill_level: value }))}
                               >
                                 <SelectTrigger>
                                   <SelectValue />
@@ -462,7 +488,7 @@ export function UnifiedProjectManagement() {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <div className="p-2 bg-muted rounded capitalize">{selectedProject.difficulty || 'Not specified'}</div>
+                              <div className="p-2 bg-muted rounded capitalize">{selectedProject.skill_level || 'Not specified'}</div>
                             )}
                           </div>
 
@@ -786,22 +812,41 @@ export function UnifiedProjectManagement() {
                 />
               </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="project-difficulty">Difficulty</Label>
-                                <Select
-                                  value={newProject.difficulty || 'Beginner'}
-                                  onValueChange={(value) => setNewProject(prev => ({ ...prev, difficulty: value }))}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Beginner">Beginner</SelectItem>
-                                    <SelectItem value="Intermediate">Intermediate</SelectItem>
-                                    <SelectItem value="Advanced">Advanced</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                <Label htmlFor="project-effort">Effort Level</Label>
+                <Select
+                  value={newProject.effort_level || 'Medium'}
+                  onValueChange={(value) => setNewProject(prev => ({ ...prev, effort_level: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Low">Low</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project-skill">Skill Level</Label>
+                <Select
+                  value={newProject.skill_level || 'Intermediate'}
+                  onValueChange={(value) => setNewProject(prev => ({ ...prev, skill_level: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Beginner">Beginner</SelectItem>
+                    <SelectItem value="Intermediate">Intermediate</SelectItem>
+                    <SelectItem value="Advanced">Advanced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

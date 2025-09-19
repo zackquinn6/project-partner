@@ -988,6 +988,7 @@ export type Database = {
           revision_notes: string | null
           revision_number: number | null
           scaling_unit: string | null
+          skill_level: string | null
           start_date: string
           status: string
           updated_at: string
@@ -1018,6 +1019,7 @@ export type Database = {
           revision_notes?: string | null
           revision_number?: number | null
           scaling_unit?: string | null
+          skill_level?: string | null
           start_date?: string
           status?: string
           updated_at?: string
@@ -1048,6 +1050,7 @@ export type Database = {
           revision_notes?: string | null
           revision_number?: number | null
           scaling_unit?: string | null
+          skill_level?: string | null
           start_date?: string
           status?: string
           updated_at?: string

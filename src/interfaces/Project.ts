@@ -158,8 +158,8 @@ export interface Project {
   status: 'not-started' | 'in-progress' | 'complete';
   publishStatus: 'draft' | 'published' | 'beta-testing';
   category?: string;
-  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
   effortLevel?: 'Low' | 'Medium' | 'High';
+  skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
   estimatedTime?: string;
   estimatedTimePerUnit?: number;
   scalingUnit?: 'per square foot' | 'per 10x10 room' | 'per linear foot' | 'per cubic yard' | 'per item';

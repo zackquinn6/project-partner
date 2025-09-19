@@ -335,7 +335,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       // Copy template data
       phases: selectedTemplate.phases,
       category: selectedTemplate.category,
-      difficulty: selectedTemplate.difficulty,
+      effortLevel: selectedTemplate.effortLevel,
+      skillLevel: selectedTemplate.skillLevel,
       estimatedTime: selectedTemplate.estimatedTime
     };
     
@@ -439,7 +440,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       // Copy template data
       phases: selectedTemplate.phases,
       category: selectedTemplate.category,
-      difficulty: selectedTemplate.difficulty,
+      effortLevel: selectedTemplate.effortLevel,
+      skillLevel: selectedTemplate.skillLevel,
       estimatedTime: selectedTemplate.estimatedTime
     };
     
