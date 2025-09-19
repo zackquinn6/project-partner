@@ -31,6 +31,14 @@ export function AdminDataRefresh() {
     },
     {
       id: '2',
+      name: 'Tool Library Pricing Data',
+      type: 'tool_rentals',
+      lastRefresh: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+      status: 'active',
+      autoRefreshDays: 7
+    },
+    {
+      id: '3',
       name: 'Community Posts & Forums',
       type: 'community_posts',
       lastRefresh: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 days ago
@@ -38,7 +46,7 @@ export function AdminDataRefresh() {
       autoRefreshDays: 30
     },
     {
-      id: '3',
+      id: '4',
       name: 'Knowledge Base Articles',
       type: 'knowledge_base',
       lastRefresh: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
@@ -127,7 +135,7 @@ export function AdminDataRefresh() {
             Internet Data Refresh Management
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Manage automatic and manual refresh schedules for external data sources including tool rental centers and community forums.
+            Manage automatic and manual refresh schedules for external data sources including tool rental centers, tool library pricing data, and community forums.
           </p>
         </CardHeader>
       </Card>

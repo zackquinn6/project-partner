@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Trash2, Image } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Search, Plus, Edit, Trash2, Image, ArrowUpDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LibraryItemForm } from "./LibraryItemForm";
 import { BulkUpload } from "./BulkUpload";
+import { ExportMaterialsData } from "./ExportMaterialsData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -21,6 +23,9 @@ interface Material {
   updated_at: string;
 }
 
+type SortField = 'item' | 'description' | 'unit_size';
+type SortDirection = 'asc' | 'desc';
+
 export function MaterialsLibrary() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,6 +34,8 @@ export function MaterialsLibrary() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('item');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const fetchMaterials = async () => {
     try {
@@ -55,6 +62,32 @@ export function MaterialsLibrary() {
     material.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (material.description && material.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const sortedMaterials = [...filteredMaterials].sort((a, b) => {
+    let aValue: string | number = a[sortField] || '';
+    let bValue: string | number = b[sortField] || '';
+    
+    aValue = aValue.toString().toLowerCase();
+    bValue = bValue.toString().toLowerCase();
+    
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-4 h-4 ml-1 opacity-50" />;
+    return <ArrowUpDown className={`w-4 h-4 ml-1 ${sortDirection === 'desc' ? 'rotate-180' : ''}`} />;
+  };
 
   const handleDelete = async (materialId: string) => {
     try {
@@ -100,18 +133,21 @@ export function MaterialsLibrary() {
             className="pl-10"
           />
         </div>
+        <ExportMaterialsData className="text-xs" />
         <Button
           variant="outline"
+          size="sm"
           onClick={() => setShowBulkUpload(true)}
+          className="text-xs"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Bulk Upload
+          <Plus className="w-4 h-4 mr-1" />
+          Import
         </Button>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Material
+            <Button size="sm" className="text-xs">
+              <Plus className="w-4 h-4 mr-1" />
+              Add
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -127,82 +163,116 @@ export function MaterialsLibrary() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-        {filteredMaterials.map((material) => (
-          <Card key={material.id} className="relative">
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <CardTitle className="text-lg">{material.item}</CardTitle>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEdit(material)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Material</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete "{material.item}"? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(material.id)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {material.photo_url && (
-                <div className="mb-3">
-                  <img
-                    src={material.photo_url}
-                    alt={material.item}
-                    className="w-full h-32 object-cover rounded-md"
-                  />
-                </div>
-              )}
-              {material.description && (
-                <p className="text-sm text-muted-foreground mb-2">
-                  {material.description}
-                </p>
-              )}
-              {material.unit_size && (
-                <div>
-                  <Badge variant="secondary" className="text-xs">
-                    Unit Size: {material.unit_size}
-                  </Badge>
-                </div>
-              )}
-              {!material.photo_url && !material.description && !material.unit_size && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Image className="w-4 h-4" />
-                  <span className="text-sm">No additional details</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+      <div className="border rounded-lg max-h-[70vh] overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">Photo</TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('item')}
+                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                >
+                  Material Name
+                  {getSortIcon('item')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('description')}
+                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                >
+                  Description
+                  {getSortIcon('description')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('unit_size')}
+                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                >
+                  Unit Size
+                  {getSortIcon('unit_size')}
+                </Button>
+              </TableHead>
+              <TableHead className="w-32 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedMaterials.map((material) => (
+              <TableRow key={material.id} className="hover:bg-muted/50">
+                <TableCell>
+                  {material.photo_url ? (
+                    <img
+                      src={material.photo_url}
+                      alt={material.item}
+                      className="w-10 h-10 object-cover rounded-md"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center">
+                      <Image className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="font-medium capitalize">{material.item}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {material.description || '-'}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {material.unit_size ? (
+                    <Badge variant="secondary" className="text-xs">
+                      {material.unit_size}
+                    </Badge>
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(material)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Material</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{material.item}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(material.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        
+        {sortedMaterials.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            {searchTerm ? 'No materials found matching your search.' : 'No materials in library yet.'}
+          </div>
+        )}
       </div>
-
-      {filteredMaterials.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          {searchTerm ? 'No materials found matching your search.' : 'No materials in library yet.'}
-        </div>
-      )}
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>

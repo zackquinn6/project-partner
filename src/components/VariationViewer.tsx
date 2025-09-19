@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { VariationEditor } from './VariationEditor';
 
 interface VariationInstance {
   id: string;
@@ -63,6 +66,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
   const [models, setModels] = useState<ToolModel[]>([]);
   const [pricing, setPricing] = useState<PricingData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editingVariation, setEditingVariation] = useState<VariationInstance | null>(null);
 
   const fetchData = async () => {
     if (!coreItemId) return;
@@ -165,6 +169,15 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
 
   const getVariationModels = (variationId: string) => {
     return models.filter(m => m.variation_instance_id === variationId);
+  };
+
+  const handleEditVariation = (variation: VariationInstance) => {
+    setEditingVariation(variation);
+  };
+
+  const handleVariationSaved = () => {
+    fetchData();
+    setEditingVariation(null);
   };
 
   return (
@@ -272,6 +285,15 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
           </div>
         )}
       </DialogContent>
+
+      {editingVariation && (
+        <VariationEditor
+          open={!!editingVariation}
+          onOpenChange={(open) => !open && setEditingVariation(null)}
+          variation={editingVariation}
+          onSave={handleVariationSaved}
+        />
+      )}
     </Dialog>
   );
 }

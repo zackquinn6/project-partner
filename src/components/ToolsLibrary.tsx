@@ -215,7 +215,7 @@ export function ToolsLibrary() {
         </Dialog>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-lg max-h-[70vh] overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -248,16 +248,6 @@ export function ToolsLibrary() {
                 >
                   Example Models
                   {getSortIcon('example_models')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('created_at')}
-                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
-                >
-                  Created
-                  {getSortIcon('created_at')}
                 </Button>
               </TableHead>
               <TableHead className="w-32 text-right">Actions</TableHead>
@@ -295,9 +285,6 @@ export function ToolsLibrary() {
                   ) : (
                     '-'
                   )}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {new Date(tool.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
