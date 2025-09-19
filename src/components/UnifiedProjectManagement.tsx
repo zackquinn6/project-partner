@@ -34,6 +34,7 @@ interface Project {
   category: string | null;
   difficulty: string | null;
   estimated_time: string | null;
+  scaling_unit: string | null;
   created_by: string;
 }
 
@@ -60,12 +61,14 @@ export function UnifiedProjectManagement() {
     category: string;
     difficulty: string;
     estimated_time: string;
+    scaling_unit: string;
   }>({
     name: '',
     description: '',
     category: '',
     difficulty: 'Beginner',
     estimated_time: '',
+    scaling_unit: '',
   });
   
   const { toast } = useToast();
@@ -256,6 +259,7 @@ export function UnifiedProjectManagement() {
           category: newProject.category || '',
           difficulty: newProject.difficulty || 'Beginner',
           estimated_time: newProject.estimated_time || '',
+          scaling_unit: newProject.scaling_unit || '',
           publish_status: 'draft',
           phases: [],
           created_by: (await supabase.auth.getUser()).data.user?.id,
@@ -277,6 +281,7 @@ export function UnifiedProjectManagement() {
         category: '',
         difficulty: 'Beginner',
         estimated_time: '',
+        scaling_unit: '',
       });
       fetchProjects();
     } catch (error) {
@@ -470,6 +475,18 @@ export function UnifiedProjectManagement() {
                               />
                             ) : (
                               <div className="p-2 bg-muted rounded">{selectedProject.estimated_time || 'Not specified'}</div>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Scaling Unit</Label>
+                            {editingProject ? (
+                              <Input
+                                value={editedProject.scaling_unit || ''}
+                                onChange={(e) => setEditedProject(prev => ({ ...prev, scaling_unit: e.target.value }))}
+                              />
+                            ) : (
+                              <div className="p-2 bg-muted rounded">{selectedProject.scaling_unit || 'Not specified'}</div>
                             )}
                           </div>
 
@@ -776,14 +793,26 @@ export function UnifiedProjectManagement() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="project-time">Estimated Time</Label>
-              <Input
-                id="project-time"
-                placeholder="e.g., 2-4 hours"
-                value={newProject.estimated_time || ''}
-                onChange={(e) => setNewProject(prev => ({ ...prev, estimated_time: e.target.value }))}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="project-time">Estimated Time</Label>
+                <Input
+                  id="project-time"
+                  placeholder="e.g., 2-4 hours"
+                  value={newProject.estimated_time || ''}
+                  onChange={(e) => setNewProject(prev => ({ ...prev, estimated_time: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project-scaling">Scaling Unit</Label>
+                <Input
+                  id="project-scaling"
+                  placeholder="e.g., sq ft, linear ft"
+                  value={newProject.scaling_unit || ''}
+                  onChange={(e) => setNewProject(prev => ({ ...prev, scaling_unit: e.target.value }))}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
