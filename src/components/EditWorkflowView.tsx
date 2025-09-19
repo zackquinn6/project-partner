@@ -19,7 +19,6 @@ import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
 import { MultiSelectLibraryDialog } from '@/components/MultiSelectLibraryDialog';
 import { StructureManager } from '@/components/StructureManager';
 import { OutputEditForm } from '@/components/OutputEditForm';
-import { OutputDetailPopup } from '@/components/OutputDetailPopup';
 import { ProjectContentImport } from '@/components/ProjectContentImport';
 import { ProcessImprovementEngine } from '@/components/ProcessImprovementEngine';
 import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain } from 'lucide-react';
@@ -51,8 +50,6 @@ export default function EditWorkflowView({
   const [editMode, setEditMode] = useState(false);
   const [editingOutput, setEditingOutput] = useState<Output | null>(null);
   const [outputEditOpen, setOutputEditOpen] = useState(false);
-  const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
-  const [outputDetailOpen, setOutputDetailOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
   const [toolsLibraryOpen, setToolsLibraryOpen] = useState(false);
@@ -723,8 +720,8 @@ export default function EditWorkflowView({
                                           </div>
                                           <div className="flex justify-between">
                                             <Button size="sm" variant="outline" onClick={() => {
-                                              setSelectedOutput(output);
-                                              setOutputDetailOpen(true);
+                                              setEditingOutput(output);
+                                              setOutputEditOpen(true);
                                             }}>
                                               <Edit className="w-4 h-4 mr-2" />
                                               Edit Details
@@ -969,17 +966,5 @@ export default function EditWorkflowView({
       }));
       updateEditingStep('materials', [...(editingStep?.materials || []), ...newMaterials]);
     }} />
-
-      {/* Output Detail Popup */}
-      {selectedOutput && (
-        <OutputDetailPopup
-          output={selectedOutput}
-          isOpen={outputDetailOpen}
-          onClose={() => {
-            setOutputDetailOpen(false);
-            setSelectedOutput(null);
-          }}
-        />
-      )}
     </div>;
 }
