@@ -529,7 +529,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                           <SelectValue placeholder="Select attribute" />
                         </SelectTrigger>
                         <SelectContent>
-                          {attributes.map(attr => (
+                          {globalAttributes.map(attr => (
                             <SelectItem key={attr.id} value={attr.id}>
                               {attr.display_name}
                             </SelectItem>
