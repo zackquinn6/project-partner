@@ -11,9 +11,8 @@ import { VariationViewer } from "./VariationViewer";
 import { ToolsImportManager } from "./ToolsImportManager";
 import { supabase } from "@/integrations/supabase/client";
 import { clearAllTools } from "@/utils/variationUtils";
+import { EnhancedToolParser, importEnhancedToolsToDatabase } from "@/utils/enhancedToolParser";
 import { toast } from "sonner";
-// Import the automation
-import "@/utils/executeImport";
 
 interface Tool {
   id: string;
@@ -108,6 +107,74 @@ export function ToolsLibrary() {
       setLoading(false);
     }
   };
+
+  // Execute one-time import on component mount
+  useEffect(() => {
+    const executeOneTimeImport = async () => {
+      try {
+        console.log('🔄 Starting one-time tool import...');
+        
+        // Clear existing tools
+        console.log('1️⃣ Clearing existing tools...');
+        await clearAllTools();
+        console.log('✅ Existing tools cleared');
+
+        // Load and parse Excel file
+        console.log('2️⃣ Loading Excel file...');
+        const response = await fetch('/src/assets/temp-import.xlsx');
+        const blob = await response.blob();
+        const file = new File([blob], 'temp-import.xlsx', {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+
+        console.log('📄 Parsing Excel file...');
+        const parsedTools = await EnhancedToolParser.parseEnhancedToolListExcel(file);
+        console.log(`✅ Parsed ${parsedTools.length} tools with variants`);
+
+        // Import to database
+        console.log('3️⃣ Importing tools to database...');
+        const results = await importEnhancedToolsToDatabase(parsedTools, (current, total) => {
+          console.log(`📥 Importing tool ${current + 1} of ${total}...`);
+        });
+        console.log(`✅ Imported ${results.success} tools successfully`);
+
+        // Trigger web scraping
+        console.log('4️⃣ Starting web scraping for pricing and estimates...');
+        const { data: variations } = await supabase
+          .from('variation_instances')
+          .select('id, name')
+          .eq('item_type', 'tools');
+
+        if (variations && variations.length > 0) {
+          console.log(`🔍 Triggering scrape for ${variations.length} tool variations...`);
+          
+          const { data, error } = await supabase.functions.invoke('scrape-tool-pricing', {
+            body: { 
+              mode: 'bulk',
+              variationIds: variations.map(v => v.id)
+            }
+          });
+
+          if (error) {
+            console.error('❌ Web scraping failed:', error);
+          } else {
+            console.log('✅ Web scraping initiated successfully');
+          }
+        }
+
+        console.log('🎉 One-time import completed successfully!');
+        toast.success('Import completed with web scraping initiated');
+        fetchTools();
+        
+      } catch (error) {
+        console.error('❌ Import failed:', error);
+        toast.error('Import failed: ' + error.message);
+      }
+    };
+
+    // Execute import once on mount
+    executeOneTimeImport();
+  }, []);  // Empty dependency array ensures this runs only once
 
   if (loading) {
     return <div className="flex justify-center p-8">Loading tools...</div>;
