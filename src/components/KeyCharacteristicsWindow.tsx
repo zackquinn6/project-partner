@@ -163,14 +163,16 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations }: Key
                             onClick={() => setSelectedOutput(output)}
                           >
                             <div className="flex items-start gap-2 flex-wrap">
-                              <h5 className="font-semibold text-sm leading-tight flex-1 min-w-0">
-                                {output.name}
-                              </h5>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                {getOutputIcon(output.type)}
-                                <Badge variant="secondary" className="text-xs px-2 py-0">
-                                  {getOutputTypeLabel(output.type)}
-                                </Badge>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h5 className="font-semibold text-sm leading-tight">
+                                  {output.name}
+                                </h5>
+                                <div className="flex items-center gap-1">
+                                  {getOutputIcon(output.type)}
+                                  <Badge variant="secondary" className="text-xs px-2 py-0">
+                                    {getOutputTypeLabel(output.type)}
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
                             
