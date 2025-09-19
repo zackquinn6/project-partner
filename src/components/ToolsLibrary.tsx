@@ -215,9 +215,9 @@ export function ToolsLibrary() {
         </Dialog>
       </div>
 
-      <div className="border rounded-lg max-h-[70vh] overflow-auto">
+      <div className="border rounded-lg max-h-[70vh] overflow-auto relative">
         <Table>
-          <TableHeader className="sticky top-0 bg-background z-10">
+          <TableHeader className="sticky top-0 bg-background border-b z-10 shadow-sm">
             <TableRow>
               <TableHead className="w-12">Photo</TableHead>
               <TableHead>

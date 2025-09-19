@@ -75,6 +75,8 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
   
   // Common attributes that can be selected
   const [commonAttributes] = useState([
+    { name: 'model', display_name: 'Model' },
+    { name: 'price', display_name: 'Price' },
     { name: 'size', display_name: 'Size' },
     { name: 'color', display_name: 'Color' },
     { name: 'material', display_name: 'Material' },
