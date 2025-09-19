@@ -965,8 +965,8 @@ export default function EditWorkflowView({
                                 <div className="flex items-start gap-3">
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                      <div className="font-medium">{output.name}</div>
-                                      <Badge variant="outline" className="text-xs capitalize">{output.type}</Badge>
+                                       <div className="font-medium">{output.name}</div>
+                                       {output.type !== "none" && <Badge variant="outline" className="text-xs capitalize">{output.type}</Badge>}
                                     </div>
                                     <div className="text-sm text-muted-foreground mt-1">{output.description}</div>
                                   </div>
