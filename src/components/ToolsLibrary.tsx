@@ -108,22 +108,26 @@ export function ToolsLibrary() {
     }
   };
 
-  // Execute one-time import on component mount
+  // Execute one-time import on component mount - FRESH START
   useEffect(() => {
-    const executeOneTimeImport = async () => {
+    let isMounted = true;
+    
+    const executeCleanImport = async () => {
+      if (!isMounted) return;
+      
       try {
-        console.log('🔄 Starting one-time tool import...');
+        console.log('🚀 FRESH START - Clean tool import beginning...');
         
-        // Clear existing tools with improved function
-        console.log('1️⃣ Clearing existing tools thoroughly...');
-        const cleared = await clearAllTools();
-        if (!cleared) {
-          throw new Error('Failed to clear existing tools');
+        // First verify database is completely empty
+        const { data: toolsCheck } = await supabase.from('tools').select('id').limit(1);
+        const { data: variationsCheck } = await supabase.from('variation_instances').select('id').eq('item_type', 'tools').limit(1);
+        
+        if ((toolsCheck && toolsCheck.length > 0) || (variationsCheck && variationsCheck.length > 0)) {
+          console.log('⚠️ Database not empty - this should not happen after TRUNCATE');
+          throw new Error('Database clearing failed');
         }
         
-        // Wait a moment for database operations to complete
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log('✅ Existing tools cleared');
+        console.log('✅ Database confirmed completely empty - proceeding with import');
 
         // Load and parse Excel file
         console.log('2️⃣ Loading Excel file...');
