@@ -217,10 +217,10 @@ export function ToolsLibrary() {
 
       <div className="border rounded-lg max-h-[70vh] overflow-auto">
         <Table>
-          <TableHeader className="sticky top-0 bg-card border-b z-20 backdrop-blur-sm">
-            <TableRow className="bg-card hover:bg-card">
-              <TableHead className="w-12">Photo</TableHead>
-              <TableHead>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b">Photo</TableHead>
+              <TableHead className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('item')}
@@ -230,7 +230,7 @@ export function ToolsLibrary() {
                   {getSortIcon('item')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('description')}
@@ -240,7 +240,7 @@ export function ToolsLibrary() {
                   {getSortIcon('description')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('example_models')}
@@ -250,7 +250,7 @@ export function ToolsLibrary() {
                   {getSortIcon('example_models')}
                 </Button>
               </TableHead>
-              <TableHead className="w-32 text-right">Actions</TableHead>
+              <TableHead className="w-32 text-right sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
