@@ -705,16 +705,16 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium">Difficulty</label>
+                <label className="text-sm font-medium">Skill Level</label>
                 <select 
                   value={currentProject.difficulty || ''} 
                   onChange={(e) => updateProjectData({...currentProject, difficulty: e.target.value as any})}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">Select difficulty</option>
-                  <option value="Beginner">Beginner</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Advanced">Advanced</option>
+                  <option value="">Select skill level</option>
+                  <option value="Beginner">Beginner Skill</option>
+                  <option value="Intermediate">Intermediate Skill</option>
+                  <option value="Advanced">Advanced Skill</option>
                 </select>
               </div>
               <div>
@@ -724,10 +724,10 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   onChange={(e) => updateProjectData({...currentProject, effortLevel: e.target.value as any})}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">Select effort</option>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
+                  <option value="">Select effort level</option>
+                  <option value="Low">Low Effort</option>
+                  <option value="Medium">Medium Effort</option>
+                  <option value="High">High Effort</option>
                 </select>
               </div>
               <div>

@@ -191,9 +191,8 @@ export function ToolsLibrary() {
         </div>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm" className="text-xs">
-              <Trash2 className="w-4 h-4 mr-1" />
-              Delete All
+            <Button variant="destructive" size="icon" className="text-xs" title="Delete All Tools">
+              <Trash2 className="w-4 h-4" />
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>

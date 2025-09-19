@@ -89,6 +89,16 @@ export interface DecisionOption {
   alternateStepId?: string;
 }
 
+export interface StepInput {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'text' | 'number' | 'boolean' | 'file' | 'measurement' | 'selection';
+  required?: boolean;
+  options?: string[]; // For selection type
+  unit?: string; // For measurement type
+}
+
 export interface WorkflowStep {
   id: string;
   step: string;
@@ -99,6 +109,7 @@ export interface WorkflowStep {
   materials: Material[];
   tools: Tool[];
   outputs: Output[];
+  inputs?: StepInput[]; // Admin-defined inputs for this step
   contentSections?: ContentSection[];
   flowType?: 'prime' | 'repeat' | 'inspection' | 'alternate' | 'if-necessary';
   // Decision tree fields
