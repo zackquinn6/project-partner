@@ -109,3 +109,49 @@ export const clearAllTools = async (): Promise<boolean> => {
     return false;
   }
 };
+
+export const clearAllMaterials = async (): Promise<boolean> => {
+  try {
+    // Get all variation instance IDs for materials first
+    const { data: materialVariations } = await supabase
+      .from('variation_instances')
+      .select('id')
+      .eq('item_type', 'materials');
+
+    const variationIds = materialVariations?.map(v => v.id) || [];
+
+    // Delete in correct order to respect foreign key constraints
+    console.log('Deleting variation warning flags...');
+    if (variationIds.length > 0) {
+      await supabase
+        .from('variation_warning_flags')
+        .delete()
+        .in('variation_instance_id', variationIds);
+    }
+
+    console.log('Deleting material variations...');
+    await supabase
+      .from('variation_instances')
+      .delete()
+      .eq('item_type', 'materials');
+
+    console.log('Deleting core materials...');
+    const { error } = await supabase
+      .from('materials')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (error) {
+      console.error('Error clearing materials:', error);
+      toast.error('Failed to clear materials');
+      return false;
+    }
+
+    console.log('All materials cleared successfully');
+    return true;
+  } catch (error) {
+    console.error('Error clearing materials:', error);
+    toast.error('Failed to clear materials');
+    return false;
+  }
+};

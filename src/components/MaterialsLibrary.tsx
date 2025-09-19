@@ -11,6 +11,7 @@ import { LibraryItemForm } from "./LibraryItemForm";
 import { BulkUpload } from "./BulkUpload";
 import { ExportMaterialsData } from "./ExportMaterialsData";
 import { supabase } from "@/integrations/supabase/client";
+import { clearAllMaterials } from "@/utils/variationUtils";
 import { toast } from "sonner";
 
 interface Material {
@@ -117,6 +118,22 @@ export function MaterialsLibrary() {
     setShowEditDialog(true);
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      setLoading(true);
+      const success = await clearAllMaterials();
+      if (success) {
+        setMaterials([]);
+        toast.success('All materials deleted successfully');
+      }
+    } catch (error) {
+      console.error('Error deleting all materials:', error);
+      toast.error('Failed to delete all materials');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center p-8">Loading materials...</div>;
   }
@@ -133,6 +150,27 @@ export function MaterialsLibrary() {
             className="pl-10"
           />
         </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm" className="text-xs" title="Delete All Materials">
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete All Materials</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete all materials and variations from the library. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete All Materials
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <ExportMaterialsData className="text-xs" />
         <Button
           variant="outline"
