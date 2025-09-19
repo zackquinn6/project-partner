@@ -64,7 +64,7 @@ export function UnifiedProjectManagement() {
     name: '',
     description: '',
     category: '',
-    difficulty: 'beginner',
+    difficulty: 'Beginner',
     estimated_time: '',
   });
   
@@ -254,7 +254,7 @@ export function UnifiedProjectManagement() {
           name: newProject.name,
           description: newProject.description || '',
           category: newProject.category || '',
-          difficulty: newProject.difficulty || 'beginner',
+          difficulty: newProject.difficulty || 'Beginner',
           estimated_time: newProject.estimated_time || '',
           publish_status: 'draft',
           phases: [],
@@ -275,7 +275,7 @@ export function UnifiedProjectManagement() {
         name: '',
         description: '',
         category: '',
-        difficulty: 'beginner',
+        difficulty: 'Beginner',
         estimated_time: '',
       });
       fetchProjects();
@@ -451,9 +451,9 @@ export function UnifiedProjectManagement() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="beginner">Beginner</SelectItem>
-                                  <SelectItem value="intermediate">Intermediate</SelectItem>
-                                  <SelectItem value="advanced">Advanced</SelectItem>
+                                  <SelectItem value="Beginner">Beginner</SelectItem>
+                                  <SelectItem value="Intermediate">Intermediate</SelectItem>
+                                  <SelectItem value="Advanced">Advanced</SelectItem>
                                 </SelectContent>
                               </Select>
                             ) : (
@@ -760,19 +760,19 @@ export function UnifiedProjectManagement() {
 
               <div className="space-y-2">
                 <Label htmlFor="project-difficulty">Difficulty</Label>
-                <Select
-                  value={newProject.difficulty || 'beginner'}
-                  onValueChange={(value) => setNewProject(prev => ({ ...prev, difficulty: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">Beginner</SelectItem>
-                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                    <SelectItem value="advanced">Advanced</SelectItem>
-                  </SelectContent>
-                </Select>
+                                <Select
+                                  value={newProject.difficulty || 'Beginner'}
+                                  onValueChange={(value) => setNewProject(prev => ({ ...prev, difficulty: value }))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Beginner">Beginner</SelectItem>
+                                    <SelectItem value="Intermediate">Intermediate</SelectItem>
+                                    <SelectItem value="Advanced">Advanced</SelectItem>
+                                  </SelectContent>
+                                </Select>
               </div>
             </div>
 
