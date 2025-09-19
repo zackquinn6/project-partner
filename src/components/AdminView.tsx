@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ProjectManagementWindow } from '@/components/ProjectManagementWindow';
-import { EnhancedProjectManagement } from '@/components/EnhancedProjectManagement';
+import { UnifiedProjectManagement } from '@/components/UnifiedProjectManagement';
 import { ProjectAnalyticsWindow } from '@/components/ProjectAnalyticsWindow';
 import { UsersSecurityWindow } from '@/components/UsersSecurityWindow';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
@@ -63,15 +63,15 @@ export const AdminView: React.FC = () => {
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Settings className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle>Revision Control</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Manage project revisions with Draft, Beta, Published, and Archive stages
-              </CardDescription>
+               <CardTitle>Project Management</CardTitle>
+               <CardDescription className="min-h-[3rem] flex items-center justify-center">
+                 Unified project management with integrated revision control
+               </CardDescription>
             </CardHeader>
             <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setEnhancedProjectManagementOpen(true)}>
-                Revision Control
-              </Button>
+               <Button className="w-full" onClick={() => setEnhancedProjectManagementOpen(true)}>
+                 Project Management
+               </Button>
             </CardContent>
           </Card>
 
@@ -234,9 +234,9 @@ export const AdminView: React.FC = () => {
         <Dialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen}>
           <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Enhanced Project Management - Revision Control</DialogTitle>
-            </DialogHeader>
-            <EnhancedProjectManagement />
+             <DialogTitle>Project Management & Revision Control</DialogTitle>
+           </DialogHeader>
+           <UnifiedProjectManagement />
           </DialogContent>
         </Dialog>
 
