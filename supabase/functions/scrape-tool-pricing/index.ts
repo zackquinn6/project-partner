@@ -278,12 +278,12 @@ serve(async (req) => {
       
       for (const variationId of variationIds) {
         try {
-          // Get variation and its model
+          // Get variation and its optional models (LEFT JOIN instead of INNER)
           const { data: variation, error: variationError } = await supabase
             .from('variation_instances')
             .select(`
-              id, name, attributes,
-              tool_models!inner(id, model_name, manufacturer)
+              id, name, attributes, estimated_weight_lbs, estimated_rental_lifespan_days,
+              tool_models(id, model_name, manufacturer)
             `)
             .eq('id', variationId)
             .single();
@@ -295,32 +295,37 @@ serve(async (req) => {
 
           // Use variation name for search term
           const toolSearchTerm = variation.name;
-          console.log(`Processing variation: ${toolSearchTerm}`);
+          console.log(`Processing variation: ${toolSearchTerm} (has ${variation.tool_models?.length || 0} models)`);
 
-          // Estimate weight and lifespan for each variation
-          const [weightEstimate, lifespanEstimate] = await Promise.all([
-            estimateWeightFromWeb(toolSearchTerm),
-            estimateRentalLifespanFromWeb(toolSearchTerm)
+          // Only estimate if not already present
+          let needsWeightEstimate = !variation.estimated_weight_lbs;
+          let needsLifespanEstimate = !variation.estimated_rental_lifespan_days;
+
+          const estimates = await Promise.all([
+            needsWeightEstimate ? estimateWeightFromWeb(toolSearchTerm) : Promise.resolve(null),
+            needsLifespanEstimate ? estimateRentalLifespanFromWeb(toolSearchTerm) : Promise.resolve(null)
           ]);
 
-          // Update variation with estimates
+          // Update variation with estimates only if needed
           const updateData: any = {};
-          if (weightEstimate) updateData.estimated_weight_lbs = weightEstimate;
-          if (lifespanEstimate) updateData.estimated_rental_lifespan_days = lifespanEstimate;
+          if (needsWeightEstimate && estimates[0]) updateData.estimated_weight_lbs = estimates[0];
+          if (needsLifespanEstimate && estimates[1]) updateData.estimated_rental_lifespan_days = estimates[1];
 
           if (Object.keys(updateData).length > 0) {
             await supabase
               .from('variation_instances')
               .update(updateData)
               .eq('id', variationId);
+            console.log(`Updated variation ${variationId} with estimates:`, updateData);
           }
 
-          // Process pricing for the tool model if it exists
+          // Process pricing for tool models if they exist
           if (variation.tool_models?.length > 0) {
+            console.log(`Processing pricing for ${variation.tool_models.length} models`);
             const toolModel = variation.tool_models[0];
             
             // Scrape pricing from all retailers
-            const retailerPromises = RETAILERS.map(retailer => 
+            const retailerPromises = RETAILERS.slice(0, 3).map(retailer => // Limit to first 3 retailers for efficiency
               scrapeRetailerPricing(retailer, `${toolModel.manufacturer || ''} ${toolModel.model_name || toolSearchTerm}`.trim())
             );
             
@@ -346,9 +351,12 @@ serve(async (req) => {
                     }, { 
                       onConflict: 'model_id,retailer'
                     });
+                  console.log(`Saved pricing for ${toolModel.model_name}: $${pricingResult.price} from ${retailer.name}`);
                 }
               }
             }
+          } else {
+            console.log(`No models found for variation ${toolSearchTerm}, skipping pricing scrape`);
           }
           
           processedCount++;
