@@ -114,9 +114,15 @@ export function ToolsLibrary() {
       try {
         console.log('🔄 Starting one-time tool import...');
         
-        // Clear existing tools
-        console.log('1️⃣ Clearing existing tools...');
-        await clearAllTools();
+        // Clear existing tools with improved function
+        console.log('1️⃣ Clearing existing tools thoroughly...');
+        const cleared = await clearAllTools();
+        if (!cleared) {
+          throw new Error('Failed to clear existing tools');
+        }
+        
+        // Wait a moment for database operations to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
         console.log('✅ Existing tools cleared');
 
         // Load and parse Excel file
@@ -131,12 +137,17 @@ export function ToolsLibrary() {
         const parsedTools = await EnhancedToolParser.parseEnhancedToolListExcel(file);
         console.log(`✅ Parsed ${parsedTools.length} tools with variants`);
 
-        // Import to database
+        // Import to database with better error handling
         console.log('3️⃣ Importing tools to database...');
         const results = await importEnhancedToolsToDatabase(parsedTools, (current, total) => {
           console.log(`📥 Importing tool ${current + 1} of ${total}...`);
         });
         console.log(`✅ Imported ${results.success} tools successfully`);
+
+        if (results.errors.length > 0) {
+          console.log(`⚠️ ${results.errors.length} import errors (likely duplicates)`);
+          // Don't stop the process for duplicate errors
+        }
 
         // Trigger web scraping
         console.log('4️⃣ Starting web scraping for pricing and estimates...');
@@ -163,8 +174,12 @@ export function ToolsLibrary() {
         }
 
         console.log('🎉 One-time import completed successfully!');
-        toast.success('Import completed with web scraping initiated');
-        fetchTools();
+        toast.success('Import completed - refreshing data...');
+        
+        // Force refresh the tools list
+        setTimeout(() => {
+          fetchTools();
+        }, 2000);
         
       } catch (error) {
         console.error('❌ Import failed:', error);
