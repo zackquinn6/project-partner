@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Trash2, Image, Eye } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Search, Plus, Edit, Trash2, Image, ArrowUpDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LibraryItemForm } from "./LibraryItemForm";
 import { VariationViewer } from "./VariationViewer";
 import { ToolsImportManager } from "./ToolsImportManager";
+import { ExportToolsData } from "./ExportToolsData";
 import { supabase } from "@/integrations/supabase/client";
 import { clearAllTools } from "@/utils/variationUtils";
 import { EnhancedToolParser, importEnhancedToolsToDatabase } from "@/utils/enhancedToolParser";
@@ -24,6 +26,9 @@ interface Tool {
   updated_at: string;
 }
 
+type SortField = 'item' | 'description' | 'example_models' | 'created_at';
+type SortDirection = 'asc' | 'desc';
+
 export function ToolsLibrary() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,6 +38,8 @@ export function ToolsLibrary() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showImportManager, setShowImportManager] = useState(false);
   const [viewingVariations, setViewingVariations] = useState<Tool | null>(null);
+  const [sortField, setSortField] = useState<SortField>('item');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const fetchTools = async () => {
     try {
@@ -59,6 +66,37 @@ export function ToolsLibrary() {
     tool.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const sortedTools = [...filteredTools].sort((a, b) => {
+    let aValue: string | number = a[sortField] || '';
+    let bValue: string | number = b[sortField] || '';
+    
+    if (sortField === 'created_at') {
+      aValue = new Date(aValue as string).getTime();
+      bValue = new Date(bValue as string).getTime();
+    } else {
+      aValue = aValue.toString().toLowerCase();
+      bValue = bValue.toString().toLowerCase();
+    }
+    
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-4 h-4 ml-1 opacity-50" />;
+    return <ArrowUpDown className={`w-4 h-4 ml-1 ${sortDirection === 'desc' ? 'rotate-180' : ''}`} />;
+  };
 
   const handleDelete = async (toolId: string) => {
     try {
@@ -147,6 +185,7 @@ export function ToolsLibrary() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <ExportToolsData className="text-xs" />
         <Button
           variant="outline"
           size="sm"
@@ -176,90 +215,134 @@ export function ToolsLibrary() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-        {filteredTools.map((tool) => (
-          <Card key={tool.id} className="relative cursor-pointer hover:shadow-md transition-shadow" onClick={() => setViewingVariations(tool)}>
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <CardTitle className="text-lg capitalize">{tool.item}</CardTitle>
-                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setViewingVariations(tool)}
-                    title="View Variations"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEdit(tool)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Tool</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete "{tool.item}"? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(tool.id)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {tool.photo_url && (
-                <div className="mb-3">
-                  <img
-                    src={tool.photo_url}
-                    alt={tool.item}
-                    className="w-full h-32 object-cover rounded-md"
-                  />
-                </div>
-              )}
-              {tool.description && (
-                <p className="text-sm text-muted-foreground mb-2">
-                  {tool.description}
-                </p>
-              )}
-              {tool.example_models && (
-                <div>
-                  <Badge variant="secondary" className="text-xs">
-                    Tool models: {tool.example_models}
-                  </Badge>
-                </div>
-              )}
-              {!tool.photo_url && !tool.description && !tool.example_models && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Image className="w-4 h-4" />
-                  <span className="text-sm">No additional details</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">Photo</TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('item')}
+                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                >
+                  Tool Name
+                  {getSortIcon('item')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('description')}
+                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                >
+                  Description
+                  {getSortIcon('description')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('example_models')}
+                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                >
+                  Example Models
+                  {getSortIcon('example_models')}
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('created_at')}
+                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                >
+                  Created
+                  {getSortIcon('created_at')}
+                </Button>
+              </TableHead>
+              <TableHead className="w-32 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedTools.map((tool) => (
+              <TableRow 
+                key={tool.id} 
+                className="cursor-pointer hover:bg-muted/50" 
+                onClick={() => setViewingVariations(tool)}
+              >
+                <TableCell>
+                  {tool.photo_url ? (
+                    <img
+                      src={tool.photo_url}
+                      alt={tool.item}
+                      className="w-10 h-10 object-cover rounded-md"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center">
+                      <Image className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="font-medium capitalize">{tool.item}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {tool.description || '-'}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {tool.example_models ? (
+                    <Badge variant="secondary" className="text-xs">
+                      {tool.example_models}
+                    </Badge>
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {new Date(tool.created_at).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(tool)}
+                      title="Edit Variations"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Tool</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{tool.item}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(tool.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        
+        {sortedTools.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            {searchTerm ? 'No tools found matching your search.' : 'No tools in library yet.'}
+          </div>
+        )}
       </div>
-
-      {filteredTools.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          {searchTerm ? 'No tools found matching your search.' : 'No tools in library yet.'}
-        </div>
-      )}
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>

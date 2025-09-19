@@ -189,6 +189,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
       setSelectedCommonAttributes([]);
       setShowAttributeDialog(false);
       fetchAttributes();
+      fetchGlobalAttributes(); // Fix: refresh global attributes for value dropdown
     } catch (error) {
       console.error('Error creating attribute:', error);
       toast.error('Failed to create attribute');
