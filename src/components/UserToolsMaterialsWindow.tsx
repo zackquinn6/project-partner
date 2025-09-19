@@ -13,7 +13,7 @@ export function UserToolsMaterialsWindow({ open, onOpenChange }: UserToolsMateri
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>My Tools & Materials Library</DialogTitle>
+          <DialogTitle>My Tools Library</DialogTitle>
         </DialogHeader>
         
         <Tabs defaultValue="tools" className="w-full h-full">

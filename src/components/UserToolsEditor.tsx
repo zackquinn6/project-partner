@@ -6,10 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, X, Upload, Camera, Eye, ShoppingCart } from "lucide-react";
+import { Search, Plus, X, Upload, Camera, Eye, ShoppingCart, Save, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { VariationViewer } from "./VariationViewer";
@@ -43,7 +42,6 @@ export function UserToolsEditor() {
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
   const [viewingVariations, setViewingVariations] = useState<Tool | null>(null);
   const [showAddTools, setShowAddTools] = useState(false);
-  const { toast } = useToast();
   const { user } = useAuth();
 
   // Debounce user tools for auto-save
@@ -74,7 +72,7 @@ export function UserToolsEditor() {
       setAvailableTools(data || []);
     } catch (error) {
       console.error('Error fetching tools:', error);
-      toast({ title: "Error", description: "Failed to load available tools", variant: "destructive" });
+      // Failed to load available tools - no toast needed
     }
   };
 
@@ -92,7 +90,7 @@ export function UserToolsEditor() {
       setUserTools((data?.owned_tools as unknown as UserOwnedTool[]) || []);
     } catch (error) {
       console.error('Error fetching user tools:', error);
-      toast({ title: "Error", description: "Failed to load your tools", variant: "destructive" });
+      // Failed to load your tools - no toast needed
     }
   };
 
@@ -147,7 +145,7 @@ export function UserToolsEditor() {
       // Photo uploaded successfully - no toast needed
     } catch (error) {
       console.error('Error uploading photo:', error);
-      toast({ title: "Error", description: "Failed to upload photo", variant: "destructive" });
+      // Failed to upload photo - no toast needed
     } finally {
       setUploadingPhoto(null);
     }
@@ -183,7 +181,7 @@ export function UserToolsEditor() {
       // Tools saved successfully - no toast needed
     } catch (error) {
       console.error('Error saving tools:', error);
-      toast({ title: "Error", description: "Failed to save tools", variant: "destructive" });
+      // Failed to save tools - no toast needed
     } finally {
       setIsLoading(false);
     }
@@ -272,9 +270,13 @@ export function UserToolsEditor() {
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">My Tools Library ({userTools.length})</h3>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowAddTools(true)}>
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Add Tools
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => setShowAddTools(true)}
+            title="Add Tools"
+          >
+            <Plus className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -289,8 +291,10 @@ export function UserToolsEditor() {
                   size="sm"
                   variant="ghost"
                   onClick={() => removeTool(tool.id)}
+                  title="Delete tool"
+                  className="text-destructive hover:text-destructive"
                 >
-                  <X className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
 

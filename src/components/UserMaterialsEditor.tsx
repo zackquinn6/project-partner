@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, X, Upload, Camera } from "lucide-react";
+import { Search, Plus, X, Upload, Camera, Save, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Material {
@@ -37,7 +36,6 @@ export function UserMaterialsEditor() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
-  const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -58,7 +56,7 @@ export function UserMaterialsEditor() {
       setAvailableMaterials(data || []);
     } catch (error) {
       console.error('Error fetching materials:', error);
-      toast({ title: "Error", description: "Failed to load available materials", variant: "destructive" });
+      // Failed to load available materials - no toast needed
     }
   };
 
@@ -76,7 +74,7 @@ export function UserMaterialsEditor() {
       setUserMaterials((data?.owned_materials as unknown as UserOwnedMaterial[]) || []);
     } catch (error) {
       console.error('Error fetching user materials:', error);
-      toast({ title: "Error", description: "Failed to load your materials", variant: "destructive" });
+      // Failed to load your materials - no toast needed
     }
   };
 
@@ -129,10 +127,10 @@ export function UserMaterialsEditor() {
         .getPublicUrl(fileName);
 
       updateMaterial(materialId, 'user_photo_url', publicUrl);
-      toast({ title: "Success", description: "Photo uploaded successfully" });
+      // Photo uploaded successfully - no toast needed
     } catch (error) {
       console.error('Error uploading photo:', error);
-      toast({ title: "Error", description: "Failed to upload photo", variant: "destructive" });
+      // Failed to upload photo - no toast needed
     } finally {
       setUploadingPhoto(null);
     }
@@ -149,10 +147,10 @@ export function UserMaterialsEditor() {
         .eq('user_id', user.id);
       
       if (error) throw error;
-      toast({ title: "Success", description: "Your materials have been saved" });
+      // Your materials have been saved - no toast needed
     } catch (error) {
       console.error('Error saving materials:', error);
-      toast({ title: "Error", description: "Failed to save materials", variant: "destructive" });
+      // Failed to save materials - no toast needed
     } finally {
       setIsLoading(false);
     }
@@ -224,8 +222,14 @@ export function UserMaterialsEditor() {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Your Materials ({userMaterials.length})</h3>
-          <Button onClick={saveMaterials} disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Materials"}
+          <Button 
+            size="sm" 
+            onClick={saveMaterials} 
+            disabled={isLoading}
+            title="Save Materials"
+            variant="outline"
+          >
+            <Save className="w-4 h-4" />
           </Button>
         </div>
 
@@ -246,8 +250,10 @@ export function UserMaterialsEditor() {
                     size="sm"
                     variant="ghost"
                     onClick={() => removeMaterial(material.id)}
+                    title="Delete material"
+                    className="text-destructive hover:text-destructive"
                   >
-                    <X className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
 
