@@ -92,7 +92,8 @@ export const PFMEAManagement: React.FC = () => {
   const [failureModes, setFailureModes] = useState<PFMEAFailureMode[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateProject, setShowCreateProject] = useState(false);
-  const [editingCell, setEditingCell] = useState<{row: string, column: string} | null>(null);
+  const [editingCell, setEditingCell] = useState<{row: string, column: string, type: string} | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
   const [currentTab, setCurrentTab] = useState('overview');
 
   useEffect(() => {
@@ -303,6 +304,137 @@ export const PFMEAManagement: React.FC = () => {
         ...action,
         failureMode
       }))
+    );
+  };
+
+  // Editing functions for inline editing
+  const startEdit = (row: string, column: string, type: string, currentValue: string) => {
+    setEditingCell({ row, column, type });
+    setEditingValue(currentValue);
+  };
+
+  const cancelEdit = () => {
+    setEditingCell(null);
+    setEditingValue('');
+  };
+
+  const saveEdit = async () => {
+    if (!editingCell) return;
+
+    try {
+      const { row, column, type } = editingCell;
+      
+      // Update based on type
+      if (type === 'failure_mode') {
+        await supabase
+          .from('pfmea_failure_modes')
+          .update({ failure_mode: editingValue })
+          .eq('id', row);
+      } else if (type === 'effect') {
+        await supabase
+          .from('pfmea_potential_effects')
+          .update({ effect_description: editingValue })
+          .eq('id', row);
+      } else if (type === 'effect_severity') {
+        await supabase
+          .from('pfmea_potential_effects')
+          .update({ severity_score: parseInt(editingValue) })
+          .eq('id', row);
+      } else if (type === 'cause') {
+        await supabase
+          .from('pfmea_potential_causes')
+          .update({ cause_description: editingValue })
+          .eq('id', row);
+      } else if (type === 'cause_occurrence') {
+        await supabase
+          .from('pfmea_potential_causes')
+          .update({ occurrence_score: parseInt(editingValue) })
+          .eq('id', row);
+      } else if (type === 'control') {
+        await supabase
+          .from('pfmea_controls')
+          .update({ control_description: editingValue })
+          .eq('id', row);
+      } else if (type === 'control_detection') {
+        await supabase
+          .from('pfmea_controls')
+          .update({ detection_score: parseInt(editingValue) })
+          .eq('id', row);
+      } else if (type === 'action') {
+        await supabase
+          .from('pfmea_action_items')
+          .update({ recommended_action: editingValue })
+          .eq('id', row);
+      }
+
+      // Refresh data
+      if (selectedPfmeaProject) {
+        await fetchPfmeaDetails(selectedPfmeaProject.id);
+      }
+      
+      cancelEdit();
+      toast.success('Updated successfully');
+    } catch (error) {
+      console.error('Error saving edit:', error);
+      toast.error('Failed to save changes');
+    }
+  };
+
+  const renderEditableCell = (value: string, rowId: string, column: string, type: string, isDropdown = false) => {
+    const isEditing = editingCell?.row === rowId && editingCell?.column === column;
+    
+    if (isEditing) {
+      if (isDropdown) {
+        return (
+          <Select 
+            value={editingValue} 
+            onValueChange={(newValue) => {
+              setEditingValue(newValue);
+              // Auto-save on dropdown change
+              setTimeout(() => saveEdit(), 0);
+            }}
+            onOpenChange={(open) => {
+              if (!open && editingValue !== value) {
+                saveEdit();
+              }
+            }}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 10 }, (_, i) => i + 1).map(num => (
+                <SelectItem key={num} value={num.toString()}>
+                  {num}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      } else {
+        return (
+          <Input
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveEdit();
+              if (e.key === 'Escape') cancelEdit();
+            }}
+            onBlur={saveEdit}
+            className="h-8"
+            autoFocus
+          />
+        );
+      }
+    }
+
+    return (
+      <div
+        className="cursor-pointer hover:bg-muted/50 p-1 rounded min-h-[24px]"
+        onClick={() => startEdit(rowId, column, type, value)}
+      >
+        {value || <span className="text-muted-foreground italic">Click to edit</span>}
+      </div>
     );
   };
 
@@ -588,12 +720,17 @@ export const PFMEAManagement: React.FC = () => {
                             </TableCell>
                           </>
                         )}
-                        <TableCell>{failureMode.failure_mode}</TableCell>
+                        <TableCell>
+                          {renderEditableCell(failureMode.failure_mode, failureMode.id, 'failure_mode', 'failure_mode')}
+                        </TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             {failureMode.pfmea_potential_effects.map(effect => (
-                              <div key={effect.id} className="text-sm">
-                                {effect.effect_description} (S:{effect.severity_score})
+                              <div key={effect.id} className="text-sm border rounded p-2">
+                                {renderEditableCell(effect.effect_description, effect.id, 'effect_description', 'effect')}
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  S: {renderEditableCell(effect.severity_score.toString(), effect.id, 'severity_score', 'effect_severity', true)}
+                                </div>
                               </div>
                             ))}
                             <Button
@@ -613,8 +750,11 @@ export const PFMEAManagement: React.FC = () => {
                         <TableCell>
                           <div className="space-y-1">
                             {failureMode.pfmea_potential_causes.map(cause => (
-                              <div key={cause.id} className="text-sm">
-                                {cause.cause_description} (O:{cause.occurrence_score})
+                              <div key={cause.id} className="text-sm border rounded p-2">
+                                {renderEditableCell(cause.cause_description, cause.id, 'cause_description', 'cause')}
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  O: {renderEditableCell(cause.occurrence_score.toString(), cause.id, 'occurrence_score', 'cause_occurrence', true)}
+                                </div>
                               </div>
                             ))}
                             <Button
@@ -639,18 +779,21 @@ export const PFMEAManagement: React.FC = () => {
                             {failureMode.pfmea_controls
                               .filter(control => control.control_type === 'prevention')
                               .map(control => (
-                                <div key={control.id} className="text-sm">
+                                <div key={control.id} className="text-sm border rounded p-2">
                                   <Badge variant="outline" className="text-xs mr-1">Prev</Badge>
-                                  {control.control_description}
+                                  {renderEditableCell(control.control_description, control.id, 'control_description', 'control')}
                                 </div>
                               ))
                             }
                             {failureMode.pfmea_controls
                               .filter(control => control.control_type === 'detection')
                               .map(control => (
-                                <div key={control.id} className="text-sm">
+                                <div key={control.id} className="text-sm border rounded p-2">
                                   <Badge variant="outline" className="text-xs mr-1">Det</Badge>
-                                  {control.control_description} (D:{control.detection_score})
+                                  {renderEditableCell(control.control_description, control.id, 'control_description', 'control')}
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    D: {renderEditableCell((control.detection_score || 5).toString(), control.id, 'detection_score', 'control_detection', true)}
+                                  </div>
                                 </div>
                               ))
                             }
@@ -691,7 +834,7 @@ export const PFMEAManagement: React.FC = () => {
                           <div className="space-y-1">
                             {failureMode.pfmea_action_items.map(action => (
                               <div key={action.id} className="text-sm p-2 bg-blue-50 rounded border">
-                                <div>{action.recommended_action}</div>
+                                {renderEditableCell(action.recommended_action, action.id, 'recommended_action', 'action')}
                                 <div className="text-xs text-muted-foreground mt-1">
                                   {action.responsible_person && `Assigned: ${action.responsible_person}`}
                                   {action.target_completion_date && ` | Due: ${action.target_completion_date}`}
