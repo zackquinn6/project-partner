@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Edit, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { VariationEditor } from './VariationEditor';
 
 interface VariationInstance {
@@ -115,7 +114,6 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to fetch variation data');
     } finally {
       setLoading(false);
     }

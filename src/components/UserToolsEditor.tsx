@@ -92,7 +92,6 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
       setAvailableTools(data || []);
     } catch (error) {
       console.error('Error fetching tools:', error);
-      // Failed to load available tools - no toast needed
     }
   };
 
@@ -110,7 +109,6 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
       setUserTools((data?.owned_tools as unknown as UserOwnedTool[]) || []);
     } catch (error) {
       console.error('Error fetching user tools:', error);
-      // Failed to load your tools - no toast needed
     }
   };
 
@@ -213,10 +211,8 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
         .getPublicUrl(fileName);
 
       updateTool(toolId, 'user_photo_url', publicUrl);
-      // Photo uploaded successfully - no toast needed
     } catch (error) {
       console.error('Error uploading photo:', error);
-      // Failed to upload photo - no toast needed
     } finally {
       setUploadingPhoto(null);
     }
@@ -234,7 +230,6 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
       if (error) throw error;
     } catch (error) {
       console.error('Error auto-saving tools:', error);
-      // Removed toast notification for auto-save failures
     }
   }, [user, userTools]);
 
@@ -249,10 +244,8 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
         .eq('user_id', user.id);
       
       if (error) throw error;
-      // Tools saved successfully - no toast needed
     } catch (error) {
       console.error('Error saving tools:', error);
-      // Failed to save tools - no toast needed
     } finally {
       setIsLoading(false);
     }
@@ -342,6 +335,7 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
                 itemType="tools"
                 onVariationSelect={(variation) => {
                   console.log('Variation selected:', variation);
+                  console.log('Current userTools before adding:', userTools);
                   // Create a new tool based on the selected variation
                   const newUserTool: UserOwnedTool = {
                     id: variation.id,
@@ -352,7 +346,26 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
                     model_name: variation.sku || '',
                     user_photo_url: ''
                   };
-                  setUserTools([...userTools, newUserTool]);
+                  console.log('Adding new tool:', newUserTool);
+                  const updatedTools = [...userTools, newUserTool];
+                  setUserTools(updatedTools);
+                  console.log('Updated userTools:', updatedTools);
+                  
+                  // Save to database immediately
+                  if (user) {
+                    supabase
+                      .from('profiles')
+                      .update({ owned_tools: updatedTools as any })
+                      .eq('user_id', user.id)
+                      .then(({ error }) => {
+                        if (error) {
+                          console.error('Failed to save tool to database:', error);
+                        } else {
+                          console.log('Tool saved to database successfully');
+                        }
+                      });
+                  }
+                  
                   setCheckingVariations(null);
                 }}
               />
