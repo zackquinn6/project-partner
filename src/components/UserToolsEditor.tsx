@@ -451,12 +451,15 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
             }
             
             // Dispatch event to refresh library and close add window
+            console.log('Dispatching events: tools-library-updated and close-add-tools-window');
             window.dispatchEvent(new CustomEvent('tools-library-updated'));
             window.dispatchEvent(new CustomEvent('close-add-tools-window'));
             
             if (onBackToLibrary) {
+              console.log('Calling onBackToLibrary callback');
               onBackToLibrary();
             } else {
+              console.log('Setting showAddTools to false');
               setShowAddTools(false);
             }
           }}
