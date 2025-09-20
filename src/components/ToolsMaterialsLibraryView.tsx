@@ -367,18 +367,19 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
               </div>
 
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <div>
                     <Label className="text-xs">Quantity</Label>
                     <Input
                       type="number"
                       min="1"
+                      max="99"
                       value={selectedItem.quantity}
                       onChange={(e) => updateItem('quantity', parseInt(e.target.value) || 1)}
-                      className="text-sm h-8"
+                      className="text-sm h-8 w-16"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-3">
                     <Label className="text-xs">{selectedType === 'tool' ? 'Model/Brand' : 'Brand'}</Label>
                     <Input
                       value={selectedType === 'tool' ? (selectedItem as UserOwnedTool).model_name || '' : (selectedItem as UserOwnedMaterial).brand || ''}
