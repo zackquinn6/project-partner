@@ -190,17 +190,18 @@ export function VariationViewer({
 
   // Render selection view when onVariationSelect is provided
   if (onVariationSelect) {
-    // Filter out variations that are already owned by the user
-    const availableVariations = variations.filter(variation => 
-      !userTools.some(userTool => userTool.id === variation.id)
-    );
+    // Filter out variations that are already owned by the user (only if userTools is provided)
+    const availableVariations = userTools ? 
+      variations.filter(variation => 
+        !userTools.some(userTool => userTool.id === variation.id)
+      ) : variations;
 
-    // Close the dialog if no variations are available
+    // Close the dialog if no variations are available (only if userTools is provided)
     React.useEffect(() => {
-      if (!loading && variations.length > 0 && availableVariations.length === 0) {
+      if (!loading && userTools && variations.length > 0 && availableVariations.length === 0) {
         onOpenChange(false);
       }
-    }, [loading, variations, availableVariations, onOpenChange]);
+    }, [loading, variations, availableVariations, onOpenChange, userTools]);
 
     return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -218,7 +219,9 @@ export function VariationViewer({
             <div className="text-center py-8 text-muted-foreground">
               {variations.length === 0 
                 ? `No variations found for this ${itemType.slice(0, -1)}.`
-                : `All variations have been added to your library.`
+                : userTools 
+                  ? `All variations have been added to your library.`
+                  : `No variations available.`
               }
             </div>
           ) : (
