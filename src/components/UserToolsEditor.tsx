@@ -372,6 +372,8 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
                           console.error('Failed to save tool to database:', error);
                         } else {
                           console.log('Tool saved to database successfully');
+                          // Dispatch event to refresh library view
+                          window.dispatchEvent(new CustomEvent('tools-library-updated'));
                         }
                       });
                   }

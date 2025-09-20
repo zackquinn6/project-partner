@@ -75,6 +75,17 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     }
   }, [user, open]);
 
+  // Listen for tools library updates
+  useEffect(() => {
+    const handleLibraryUpdate = () => {
+      console.log('Library update event received, refreshing data');
+      fetchUserItems();
+    };
+
+    window.addEventListener('tools-library-updated', handleLibraryUpdate);
+    return () => window.removeEventListener('tools-library-updated', handleLibraryUpdate);
+  }, [user]);
+
   const fetchUserItems = async () => {
     if (!user) return;
     
@@ -330,6 +341,17 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                 title="Add Items"
               >
                 <Plus className="w-4 h-4" />
+              </Button>
+              <Button 
+                size="icon" 
+                variant="outline"
+                onClick={() => {
+                  console.log('Manual refresh requested');
+                  fetchUserItems();
+                }}
+                title="Refresh Library"
+              >
+                <Eye className="w-4 h-4" />
               </Button>
               <Button 
                 size="icon" 
