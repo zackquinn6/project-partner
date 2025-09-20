@@ -5,6 +5,7 @@ import { UsersSecurityWindow } from '@/components/UsersSecurityWindow';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
 import { KnowledgeIngestionSystem } from '@/components/KnowledgeIngestionSystem';
 import { HomeRiskManager } from '@/components/HomeRiskManager';
+import { AdminSecurityDashboard } from '@/components/AdminSecurityDashboard';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +26,7 @@ export const AdminView: React.FC = () => {
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
   const [knowledgeSystemOpen, setKnowledgeSystemOpen] = useState(false);
   const [homeRiskManagerOpen, setHomeRiskManagerOpen] = useState(false);
+  const [securityDashboardOpen, setSecurityDashboardOpen] = useState(false);
   
   const [processDesignOpen, setProcessDesignOpen] = useState(false);
   const [roadmapManagerOpen, setRoadmapManagerOpen] = useState(false);
@@ -211,6 +213,23 @@ export const AdminView: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col border-red-200 bg-red-50" onClick={() => setSecurityDashboardOpen(true)}>
+            <CardHeader className="text-center flex-1">
+              <div className="mx-auto w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-red-600" />
+              </div>
+              <CardTitle className="text-red-800">Security Dashboard</CardTitle>
+              <CardDescription className="min-h-[3rem] flex items-center justify-center text-red-700">
+                Enhanced security monitoring with data masking and audit logging
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-auto">
+              <Button className="w-full bg-red-600 hover:bg-red-700" onClick={() => setSecurityDashboardOpen(true)}>
+                Security Center
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <Dialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen}>
@@ -286,6 +305,18 @@ export const AdminView: React.FC = () => {
               <DialogTitle>Internet Data Refresh Management</DialogTitle>
             </DialogHeader>
             <AdminDataRefresh />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={securityDashboardOpen} onOpenChange={setSecurityDashboardOpen}>
+          <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-red-800 flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                Enhanced Security Dashboard
+              </DialogTitle>
+            </DialogHeader>
+            <AdminSecurityDashboard />
           </DialogContent>
         </Dialog>
       </div>

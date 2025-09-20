@@ -2062,7 +2062,9 @@ export type Database = {
         }[]
       }
       get_masked_home_for_admin: {
-        Args: { home_user_id: string }
+        Args:
+          | { access_reason?: string; home_user_id: string }
+          | { home_user_id: string }
         Returns: {
           address_masked: string
           build_year: string
@@ -2076,7 +2078,9 @@ export type Database = {
         }[]
       }
       get_masked_profile_for_admin: {
-        Args: { profile_user_id: string }
+        Args:
+          | { access_reason?: string; profile_user_id: string }
+          | { profile_user_id: string }
         Returns: {
           created_at: string
           display_name: string
@@ -2174,6 +2178,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      request_emergency_data_access: {
+        Args: {
+          emergency_reason: string
+          supervisor_email: string
+          target_user_id: string
+        }
+        Returns: string
+      }
       request_sensitive_data_access: {
         Args: {
           justification: string
@@ -2206,6 +2218,10 @@ export type Database = {
       }
       validate_admin_action: {
         Args: { action_type: string }
+        Returns: boolean
+      }
+      validate_admin_data_access: {
+        Args: { access_reason: string; target_table: string }
         Returns: boolean
       }
       validate_admin_security_access: {
