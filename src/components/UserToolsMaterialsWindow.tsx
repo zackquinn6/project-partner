@@ -15,10 +15,15 @@ export function UserToolsMaterialsWindow({ open, onOpenChange, initialToolsMode 
 
   // Update currentMode when initialToolsMode changes
   useEffect(() => {
+    console.log('UserToolsMaterialsWindow initialToolsMode changed:', initialToolsMode);
     if (initialToolsMode) {
       setCurrentMode(initialToolsMode);
     }
   }, [initialToolsMode]);
+
+  useEffect(() => {
+    console.log('UserToolsMaterialsWindow - open:', open, 'currentMode:', currentMode);
+  }, [open, currentMode]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

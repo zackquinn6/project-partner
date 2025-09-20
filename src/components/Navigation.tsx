@@ -120,6 +120,7 @@ export default function Navigation({
     const handleToolsMaterialsEditorEvent = (event: Event) => {
       console.log('🔧 Navigation: Tools materials editor event received');
       event.stopPropagation();
+      console.log('Setting userToolsMode to add-tools and opening user tools library');
       setUserToolsMode('add-tools');
       setIsUserToolsLibraryOpen(true);
     };

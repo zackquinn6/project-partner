@@ -331,9 +331,12 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                 size="icon"
                 variant="outline" 
                 onClick={() => {
+                  console.log('Add tools button clicked');
                   if (onAddMode) {
+                    console.log('Using onAddMode callback');
                     onAddMode();
                   } else {
+                    console.log('Dispatching show-tools-materials-editor event');
                     const event = new CustomEvent('show-tools-materials-editor');
                     window.dispatchEvent(event);
                   }
