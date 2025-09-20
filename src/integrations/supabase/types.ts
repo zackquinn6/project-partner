@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_sensitive_data_access: {
+        Row: {
+          access_type: string
+          accessed_table: string
+          accessed_user_id: string | null
+          admin_user_id: string
+          created_at: string
+          data_fields_accessed: string[] | null
+          id: string
+          ip_address: unknown | null
+          justification: string | null
+          session_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          access_type: string
+          accessed_table: string
+          accessed_user_id?: string | null
+          admin_user_id: string
+          created_at?: string
+          data_fields_accessed?: string[] | null
+          id?: string
+          ip_address?: unknown | null
+          justification?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          access_type?: string
+          accessed_table?: string
+          accessed_user_id?: string | null
+          admin_user_id?: string
+          created_at?: string
+          data_fields_accessed?: string[] | null
+          id?: string
+          ip_address?: unknown | null
+          justification?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      admin_sessions: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          is_active: boolean
+          sensitive_data_accessed: boolean
+          session_end: string | null
+          session_start: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          sensitive_data_accessed?: boolean
+          session_end?: string | null
+          session_start?: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          sensitive_data_accessed?: boolean
+          session_end?: string | null
+          session_start?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       ai_repair_analyses: {
         Row: {
           action_plan: string | null
@@ -1983,6 +2061,34 @@ export type Database = {
           unique_ips: number
         }[]
       }
+      get_masked_home_for_admin: {
+        Args: { home_user_id: string }
+        Returns: {
+          address_masked: string
+          build_year: string
+          city: string
+          created_at: string
+          home_type: string
+          id: string
+          name: string
+          state: string
+          user_id: string
+        }[]
+      }
+      get_masked_profile_for_admin: {
+        Args: { profile_user_id: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          email_masked: string
+          full_name_masked: string
+          home_ownership: string
+          home_state: string
+          id: string
+          skill_level: string
+          user_id: string
+        }[]
+      }
       get_security_headers: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -2068,8 +2174,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      request_sensitive_data_access: {
+        Args: {
+          justification: string
+          requested_fields?: string[]
+          target_table: string
+          target_user_id: string
+        }
+        Returns: string
+      }
       sanitize_input: {
         Args: { input_text: string }
+        Returns: string
+      }
+      start_admin_session: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       upsert_notification_settings: {
