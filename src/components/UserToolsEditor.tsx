@@ -386,33 +386,42 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
       </div>
 
       {/* Variation Selection for Adding */}
-      {checkingVariations && (
-        <VariationViewer
-          open={true}
-          onOpenChange={() => {
-            console.log('VariationViewer onOpenChange called');
-            setCheckingVariations(null);
-          }}
-          coreItemId={checkingVariations.id}
-          coreItemName={checkingVariations.item}
-          itemType="tools"
-          onVariationSelect={(variation) => {
-            console.log('Variation selected:', variation);
-            // Create a new tool based on the selected variation
-            const newUserTool: UserOwnedTool = {
-              id: variation.id,
-              item: variation.name,
-              description: variation.description,
-              photo_url: variation.photo_url,
-              quantity: 1,
-              model_name: variation.sku || '',
-              user_photo_url: ''
-            };
-            setUserTools([...userTools, newUserTool]);
-            setCheckingVariations(null);
-          }}
-        />
-      )}
+      {(() => {
+        console.log('checkingVariations state:', checkingVariations);
+        return checkingVariations ? (
+          <div>
+            {(() => {
+              console.log('About to render VariationViewer');
+              return null;
+            })()}
+            <VariationViewer
+              open={true}
+              onOpenChange={() => {
+                console.log('VariationViewer onOpenChange called');
+                setCheckingVariations(null);
+              }}
+              coreItemId={checkingVariations.id}
+              coreItemName={checkingVariations.item}
+              itemType="tools"
+              onVariationSelect={(variation) => {
+                console.log('Variation selected:', variation);
+                // Create a new tool based on the selected variation
+                const newUserTool: UserOwnedTool = {
+                  id: variation.id,
+                  item: variation.name,
+                  description: variation.description,
+                  photo_url: variation.photo_url,
+                  quantity: 1,
+                  model_name: variation.sku || '',
+                  user_photo_url: ''
+                };
+                setUserTools([...userTools, newUserTool]);
+                setCheckingVariations(null);
+              }}
+            />
+          </div>
+        ) : null;
+      })()}
 
       {/* Variations Viewer for Information Only */}
       {viewingVariations && (
