@@ -58,18 +58,9 @@ interface VariationViewerProps {
   itemType: 'tools' | 'materials';
   coreItemName: string;
   onVariationSelect?: (variation: VariationInstance) => void;
-  userTools?: any[]; // Array of user's owned tools/materials for filtering
 }
 
-export function VariationViewer({ 
-  open, 
-  onOpenChange, 
-  coreItemId, 
-  itemType, 
-  coreItemName, 
-  onVariationSelect,
-  userTools = []
-}: VariationViewerProps) {
+export function VariationViewer({ open, onOpenChange, coreItemId, itemType, coreItemName, onVariationSelect }: VariationViewerProps) {
   const [variations, setVariations] = useState<VariationInstance[]>([]);
   const [attributes, setAttributes] = useState<VariationAttribute[]>([]);
   const [models, setModels] = useState<ToolModel[]>([]);
@@ -190,19 +181,6 @@ export function VariationViewer({
 
   // Render selection view when onVariationSelect is provided
   if (onVariationSelect) {
-    // Filter out variations that are already owned by the user (only if userTools is provided)
-    const availableVariations = userTools ? 
-      variations.filter(variation => 
-        !userTools.some(userTool => userTool.id === variation.id)
-      ) : variations;
-
-    // Close the dialog if no variations are available (only if userTools is provided)
-    React.useEffect(() => {
-      if (!loading && userTools && variations.length > 0 && availableVariations.length === 0) {
-        onOpenChange(false);
-      }
-    }, [loading, variations, availableVariations, onOpenChange, userTools]);
-
     return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden" style={{ zIndex: 10000 }}>
@@ -215,19 +193,14 @@ export function VariationViewer({
           
           {loading ? (
             <div className="flex justify-center p-8">Loading variations...</div>
-          ) : availableVariations.length === 0 ? (
+          ) : variations.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {variations.length === 0 
-                ? `No variations found for this ${itemType.slice(0, -1)}.`
-                : userTools 
-                  ? `All variations have been added to your library.`
-                  : `No variations available.`
-              }
+              No variations found for this {itemType.slice(0, -1)}.
             </div>
           ) : (
             <div className="overflow-y-auto max-h-[60vh]">
               <div className="space-y-2">
-                {availableVariations.map(variation => (
+                {variations.map(variation => (
                   <div
                     key={variation.id}
                     className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
