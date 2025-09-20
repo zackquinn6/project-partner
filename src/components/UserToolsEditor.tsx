@@ -260,66 +260,106 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
 
   if (showAddTools) {
     return (
-      <div className="space-y-4 h-full">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Add Tools to Your Library</h3>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search available tools..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      <>
+        <div className="space-y-4 h-full">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Add Tools to Your Library</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Search available tools..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {filteredTools.map((tool) => (
+              <Card key={tool.id} className="p-4">
+                <div className="flex justify-between items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-medium truncate">{tool.item}</h4>
+                      </div>
+                      {tool.description && (
+                        <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
+                      )}
+                      {tool.example_models && (
+                        <p className="text-xs text-muted-foreground">Examples: {tool.example_models}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {tool.photo_url && (
+                        <img 
+                          src={tool.photo_url} 
+                          alt={tool.item}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => handleAddTool(tool)}
+                        className="flex-shrink-0"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add
+                      </Button>
+                    </div>
+                </div>
+              </Card>
+            ))}
+            
+            {filteredTools.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                {searchTerm ? "No tools found matching your search" : "All available tools have been added to your library"}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-          {filteredTools.map((tool) => (
-            <Card key={tool.id} className="p-4">
-              <div className="flex justify-between items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium truncate">{tool.item}</h4>
-                    </div>
-                    {tool.description && (
-                      <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
-                    )}
-                    {tool.example_models && (
-                      <p className="text-xs text-muted-foreground">Examples: {tool.example_models}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {tool.photo_url && (
-                      <img 
-                        src={tool.photo_url} 
-                        alt={tool.item}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                    )}
-                    <Button
-                      size="sm"
-                      onClick={() => handleAddTool(tool)}
-                      className="flex-shrink-0"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add
-                    </Button>
-                  </div>
-              </div>
-            </Card>
-          ))}
-          
-          {filteredTools.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? "No tools found matching your search" : "All available tools have been added to your library"}
+        {/* Variation Selection for Adding - MOVED INSIDE showAddTools block */}
+        {(() => {
+          console.log('checkingVariations state:', checkingVariations);
+          return checkingVariations ? (
+            <div>
+              {(() => {
+                console.log('About to render VariationViewer');
+                return null;
+              })()}
+              <VariationViewer
+                open={true}
+                onOpenChange={() => {
+                  console.log('VariationViewer onOpenChange called');
+                  setCheckingVariations(null);
+                }}
+                coreItemId={checkingVariations.id}
+                coreItemName={checkingVariations.item}
+                itemType="tools"
+                onVariationSelect={(variation) => {
+                  console.log('Variation selected:', variation);
+                  // Create a new tool based on the selected variation
+                  const newUserTool: UserOwnedTool = {
+                    id: variation.id,
+                    item: variation.name,
+                    description: variation.description,
+                    photo_url: variation.photo_url,
+                    quantity: 1,
+                    model_name: variation.sku || '',
+                    user_photo_url: ''
+                  };
+                  setUserTools([...userTools, newUserTool]);
+                  setCheckingVariations(null);
+                }}
+              />
             </div>
-          )}
-        </div>
-      </div>
+          ) : null;
+        })()}
+      </>
     );
   }
 
@@ -384,44 +424,6 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
           </div>
         )}
       </div>
-
-      {/* Variation Selection for Adding */}
-      {(() => {
-        console.log('checkingVariations state:', checkingVariations);
-        return checkingVariations ? (
-          <div>
-            {(() => {
-              console.log('About to render VariationViewer');
-              return null;
-            })()}
-            <VariationViewer
-              open={true}
-              onOpenChange={() => {
-                console.log('VariationViewer onOpenChange called');
-                setCheckingVariations(null);
-              }}
-              coreItemId={checkingVariations.id}
-              coreItemName={checkingVariations.item}
-              itemType="tools"
-              onVariationSelect={(variation) => {
-                console.log('Variation selected:', variation);
-                // Create a new tool based on the selected variation
-                const newUserTool: UserOwnedTool = {
-                  id: variation.id,
-                  item: variation.name,
-                  description: variation.description,
-                  photo_url: variation.photo_url,
-                  quantity: 1,
-                  model_name: variation.sku || '',
-                  user_photo_url: ''
-                };
-                setUserTools([...userTools, newUserTool]);
-                setCheckingVariations(null);
-              }}
-            />
-          </div>
-        ) : null;
-      })()}
 
       {/* Variations Viewer for Information Only */}
       {viewingVariations && (
