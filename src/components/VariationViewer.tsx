@@ -181,6 +181,73 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
     setEditingVariation(null);
   };
 
+  // Render selection view when onVariationSelect is provided
+  if (onVariationSelect) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Select Variation for {coreItemName}</DialogTitle>
+          </DialogHeader>
+          
+          {loading ? (
+            <div className="flex justify-center p-8">Loading variations...</div>
+          ) : variations.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No variations found for this {itemType.slice(0, -1)}.
+            </div>
+          ) : (
+            <div className="overflow-y-auto max-h-[60vh]">
+              <div className="space-y-2">
+                {variations.map(variation => (
+                  <div
+                    key={variation.id}
+                    className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-4 flex-1">
+                      {variation.photo_url && (
+                        <img
+                          src={variation.photo_url}
+                          alt={variation.name}
+                          className="h-12 w-12 object-cover rounded flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-base truncate">{variation.name}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {Object.entries(variation.attributes).map(([key, value]) => {
+                            const attr = attributes.find(a => a.name === key);
+                            const attrValue = attr?.values.find(v => v.value === value);
+                            return (
+                              <Badge key={key} variant="secondary" className="text-xs">
+                                {attr?.display_name || key}: {attrValue?.display_value || value}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        onVariationSelect(variation);
+                      }}
+                      className="ml-4 flex-shrink-0"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Render detailed view when no onVariationSelect is provided
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -277,22 +344,6 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
                             );
                           })}
                         </div>
-                        
-                        {onVariationSelect && (
-                          <div className="mt-3">
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                onVariationSelect(variation);
-                                onOpenChange(false);
-                              }}
-                              className="w-full"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add This Variation
-                            </Button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </CardContent>
