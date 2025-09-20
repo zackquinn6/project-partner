@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Minus, Package } from 'lucide-react';
+import { Plus, Minus, Package, X, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { MaterialReference } from '@/interfaces/Project';
 import { useProject } from '@/contexts/ProjectContext';
@@ -239,11 +239,11 @@ export const MaterialsAdjustmentWindow: React.FC<MaterialsAdjustmentWindowProps>
               )}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+              <Button variant="outline" onClick={() => onOpenChange(false)} size="icon">
+                <X className="w-4 h-4" />
               </Button>
-              <Button onClick={handleSave}>
-                Save Changes
+              <Button onClick={handleSave} size="icon" variant="outline">
+                <Save className="w-4 h-4" />
               </Button>
             </div>
           </div>

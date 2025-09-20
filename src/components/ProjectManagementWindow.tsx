@@ -441,10 +441,10 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               <div className="flex gap-1">
                 {isEditing ? (
                   <>
-                    <Button size="sm" onClick={saveEdit}>
+                    <Button size="icon" variant="outline" onClick={saveEdit}>
                       <Check className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="outline" onClick={cancelEdit}>
+                    <Button size="icon" variant="outline" onClick={cancelEdit}>
                       <X className="w-4 h-4" />
                     </Button>
                   </>
@@ -497,10 +497,10 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               <div className="flex gap-1">
                 {isEditing ? (
                   <>
-                    <Button size="sm" onClick={saveEdit}>
+                    <Button size="icon" variant="outline" onClick={saveEdit}>
                       <Check className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="outline" onClick={cancelEdit}>
+                    <Button size="icon" variant="outline" onClick={cancelEdit}>
                       <X className="w-4 h-4" />
                     </Button>
                   </>
@@ -549,10 +549,10 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               <div className="flex gap-1">
                 {isEditing ? (
                   <>
-                    <Button size="sm" onClick={saveEdit}>
+                    <Button size="icon" variant="outline" onClick={saveEdit}>
                       <Check className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="outline" onClick={cancelEdit}>
+                    <Button size="icon" variant="outline" onClick={cancelEdit}>
                       <X className="w-4 h-4" />
                     </Button>
                   </>

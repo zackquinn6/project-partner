@@ -101,13 +101,11 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                 />
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleSave}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                <Button onClick={handleSave} size="icon" variant="outline">
+                  <Save className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" onClick={handleCancel}>
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel
+                <Button variant="outline" onClick={handleCancel} size="icon">
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
             </>

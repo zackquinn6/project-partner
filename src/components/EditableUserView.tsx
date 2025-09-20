@@ -369,13 +369,11 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
           </div>
           
           <div className="flex gap-2">
-            <Button onClick={saveEdits} size="sm">
-              <Save className="w-4 h-4 mr-2" />
-              Save Changes
+            <Button onClick={saveEdits} size="icon" variant="outline">
+              <Save className="w-4 h-4" />
             </Button>
-            <Button onClick={cancelEditing} variant="outline" size="sm">
-              <X className="w-4 h-4 mr-2" />
-              Cancel
+            <Button onClick={cancelEditing} variant="outline" size="icon">
+              <X className="w-4 h-4" />
             </Button>
           </div>
         </div>

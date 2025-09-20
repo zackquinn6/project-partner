@@ -7,13 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Plus, X, Save } from 'lucide-react';
 import { Output, StepInput } from '@/interfaces/Project';
 
 // Extend Output interface to include allowances field
 interface ExtendedOutput extends Output {
   allowances?: string;
 }
-import { Plus, X } from 'lucide-react';
 
 interface OutputEditFormProps {
   output: ExtendedOutput;
@@ -279,11 +279,11 @@ export const OutputEditForm: React.FC<OutputEditFormProps> = ({
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
+            <Button variant="outline" onClick={onClose} size="icon">
+              <X className="w-4 h-4" />
             </Button>
-            <Button onClick={handleSave}>
-              Save Changes
+            <Button onClick={handleSave} size="icon" variant="outline">
+              <Save className="w-4 h-4" />
             </Button>
           </div>
         </div>

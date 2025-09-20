@@ -271,12 +271,21 @@ export function UserToolsEditor() {
         <h3 className="text-lg font-semibold">My Tools Library ({userTools.length})</h3>
         <div className="flex gap-2">
           <Button 
-            size="sm" 
+            size="icon" 
             variant="outline" 
             onClick={() => setShowAddTools(true)}
             title="Add Tools"
           >
             <Plus className="w-4 h-4" />
+          </Button>
+          <Button 
+            size="icon" 
+            variant="outline" 
+            onClick={saveTools}
+            disabled={isLoading}
+            title="Save Tools Library"
+          >
+            <Save className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -288,11 +297,11 @@ export function UserToolsEditor() {
               <div className="flex justify-between items-start">
                 <h4 className="font-medium">{tool.item}</h4>
                 <Button
-                  size="sm"
+                  size="icon"
                   variant="ghost"
                   onClick={() => removeTool(tool.id)}
                   title="Delete tool"
-                  className="text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive h-8 w-8"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Camera, Wrench, Package, Eye } from "lucide-react";
+import { Search, Plus, Camera, Wrench, Package, Eye, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -211,17 +211,24 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange }: ToolsMaterials
                 />
               </div>
               <Button 
+                size="icon"
                 variant="outline" 
                 onClick={() => {
                   const event = new CustomEvent('show-tools-materials-editor');
                   window.dispatchEvent(event);
                 }}
+                title="Add Items"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Items
+                <Plus className="w-4 h-4" />
               </Button>
-              <Button onClick={saveItems} disabled={isLoading}>
-                {isLoading ? "Saving..." : "Save Changes"}
+              <Button 
+                size="icon" 
+                variant="outline"
+                onClick={saveItems} 
+                disabled={isLoading}
+                title="Save Library"
+              >
+                <Save className="w-4 h-4" />
               </Button>
             </div>
 

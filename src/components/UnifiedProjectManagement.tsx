@@ -399,13 +399,11 @@ export function UnifiedProjectManagement() {
                           <div className="flex gap-2">
                             {editingProject ? (
                               <>
-                                <Button onClick={saveProjectEdit} className="flex items-center gap-1">
+                                <Button onClick={saveProjectEdit} size="icon" variant="outline">
                                   <Save className="w-4 h-4" />
-                                  Save
                                 </Button>
-                                <Button onClick={cancelProjectEdit} variant="outline" className="flex items-center gap-1">
+                                <Button onClick={cancelProjectEdit} variant="outline" size="icon">
                                   <X className="w-4 h-4" />
-                                  Cancel
                                 </Button>
                               </>
                             ) : (

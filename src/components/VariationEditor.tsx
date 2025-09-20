@@ -668,9 +668,8 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={saveVariation} disabled={loading}>
-            <Save className="w-4 h-4 mr-2" />
-            {loading ? 'Saving...' : 'Save Changes'}
+          <Button onClick={saveVariation} disabled={loading} size="icon" variant="outline">
+            <Save className="w-4 h-4" />
           </Button>
         </div>
       </DialogContent>
