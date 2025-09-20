@@ -194,7 +194,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange }: ToolsMaterials
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl h-[80vh]">
         <DialogHeader>
-          <DialogTitle>My Tools & Materials Library</DialogTitle>
+          <DialogTitle>My Tools Library</DialogTitle>
         </DialogHeader>
         
         <div className="flex flex-1 gap-6 min-h-0">
