@@ -387,34 +387,31 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
 
       {/* Variation Selection for Adding */}
       {checkingVariations && (
-        <>
-          {console.log('Rendering VariationViewer with:', checkingVariations)}
-          <VariationViewer
-            open={!!checkingVariations}
-            onOpenChange={() => {
-              console.log('VariationViewer onOpenChange called');
-              setCheckingVariations(null);
-            }}
-            coreItemId={checkingVariations.id}
-            coreItemName={checkingVariations.item}
-            itemType="tools"
-            onVariationSelect={(variation) => {
-              console.log('Variation selected:', variation);
-              // Create a new tool based on the selected variation
-              const newUserTool: UserOwnedTool = {
-                id: variation.id,
-                item: variation.name,
-                description: variation.description,
-                photo_url: variation.photo_url,
-                quantity: 1,
-                model_name: variation.sku || '',
-                user_photo_url: ''
-              };
-              setUserTools([...userTools, newUserTool]);
-              setCheckingVariations(null);
-            }}
-          />
-        </>
+        <VariationViewer
+          open={true}
+          onOpenChange={() => {
+            console.log('VariationViewer onOpenChange called');
+            setCheckingVariations(null);
+          }}
+          coreItemId={checkingVariations.id}
+          coreItemName={checkingVariations.item}
+          itemType="tools"
+          onVariationSelect={(variation) => {
+            console.log('Variation selected:', variation);
+            // Create a new tool based on the selected variation
+            const newUserTool: UserOwnedTool = {
+              id: variation.id,
+              item: variation.name,
+              description: variation.description,
+              photo_url: variation.photo_url,
+              quantity: 1,
+              model_name: variation.sku || '',
+              user_photo_url: ''
+            };
+            setUserTools([...userTools, newUserTool]);
+            setCheckingVariations(null);
+          }}
+        />
       )}
 
       {/* Variations Viewer for Information Only */}
