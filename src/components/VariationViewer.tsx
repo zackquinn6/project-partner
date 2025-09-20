@@ -185,7 +185,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
   if (onVariationSelect) {
     return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden" style={{ zIndex: 9999 }}>
+      <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden" style={{ zIndex: 10000 }}>
           <DialogHeader>
             <DialogTitle>Select Variation for {coreItemName}</DialogTitle>
           </DialogHeader>
@@ -250,7 +250,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
   // Render detailed view when no onVariationSelect is provided
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto z-[100]">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" style={{ zIndex: 10000 }}>
         <DialogHeader>
           <DialogTitle>Variations for {coreItemName}</DialogTitle>
         </DialogHeader>
