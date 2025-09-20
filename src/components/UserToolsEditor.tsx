@@ -117,6 +117,7 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
       const matchesSearch = tool.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
+      // Check if this core tool or any of its variations are already owned
       const alreadyOwned = userTools.some(userTool => userTool.id === tool.id);
       
       return matchesSearch && !alreadyOwned;
@@ -336,6 +337,15 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
                 onVariationSelect={(variation) => {
                   console.log('Variation selected:', variation);
                   console.log('Current userTools before adding:', userTools);
+                  
+                  // Check if this variation is already in the user's tools
+                  const isDuplicate = userTools.some(userTool => userTool.id === variation.id);
+                  if (isDuplicate) {
+                    console.log('Variation already exists, skipping add');
+                    setCheckingVariations(null);
+                    return;
+                  }
+                  
                   // Create a new tool based on the selected variation
                   const newUserTool: UserOwnedTool = {
                     id: variation.id,

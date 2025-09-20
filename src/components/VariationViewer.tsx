@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -186,6 +186,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
       <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden" style={{ zIndex: 10000 }}>
           <DialogHeader>
             <DialogTitle>Select Variation for {coreItemName}</DialogTitle>
+            <DialogDescription>
+              Choose a specific variation of this {itemType.slice(0, -1)} to add to your library.
+            </DialogDescription>
           </DialogHeader>
           
           {loading ? (
@@ -251,6 +254,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" style={{ zIndex: 10000 }}>
         <DialogHeader>
           <DialogTitle>Variations for {coreItemName}</DialogTitle>
+          <DialogDescription>
+            View all available variations of this {itemType.slice(0, -1)} with pricing and model information.
+          </DialogDescription>
         </DialogHeader>
         
         {loading ? (
