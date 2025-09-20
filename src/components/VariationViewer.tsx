@@ -185,7 +185,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
   if (onVariationSelect) {
     return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden z-[100]">
+      <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden" style={{ zIndex: 9999 }}>
           <DialogHeader>
             <DialogTitle>Select Variation for {coreItemName}</DialogTitle>
           </DialogHeader>
