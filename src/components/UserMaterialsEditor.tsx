@@ -34,9 +34,10 @@ interface UserOwnedMaterial {
 
 interface UserMaterialsEditorProps {
   initialMode?: 'library' | 'add-materials';
+  onBackToLibrary?: () => void;
 }
 
-export function UserMaterialsEditor({ initialMode = 'library' }: UserMaterialsEditorProps = {}) {
+export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }: UserMaterialsEditorProps = {}) {
   const [availableMaterials, setAvailableMaterials] = useState<Material[]>([]);
   const [userMaterials, setUserMaterials] = useState<UserOwnedMaterial[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -214,7 +215,7 @@ export function UserMaterialsEditor({ initialMode = 'library' }: UserMaterialsEd
       <div className="space-y-4 h-full">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Add Materials to Your Library</h3>
-          <Button variant="outline" onClick={() => setShowAddMaterials(false)}>
+          <Button variant="outline" onClick={() => onBackToLibrary ? onBackToLibrary() : setShowAddMaterials(false)}>
             Back to My Materials
           </Button>
         </div>

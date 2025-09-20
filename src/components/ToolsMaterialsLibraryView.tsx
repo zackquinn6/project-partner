@@ -56,9 +56,11 @@ interface UserOwnedMaterial {
 interface ToolsMaterialsLibraryViewProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEditMode?: () => void;
+  onAddMode?: () => void;
 }
 
-export function ToolsMaterialsLibraryView({ open, onOpenChange }: ToolsMaterialsLibraryViewProps) {
+export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAddMode }: ToolsMaterialsLibraryViewProps) {
   const [userTools, setUserTools] = useState<UserOwnedTool[]>([]);
   const [userMaterials, setUserMaterials] = useState<UserOwnedMaterial[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -229,8 +231,12 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange }: ToolsMaterials
                 size="icon"
                 variant="outline" 
                 onClick={() => {
-                  const event = new CustomEvent('show-tools-materials-editor');
-                  window.dispatchEvent(event);
+                  if (onAddMode) {
+                    onAddMode();
+                  } else {
+                    const event = new CustomEvent('show-tools-materials-editor');
+                    window.dispatchEvent(event);
+                  }
                 }}
                 title="Add Items"
               >

@@ -35,9 +35,10 @@ interface UserOwnedTool {
 
 interface UserToolsEditorProps {
   initialMode?: 'library' | 'add-tools';
+  onBackToLibrary?: () => void;
 }
 
-export function UserToolsEditor({ initialMode = 'library' }: UserToolsEditorProps = {}) {
+export function UserToolsEditor({ initialMode = 'library', onBackToLibrary }: UserToolsEditorProps = {}) {
   const [availableTools, setAvailableTools] = useState<Tool[]>([]);
   const [userTools, setUserTools] = useState<UserOwnedTool[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -223,7 +224,7 @@ export function UserToolsEditor({ initialMode = 'library' }: UserToolsEditorProp
       <div className="space-y-4 h-full">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Add Tools to Your Library</h3>
-          <Button variant="outline" onClick={() => setShowAddTools(false)}>
+          <Button variant="outline" onClick={() => onBackToLibrary ? onBackToLibrary() : setShowAddTools(false)}>
             Back to My Tools
           </Button>
         </div>
