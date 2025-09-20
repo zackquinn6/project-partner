@@ -117,10 +117,17 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
       const matchesSearch = tool.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      // Check if this exact core tool is already owned (not just variations)
-      const coreToolOwned = userTools.some(userTool => userTool.id === tool.id);
+      // Check if this core tool or any of its variations are already owned
+      const alreadyOwned = userTools.some(userTool => {
+        // Check if the core tool is owned
+        if (userTool.id === tool.id) return true;
+        
+        // Check if any variation of this core tool is owned
+        // This ensures core items disappear when their variations are added
+        return userTool.item === tool.item;
+      });
       
-      return matchesSearch && !coreToolOwned;
+      return matchesSearch && !alreadyOwned;
     })
     .sort((a, b) => a.item.localeCompare(b.item));
 
@@ -352,20 +359,18 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
           <div>
             <VariationViewer
               open={true}
-              onOpenChange={(open) => {
-                if (!open) {
-                  setCheckingVariations(null);
-                }
+              onOpenChange={() => {
+                setCheckingVariations(null);
               }}
               coreItemId={checkingVariations.id}
               coreItemName={checkingVariations.item}
               itemType="tools"
-              userTools={userTools}
               onVariationSelect={(variation) => {
                 // Check if this variation is already in the user's tools
                 const isDuplicate = userTools.some(userTool => userTool.id === variation.id);
                 if (isDuplicate) {
-                  return; // Don't add duplicates
+                  setCheckingVariations(null);
+                  return;
                 }
                 
                 // Create a new tool based on the selected variation
@@ -397,7 +402,7 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
                     });
                 }
                 
-                // The VariationViewer will auto-close if no more variations are available
+                setCheckingVariations(null);
               }}
             />
           </div>
