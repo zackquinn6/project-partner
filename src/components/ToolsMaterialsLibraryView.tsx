@@ -160,21 +160,62 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     }
   };
 
-  const updateItem = (field: string, value: any) => {
-    if (!selectedItem) return;
+  const updateItem = async (field: string, value: any) => {
+    if (!selectedItem || !user) return;
 
+    console.log('Updating item field:', field, 'value:', value);
+    
+    let updatedTools = userTools;
+    let updatedMaterials = userMaterials;
+    
     if (selectedType === 'tool') {
-      const updatedTools = userTools.map(tool => 
+      updatedTools = userTools.map(tool => 
         tool.id === selectedItem.id ? { ...tool, [field]: value } : tool
       );
       setUserTools(updatedTools);
       setSelectedItem({ ...selectedItem, [field]: value } as UserOwnedTool);
     } else {
-      const updatedMaterials = userMaterials.map(material => 
+      updatedMaterials = userMaterials.map(material => 
         material.id === selectedItem.id ? { ...material, [field]: value } : material
       );
       setUserMaterials(updatedMaterials);
       setSelectedItem({ ...selectedItem, [field]: value } as UserOwnedMaterial);
+    }
+    
+    // Immediately save to database
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          owned_tools: updatedTools as any,
+          owned_materials: updatedMaterials as any
+        })
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Failed to save item update to database:', error);
+        // Revert local state on error
+        if (selectedType === 'tool') {
+          setUserTools(userTools);
+          setSelectedItem(selectedItem);
+        } else {
+          setUserMaterials(userMaterials);
+          setSelectedItem(selectedItem);
+        }
+        return;
+      }
+      
+      console.log('Item field successfully updated in database');
+    } catch (error) {
+      console.error('Error updating item:', error);
+      // Revert local state on error
+      if (selectedType === 'tool') {
+        setUserTools(userTools);
+        setSelectedItem(selectedItem);
+      } else {
+        setUserMaterials(userMaterials);
+        setSelectedItem(selectedItem);
+      }
     }
   };
 
