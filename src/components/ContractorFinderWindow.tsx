@@ -17,30 +17,31 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Contractor Finder
-          </DialogTitle>
-        </DialogHeader>
-        
-        {/* Beta Banner */}
-        <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-b border-orange-200 p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Badge className="bg-orange-500 text-white">BETA</Badge>
-              <span className="text-sm font-medium text-orange-800">
-                Feature under development - Hit the ? icon in upper right to give us feedback!
-              </span>
+      <DialogContent className="w-[95vw] h-[95vh] max-w-none max-h-none overflow-hidden sm:w-[90vw] sm:h-[90vh] lg:max-w-4xl lg:h-[90vh]">
+        <div className="h-full flex flex-col">
+          <DialogHeader className="p-6 border-b flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Contractor Finder
+            </DialogTitle>
+          </DialogHeader>
+          
+          {/* Beta Banner */}
+          <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-b border-orange-200 p-3 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-orange-500 text-white">BETA</Badge>
+                <span className="text-sm font-medium text-orange-800">
+                  Feature under development - Hit the ? icon in upper right to give us feedback!
+                </span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setShowFeedback(true)}>
+                <HelpCircle className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setShowFeedback(true)}>
-              <HelpCircle className="h-4 w-4" />
-            </Button>
           </div>
-        </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-120px)] space-y-6">
+          <div className="flex-1 overflow-y-auto space-y-6 p-6">
           <div className="text-center">
             <p className="text-muted-foreground">
               Connect with trusted professionals to help complete your DIY projects. 
@@ -156,6 +157,7 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
             </CardContent>
           </Card>
         </div>
+      </div>
       </DialogContent>
     </Dialog>
     

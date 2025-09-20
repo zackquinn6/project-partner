@@ -217,8 +217,8 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="pb-4">
+          <ScrollArea className="flex-1 overflow-auto">
+            <div className="pb-4 min-h-0">
               {/* Pricing Alert */}
               {showPricingAlert && (
                 <div className="bg-gradient-to-r from-orange-50 to-green-50 border border-orange-200 p-4 m-4 rounded-xl shadow-sm">
