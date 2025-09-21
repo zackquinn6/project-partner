@@ -1230,6 +1230,7 @@ export type Database = {
           progress: number
           project_leader: string | null
           project_photos: Json | null
+          skill_level: string | null
           start_date: string
           status: string
           template_id: string
@@ -1260,6 +1261,7 @@ export type Database = {
           progress?: number
           project_leader?: string | null
           project_photos?: Json | null
+          skill_level?: string | null
           start_date?: string
           status?: string
           template_id: string
@@ -1290,6 +1292,7 @@ export type Database = {
           progress?: number
           project_leader?: string | null
           project_photos?: Json | null
+          skill_level?: string | null
           start_date?: string
           status?: string
           template_id?: string
