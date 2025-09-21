@@ -39,7 +39,7 @@ interface UserToolsEditorProps {
   onSwitchToAdd?: () => void;
 }
 
-export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, onSwitchToAdd }: UserToolsEditorProps = {}) {
+export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSwitchToAdd }: UserToolsEditorProps = {}) {
   const [availableTools, setAvailableTools] = useState<Tool[]>([]);
   const [userTools, setUserTools] = useState<UserOwnedTool[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -408,6 +408,78 @@ export function UserToolsEditor({ initialMode = 'add-tools', onBackToLibrary, on
           </div>
         ) : null}
       </>
+    );
+  }
+
+  // Show library view when not in add-tools mode
+  if (!showAddTools) {
+    return (
+      <div className="space-y-4 h-full">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">My Tools Library</h3>
+          <Button 
+            onClick={() => {
+              if (onSwitchToAdd) {
+                onSwitchToAdd();
+              } else {
+                setShowAddTools(true);
+              }
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Tools
+          </Button>
+        </div>
+        
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          {userTools.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No tools in your library yet.</p>
+              <p className="text-sm mt-2">Click "Add Tools" to get started!</p>
+            </div>
+          ) : (
+            userTools.map((tool) => (
+              <Card key={tool.id} className="p-4">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-medium truncate">{tool.item}</h4>
+                      <Badge variant="secondary">Qty: {tool.quantity}</Badge>
+                    </div>
+                    {tool.description && (
+                      <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
+                    )}
+                    {tool.custom_description && (
+                      <p className="text-sm text-primary mb-2">
+                        <strong>My Notes:</strong> {tool.custom_description}
+                      </p>
+                    )}
+                    {tool.model_name && (
+                      <p className="text-xs text-muted-foreground">Model: {tool.model_name}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {(tool.user_photo_url || tool.photo_url) && (
+                      <img 
+                        src={tool.user_photo_url || tool.photo_url} 
+                        alt={tool.item}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    )}
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => removeTool(tool.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
     );
   }
 
