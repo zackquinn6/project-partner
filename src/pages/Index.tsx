@@ -29,7 +29,7 @@ import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow';
 import ProfileManager from '@/components/ProfileManager';
-import { Dialog } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
@@ -57,6 +57,17 @@ const Index = () => {
   const [showAIRepair, setShowAIRepair] = useState(false);
   const [showUserToolsMaterials, setShowUserToolsMaterials] = useState(false);
   const [showProfileManager, setShowProfileManager] = useState(false);
+
+  // Add debug logging for modal state
+  useEffect(() => {
+    console.log('🔍 Index: Modal states changed:', {
+      showRapidAssessment,
+      showUserToolsMaterials,
+      showProfileManager,
+      showToolRentals,
+      showCodePermits
+    });
+  }, [showRapidAssessment, showUserToolsMaterials, showProfileManager, showToolRentals, showCodePermits]);
 
   // Handle navigation state changes (including view parameter)
   useEffect(() => {
@@ -118,6 +129,7 @@ const Index = () => {
     };
 
     const handleRapidAssessment = () => {
+      console.log('🎯 Index: Rapid Assessment button clicked');
       setShowRapidAssessment(true);
     };
 
@@ -394,7 +406,9 @@ const Index = () => {
       
       {/* Mobile App Modals */}
       <Dialog open={showRapidAssessment} onOpenChange={setShowRapidAssessment}>
-        <RapidProjectAssessment />
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <RapidProjectAssessment />
+        </DialogContent>
       </Dialog>
       
       <ToolRentalsWindow

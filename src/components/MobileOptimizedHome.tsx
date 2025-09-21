@@ -56,10 +56,8 @@ export function MobileOptimizedHome() {
       subtitle: 'Continue or start new',
       color: 'bg-blue-600',
       action: () => {
-        navigate('/', {
-          replace: true,
-          state: { view: 'user', resetToListing: true }
-        });
+        console.log('🔄 MobileOptimizedHome: My Projects clicked');
+        window.dispatchEvent(new CustomEvent('navigate-to-projects'));
       }
     },
     {
@@ -68,7 +66,10 @@ export function MobileOptimizedHome() {
       title: 'Rapid Plan',
       subtitle: 'Quick project estimate',
       color: 'bg-green-600',
-      action: () => window.dispatchEvent(new CustomEvent('show-rapid-assessment'))
+      action: () => {
+        console.log('🎯 MobileOptimizedHome: Rapid Plan clicked');
+        window.dispatchEvent(new CustomEvent('show-rapid-assessment'));
+      }
     },
     {
       id: 'home-maintenance',
