@@ -99,43 +99,40 @@ export const PasswordSecurityManager: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Shield className="w-5 h-5 text-primary" />
-        <h2 className="text-xl font-semibold">Password & Security</h2>
-      </div>
+    <div className="space-y-4">
 
       {/* Email Update Section */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
             <Mail className="w-4 h-4" />
             Email Address
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs">
             Update your account email address. You'll need to verify the new email.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <div>
-            <Label htmlFor="current-email">Current Email</Label>
+            <Label htmlFor="current-email" className="text-xs">Current Email</Label>
             <Input
               id="current-email"
               type="email"
               value={user?.email || ''}
               disabled
-              className="bg-muted"
+              className="bg-muted h-8 text-sm"
             />
           </div>
           
           <div>
-            <Label htmlFor="new-email">New Email Address</Label>
+            <Label htmlFor="new-email" className="text-xs">New Email Address</Label>
             <Input
               id="new-email"
               type="email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               placeholder="Enter new email address"
+              className="h-8 text-sm"
             />
           </div>
           
@@ -143,14 +140,15 @@ export const PasswordSecurityManager: React.FC = () => {
             onClick={handleEmailUpdate} 
             disabled={emailLoading || !newEmail || newEmail === user?.email}
             className="w-full"
+            size="sm"
           >
-            {emailLoading ? 'Updating...' : 'Update Email Address'}
+            {emailLoading ? 'Updating...' : 'Update Email'}
           </Button>
           
-          <Alert>
-            <AlertTriangle className="w-4 h-4" />
-            <AlertDescription>
-              You will receive a confirmation email at your new address. You must confirm the change before it takes effect.
+          <Alert className="py-2">
+            <AlertTriangle className="w-3 h-3" />
+            <AlertDescription className="text-xs">
+              You'll receive a confirmation email. Confirm the change before it takes effect.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -158,18 +156,18 @@ export const PasswordSecurityManager: React.FC = () => {
 
       {/* Password Update Section */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
             <Key className="w-4 h-4" />
             Change Password
           </CardTitle>
-          <CardDescription>
-            Update your account password. Choose a strong password with at least 6 characters.
+          <CardDescription className="text-xs">
+            Choose a strong password with at least 6 characters.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <div>
-            <Label htmlFor="current-password">Current Password</Label>
+            <Label htmlFor="current-password" className="text-xs">Current Password</Label>
             <div className="relative">
               <Input
                 id="current-password"
@@ -180,21 +178,22 @@ export const PasswordSecurityManager: React.FC = () => {
                   currentPassword: e.target.value
                 }))}
                 placeholder="Enter current password"
+                className="h-8 text-sm pr-10"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-0 top-0 h-full px-3"
+                className="absolute right-0 top-0 h-8 px-2"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
               >
-                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showCurrentPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
               </Button>
             </div>
           </div>
           
           <div>
-            <Label htmlFor="new-password">New Password</Label>
+            <Label htmlFor="new-password" className="text-xs">New Password</Label>
             <div className="relative">
               <Input
                 id="new-password"
@@ -205,21 +204,22 @@ export const PasswordSecurityManager: React.FC = () => {
                   newPassword: e.target.value
                 }))}
                 placeholder="Enter new password"
+                className="h-8 text-sm pr-10"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-0 top-0 h-full px-3"
+                className="absolute right-0 top-0 h-8 px-2"
                 onClick={() => setShowNewPassword(!showNewPassword)}
               >
-                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showNewPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
               </Button>
             </div>
           </div>
           
           <div>
-            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <Label htmlFor="confirm-password" className="text-xs">Confirm New Password</Label>
             <div className="relative">
               <Input
                 id="confirm-password"
@@ -230,32 +230,33 @@ export const PasswordSecurityManager: React.FC = () => {
                   confirmPassword: e.target.value
                 }))}
                 placeholder="Confirm new password"
+                className="h-8 text-sm pr-10"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-0 top-0 h-full px-3"
+                className="absolute right-0 top-0 h-8 px-2"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showConfirmPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
               </Button>
             </div>
           </div>
           
           {passwordData.newPassword && passwordData.confirmPassword && (
-            <Alert className={passwordData.newPassword === passwordData.confirmPassword ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}>
+            <Alert className={`py-2 ${passwordData.newPassword === passwordData.confirmPassword ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
               {passwordData.newPassword === passwordData.confirmPassword ? (
                 <>
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <AlertDescription className="text-green-700">
+                  <CheckCircle className="w-3 h-3 text-green-600" />
+                  <AlertDescription className="text-green-700 text-xs">
                     Passwords match
                   </AlertDescription>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="w-4 h-4 text-red-600" />
-                  <AlertDescription className="text-red-700">
+                  <AlertTriangle className="w-3 h-3 text-red-600" />
+                  <AlertDescription className="text-red-700 text-xs">
                     Passwords do not match
                   </AlertDescription>
                 </>
@@ -267,14 +268,15 @@ export const PasswordSecurityManager: React.FC = () => {
             onClick={handlePasswordUpdate} 
             disabled={loading || !passwordData.currentPassword || !passwordData.newPassword || passwordData.newPassword !== passwordData.confirmPassword}
             className="w-full"
+            size="sm"
           >
-            {loading ? 'Updating Password...' : 'Update Password'}
+            {loading ? 'Updating...' : 'Update Password'}
           </Button>
           
-          <Alert>
-            <AlertTriangle className="w-4 h-4" />
-            <AlertDescription>
-              After changing your password, you may need to sign in again on other devices.
+          <Alert className="py-2">
+            <AlertTriangle className="w-3 h-3" />
+            <AlertDescription className="text-xs">
+              After changing password, you may need to sign in again on other devices.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -282,19 +284,19 @@ export const PasswordSecurityManager: React.FC = () => {
 
       {/* Security Tips */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
             <Shield className="w-4 h-4" />
             Security Tips
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>• Use a unique password that you don't use anywhere else</li>
-            <li>• Include a mix of uppercase, lowercase, numbers, and symbols</li>
-            <li>• Avoid using personal information like names or dates</li>
-            <li>• Consider using a password manager to generate and store strong passwords</li>
-            <li>• Sign out of your account when using shared or public computers</li>
+          <ul className="space-y-1 text-xs text-muted-foreground">
+            <li>• Use unique passwords not used elsewhere</li>
+            <li>• Mix uppercase, lowercase, numbers, and symbols</li>
+            <li>• Avoid personal information like names or dates</li>
+            <li>• Consider a password manager for strong passwords</li>
+            <li>• Sign out on shared or public computers</li>
           </ul>
         </CardContent>
       </Card>

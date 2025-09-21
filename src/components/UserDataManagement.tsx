@@ -84,28 +84,22 @@ export const UserDataManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Shield className="h-6 w-6" />
-        <h2 className="text-2xl font-bold">Data Privacy & Security</h2>
-      </div>
-
-      <div className="grid gap-6">
+    <div className="space-y-4">
+      <div className="grid gap-4">
         {/* Data Export */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Download className="h-4 w-4" />
               Export Your Data
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Download a complete copy of all your personal data stored in our system, including your profile, 
-              project runs, and role assignments. This export is provided in JSON format.
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Download a complete copy of all your personal data including profile, project runs, and role assignments in JSON format.
             </p>
-            <Button onClick={exportUserData} disabled={loading}>
-              <Download className="h-4 w-4 mr-2" />
+            <Button onClick={exportUserData} disabled={loading} size="sm">
+              <Download className="h-3 w-3 mr-2" />
               {loading ? 'Exporting...' : 'Export My Data'}
             </Button>
           </CardContent>
@@ -113,54 +107,52 @@ export const UserDataManagement: React.FC = () => {
 
         {/* Data Deletion */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="h-5 w-5" />
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-destructive text-base">
+              <Trash2 className="h-4 w-4" />
               Delete Your Data
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Warning:</strong> This action is irreversible. Deleting your data will permanently 
-                remove your profile, all project runs, and role assignments. Your account will also be signed out.
+          <CardContent className="space-y-3">
+            <Alert className="py-2">
+              <AlertTriangle className="h-3 w-3" />
+              <AlertDescription className="text-xs">
+                <strong>Warning:</strong> Irreversible action. Permanently removes profile, project runs, and role assignments.
               </AlertDescription>
             </Alert>
             
-            <p className="text-sm text-muted-foreground">
-              If you wish to permanently delete all your personal data from our system, you can do so here. 
-              This action complies with GDPR "right to erasure" requirements.
+            <p className="text-xs text-muted-foreground">
+              Permanently delete all personal data. Complies with GDPR "right to erasure" requirements.
             </p>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="destructive" disabled={loading}>
-                  <Trash2 className="h-4 w-4 mr-2" />
+                <Button variant="destructive" disabled={loading} size="sm">
+                  <Trash2 className="h-3 w-3 mr-2" />
                   Delete My Data
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Confirm Data Deletion</DialogTitle>
-                  <DialogDescription>
-                    Are you absolutely sure you want to delete all your data? This action cannot be undone.
-                    This will permanently delete:
+                  <DialogTitle className="text-base">Confirm Data Deletion</DialogTitle>
+                  <DialogDescription className="text-sm">
+                    Are you sure? This will permanently delete:
                   </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                  <ul className="list-disc list-inside space-y-2 text-sm">
-                    <li>Your user profile and preferences</li>
-                    <li>All your project runs and progress</li>
-                    <li>Your role assignments and permissions</li>
-                    <li>Any other personal data we have stored</li>
+                <div className="py-2">
+                  <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground">
+                    <li>User profile and preferences</li>
+                    <li>All project runs and progress</li>
+                    <li>Role assignments and permissions</li>
+                    <li>Any other personal data stored</li>
                   </ul>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="gap-2">
                   <Button 
                     variant="outline" 
                     onClick={() => setDeleteDialogOpen(false)}
                     disabled={loading}
+                    size="sm"
                   >
                     Cancel
                   </Button>
@@ -168,8 +160,9 @@ export const UserDataManagement: React.FC = () => {
                     variant="destructive" 
                     onClick={deleteUserData}
                     disabled={loading}
+                    size="sm"
                   >
-                    {loading ? 'Deleting...' : 'Yes, Delete Everything'}
+                    {loading ? 'Deleting...' : 'Delete Everything'}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -179,26 +172,22 @@ export const UserDataManagement: React.FC = () => {
 
         {/* Privacy Information */}
         <Card>
-          <CardHeader>
-            <CardTitle>Your Privacy Rights</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Your Privacy Rights</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-sm text-muted-foreground space-y-2">
+          <CardContent>
+            <div className="text-xs text-muted-foreground space-y-2">
               <p>
-                <strong>Data Protection:</strong> Your data is protected with Row Level Security (RLS) 
-                policies that ensure you can only access your own information.
+                <strong>Data Protection:</strong> RLS policies ensure you only access your own information.
               </p>
               <p>
-                <strong>Data Retention:</strong> We automatically clean up old session data after 90 days. 
-                Your core profile and project data is retained until you choose to delete it.
+                <strong>Data Retention:</strong> Session data auto-cleaned after 90 days. Profile data retained until deleted.
               </p>
               <p>
-                <strong>Admin Access:</strong> System administrators can view audit logs and security 
-                information but cannot access your personal project data without proper authorization.
+                <strong>Admin Access:</strong> Admins view audit logs but need authorization for personal project data.
               </p>
               <p>
-                <strong>Security Monitoring:</strong> We monitor failed login attempts and maintain 
-                session logs for security purposes. This helps protect your account from unauthorized access.
+                <strong>Security Monitoring:</strong> Login attempts and sessions monitored for account protection.
               </p>
             </div>
           </CardContent>
