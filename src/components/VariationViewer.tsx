@@ -58,9 +58,10 @@ interface VariationViewerProps {
   itemType: 'tools' | 'materials';
   coreItemName: string;
   onVariationSelect?: (variation: VariationInstance) => void;
+  ownedVariationIds?: Set<string>;
 }
 
-export function VariationViewer({ open, onOpenChange, coreItemId, itemType, coreItemName, onVariationSelect }: VariationViewerProps) {
+export function VariationViewer({ open, onOpenChange, coreItemId, itemType, coreItemName, onVariationSelect, ownedVariationIds = new Set() }: VariationViewerProps) {
   const [variations, setVariations] = useState<VariationInstance[]>([]);
   const [attributes, setAttributes] = useState<VariationAttribute[]>([]);
   const [models, setModels] = useState<ToolModel[]>([]);
@@ -197,10 +198,14 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
             <div className="text-center py-8 text-muted-foreground">
               No variations found for this {itemType.slice(0, -1)}.
             </div>
+          ) : variations.filter(variation => !ownedVariationIds.has(variation.id)).length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              All variations of this {itemType.slice(0, -1)} have been added to your library.
+            </div>
           ) : (
             <div className="overflow-y-auto max-h-[60vh]">
               <div className="space-y-2">
-                {variations.map(variation => (
+                {variations.filter(variation => !ownedVariationIds.has(variation.id)).map(variation => (
                   <div
                     key={variation.id}
                     className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"

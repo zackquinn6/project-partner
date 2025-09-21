@@ -112,22 +112,58 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     }
   };
 
+  const [toolVariations, setToolVariations] = useState<Record<string, any[]>>({});
+
+  // Fetch variations for all tools to properly filter
+  useEffect(() => {
+    const fetchToolVariations = async () => {
+      if (availableTools.length === 0) return;
+      
+      const variationsMap: Record<string, any[]> = {};
+      
+      try {
+        for (const tool of availableTools) {
+          const { data: variations } = await supabase
+            .from('variation_instances')
+            .select('*')
+            .eq('core_item_id', tool.id)
+            .eq('item_type', 'tools');
+          
+          variationsMap[tool.id] = variations || [];
+        }
+        setToolVariations(variationsMap);
+      } catch (error) {
+        console.error('Error fetching variations:', error);
+      }
+    };
+
+    fetchToolVariations();
+  }, [availableTools]);
+
   const filteredTools = availableTools
     .filter(tool => {
       const matchesSearch = tool.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      // Check if this core tool or any of its variations are already owned
-      const alreadyOwned = userTools.some(userTool => {
-        // Check if the core tool is owned
-        if (userTool.id === tool.id) return true;
-        
-        // Check if any variation of this core tool is owned
-        // This ensures core items disappear when their variations are added
-        return userTool.item === tool.item;
-      });
+      if (!matchesSearch) return false;
+
+      // Get all variations for this core tool
+      const variations = toolVariations[tool.id] || [];
       
-      return matchesSearch && !alreadyOwned;
+      // If tool has no variations, check if core tool itself is owned
+      if (variations.length === 0) {
+        const coreToolOwned = userTools.some(userTool => userTool.id === tool.id);
+        return !coreToolOwned;
+      }
+      
+      // If tool has variations, check if ALL variations are owned
+      const ownedVariationIds = new Set(userTools.map(userTool => userTool.id));
+      const allVariationsOwned = variations.every(variation => 
+        ownedVariationIds.has(variation.id)
+      );
+      
+      // Show tool if not all variations are owned
+      return !allVariationsOwned;
     })
     .sort((a, b) => a.item.localeCompare(b.item));
 
@@ -404,6 +440,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                 
                 setCheckingVariations(null);
               }}
+              ownedVariationIds={new Set(userTools.map(userTool => userTool.id))}
             />
           </div>
         ) : null}
