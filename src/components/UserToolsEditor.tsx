@@ -157,13 +157,19 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       }
       
       // If tool has variations, check if ALL variations are owned
+      // Create a fresh set each time to ensure we have the latest userTools state
       const ownedVariationIds = new Set(userTools.map(userTool => userTool.id));
       const allVariationsOwned = variations.every(variation => 
         ownedVariationIds.has(variation.id)
       );
       
-      // Show tool if not all variations are owned
-      return !allVariationsOwned;
+      // Also check if the core tool itself is owned (for tools that have both core and variations)
+      const coreToolOwned = ownedVariationIds.has(tool.id);
+      
+      // Show tool only if:
+      // 1. Not all variations are owned AND
+      // 2. The core tool itself is not owned
+      return !allVariationsOwned && !coreToolOwned;
     })
     .sort((a, b) => a.item.localeCompare(b.item));
 
@@ -405,7 +411,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                 // Check if this variation is already in the user's tools
                 const isDuplicate = userTools.some(userTool => userTool.id === variation.id);
                 if (isDuplicate) {
-                  setCheckingVariations(null);
                   return;
                 }
                 
@@ -438,7 +443,17 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                     });
                 }
                 
-                setCheckingVariations(null);
+                // Check if all variants are now owned - if so, close the window
+                const currentToolVariations = toolVariations[checkingVariations?.id || ''] || [];
+                const updatedOwnedIds = new Set([...userTools.map(t => t.id), variation.id]);
+                const allVariationsNowOwned = currentToolVariations.every(v => 
+                  updatedOwnedIds.has(v.id)
+                );
+                
+                if (allVariationsNowOwned) {
+                  setCheckingVariations(null);
+                }
+                // If not all owned, keep the window open for more selections
               }}
               ownedVariationIds={new Set(userTools.map(userTool => userTool.id))}
             />
