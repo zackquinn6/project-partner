@@ -1217,6 +1217,7 @@ export type Database = {
           custom_project_name: string | null
           description: string | null
           difficulty: string | null
+          effort_level: string | null
           end_date: string | null
           estimated_time: string | null
           home_id: string | null
@@ -1246,6 +1247,7 @@ export type Database = {
           custom_project_name?: string | null
           description?: string | null
           difficulty?: string | null
+          effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
           home_id?: string | null
@@ -1275,6 +1277,7 @@ export type Database = {
           custom_project_name?: string | null
           description?: string | null
           difficulty?: string | null
+          effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
           home_id?: string | null
