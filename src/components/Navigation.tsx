@@ -13,7 +13,7 @@ import { AppDocumentationWindow } from './AppDocumentationWindow';
 import { HomeManager } from './HomeManager';
 import { ToolsMaterialsWindow } from './ToolsMaterialsWindow';
 import { UserToolsMaterialsWindow } from './UserToolsMaterialsWindow';
-
+import { ToolsMaterialsLibraryView } from './ToolsMaterialsLibraryView';
 import { HomeMaintenanceWindow } from './HomeMaintenanceWindow';
 import { CommunityPostsWindow } from './CommunityPostsWindow';
 import { ToolRentalsWindow } from './ToolRentalsWindow';
@@ -43,7 +43,7 @@ export default function Navigation({
   const [isToolsLibraryOpen, setIsToolsLibraryOpen] = useState(false);
   const [isUserToolsLibraryOpen, setIsUserToolsLibraryOpen] = useState(false);
   const [userToolsMode, setUserToolsMode] = useState<'library' | 'add-tools'>('library');
-  
+  const [isNewToolsLibraryOpen, setIsNewToolsLibraryOpen] = useState(false);
   const [isHomeMaintenanceOpen, setIsHomeMaintenanceOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCommunityPostsOpen, setIsCommunityPostsOpen] = useState(false);
@@ -79,6 +79,10 @@ export default function Navigation({
       setIsToolsLibraryOpen(true);
     };
 
+    const handleUserToolsLibraryEvent = (event: Event) => {
+      event.stopPropagation();
+      setIsNewToolsLibraryOpen(true);
+    };
 
     const handleHomeMaintenanceEvent = (event: Event) => {
       event.stopPropagation();
@@ -113,7 +117,7 @@ export default function Navigation({
 
     window.addEventListener('show-home-manager', handleHomeManagerEvent);
     window.addEventListener('show-tools-materials', handleToolsLibraryEvent);
-    
+    window.addEventListener('show-user-tools-materials', handleUserToolsLibraryEvent);
     window.addEventListener('show-home-maintenance', handleHomeMaintenanceEvent);
     window.addEventListener('open-profile-manager', handleProfileManagerEvent);
     window.addEventListener('show-community-posts', handleCommunityPostsEvent);
@@ -124,7 +128,7 @@ export default function Navigation({
     return () => {
       window.removeEventListener('show-home-manager', handleHomeManagerEvent);
       window.removeEventListener('show-tools-materials', handleToolsLibraryEvent);
-      
+      window.removeEventListener('show-user-tools-materials', handleUserToolsLibraryEvent);
       window.removeEventListener('show-home-maintenance', handleHomeMaintenanceEvent);
       window.removeEventListener('open-profile-manager', handleProfileManagerEvent);
       window.removeEventListener('show-community-posts', handleCommunityPostsEvent);
@@ -314,6 +318,10 @@ export default function Navigation({
           initialToolsMode={userToolsMode}
         />
         
+        <ToolsMaterialsLibraryView 
+          open={isNewToolsLibraryOpen}
+          onOpenChange={setIsNewToolsLibraryOpen}
+        />
         
         <HomeMaintenanceWindow 
           open={isHomeMaintenanceOpen}
