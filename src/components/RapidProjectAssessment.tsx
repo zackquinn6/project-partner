@@ -385,11 +385,14 @@ export function RapidProjectAssessment() {
               <Calculator className="w-5 h-5" />
               Rapid Plan
             </CardTitle>
-            <div className="flex justify-between items-center">
-              <p className="text-muted-foreground">Manage your project cost assessments</p>
-              <Button onClick={createNewProject}>
-                <Plus className="w-4 h-4 mr-2" />
-                New Assessment
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-sm">Manage your project cost assessments</p>
+              </div>
+              <Button onClick={createNewProject} size="sm" className="flex items-center gap-2 self-start sm:self-auto">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">New Assessment</span>
+                <span className="sr-only sm:hidden">Create New Assessment</span>
               </Button>
             </div>
           </CardHeader>
@@ -452,7 +455,7 @@ export function RapidProjectAssessment() {
     );
   }
 
-  // Render project edit view (existing functionality preserved)
+  // Render project edit view
   const subtotal = calculateSubtotal();
   const total = calculateTotal();
   const materialItems = project.lineItems.filter(item => item.type === 'material');
@@ -804,13 +807,13 @@ export function RapidProjectAssessment() {
                       <div className="text-xs text-muted-foreground mb-1">High Estimate</div>
                       <div className="text-orange-600">{formatCurrency(total.high)}</div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
         </CardContent>
-      </Card>
-    </div>
-  );
+        </Card>
+      </div>
+    );
 }

@@ -29,7 +29,8 @@ import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow';
 import ProfileManager from '@/components/ProfileManager';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Calculator } from 'lucide-react';
 
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
@@ -171,6 +172,9 @@ const Index = () => {
       console.log('🔄 Index: Current view before switch:', currentView);
       console.log('🔄 Index: Current project before clear:', currentProject?.name);
       console.log('🔄 Index: Current project run before clear:', currentProjectRun?.name);
+      if (isMobile) {
+        setMobileView('projects');
+      }
       handleProjectsView();
     };
 
@@ -406,8 +410,16 @@ const Index = () => {
       
       {/* Mobile App Modals */}
       <Dialog open={showRapidAssessment} onOpenChange={setShowRapidAssessment}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <RapidProjectAssessment />
+        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] max-h-[90vh] overflow-hidden p-0">
+          <DialogHeader className="p-4 pb-2 border-b">
+            <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
+              <Calculator className="w-5 h-5" />
+              Rapid Plan
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4">
+            <RapidProjectAssessment />
+          </div>
         </DialogContent>
       </Dialog>
       
