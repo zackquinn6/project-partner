@@ -14,12 +14,21 @@ import UserView from "@/components/UserView";
 import ProjectCatalog from "@/components/ProjectCatalog";
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { HomeManager } from '@/components/HomeManager';
 import { HelpPopup } from '@/components/HelpPopup';
 import { MobileOptimizedHome } from '@/components/MobileOptimizedHome';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileProjectListing } from '@/components/MobileProjectListing';
 import { MobileWorkflowView } from '@/components/MobileWorkflowView';
+import { RapidProjectAssessment } from '@/components/RapidProjectAssessment';
+import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
+import { CodePermitsWindow } from '@/components/CodePermitsWindow';
+import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
+import { HomeMaintenanceWindow } from '@/components/HomeMaintenanceWindow';
+import { HomeManager } from '@/components/HomeManager';
+import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
+import { AIRepairWindow } from '@/components/AIRepairWindow';
+import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow';
+import { Dialog } from '@/components/ui/dialog';
 
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
@@ -35,6 +44,17 @@ const Index = () => {
   const [forceListingMode, setForceListingMode] = useState(false);
   const [showHelpPopup, setShowHelpPopup] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'profile' | 'help'>('home');
+  
+  // Modal states for mobile app buttons
+  const [showRapidAssessment, setShowRapidAssessment] = useState(false);
+  const [showToolRentals, setShowToolRentals] = useState(false);
+  const [showCodePermits, setShowCodePermits] = useState(false);
+  const [showContractorFinder, setShowContractorFinder] = useState(false);
+  const [showHomeMaintenanceMgmt, setShowHomeMaintenanceMgmt] = useState(false);
+  const [showHomeMgmt, setShowHomeMgmt] = useState(false);
+  const [showCommunityPosts, setShowCommunityPosts] = useState(false);
+  const [showAIRepair, setShowAIRepair] = useState(false);
+  const [showUserToolsMaterials, setShowUserToolsMaterials] = useState(false);
 
   // Handle navigation state changes (including view parameter)
   useEffect(() => {
@@ -49,6 +69,30 @@ const Index = () => {
       }
     }
   }, [location.state]);
+
+  // Prevent constant re-renders by memoizing navigation handlers
+  const [hasHandledInitialState, setHasHandledInitialState] = useState(false);
+
+  // Listen for edit workflow navigation event
+  useEffect(() => {
+    // Only handle state changes once per location change
+    if (location.state?.view && !hasHandledInitialState) {
+      console.log('🎯 Index: Setting view from navigation state:', location.state.view);
+      setCurrentView(location.state.view);
+      
+      if (location.state.resetToListing) {
+        console.log('🔄 Index: Setting reset flags from navigation state');
+        setResetUserView(true);
+        setForceListingMode(true);
+      }
+      setHasHandledInitialState(true);
+    }
+  }, [location.state, hasHandledInitialState]);
+
+  // Reset handled state when location changes
+  useEffect(() => {
+    setHasHandledInitialState(false);
+  }, [location.pathname]);
 
   // Listen for edit workflow navigation event
   useEffect(() => {
@@ -69,6 +113,42 @@ const Index = () => {
 
     const handleShowHelpPopup = () => {
       setShowHelpPopup(true);
+    };
+
+    const handleRapidAssessment = () => {
+      setShowRapidAssessment(true);
+    };
+
+    const handleShowHomeMaintenanceMgmt = () => {
+      setShowHomeMaintenanceMgmt(true);
+    };
+
+    const handleShowUserToolsMaterials = () => {
+      setShowUserToolsMaterials(true);
+    };
+
+    const handleShowToolRentals = () => {
+      setShowToolRentals(true);
+    };
+
+    const handleShowHomeMgmt = () => {
+      setShowHomeMgmt(true);
+    };
+
+    const handleShowCommunityPosts = () => {
+      setShowCommunityPosts(true);
+    };
+
+    const handleShowAIRepair = () => {
+      setShowAIRepair(true);
+    };
+
+    const handleShowCodePermits = () => {
+      setShowCodePermits(true);
+    };
+
+    const handleShowContractorFinder = () => {
+      setShowContractorFinder(true);
     };
 
 
@@ -106,6 +186,18 @@ const Index = () => {
     window.addEventListener('show-tools-materials', handleToolLibraryNavigation);
     window.addEventListener('show-admin-panel', handleAdminPanelNavigation);
     
+    // Mobile app event listeners
+    window.addEventListener('show-rapid-assessment', handleRapidAssessment);
+    window.addEventListener('show-home-maintenance', handleShowHomeMaintenanceMgmt);
+    window.addEventListener('show-user-tools-materials', handleShowUserToolsMaterials);
+    window.addEventListener('show-tool-rentals', handleShowToolRentals);
+    window.addEventListener('show-home-manager', handleShowHomeMgmt);
+    window.addEventListener('show-community-posts', handleShowCommunityPosts);
+    window.addEventListener('show-ai-repair', handleShowAIRepair);
+    window.addEventListener('show-code-permits', handleShowCodePermits);
+    window.addEventListener('show-contractor-finder', handleShowContractorFinder);
+    window.addEventListener('open-profile-manager', handleProfileNavigation);
+    
     return () => {
       window.removeEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
       window.removeEventListener('navigate-to-kickoff', handleKickoffNavigation as EventListener);
@@ -114,6 +206,18 @@ const Index = () => {
       window.removeEventListener('show-profile', handleProfileNavigation);
       window.removeEventListener('show-tools-materials', handleToolLibraryNavigation);
       window.removeEventListener('show-admin-panel', handleAdminPanelNavigation);
+      
+      // Mobile app event listener cleanup
+      window.removeEventListener('show-rapid-assessment', handleRapidAssessment);
+      window.removeEventListener('show-home-maintenance', handleShowHomeMaintenanceMgmt);
+      window.removeEventListener('show-user-tools-materials', handleShowUserToolsMaterials);
+      window.removeEventListener('show-tool-rentals', handleShowToolRentals);
+      window.removeEventListener('show-home-manager', handleShowHomeMgmt);
+      window.removeEventListener('show-community-posts', handleShowCommunityPosts);
+      window.removeEventListener('show-ai-repair', handleShowAIRepair);
+      window.removeEventListener('show-code-permits', handleShowCodePermits);
+      window.removeEventListener('show-contractor-finder', handleShowContractorFinder);
+      window.removeEventListener('open-profile-manager', handleProfileNavigation);
     };
   }, [navigate]);
 
@@ -287,6 +391,51 @@ const Index = () => {
       <HelpPopup
         isOpen={showHelpPopup}
         onClose={() => setShowHelpPopup(false)}
+      />
+      
+      {/* Mobile App Modals */}
+      <Dialog open={showRapidAssessment} onOpenChange={setShowRapidAssessment}>
+        <RapidProjectAssessment />
+      </Dialog>
+      
+      <ToolRentalsWindow
+        isOpen={showToolRentals}
+        onClose={() => setShowToolRentals(false)}
+      />
+      
+      <CodePermitsWindow
+        open={showCodePermits}
+        onOpenChange={setShowCodePermits}
+      />
+      
+      <ContractorFinderWindow
+        open={showContractorFinder}
+        onOpenChange={setShowContractorFinder}
+      />
+      
+      <HomeMaintenanceWindow
+        open={showHomeMaintenanceMgmt}
+        onOpenChange={setShowHomeMaintenanceMgmt}
+      />
+      
+      <HomeManager 
+        open={showHomeMgmt} 
+        onOpenChange={setShowHomeMgmt}
+      />
+      
+      <CommunityPostsWindow
+        open={showCommunityPosts}
+        onOpenChange={setShowCommunityPosts}
+      />
+      
+      <AIRepairWindow
+        open={showAIRepair}
+        onOpenChange={setShowAIRepair}
+      />
+      
+      <UserToolsMaterialsWindow
+        open={showUserToolsMaterials}
+        onOpenChange={setShowUserToolsMaterials}
       />
     </div>
   );

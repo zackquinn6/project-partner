@@ -279,6 +279,19 @@ All colors MUST be HSL.
       @apply px-4;
     }
     
+    /* Enable smooth scrolling and prevent bounce on iOS */
+    body {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: none;
+    }
+    
+    /* Ensure smooth momentum scrolling */
+    .mobile-scroll {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+    
     .text-responsive {
       @apply text-base md:text-lg;
     }
@@ -297,6 +310,12 @@ All colors MUST be HSL.
     /* Larger text inputs on mobile */
     input[type="text"], input[type="email"], input[type="password"], textarea {
       font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+    
+    /* Prevent horizontal overflow */
+    * {
+      max-width: 100%;
+      box-sizing: border-box;
     }
   }
   

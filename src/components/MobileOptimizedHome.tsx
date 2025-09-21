@@ -153,7 +153,7 @@ export function MobileOptimizedHome() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pb-20">
+    <div className="min-h-screen bg-gradient-subtle pb-20 mobile-scroll">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="p-4">
@@ -169,7 +169,7 @@ export function MobileOptimizedHome() {
               variant="ghost"
               size="sm"
               onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}
-              className="p-2"
+              className="p-2 touch-target"
             >
               <User className="h-5 w-5" />
             </Button>
@@ -184,7 +184,7 @@ export function MobileOptimizedHome() {
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-6 mobile-scroll">
         {/* Current Project (if any) */}
         {currentProjectRun && (
           <Card className="gradient-card border-primary/20">
