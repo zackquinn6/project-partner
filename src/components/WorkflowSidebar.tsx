@@ -70,47 +70,43 @@ export function WorkflowSidebar({
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col items-center space-y-2">
-                  <Button 
-                    onClick={onHelpClick}
-                    variant="outline"
-                    size="sm"
-                    className="px-3 py-1 text-xs bg-blue-900/20 hover:bg-blue-900/30 text-blue-800 hover:text-blue-900 border-blue-900/30 w-fit"
-                  >
-                    <div className="text-center">
-                      <div>Expert Virtual Consults</div>
-                      <div className="text-[10px] opacity-75">Get Expert Help</div>
-                    </div>
-                  </Button>
-                  
-                  <Button 
-                    onClick={onKeysToSuccessClick}
-                    variant="outline"
-                    size="sm"
-                    className="px-3 py-1 text-xs bg-green-900/20 hover:bg-green-900/30 text-green-800 hover:text-green-900 border-green-900/30 w-fit"
-                  >
-                    <div className="text-center">
-                      <div>🔑 Keys to Success</div>
-                      <div className="text-[10px] opacity-75">Critical characteristics</div>
-                    </div>
-                  </Button>
-                  
-                  {isKickoffComplete && (
+                {/* DIY Playbook Section */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-primary">DIY Playbook</h3>
+                  <div className="grid grid-cols-1 gap-2">
                     <Button 
-                      onClick={onUnplannedWorkClick}
+                      onClick={onHelpClick}
                       variant="outline"
-                      size="sm"
-                      className="px-3 py-1 text-xs bg-red-900/20 hover:bg-red-900/30 text-red-800 hover:text-red-900 border-red-900/30 w-fit"
+                      className="h-16 w-full flex flex-col items-center justify-center gap-1 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/30 transition-all"
                     >
-                      <div className="text-center">
-                        <div>❗ Call an audible</div>
-                        <div className="text-[10px] opacity-75">Update project plan</div>
-                      </div>
+                      <div className="text-xs font-semibold text-primary">Talk to a Pro</div>
+                      <div className="text-[10px] text-muted-foreground">Get Expert Help</div>
                     </Button>
-                  )}
-
+                    
+                    <Button 
+                      onClick={onKeysToSuccessClick}
+                      variant="outline"
+                      className="h-16 w-full flex flex-col items-center justify-center gap-1 bg-accent/5 hover:bg-accent/10 border-accent/20 hover:border-accent/30 transition-all"
+                    >
+                      <div className="text-xs font-semibold text-accent-foreground">Pro Tips</div>
+                      <div className="text-[10px] text-muted-foreground">Get To What Really Matters</div>
+                    </Button>
+                    
+                    {isKickoffComplete && (
+                      <Button 
+                        onClick={onUnplannedWorkClick}
+                        variant="outline"
+                        className="h-16 w-full flex flex-col items-center justify-center gap-1 bg-secondary/5 hover:bg-secondary/10 border-secondary/20 hover:border-secondary/30 transition-all"
+                      >
+                        <div className="text-xs font-semibold text-secondary-foreground">Change the Plan</div>
+                        <div className="text-[10px] text-muted-foreground">Update With Learnings</div>
+                      </Button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Separator */}
+                <div className="border-t border-border my-4"></div>
 
                 {/* Step Navigation */}
                 <div className="space-y-3 max-h-[50vh] overflow-y-auto">
