@@ -240,7 +240,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {/* Home Selection */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
               <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
-                <SelectTrigger className="w-full sm:w-[300px]">
+                <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="Select a home" />
                 </SelectTrigger>
                 <SelectContent>
@@ -250,19 +250,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 </SelectContent>
               </Select>
 
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="w-6 h-6 p-0" title="Add Task">
-                  <Plus className="h-3 w-3" />
-                </Button>
-                
-                {selectedHomeId && tasks.length > 0 && (
-                  <MaintenancePdfPrinter 
-                    tasks={tasks}
-                    completions={completions}
-                    homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
-                  />
-                )}
-              </div>
+              {selectedHomeId && tasks.length > 0 && (
+                <MaintenancePdfPrinter 
+                  tasks={tasks}
+                  completions={completions}
+                  homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
+                />
+              )}
             </div>
 
             {selectedHomeId && <Tabs defaultValue="tasks" className="w-full">
@@ -277,7 +271,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-full sm:w-[200px]">
+                      <SelectTrigger className="w-full sm:w-[150px]">
                         <SelectValue placeholder="Filter by category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -290,6 +284,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     })}
                       </SelectContent>
                     </Select>
+                    
+                    <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="w-6 h-6 p-0" title="Add Task">
+                      <Plus className="h-3 w-3" />
+                    </Button>
                   </div>
 
                   <div className="max-h-[60vh] overflow-y-auto space-y-3">
@@ -340,9 +338,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                    <Button onClick={() => handleTaskComplete(task)} size="sm" className="w-6 h-6 p-0 bg-green-600 hover:bg-green-700 text-white" title="Complete Task">
                                      <CheckCircle className="h-3 w-3" />
                                    </Button>
-                                   <Button variant="destructive" size="sm" onClick={() => handleDeleteTask(task.id)} className="w-4 h-4 p-0" title="Delete Task">
-                                     <Trash2 className="h-2 w-2" />
-                                   </Button>
+                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteTask(task.id)} className="w-4 h-4 p-0" title="Delete Task">
+                                      <Trash2 className="h-1 w-1" />
+                                    </Button>
                                  </div>
                               </div>
                             </CardContent>
