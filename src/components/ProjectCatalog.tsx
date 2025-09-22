@@ -689,7 +689,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                   
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                      {project.name.replace(/ rev \d+$/i, '')}
+                      {project.name.replace(/ \(Rev \d+\)$/i, '')}
                     </CardTitle>
                     <CardDescription className="text-sm line-clamp-2">
                       {project.description}
