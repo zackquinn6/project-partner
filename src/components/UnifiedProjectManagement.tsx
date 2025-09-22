@@ -412,47 +412,57 @@ export function UnifiedProjectManagement() {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Project Name</Label>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-sm">Project Name</Label>
                             {editingProject ? (
                               <Input
                                 value={editedProject.name || ''}
                                 onChange={(e) => setEditedProject(prev => ({ ...prev, name: e.target.value }))}
+                                className="text-sm"
                               />
                             ) : (
-                              <div className="p-2 bg-muted rounded">{selectedProject.name}</div>
+                              <div className="p-2 bg-muted rounded text-sm">{selectedProject.name}</div>
                             )}
                           </div>
                           
                           <div className="space-y-2">
-                            <Label>Status</Label>
-                            <div className="p-2">
-                              {getStatusBadge(selectedProject.publish_status, selectedProject.is_current_version)}
+                            <Label className="text-sm">Status</Label>
+                            <div className="p-2 text-sm">
+                              {selectedProject.revision_number > 0 && (
+                                <span className="font-medium">Revision {selectedProject.revision_number} - </span>
+                              )}
+                              {selectedProject.publish_status === 'published' ? 'Production' : 
+                               selectedProject.publish_status === 'beta' ? 'Beta' : 
+                               selectedProject.publish_status === 'draft' ? 'Draft' : 'Archived'}
+                              {selectedProject.is_current_version && (
+                                <span className="ml-1 text-xs text-muted-foreground">(Current)</span>
+                              )}
                             </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Category</Label>
+                          <div className="space-y-1">
+                            <Label className="text-sm">Category</Label>
                             {editingProject ? (
                               <Input
                                 value={editedProject.category || ''}
                                 onChange={(e) => setEditedProject(prev => ({ ...prev, category: e.target.value }))}
+                                className="text-sm"
                               />
                             ) : (
-                              <div className="p-2 bg-muted rounded">{selectedProject.category || 'Not specified'}</div>
+                              <div className="p-2 bg-muted rounded text-sm">{selectedProject.category || 'Not specified'}</div>
                             )}
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Effort Level</Label>
+                          <div className="space-y-1">
+                            <Label className="text-sm">Effort Level</Label>
                             {editingProject ? (
                               <Select
                                 value={editedProject.effort_level || ''}
                                 onValueChange={(value) => setEditedProject(prev => ({ ...prev, effort_level: value }))}
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="text-sm">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -462,18 +472,18 @@ export function UnifiedProjectManagement() {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <div className="p-2 bg-muted rounded capitalize">{selectedProject.effort_level || 'Not specified'}</div>
+                              <div className="p-2 bg-muted rounded capitalize text-sm">{selectedProject.effort_level || 'Not specified'}</div>
                             )}
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Skill Level</Label>
+                          <div className="space-y-1">
+                            <Label className="text-sm">Skill Level</Label>
                             {editingProject ? (
                               <Select
                                 value={editedProject.skill_level || ''}
                                 onValueChange={(value) => setEditedProject(prev => ({ ...prev, skill_level: value }))}
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="text-sm">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -483,30 +493,31 @@ export function UnifiedProjectManagement() {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <div className="p-2 bg-muted rounded capitalize">{selectedProject.skill_level || 'Not specified'}</div>
+                              <div className="p-2 bg-muted rounded capitalize text-sm">{selectedProject.skill_level || 'Not specified'}</div>
                             )}
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Estimated Time</Label>
+                          <div className="space-y-1">
+                            <Label className="text-sm">Estimated Time</Label>
                             {editingProject ? (
                               <Input
                                 value={editedProject.estimated_time || ''}
                                 onChange={(e) => setEditedProject(prev => ({ ...prev, estimated_time: e.target.value }))}
+                                className="text-sm"
                               />
                             ) : (
-                              <div className="p-2 bg-muted rounded">{selectedProject.estimated_time || 'Not specified'}</div>
+                              <div className="p-2 bg-muted rounded text-sm">{selectedProject.estimated_time || 'Not specified'}</div>
                             )}
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Scaling Unit</Label>
+                          <div className="space-y-1">
+                            <Label className="text-sm">Scaling Unit</Label>
                             {editingProject ? (
                               <Select
                                 value={editedProject.scaling_unit || ''}
                                 onValueChange={(value) => setEditedProject(prev => ({ ...prev, scaling_unit: value }))}
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="text-sm">
                                   <SelectValue placeholder="Select scaling unit" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -518,32 +529,33 @@ export function UnifiedProjectManagement() {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <div className="p-2 bg-muted rounded">{selectedProject.scaling_unit || 'Not specified'}</div>
+                              <div className="p-2 bg-muted rounded text-sm">{selectedProject.scaling_unit || 'Not specified'}</div>
                             )}
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Revision</Label>
-                            <div className="p-2 bg-muted rounded">Revision {selectedProject.revision_number}</div>
+                          <div className="space-y-1">
+                            <Label className="text-sm">Revision</Label>
+                            <div className="p-2 bg-muted rounded text-sm">Revision {selectedProject.revision_number}</div>
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label>Description</Label>
+                        <div className="space-y-1">
+                          <Label className="text-sm">Description</Label>
                           {editingProject ? (
                             <Textarea
                               value={editedProject.description || ''}
                               onChange={(e) => setEditedProject(prev => ({ ...prev, description: e.target.value }))}
-                              rows={4}
+                              rows={3}
+                              className="text-sm"
                             />
                           ) : (
-                            <div className="p-2 bg-muted rounded min-h-[80px]">
+                            <div className="p-2 bg-muted rounded min-h-[60px] text-sm">
                               {selectedProject.description || 'No description provided'}
                             </div>
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-muted-foreground">
                           <div>
                             <span className="font-medium">Created:</span> {formatDate(selectedProject.created_at)}
                           </div>
@@ -631,18 +643,20 @@ export function UnifiedProjectManagement() {
                                     </div>
 
                                     <div className="flex flex-col gap-2 ml-4">
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                          // Navigate to edit workflow - placeholder for now
-                                          console.log('Edit Workflow clicked for revision:', revision.id);
-                                        }}
-                                        className="flex items-center gap-1"
-                                      >
-                                        <Edit className="w-3 h-3" />
-                                        Edit Workflow
-                                      </Button>
+                      {revision.publish_status === 'draft' && revision.is_current_version && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Navigate to edit workflow
+                            window.location.href = `/#/edit-project/${revision.id}`;
+                          }}
+                          className="flex items-center gap-1"
+                        >
+                          <Edit className="w-3 h-3" />
+                          Edit Workflow
+                        </Button>
+                      )}
                                       {revision.publish_status === 'draft' && (
                                         <>
                                           <Button
