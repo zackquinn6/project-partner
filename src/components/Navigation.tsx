@@ -219,7 +219,7 @@ export default function Navigation({
                   className="transition-fast text-xs sm:text-sm px-2 sm:px-3 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
                   onClick={() => window.dispatchEvent(new CustomEvent('show-help-popup'))}
                 >
-                  <span>Call a Coach</span>
+                  <span>Get Expert Help</span>
                 </Button>
                 
                 <DropdownMenu>

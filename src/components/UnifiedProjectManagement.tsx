@@ -427,18 +427,17 @@ export function UnifiedProjectManagement() {
                             )}
                           </div>
                           
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             <Label className="text-sm">Status</Label>
                             <div className="p-2 text-sm">
-                              {selectedProject.revision_number > 0 && (
-                                <span className="font-medium">Revision {selectedProject.revision_number} - </span>
-                              )}
-                              {selectedProject.publish_status === 'published' ? 'Production' : 
-                               selectedProject.publish_status === 'beta' ? 'Beta' : 
-                               selectedProject.publish_status === 'draft' ? 'Draft' : 'Archived'}
-                              {selectedProject.is_current_version && (
-                                <span className="ml-1 text-xs text-muted-foreground">(Current)</span>
-                              )}
+                              {(() => {
+                                if (!projectRevisions || projectRevisions.length === 0) return 'No revisions';
+                                const latestRevision = projectRevisions.find(r => r.is_current_version) || projectRevisions[0];
+                                const statusText = latestRevision.publish_status === 'published' ? 'Production' : 
+                                                 latestRevision.publish_status === 'beta' ? 'Beta' : 
+                                                 latestRevision.publish_status === 'draft' ? 'Draft' : 'Archived';
+                                return `Revision ${latestRevision.revision_number} - ${statusText}`;
+                              })()}
                             </div>
                           </div>
 
@@ -531,11 +530,6 @@ export function UnifiedProjectManagement() {
                             ) : (
                               <div className="p-2 bg-muted rounded text-sm">{selectedProject.scaling_unit || 'Not specified'}</div>
                             )}
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label className="text-sm">Revision</Label>
-                            <div className="p-2 bg-muted rounded text-sm">Revision {selectedProject.revision_number}</div>
                           </div>
                         </div>
 

@@ -378,7 +378,7 @@ export default function Home({
                 <Wrench className="h-8 w-8 text-primary mb-2" />
                 <span className="text-sm font-medium text-center">Tool Library</span>
               </div>
-              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
+              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
                 <Hammer className="h-8 w-8 text-primary mb-2" />
                 <span className="text-sm font-medium text-center">Tool Access</span>
               </div>

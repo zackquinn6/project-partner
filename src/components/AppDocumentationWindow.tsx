@@ -578,7 +578,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         <ul className="space-y-2 text-sm">
                           <li>• Follow step-by-step guidance in "My Projects"</li>
                           <li>• Document progress with photos at each phase</li>
-                          <li>• Use "Call a Coach" for expert help when needed</li>
+                          <li>• Use "Get Expert Help" for expert help when needed</li>
                           <li>• Celebrate completion and share with the community!</li>
                         </ul>
                       </CardContent>
@@ -600,7 +600,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         </div>
                         <div>
                           <h4 className="font-semibold mb-1">Expert Support</h4>
-                          <p className="text-muted-foreground">Schedule one-on-one consultations via "Call a Coach"</p>
+                          <p className="text-muted-foreground">Schedule one-on-one consultations via "Get Expert Help"</p>
                         </div>
                         <div>
                           <h4 className="font-semibold mb-1">Technical Issues</h4>
