@@ -136,18 +136,18 @@ export default function Home({
             </p>
             
             {/* Stats */}
-            <div className="border-t border-border pt-3 mb-3">
-              <div className="flex justify-center gap-4 sm:gap-8">
+            <div className="border-t border-border pt-2 mb-2">
+              <div className="flex justify-center gap-6 sm:gap-8">
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">{stats.activeProjects}</div>
+                  <div className="text-lg sm:text-xl font-bold text-foreground">{stats.activeProjects || 0}</div>
                   <div className="text-xs text-muted-foreground">active projects</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">{stats.completedProjects}</div>
+                  <div className="text-lg sm:text-xl font-bold text-foreground">{stats.completedProjects || 0}</div>
                   <div className="text-xs text-muted-foreground">completed</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">{stats.hoursSaved}</div>
+                  <div className="text-lg sm:text-xl font-bold text-foreground">{stats.hoursSaved || 0}</div>
                   <div className="text-xs text-muted-foreground">hours saved</div>
                 </div>
               </div>
