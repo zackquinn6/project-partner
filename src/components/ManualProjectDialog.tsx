@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 interface ManualProjectDialogProps {
@@ -102,7 +102,10 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
 
       if (error) throw error;
 
-      toast.success('Manual project logged successfully!');
+      toast({
+        title: "Success",
+        description: "Manual project logged successfully!"
+      });
       
       // Reset form
       setFormData({
@@ -123,7 +126,11 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
       onProjectCreated?.();
     } catch (error) {
       console.error('Error creating manual project:', error);
-      toast.error('Failed to log project. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to log project. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }

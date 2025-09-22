@@ -30,6 +30,8 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const [showHomeManager, setShowHomeManager] = useState(false);
   const [showCommunityPosts, setShowCommunityPosts] = useState(false);
   const [showManualProjectDialog, setShowManualProjectDialog] = useState(false);
+  const [showManualProjectEditDialog, setShowManualProjectEditDialog] = useState(false);
+  const [editingProjectRun, setEditingProjectRun] = useState<ProjectRun | null>(null);
 
   const calculateProgress = (projectRun: ProjectRun) => {
     return projectRun.progress || 0;
@@ -208,8 +210,8 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                               size="sm" 
                               variant="outline"
                               onClick={() => {
-                                // TODO: Open edit dialog for manual project
-                                console.log('Edit manual project:', projectRun.id);
+                                setEditingProjectRun(projectRun);
+                                setShowManualProjectEditDialog(true);
                               }}
                               className="transition-fast"
                             >
@@ -283,6 +285,20 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
           // The project runs should automatically refresh via the ProjectContext
           // since it's using real-time subscriptions or polling
           console.log('Manual project created');
+        }}
+      />
+      <ManualProjectEditDialog
+        open={showManualProjectEditDialog}
+        onOpenChange={(open) => {
+          setShowManualProjectEditDialog(open);
+          if (!open) {
+            setEditingProjectRun(null);
+          }
+        }}
+        projectRun={editingProjectRun}
+        onProjectUpdated={() => {
+          console.log('Manual project updated');
+          // Project runs will refresh automatically
         }}
       />
       {/* Removed duplicate CommunityPostsWindow - handled by Navigation */}

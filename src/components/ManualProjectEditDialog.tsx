@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 
@@ -127,12 +127,19 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
 
       if (error) throw error;
 
-      toast.success('Manual project updated successfully!');
+      toast({
+        title: "Success",
+        description: "Manual project updated successfully!"
+      });
       onOpenChange(false);
       onProjectUpdated?.();
     } catch (error) {
       console.error('Error updating manual project:', error);
-      toast.error('Failed to update project. Please try again.');
+      toast({
+        title: "Error", 
+        description: "Failed to update project. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
