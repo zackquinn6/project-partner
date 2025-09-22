@@ -178,7 +178,7 @@ export default function ProfileManager({
         <div className="flex justify-center gap-3">
           <Button onClick={handleStartEdit} className="flex items-center gap-2">
             <Edit3 className="w-4 h-4" />
-            edit
+            Edit
           </Button>
           
           <Button variant="default" onClick={() => onOpenChange(false)} className="bg-green-600 hover:bg-green-700">
