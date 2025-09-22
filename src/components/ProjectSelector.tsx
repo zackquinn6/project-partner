@@ -22,7 +22,7 @@ interface ProjectSelectorProps {
 }
 
 export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = false, onProjectSelected, onEditProjectDetails }) => {
-  const { projects, currentProject, setCurrentProject, addProject, updateProject, deleteProject } = useProject();
+  const { projects, currentProject, setCurrentProject, addProject, updateProject, deleteProject, projectRuns } = useProject();
   const { user } = useAuth();
   
   // Debug logging
@@ -76,10 +76,25 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
     
     if (project && project.id !== currentProject?.id) {
       setCurrentProject(project);
-      // Only open setup dialog in user mode, not admin mode
+      // Check if we're in kickoff mode before opening setup dialog
       if (!isAdminMode) {
-        fetchHomes(); // Fetch homes when setup dialog opens
-        setIsProjectSetupOpen(true);
+        const existingRun = projectRuns.find(run => 
+          run.templateId === project.id && 
+          run.status !== 'complete'
+        );
+        
+        if (existingRun) {
+          const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
+          const kickoffComplete = kickoffStepIds.every(stepId => 
+            existingRun.completedSteps.includes(stepId)
+          );
+          
+          // Only show project setup dialog if kickoff is complete
+          if (kickoffComplete) {
+            fetchHomes(); // Fetch homes when setup dialog opens
+            setIsProjectSetupOpen(true);
+          }
+        }
       }
     }
   };
@@ -91,10 +106,25 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
     const project = projects.find(p => p.id === value);
     if (project && project.id !== currentProject?.id) {
       setCurrentProject(project);
-      // Only open setup dialog in user mode, not admin mode
+      // Check if we're in kickoff mode before opening setup dialog
       if (!isAdminMode) {
-        fetchHomes(); // Fetch homes when setup dialog opens
-        setIsProjectSetupOpen(true);
+        const existingRun = projectRuns.find(run => 
+          run.templateId === project.id && 
+          run.status !== 'complete'
+        );
+        
+        if (existingRun) {
+          const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
+          const kickoffComplete = kickoffStepIds.every(stepId => 
+            existingRun.completedSteps.includes(stepId)
+          );
+          
+          // Only show project setup dialog if kickoff is complete
+          if (kickoffComplete) {
+            fetchHomes(); // Fetch homes when setup dialog opens
+            setIsProjectSetupOpen(true);
+          }
+        }
       }
     }
   };

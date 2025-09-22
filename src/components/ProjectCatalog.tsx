@@ -52,7 +52,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     setCurrentProject,
     addProject,
     addProjectRun,
-    projects
+    projects,
+    projectRuns
   } = useProject();
 
   // State for published projects when not authenticated
@@ -290,8 +291,30 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       // Fetch homes when opening project setup dialog
       fetchHomes();
       
-      // Show project setup dialog first
-      setIsProjectSetupOpen(true);
+      // Check if there's an active project run for this user
+      const existingRun = projectRuns.find(run => 
+        run.templateId === project.id && 
+        run.status !== 'complete'
+      );
+      
+      // If there's an existing project run, check if kickoff is complete
+      if (existingRun) {
+        const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
+        const kickoffComplete = kickoffStepIds.every(stepId => 
+          existingRun.completedSteps.includes(stepId)
+        );
+        
+        // Only show project setup dialog if kickoff is complete
+        if (kickoffComplete) {
+          setIsProjectSetupOpen(true);
+        } else {
+          // Kickoff is not complete, let KickoffWorkflow handle the flow
+          console.log('ProjectCatalog: Kickoff not complete, skipping setup dialog');
+        }
+      } else {
+        // New project run, will go through kickoff flow - don't show setup dialog
+        console.log('ProjectCatalog: New project, will go through kickoff - skipping setup dialog');
+      }
     }
   };
 
@@ -481,8 +504,30 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       customProjectName: selectedTemplate.name.replace(/ \(Rev \d+\)$/i, '')
     }));
     
-    // Show project setup dialog
-    setIsProjectSetupOpen(true);
+    // Check if there's an active project run for this template
+    const existingRun = projectRuns.find(run => 
+      run.templateId === selectedTemplate.id && 
+      run.status !== 'complete'
+    );
+    
+    // If there's an existing project run, check if kickoff is complete
+    if (existingRun) {
+      const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
+      const kickoffComplete = kickoffStepIds.every(stepId => 
+        existingRun.completedSteps.includes(stepId)
+      );
+      
+      // Only show project setup dialog if kickoff is complete
+      if (kickoffComplete) {
+        setIsProjectSetupOpen(true);
+      } else {
+        // Kickoff not complete, let KickoffWorkflow handle it
+        console.log('ProjectCatalog: Kickoff not complete after beta accept, skipping setup dialog');
+      }
+    } else {
+      // New project run, will go through kickoff flow - don't show setup dialog
+      console.log('ProjectCatalog: New project after beta accept, will go through kickoff - skipping setup dialog');
+    }
   };
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto px-6 py-8">
