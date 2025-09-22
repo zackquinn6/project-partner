@@ -458,6 +458,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const proceedToNewProject = () => {
     if (!selectedTemplate) return;
 
+    // Explicitly close all dialogs before proceeding
+    setIsProjectSetupOpen(false);
+    setIsDIYSurveyOpen(false);
+    setIsProfileManagerOpen(false);
+    setIsBetaWarningOpen(false);
+
     // Create a new project RUN based on the template without setup info
     const newProjectRun = {
       templateId: selectedTemplate.id,
@@ -486,15 +492,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       // Reset state immediately
       setSelectedTemplate(null);
       
-      // Navigate immediately without delay
-      setTimeout(() => {
-        navigate('/', {
-          state: {
-            view: 'user',
-            projectRunId: projectRunId
-          }
-        });
-      }, 100); // Small delay to ensure state updates
+      // Navigate immediately to kickoff
+      navigate('/', {
+        state: {
+          view: 'user',
+          projectRunId: projectRunId
+        }
+      });
     });
   };
 
