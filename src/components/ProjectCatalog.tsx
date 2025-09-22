@@ -63,6 +63,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [isProfileManagerOpen, setIsProfileManagerOpen] = useState(false);
   const [isBetaWarningOpen, setIsBetaWarningOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Project | null>(null);
+  const [isCreatingNewProject, setIsCreatingNewProject] = useState(false);
   const [surveyMode, setSurveyMode] = useState<'new' | 'verify'>('new');
   const [userProfile, setUserProfile] = useState<any>(null);
   const [homes, setHomes] = useState<any[]>([]);
@@ -319,8 +320,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         }
       } else {
         // New project run, will go through kickoff flow - don't show setup dialog
-        console.log('ProjectCatalog: New project, will go through kickoff - skipping setup dialog');
-        // For new projects, we should start the project creation process immediately
+        console.log('🚀 ProjectCatalog: New project detected, proceeding directly to kickoff');
+        setIsCreatingNewProject(true);
         proceedToNewProject();
       }
     }
@@ -425,6 +426,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     setHomes([]);
   };
   const handleProjectSetupComplete = async () => {
+    // Prevent this from running during new project creation
+    if (isCreatingNewProject) {
+      console.log('🚫 handleProjectSetupComplete: Blocked during new project creation');
+      return;
+    }
+    
     if (!selectedTemplate || !user) return;
 
     // Close project setup dialog
@@ -458,11 +465,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const proceedToNewProject = () => {
     if (!selectedTemplate) return;
 
-    // Explicitly close all dialogs before proceeding
+    console.log('🎯 proceedToNewProject: Starting new project creation for:', selectedTemplate.name);
+    
+    // Explicitly close ALL dialogs before proceeding - this is critical
     setIsProjectSetupOpen(false);
     setIsDIYSurveyOpen(false);
     setIsProfileManagerOpen(false);
     setIsBetaWarningOpen(false);
+    
+    // Set flag to prevent any intermediate dialogs
+    setIsCreatingNewProject(true);
 
     // Create a new project RUN based on the template without setup info
     const newProjectRun = {
@@ -491,6 +503,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       
       // Reset state immediately
       setSelectedTemplate(null);
+      setIsCreatingNewProject(false);
       
       // Navigate immediately to kickoff
       navigate('/', {
@@ -587,8 +600,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         }
       } else {
         // New project run, will go through kickoff flow - start project creation process
-        console.log('ProjectCatalog: New project after beta accept, starting project creation');
-        handleSkipSetup();
+        console.log('🚀 ProjectCatalog: New project after beta accept, proceeding directly to kickoff');
+        proceedToNewProject();
       }
   };
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
