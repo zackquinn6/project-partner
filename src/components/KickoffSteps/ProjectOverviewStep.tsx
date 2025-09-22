@@ -17,7 +17,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   onComplete,
   isCompleted
 }) => {
-  const { currentProjectRun, updateProjectRun } = useProject();
+  const { currentProjectRun, updateProjectRun, currentProject } = useProject();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: currentProjectRun?.name || '',
@@ -77,29 +77,57 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             <Label>Description</Label>
             <p className="mt-1 text-muted-foreground">{currentProjectRun.description}</p>
           </div>
-          {currentProjectRun.diyLengthChallenges && (
+          {currentProject?.diyLengthChallenges && (
             <div>
               <Label>DIY Challenges</Label>
-              <p className="mt-1 text-muted-foreground">{currentProjectRun.diyLengthChallenges}</p>
+              <p className="mt-1 text-muted-foreground">{currentProject.diyLengthChallenges}</p>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t">
             <div>
               <Label>Category</Label>
-              <p className="font-medium">{currentProjectRun.category || 'Not specified'}</p>
+               <Badge variant="outline" className="mt-1 text-sm">
+                 {currentProject?.category || 'Not specified'}
+               </Badge>
             </div>
             <div>
               <Label>Effort Level</Label>
-              <Badge variant="outline">{currentProjectRun.effortLevel || 'Not specified'}</Badge>
+              <Badge 
+                variant="outline" 
+                className={
+                  `mt-1 text-sm ${
+                     currentProject?.effortLevel === 'Low' ? 'bg-blue-100 text-blue-800' :
+                     currentProject?.effortLevel === 'Medium' ? 'bg-orange-100 text-orange-800' :
+                     currentProject?.effortLevel === 'High' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`
+                }
+              >
+                {currentProject?.effortLevel || 'Not specified'}
+              </Badge>
             </div>
             <div>
               <Label>Skill Level</Label>
-              <Badge variant="outline">{currentProjectRun.skillLevel || 'Not specified'}</Badge>
+              <Badge 
+                variant="outline" 
+                className={
+                  `mt-1 text-sm ${
+                     currentProject?.skillLevel === 'Beginner' ? 'bg-green-100 text-green-800' :
+                     currentProject?.skillLevel === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                     currentProject?.skillLevel === 'Advanced' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`
+                }
+              >
+                {currentProject?.skillLevel || 'Not specified'}
+              </Badge>
             </div>
             <div>
               <Label>Estimated Time</Label>
-              <p className="font-medium">{currentProjectRun.estimatedTime || 'Not specified'}</p>
+               <Badge variant="outline" className="mt-1 text-sm">
+                 {currentProject?.estimatedTime || 'Not specified'}
+               </Badge>
             </div>
           </div>
 
