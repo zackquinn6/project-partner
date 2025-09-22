@@ -239,24 +239,26 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           <div className="space-y-4">
             {/* Home Selection */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-              <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue placeholder="Select a home" />
-                </SelectTrigger>
-                <SelectContent>
-                  {homes.map(home => <SelectItem key={home.id} value={home.id}>
-                      {home.name} {home.address && `- ${home.address}`}
-                    </SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
+                  <SelectTrigger className="w-full sm:w-[160px]">
+                    <SelectValue placeholder="Select a home" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {homes.map(home => <SelectItem key={home.id} value={home.id}>
+                        {home.name} {home.address && `- ${home.address}`}
+                      </SelectItem>)}
+                  </SelectContent>
+                </Select>
 
-              {selectedHomeId && tasks.length > 0 && (
-                <MaintenancePdfPrinter 
-                  tasks={tasks}
-                  completions={completions}
-                  homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
-                />
-              )}
+                {selectedHomeId && tasks.length > 0 && (
+                  <MaintenancePdfPrinter 
+                    tasks={tasks}
+                    completions={completions}
+                    homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
+                  />
+                )}
+              </div>
             </div>
 
             {selectedHomeId && <Tabs defaultValue="tasks" className="w-full">
@@ -338,8 +340,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                    <Button onClick={() => handleTaskComplete(task)} size="sm" className="w-6 h-6 p-0 bg-green-600 hover:bg-green-700 text-white" title="Complete Task">
                                      <CheckCircle className="h-3 w-3" />
                                    </Button>
-                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteTask(task.id)} className="w-4 h-4 p-0" title="Delete Task">
-                                      <Trash2 className="h-1 w-1" />
+                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteTask(task.id)} className="w-3 h-3 p-0" title="Delete Task">
+                                      <Trash2 className="h-1.5 w-1.5" />
                                     </Button>
                                  </div>
                               </div>
