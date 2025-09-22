@@ -103,14 +103,35 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
         arr.findIndex(t => t.id === tool.id) === index
       );
       
-      // Deduplicate materials by ID  
+      // Deduplicate materials by ID and enrich with unit_size from materials table
       const rawMaterials = (data?.owned_materials as unknown as UserOwnedMaterial[]) || [];
       const uniqueMaterials = rawMaterials.filter((material, index, arr) => 
         arr.findIndex(m => m.id === material.id) === index
       );
       
+      // Fetch unit_size from materials table for owned materials
+      if (uniqueMaterials.length > 0) {
+        const materialIds = uniqueMaterials.map(m => m.id);
+        const { data: materialsData } = await supabase
+          .from('materials')
+          .select('id, unit_size')
+          .in('id', materialIds);
+        
+        // Merge unit_size into user materials
+        const enrichedMaterials = uniqueMaterials.map(userMaterial => {
+          const materialInfo = materialsData?.find(m => m.id === userMaterial.id);
+          return {
+            ...userMaterial,
+            unit_size: materialInfo?.unit_size || userMaterial.unit_size
+          };
+        });
+        
+        setUserMaterials(enrichedMaterials);
+      } else {
+        setUserMaterials(uniqueMaterials);
+      }
+      
       setUserTools(uniqueTools);
-      setUserMaterials(uniqueMaterials);
     } catch (error) {
       console.error('Error fetching user items:', error);
     }
@@ -438,8 +459,13 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                               <Package className="w-6 h-6 text-accent-foreground" />
                             )}
                             {material.quantity >= 1 && (
-                              <div className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                              <div className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full min-w-5 h-5 flex items-center justify-center font-semibold px-1">
                                 {material.quantity}
+                                {material.unit_size && (
+                                  <span className="ml-0.5 text-[10px] opacity-75">
+                                    {material.unit_size.toLowerCase()}
+                                  </span>
+                                )}
                               </div>
                             )}
                           </div>

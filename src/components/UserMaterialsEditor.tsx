@@ -102,7 +102,30 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
         .single();
       
       if (error) throw error;
-      setUserMaterials((data?.owned_materials as unknown as UserOwnedMaterial[]) || []);
+      
+      const rawMaterials = (data?.owned_materials as unknown as UserOwnedMaterial[]) || [];
+      
+      // Fetch unit_size from materials table for owned materials
+      if (rawMaterials.length > 0) {
+        const materialIds = rawMaterials.map(m => m.id);
+        const { data: materialsData } = await supabase
+          .from('materials')
+          .select('id, unit_size')
+          .in('id', materialIds);
+        
+        // Merge unit_size into user materials
+        const enrichedMaterials = rawMaterials.map(userMaterial => {
+          const materialInfo = materialsData?.find(m => m.id === userMaterial.id);
+          return {
+            ...userMaterial,
+            unit_size: materialInfo?.unit_size || userMaterial.unit_size
+          };
+        });
+        
+        setUserMaterials(enrichedMaterials);
+      } else {
+        setUserMaterials(rawMaterials);
+      }
     } catch (error) {
       console.error('Error fetching user materials:', error);
     }
@@ -386,7 +409,14 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor={`quantity-${material.id}`}>Quantity</Label>
+                  <Label htmlFor={`quantity-${material.id}`}>
+                    Quantity
+                    {material.unit_size && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        ({material.unit_size})
+                      </span>
+                    )}
+                  </Label>
                   <Input
                     id={`quantity-${material.id}`}
                     type="number"
