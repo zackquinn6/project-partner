@@ -554,7 +554,24 @@ export function UnifiedProjectManagement() {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-muted-foreground">
+                         <div className="space-y-1">
+                           <Label className="text-sm">DIY Challenges</Label>
+                           {editingProject ? (
+                             <Textarea
+                               value={editedProject.diy_length_challenges || ''}
+                               onChange={(e) => setEditedProject(prev => ({ ...prev, diy_length_challenges: e.target.value }))}
+                               rows={3}
+                               className="text-sm"
+                               placeholder="Describe any DIY challenges or considerations..."
+                             />
+                           ) : (
+                             <div className="p-2 bg-muted rounded min-h-[60px] text-sm">
+                               {selectedProject.diy_length_challenges || 'No DIY challenges specified'}
+                             </div>
+                           )}
+                         </div>
+
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-muted-foreground">
                           <div>
                             <span className="font-medium">Created:</span> {formatDate(selectedProject.created_at)}
                           </div>
