@@ -459,13 +459,8 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                               <Package className="w-6 h-6 text-accent-foreground" />
                             )}
                             {material.quantity >= 1 && (
-                              <div className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full min-w-5 h-5 flex items-center justify-center font-semibold px-1">
+                              <div className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
                                 {material.quantity}
-                                {material.unit_size && (
-                                  <span className="ml-0.5 text-[10px] opacity-75">
-                                    {material.unit_size.toLowerCase()}
-                                  </span>
-                                )}
                               </div>
                             )}
                           </div>
@@ -501,18 +496,25 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
               </div>
 
               <div className="space-y-3">
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <Label className="text-xs">Quantity</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="99"
-                      value={selectedItem.quantity}
-                      onChange={(e) => updateItem('quantity', parseInt(e.target.value) || 1)}
-                      className="text-sm h-8 w-16"
-                    />
-                  </div>
+                 <div className="grid grid-cols-4 gap-2">
+                   <div>
+                     <Label className="text-xs">
+                       Quantity
+                       {selectedType === 'material' && (selectedItem as UserOwnedMaterial).unit_size && (
+                         <span className="text-muted-foreground ml-1">
+                           ({(selectedItem as UserOwnedMaterial).unit_size})
+                         </span>
+                       )}
+                     </Label>
+                     <Input
+                       type="number"
+                       min="1"
+                       max="99"
+                       value={selectedItem.quantity}
+                       onChange={(e) => updateItem('quantity', parseInt(e.target.value) || 1)}
+                       className="text-sm h-8 w-16"
+                     />
+                   </div>
                   <div className="col-span-3">
                     <Label className="text-xs">{selectedType === 'tool' ? 'Model/Brand' : 'Brand'}</Label>
                     <Input
