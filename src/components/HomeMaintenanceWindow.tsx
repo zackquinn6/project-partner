@@ -255,15 +255,24 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
-              <Home className="h-4 w-4 sm:h-5 sm:w-5" />
-              Home Maintenance Tracker
-            </DialogTitle>
+        <DialogContent className="w-full h-full sm:max-w-[95vw] sm:max-w-6xl sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
+          <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <Home className="h-4 w-4 sm:h-5 sm:w-5" />
+                Home Maintenance Tracker
+              </DialogTitle>
+              <Button 
+                variant="ghost" 
+                onClick={() => onOpenChange(false)}
+                className="sm:hidden text-xs px-2 py-1 h-6"
+              >
+                close
+              </Button>
+            </div>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="p-4 sm:p-0 space-y-4">
             {/* Home Selection */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
               <div className="flex items-center gap-2">

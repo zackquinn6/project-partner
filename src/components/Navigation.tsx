@@ -345,9 +345,18 @@ export default function Navigation({
         />
 
         <Dialog open={isRapidAssessmentOpen} onOpenChange={setIsRapidAssessmentOpen}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
-            <DialogHeader>
-              <DialogTitle>Rapid Project Assessment</DialogTitle>
+          <DialogContent className="w-full h-full sm:max-w-7xl sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
+            <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
+              <div className="flex items-center justify-between">
+                <DialogTitle>Rapid Project Assessment</DialogTitle>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setIsRapidAssessmentOpen(false)}
+                  className="sm:hidden text-xs px-2 py-1 h-6"
+                >
+                  close
+                </Button>
+              </div>
             </DialogHeader>
             <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
               <RapidProjectAssessment />
