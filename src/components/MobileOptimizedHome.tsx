@@ -112,13 +112,6 @@ export function MobileOptimizedHome() {
       action: () => window.dispatchEvent(new CustomEvent('show-help-popup'))
     },
     {
-      id: 'community',
-      icon: Users,
-      title: 'Community',
-      color: 'bg-pink-600',
-      action: () => window.dispatchEvent(new CustomEvent('show-community-posts'))
-    },
-    {
       id: 'my-homes',
       icon: MapPin,
       title: 'My Homes',
@@ -135,6 +128,20 @@ export function MobileOptimizedHome() {
   ];
 
   const betaApps = [
+    {
+      id: 'community',
+      icon: Users,
+      title: 'Community',
+      color: 'bg-pink-600',
+      action: () => window.dispatchEvent(new CustomEvent('show-community-posts'))
+    },
+    {
+      id: 'contractor-finder',
+      icon: Users,
+      title: 'Contractor Finder',
+      color: 'bg-indigo-600',
+      action: () => window.dispatchEvent(new CustomEvent('show-contractor-finder'))
+    },
     {
       id: 'ai-repair',
       icon: Camera,
