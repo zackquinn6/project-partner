@@ -156,6 +156,13 @@ export default function Home({
             
             {/* Core Apps Grid */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate('/projects')}>
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.projectCatalog} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                  <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                </div>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">Project Catalog</span>
+              </div>
+              
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => {
             navigate('/', {
               replace: true,
@@ -171,13 +178,6 @@ export default function Home({
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">My Projects</span>
               </div>
               
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-rapid-assessment'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.rapidPlan} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <Calculator className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Rapid Plan</span>
-              </div>
-              
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}>
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeMaintenance} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                   <HomeIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
@@ -185,25 +185,11 @@ export default function Home({
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">Home Maintenance</span>
               </div>
               
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolLibrary} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <Wrench className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-rapid-assessment'))}>
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.rapidPlan} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                  <Calculator className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Tool Library</span>
-              </div>
-              
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolAccess} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <Hammer className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Tool Access</span>
-              </div>
-              
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate('/projects')}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.projectCatalog} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Project Catalog</span>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">Rapid Plan</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-help-popup'))}>
@@ -211,6 +197,13 @@ export default function Home({
                   <HelpCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">Expert Help</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolAccess} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                  <Hammer className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                </div>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">Tool Access</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
@@ -225,6 +218,13 @@ export default function Home({
                   <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">My Homes</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}>
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolLibrary} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                  <Wrench className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                </div>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">My Tools</span>
               </div>
             </div>
 

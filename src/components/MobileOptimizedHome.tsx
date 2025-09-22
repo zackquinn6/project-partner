@@ -50,6 +50,14 @@ export function MobileOptimizedHome() {
 
   const quickActions = [
     {
+      id: 'project-catalog',
+      icon: BookOpen,
+      title: 'Project Catalog',
+      subtitle: 'Browse projects',
+      color: 'bg-cyan-600',
+      action: () => navigate('/projects')
+    },
+    {
       id: 'my-projects',
       icon: Folder,
       title: 'My Projects',
@@ -61,6 +69,14 @@ export function MobileOptimizedHome() {
       }
     },
     {
+      id: 'home-maintenance',
+      icon: HomeIcon,
+      title: 'Home Maintenance',
+      subtitle: 'Schedule & track',
+      color: 'bg-purple-600',
+      action: () => window.dispatchEvent(new CustomEvent('show-home-maintenance'))
+    },
+    {
       id: 'rapid-plan',
       icon: Calculator,
       title: 'Rapid Plan',
@@ -70,46 +86,30 @@ export function MobileOptimizedHome() {
         console.log('🎯 MobileOptimizedHome: Rapid Plan clicked');
         window.dispatchEvent(new CustomEvent('show-rapid-assessment'));
       }
-    },
-    {
-      id: 'home-maintenance',
-      icon: HomeIcon,
-      title: 'Home Maintenance',
-      subtitle: 'Schedule & track',
-      color: 'bg-purple-600',
-      action: () => window.dispatchEvent(new CustomEvent('show-home-maintenance'))
-    },
-    {
-      id: 'tool-library',
-      icon: Wrench,
-      title: 'My Tools',
-      subtitle: 'Manage inventory',
-      color: 'bg-orange-600',
-      action: () => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))
     }
   ];
 
   const utilityApps = [
-    {
-      id: 'tool-rentals',
-      icon: Hammer,
-      title: 'Tool Rentals',
-      color: 'bg-indigo-600',
-      action: () => window.dispatchEvent(new CustomEvent('show-tool-rentals'))
-    },
-    {
-      id: 'project-catalog',
-      icon: BookOpen,
-      title: 'Browse Projects',
-      color: 'bg-cyan-600',
-      action: () => navigate('/projects')
-    },
     {
       id: 'expert-help',
       icon: HelpCircle,
       title: 'Expert Help',
       color: 'bg-emerald-600',
       action: () => window.dispatchEvent(new CustomEvent('show-help-popup'))
+    },
+    {
+      id: 'tool-rentals',
+      icon: Hammer,
+      title: 'Tool Access',
+      color: 'bg-indigo-600',
+      action: () => window.dispatchEvent(new CustomEvent('show-tool-rentals'))
+    },
+    {
+      id: 'profile',
+      icon: User,
+      title: 'My Profile',
+      color: 'bg-violet-600',
+      action: () => window.dispatchEvent(new CustomEvent('open-profile-manager'))
     },
     {
       id: 'my-homes',
@@ -119,11 +119,11 @@ export function MobileOptimizedHome() {
       action: () => window.dispatchEvent(new CustomEvent('show-home-manager'))
     },
     {
-      id: 'profile',
-      icon: User,
-      title: 'Profile',
-      color: 'bg-violet-600',
-      action: () => window.dispatchEvent(new CustomEvent('open-profile-manager'))
+      id: 'tool-library',
+      icon: Wrench,
+      title: 'My Tools',
+      color: 'bg-orange-600',
+      action: () => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))
     }
   ];
 
