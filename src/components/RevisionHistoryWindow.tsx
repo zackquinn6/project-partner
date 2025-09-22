@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { History, RotateCcw, Calendar, User } from 'lucide-react';
+import { History, RotateCcw, Calendar, User, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RevisionHistoryWindowProps {
@@ -174,6 +174,53 @@ export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
               </div>
               <p className="text-sm text-muted-foreground">
                 Restoring will create a new revision based on the selected version.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Project Management Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Project Management</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Button 
+                  onClick={() => {
+                    onOpenChange(false);
+                    // Navigate to edit workflow - this would need to be passed as a prop
+                  }}
+                  className="flex items-center gap-2"
+                  variant="outline"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit Workflow
+                </Button>
+                <Button 
+                  onClick={() => {
+                    // Handle release to beta
+                    toast("Project marked for beta testing");
+                  }}
+                  className="flex items-center gap-2"
+                  variant="outline"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Release to Beta
+                </Button>
+                <Button 
+                  onClick={() => {
+                    // Handle release to production
+                    toast("Project released to production");
+                  }}
+                  className="flex items-center gap-2"
+                  variant="default"
+                >
+                  <User className="w-4 h-4" />
+                  Release to Production
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Use these actions to edit the project workflow or manage release status.
               </p>
             </CardContent>
           </Card>

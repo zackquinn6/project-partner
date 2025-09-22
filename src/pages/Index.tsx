@@ -448,10 +448,7 @@ const Index = () => {
         onOpenChange={setShowHomeMgmt}
       />
       
-      <CommunityPostsWindow
-        open={showCommunityPosts}
-        onOpenChange={setShowCommunityPosts}
-      />
+      {/* CommunityPostsWindow handled by Navigation component */}
       
       <AIRepairWindow
         open={showAIRepair}

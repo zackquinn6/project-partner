@@ -330,7 +330,9 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
                     <p className="text-sm text-muted-foreground mb-2">{material.description}</p>
                   )}
                   {material.unit_size && (
-                    <p className="text-xs text-muted-foreground">Unit Size: {material.unit_size}</p>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Unit: {material.unit_size}
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -411,12 +413,12 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
                 <div>
                   <Label htmlFor={`quantity-${material.id}`}>
                     Quantity
-                    {material.unit_size && (
-                      <span className="text-xs text-muted-foreground ml-1">
-                        ({material.unit_size})
-                      </span>
-                    )}
                   </Label>
+                  {material.unit_size && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Unit: {material.unit_size}
+                    </div>
+                  )}
                   <Input
                     id={`quantity-${material.id}`}
                     type="number"
