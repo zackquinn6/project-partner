@@ -238,9 +238,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     }
   };
   const handleSelectProject = async (project: any) => {
-    console.log('🎯 handleSelectProject called with:', project.name, 'isAdminMode:', isAdminMode, 'user:', !!user);
-    
-    if (isAdminMode) {
+    try {
+      console.log('🎯 ENTER handleSelectProject - Project:', project?.name || 'UNDEFINED');
+      console.log('🎯 Admin mode:', isAdminMode, 'User exists:', !!user);
+      
+      if (!project) {
+        console.error('❌ No project provided to handleSelectProject');
+        return;
+      }
+      
+      if (isAdminMode) {
       // In admin mode, create a new template project
       const newProject = {
         id: crypto.randomUUID(),
@@ -259,18 +266,22 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       };
       addProject(newProject);
       setCurrentProject(newProject);
-      navigate('/', {
-        state: {
-          view: 'admin'
+        navigate('/', {
+          state: {
+            view: 'admin'
+          }
+        });
+      } else {
+        // User mode - handling project selection
+        console.log('👤 USER MODE - Processing project selection');
+        
+        // Check if project is beta and show warning first
+        if (project.publishStatus === 'beta-testing') {
+          console.log('⚠️ Beta project detected, showing warning');
+          setSelectedTemplate(project);
+          setIsBetaWarningOpen(true);
+          return;
         }
-      });
-    } else {
-      // In user mode, check if project is beta and show warning first
-      if (project.publishStatus === 'beta-testing') {
-        setSelectedTemplate(project);
-        setIsBetaWarningOpen(true);
-        return;
-      }
       
       // For published projects, proceed normally
       console.log('✅ User mode - proceeding with project setup for:', project.name);
@@ -330,6 +341,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         console.log('🚀 New project detected, proceeding directly to kickoff');
         proceedToNewProject();
       }
+      } // Close the user mode else block
+    } catch (error) {
+      console.error('❌ Error in handleSelectProject:', error);
     }
   };
 
@@ -795,10 +809,21 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               )}
             </div> : filteredProjects.map(project => {
           const IconComponent = getIconForCategory(project.category || '');
-          return <Card key={project.id} className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden" onClick={(e) => {
-            console.log('🖱️ Card clicked for project:', project.name);
-            handleSelectProject(project);
-          }}>
+            return <Card 
+              key={project.id} 
+              className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ CARD CLICK - Project:', project.name);
+                console.log('🖱️ CARD CLICK - Event:', e.type);
+                try {
+                  handleSelectProject(project);
+                } catch (error) {
+                  console.error('❌ Error in handleSelectProject:', error);
+                }
+              }}
+            >
                   <div className={`h-32 bg-gradient-to-br from-primary to-orange-500 relative overflow-hidden`}>
                     <div className="absolute inset-0 bg-black/20" />
                     <div className="absolute bottom-4 left-4 text-white">
@@ -848,11 +873,20 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       <Badge className={getDifficultyColor(project.difficulty || '')} variant="secondary">
                         {project.difficulty}
                       </Badge>
-                      <Button size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => {
-                  e.stopPropagation();
-                  console.log('🔘 Button clicked for project:', project.name);
-                  handleSelectProject(project);
-                }}>
+                      <Button 
+                        size="sm" 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('🔘 BUTTON CLICK - Project:', project.name);
+                          try {
+                            handleSelectProject(project);
+                          } catch (error) {
+                            console.error('❌ Error in button handleSelectProject:', error);
+                          }
+                        }}
+                      >
                         {isAdminMode ? 'Edit Template' : 'Start Project'}
                       </Button>
                     </div>
