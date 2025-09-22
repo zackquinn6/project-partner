@@ -268,9 +268,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
             {selectedHomeId && <Tabs defaultValue="tasks" className="w-full">
                 <TabsList className="grid grid-cols-3 w-full">
-                  <TabsTrigger value="tasks">Active Tasks</TabsTrigger>
-                  <TabsTrigger value="history">Completion History</TabsTrigger>
-                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                  <TabsTrigger value="tasks">Active</TabsTrigger>
+                  <TabsTrigger value="history">History</TabsTrigger>
+                  <TabsTrigger value="notifications">Alerts</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="tasks" className="space-y-4">
@@ -337,11 +337,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                     <Progress value={progress} className="h-1" />
                                   </div>
                                 </div>
-                                 <div className="flex gap-2 ml-3 shrink-0">
-                                   <Button onClick={() => handleTaskComplete(task)} size="sm" className="text-xs">
+                                 <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 ml-2 sm:ml-3 shrink-0">
+                                   <Button onClick={() => handleTaskComplete(task)} size="sm" className="text-xs px-2 sm:px-4">
                                      Complete
                                    </Button>
-                                   <Button variant="destructive" size="sm" onClick={() => handleDeleteTask(task.id)} className="w-8 h-8 p-0" title="Delete Task">
+                                   <Button variant="destructive" size="sm" onClick={() => handleDeleteTask(task.id)} className="w-6 h-6 sm:w-8 sm:h-8 p-0" title="Delete Task">
                                      <Trash2 className="h-3 w-3" />
                                    </Button>
                                  </div>
