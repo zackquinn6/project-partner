@@ -42,13 +42,6 @@ const categoryOptions = [
   { value: 'other', label: 'Other' }
 ];
 
-const difficultyOptions = [
-  { value: 'beginner', label: 'Beginner' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advanced', label: 'Advanced' },
-  { value: 'expert', label: 'Expert' }
-];
-
 export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProjectUpdated }: ManualProjectEditDialogProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +49,6 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
     name: '',
     description: '',
     category: '',
-    difficulty: '',
     status: 'completed',
     progress: 100,
     estimatedTime: '',
@@ -78,7 +70,6 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
         name: projectRun.customProjectName || projectRun.name || '',
         description: projectRun.description || '',
         category: projectRun.category || '',
-        difficulty: projectRun.effortLevel || '',
         status: projectRun.status || 'completed',
         progress: projectRun.progress || 100,
         estimatedTime: projectRun.estimatedTime || '',
@@ -108,7 +99,6 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
         description: formData.description || null,
         custom_project_name: formData.name,
         category: formData.category || null,
-        effort_level: formData.difficulty || null,
         status: formData.status,
         progress: formData.progress,
         estimated_time: formData.estimatedTime || null,
@@ -209,38 +199,20 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoryOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="difficulty">Difficulty</Label>
-                <Select value={formData.difficulty} onValueChange={(value) => handleInputChange('difficulty', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select difficulty" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {difficultyOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-md z-50">
+                  {categoryOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -250,7 +222,7 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border shadow-md z-50">
                     {statusOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
