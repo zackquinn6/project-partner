@@ -168,7 +168,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Project Name</label>
+              <label className="text-sm font-medium mb-2 block">Name your project</label>
               <Input
                 value={projectForm.customProjectName}
                 onChange={(e) => setProjectForm(prev => ({
@@ -180,7 +180,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Project Description</label>
+              <label className="text-sm font-medium mb-2 block">Describe your project</label>
+              <p className="text-xs text-muted-foreground mb-2">A short summary of your unique project</p>
               <Textarea
                 value={projectForm.description}
                 onChange={(e) => setProjectForm(prev => ({
@@ -261,19 +262,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           </div>
 
           {!isCompleted ? (
-            <div className="text-center">
-              <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Save Project Profile
-              </Button>
-            </div>
+            <Button onClick={handleSave} className="w-full bg-green-600 hover:bg-green-700">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Save Project Profile
+            </Button>
           ) : (
-            <div className="text-center">
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Project Profile Complete
-              </Badge>
-            </div>
+            <Button className="w-full bg-green-100 text-green-800 hover:bg-green-200" disabled>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Profile Complete - Continue
+            </Button>
           )}
         </CardContent>
       </Card>
