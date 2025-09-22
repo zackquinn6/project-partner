@@ -9,6 +9,7 @@ import { Search, Minus, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { VariationSelector } from './VariationSelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SelectedItem {
   id: string;
@@ -42,12 +43,16 @@ export function MultiSelectLibraryDialog({
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectingVariationFor, setSelectingVariationFor] = useState<string | null>(null);
+  const [userOwnedItems, setUserOwnedItems] = useState<any[]>([]);
+  const [itemVariations, setItemVariations] = useState<Record<string, any[]>>({});
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (open) {
+    if (open && user) {
       fetchItems();
+      fetchUserOwnedItems();
     }
-  }, [open, type]);
+  }, [open, type, user]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -59,7 +64,11 @@ export function MultiSelectLibraryDialog({
       
       if (error) throw error;
       
-      setItems(data || []);
+      const allItems = data || [];
+      setItems(allItems);
+      
+      // Fetch variations for all items
+      await fetchItemVariations(allItems);
     } catch (error) {
       console.error(`Error fetching ${type}:`, error);
     } finally {
@@ -67,10 +76,78 @@ export function MultiSelectLibraryDialog({
     }
   };
 
-  const filteredItems = items.filter(item =>
-    item.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const fetchUserOwnedItems = async () => {
+    if (!user) return;
+    
+    try {
+      const columnName = type === 'tools' ? 'owned_tools' : 'owned_materials';
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(columnName)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) throw error;
+      
+      setUserOwnedItems((data?.[columnName] as any[]) || []);
+    } catch (error) {
+      console.error(`Error fetching user owned ${type}:`, error);
+      setUserOwnedItems([]);
+    }
+  };
+
+  const fetchItemVariations = async (itemsList: any[]) => {
+    if (itemsList.length === 0) return;
+    
+    const variationsMap: Record<string, any[]> = {};
+    
+    try {
+      for (const item of itemsList) {
+        const { data: variations } = await supabase
+          .from('variation_instances')
+          .select('*')
+          .eq('core_item_id', item.id)
+          .eq('item_type', type);
+        
+        variationsMap[item.id] = variations || [];
+      }
+      setItemVariations(variationsMap);
+    } catch (error) {
+      console.error('Error fetching variations:', error);
+    }
+  };
+
+  const filteredItems = items
+    .filter(item => {
+      const matchesSearch = item.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      if (!matchesSearch) return false;
+
+      // Get all variations for this core item
+      const variations = itemVariations[item.id] || [];
+      
+      // If item has no variations, check if core item itself is owned
+      if (variations.length === 0) {
+        const coreItemOwned = userOwnedItems.some(ownedItem => ownedItem.id === item.id);
+        return !coreItemOwned;
+      }
+      
+      // If item has variations, check if ALL variations are owned
+      const ownedItemIds = new Set(userOwnedItems.map(ownedItem => ownedItem.id));
+      const allVariationsOwned = variations.every(variation => 
+        ownedItemIds.has(variation.id)
+      );
+      
+      // Also check if the core item itself is owned (for items that have both core and variations)
+      const coreItemOwned = ownedItemIds.has(item.id);
+      
+      // Show item only if:
+      // 1. Not all variations are owned AND
+      // 2. The core item itself is not owned
+      return !allVariationsOwned && !coreItemOwned;
+    })
+    .sort((a, b) => a.item.localeCompare(b.item));
 
   const handleItemToggle = (coreItem: any) => {
     setSelectingVariationFor(coreItem.id);
