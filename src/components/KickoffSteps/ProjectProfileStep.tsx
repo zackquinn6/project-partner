@@ -119,7 +119,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
       await updateProjectRun(updatedProjectRun);
       onComplete();
-      toast.success('Project profile updated successfully');
     } catch (error) {
       console.error('Error saving project profile:', error);
       toast.error('Failed to save project profile');
