@@ -238,9 +238,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     }
   };
   const handleSelectProject = async (project: any) => {
-    console.log('handleSelectProject called with:', project);
-    console.log('isAdminMode:', isAdminMode);
-    console.log('user:', user);
+    console.log('🎯 handleSelectProject called with:', project.name, 'isAdminMode:', isAdminMode, 'user:', !!user);
+    
+    // Prevent multiple rapid clicks
+    if (isCreatingNewProject) {
+      console.log('🚫 Already creating project, ignoring click');
+      return;
+    }
     
     if (isAdminMode) {
       // In admin mode, create a new template project
@@ -785,7 +789,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               )}
             </div> : filteredProjects.map(project => {
           const IconComponent = getIconForCategory(project.category || '');
-          return <Card key={project.id} className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden" onClick={() => handleSelectProject(project)}>
+          return <Card key={project.id} className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden" onClick={(e) => {
+            console.log('🖱️ Card clicked for project:', project.name);
+            handleSelectProject(project);
+          }}>
                   <div className={`h-32 bg-gradient-to-br from-primary to-orange-500 relative overflow-hidden`}>
                     <div className="absolute inset-0 bg-black/20" />
                     <div className="absolute bottom-4 left-4 text-white">
@@ -837,6 +844,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       </Badge>
                       <Button size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => {
                   e.stopPropagation();
+                  console.log('🔘 Button clicked for project:', project.name);
                   handleSelectProject(project);
                 }}>
                         {isAdminMode ? 'Edit Template' : 'Start Project'}
