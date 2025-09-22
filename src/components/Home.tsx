@@ -136,23 +136,23 @@ export default function Home({
             </p>
             
             {/* Stats */}
-            <div className="border-t border-border pt-2 mb-2">
+            <div className="border-t border-border pt-1 mb-1">
               <div className="flex justify-center gap-6 sm:gap-8">
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">{stats.activeProjects || 0}</div>
-                  <div className="text-xs text-muted-foreground">active projects</div>
+                  <div className="text-base font-bold text-foreground">{stats.activeProjects || 0}</div>
+                  <div className="text-xs text-muted-foreground">active</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">{stats.completedProjects || 0}</div>
+                  <div className="text-base font-bold text-foreground">{stats.completedProjects || 0}</div>
                   <div className="text-xs text-muted-foreground">completed</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-foreground">{stats.hoursSaved || 0}</div>
+                  <div className="text-base font-bold text-foreground">{stats.hoursSaved || 0}</div>
                   <div className="text-xs text-muted-foreground">hours saved</div>
                 </div>
               </div>
             </div>
-            <div className="border-b border-border pb-6 mb-8"></div>
+            <div className="border-b border-border pb-4 mb-6"></div>
             
             {/* Apps Grid */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-8 px-2">
