@@ -240,12 +240,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const handleSelectProject = async (project: any) => {
     console.log('🎯 handleSelectProject called with:', project.name, 'isAdminMode:', isAdminMode, 'user:', !!user);
     
-    // Prevent multiple rapid clicks
-    if (isCreatingNewProject) {
-      console.log('🚫 Already creating project, ignoring click');
-      return;
-    }
-    
     if (isAdminMode) {
       // In admin mode, create a new template project
       const newProject = {
@@ -325,7 +319,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       } else {
         // New project run, will go through kickoff flow - don't show setup dialog
         console.log('🚀 ProjectCatalog: New project detected, proceeding directly to kickoff');
-        setIsCreatingNewProject(true);
         proceedToNewProject();
       }
     }
@@ -471,14 +464,18 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
     console.log('🎯 proceedToNewProject: Starting new project creation for:', selectedTemplate.name);
     
+    // Set flag to prevent double-clicks during creation
+    if (isCreatingNewProject) {
+      console.log('🚫 Already creating project, aborting');
+      return;
+    }
+    setIsCreatingNewProject(true);
+    
     // Explicitly close ALL dialogs before proceeding - this is critical
     setIsProjectSetupOpen(false);
     setIsDIYSurveyOpen(false);
     setIsProfileManagerOpen(false);
     setIsBetaWarningOpen(false);
-    
-    // Set flag to prevent any intermediate dialogs
-    setIsCreatingNewProject(true);
 
     // Create a new project RUN based on the template without setup info
     const newProjectRun = {
