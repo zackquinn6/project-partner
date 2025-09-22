@@ -147,7 +147,7 @@ export const createPlanningPhase = (): Phase => {
 
   const projectSchedulingOperation: Operation = {
     id: 'project-scheduling-operation',
-    name: 'Project Scheduling',
+    name: 'Project Schedule',
     description: 'Create project timeline and schedule phases',
     steps: [{
       id: 'planning-step-2',
