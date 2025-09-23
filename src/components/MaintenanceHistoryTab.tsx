@@ -123,7 +123,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
   const filteredCompletions = getFilteredAndSortedCompletions();
 
   return (
-    <div className="space-y-2">
+    <div>
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2 mb-2">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
