@@ -28,9 +28,10 @@ import { HomeManager } from '@/components/HomeManager';
 import { HomeMaintenanceWindow } from '@/components/HomeMaintenanceWindow';
 import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow';
 import ProfileManager from '@/components/ProfileManager';
+import { HelpPopup } from '@/components/HelpPopup';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
+import { Button } from '@/components/ui/button';
 
 // Force rebuild to clear cache
 
@@ -48,8 +49,19 @@ const Index = () => {
   const [forceListingMode, setForceListingMode] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'profile' | 'help'>('home');
   
-  // Modal states - only keeping mobile-specific ones that Navigation.tsx doesn't handle
+  // Modal states - moved from Navigation to work on both mobile and desktop
   const [showKCExplainer, setShowKCExplainer] = useState(false);
+  const [isHomeManagerOpen, setIsHomeManagerOpen] = useState(false);
+  const [isUserToolsLibraryOpen, setIsUserToolsLibraryOpen] = useState(false);
+  const [userToolsMode, setUserToolsMode] = useState<'library' | 'add-tools'>('library');
+  const [isHomeMaintenanceOpen, setIsHomeMaintenanceOpen] = useState(false);
+  const [isCommunityPostsOpen, setIsCommunityPostsOpen] = useState(false);
+  const [isToolRentalsOpen, setIsToolRentalsOpen] = useState(false);
+  const [isRapidAssessmentOpen, setIsRapidAssessmentOpen] = useState(false);
+  const [isAIRepairOpen, setIsAIRepairOpen] = useState(false);
+  const [isContractorFinderOpen, setIsContractorFinderOpen] = useState(false);
+  const [isHelpPopupOpen, setIsHelpPopupOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Removed debug logging - no longer tracking duplicate modals
 
@@ -90,6 +102,104 @@ const Index = () => {
   useEffect(() => {
     setHasHandledInitialState(false);
   }, [location.pathname]);
+
+  // Add event listeners for modal windows (works on both mobile and desktop)
+  useEffect(() => {
+    const handleHomeManagerEvent = (event: Event) => {
+      console.log('🏠 Opening Home Manager');
+      event.stopPropagation();
+      setIsHomeManagerOpen(true);
+    };
+
+    const handleHomeMaintenanceEvent = (event: Event) => {
+      console.log('🏡 Opening Home Maintenance');
+      event.stopPropagation();
+      setIsHomeMaintenanceOpen(true);
+    };
+
+    const handleProfileManagerEvent = (event: Event) => {
+      console.log('👤 Opening Profile Manager');
+      event.stopPropagation();
+      setIsProfileOpen(true);
+    };
+
+    const handleCommunityPostsEvent = (event: Event) => {
+      console.log('👥 Opening Community Posts');
+      event.stopPropagation();
+      setIsCommunityPostsOpen(true);
+    };
+
+    const handleToolRentalsEvent = (event: Event) => {
+      console.log('🔨 Opening Tool Rentals');
+      event.stopPropagation();
+      setIsToolRentalsOpen(true);
+    };
+
+    const handleRapidAssessmentEvent = (event: Event) => {
+      console.log('⚡ Opening Rapid Assessment');
+      event.stopPropagation();
+      setIsRapidAssessmentOpen(true);
+    };
+
+    const handleUserToolsMaterialsEvent = (event: Event) => {
+      console.log('🔧 Opening User Tools/Materials - library mode');
+      event.stopPropagation();
+      setUserToolsMode('library');
+      setIsUserToolsLibraryOpen(true);
+    };
+
+    const handleToolsMaterialsEditorEvent = (event: Event) => {
+      console.log('🔧 Opening User Tools/Materials - add tools mode');
+      event.stopPropagation();
+      setUserToolsMode('add-tools');
+      setIsUserToolsLibraryOpen(true);
+    };
+
+    const handleAIRepairEvent = (event: Event) => {
+      console.log('🤖 Opening AI Repair');
+      event.stopPropagation();
+      setIsAIRepairOpen(true);
+    };
+
+    const handleContractorFinderEvent = (event: Event) => {
+      console.log('👷 Opening Contractor Finder');
+      event.stopPropagation();
+      setIsContractorFinderOpen(true);
+    };
+
+    const handleHelpPopupEvent = (event: Event) => {
+      console.log('❓ Opening Help Popup');
+      event.stopPropagation();
+      setIsHelpPopupOpen(true);
+    };
+
+    // Add event listeners
+    window.addEventListener('show-home-manager', handleHomeManagerEvent);
+    window.addEventListener('show-home-maintenance', handleHomeMaintenanceEvent);
+    window.addEventListener('open-profile-manager', handleProfileManagerEvent);
+    window.addEventListener('show-community-posts', handleCommunityPostsEvent);
+    window.addEventListener('show-tool-rentals', handleToolRentalsEvent);
+    window.addEventListener('show-rapid-assessment', handleRapidAssessmentEvent);
+      window.removeEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
+    window.addEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
+    window.addEventListener('show-ai-repair', handleAIRepairEvent);
+    window.addEventListener('show-contractor-finder', handleContractorFinderEvent);
+    window.addEventListener('show-help-popup', handleHelpPopupEvent);
+
+    return () => {
+      window.removeEventListener('show-home-manager', handleHomeManagerEvent);
+      window.removeEventListener('show-home-maintenance', handleHomeMaintenanceEvent);
+      window.removeEventListener('open-profile-manager', handleProfileManagerEvent);
+      window.removeEventListener('show-community-posts', handleCommunityPostsEvent);
+      window.removeEventListener('show-tool-rentals', handleToolRentalsEvent);
+      window.removeEventListener('show-rapid-assessment', handleRapidAssessmentEvent);
+      window.addEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
+      window.removeEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
+      window.removeEventListener('show-ai-repair', handleAIRepairEvent);
+      window.removeEventListener('show-contractor-finder', handleContractorFinderEvent);
+      window.removeEventListener('show-help-popup', handleHelpPopupEvent);
+    };
+  }, []);
 
   // Listen for edit workflow navigation event
   useEffect(() => {
@@ -334,7 +444,68 @@ const Index = () => {
         {renderView()}
       </div>
       
-      {/* Only mobile-specific modals that Navigation.tsx doesn't handle */}
+      {/* Modal windows that work on both mobile and desktop */}
+      <HomeManager 
+        open={isHomeManagerOpen}
+        onOpenChange={setIsHomeManagerOpen}
+      />
+      
+      <UserToolsMaterialsWindow 
+        open={isUserToolsLibraryOpen}
+        onOpenChange={(open) => {
+          setIsUserToolsLibraryOpen(open);
+          if (!open) setUserToolsMode('library'); // Reset mode when closing
+        }}
+        initialToolsMode={userToolsMode}
+      />
+      
+      <HomeMaintenanceWindow 
+        open={isHomeMaintenanceOpen}
+        onOpenChange={setIsHomeMaintenanceOpen}
+      />
+      
+      <CommunityPostsWindow 
+        open={isCommunityPostsOpen}
+        onOpenChange={setIsCommunityPostsOpen}
+      />
+
+      <ToolRentalsWindow 
+        isOpen={isToolRentalsOpen}
+        onClose={() => setIsToolRentalsOpen(false)}
+      />
+
+      <Dialog open={isRapidAssessmentOpen} onOpenChange={setIsRapidAssessmentOpen}>
+        <DialogContent className="w-full sm:max-w-7xl sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
+          <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
+            <DialogTitle>Rapid Project Assessment</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
+            <RapidProjectAssessment />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      <AIRepairWindow 
+        open={isAIRepairOpen}
+        onOpenChange={setIsAIRepairOpen}
+      />
+      
+      <ContractorFinderWindow 
+        open={isContractorFinderOpen}
+        onOpenChange={setIsContractorFinderOpen}
+      />
+      
+      <HelpPopup 
+        isOpen={isHelpPopupOpen}
+        onClose={() => setIsHelpPopupOpen(false)}
+      />
+
+      <ProfileManager 
+        open={isProfileOpen}
+        onOpenChange={setIsProfileOpen}
+      />
+
+      {/* Mobile-specific modals */}
       <KeyCharacteristicsExplainer
         open={showKCExplainer}
         onOpenChange={setShowKCExplainer}
