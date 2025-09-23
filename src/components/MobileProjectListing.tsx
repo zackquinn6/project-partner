@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ interface MobileProjectListingProps {
 
 export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }: MobileProjectListingProps) {
   const { projects, projectRuns, currentProjectRun } = useProject();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'progress'>('recent');
 
@@ -98,7 +100,7 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
           <Button
             variant="default"
             size="sm"
-            onClick={onNewProject}
+            onClick={() => navigate('/projects')}
             className="px-3 h-10"
           >
             <Plus className="h-4 w-4" />

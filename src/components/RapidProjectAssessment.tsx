@@ -474,10 +474,12 @@ export function RapidProjectAssessment() {
               <Button variant="outline" onClick={() => setCurrentView('list')} className="sm:px-4">
                 <ArrowLeft className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Back to List</span>
+                <span className="sm:hidden">Back</span>
               </Button>
               <Button onClick={saveProject} disabled={isLoading} className="sm:px-4">
                 <Save className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">{isLoading ? "Saving..." : project.id ? "Update" : "Save"} Assessment</span>
+                <span className="sm:hidden">{isLoading ? "Saving..." : "Save"}</span>
               </Button>
             </div>
           </div>

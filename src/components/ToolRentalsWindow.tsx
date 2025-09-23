@@ -19,19 +19,30 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full h-full sm:max-w-6xl sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
-        <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
+        <DialogHeader className="p-4 sm:p-0 border-b sm:border-b-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
               <Wrench className="h-6 w-6 text-primary" />
               Tool Access & Rentals
             </DialogTitle>
-            <Button 
-              variant="ghost" 
-              onClick={onClose}
-              className="sm:hidden text-xs px-2 py-1 h-6"
-            >
-              Close
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))}
+                className="text-xs px-3 py-1 h-7"
+              >
+                <Wrench className="h-3 w-3 mr-1" />
+                My Tool Library
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={onClose}
+                className="sm:hidden text-xs px-2 py-1 h-6"
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </DialogHeader>
         

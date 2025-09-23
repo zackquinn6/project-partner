@@ -47,14 +47,6 @@ export function MobileOptimizedHome() {
 
   const quickActions = [
     {
-      id: 'project-catalog',
-      icon: BookOpen,
-      title: 'Project Catalog',
-      subtitle: 'Browse projects',
-      color: 'bg-cyan-600',
-      action: () => navigate('/projects')
-    },
-    {
       id: 'my-projects',
       icon: Folder,
       title: 'My Projects',
@@ -74,25 +66,32 @@ export function MobileOptimizedHome() {
       action: () => window.dispatchEvent(new CustomEvent('show-home-maintenance'))
     },
     {
-      id: 'rapid-plan',
-      icon: Calculator,
-      title: 'Rapid Plan',
-      subtitle: 'Quick project estimate',
-      color: 'bg-green-600',
-      action: () => {
-        console.log('🎯 MobileOptimizedHome: Rapid Plan clicked');
-        window.dispatchEvent(new CustomEvent('show-rapid-assessment'));
-      }
+      id: 'expert-help',
+      icon: HelpCircle,
+      title: 'Expert Help',
+      subtitle: 'Get assistance',
+      color: 'bg-emerald-600',
+      action: () => window.dispatchEvent(new CustomEvent('show-help-popup'))
     }
   ];
 
   const utilityApps = [
     {
-      id: 'expert-help',
-      icon: HelpCircle,
-      title: 'Expert Help',
-      color: 'bg-emerald-600',
-      action: () => window.dispatchEvent(new CustomEvent('show-help-popup'))
+      id: 'project-catalog',
+      icon: BookOpen,
+      title: 'Project Catalog',
+      color: 'bg-cyan-600',
+      action: () => navigate('/projects')
+    },
+    {
+      id: 'rapid-plan',
+      icon: Calculator,
+      title: 'Rapid Plan',
+      color: 'bg-green-600',
+      action: () => {
+        console.log('🎯 MobileOptimizedHome: Rapid Plan clicked');
+        window.dispatchEvent(new CustomEvent('show-rapid-assessment'));
+      }
     },
     {
       id: 'tool-rentals',
@@ -100,6 +99,13 @@ export function MobileOptimizedHome() {
       title: 'Tool Access',
       color: 'bg-indigo-600',
       action: () => window.dispatchEvent(new CustomEvent('show-tool-rentals'))
+    },
+    {
+      id: 'tool-library',
+      icon: Wrench,
+      title: 'My Tools',
+      color: 'bg-orange-600',
+      action: () => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))
     },
     {
       id: 'profile',
@@ -114,13 +120,6 @@ export function MobileOptimizedHome() {
       title: 'My Homes',
       color: 'bg-slate-600',
       action: () => window.dispatchEvent(new CustomEvent('show-home-manager'))
-    },
-    {
-      id: 'tool-library',
-      icon: Wrench,
-      title: 'My Tools',
-      color: 'bg-orange-600',
-      action: () => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))
     }
   ];
 
@@ -245,7 +244,7 @@ export function MobileOptimizedHome() {
         {/* Quick Actions */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-3">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {quickActions.map((action) => {
               const Icon = action.icon;
               return (
@@ -270,7 +269,7 @@ export function MobileOptimizedHome() {
         {/* All Apps */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-3">All Apps</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {utilityApps.map((app) => {
               const Icon = app.icon;
               return (
