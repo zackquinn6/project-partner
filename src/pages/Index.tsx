@@ -226,7 +226,6 @@ const Index = () => {
     // Add the mobile-specific event listeners
     window.addEventListener('show-rapid-assessment', handleShowRapidAssessment);
     window.addEventListener('show-home-manager', handleShowHomeManager);
-    window.addEventListener('show-home-maintenance', handleShowHomeMaintenanceWindow);
     window.addEventListener('show-user-tools-materials', handleShowUserToolsMaterials);
     window.addEventListener('open-profile-manager', handleOpenProfileManager);
     window.addEventListener('show-kc-explainer', handleShowKCExplainer);
@@ -250,7 +249,6 @@ const Index = () => {
       // Clean up mobile-specific listeners
       window.removeEventListener('show-rapid-assessment', handleShowRapidAssessment);
       window.removeEventListener('show-home-manager', handleShowHomeManager);
-      window.removeEventListener('show-home-maintenance', handleShowHomeMaintenanceWindow);
       window.removeEventListener('show-user-tools-materials', handleShowUserToolsMaterials);
       window.removeEventListener('open-profile-manager', handleOpenProfileManager);
       window.removeEventListener('show-kc-explainer', handleShowKCExplainer);

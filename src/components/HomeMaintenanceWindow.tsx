@@ -400,10 +400,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="history" className="space-y-4 mt-0">
-                  <div className="max-h-[60vh] overflow-y-auto">
-                    <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
-                  </div>
+                <TabsContent value="history" className="space-y-2">
+                  <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                 </TabsContent>
 
                 <TabsContent value="notifications" className="space-y-4">
