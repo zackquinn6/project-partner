@@ -29,7 +29,7 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => window.dispatchEvent(new CustomEvent('show-user-tools-materials'))}
+                onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}
                 className="text-xs px-3 py-1 h-7"
               >
                 <Wrench className="h-3 w-3 mr-1" />
