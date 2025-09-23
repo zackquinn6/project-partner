@@ -32,6 +32,8 @@ import ProfileManager from '@/components/ProfileManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
+// Force rebuild to clear cache
+
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
