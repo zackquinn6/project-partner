@@ -124,14 +124,14 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
   const filteredCompletions = getFilteredAndSortedCompletions();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* Filters - matching Active tab spacing */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4 shrink-0">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="mt-1">
             <SelectItem value="all">All Categories</SelectItem>
             {categories.map(category => (
               <SelectItem key={category} value={category}>
@@ -145,7 +145,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="mt-1">
             <SelectItem value="date-desc">Date (Newest First)</SelectItem>
             <SelectItem value="date-asc">Date (Oldest First)</SelectItem>
             <SelectItem value="category">Category</SelectItem>
