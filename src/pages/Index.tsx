@@ -23,9 +23,11 @@ import { RapidProjectAssessment } from '@/components/RapidProjectAssessment';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
-// Removed unused imports: HomeMaintenanceWindow, HomeManager, RapidProjectAssessment, UserToolsMaterialsWindow
 import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
+import { HomeManager } from '@/components/HomeManager';
+import { HomeMaintenanceWindow } from '@/components/HomeMaintenanceWindow';
+import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow';
 import ProfileManager from '@/components/ProfileManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -50,8 +52,11 @@ const Index = () => {
   const [showContractorFinder, setShowContractorFinder] = useState(false);
   const [showCommunityPosts, setShowCommunityPosts] = useState(false);
   const [showAIRepair, setShowAIRepair] = useState(false);
-  // showRapidAssessment and showUserToolsMaterials removed - handled by Navigation.tsx
   const [showProfileManager, setShowProfileManager] = useState(false);
+  const [showRapidAssessment, setShowRapidAssessment] = useState(false);
+  const [showHomeManager, setShowHomeManager] = useState(false);
+  const [showHomeMaintenanceWindow, setShowHomeMaintenanceWindow] = useState(false);
+  const [showUserToolsMaterials, setShowUserToolsMaterials] = useState(false);
 
   // Add debug logging for modal state
   useEffect(() => {
@@ -145,6 +150,26 @@ const Index = () => {
       setShowContractorFinder(true);
     };
 
+    // Mobile-only event handlers (since Navigation isn't rendered on mobile)
+    const handleShowRapidAssessment = () => {
+      setShowRapidAssessment(true);
+    };
+
+    const handleShowHomeManager = () => {
+      setShowHomeManager(true);
+    };
+
+    const handleShowHomeMaintenanceWindow = () => {
+      setShowHomeMaintenanceWindow(true);
+    };
+
+    const handleShowUserToolsMaterials = () => {
+      setShowUserToolsMaterials(true);
+    };
+
+    const handleOpenProfileManager = () => {
+      setShowProfileManager(true);
+    };
 
     const handleProjectsNavigation = () => {
       console.log('🔄 Index: "My Projects" clicked from PostAuthLanding');
@@ -204,8 +229,17 @@ const Index = () => {
       window.removeEventListener('show-ai-repair', handleShowAIRepair);
       window.removeEventListener('show-code-permits', handleShowCodePermits);
       window.removeEventListener('show-contractor-finder', handleShowContractorFinder);
+      
+      // Clean up mobile-only listeners
+      if (isMobile) {
+        window.removeEventListener('show-rapid-assessment', handleShowRapidAssessment);
+        window.removeEventListener('show-home-manager', handleShowHomeManager);
+        window.removeEventListener('show-home-maintenance', handleShowHomeMaintenanceWindow);
+        window.removeEventListener('show-user-tools-materials', handleShowUserToolsMaterials);
+        window.removeEventListener('open-profile-manager', handleOpenProfileManager);
+      }
     };
-  }, [navigate]);
+  }, [isMobile, navigate]);
 
   // Define functions BEFORE they are used in useEffect
   const handleProjectsView = () => {
@@ -379,9 +413,7 @@ const Index = () => {
         onClose={() => setShowHelpPopup(false)}
       />
       
-      {/* Mobile App Modals */}
-      {/* All duplicate windows removed - handled by Navigation.tsx */}
-      {/* RapidProjectAssessment, UserToolsMaterialsWindow, etc. are handled by Navigation.tsx */}
+      {/* Mobile App Modals - Re-added for mobile compatibility */}
       
       <ToolRentalsWindow
         isOpen={showToolRentals}
@@ -411,6 +443,33 @@ const Index = () => {
       <ProfileManager
         open={showProfileManager}
         onOpenChange={setShowProfileManager}
+      />
+
+      {/* Mobile-specific modals */}
+      <Dialog open={showRapidAssessment} onOpenChange={setShowRapidAssessment}>
+        <DialogContent className="w-full h-full sm:max-w-7xl sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
+          <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
+            <DialogTitle>Rapid Project Assessment</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
+            <RapidProjectAssessment />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <HomeManager
+        open={showHomeManager}
+        onOpenChange={setShowHomeManager}
+      />
+
+      <HomeMaintenanceWindow
+        open={showHomeMaintenanceWindow}
+        onOpenChange={setShowHomeMaintenanceWindow}
+      />
+
+      <UserToolsMaterialsWindow
+        open={showUserToolsMaterials}
+        onOpenChange={setShowUserToolsMaterials}
       />
     </div>
   );
