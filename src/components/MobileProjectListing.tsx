@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Filter, Plus, SortAsc } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { MobileProjectCard } from './MobileProjectCard';
@@ -17,7 +16,7 @@ interface MobileProjectListingProps {
 export function MobileProjectListing({ onProjectSelect, onNewProject }: MobileProjectListingProps) {
   const { projects, projectRuns, currentProjectRun } = useProject();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'active' | 'templates' | 'completed'>('active');
+  const [showTemplates, setShowTemplates] = useState(false);
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'progress'>('recent');
 
   // Filter and sort project runs
@@ -25,29 +24,23 @@ export function MobileProjectListing({ onProjectSelect, onNewProject }: MobilePr
     let filtered = projectRuns.filter(run => {
       const matchesSearch = run.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           run.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      if (activeTab === 'active') {
-        return matchesSearch && (run.progress || 0) < 100;
-      } else if (activeTab === 'completed') {
-        return matchesSearch && (run.progress || 0) >= 100;
-      }
-      return false;
+      return matchesSearch;
     });
 
-    // Sort
+    // Sort by progress (active first, then completed)
     return filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'progress':
-          return (b.progress || 0) - (a.progress || 0);
-        case 'recent':
-        default:
-          return new Date(b.updatedAt || b.createdAt).getTime() - 
-                 new Date(a.updatedAt || a.createdAt).getTime();
-      }
+      const aProgress = a.progress || 0;
+      const bProgress = b.progress || 0;
+      
+      // Active projects first
+      if (aProgress < 100 && bProgress >= 100) return -1;
+      if (bProgress < 100 && aProgress >= 100) return 1;
+      
+      // Within same category, sort by recent activity
+      return new Date(b.updatedAt || b.createdAt).getTime() - 
+             new Date(a.updatedAt || a.createdAt).getTime();
     });
-  }, [projectRuns, searchQuery, activeTab, sortBy]);
+  }, [projectRuns, searchQuery, sortBy]);
 
   // Filter project templates
   const filteredProjects = useMemo(() => {
@@ -59,10 +52,9 @@ export function MobileProjectListing({ onProjectSelect, onNewProject }: MobilePr
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [projects, searchQuery]);
 
-  // Get counts for tabs
+  // Get counts
   const activeCount = projectRuns.filter(run => (run.progress || 0) < 100).length;
   const completedCount = projectRuns.filter(run => (run.progress || 0) >= 100).length;
-  const templatesCount = projects.length;
 
   return (
     <div className="flex flex-col h-full">
@@ -101,7 +93,7 @@ export function MobileProjectListing({ onProjectSelect, onNewProject }: MobilePr
         </div>
 
         {/* Continue Current Project (if any) */}
-        {currentProjectRun && activeTab === 'active' && (
+        {currentProjectRun && !showTemplates && (
           <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
@@ -121,101 +113,113 @@ export function MobileProjectListing({ onProjectSelect, onNewProject }: MobilePr
         )}
       </div>
 
-      {/* Tabs */}
+      {/* Toggle between Projects and Templates */}
       <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mx-4 mb-4">
-            <TabsTrigger value="active" className="relative">
-              Active
-              {activeCount > 0 && (
-                <Badge className="ml-2 bg-primary text-primary-foreground text-xs h-5 w-5 rounded-full p-0 flex items-center justify-center">
-                  {activeCount}
+        <div className="px-4 mb-4">
+          <div className="flex gap-2">
+            <Button
+              variant={!showTemplates ? "default" : "outline"}
+              onClick={() => setShowTemplates(false)}
+              className="flex-1"
+            >
+              My Projects
+              {(activeCount + completedCount) > 0 && (
+                <Badge className="ml-2 bg-background text-foreground text-xs h-5 w-5 rounded-full p-0 flex items-center justify-center">
+                  {activeCount + completedCount}
                 </Badge>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="relative">
+            </Button>
+            <Button
+              variant={showTemplates ? "default" : "outline"}
+              onClick={() => setShowTemplates(true)}
+              className="flex-1"
+            >
               Templates
-              {templatesCount > 0 && (
-                <Badge className="ml-2 bg-muted text-muted-foreground text-xs h-5 w-5 rounded-full p-0 flex items-center justify-center">
-                  {templatesCount}
+              {filteredProjects.length > 0 && (
+                <Badge className="ml-2 bg-background text-foreground text-xs h-5 w-5 rounded-full p-0 flex items-center justify-center">
+                  {filteredProjects.length}
                 </Badge>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="relative">
-              Done
-              {completedCount > 0 && (
-                <Badge className="ml-2 bg-green-100 text-green-700 text-xs h-5 w-5 rounded-full p-0 flex items-center justify-center">
-                  {completedCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
-        <Tabs value={activeTab} className="h-full">
-          <TabsContent value="active" className="p-4 space-y-3 mt-0">
-            {filteredProjectRuns.length > 0 ? (
-              filteredProjectRuns.map((run) => (
-                <MobileProjectCard
-                  key={run.id}
-                  project={run}
-                  variant="run"
-                  onSelect={() => onProjectSelect(run)}
-                />
-              ))
-            ) : (
+      <div className="flex-1 overflow-auto p-4 space-y-3">
+        {showTemplates ? (
+          // Templates view
+          filteredProjects.length > 0 ? (
+            filteredProjects.map((project) => (
+              <MobileProjectCard
+                key={project.id}
+                project={project}
+                variant="project"
+                onSelect={() => onProjectSelect(project)}
+              />
+            ))
+          ) : (
+            <EmptyState
+              title="No templates found"
+              description="Try adjusting your search"
+              actionLabel="Clear Search"
+              onAction={() => setSearchQuery('')}
+            />
+          )
+        ) : (
+          // Projects view - active and completed together
+          <>
+            {/* Active Projects Section */}
+            {filteredProjectRuns.filter(run => (run.progress || 0) < 100).length > 0 && (
+              <>
+                <div className="text-sm font-medium text-muted-foreground px-1 mb-2">
+                  Active Projects ({activeCount})
+                </div>
+                {filteredProjectRuns
+                  .filter(run => (run.progress || 0) < 100)
+                  .map((run) => (
+                    <MobileProjectCard
+                      key={run.id}
+                      project={run}
+                      variant="run"
+                      onSelect={() => onProjectSelect(run)}
+                    />
+                  ))
+                }
+              </>
+            )}
+
+            {/* Completed Projects Section */}
+            {filteredProjectRuns.filter(run => (run.progress || 0) >= 100).length > 0 && (
+              <>
+                <div className="text-sm font-medium text-muted-foreground px-1 mb-2 mt-6">
+                  Completed Projects ({completedCount})
+                </div>
+                {filteredProjectRuns
+                  .filter(run => (run.progress || 0) >= 100)
+                  .map((run) => (
+                    <MobileProjectCard
+                      key={run.id}
+                      project={run}
+                      variant="run"
+                      onSelect={() => onProjectSelect(run)}
+                    />
+                  ))
+                }
+              </>
+            )}
+
+            {/* Empty State */}
+            {filteredProjectRuns.length === 0 && (
               <EmptyState
-                title="No active projects"
+                title="No projects yet"
                 description="Start a new project from our templates"
                 actionLabel="Browse Templates"
-                onAction={() => setActiveTab('templates')}
+                onAction={() => setShowTemplates(true)}
               />
             )}
-          </TabsContent>
-
-          <TabsContent value="templates" className="p-4 space-y-3 mt-0">
-            {filteredProjects.length > 0 ? (
-              filteredProjects.map((project) => (
-                <MobileProjectCard
-                  key={project.id}
-                  project={project}
-                  variant="project"
-                  onSelect={() => onProjectSelect(project)}
-                />
-              ))
-            ) : (
-              <EmptyState
-                title="No templates found"
-                description="Try adjusting your search"
-                actionLabel="Clear Search"
-                onAction={() => setSearchQuery('')}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="completed" className="p-4 space-y-3 mt-0">
-            {filteredProjectRuns.length > 0 ? (
-              filteredProjectRuns.map((run) => (
-                <MobileProjectCard
-                  key={run.id}
-                  project={run}
-                  variant="run"
-                  onSelect={() => onProjectSelect(run)}
-                />
-              ))
-            ) : (
-              <EmptyState
-                title="No completed projects"
-                description="Finish a project to see it here"
-                actionLabel="View Active"
-                onAction={() => setActiveTab('active')}
-              />
-            )}
-          </TabsContent>
-        </Tabs>
+          </>
+        )}
       </div>
     </div>
   );

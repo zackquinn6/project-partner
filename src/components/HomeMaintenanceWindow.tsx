@@ -267,7 +267,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 onClick={() => onOpenChange(false)}
                 className="sm:hidden text-xs px-2 py-1 h-6"
               >
-                close
+                Close
               </Button>
             </div>
           </DialogHeader>
@@ -407,13 +407,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="history" className="space-y-4">
-                  {/* Category Filter */}
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">History filters are within the history component</span>
-                  </div>
-
+                <TabsContent value="history" className="space-y-4 mt-0">
                   <div className="max-h-[60vh] overflow-y-auto">
                     <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                   </div>

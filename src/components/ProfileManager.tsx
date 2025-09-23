@@ -198,11 +198,20 @@ export default function ProfileManager({
   }
   return <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="text-center">
-            <DialogTitle className="text-2xl font-bold">My Profile</DialogTitle>
+        <DialogContent className="w-full h-full sm:max-w-2xl sm:max-h-[90vh] overflow-y-auto border-none sm:border p-0 sm:p-6">
+          <DialogHeader className="text-center p-4 sm:p-0 border-b sm:border-none">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl font-bold">My Profile</DialogTitle>
+              <Button 
+                variant="ghost" 
+                onClick={() => onOpenChange(false)}
+                className="sm:hidden text-xs px-2 py-1 h-6"
+              >
+                Close
+              </Button>
+            </div>
           </DialogHeader>
-          <div className="py-6">
+          <div className="py-6 px-4 sm:px-0">
             {renderProfileView()}
           </div>
         </DialogContent>

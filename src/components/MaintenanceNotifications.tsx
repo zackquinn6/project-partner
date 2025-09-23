@@ -102,6 +102,7 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
               id="email-enabled"
               checked={emailEnabled}
               onCheckedChange={(checked) => setEmailEnabled(checked === true)}
+              className="sm:h-5 sm:w-5 h-3 w-3"
             />
             <Label htmlFor="email-enabled" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -136,24 +137,25 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
 
         {/* SMS Settings */}
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="sms-enabled"
-              checked={smsEnabled}
-              onCheckedChange={(checked) => {
-                if (checked) {
-                  showSMSNotAvailable();
-                } else {
-                  setSmsEnabled(false);
-                }
-              }}
-            />
-            <Label htmlFor="sms-enabled" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Enable SMS Notifications
-            </Label>
-            <Badge variant="outline">Coming Soon</Badge>
-          </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="sms-enabled"
+                checked={smsEnabled}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    showSMSNotAvailable();
+                  } else {
+                    setSmsEnabled(false);
+                  }
+                }}
+                className="sm:h-5 sm:w-5 h-3 w-3"
+              />
+              <Label htmlFor="sms-enabled" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Enable SMS Notifications
+              </Label>
+              <Badge variant="outline">Coming Soon</Badge>
+            </div>
           
           {smsEnabled && (
             <div className="ml-6 space-y-3">
@@ -186,6 +188,7 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
                 id="notify-monthly"
                 checked={notifyMonthly}
                 onCheckedChange={(checked) => setNotifyMonthly(checked === true)}
+                className="sm:h-5 sm:w-5 h-3 w-3"
               />
               <Label htmlFor="notify-monthly">
                 Tasks due in the upcoming month
@@ -197,6 +200,7 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
                 id="notify-weekly"
                 checked={notifyWeekly}
                 onCheckedChange={(checked) => setNotifyWeekly(checked === true)}
+                className="sm:h-5 sm:w-5 h-3 w-3"
               />
               <Label htmlFor="notify-weekly">
                 Tasks due in the upcoming week
@@ -208,6 +212,7 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
                 id="notify-due-date"
                 checked={notifyDueDate}
                 onCheckedChange={(checked) => setNotifyDueDate(checked === true)}
+                className="sm:h-5 sm:w-5 h-3 w-3"
               />
               <Label htmlFor="notify-due-date">
                 Tasks due today

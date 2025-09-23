@@ -471,13 +471,13 @@ export function RapidProjectAssessment() {
               Rapid Plan
             </CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setCurrentView('list')}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to List
+              <Button variant="outline" onClick={() => setCurrentView('list')} className="sm:px-4">
+                <ArrowLeft className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Back to List</span>
               </Button>
-              <Button onClick={saveProject} disabled={isLoading}>
-                <Save className="w-4 h-4 mr-2" />
-                {isLoading ? "Saving..." : project.id ? "Update" : "Save"} Assessment
+              <Button onClick={saveProject} disabled={isLoading} className="sm:px-4">
+                <Save className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">{isLoading ? "Saving..." : project.id ? "Update" : "Save"} Assessment</span>
               </Button>
             </div>
           </div>

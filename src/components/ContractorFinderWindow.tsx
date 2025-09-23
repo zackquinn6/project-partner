@@ -31,7 +31,7 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
                 onClick={() => onOpenChange(false)}
                 className="sm:hidden text-xs px-2 py-1 h-6"
               >
-                close
+                Close
               </Button>
             </div>
           </DialogHeader>

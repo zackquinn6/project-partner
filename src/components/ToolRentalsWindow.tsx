@@ -18,15 +18,25 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Wrench className="h-6 w-6 text-primary" />
-            Tool Access & Rentals
-          </DialogTitle>
+      <DialogContent className="w-full h-full sm:max-w-6xl sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
+        <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="h-6 w-6 text-primary" />
+              Tool Access & Rentals
+            </DialogTitle>
+            <Button 
+              variant="ghost" 
+              onClick={onClose}
+              className="sm:hidden text-xs px-2 py-1 h-6"
+            >
+              Close
+            </Button>
+          </div>
         </DialogHeader>
         
-        <Tabs defaultValue="finder" className="w-full h-full">
+        <div className="p-4 sm:p-0">
+          <Tabs defaultValue="finder" className="w-full h-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="finder">Tool Access Finder</TabsTrigger>
             <TabsTrigger value="toolio">Toolio (Boston, MA)</TabsTrigger>
@@ -144,7 +154,8 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
               </div>
             </div>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
