@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, AlertTriangle, Star, Shield, HelpCircle, X } from "lucide-react";
 import { Operation, Output } from "@/interfaces/Project";
+import { KeyCharacteristicsExplainer } from "./KeyCharacteristicsExplainer";
 
 interface KeyCharacteristicsWindowProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface KeyCharacteristicsWindowProps {
 export function KeyCharacteristicsWindow({ open, onOpenChange, operations }: KeyCharacteristicsWindowProps) {
   const [selectedOperationIndex, setSelectedOperationIndex] = useState(0);
   const [showHelpPopup, setShowHelpPopup] = useState(false);
+  const [showKCExplainer, setShowKCExplainer] = useState(false);
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
 
   const getCurrentOperation = () => operations[selectedOperationIndex];
@@ -217,18 +219,27 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations }: Key
             <DialogTitle className="text-lg font-bold">What are Key Characteristics (KC's)?</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-            <p>
-              Ever skip the manual? That's why we created KC's—your quick guide to what really matters in each project. 
-              Think of them as the essentials: the key things you need to get right for success.
+            <p className="text-primary font-medium">
+              KCs are the way that engineered processes are personalized to each builder.
             </p>
             <p>
-              Step‑by‑step instructions are still there if you want the full detail, but KC's cut through the noise. 
-              They highlight the must‑do's that make or break a step, so you can work smarter, not slower.
+              Key Characteristics match instruction detail to your skill level. Whether you're a beginner who needs 
+              step-by-step guidance or an expert who just needs quick reminders, KCs deliver the right level of detail 
+              for successful project completion.
             </p>
-            <p>
-              Whether you're new to DIY or a seasoned builder, KC's save you time, reduce frustration, and keep your 
-              project on track—without forcing you to follow every line like a robot.
-            </p>
+            <div className="flex justify-center mt-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setShowHelpPopup(false);
+                  setShowKCExplainer(true);
+                }}
+                className="text-primary border-primary hover:bg-primary/10"
+              >
+                Learn More About Key Characteristics
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -306,6 +317,12 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations }: Key
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Key Characteristics Detailed Explainer */}
+      <KeyCharacteristicsExplainer 
+        open={showKCExplainer} 
+        onOpenChange={setShowKCExplainer} 
+      />
     </>
   );
 }

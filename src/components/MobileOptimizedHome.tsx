@@ -241,6 +241,22 @@ export function MobileOptimizedHome() {
           </div>
         </div>
 
+        {/* Key Characteristics Section */}
+        <div className="bg-gradient-subtle p-4 rounded-lg">
+          <h2 className="text-lg font-semibold text-foreground mb-2">🔑 Key Characteristics</h2>
+          <p className="text-sm text-muted-foreground mb-3">
+            KCs are the way that engineered processes are personalized to each builder. Get the right level of detail for your skill level.
+          </p>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.dispatchEvent(new CustomEvent('show-kc-explainer'))}
+            className="text-primary border-primary hover:bg-primary/10 text-xs px-3 py-1 h-7"
+          >
+            Learn More
+          </Button>
+        </div>
+
         {/* Quick Actions */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-3">Quick Actions</h2>

@@ -9,6 +9,7 @@ import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
+import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2 } from 'lucide-react';
 interface HomeProps {
@@ -42,6 +43,7 @@ export default function Home({
   const [isAIRepairOpen, setIsAIRepairOpen] = useState(false);
   const [isCodePermitsOpen, setIsCodePermitsOpen] = useState(false);
   const [isContractorFinderOpen, setIsContractorFinderOpen] = useState(false);
+  const [isKCExplainerOpen, setIsKCExplainerOpen] = useState(false);
   const [stats, setStats] = useState({
     activeProjects: 0,
     completedProjects: 0
@@ -354,6 +356,23 @@ export default function Home({
               Access all your home management tools with beautiful, intuitive apps designed for homeowners.
             </p>
             
+            {/* Key Characteristics Section */}
+            <div className="bg-gradient-subtle p-6 rounded-lg max-w-4xl mx-auto mb-12">
+              <h3 className="text-xl font-semibold text-foreground mb-3">🔑 Key Characteristics: Engineered Processes, Personalized</h3>
+              <p className="text-muted-foreground mb-4">
+                KCs are the way that engineered processes are personalized to each builder. Get the right level of detail 
+                for your skill level—from step-by-step for beginners to quick reminders for experts.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsKCExplainerOpen(true)}
+                className="text-primary border-primary hover:bg-primary/10"
+              >
+                Learn More About Key Characteristics
+              </Button>
+            </div>
+            
             {/* App List */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-5xl mx-auto mb-12">
               <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
@@ -465,5 +484,7 @@ export default function Home({
       <CodePermitsWindow open={isCodePermitsOpen} onOpenChange={setIsCodePermitsOpen} />
       
       <ContractorFinderWindow open={isContractorFinderOpen} onOpenChange={setIsContractorFinderOpen} />
+      
+      <KeyCharacteristicsExplainer open={isKCExplainerOpen} onOpenChange={setIsKCExplainerOpen} />
     </div>;
 }

@@ -31,6 +31,7 @@ import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow'
 import ProfileManager from '@/components/ProfileManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
 
 // Force rebuild to clear cache
 
@@ -60,6 +61,7 @@ const Index = () => {
   const [showHomeManager, setShowHomeManager] = useState(false);
   const [showHomeMaintenanceWindow, setShowHomeMaintenanceWindow] = useState(false);
   const [showUserToolsMaterials, setShowUserToolsMaterials] = useState(false);
+  const [showKCExplainer, setShowKCExplainer] = useState(false);
 
   // Add debug logging for modal state
   useEffect(() => {
@@ -170,6 +172,10 @@ const Index = () => {
       setShowUserToolsMaterials(true);
     };
 
+    const handleShowKCExplainer = () => {
+      setShowKCExplainer(true);
+    };
+
     const handleOpenProfileManager = () => {
       setShowProfileManager(true);
     };
@@ -223,6 +229,7 @@ const Index = () => {
     window.addEventListener('show-home-maintenance', handleShowHomeMaintenanceWindow);
     window.addEventListener('show-user-tools-materials', handleShowUserToolsMaterials);
     window.addEventListener('open-profile-manager', handleOpenProfileManager);
+    window.addEventListener('show-kc-explainer', handleShowKCExplainer);
     
     return () => {
       window.removeEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
@@ -246,6 +253,7 @@ const Index = () => {
       window.removeEventListener('show-home-maintenance', handleShowHomeMaintenanceWindow);
       window.removeEventListener('show-user-tools-materials', handleShowUserToolsMaterials);
       window.removeEventListener('open-profile-manager', handleOpenProfileManager);
+      window.removeEventListener('show-kc-explainer', handleShowKCExplainer);
     };
   }, [isMobile, navigate]);
 
@@ -488,6 +496,11 @@ const Index = () => {
       <UserToolsMaterialsWindow
         open={showUserToolsMaterials}
         onOpenChange={setShowUserToolsMaterials}
+      />
+
+      <KeyCharacteristicsExplainer
+        open={showKCExplainer}
+        onOpenChange={setShowKCExplainer}
       />
     </div>
   );
