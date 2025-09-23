@@ -36,12 +36,12 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
                 My Tool Library
               </Button>
               <Button 
-                variant="ghost" 
-                onClick={onClose}
-                className="sm:hidden text-xs px-2 py-1 h-6"
-              >
-                Close
-              </Button>
+                 variant="ghost" 
+                 onClick={onClose}
+                 className="sm:hidden text-xs px-2 py-1 h-6"
+               >
+                 Close
+               </Button>
             </div>
           </div>
         </DialogHeader>

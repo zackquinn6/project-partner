@@ -22,6 +22,7 @@ import { RapidProjectAssessment } from './RapidProjectAssessment';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AIRepairWindow } from './AIRepairWindow';
 import { ContractorFinderWindow } from './ContractorFinderWindow';
+import { HelpPopup } from './HelpPopup';
 
 interface NavigationProps {
   currentView: 'home' | 'admin' | 'user' | 'editWorkflow';
@@ -55,6 +56,7 @@ export default function Navigation({
   const [isToolsLibraryGridOpen, setIsToolsLibraryGridOpen] = useState(false);
   const [isAIRepairOpen, setIsAIRepairOpen] = useState(false);
   const [isContractorFinderOpen, setIsContractorFinderOpen] = useState(false);
+  const [isHelpPopupOpen, setIsHelpPopupOpen] = useState(false);
   
   // Add error boundary for useProject hook
   let projectData;
@@ -141,7 +143,13 @@ export default function Navigation({
     const handleHelpPopupEvent = (event: Event) => {
       console.log('handleHelpPopupEvent triggered');
       event.stopPropagation();
-      setIsDocumentationOpen(true);
+      setIsHelpPopupOpen(true);
+    };
+
+    const handleExpertHelpPopupEvent = (event: Event) => {
+      console.log('handleExpertHelpPopupEvent triggered');
+      event.stopPropagation();
+      setIsHelpPopupOpen(true);
     };
 
     const handleAIRepairEvent = (event: Event) => {
@@ -168,6 +176,7 @@ export default function Navigation({
     window.addEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
     window.addEventListener('navigate-to-projects', handleNavigateToProjectsEvent);
     window.addEventListener('show-help-popup', handleHelpPopupEvent);
+    window.addEventListener('show-expert-help-popup', handleExpertHelpPopupEvent);
     window.addEventListener('show-ai-repair', handleAIRepairEvent);
     window.addEventListener('show-contractor-finder', handleContractorFinderEvent);
     
@@ -184,6 +193,7 @@ export default function Navigation({
       window.removeEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
       window.removeEventListener('navigate-to-projects', handleNavigateToProjectsEvent);
       window.removeEventListener('show-help-popup', handleHelpPopupEvent);
+      window.removeEventListener('show-expert-help-popup', handleExpertHelpPopupEvent);
       window.removeEventListener('show-ai-repair', handleAIRepairEvent);
       window.removeEventListener('show-contractor-finder', handleContractorFinderEvent);
     };
@@ -275,7 +285,7 @@ export default function Navigation({
                     </Button>
                   </DropdownMenuTrigger>
                    <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg z-[60] backdrop-blur-sm">
-                     <DropdownMenuItem onClick={() => setIsProfileOpen(true)}>
+                     <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
                        <User className="w-4 h-4 mr-2 text-blue-500" />
                        My Profile
                      </DropdownMenuItem>
@@ -418,6 +428,11 @@ export default function Navigation({
         <ContractorFinderWindow 
           open={isContractorFinderOpen}
           onOpenChange={setIsContractorFinderOpen}
+        />
+        
+        <HelpPopup 
+          isOpen={isHelpPopupOpen}
+          onClose={() => setIsHelpPopupOpen(false)}
         />
     </>
   );

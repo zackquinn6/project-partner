@@ -41,17 +41,24 @@ export function UserToolsMaterialsWindow({ open, onOpenChange, initialToolsMode 
             <DialogTitle className="text-sm sm:text-base">
               {currentMode === 'add-tools' ? 'Add to Library' : 'My Tools Library'}
             </DialogTitle>
+            <Button 
+              variant="ghost" 
+              onClick={() => onOpenChange(false)}
+              className="sm:hidden text-xs px-2 py-1 h-6"
+            >
+              Close
+            </Button>
           </div>
         </DialogHeader>
         
         <div className="p-4 sm:p-0">
-          <Tabs defaultValue="tools" className="w-full h-full">
+          <Tabs defaultValue="tools" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="tools">My Tools</TabsTrigger>
               <TabsTrigger value="materials">My Materials</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="tools" className="h-full">
+            <TabsContent value="tools" className="mt-4 min-h-[60vh]">
               <UserToolsEditor 
                 initialMode={currentMode}
                 onBackToLibrary={() => setCurrentMode('library')}
@@ -59,7 +66,7 @@ export function UserToolsMaterialsWindow({ open, onOpenChange, initialToolsMode 
               />
             </TabsContent>
             
-            <TabsContent value="materials" className="h-full">
+            <TabsContent value="materials" className="mt-4 min-h-[60vh]">
               <UserMaterialsEditor 
                 initialMode={'library'}
                 onBackToLibrary={() => setCurrentMode('library')}

@@ -301,15 +301,24 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
   }
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Home className="w-5 h-5" />
-            Manage Your Homes
-          </DialogTitle>
+      <DialogContent className="w-full h-full sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto border-none sm:border p-0 sm:p-6">
+        <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <Home className="w-5 h-5" />
+              Manage Your Homes
+            </DialogTitle>
+            <Button 
+              variant="ghost" 
+              onClick={() => onOpenChange(false)}
+              className="sm:hidden text-xs px-2 py-1 h-6"
+            >
+              Close
+            </Button>
+          </div>
         </DialogHeader>
 
-        {!showForm ? <div className="space-y-6">
+        {!showForm ? <div className="space-y-6 p-4 sm:p-0">
             {/* Header */}
             <div className="flex justify-between items-center">
               <p className="text-muted-foreground">
@@ -396,7 +405,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
                   </Card>)}
               </div>}
           </div> : (/* Form */
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 p-4 sm:p-0">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">
                 {editingHome ? 'Edit Home' : 'Add New Home'}

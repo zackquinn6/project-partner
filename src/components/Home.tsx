@@ -244,41 +244,41 @@ export default function Home({
                   <span className="text-xs font-medium text-black text-center leading-tight px-1">Community</span>
                 </div>
 
-                <div className="flex flex-col items-center group cursor-pointer" onClick={() => setIsContractorFinderOpen(true)}>
-                  <div className="relative">
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.contractorFinder} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                      <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                    </div>
-                    <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full border-2 border-white">
-                      BETA
-                    </Badge>
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-contractor-finder'))}>
+                <div className="relative">
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.contractorFinder} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                    <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                   </div>
-                  <span className="text-xs font-medium text-black text-center leading-tight px-1">Contractor Finder</span>
+                  <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full border-2 border-white">
+                    BETA
+                  </Badge>
                 </div>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">Contractor Finder</span>
+              </div>
 
-                <div className="flex flex-col items-center group cursor-pointer" onClick={() => setIsAIRepairOpen(true)}>
-                  <div className="relative">
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.aiRepair} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                      <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                    </div>
-                    <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full border-2 border-white">
-                      BETA
-                    </Badge>
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-ai-repair'))}>
+                <div className="relative">
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.aiRepair} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                    <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                   </div>
-                  <span className="text-xs font-medium text-black text-center leading-tight px-1">AI Repair</span>
+                  <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full border-2 border-white">
+                    BETA
+                  </Badge>
                 </div>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">AI Repair</span>
+              </div>
 
-                <div className="flex flex-col items-center group cursor-pointer" onClick={() => setIsCodePermitsOpen(true)}>
-                  <div className="relative">
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.codePermits} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                      <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                    </div>
-                    <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full border-2 border-white">
-                      BETA
-                    </Badge>
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => setIsCodePermitsOpen(true)}>
+                <div className="relative">
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.codePermits} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                    <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                   </div>
-                  <span className="text-xs font-medium text-black text-center leading-tight px-1">Code & Permits</span>
+                  <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full border-2 border-white">
+                    BETA
+                  </Badge>
                 </div>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">Code & Permits</span>
+              </div>
               </div>
             </div>
            </div>

@@ -477,9 +477,9 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                 setShowAddTools(true);
               }
             }}
+            className="w-8 h-8 p-0"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Tools
+            <Plus className="w-4 h-4" />
           </Button>
         </div>
         
