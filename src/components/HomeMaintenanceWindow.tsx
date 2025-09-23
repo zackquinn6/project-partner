@@ -407,13 +407,19 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="history" className="max-w-full overflow-hidden">
+                <TabsContent value="history" className="space-y-4">
+                  {/* Category Filter */}
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">History filters are within the history component</span>
+                  </div>
+
                   <div className="max-h-[60vh] overflow-y-auto">
                     <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                   </div>
                 </TabsContent>
 
-                <TabsContent value="notifications" className="max-w-full overflow-hidden">
+                <TabsContent value="notifications" className="space-y-4">
                   <div className="max-h-[60vh] overflow-y-auto">
                     <MaintenanceNotifications selectedHomeId={selectedHomeId} />
                   </div>

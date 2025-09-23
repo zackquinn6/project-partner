@@ -120,6 +120,13 @@ export default function Navigation({
       setIsUserToolsLibraryOpen(true);
     };
 
+    const handleUserToolsMaterialsEvent = (event: Event) => {
+      console.log('handleUserToolsMaterialsEvent triggered - opening library mode');
+      event.stopPropagation();
+      setUserToolsMode('library');
+      setIsUserToolsLibraryOpen(true);
+    };
+
     window.addEventListener('show-home-manager', handleHomeManagerEvent);
     window.addEventListener('show-tools-materials', handleToolsLibraryEvent);
     window.addEventListener('show-tools-library-grid', handleToolsLibraryGridEvent);
@@ -129,6 +136,7 @@ export default function Navigation({
     window.addEventListener('show-tool-rentals', handleToolRentalsEvent);
     window.addEventListener('show-rapid-assessment', handleRapidAssessmentEvent);
     window.addEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
+    window.addEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
     
     return () => {
       window.removeEventListener('show-home-manager', handleHomeManagerEvent);
@@ -140,6 +148,7 @@ export default function Navigation({
       window.removeEventListener('show-tool-rentals', handleToolRentalsEvent);
       window.removeEventListener('show-rapid-assessment', handleRapidAssessmentEvent);
       window.removeEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
+      window.removeEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
     };
   }, []);
   

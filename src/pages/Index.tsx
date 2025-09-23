@@ -23,14 +23,11 @@ import { RapidProjectAssessment } from '@/components/RapidProjectAssessment';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
-import { HomeMaintenanceWindow } from '@/components/HomeMaintenanceWindow';
-import { HomeManager } from '@/components/HomeManager';
+// Removed unused imports: HomeMaintenanceWindow, HomeManager, RapidProjectAssessment, UserToolsMaterialsWindow
 import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
-import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow';
 import ProfileManager from '@/components/ProfileManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calculator } from 'lucide-react';
 
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
@@ -47,28 +44,23 @@ const Index = () => {
   const [showHelpPopup, setShowHelpPopup] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'profile' | 'help'>('home');
   
-  // Modal states for mobile app buttons
-  const [showRapidAssessment, setShowRapidAssessment] = useState(false);
+  // Modal states for mobile app buttons (removed more duplicates handled by Navigation.tsx)
   const [showToolRentals, setShowToolRentals] = useState(false);
   const [showCodePermits, setShowCodePermits] = useState(false);
   const [showContractorFinder, setShowContractorFinder] = useState(false);
-  const [showHomeMaintenanceMgmt, setShowHomeMaintenanceMgmt] = useState(false);
-  const [showHomeMgmt, setShowHomeMgmt] = useState(false);
   const [showCommunityPosts, setShowCommunityPosts] = useState(false);
   const [showAIRepair, setShowAIRepair] = useState(false);
-  const [showUserToolsMaterials, setShowUserToolsMaterials] = useState(false);
+  // showRapidAssessment and showUserToolsMaterials removed - handled by Navigation.tsx
   const [showProfileManager, setShowProfileManager] = useState(false);
 
   // Add debug logging for modal state
   useEffect(() => {
     console.log('🔍 Index: Modal states changed:', {
-      showRapidAssessment,
-      showUserToolsMaterials,
       showProfileManager,
       showToolRentals,
       showCodePermits
     });
-  }, [showRapidAssessment, showUserToolsMaterials, showProfileManager, showToolRentals, showCodePermits]);
+  }, [showProfileManager, showToolRentals, showCodePermits]);
 
   // Handle navigation state changes (including view parameter)
   useEffect(() => {
@@ -129,25 +121,12 @@ const Index = () => {
       setShowHelpPopup(true);
     };
 
-    const handleRapidAssessment = () => {
-      console.log('🎯 Index: Rapid Assessment button clicked');
-      setShowRapidAssessment(true);
-    };
+    // handleRapidAssessment removed - handled by Navigation.tsx
 
-    const handleShowHomeMaintenanceMgmt = () => {
-      setShowHomeMaintenanceMgmt(true);
-    };
-
-    const handleShowUserToolsMaterials = () => {
-      setShowUserToolsMaterials(true);
-    };
+    // More handlers removed - handled by Navigation.tsx
 
     const handleShowToolRentals = () => {
       setShowToolRentals(true);
-    };
-
-    const handleShowHomeMgmt = () => {
-      setShowHomeMgmt(true);
     };
 
     const handleShowCommunityPosts = () => {
@@ -203,12 +182,8 @@ const Index = () => {
     window.addEventListener('show-tools-materials', handleToolLibraryNavigation);
     window.addEventListener('show-admin-panel', handleAdminPanelNavigation);
     
-    // Mobile app event listeners
-    window.addEventListener('show-rapid-assessment', handleRapidAssessment);
-    window.addEventListener('show-home-maintenance', handleShowHomeMaintenanceMgmt);
-    window.addEventListener('show-user-tools-materials', handleShowUserToolsMaterials);
+    // Mobile app event listeners (removed more duplicates handled by Navigation.tsx)
     window.addEventListener('show-tool-rentals', handleShowToolRentals);
-    window.addEventListener('show-home-manager', handleShowHomeMgmt);
     window.addEventListener('show-community-posts', handleShowCommunityPosts);
     window.addEventListener('show-ai-repair', handleShowAIRepair);
     window.addEventListener('show-code-permits', handleShowCodePermits);
@@ -223,12 +198,8 @@ const Index = () => {
       window.removeEventListener('show-tools-materials', handleToolLibraryNavigation);
       window.removeEventListener('show-admin-panel', handleAdminPanelNavigation);
       
-      // Mobile app event listener cleanup
-      window.removeEventListener('show-rapid-assessment', handleRapidAssessment);
-      window.removeEventListener('show-home-maintenance', handleShowHomeMaintenanceMgmt);
-      window.removeEventListener('show-user-tools-materials', handleShowUserToolsMaterials);
+      // Mobile app event listener cleanup (removed more duplicates handled by Navigation.tsx)
       window.removeEventListener('show-tool-rentals', handleShowToolRentals);
-      window.removeEventListener('show-home-manager', handleShowHomeMgmt);
       window.removeEventListener('show-community-posts', handleShowCommunityPosts);
       window.removeEventListener('show-ai-repair', handleShowAIRepair);
       window.removeEventListener('show-code-permits', handleShowCodePermits);
@@ -409,19 +380,8 @@ const Index = () => {
       />
       
       {/* Mobile App Modals */}
-      <Dialog open={showRapidAssessment} onOpenChange={setShowRapidAssessment}>
-        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] max-h-[90vh] overflow-hidden p-0">
-          <DialogHeader className="p-4 pb-2 border-b">
-            <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Calculator className="w-5 h-5" />
-              Rapid Plan
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4">
-            <RapidProjectAssessment />
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* All duplicate windows removed - handled by Navigation.tsx */}
+      {/* RapidProjectAssessment, UserToolsMaterialsWindow, etc. are handled by Navigation.tsx */}
       
       <ToolRentalsWindow
         isOpen={showToolRentals}
@@ -438,26 +398,14 @@ const Index = () => {
         onOpenChange={setShowContractorFinder}
       />
       
-      <HomeMaintenanceWindow
-        open={showHomeMaintenanceMgmt}
-        onOpenChange={setShowHomeMaintenanceMgmt}
+      <CommunityPostsWindow
+        open={showCommunityPosts}
+        onOpenChange={setShowCommunityPosts}
       />
-      
-      <HomeManager 
-        open={showHomeMgmt} 
-        onOpenChange={setShowHomeMgmt}
-      />
-      
-      {/* CommunityPostsWindow handled by Navigation component */}
       
       <AIRepairWindow
         open={showAIRepair}
         onOpenChange={setShowAIRepair}
-      />
-      
-      <UserToolsMaterialsWindow
-        open={showUserToolsMaterials}
-        onOpenChange={setShowUserToolsMaterials}
       />
       
       <ProfileManager
