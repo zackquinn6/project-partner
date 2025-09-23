@@ -87,8 +87,8 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
   };
 
   return (
-    <div>
-      <div className="pb-2">
+    <div className="h-full overflow-y-auto">
+      <div className="pb-2 shrink-0">
         <h3 className="flex items-center gap-2 text-lg font-semibold">
           <Bell className="h-5 w-5" />
           Notification Settings

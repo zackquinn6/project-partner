@@ -272,11 +272,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     <SelectTrigger className="w-full sm:w-[280px]">
                       <SelectValue placeholder="Select a home" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {homes.map(home => <SelectItem key={home.id} value={home.id}>
-                          {home.name} {home.address && `- ${home.address}`}
-                        </SelectItem>)}
-                    </SelectContent>
+                     <SelectContent className="z-50">
+                       {homes.map(home => <SelectItem key={home.id} value={home.id}>
+                           {home.name} {home.address && `- ${home.address}`}
+                         </SelectItem>)}
+                     </SelectContent>
                   </Select>
 
                   {selectedHomeId && tasks.length > 0 && (
@@ -403,16 +403,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="history" className="flex-1 overflow-hidden mt-2">
-                    <div className="h-full overflow-y-auto">
-                      <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
-                    </div>
+                  <TabsContent value="history" className="flex-1 overflow-hidden">
+                    <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                   </TabsContent>
 
-                  <TabsContent value="notifications" className="flex-1 overflow-hidden mt-2">
-                    <div className="h-full overflow-y-auto">
-                      <MaintenanceNotifications selectedHomeId={selectedHomeId} />
-                    </div>
+                  <TabsContent value="notifications" className="flex-1 overflow-hidden">
+                    <MaintenanceNotifications selectedHomeId={selectedHomeId} />
                   </TabsContent>
                 </Tabs>
               </div>

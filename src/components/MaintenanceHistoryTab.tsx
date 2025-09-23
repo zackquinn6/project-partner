@@ -123,9 +123,9 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
   const filteredCompletions = getFilteredAndSortedCompletions();
 
   return (
-    <div>
+    <div className="space-y-2 h-full overflow-y-auto">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-2">
+      <div className="flex flex-col sm:flex-row gap-2 mb-2 shrink-0">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by category" />
