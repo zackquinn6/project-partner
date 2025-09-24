@@ -427,14 +427,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </div>
                   </TabsContent>
 
-                   <TabsContent value="history" className="flex-1 flex flex-col overflow-hidden mt-0 h-full">
-                     <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3">
+                   <TabsContent value="history" className="flex-1 overflow-hidden mt-0">
+                     <div className="h-full overflow-y-auto px-3 sm:px-6 py-3">
                        <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                      </div>
                    </TabsContent>
 
-                   <TabsContent value="notifications" className="flex-1 flex flex-col overflow-hidden mt-0 h-full">
-                     <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3">
+                   <TabsContent value="notifications" className="flex-1 overflow-hidden mt-0">
+                     <div className="h-full overflow-y-auto px-3 sm:px-6 py-3">
                        <MaintenanceNotifications selectedHomeId={selectedHomeId} />
                      </div>
                    </TabsContent>
