@@ -124,9 +124,9 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
   const filteredCompletions = getFilteredAndSortedCompletions();
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col min-h-0">
       {/* Filters - matching Active tab spacing */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4 shrink-0">
+      <div className="flex flex-col sm:flex-row gap-2 py-3 shrink-0">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by category" />
@@ -171,7 +171,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {filteredCompletions.map(completion => (
               <Card key={completion.id} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-4">

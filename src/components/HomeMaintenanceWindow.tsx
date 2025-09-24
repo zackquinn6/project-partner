@@ -312,7 +312,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </TabsList>
                   </div>
 
-                   <TabsContent value="tasks" className="flex-1 flex flex-col min-h-0 m-0 px-3 md:px-6 data-[state=active]:flex">
+                   <TabsContent value="tasks" className="!mt-0 flex-1 flex flex-col min-h-0 px-3 md:px-6">
                      {/* Category Filter */}
                      <div className="flex items-center gap-2 py-3 shrink-0">
                       <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -427,16 +427,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </div>
                   </TabsContent>
 
-                   <TabsContent value="history" className="flex-1 flex flex-col min-h-0 m-0 data-[state=active]:flex">
-                     <div className="flex-1 overflow-y-auto min-h-0">
-                       <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
-                     </div>
+                   <TabsContent value="history" className="!mt-0 flex-1 flex flex-col min-h-0 px-3 md:px-6">
+                     <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                    </TabsContent>
 
-                   <TabsContent value="notifications" className="flex-1 flex flex-col min-h-0 m-0 data-[state=active]:flex">
-                     <div className="flex-1 overflow-y-auto min-h-0">
-                       <MaintenanceNotifications selectedHomeId={selectedHomeId} />
-                     </div>
+                   <TabsContent value="notifications" className="!mt-0 flex-1 flex flex-col min-h-0 px-3 md:px-6">
+                     <MaintenanceNotifications selectedHomeId={selectedHomeId} />
                    </TabsContent>
                 </Tabs>
               </div>
