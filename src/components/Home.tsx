@@ -141,7 +141,7 @@ export default function Home({
                 </div>
               </div>
             </div>
-            <div className="border-b border-border pb-1 mb-2"></div>
+            <div className="border-b border-border pb-1 mb-6"></div>
             
             {/* Core Apps Grid */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
