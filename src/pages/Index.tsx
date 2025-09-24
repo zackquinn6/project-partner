@@ -18,7 +18,7 @@ import { MobileOptimizedHome } from '@/components/MobileOptimizedHome';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileProjectListing } from '@/components/MobileProjectListing';
 import { MobileWorkflowView } from '@/components/MobileWorkflowView';
-import { RapidProjectAssessment } from '@/components/RapidProjectAssessment';
+import { RapidProjectAssessmentWindow } from '@/components/RapidProjectAssessmentWindow';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
@@ -490,16 +490,10 @@ const Index = () => {
         onClose={() => setIsToolRentalsOpen(false)}
       />
 
-      <Dialog open={isRapidAssessmentOpen} onOpenChange={setIsRapidAssessmentOpen}>
-        <DialogContent className="w-full sm:max-w-7xl sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
-          <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
-            <DialogTitle>Rapid Project Assessment</DialogTitle>
-          </DialogHeader>
-          <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
-            <RapidProjectAssessment />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <RapidProjectAssessmentWindow 
+        open={isRapidAssessmentOpen} 
+        onOpenChange={setIsRapidAssessmentOpen}
+      />
       
       <AIRepairWindow 
         open={isAIRepairOpen}
