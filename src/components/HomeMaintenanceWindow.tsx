@@ -256,7 +256,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full h-full sm:max-w-6xl sm:max-h-[90vh] sm:h-auto overflow-hidden border-none sm:border flex flex-col">
+        <DialogContent className="w-full h-full sm:max-w-6xl sm:h-[90vh] overflow-hidden border-none sm:border flex flex-col">
           <DialogHeader className="p-3 sm:p-6 pb-2 sm:pb-0 border-b sm:border-none shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold">
@@ -427,14 +427,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </div>
                   </TabsContent>
 
-                   <TabsContent value="history" className="flex-1 overflow-hidden mt-0 px-3 sm:px-6 py-3">
-                     <div className="h-full overflow-y-auto">
+                   <TabsContent value="history" className="flex-1 flex flex-col overflow-hidden mt-0 h-full">
+                     <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3">
                        <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                      </div>
                    </TabsContent>
 
-                   <TabsContent value="notifications" className="flex-1 overflow-hidden mt-0 px-3 sm:px-6 py-3">
-                     <div className="h-full overflow-y-auto">
+                   <TabsContent value="notifications" className="flex-1 flex flex-col overflow-hidden mt-0 h-full">
+                     <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3">
                        <MaintenanceNotifications selectedHomeId={selectedHomeId} />
                      </div>
                    </TabsContent>
