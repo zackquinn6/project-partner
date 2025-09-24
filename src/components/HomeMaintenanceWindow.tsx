@@ -72,6 +72,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<number>(0);
   const [touchEnd, setTouchEnd] = useState<number>(0);
+  const [sortBy, setSortBy] = useState<string>('date-desc');
+  const [historyCategoryFilter, setHistoryCategoryFilter] = useState<string>('all');
   useEffect(() => {
     if (open && user) {
       fetchHomes();
@@ -428,7 +430,36 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   </TabsContent>
 
                    <TabsContent value="history" className="flex-1 flex flex-col h-full">
-                     <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
+                     {/* Category Filter */}
+                     <div className="flex flex-col sm:flex-row gap-2 py-3 shrink-0 px-3 md:px-6">
+                       <Select value={historyCategoryFilter} onValueChange={setHistoryCategoryFilter}>
+                         <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
+                           <SelectValue placeholder="Filter by category" />
+                         </SelectTrigger>
+                         <SelectContent className="z-[100]">
+                           <SelectItem value="all">All Categories</SelectItem>
+                           {categories.map(category => (
+                             <SelectItem key={category} value={category}>
+                               {categoryLabels[category]}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+
+                       <Select value={sortBy} onValueChange={setSortBy}>
+                         <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
+                           <SelectValue placeholder="Sort by" />
+                         </SelectTrigger>
+                         <SelectContent className="z-[100]">
+                           <SelectItem value="date-desc">Date (Newest First)</SelectItem>
+                           <SelectItem value="date-asc">Date (Oldest First)</SelectItem>
+                           <SelectItem value="category">Category</SelectItem>
+                           <SelectItem value="title">Task Name</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+
+                     <MaintenanceHistoryTab selectedHomeId={selectedHomeId} sortBy={sortBy} categoryFilter={historyCategoryFilter} />
                    </TabsContent>
 
                    <TabsContent value="notifications" className="flex-1 flex flex-col h-full px-3 md:px-6">
