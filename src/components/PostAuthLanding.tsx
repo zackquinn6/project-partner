@@ -283,11 +283,11 @@ Pick up where you left off or start your next winning project.</p>
         <ContractorFinderWindow open={showContractorFinder} onOpenChange={setShowContractorFinder} />
         
         <Dialog open={showProjectPlanning} onOpenChange={setShowProjectPlanning}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
-            <DialogHeader>
+          <DialogContent className="w-full h-full sm:max-w-[90vw] sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
+            <DialogHeader className="p-4 sm:p-0 border-b sm:border-b-0">
               <DialogTitle>Rapid Project Assessment</DialogTitle>
             </DialogHeader>
-            <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
+            <div className="overflow-y-auto h-full sm:max-h-[80vh] p-4 sm:pr-2 sm:p-0">
               <RapidProjectAssessment />
             </div>
           </DialogContent>

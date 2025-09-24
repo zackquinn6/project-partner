@@ -320,7 +320,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
       onOpenChange={onOpenChange}
       title="My Tools Library"
       description="View and manage your personal collection of tools and materials."
-      size="xlarge"
+      size="content-large"
       className="max-h-[95vh] overflow-hidden"
     >
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-0 flex-1 overflow-hidden">

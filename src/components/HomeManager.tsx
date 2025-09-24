@@ -301,8 +301,8 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
   }
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-full sm:max-w-6xl sm:max-h-[95vh] overflow-y-auto border-none sm:border p-0 sm:p-6">
-        <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
+      <DialogContent className="w-full h-full sm:max-w-[90vw] sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
+        <DialogHeader className="p-4 sm:p-0 border-b sm:border-b-0">
           <DialogTitle className="flex items-center gap-2">
             <Home className="w-5 h-5" />
             Manage Your Homes
