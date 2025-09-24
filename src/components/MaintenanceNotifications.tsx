@@ -100,6 +100,13 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
       {/* Content - matching Active tab content area */}
       <div className="flex-1 overflow-y-auto">
         <div className="space-y-2 pb-3">
+        {/* Save Button */}
+        <div className="flex justify-start pb-4">
+          <Button onClick={saveNotificationSettings} disabled={saving}>
+            {saving ? "Saving..." : "Save Settings"}
+          </Button>
+        </div>
+
         {/* Email Settings */}
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -118,7 +125,7 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
           
           {emailEnabled && (
             <div className="ml-6 space-y-3">
-              <div>
+              <div className="max-w-xs">
                 <Label htmlFor="email-address">Email Address</Label>
                 <Input
                   id="email-address"
@@ -226,15 +233,8 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
           </div>
         </div>
 
-        {/* Save Button */}
-        <div className="flex justify-end pt-4">
-          <Button onClick={saveNotificationSettings} disabled={saving}>
-            {saving ? "Saving..." : "Save Settings"}
-          </Button>
-        </div>
-
         {/* Help text */}
-        <div className="bg-muted/30 p-4 rounded-lg">
+        <div className="bg-muted/30 p-4 rounded-lg mt-4 mb-4">
           <p className="text-sm text-muted-foreground">
             <strong>Note:</strong> Notifications will be sent 7 days before each maintenance task is due. 
             You can disable notifications for specific tasks or adjust your preferences above.
