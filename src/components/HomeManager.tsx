@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -300,16 +301,14 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       </Dialog>;
   }
   return <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-full md:max-w-[90vw] md:max-h-[90vh] overflow-hidden border-none md:border p-0 md:p-6">
-        <DialogHeader className="p-4 md:p-0 border-b md:border-b-0">
-          <DialogTitle className="flex items-center gap-2">
-            <Home className="w-5 h-5" />
-            Manage Your Homes
-          </DialogTitle>
-        </DialogHeader>
+    <ResponsiveDialog 
+      open={open} 
+      onOpenChange={onOpenChange}
+      title="Manage Your Homes"
+      size="content-large"
+    >
 
-        {!showForm ? <div className="space-y-6 p-4 sm:p-0">
+        {!showForm ? <div className="space-y-6 p-6">
             {/* Header */}
             <div className="flex justify-between items-center">
               <p className="text-muted-foreground">
@@ -399,7 +398,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
                   </Card>)}
               </div>}
           </div> : (/* Form */
-      <form onSubmit={handleSubmit} className="space-y-6 p-4 sm:p-0">
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">
                 {editingHome ? 'Edit Home' : 'Add New Home'}
@@ -554,8 +553,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
               </Button>
             </div>
           </form>)}
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
     
     <HomeDetailsWindow
       open={showHomeDetails}
