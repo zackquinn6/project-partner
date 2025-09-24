@@ -301,7 +301,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
   }
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-full sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto border-none sm:border p-0 sm:p-6">
+      <DialogContent className="w-full h-full sm:max-w-6xl sm:max-h-[95vh] overflow-y-auto border-none sm:border p-0 sm:p-6">
         <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
           <DialogTitle className="flex items-center gap-2">
             <Home className="w-5 h-5" />
@@ -318,9 +318,10 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
               <Button 
                 onClick={() => setShowForm(true)}
                 size="sm"
-                className="w-8 h-8 p-0"
+                className="md:w-auto md:px-4 w-10 h-10 p-0 md:p-2"
               >
                 <Plus className="w-4 h-4" />
+                <span className="hidden md:inline ml-2">Add Home</span>
               </Button>
             </div>
 
@@ -335,35 +336,37 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
               <Button 
                 size="sm"
                 onClick={() => setShowForm(true)}
-                className="w-8 h-8 p-0"
+                className="md:w-auto md:px-4 w-10 h-10 p-0 md:p-2"
               >
                 <Plus className="w-4 h-4" />
+                <span className="hidden md:inline ml-2">Add Home</span>
               </Button>
                 </CardContent>
               </Card> : <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {homes.map(home => <Card key={home.id} className={home.is_primary ? 'ring-2 ring-primary cursor-pointer hover:shadow-md transition-shadow' : 'cursor-pointer hover:shadow-md transition-shadow'} onClick={() => handleHomeClick(home)}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1">
                           {/* Home Photo Icon */}
                           <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border-2 border-border">
                             {home.photos && home.photos.length > 0 ? <img src={home.photos[0]} alt={`${home.name} photo`} className="w-full h-full object-cover" /> : <Home className="w-6 h-6 text-muted-foreground" />}
                           </div>
-                          <div>
-                            <CardTitle className="text-lg flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-lg flex items-center gap-2 truncate">
                               {home.name}
-                              {home.is_primary && <Badge variant="secondary" className="text-xs">
+                              {home.is_primary && <Badge variant="secondary" className="text-xs flex-shrink-0">
                                   <Star className="w-3 h-3 mr-1" />
                                   Primary
                                 </Badge>}
                             </CardTitle>
                           </div>
                         </div>
-                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(home)}>
-                            Edit
+                        <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(home)} className="px-2 md:px-3">
+                            <span className="hidden sm:inline">Edit</span>
+                            <span className="sm:hidden">E</span>
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(home.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(home.id)} className="px-2">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
