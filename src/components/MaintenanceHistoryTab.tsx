@@ -128,10 +128,10 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
       {/* Filters - matching Active tab spacing */}
       <div className="flex flex-col sm:flex-row gap-2 py-3 shrink-0 px-3 md:px-6">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
             <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
-          <SelectContent className="mt-1">
+          <SelectContent className="z-[100]">
             <SelectItem value="all">All Categories</SelectItem>
             {categories.map(category => (
               <SelectItem key={category} value={category}>
@@ -142,10 +142,10 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
         </Select>
 
         <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
-          <SelectContent className="mt-1">
+          <SelectContent className="z-[100]">
             <SelectItem value="date-desc">Date (Newest First)</SelectItem>
             <SelectItem value="date-asc">Date (Oldest First)</SelectItem>
             <SelectItem value="category">Category</SelectItem>
@@ -173,23 +173,23 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
         ) : (
           filteredCompletions.map(completion => (
             <Card key={completion.id} className="hover:shadow-sm transition-shadow mx-1">
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium">{completion.task.title}</h4>
-                      <Badge variant="secondary" className="text-xs">
+                      <h4 className="font-medium text-sm">{completion.task.title}</h4>
+                      <Badge variant="secondary" className="text-xs px-1 py-0">
                         {categoryLabels[completion.task.category]}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {format(new Date(completion.completed_at), 'MMM dd, yyyy')}
                       </div>
                     </div>
                     {completion.notes && (
-                      <p className="text-sm text-muted-foreground mt-2">{completion.notes}</p>
+                      <p className="text-xs text-muted-foreground mt-2">{completion.notes}</p>
                     )}
                   </div>
                   {completion.photo_url && (
@@ -197,7 +197,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
                       <img 
                         src={completion.photo_url} 
                         alt="Completion photo"
-                        className="w-16 h-16 rounded-lg object-cover border"
+                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover border"
                       />
                     </div>
                   )}
