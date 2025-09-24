@@ -124,9 +124,9 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
   const filteredCompletions = getFilteredAndSortedCompletions();
 
   return (
-    <div className="flex-1 flex flex-col h-full px-3 md:px-6">
+    <>
       {/* Filters - matching Active tab spacing */}
-      <div className="flex flex-col sm:flex-row gap-2 py-3 shrink-0">
+      <div className="flex flex-col sm:flex-row gap-2 py-3 shrink-0 px-3 md:px-6">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by category" />
@@ -155,12 +155,11 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
       </div>
 
       {/* Completion History - matching Active tab content area */}
-      <div className="flex-1 overflow-y-auto py-3">
-        <div className="space-y-2 pb-3">
+      <div className="flex-1 overflow-y-auto space-y-2 pb-3 px-3 md:px-6">
         {loading ? (
           <div className="text-center py-8">Loading completion history...</div>
         ) : filteredCompletions.length === 0 ? (
-          <Card>
+          <Card className="mx-1">
             <CardContent className="pt-6">
               <div className="text-center py-8">
                 <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -172,45 +171,41 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
-            {filteredCompletions.map(completion => (
-              <Card key={completion.id} className="hover:shadow-sm transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-medium">{completion.task.title}</h4>
-                        <Badge variant="secondary" className="text-xs">
-                          {categoryLabels[completion.task.category]}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(completion.completed_at), 'MMM dd, yyyy')}
-                        </div>
-                      </div>
-                      {completion.notes && (
-                        <p className="text-sm text-muted-foreground mt-2">{completion.notes}</p>
-                      )}
+          filteredCompletions.map(completion => (
+            <Card key={completion.id} className="hover:shadow-sm transition-shadow mx-1">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-medium">{completion.task.title}</h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {categoryLabels[completion.task.category]}
+                      </Badge>
                     </div>
-                    {completion.photo_url && (
-                      <div className="ml-4">
-                        <img 
-                          src={completion.photo_url} 
-                          alt="Completion photo"
-                          className="w-16 h-16 rounded-lg object-cover border"
-                        />
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {format(new Date(completion.completed_at), 'MMM dd, yyyy')}
                       </div>
+                    </div>
+                    {completion.notes && (
+                      <p className="text-sm text-muted-foreground mt-2">{completion.notes}</p>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-        </div>
+                  {completion.photo_url && (
+                    <div className="ml-4">
+                      <img 
+                        src={completion.photo_url} 
+                        alt="Completion photo"
+                        className="w-16 h-16 rounded-lg object-cover border"
+                      />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )))}
       </div>
-    </div>
+    </>
   );
 };
