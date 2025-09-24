@@ -159,7 +159,7 @@ export interface Project {
   planEndDate: Date;
   endDate?: Date;
   status: 'not-started' | 'in-progress' | 'complete';
-  publishStatus: 'draft' | 'published' | 'beta-testing';
+  publishStatus?: 'draft' | 'published' | 'beta-testing' | 'archived';
   category?: string;
   effortLevel?: 'Low' | 'Medium' | 'High';
   skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced';

@@ -24,7 +24,7 @@ interface ProjectRevision {
   createdFromRevision: number;
   createdAt: Date;
   updatedAt: Date;
-  publishStatus: 'draft' | 'published' | 'beta-testing';
+  publishStatus: 'draft' | 'published' | 'beta-testing' | 'archived';
   author?: string;
   changesSummary?: string;
 }

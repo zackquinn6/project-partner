@@ -4,13 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProject } from '@/contexts/ProjectContext';
 import { PricingWindow } from '@/components/PricingWindow';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
-import { supabase } from '@/integrations/supabase/client';
 import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2 } from 'lucide-react';
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
@@ -37,6 +37,7 @@ export default function Home({
   const {
     user
   } = useAuth();
+  const { projectRuns } = useProject();
   const navigate = useNavigate();
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isDIYQuizOpen, setIsDIYQuizOpen] = useState(false);
@@ -49,33 +50,25 @@ export default function Home({
     completedProjects: 0
   });
 
-  // Fetch project data to calculate stats
+  // Calculate stats from context data instead of fetching separately
   useEffect(() => {
-    const fetchProjectStats = async () => {
-      if (!user) return;
+    if (projectRuns) {
+      const active = projectRuns.filter(run => (run.progress || 0) < 100).length;
+      const completed = projectRuns.filter(run => (run.progress || 0) >= 100).length;
 
-      try {
-        const { data: projectRuns, error } = await supabase
-          .from('project_runs')
-          .select('progress')
-          .eq('user_id', user.id);
+      console.log('🔍 Debug - Home stats calculation:', {
+        totalProjectRuns: projectRuns.length,
+        activeProjects: active,
+        completedProjects: completed,
+        projectRunsData: projectRuns.map(run => ({ id: run.id, progress: run.progress, status: run.status }))
+      });
 
-        if (error) throw error;
-
-        const active = projectRuns?.filter(run => (run.progress || 0) < 100).length || 0;
-        const completed = projectRuns?.filter(run => (run.progress || 0) >= 100).length || 0;
-
-        setStats({
-          activeProjects: active,
-          completedProjects: completed
-        });
-      } catch (error) {
-        console.error('Error fetching project stats:', error);
-      }
-    };
-
-    fetchProjectStats();
-  }, [user]);
+      setStats({
+        activeProjects: active,
+        completedProjects: completed
+      });
+    }
+  }, [projectRuns]);
 
   // Sophisticated darker color palette for app icons
   const colorPalette = ['bg-blue-700', 'bg-indigo-700', 'bg-purple-700', 'bg-violet-700', 'bg-emerald-700', 'bg-teal-700', 'bg-cyan-700', 'bg-sky-700', 'bg-orange-700', 'bg-amber-700', 'bg-red-700', 'bg-rose-700', 'bg-pink-700', 'bg-fuchsia-700', 'bg-lime-700', 'bg-green-700'];

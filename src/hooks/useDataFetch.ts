@@ -57,17 +57,6 @@ export function useDataFetch<T = any>({
 
     try {
       let query = supabase.from(table as any).select(select);
-      
-      // Debug logging for projects table specifically
-      if (table === 'projects') {
-        console.log('🔍 Debug - Fetching projects table');
-        console.log('🔍 Debug - User authenticated:', !!supabase.auth.getUser());
-      }
-      
-      if (table === 'project_runs') {
-        console.log('🔍 Debug - Fetching project_runs table');
-        console.log('🔍 Debug - Filters:', filters);
-      }
 
       // Apply filters
       filters.forEach(filter => {
@@ -81,17 +70,6 @@ export function useDataFetch<T = any>({
       }
 
       const { data: result, error: fetchError } = await query;
-      
-      // Debug logging for results
-      if (table === 'projects') {
-        console.log('🔍 Debug - Projects query result:', result?.length || 0, 'projects');
-        console.log('🔍 Debug - Projects error:', fetchError);
-      }
-      
-      if (table === 'project_runs') {
-        console.log('🔍 Debug - Project runs query result:', result?.length || 0, 'project runs');
-        console.log('🔍 Debug - Project runs error:', fetchError);
-      }
 
       if (fetchError) {
         throw new Error(fetchError.message);
