@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, Camera, Wrench, Package, Eye, Save, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -315,29 +315,17 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-full sm:max-w-6xl sm:h-[80vh] border-none sm:border p-0 sm:p-6">
-        <DialogHeader className="p-4 sm:p-0 border-b sm:border-none">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle>My Tools Library</DialogTitle>
-              <DialogDescription>
-                View and manage your personal collection of tools and materials.
-              </DialogDescription>
-            </div>
-            <Button 
-              variant="ghost" 
-              onClick={() => onOpenChange(false)}
-              className="sm:hidden text-xs px-2 py-1 h-6"
-            >
-              Close
-            </Button>
-          </div>
-        </DialogHeader>
-        
-        <div className="flex flex-1 gap-6 min-h-0 p-4 sm:p-0">
+    <ResponsiveDialog 
+      open={open} 
+      onOpenChange={onOpenChange}
+      title="My Tools Library"
+      description="View and manage your personal collection of tools and materials."
+      size="xlarge"
+      className="max-h-[95vh] overflow-hidden"
+    >
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-0 flex-1 overflow-hidden">
           {/* Library Grid */}
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-4 min-w-0 overflow-hidden">
             <div className="flex items-center gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -388,14 +376,14 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                 <TabsTrigger value="materials">Materials ({userMaterials.length})</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="tools" className="space-y-4 mt-4 h-96 overflow-y-auto">
+              <TabsContent value="tools" className="space-y-4 mt-4 max-h-[50vh] overflow-y-auto">
                 {filteredTools.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Wrench className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                     <p>No tools in your library yet</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
                     {filteredTools.map((tool) => (
                       <Card 
                         key={tool.id} 
@@ -430,14 +418,14 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                 )}
               </TabsContent>
               
-              <TabsContent value="materials" className="space-y-4 mt-4 h-96 overflow-y-auto">
+              <TabsContent value="materials" className="space-y-4 mt-4 max-h-[50vh] overflow-y-auto">
                 {filteredMaterials.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                     <p>No materials in your library yet</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
                     {filteredMaterials.map((material) => (
                       <Card 
                         key={material.id} 
@@ -476,7 +464,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
 
           {/* Detail Panel */}
           {selectedItem && (
-            <div className="w-96 border-l pl-6 space-y-3">
+            <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l pt-4 lg:pt-0 lg:pl-6 space-y-4 lg:space-y-6 overflow-y-auto max-h-[50vh] lg:max-h-full">
               <div className="flex items-center gap-3">
                 <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
                   {(selectedItem.user_photo_url || selectedItem.photo_url) ? (
@@ -589,7 +577,6 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }
