@@ -38,8 +38,8 @@ export function ResponsiveDialog({
     xlarge: responsiveDialogClasses.padding,
     'modal-sm': responsiveDialogClasses.paddingSmall,
     'modal-md': responsiveDialogClasses.padding,
-    'content-large': responsiveDialogClasses.paddingGenerous,
-    'content-full': responsiveDialogClasses.paddingGenerous,
+    'content-large': responsiveDialogClasses.padding,
+    'content-full': responsiveDialogClasses.padding,
   };
 
   return (
@@ -75,10 +75,7 @@ export function ResponsiveDialog({
           </DialogHeader>
         )}
         
-        <div className={cn(
-          "flex flex-col min-h-0 flex-1",
-          responsiveDialogClasses.gap
-        )}>
+        <div className="flex flex-col min-h-0 flex-1 gap-2">
           {children}
         </div>
       </DialogContent>
