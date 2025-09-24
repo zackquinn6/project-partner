@@ -155,7 +155,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
       </div>
 
       {/* Completion History - matching Active tab content area */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="text-center py-8">Loading completion history...</div>
         ) : filteredCompletions.length === 0 ? (
