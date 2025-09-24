@@ -378,7 +378,7 @@ export function RapidProjectAssessment() {
   // Render project list view
   if (currentView === 'list') {
     return (
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="w-full p-6 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -462,7 +462,7 @@ export function RapidProjectAssessment() {
   const laborItems = project.lineItems.filter(item => item.type === 'labor');
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="w-full p-6 space-y-6">
       <Card>
         <CardHeader>
             <div className="flex items-center justify-between">
