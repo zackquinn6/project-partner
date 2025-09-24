@@ -22,29 +22,6 @@ export function ResponsiveDialog({
   children, 
   className 
 }: ResponsiveDialogProps) {
-  // Simple debug to verify component is running
-  console.log('🎯 ResponsiveDialog render - size:', size, 'open:', open, 'title:', title);
-  
-  // Debug logging
-  React.useEffect(() => {
-    if (open) {
-      console.log('✅ ResponsiveDialog opened with size:', size);
-      console.log('📏 Title:', title);
-      
-      // Check actual DOM element after render
-      setTimeout(() => {
-        const dialogContent = document.querySelector('[data-radix-dialog-content]');
-        if (dialogContent) {
-          const computedStyle = window.getComputedStyle(dialogContent);
-          console.log('📐 Dialog actual styles:', {
-            maxWidth: computedStyle.maxWidth,
-            width: computedStyle.width,
-            className: dialogContent.className
-          });
-        }
-      }, 100);
-    }
-  }, [open, size, title]);
   const sizeClasses = {
     default: responsiveDialogClasses.content,
     large: responsiveDialogClasses.contentLarge,
@@ -100,7 +77,7 @@ export function ResponsiveDialog({
         
         <div className={cn(
           "flex flex-col min-h-0 flex-1",
-          size === 'content-large' || size === 'content-full' ? responsiveDialogClasses.gapGenerous : responsiveDialogClasses.gap
+          responsiveDialogClasses.gap
         )}>
           {children}
         </div>
