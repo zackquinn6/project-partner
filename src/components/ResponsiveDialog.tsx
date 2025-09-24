@@ -22,6 +22,26 @@ export function ResponsiveDialog({
   children, 
   className 
 }: ResponsiveDialogProps) {
+  // Debug logging
+  React.useEffect(() => {
+    if (open) {
+      console.log('ResponsiveDialog opened with size:', size);
+      console.log('Title:', title);
+      
+      // Check actual DOM element after render
+      setTimeout(() => {
+        const dialogContent = document.querySelector('[data-radix-dialog-content]');
+        if (dialogContent) {
+          const computedStyle = window.getComputedStyle(dialogContent);
+          console.log('Dialog actual styles:', {
+            maxWidth: computedStyle.maxWidth,
+            width: computedStyle.width,
+            className: dialogContent.className
+          });
+        }
+      }, 100);
+    }
+  }, [open, size, title]);
   const sizeClasses = {
     default: responsiveDialogClasses.content,
     large: responsiveDialogClasses.contentLarge,
@@ -45,14 +65,20 @@ export function ResponsiveDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
+        data-dialog-size={size}
         className={cn(
+          "dialog-content-base",
           sizeClasses[size],
           paddingClasses[size],
           "overflow-hidden",
           // Force override base dialog sizing for content-large
-          size === 'content-large' && "[&]:!max-w-[90vw] [&]:!w-[90vw] md:[&]:!max-w-[90vw] md:[&]:!w-[90vw]",
+          size === 'content-large' && "!max-w-[90vw] !w-[90vw]",
           className
         )}
+        style={size === 'content-large' ? { 
+          maxWidth: '90vw', 
+          width: '90vw' 
+        } : undefined}
       >
         {(title || description) && (
           <DialogHeader>
