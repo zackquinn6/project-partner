@@ -256,33 +256,33 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full sm:max-w-6xl sm:max-h-[90vh] overflow-hidden border-none sm:border flex flex-col">
-          <DialogHeader className="p-4 sm:p-6 pb-0 border-b sm:border-none shrink-0">
+        <DialogContent className="w-full h-full sm:max-w-6xl sm:max-h-[90vh] sm:h-auto overflow-hidden border-none sm:border flex flex-col">
+          <DialogHeader className="p-3 sm:p-6 pb-2 sm:pb-0 border-b sm:border-none shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
-                <Home className="h-4 w-4 sm:h-5 sm:w-5" />
+              <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold">
+                <Home className="h-5 w-5" />
                 Home Maintenance Tracker
               </DialogTitle>
               <Button 
                 variant="ghost" 
                 onClick={() => onOpenChange(false)}
-                className="sm:hidden text-xs px-2 py-1 h-6"
+                className="sm:hidden text-sm px-3 py-2 h-8 font-medium"
               >
                 Close
               </Button>
             </div>
           </DialogHeader>
 
-          <div className="flex flex-col min-h-[60vh] overflow-hidden">
+          <div className="flex flex-col flex-1 overflow-hidden">
             {/* Home Selection - Fixed at top */}
-            <div className="px-4 sm:px-6 shrink-0 mb-3">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                <div className="flex items-center gap-2">
+            <div className="px-3 sm:px-6 py-3 shrink-0 bg-background border-b sm:border-none">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
-                    <SelectTrigger className="w-full sm:w-[280px]">
+                    <SelectTrigger className="w-full sm:w-[280px] h-9">
                       <SelectValue placeholder="Select a home" />
                     </SelectTrigger>
-                     <SelectContent className="z-50 mt-1">
+                     <SelectContent className="z-[100]">
                        {homes.map(home => <SelectItem key={home.id} value={home.id}>
                            {home.name} {home.address && `- ${home.address}`}
                          </SelectItem>)}
@@ -300,25 +300,27 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               </div>
             </div>
 
-            {/* Tabs - Fixed structure */}
+            {/* Tabs - Scrollable content */}
             {selectedHomeId && (
-              <div className="flex flex-col overflow-hidden px-4 sm:px-6">
-                <Tabs defaultValue="tasks" className="flex flex-col overflow-hidden">
-                  <TabsList className="grid grid-cols-3 w-full shrink-0">
-                    <TabsTrigger value="tasks">Active</TabsTrigger>
-                    <TabsTrigger value="history">History</TabsTrigger>
-                    <TabsTrigger value="notifications">Alerts</TabsTrigger>
-                  </TabsList>
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <Tabs defaultValue="tasks" className="flex flex-col flex-1 overflow-hidden">
+                  <div className="px-3 sm:px-6 py-2 bg-background border-b">
+                    <TabsList className="grid grid-cols-3 w-full h-9">
+                      <TabsTrigger value="tasks" className="text-xs sm:text-sm">Active</TabsTrigger>
+                      <TabsTrigger value="history" className="text-xs sm:text-sm">History</TabsTrigger>
+                      <TabsTrigger value="notifications" className="text-xs sm:text-sm">Alerts</TabsTrigger>
+                    </TabsList>
+                  </div>
 
-                   <TabsContent value="tasks" className="flex-1 flex flex-col overflow-hidden mt-0">
+                   <TabsContent value="tasks" className="flex-1 flex flex-col overflow-hidden mt-0 px-3 sm:px-6">
                      {/* Category Filter */}
-                     <div className="flex items-center gap-2 mb-4 shrink-0">
-                      <Filter className="h-4 w-4 text-muted-foreground" />
+                     <div className="flex items-center gap-2 py-3 shrink-0 bg-background">
+                      <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
                       <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                        <SelectTrigger className="w-full sm:w-[150px]">
+                        <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
                           <SelectValue placeholder="Filter by category" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[100]">
                           <SelectItem value="all">All Categories ({tasks.length})</SelectItem>
                           {categories.map(category => {
                         const count = tasks.filter(task => task.category === category).length;
@@ -329,20 +331,23 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         </SelectContent>
                       </Select>
                       
-                      <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="w-6 h-6 p-0" title="Add Task">
-                        <Plus className="h-3 w-3" />
+                      <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="w-8 h-8 p-0 shrink-0" title="Add Task">
+                        <Plus className="h-4 w-4" />
                       </Button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-3" onClick={() => setSwipedTaskId(null)}>
-                      {loading ? <div className="text-center py-8">Loading tasks...</div> : getFilteredTasks().length === 0 ? <Card>
+                    <div className="flex-1 overflow-y-auto space-y-2 pb-3" onClick={() => setSwipedTaskId(null)}>
+                      {loading ? (
+                        <div className="text-center py-8">Loading tasks...</div>
+                      ) : getFilteredTasks().length === 0 ? (
+                        <Card className="mx-1">
                           <CardContent className="pt-6">
                             <div className="text-center py-8">
                               <Home className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                               <h3 className="text-lg font-medium mb-2">
                                 {tasks.length === 0 ? 'No maintenance tasks yet' : 'No tasks in this category'}
                               </h3>
-                              <p className="text-muted-foreground mb-4">
+                              <p className="text-muted-foreground mb-4 text-sm">
                                 {tasks.length === 0 ? 'Add your first maintenance task to start tracking your home maintenance.' : 'Try selecting a different category or add a new task.'}
                               </p>
                               <Button onClick={() => setShowAddTask(true)}>
@@ -351,26 +356,28 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               </Button>
                             </div>
                           </CardContent>
-                        </Card> : getFilteredTasks().map(task => {
-                    const progress = getTaskProgress(task);
-                    const {
-                      status,
-                      color,
-                      icon: StatusIcon
-                    } = getTaskStatus(task);
-                    return <Card key={task.id} className="hover:shadow-sm transition-shadow relative overflow-hidden">
+                        </Card>
+                      ) : (
+                        getFilteredTasks().map(task => {
+                          const progress = getTaskProgress(task);
+                          const {
+                            status,
+                            color,
+                            icon: StatusIcon
+                          } = getTaskStatus(task);
+                          return (
+                            <Card key={task.id} className="hover:shadow-sm transition-shadow relative overflow-hidden mx-1">
                               <CardContent 
-                                className="p-4"
+                                className="p-3 sm:p-4"
                                 onTouchStart={handleTouchStart}
                                 onTouchMove={handleTouchMove}
                                 onTouchEnd={() => handleTouchEnd(task.id)}
                               >
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between gap-3">
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
+                                    <div className="flex items-center gap-2 mb-2">
                                       <h4 className="font-medium text-sm truncate">{task.title}</h4>
-                                      
-                                      {task.is_custom && <Badge variant="outline" className="text-xs">Custom</Badge>}
+                                      {task.is_custom && <Badge variant="outline" className="text-xs px-1 py-0">Custom</Badge>}
                                     </div>
                                     <div className="text-xs text-muted-foreground mb-2">
                                       Due: {format(new Date(task.next_due_date), 'MMM dd, yyyy')}
@@ -380,17 +387,22 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                         <span>Progress</span>
                                         <span>{Math.round(progress)}%</span>
                                       </div>
-                                      <Progress value={progress} className="h-1" />
+                                      <Progress value={progress} className="h-2" />
                                     </div>
                                   </div>
-                                   <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 ml-2 sm:ml-3 shrink-0">
-                                     <Button onClick={() => handleTaskComplete(task)} size="sm" className="w-6 h-6 p-0 bg-green-600 hover:bg-green-700 text-white" title="Complete Task">
-                                       <CheckCircle className="h-3 w-3" />
+                                   <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                                     <Button 
+                                       onClick={() => handleTaskComplete(task)} 
+                                       size="sm" 
+                                       className="w-8 h-8 p-0 bg-green-600 hover:bg-green-700 text-white" 
+                                       title="Complete Task"
+                                     >
+                                       <CheckCircle className="h-4 w-4" />
                                      </Button>
                                      
                                      {/* Show delete button on desktop or when swiped on mobile */}
                                      <div className={`transition-all duration-200 ${
-                                       swipedTaskId === task.id ? 'opacity-100 w-6' : 'sm:opacity-100 sm:w-3 opacity-0 w-0'
+                                       swipedTaskId === task.id ? 'opacity-100 w-8' : 'sm:opacity-100 sm:w-8 opacity-0 w-0'
                                      }`}>
                                        <Button 
                                          variant="destructive" 
@@ -399,26 +411,32 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                            handleDeleteTask(task.id);
                                            setSwipedTaskId(null);
                                          }} 
-                                         className="w-full h-3 p-0" 
+                                         className="w-8 h-8 p-0" 
                                          title="Delete Task"
                                        >
-                                         <Trash2 className="h-1.5 w-1.5" />
+                                         <Trash2 className="h-4 w-4" />
                                        </Button>
                                      </div>
                                    </div>
                                 </div>
                               </CardContent>
-                            </Card>;
-                  })}
+                            </Card>
+                          );
+                        })
+                      )}
                     </div>
                   </TabsContent>
 
-                   <TabsContent value="history" className="flex-1 overflow-hidden mt-0">
-                     <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
+                   <TabsContent value="history" className="flex-1 overflow-hidden mt-0 px-3 sm:px-6 py-3">
+                     <div className="h-full overflow-y-auto">
+                       <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
+                     </div>
                    </TabsContent>
 
-                   <TabsContent value="notifications" className="flex-1 overflow-hidden mt-0">
-                     <MaintenanceNotifications selectedHomeId={selectedHomeId} />
+                   <TabsContent value="notifications" className="flex-1 overflow-hidden mt-0 px-3 sm:px-6 py-3">
+                     <div className="h-full overflow-y-auto">
+                       <MaintenanceNotifications selectedHomeId={selectedHomeId} />
+                     </div>
                    </TabsContent>
                 </Tabs>
               </div>
