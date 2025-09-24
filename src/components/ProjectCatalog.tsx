@@ -617,7 +617,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               Project Catalog
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Select a base project to get started with confidence</p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Select a project to get started with confidence</p>
         </div>
 
         {/* Mobile Close Button */}
