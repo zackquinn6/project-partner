@@ -4,6 +4,7 @@ import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingU
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { FeedbackDialog } from './FeedbackDialog';
 import { useState, useEffect } from "react";
 import { DataPrivacyManager } from './DataPrivacyManager';
@@ -49,6 +50,7 @@ export default function Navigation({
   const { projectRuns, currentProjectRun, setCurrentProjectRun } = projectData;
   const { signOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Only handle Navigation-specific events
@@ -131,11 +133,11 @@ export default function Navigation({
               </Button>
             </div>
             
-            {currentProjectRun && (
+            {!isMobile && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="text-sm max-w-64 truncate">
-                    {currentProjectRun.name}
+                    {currentProjectRun ? currentProjectRun.name : "Select Project"}
                     <ChevronDown className="h-4 w-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
