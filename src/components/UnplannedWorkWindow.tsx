@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -178,16 +179,13 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
   const hasManualPhases = selectedPhases.some(phase => phase.id.startsWith('manual-'));
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-            <div>
-              <DialogTitle className="text-2xl font-bold">Add Unplanned Work</DialogTitle>
-              <DialogDescription>
-                Add additional phases to handle unexpected work discovered during your project
-              </DialogDescription>
-            </div>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      size="content-large"
+      title="Add Unplanned Work"
+      description="Add additional phases to handle unexpected work discovered during your project"
+    >
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Available Phases Library */}
@@ -478,7 +476,6 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
             </CardContent>
           </Card>
         </div>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 };

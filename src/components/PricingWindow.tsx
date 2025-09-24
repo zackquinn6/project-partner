@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -81,16 +82,13 @@ export const PricingWindow = ({ open, onOpenChange }: PricingWindowProps) => {
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-3xl font-bold text-center mb-2">
-            Choose Your Plan
-          </DialogTitle>
-          <p className="text-muted-foreground text-center">
-            Get the right level of support for your DIY project success
-          </p>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="content-large"
+      title="Choose Your Plan"
+      description="Get the right level of support for your DIY project success"
+    >
         
         <div className="grid md:grid-cols-3 gap-6 mt-6">
           {plans.map((plan, index) => (
@@ -159,7 +157,6 @@ export const PricingWindow = ({ open, onOpenChange }: PricingWindowProps) => {
             Upgrade or downgrade anytime to match your project needs.
           </p>
         </div>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 };

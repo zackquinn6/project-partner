@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { History, RotateCcw, Calendar, User, Edit } from 'lucide-react';
 import { toast } from 'sonner';
@@ -122,23 +123,24 @@ export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
 
   if (loading) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-center py-8">Loading revision history...</div>
-        </DialogContent>
-      </Dialog>
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        size="modal-md"
+        title="Loading..."
+      >
+        <div className="flex justify-center py-8">Loading revision history...</div>
+      </ResponsiveDialog>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="w-5 h-5 text-primary" />
-            Revision History
-          </DialogTitle>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="modal-md"
+      title="Revision History"
+    >
 
         <div className="space-y-6">
           {/* Restore Section */}
@@ -298,7 +300,6 @@ export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
             </CardContent>
           </Card>
         </div>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 };

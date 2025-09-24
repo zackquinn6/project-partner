@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Plus, ThumbsUp, Calendar, CheckCircle, Clock, AlertCircle, Star, TrendingUp } from 'lucide-react';
@@ -231,23 +232,25 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
 
   if (loading) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-center py-8">Loading roadmap...</div>
-        </DialogContent>
-      </Dialog>
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        size="content-large"
+        title="Loading..."
+      >
+        <div className="flex justify-center py-8">Loading roadmap...</div>
+      </ResponsiveDialog>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            Project Partner Roadmap
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        size="content-large"
+        title="Project Partner Roadmap"
+      >
         
         <div className="space-y-6">
           <div className="text-center">
@@ -418,85 +421,85 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
             </TabsContent>
           </Tabs>
         </div>
+      </ResponsiveDialog>
 
-        {/* Feature Request Form */}
-        <Dialog open={showFeatureRequestForm} onOpenChange={setShowFeatureRequestForm}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Submit Feature Request</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
+      {/* Feature Request Form */}
+      <Dialog open={showFeatureRequestForm} onOpenChange={setShowFeatureRequestForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Submit Feature Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="req-title">Title *</Label>
+              <Input
+                id="req-title"
+                value={requestForm.title}
+                onChange={(e) => setRequestForm({ ...requestForm, title: e.target.value })}
+                placeholder="What feature would you like?"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="req-description">Description *</Label>
+              <Textarea
+                id="req-description"
+                value={requestForm.description}
+                onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
+                placeholder="Please describe the feature in detail"
+                rows={4}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="req-title">Title *</Label>
-                <Input
-                  id="req-title"
-                  value={requestForm.title}
-                  onChange={(e) => setRequestForm({ ...requestForm, title: e.target.value })}
-                  placeholder="What feature would you like?"
-                />
+                <Label htmlFor="req-category">Category</Label>
+                <Select
+                  value={requestForm.category}
+                  onValueChange={(value: any) => setRequestForm({ ...requestForm, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="feature">New Feature</SelectItem>
+                    <SelectItem value="improvement">Improvement</SelectItem>
+                    <SelectItem value="bugfix">Bug Fix</SelectItem>
+                    <SelectItem value="integration">Integration</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              
+
               <div>
-                <Label htmlFor="req-description">Description *</Label>
-                <Textarea
-                  id="req-description"
-                  value={requestForm.description}
-                  onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })}
-                  placeholder="Please describe the feature in detail"
-                  rows={4}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="req-category">Category</Label>
-                  <Select
-                    value={requestForm.category}
-                    onValueChange={(value: any) => setRequestForm({ ...requestForm, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="feature">New Feature</SelectItem>
-                      <SelectItem value="improvement">Improvement</SelectItem>
-                      <SelectItem value="bugfix">Bug Fix</SelectItem>
-                      <SelectItem value="integration">Integration</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="req-priority">Priority</Label>
-                  <Select
-                    value={requestForm.priority_request}
-                    onValueChange={(value: any) => setRequestForm({ ...requestForm, priority_request: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowFeatureRequestForm(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={submitFeatureRequest}>
-                  Submit Request
-                </Button>
+                <Label htmlFor="req-priority">Priority</Label>
+                <Select
+                  value={requestForm.priority_request}
+                  onValueChange={(value: any) => setRequestForm({ ...requestForm, priority_request: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      </DialogContent>
-    </Dialog>
-  );
-};
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowFeatureRequestForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={submitFeatureRequest}>
+                Submit Request
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+   );
+ };

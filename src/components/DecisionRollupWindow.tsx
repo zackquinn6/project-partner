@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -333,14 +334,12 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-primary" />
-            {title || `Project Decisions - ${mode.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`}
-          </DialogTitle>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="modal-md"
+      title={title || `Project Decisions - ${mode.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`}
+    >
 
         <div className="space-y-6">
           {/* Summary */}
@@ -465,7 +464,6 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 };

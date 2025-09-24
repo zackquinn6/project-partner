@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -231,17 +232,13 @@ export function CodePermitsWindow({ open, onOpenChange }: CodePermitsWindowProps
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Code & Permits
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            This helps identify relevant building codes and permitting process when beginning a new project
-          </p>
-        </DialogHeader>
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        size="content-large"
+        title="Code & Permits"
+        description="This helps identify relevant building codes and permitting process when beginning a new project"
+      >
         
         {/* Beta Banner */}
         <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-b border-orange-200 p-3">
@@ -502,13 +499,12 @@ export function CodePermitsWindow({ open, onOpenChange }: CodePermitsWindowProps
             )}
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
-    
-    <FeedbackDialog 
-      open={showFeedback}
-      onOpenChange={setShowFeedback}
-    />
+      </ResponsiveDialog>
+      
+      <FeedbackDialog 
+        open={showFeedback}
+        onOpenChange={setShowFeedback}
+      />
     </>
   );
 }

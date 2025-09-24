@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -104,17 +105,13 @@ export const MaterialsAdjustmentWindow: React.FC<MaterialsAdjustmentWindowProps>
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5" />
-            Adjust Project Materials
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Update material quantities based on what you've discovered during the project
-          </p>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="modal-md"
+      title="Adjust Project Materials"
+      description="Update material quantities based on what you've discovered during the project"
+    >
 
         <div className="space-y-6">
           {/* Current Materials */}
@@ -248,7 +245,6 @@ export const MaterialsAdjustmentWindow: React.FC<MaterialsAdjustmentWindowProps>
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 };

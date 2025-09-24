@@ -4,6 +4,7 @@ import { ProjectAgreementsList } from '@/components/ProjectAgreementsList';
 import { SecurityMonitoringDashboard } from '@/components/SecurityMonitoringDashboard';
 import { AdminSecurityDashboard } from '@/components/AdminSecurityDashboard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface UsersSecurityWindowProps {
@@ -13,11 +14,12 @@ interface UsersSecurityWindowProps {
 
 export const UsersSecurityWindow: React.FC<UsersSecurityWindowProps> = ({ open, onOpenChange }) => {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Users & Security</DialogTitle>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="content-large"
+      title="Users & Security"
+    >
         
         <Tabs defaultValue="roles" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
@@ -43,7 +45,6 @@ export const UsersSecurityWindow: React.FC<UsersSecurityWindowProps> = ({ open, 
             <AdminSecurityDashboard />
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 };

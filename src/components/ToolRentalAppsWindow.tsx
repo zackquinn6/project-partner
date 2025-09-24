@@ -1,5 +1,6 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Star, MapPin } from 'lucide-react';
@@ -63,13 +64,12 @@ export function ToolRentalAppsWindow({ open, onClose }: ToolRentalAppsWindowProp
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Tool Rental Apps
-          </DialogTitle>
-        </DialogHeader>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onClose}
+      size="modal-md"
+      title="Tool Rental Apps"
+    >
         
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -108,7 +108,6 @@ export function ToolRentalAppsWindow({ open, onClose }: ToolRentalAppsWindowProp
             ))}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

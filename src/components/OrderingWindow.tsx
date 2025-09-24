@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -332,8 +333,11 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
 
   if (fullScreenMode) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        size="content-large"
+      >
           <div className="h-[90vh] flex flex-col">
             <div className="p-4 border-b flex items-center justify-between bg-muted/30">
               <div className="flex items-center gap-2">
@@ -418,8 +422,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </ResponsiveDialog>
     );
   }
 
