@@ -28,7 +28,7 @@ export function ResponsiveDialog({
     xlarge: responsiveDialogClasses.contentXLarge,
     'modal-sm': responsiveDialogClasses.modalSm,
     'modal-md': responsiveDialogClasses.modalMd,
-    'content-large': `${responsiveDialogClasses.contentLarge} !max-w-[100vw] md:!max-w-[90vw] !max-h-[100vh] md:!max-h-[90vh]`,
+    'content-large': responsiveDialogClasses.contentLarge,
     'content-full': responsiveDialogClasses.contentFull,
   };
 
@@ -45,6 +45,7 @@ export function ResponsiveDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn(
+        "!max-w-none", // Override default max-width completely
         sizeClasses[size],
         paddingClasses[size],
         "overflow-hidden",
