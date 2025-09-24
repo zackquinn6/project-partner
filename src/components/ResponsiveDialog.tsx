@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { FullScreenDialog } from "@/components/FullScreenDialog"
 import { cn } from "@/lib/utils"
 import { responsiveDialogClasses } from "@/utils/responsive"
 
@@ -22,13 +23,28 @@ export function ResponsiveDialog({
   children, 
   className 
 }: ResponsiveDialogProps) {
+  // Use FullScreenDialog for content-large to avoid override conflicts
+  if (size === 'content-large') {
+    return (
+      <FullScreenDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title={title}
+        description={description}
+        className={className}
+      >
+        {children}
+      </FullScreenDialog>
+    );
+  }
+
+  // Use standard Dialog for all other sizes
   const sizeClasses = {
     default: responsiveDialogClasses.content,
     large: responsiveDialogClasses.contentLarge,
     xlarge: responsiveDialogClasses.contentXLarge,
     'modal-sm': responsiveDialogClasses.modalSm,
     'modal-md': responsiveDialogClasses.modalMd,
-    'content-large': "!max-w-[100vw] !max-h-[100vh] md:!max-w-[90vw] md:!max-h-[90vh] !w-full !h-full",
     'content-full': responsiveDialogClasses.contentFull,
   };
 
@@ -38,7 +54,6 @@ export function ResponsiveDialog({
     xlarge: responsiveDialogClasses.padding,
     'modal-sm': responsiveDialogClasses.paddingSmall,
     'modal-md': responsiveDialogClasses.padding,
-    'content-large': "p-0", // Remove all padding for content-large
     'content-full': responsiveDialogClasses.padding,
   };
 
@@ -51,28 +66,22 @@ export function ResponsiveDialog({
           sizeClasses[size],
           paddingClasses[size],
           "overflow-hidden",
-          // Force override base dialog sizing and spacing for content-large
-          size === 'content-large' && "!max-w-[90vw] !w-[90vw] !gap-0",
           className
         )}
-        style={size === 'content-large' ? { 
-          maxWidth: '90vw', 
-          width: '90vw' 
-        } : undefined}
       >
         {(title || description) && (
-          <div className={size === 'content-large' ? "px-4 md:px-6 py-4" : ""}>
+          <DialogHeader>
             {title && (
-              <DialogTitle className="text-lg md:text-xl font-bold mb-0 pb-0">
+              <DialogTitle className="text-lg md:text-xl font-bold">
                 {title}
               </DialogTitle>
             )}
             {description && (
-              <DialogDescription className="text-sm md:text-base mb-0 pb-0">
+              <DialogDescription className="text-sm md:text-base">
                 {description}
               </DialogDescription>
             )}
-          </div>
+          </DialogHeader>
         )}
         
         <div className="flex flex-col min-h-0 flex-1">
