@@ -427,7 +427,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </div>
                   </TabsContent>
 
-                   <TabsContent value="history" className="flex-1 flex flex-col h-full px-3 md:px-6">
+                   <TabsContent value="history" className="flex-1 flex flex-col h-full">
                      <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                    </TabsContent>
 
