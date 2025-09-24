@@ -1,6 +1,9 @@
 import * as React from "react"
 import { Dialog, DialogPortal, DialogOverlay, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useResponsive } from "@/hooks/useResponsive"
 
 interface FullScreenDialogProps {
   open: boolean;
@@ -19,6 +22,8 @@ export function FullScreenDialog({
   children, 
   className 
 }: FullScreenDialogProps) {
+  const { isMobile } = useResponsive();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
@@ -33,16 +38,38 @@ export function FullScreenDialog({
           )}
         >
           {(title || description) && (
-            <div className="px-4 md:px-6 py-4 border-b">
-              {title && (
-                <DialogTitle className="text-lg md:text-xl font-bold">
-                  {title}
-                </DialogTitle>
-              )}
-              {description && (
-                <DialogDescription className="text-sm md:text-base mt-1">
-                  {description}
-                </DialogDescription>
+            <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between">
+              <div>
+                {title && (
+                  <DialogTitle className="text-lg md:text-xl font-bold">
+                    {title}
+                  </DialogTitle>
+                )}
+                {description && (
+                  <DialogDescription className="text-sm md:text-base mt-1">
+                    {description}
+                  </DialogDescription>
+                )}
+              </div>
+              
+              {/* Close button - X for desktop, Close button for mobile */}
+              {isMobile ? (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Close
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               )}
             </div>
           )}
