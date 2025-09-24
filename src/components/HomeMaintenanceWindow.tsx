@@ -429,7 +429,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </div>
                   </TabsContent>
 
-                   <TabsContent value="history" className="flex-1 flex flex-col h-full">
+                   <TabsContent value="history" className="flex-1 flex flex-col h-full p-0 m-0">
                       {/* Category Filter */}
                       <div className="flex items-center gap-2 py-3 shrink-0 px-3 md:px-6">
                        <Select value={historyCategoryFilter} onValueChange={setHistoryCategoryFilter}>
