@@ -432,7 +432,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
                   <SelectContent>
                     <SelectItem value="single-family">Single Family</SelectItem>
                     <SelectItem value="townhouse">Townhouse</SelectItem>
-                    <SelectItem value="condo">Condo</SelectItem>
                     <SelectItem value="apartment">Apartment</SelectItem>
                     <SelectItem value="duplex">Duplex</SelectItem>
                     <SelectItem value="mobile">Mobile Home</SelectItem>
