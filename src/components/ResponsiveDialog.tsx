@@ -38,7 +38,7 @@ export function ResponsiveDialog({
     xlarge: responsiveDialogClasses.padding,
     'modal-sm': responsiveDialogClasses.paddingSmall,
     'modal-md': responsiveDialogClasses.padding,
-    'content-large': responsiveDialogClasses.padding,
+    'content-large': "p-0", // Remove all padding for content-large
     'content-full': responsiveDialogClasses.padding,
   };
 
@@ -51,8 +51,8 @@ export function ResponsiveDialog({
           sizeClasses[size],
           paddingClasses[size],
           "overflow-hidden",
-          // Force override base dialog sizing for content-large
-          size === 'content-large' && "!max-w-[90vw] !w-[90vw]",
+          // Force override base dialog sizing and spacing for content-large
+          size === 'content-large' && "!max-w-[90vw] !w-[90vw] !gap-0",
           className
         )}
         style={size === 'content-large' ? { 
@@ -61,7 +61,7 @@ export function ResponsiveDialog({
         } : undefined}
       >
         {(title || description) && (
-          <div>
+          <div className={size === 'content-large' ? "px-4 md:px-6 py-4" : ""}>
             {title && (
               <DialogTitle className="text-lg md:text-xl font-bold mb-0 pb-0">
                 {title}
