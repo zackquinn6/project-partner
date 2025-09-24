@@ -256,17 +256,17 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full h-[100vh] sm:max-w-6xl sm:h-[80vh] overflow-hidden border-none sm:border flex flex-col">
-          <DialogHeader className="p-3 sm:p-6 pb-2 sm:pb-0 border-b sm:border-none shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <DialogContent className="w-full h-[100vh] md:max-w-6xl md:h-[85vh] overflow-hidden border-none md:border flex flex-col p-0">
+          <DialogHeader className="p-3 md:p-6 pb-2 md:pb-4 border-b shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold">
+              <DialogTitle className="flex items-center gap-2 text-base md:text-xl font-semibold">
                 <Home className="h-5 w-5" />
                 Home Maintenance Tracker
               </DialogTitle>
               <Button 
                 variant="ghost" 
                 onClick={() => onOpenChange(false)}
-                className="sm:hidden text-sm px-3 py-2 h-8 font-medium"
+                className="md:hidden text-sm px-3 py-2 h-8 font-medium"
               >
                 Close
               </Button>
@@ -275,7 +275,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
           <div className="flex flex-col flex-1 overflow-hidden">
             {/* Home Selection - Fixed at top */}
-            <div className="px-3 sm:px-6 py-3 shrink-0 bg-background border-b sm:border-none">
+            <div className="px-3 md:px-6 py-3 shrink-0 bg-background border-b">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
@@ -304,15 +304,15 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {selectedHomeId && (
               <div className="flex flex-col flex-1 overflow-hidden">
                 <Tabs defaultValue="tasks" className="flex flex-col h-full overflow-hidden">
-                  <div className="px-3 sm:px-6 py-2 bg-background border-b">
+                  <div className="px-3 md:px-6 py-2 bg-background border-b">
                     <TabsList className="grid grid-cols-3 w-full h-9">
-                      <TabsTrigger value="tasks" className="text-xs sm:text-sm">Active</TabsTrigger>
-                      <TabsTrigger value="history" className="text-xs sm:text-sm">History</TabsTrigger>
-                      <TabsTrigger value="notifications" className="text-xs sm:text-sm">Alerts</TabsTrigger>
+                      <TabsTrigger value="tasks" className="text-xs md:text-sm">Active</TabsTrigger>
+                      <TabsTrigger value="history" className="text-xs md:text-sm">History</TabsTrigger>
+                      <TabsTrigger value="notifications" className="text-xs md:text-sm">Alerts</TabsTrigger>
                     </TabsList>
                   </div>
 
-                   <TabsContent value="tasks" className="overflow-hidden mt-0 px-3 sm:px-6">
+                   <TabsContent value="tasks" className="overflow-hidden mt-0 px-3 md:px-6 flex-1 flex flex-col">
                      {/* Category Filter */}
                      <div className="flex items-center gap-2 py-3 shrink-0 bg-background">
                       <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -336,7 +336,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                       </Button>
                     </div>
 
-                    <div className="overflow-y-auto space-y-2 pb-3 max-h-[calc(80vh-250px)]" onClick={() => setSwipedTaskId(null)}>
+                    <div className="overflow-y-auto space-y-2 pb-3 flex-1 max-h-[50vh] md:max-h-[calc(85vh-280px)]" onClick={() => setSwipedTaskId(null)}>
                       {loading ? (
                         <div className="text-center py-8">Loading tasks...</div>
                       ) : getFilteredTasks().length === 0 ? (
@@ -390,11 +390,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                       <Progress value={progress} className="h-2" />
                                     </div>
                                   </div>
-                                   <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                                    <div className="flex flex-col gap-1 min-h-[44px] md:min-h-[36px] justify-center">
                                      <Button 
                                        onClick={() => handleTaskComplete(task)} 
                                        size="sm" 
-                                       className="w-8 h-8 p-0 bg-green-600 hover:bg-green-700 text-white" 
+                                       className="w-9 h-9 md:w-8 md:h-8 p-0 bg-green-600 hover:bg-green-700 text-white" 
                                        title="Complete Task"
                                      >
                                        <CheckCircle className="h-4 w-4" />
@@ -402,7 +402,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                      
                                      {/* Show delete button on desktop or when swiped on mobile */}
                                      <div className={`transition-all duration-200 ${
-                                       swipedTaskId === task.id ? 'opacity-100 w-8' : 'sm:opacity-100 sm:w-8 opacity-0 w-0'
+                                       swipedTaskId === task.id ? 'opacity-100 w-9 md:w-8' : 'md:opacity-100 md:w-8 opacity-0 w-0'
                                      }`}>
                                        <Button 
                                          variant="destructive" 
@@ -411,7 +411,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                            handleDeleteTask(task.id);
                                            setSwipedTaskId(null);
                                          }} 
-                                         className="w-8 h-8 p-0" 
+                                         className="w-9 h-9 md:w-8 md:h-8 p-0" 
                                          title="Delete Task"
                                        >
                                          <Trash2 className="h-4 w-4" />
@@ -427,14 +427,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </div>
                   </TabsContent>
 
-                   <TabsContent value="history" className="overflow-hidden mt-0">
-                     <div className="overflow-y-auto px-3 sm:px-6 py-3 max-h-[calc(80vh-200px)]">
+                   <TabsContent value="history" className="overflow-hidden mt-0 flex-1 flex flex-col">
+                     <div className="overflow-y-auto px-3 md:px-6 py-3 flex-1 max-h-[50vh] md:max-h-[calc(85vh-200px)]">
                        <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                      </div>
                    </TabsContent>
 
-                   <TabsContent value="notifications" className="overflow-hidden mt-0">
-                     <div className="overflow-y-auto px-3 sm:px-6 py-3 max-h-[calc(80vh-200px)]">
+                   <TabsContent value="notifications" className="overflow-hidden mt-0 flex-1 flex flex-col">
+                     <div className="overflow-y-auto px-3 md:px-6 py-3 flex-1 max-h-[50vh] md:max-h-[calc(85vh-200px)]">
                        <MaintenanceNotifications selectedHomeId={selectedHomeId} />
                      </div>
                    </TabsContent>
