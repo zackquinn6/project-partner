@@ -8,6 +8,8 @@ interface RapidProjectAssessmentWindowProps {
 }
 
 export function RapidProjectAssessmentWindow({ open, onOpenChange }: RapidProjectAssessmentWindowProps) {
+  console.log('🚀 RapidProjectAssessmentWindow render - open:', open);
+  
   return (
     <ResponsiveDialog
       open={open}
