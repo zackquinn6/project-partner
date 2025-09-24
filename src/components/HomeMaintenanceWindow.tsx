@@ -256,7 +256,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full h-[100vh] sm:h-auto sm:max-w-6xl sm:min-h-[60vh] sm:max-h-[90vh] overflow-hidden border-none sm:border flex flex-col">
+        <DialogContent className="w-full h-[100vh] sm:max-w-6xl sm:h-[80vh] overflow-hidden border-none sm:border flex flex-col">
           <DialogHeader className="p-3 sm:p-6 pb-2 sm:pb-0 border-b sm:border-none shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold">
@@ -303,7 +303,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {/* Tabs - Scrollable content */}
             {selectedHomeId && (
               <div className="flex flex-col flex-1 overflow-hidden">
-                <Tabs defaultValue="tasks" className="flex flex-col flex-1 overflow-hidden">
+                <Tabs defaultValue="tasks" className="flex flex-col h-full overflow-hidden">
                   <div className="px-3 sm:px-6 py-2 bg-background border-b">
                     <TabsList className="grid grid-cols-3 w-full h-9">
                       <TabsTrigger value="tasks" className="text-xs sm:text-sm">Active</TabsTrigger>
@@ -312,7 +312,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </TabsList>
                   </div>
 
-                   <TabsContent value="tasks" className="overflow-hidden mt-0 px-3 sm:px-6">
+                   <TabsContent value="tasks" className="flex-1 flex flex-col overflow-hidden mt-0 px-3 sm:px-6">
                      {/* Category Filter */}
                      <div className="flex items-center gap-2 py-3 shrink-0 bg-background">
                       <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -336,7 +336,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                       </Button>
                     </div>
 
-                    <div className="overflow-y-auto space-y-2 pb-3 max-h-[60vh]" onClick={() => setSwipedTaskId(null)}>
+                    <div className="flex-1 overflow-y-auto space-y-2 pb-3" onClick={() => setSwipedTaskId(null)}>
                       {loading ? (
                         <div className="text-center py-8">Loading tasks...</div>
                       ) : getFilteredTasks().length === 0 ? (
@@ -427,14 +427,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </div>
                   </TabsContent>
 
-                   <TabsContent value="history" className="overflow-hidden mt-0">
-                     <div className="overflow-y-auto px-3 sm:px-6 py-3 max-h-[60vh]">
+                   <TabsContent value="history" className="flex-1 overflow-hidden mt-0">
+                     <div className="h-full overflow-y-auto px-3 sm:px-6 py-3">
                        <MaintenanceHistoryTab selectedHomeId={selectedHomeId} />
                      </div>
                    </TabsContent>
 
-                   <TabsContent value="notifications" className="overflow-hidden mt-0">
-                     <div className="overflow-y-auto px-3 sm:px-6 py-3 max-h-[60vh]">
+                   <TabsContent value="notifications" className="flex-1 overflow-hidden mt-0">
+                     <div className="h-full overflow-y-auto px-3 sm:px-6 py-3">
                        <MaintenanceNotifications selectedHomeId={selectedHomeId} />
                      </div>
                    </TabsContent>
