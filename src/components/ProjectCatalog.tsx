@@ -487,12 +487,25 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       setIsCreatingNewProject(false);
       
       // Navigate immediately to kickoff
-      navigate('/', {
-        state: {
-          view: 'user',
-          projectRunId: projectRunId
-        }
-      });
+      // Navigate to user view and trigger kickoff workflow
+      if (window.innerWidth < 768) {
+        // On mobile, navigate to mobile workflow view 
+        navigate('/', {
+          state: {
+            view: 'user',
+            projectRunId: projectRunId,
+            mobileView: 'workflow'
+          }
+        });
+      } else {
+        // On desktop, navigate to user view
+        navigate('/', {
+          state: {
+            view: 'user',
+            projectRunId: projectRunId
+          }
+        });
+      }
     });
   };
 

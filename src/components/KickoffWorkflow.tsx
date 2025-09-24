@@ -189,7 +189,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-2 sm:p-6 space-y-4 sm:space-y-6">
       {/* Progress Header */}
       <Card>
         <CardHeader>
@@ -217,13 +217,13 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
 
       {/* Step Navigation */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <CardContent className="p-2 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto w-full sm:w-auto">
               {kickoffSteps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
+                <div key={step.id} className="flex items-center flex-shrink-0">
                   <div className={`
-                    flex items-center justify-center w-8 h-8 rounded-full border-2 transition-colors
+                    flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 transition-colors
                     ${index === currentKickoffStep 
                       ? 'border-primary bg-primary text-primary-foreground' 
                       : isStepCompleted(index)
@@ -232,13 +232,13 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
                     }
                   `}>
                     {isStepCompleted(index) ? (
-                      <CheckCircle className="w-4 h-4" />
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                     ) : (
-                      <span className="text-sm font-medium">{index + 1}</span>
+                      <span className="text-xs sm:text-sm font-medium">{index + 1}</span>
                     )}
                   </div>
-                  <div className="ml-2 hidden sm:block">
-                    <p className={`text-sm font-medium ${
+                  <div className="ml-1 sm:ml-2 hidden md:block">
+                    <p className={`text-xs sm:text-sm font-medium ${
                       index === currentKickoffStep ? 'text-primary' : 
                       isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'
                     }`}>
@@ -246,28 +246,34 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
                     </p>
                   </div>
                   {index < kickoffSteps.length - 1 && (
-                    <div className="mx-4 w-8 h-0.5 bg-muted-foreground/20" />
+                    <div className="mx-2 sm:mx-4 w-4 sm:w-8 h-0.5 bg-muted-foreground/20" />
                   )}
                 </div>
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handlePrevious}
                 disabled={currentKickoffStep === 0}
+                className="flex-1 sm:flex-initial"
               >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Previous
+                <ChevronLeft className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleNext}
                 disabled={currentKickoffStep === kickoffSteps.length - 1}
+                className="flex-1 sm:flex-initial"
               >
-                Next
-                <ChevronRight className="w-4 h-4 ml-2" />
+                <span className="hidden sm:inline">Next</span>
+                <span className="sm:hidden">Next</span>
+                <ChevronRight className="w-4 h-4 ml-1 sm:ml-2" />
               </Button>
             </div>
           </div>

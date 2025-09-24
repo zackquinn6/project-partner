@@ -91,6 +91,12 @@ const Index = () => {
       console.log('🎯 Index: Setting view from navigation state:', location.state.view);
       setCurrentView(location.state.view);
       
+      // Handle mobile view state
+      if (location.state.mobileView && isMobile) {
+        console.log('📱 Index: Setting mobile view from state:', location.state.mobileView);
+        setMobileView(location.state.mobileView);
+      }
+      
       if (location.state.resetToListing) {
         console.log('🔄 Index: Setting reset flags from navigation state');
         setResetUserView(true);
