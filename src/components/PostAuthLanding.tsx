@@ -10,11 +10,9 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
 import { HelpPopup } from '@/components/HelpPopup';
-import { RapidProjectAssessment } from '@/components/RapidProjectAssessment';
+import { RapidProjectAssessmentWindow } from '@/components/RapidProjectAssessmentWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
-import { ResponsiveDialog } from '@/components/ResponsiveDialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
   const {
@@ -283,14 +281,7 @@ Pick up where you left off or start your next winning project.</p>
         
         <ContractorFinderWindow open={showContractorFinder} onOpenChange={setShowContractorFinder} />
         
-        <ResponsiveDialog
-          open={showProjectPlanning}
-          onOpenChange={setShowProjectPlanning}
-          size="content-large"
-          title="Rapid Project Assessment"
-        >
-          <RapidProjectAssessment />
-        </ResponsiveDialog>
+        <RapidProjectAssessmentWindow open={showProjectPlanning} onOpenChange={setShowProjectPlanning} />
       </div>
     </div>;
 };
