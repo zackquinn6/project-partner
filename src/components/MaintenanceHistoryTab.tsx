@@ -126,7 +126,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Filters - matching Active tab spacing */}
-      <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+      <div className="flex flex-col sm:flex-row gap-2 py-3 shrink-0">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by category" />
@@ -156,6 +156,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
 
       {/* Completion History - matching Active tab content area */}
       <div className="flex-1 overflow-y-auto">
+        <div className="space-y-2 pb-3">
         {loading ? (
           <div className="text-center py-8">Loading completion history...</div>
         ) : filteredCompletions.length === 0 ? (
@@ -208,6 +209,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

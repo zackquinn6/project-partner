@@ -98,7 +98,7 @@ export function MaintenanceNotifications({ selectedHomeId }: MaintenanceNotifica
       </div>
       
       {/* Content - matching Active tab content area */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto">
         <div className="space-y-2 pb-3">
         {/* Email Settings */}
         <div className="space-y-4">
