@@ -145,8 +145,8 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         </TabsTrigger>
       </TabsList>
       
-      <TabsContent value="basic" className="space-y-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <TabsContent value="basic" className="space-y-6 p-6">
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
           <div>
             <Label htmlFor="item">
               {type === 'tools' ? 'Tool' : 'Material'} Name *
