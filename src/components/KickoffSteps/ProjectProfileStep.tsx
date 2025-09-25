@@ -126,9 +126,14 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   };
 
   const handleHomeManagerClose = (open: boolean) => {
-    setShowHomeManager(open);
     if (!open) {
-      fetchHomes(); // Refresh homes when dialog closes
+      setShowHomeManager(false);
+      // Debounce the homes refresh to prevent rapid re-renders
+      setTimeout(() => {
+        if (user) {
+          fetchHomes();
+        }
+      }, 100);
     }
   };
 

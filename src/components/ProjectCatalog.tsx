@@ -126,28 +126,21 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const availableProjects = user ? projects : publicProjects;
   
   // Filter projects to show published and beta projects or all projects in admin mode
-  const publishedProjects = user 
-    ? projects.filter(project => {
-        const isValidStatus = (
-          project.publishStatus === 'published' || 
-          project.publishStatus === 'beta-testing' || 
-          isAdminMode
-        );
-        const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
-        
-        console.log('🔍 Debug - Project filtering:', {
-          projectName: project.name,
-          publishStatus: project.publishStatus,
-          isValidStatus,
-          isNotManualTemplate,
-          shouldShow: isValidStatus && isNotManualTemplate
-        });
-        
-        return isValidStatus && isNotManualTemplate;
-      })
-    : publicProjects.filter(project => 
-        project.id !== '00000000-0000-0000-0000-000000000000' // Hide manual project template
-      );
+  const publishedProjects = useMemo(() => 
+    user 
+      ? projects.filter(project => {
+          const isValidStatus = (
+            project.publishStatus === 'published' || 
+            project.publishStatus === 'beta-testing' || 
+            isAdminMode
+          );
+          const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
+          
+          return isValidStatus && isNotManualTemplate;
+        })
+      : publicProjects.filter(project => 
+          project.id !== '00000000-0000-0000-0000-000000000000' // Hide manual project template
+        ), [projects, user, isAdminMode, publicProjects]);
 
   // Get unique filter options
   const availableCategories = useMemo(() => 
