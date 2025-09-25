@@ -73,13 +73,29 @@ const Index = () => {
       console.log('🎯 Index: Setting view from navigation state:', location.state.view);
       setCurrentView(location.state.view);
       
+      // Handle projectRunId on mobile - ensure we can find the project run
+      if (location.state.projectRunId && isMobile) {
+        console.log('📱 Index: Mobile navigation with projectRunId:', location.state.projectRunId);
+        // Wait for project runs to load and then set the project run
+        const projectRun = projectRuns.find(run => run.id === location.state.projectRunId);
+        if (projectRun) {
+          console.log('📱 Index: Found project run, setting as current:', projectRun.name);
+          setCurrentProjectRun(projectRun);
+          setMobileView('workflow');
+        } else if (projectRuns.length > 0) {
+          console.log('📱 Index: Project run not found in loaded runs, staying in projects view');
+          setMobileView('projects');
+        }
+        // If projectRuns is empty, wait for them to load
+      }
+      
       if (location.state.resetToListing) {
         console.log('🔄 Index: Setting reset flags from navigation state');
         setResetUserView(true);
         setForceListingMode(true);
       }
     }
-  }, [location.state]);
+  }, [location.state, projectRuns, isMobile, setCurrentProjectRun]);
 
   // Prevent constant re-renders by memoizing navigation handlers
   const [hasHandledInitialState, setHasHandledInitialState] = useState(false);
@@ -344,10 +360,13 @@ const Index = () => {
   };
 
   const handleMobileProjectSelect = (project: any) => {
+    console.log('📱 Index: Mobile project selected:', project);
     if ('progress' in project) {
+      console.log('📱 Index: Setting project run:', project.name);
       setCurrentProjectRun(project);
       setMobileView('workflow');
     } else {
+      console.log('📱 Index: Setting project template:', project.name);
       setCurrentProject(project);
       setMobileView('workflow');
     }
