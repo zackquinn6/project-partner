@@ -7,7 +7,7 @@ import { Upload, FileText, AlertCircle, CheckCircle, Download } from 'lucide-rea
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Phase, Operation, WorkflowStep, Output, Material, Tool } from '@/interfaces/Project';
+import { Phase, Operation, WorkflowStep, Output, Material, Tool, StepInput } from '@/interfaces/Project';
 
 interface ProjectContentImportProps {
   open: boolean;
@@ -27,13 +27,13 @@ export function ProjectContentImport({ open, onOpenChange, onImport }: ProjectCo
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  const sampleCSV = `phase,operation,step,step_description,output_name,output_description,output_type,tool_name,tool_description,material_name,material_description
-Planning,Project Setup,Define Requirements,Gather all project requirements,Requirements Document,Complete project requirements,none,Pen,Writing instrument,Paper,Note-taking paper
-Planning,Project Setup,Create Timeline,Establish project milestones,Project Timeline,Detailed project schedule,none,Computer,For scheduling software,,,
-Preparation,Site Prep,Clear Area,Remove debris and obstacles,Clean Work Area,Area ready for work,safety,Shovel,For moving debris,Trash Bags,For debris collection
-Preparation,Site Prep,Mark Utilities,Identify underground utilities,Utility Markings,All utilities clearly marked,safety,Spray Paint,For marking locations,,,
-Execution,Installation,Measure Space,Take accurate measurements,Measurements,Precise dimensions recorded,performance-durability,Tape Measure,25ft measuring tape,,,
-Execution,Installation,Cut Materials,Cut materials to size,Cut Materials,Materials ready for installation,major-aesthetics,Saw,Hand saw for cutting,Wood,Construction lumber`;
+  const sampleCSV = `phase,operation,step,step_description,inputs,output_name,output_description,output_type,tool_name,tool_description,material_name,material_description
+Planning,Project Setup,Define Requirements,Gather all project requirements,Budget Amount*Project Type*Timeline Preference,Requirements Document,Complete project requirements,none,Pen,Writing instrument,Paper,Note-taking paper
+Planning,Project Setup,Create Timeline,Establish project milestones,Start Date*End Date,Project Timeline,Detailed project schedule,none,Computer,For scheduling software,,,
+Preparation,Site Prep,Clear Area,Remove debris and obstacles,Area Size*Debris Type,Clean Work Area,Area ready for work,safety,Shovel,For moving debris,Trash Bags,For debris collection
+Preparation,Site Prep,Mark Utilities,Identify underground utilities,,Utility Markings,All utilities clearly marked,safety,Spray Paint,For marking locations,,,
+Execution,Installation,Measure Space,Take accurate measurements,Length*Width*Height,Measurements,Precise dimensions recorded,performance-durability,Tape Measure,25ft measuring tape,,,
+Execution,Installation,Cut Materials,Cut materials to size,Cut Length*Angle,Cut Materials,Materials ready for installation,major-aesthetics,Saw,Hand saw for cutting,Wood,Construction lumber`;
 
   const parseCsvLine = (line: string): string[] => {
     const values: string[] = [];
@@ -140,9 +140,28 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Materials,Materia
           content: '',
           materials: [],
           tools: [],
-          outputs: []
+          outputs: [],
+          inputs: []
         };
         operation.steps.push(step);
+      }
+
+      // Parse and add inputs if provided
+      if (rowData.inputs && rowData.inputs.trim()) {
+        const inputNames = rowData.inputs.split('*').map((name: string) => name.trim()).filter(Boolean);
+        inputNames.forEach((inputName: string) => {
+          if (!step!.inputs?.some(input => input.name === inputName)) {
+            const input: StepInput = {
+              id: `input-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: inputName,
+              type: 'text' as const,
+              required: true,
+              description: `Input for ${inputName.toLowerCase()}`
+            };
+            step!.inputs = step!.inputs || [];
+            step!.inputs.push(input);
+          }
+        });
       }
 
       // Add output if provided
@@ -310,7 +329,10 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Materials,Materia
                 <strong>Required Columns:</strong> phase, operation, step
               </div>
               <div>
-                <strong>Optional Columns:</strong> step_description, output_name, output_description, output_type, tool_name, tool_description, material_name, material_description
+                <strong>Optional Columns:</strong> step_description, inputs, output_name, output_description, output_type, tool_name, tool_description, material_name, material_description
+              </div>
+              <div>
+                <strong>Inputs Format:</strong> Multiple inputs separated by asterisks (*), e.g., "Budget Amount*Project Type*Timeline"
               </div>
               <div>
                 <strong>Output Types:</strong> none, major-aesthetics, performance-durability, safety
@@ -362,6 +384,11 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Materials,Materia
                               )}
                               
                               <div className="flex gap-4 mt-2 text-xs">
+                                {step.inputs && step.inputs.length > 0 && (
+                                  <div>
+                                    <span className="font-medium">Inputs:</span> {step.inputs.map(i => i.name).join(', ')}
+                                  </div>
+                                )}
                                 {step.outputs.length > 0 && (
                                   <div>
                                     <span className="font-medium">Outputs:</span> {step.outputs.map(o => o.name).join(', ')}
