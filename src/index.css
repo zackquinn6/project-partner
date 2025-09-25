@@ -297,18 +297,11 @@ All colors MUST be HSL.
       @apply px-4;
     }
     
-    /* Enable smooth scrolling and prevent bounce on iOS */
-    body {
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: none;
-    }
-    
-    /* Ensure smooth momentum scrolling */
-    .mobile-scroll {
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
-    }
+  /* Enable smooth scrolling and prevent bounce on iOS */
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
     
     .text-responsive {
       @apply text-base md:text-lg;
@@ -359,5 +352,13 @@ All colors MUST be HSL.
   /* Improved focus states for accessibility */
   .focus-enhanced:focus-visible {
     @apply ring-2 ring-primary ring-offset-2 outline-none;
+  }
+
+  /* Ensure smooth momentum scrolling for all devices */
+  .mobile-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    scroll-behavior: smooth;
   }
 }

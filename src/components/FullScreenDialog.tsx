@@ -75,7 +75,7 @@ export function FullScreenDialog({
           )}
           
           <div 
-            className="flex-1 overflow-y-auto overscroll-contain mobile-scroll p-4 md:p-6"
+            className="flex-1 min-h-0 mobile-scroll p-4 md:p-6"
           >
             {children}
           </div>
