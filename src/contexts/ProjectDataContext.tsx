@@ -32,8 +32,8 @@ interface ProjectDataProviderProps {
 export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ children }) => {
   const { user } = useAuth();
 
-  // Transform function for projects
-  const transformProjects = (data: any[]): Project[] => {
+  // Memoized transform function for projects with better error handling
+  const transformProjects = React.useMemo(() => (data: any[]): Project[] => {
     return data.map(project => {
       let phases = [];
       if (project.phases) {
@@ -70,10 +70,10 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         phases: Array.isArray(phases) ? phases : []
       };
     });
-  };
+  }, []);
 
-  // Transform function for project runs
-  const transformProjectRuns = (data: any[]): ProjectRun[] => {
+  // Memoized transform function for project runs with better error handling
+  const transformProjectRuns = React.useMemo(() => (data: any[]): ProjectRun[] => {
     return data.map(run => {
       let phases = [];
       if (run.phases) {
@@ -127,7 +127,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         estimatedTime: run.estimated_time
       };
     });
-  };
+  }, []);
 
   // Fetch projects data
   const {

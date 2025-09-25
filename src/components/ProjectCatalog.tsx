@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle, Plus } from 'lucide-react';
+import { MemoizedProjectCard } from '@/components/OptimizedComponents/MemoizedProjectCard';
 import { supabase } from '@/integrations/supabase/client';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import ProfileManager from '@/components/ProfileManager';
@@ -220,7 +221,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     setSelectedDifficulties([]);
     setSelectedEffortLevels([]);
   };
-  const getDifficultyColor = (difficulty: string) => {
+  const getDifficultyColor = useCallback((difficulty: string) => {
     switch (difficulty) {
       case 'Beginner':
         return 'bg-green-100 text-green-800';
@@ -231,8 +232,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       default:
         return 'bg-gray-100 text-gray-800';
     }
-  };
-  const getIconForCategory = (category: string) => {
+  }, []);
+  
+  const getIconForCategory = useCallback((category: string) => {
     switch (category) {
       case 'Interior':
         return Palette;
@@ -251,7 +253,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       default:
         return Hammer;
     }
-  };
+  }, []);
   const handleSelectProject = async (project: any) => {
     try {
       console.log('🎯 ENTER handleSelectProject - Project:', project?.name || 'UNDEFINED');

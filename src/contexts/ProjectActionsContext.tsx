@@ -187,16 +187,47 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       if (error) throw error;
 
-      await refetchProjectRuns();
-      
-      if (data?.id && onSuccess) {
-        console.log("🎯 ProjectActions: Calling onSuccess callback with ID:", data.id);
-        onSuccess(data.id);
-      } else if (data?.id) {
-        console.log("🎯 ProjectActions: Dispatching navigation event for Index.tsx");
-        window.dispatchEvent(new CustomEvent('navigate-to-kickoff', { 
-          detail: { projectRunId: data.id } 
-        }));
+      // Optimistic update: Add to cache immediately instead of refetching
+      if (data) {
+        const newProjectRun: ProjectRun = {
+          id: data.id,
+          templateId: projectRunData.templateId,
+          name: projectRunData.name,
+          description: projectRunData.description,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          startDate: projectRunData.startDate,
+          planEndDate: projectRunData.planEndDate,
+          endDate: projectRunData.endDate,
+          status: projectRunData.status,
+          projectLeader: projectRunData.projectLeader,
+          accountabilityPartner: projectRunData.accountabilityPartner,
+          customProjectName: projectRunData.customProjectName,
+          currentPhaseId: projectRunData.currentPhaseId,
+          currentOperationId: projectRunData.currentOperationId,
+          currentStepId: projectRunData.currentStepId,
+          completedSteps: projectRunData.completedSteps,
+          progress: projectRunData.progress,
+          phases: phasesWithKickoff,
+          category: projectRunData.category,
+          effortLevel: projectRunData.effortLevel,
+          skillLevel: projectRunData.skillLevel,
+          estimatedTime: projectRunData.estimatedTime
+        };
+
+        // Update cache optimistically
+        updateProjectRunsCache([...projectRuns, newProjectRun]);
+        
+        // Call success callback immediately
+        if (onSuccess) {
+          console.log("🎯 ProjectActions: Calling onSuccess callback with ID:", data.id);
+          onSuccess(data.id);
+        } else {
+          console.log("🎯 ProjectActions: Dispatching navigation event for Index.tsx");
+          window.dispatchEvent(new CustomEvent('navigate-to-kickoff', { 
+            detail: { projectRunId: data.id } 
+          }));
+        }
       }
     } catch (error) {
       console.error('Error adding project run:', error);
@@ -206,7 +237,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         variant: "destructive",
       });
     }
-  }, [user, refetchProjectRuns]);
+  }, [user, updateProjectRunsCache, projectRuns]);
 
   const updateProject = useCallback(async (project: Project) => {
     if (!user || !isAdmin) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -36,8 +36,25 @@ export function useDataFetch<T = any>({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastFetchParams = useRef<string>('');
+
+  // Memoize fetch parameters to avoid unnecessary re-fetches
+  const fetchParams = useMemo(() => {
+    return JSON.stringify({
+      table,
+      select,
+      filters,
+      orderBy,
+      cacheKey
+    });
+  }, [table, select, filters, orderBy, cacheKey]);
 
   const fetchData = useCallback(async (useCache = true) => {
+    // Prevent duplicate fetches with same parameters
+    if (fetchParams === lastFetchParams.current && data.length > 0 && !loading) {
+      return;
+    }
+
     if (cacheKey && useCache) {
       const cached = dataCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -77,6 +94,7 @@ export function useDataFetch<T = any>({
 
       const transformedData = transform ? transform(result || []) : (result || []) as T[];
       setData(transformedData);
+      lastFetchParams.current = fetchParams;
       
       if (cacheKey) {
         dataCache.set(cacheKey, { data: transformedData, timestamp: Date.now() });
@@ -86,29 +104,31 @@ export function useDataFetch<T = any>({
       if (err instanceof Error && err.name !== 'AbortError') {
         setError(err);
         
-        // Provide more helpful error messages based on the error type
-        let errorDescription = `Failed to load ${table}`;
-        
-        if (err.message === 'Failed to fetch') {
-          errorDescription = 'Network connection issue. Please check your internet connection and try again.';
-        } else if (err.message.includes('JWT')) {
-          errorDescription = 'Authentication expired. Please sign in again.';
-        } else if (err.message.includes('permission')) {
-          errorDescription = 'Access denied. You may not have permission to view this data.';
-        } else {
-          errorDescription = `${errorDescription}: ${err.message}`;
+        // Only show toast for actual errors, not when data doesn't exist
+        if (!err.message.includes('No rows')) {
+          let errorDescription = `Failed to load ${table}`;
+          
+          if (err.message === 'Failed to fetch') {
+            errorDescription = 'Network connection issue. Please check your internet connection and try again.';
+          } else if (err.message.includes('JWT')) {
+            errorDescription = 'Authentication expired. Please sign in again.';
+          } else if (err.message.includes('permission')) {
+            errorDescription = 'Access denied. You may not have permission to view this data.';
+          } else {
+            errorDescription = `${errorDescription}: ${err.message}`;
+          }
+          
+          toast({
+            title: "Connection Error",
+            description: errorDescription,
+            variant: "destructive",
+          });
         }
-        
-        toast({
-          title: "Connection Error",
-          description: errorDescription,
-          variant: "destructive",
-        });
       }
     } finally {
       setLoading(false);
     }
-  }, [table, select, JSON.stringify(filters), JSON.stringify(orderBy), cacheKey, transform]);
+  }, [table, select, filters, orderBy, cacheKey, transform, fetchParams, data.length, loading]);
 
   const refetch = useCallback(() => fetchData(false), [fetchData]);
 
