@@ -490,14 +490,30 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
       return value?.display_value || valueKey;
     });
     
-    // Title case function - capitalize first letter of each word
-    const toTitleCase = (str: string) => {
-      return str.replace(/\w\S*/g, (txt) => 
-        txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-      );
+    // Common acronyms that should remain in all caps
+    const acronyms = [
+      'CFM', 'PSI', 'RPM', 'GPM', 'BTU', 'HP', 'AC', 'DC', 'LED', 'LCD', 
+      'USB', 'WIFI', 'GPS', 'GPS', 'ABS', 'PVC', 'HVAC', 'DIY', 'EMF',
+      'UV', 'IR', 'RF', 'AM', 'FM', 'TV', 'DVD', 'CD', 'MP3', 'HD',
+      'UHD', '4K', '8K', 'AI', 'API', 'CPU', 'GPU', 'RAM', 'SSD', 'HDD',
+      'AWG', 'NM', 'MM', 'CM', 'KG', 'LB', 'OZ', 'FT', 'IN', 'YD',
+      'V', 'A', 'W', 'KW', 'MW', 'GW', 'HZ', 'KHZ', 'MHZ', 'GHZ'
+    ];
+    
+    // Enhanced title case function that preserves acronyms
+    const toTitleCaseWithAcronyms = (str: string) => {
+      return str.replace(/\w+/g, (word) => {
+        const upperWord = word.toUpperCase();
+        // Check if this word is a known acronym
+        if (acronyms.includes(upperWord)) {
+          return upperWord;
+        }
+        // Otherwise, apply normal title case
+        return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
+      });
     };
     
-    const generatedName = toTitleCase(`${attributeStrings.join(' ')} ${coreItemName}`);
+    const generatedName = toTitleCaseWithAcronyms(`${attributeStrings.join(' ')} ${coreItemName}`);
     setVariationName(generatedName);
   };
 
