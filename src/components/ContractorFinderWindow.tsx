@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollableDialog } from "@/components/ScrollableDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,14 +18,11 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full h-full sm:max-w-[90vw] sm:max-h-[90vh] overflow-hidden border-none sm:border p-0 sm:p-6">
-          <DialogHeader className="p-4 sm:p-0 border-b sm:border-b-0">
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Find Local Contractors
-            </DialogTitle>
-          </DialogHeader>
+      <ScrollableDialog 
+        open={open} 
+        onOpenChange={onOpenChange}
+        title="Find Local Contractors"
+      >
           
           {/* Beta Banner */}
           <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-b border-orange-200 p-3 flex-shrink-0">
@@ -159,8 +157,7 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
              </Card>
              </div>
            </div>
-        </DialogContent>
-      </Dialog>
+      </ScrollableDialog>
       
       <FeedbackDialog 
         open={showFeedback}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollableDialog } from '@/components/ScrollableDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -257,29 +258,16 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   };
   return <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full h-[100vh] md:max-w-6xl md:h-[85vh] overflow-hidden border-none md:border flex flex-col p-0 gap-0">
-          <DialogHeader className="p-3 md:p-6 pb-2 md:pb-4 border-b shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-base md:text-xl font-semibold">
-                <Home className="h-5 w-5" />
-                Home Maintenance Tracker
-              </DialogTitle>
-              <Button 
-                variant="ghost" 
-                onClick={() => onOpenChange(false)}
-                className="md:hidden text-sm px-3 py-2 h-8 font-medium"
-              >
-                Close
-              </Button>
-            </div>
-          </DialogHeader>
-
-          <div className="flex flex-col flex-1 overflow-hidden">
-            {/* Home Selection - Fixed at top */}
-            <div className="px-3 md:px-6 py-3 shrink-0 bg-background border-b">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+    <ScrollableDialog 
+      open={open} 
+      onOpenChange={onOpenChange}
+      title="Home Maintenance Tracker"
+    >
+      <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+        {/* Home Selection - Fixed at top */}
+        <div className="px-3 md:px-6 py-3 shrink-0 bg-background border-b">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
                     <SelectTrigger className="w-full sm:w-[280px] h-9">
                       <SelectValue placeholder="Select a home" />
@@ -477,8 +465,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               </div>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+    </ScrollableDialog>
 
       {/* Dialogs */}
       <AddMaintenanceTaskDialog open={showAddTask} onOpenChange={setShowAddTask} homeId={selectedHomeId} onTaskAdded={fetchTasks} />

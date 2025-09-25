@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollableDialog } from '@/components/ScrollableDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -189,18 +190,16 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(open) => {
-        onOpenChange(open);
-        if (!open) reset();
-      }}>
-      <DialogContent className="w-[95vw] h-[95vh] max-w-none max-h-none p-0 overflow-hidden sm:w-[90vw] sm:h-[90vh] lg:w-[80vw] lg:h-[85vh]">
-        <div className="h-full flex flex-col">
-          <DialogHeader className="p-4 sm:p-6 border-b">
-            <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
-              <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-              AI Repair Analysis
-            </DialogTitle>
-          </DialogHeader>
+      <ScrollableDialog 
+        open={open} 
+        onOpenChange={(open) => {
+          onOpenChange(open);
+          if (!open) reset();
+        }}
+        title="AI Repair Analysis"
+        description="Upload photos of your repair issue and get AI-powered analysis and recommendations"
+      >
+        <div className="h-full flex flex-col min-h-0">
           
           {/* Beta Banner */}
           <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-b border-orange-200 p-3">
@@ -442,8 +441,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
             </div>
           </ScrollArea>
         </div>
-      </DialogContent>
-    </Dialog>
+    </ScrollableDialog>
     
     <FeedbackDialog 
       open={showFeedback}

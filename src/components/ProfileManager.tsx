@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollableDialog } from "@/components/ScrollableDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Edit3 } from "lucide-react";
@@ -188,25 +189,26 @@ export default function ProfileManager({
       </div>;
   };
   if (isLoading) {
-    return <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl">
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">Loading profile...</div>
-          </div>
-        </DialogContent>
-      </Dialog>;
+    return <ScrollableDialog 
+      open={open} 
+      onOpenChange={onOpenChange}
+      title="My Profile"
+    >
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">Loading profile...</div>
+      </div>
+    </ScrollableDialog>;
   }
   return <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full h-full sm:max-w-2xl sm:max-h-[90vh] overflow-y-auto border-none sm:border p-0 sm:p-6">
-          <DialogHeader className="text-center p-4 sm:p-0 border-b sm:border-none">
-            <DialogTitle className="text-2xl font-bold">My Profile</DialogTitle>
-          </DialogHeader>
-          <div className="py-6 px-4 sm:px-0">
-            {renderProfileView()}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ScrollableDialog 
+        open={open} 
+        onOpenChange={onOpenChange}
+        title="My Profile"
+      >
+        <div className="py-6">
+          {renderProfileView()}
+        </div>
+      </ScrollableDialog>
 
       <DIYSurveyPopup open={showSurveyEditor} onOpenChange={open => {
       setShowSurveyEditor(open);
