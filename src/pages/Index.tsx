@@ -49,7 +49,7 @@ const Index = () => {
   const [mobileView, setMobileView] = useState<'home' | 'projects' | 'workflow'>('home');
   const [resetUserView, setResetUserView] = useState(false);
   const [forceListingMode, setForceListingMode] = useState(false);
-  const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'profile' | 'help'>('home');
+  const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'profile' | 'help' | 'expert'>('home');
   
   // Modal states - moved from Navigation to work on both mobile and desktop
   const [showKCExplainer, setShowKCExplainer] = useState(false);
@@ -324,7 +324,7 @@ const Index = () => {
   };
 
   // Mobile navigation handlers
-  const handleMobileNavigation = (tab: 'home' | 'projects' | 'profile' | 'help') => {
+  const handleMobileNavigation = (tab: 'home' | 'projects' | 'profile' | 'help' | 'expert') => {
     setMobileActiveTab(tab);
     switch (tab) {
       case 'home':
@@ -338,6 +338,9 @@ const Index = () => {
         break;
       case 'help':
         window.dispatchEvent(new CustomEvent('show-help-popup'));
+        break;
+      case 'expert':
+        setIsExpertHelpOpen(true);
         break;
     }
   };
