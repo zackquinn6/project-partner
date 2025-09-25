@@ -49,6 +49,16 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     return <div>No project selected</div>;
   }
 
+  // Debug logging to see what data we have
+  console.log('ProjectOverviewStep - currentProjectRun:', {
+    diyLengthChallenges: currentProjectRun.diyLengthChallenges,
+    name: currentProjectRun.name
+  });
+  console.log('ProjectOverviewStep - currentProject:', {
+    diyLengthChallenges: currentProject?.diyLengthChallenges,
+    name: currentProject?.name
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
