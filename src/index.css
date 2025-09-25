@@ -303,34 +303,17 @@ All colors MUST be HSL.
     overscroll-behavior: none;
   }
 
-  /* Force override Radix scroll lock when needed */
+  /* Override Radix scroll lock to allow dialog scrolling */
   body[data-scroll-locked] .enhanced-scroll {
     overflow-y: auto !important;
     touch-action: pan-y !important;
   }
 
-  /* Ensure dialog overlay is always visible when open */
-  .dialog-overlay[data-state="open"] {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-  
-  .dialog-overlay[data-state="closed"] {
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-
-  /* Prevent background interaction when dialog is open, but allow dialog scrolling */
-  body:has(.dialog-overlay[data-state="open"]) > *:not([data-radix-portal]) {
-    pointer-events: none;
-  }
-  
-  /* Ensure all dialog content is interactive */
-  [data-radix-portal],
-  [role="dialog"],
-  .dialog-overlay,
-  .enhanced-scroll {
-    pointer-events: auto !important;
+  /* Ensure touchpad scrolling works in dialogs */
+  body[data-scroll-locked] [role="dialog"] .enhanced-scroll {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
     
     .text-responsive {

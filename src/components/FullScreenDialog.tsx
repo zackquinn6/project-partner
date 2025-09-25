@@ -25,19 +25,9 @@ export function FullScreenDialog({
   const { isMobile } = useResponsive();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogPortal>
-        <DialogOverlay 
-          className={cn(
-            "dialog-overlay bg-black/60 backdrop-blur-md fixed inset-0 z-50 transition-all duration-300",
-            open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          )}
-          data-state={open ? "open" : "closed"}
-          style={{ 
-            backdropFilter: open ? 'blur(8px)' : 'none',
-            background: open ? 'rgba(0, 0, 0, 0.6)' : 'transparent'
-          }}
-        />
+        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-50" />
         <div
           className={cn(
             "fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]",
