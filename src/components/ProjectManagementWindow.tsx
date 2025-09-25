@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -796,16 +797,14 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
 
   if (!currentProject) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>Project Management</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[85vh] p-6">
-            {renderProjectSelector()}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      <ResponsiveDialog 
+        open={open} 
+        onOpenChange={onOpenChange}
+        size="content-large"
+        title="Project Management"
+      >
+        {renderProjectSelector()}
+      </ResponsiveDialog>
     );
   }
 
@@ -870,15 +869,13 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Project Management</DialogTitle>
-        </DialogHeader>
-        <ScrollArea className="max-h-[85vh] p-6">
-          {renderView()}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+    <ResponsiveDialog 
+      open={open} 
+      onOpenChange={onOpenChange}
+      size="content-large"
+      title="Project Management"
+    >
+      {renderView()}
+    </ResponsiveDialog>
   );
 };
