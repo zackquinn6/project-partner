@@ -1,5 +1,6 @@
 import { Project, Phase, Operation, WorkflowStep, LibraryTool, LibraryMaterial, Material, Tool, ContentSection } from '@/interfaces/Project';
 import { addStandardPhasesToProjectRun } from './projectUtils';
+import { importExcelToTileProject } from './directExcelImport';
 
 // Tool references for tile installation
 export const tileInstallationTools: LibraryTool[] = [
@@ -144,7 +145,20 @@ export const tileInstallationMaterials: LibraryMaterial[] = [
   }
 ];
 
-export const createTileInstallationProject = (): Project => {
+export const createTileInstallationProject = async (): Promise<Project> => {
+  // Try to import from Excel first, fallback to hardcoded if it fails
+  try {
+    console.log('Attempting to import tile project from Excel...');
+    const excelProject = await importExcelToTileProject();
+    console.log('Successfully imported from Excel');
+    return excelProject;
+  } catch (error) {
+    console.warn('Excel import failed, using fallback project structure:', error);
+    return createFallbackTileProject();
+  }
+};
+
+export const createFallbackTileProject = (): Project => {
   // Surface Preparation Phase
   const surfacePrepOperation: Operation = {
     id: 'surface-prep-operation',
