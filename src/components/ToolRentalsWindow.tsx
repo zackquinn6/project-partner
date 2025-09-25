@@ -1,5 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ResponsiveDialog } from '@/components/ResponsiveDialog';
+import { ScrollableDialog } from '@/components/ScrollableDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,10 +17,9 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
   };
 
   return (
-    <ResponsiveDialog
+    <ScrollableDialog
       open={isOpen}
       onOpenChange={onClose}
-      size="content-large"
       title="Tool Access & Rentals"
     >
       <div className="flex items-center justify-between mb-6">
@@ -37,17 +35,17 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
       </div>
       
       <div className="flex-1 min-h-0">
-          <Tabs defaultValue="finder" className="w-full h-full flex flex-col">
+        <Tabs defaultValue="finder" className="w-full h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
             <TabsTrigger value="finder">Tool Access Finder</TabsTrigger>
             <TabsTrigger value="toolio">Toolio (Boston, MA)</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="finder" className="mt-6 flex-1 min-h-0 enhanced-scroll">
+          <TabsContent value="finder" className="mt-6 flex-1 min-h-0 overflow-y-auto">
             <ToolRentalFinder />
           </TabsContent>
           
-          <TabsContent value="toolio" className="mt-6 flex-1 min-h-0 enhanced-scroll">
+          <TabsContent value="toolio" className="mt-6 flex-1 min-h-0 overflow-y-auto">
             <div className="space-y-6">
               {/* Hero Section with Toolio Theme */}
               <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
@@ -155,8 +153,8 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
               </div>
             </div>
           </TabsContent>
-          </Tabs>
-        </div>
-    </ResponsiveDialog>
+        </Tabs>
+      </div>
+    </ScrollableDialog>
   );
 };

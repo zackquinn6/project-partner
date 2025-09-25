@@ -419,7 +419,7 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
   };
 
   return (
-    <div className={`space-y-6 enhanced-scroll ${className}`} style={{ maxHeight: 'calc(90vh - 180px)', overflowY: 'auto' }}>
+    <div className={`space-y-6 ${className}`}>
       {/* Search Controls */}
       <Card>
         <CardHeader>
