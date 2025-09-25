@@ -216,8 +216,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                 {projects
                   .filter(project => {
                     const shouldInclude = isAdminMode ? true : (project.publishStatus === 'published' || project.publishStatus === 'beta-testing');
-                    console.log('Project filter:', project.name, 'publishStatus:', project.publishStatus, 'include:', shouldInclude);
-                    return shouldInclude;
+                    const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000'; // Hide manual log template
+                    console.log('Project filter:', project.name, 'publishStatus:', project.publishStatus, 'include:', shouldInclude && isNotManualTemplate);
+                    return shouldInclude && isNotManualTemplate;
                   })
                   .map((project) => (
                     <SelectItem key={project.id} value={project.id}>

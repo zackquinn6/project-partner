@@ -74,7 +74,7 @@ export function FullScreenDialog({
             </div>
           )}
           
-          <div className="flex-1 min-h-0 overflow-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex-1 min-h-0 overflow-auto overscroll-contain scrollbar-thin scrollbar-thumb-border scrollbar-track-background" style={{ WebkitOverflowScrolling: 'touch' }}>
             {children}
           </div>
         </div>

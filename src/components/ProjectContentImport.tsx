@@ -259,23 +259,10 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Materials,Materia
           <DialogTitle>Import Project Content</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="paste" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="paste">Paste CSV</TabsTrigger>
+        <Tabs defaultValue="upload" className="w-full">
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="upload">Upload File</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="paste" className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium mb-2">Paste CSV Data</h3>
-              <Textarea
-                placeholder={`Paste your CSV data here...\n\nExample:\n${sampleCSV.split('\n').slice(0, 3).join('\n')}...`}
-                value={csvData}
-                onChange={(e) => setCsvData(e.target.value)}
-                className="min-h-[200px] font-mono text-sm"
-              />
-            </div>
-          </TabsContent>
           
           <TabsContent value="upload" className="space-y-4">
             <div>
