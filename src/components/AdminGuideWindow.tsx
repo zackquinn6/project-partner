@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FullScreenDialog } from '@/components/FullScreenDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Settings, 
   BarChart3, 
@@ -15,17 +16,14 @@ import {
   MapPin,
   Cog,
   RefreshCw,
-  Users,
-  Database,
-  Lock,
-  FileText,
-  BookOpen,
-  ExternalLink,
-  Info,
   Target,
   TrendingUp,
-  UserCheck,
-  Zap
+  BookOpen,
+  Zap,
+  Info,
+  Users,
+  ExternalLink,
+  CheckCircle
 } from 'lucide-react';
 
 interface AdminGuideWindowProps {
@@ -281,280 +279,276 @@ const adminFunctions = [
 
 export function AdminGuideWindow({ open, onOpenChange }: AdminGuideWindowProps) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [openUserDocs, setOpenUserDocs] = useState(false);
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] h-[95vh] max-w-none max-h-none p-0 overflow-hidden">
-          <div className="h-full flex flex-col">
-            <DialogHeader className="p-6 border-b bg-gradient-to-r from-primary/5 to-primary/10">
-              <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-                <Shield className="w-6 h-6 text-primary" />
-                Administrator Guide & Documentation
-              </DialogTitle>
-            </DialogHeader>
+    <FullScreenDialog 
+      open={open} 
+      onOpenChange={onOpenChange}
+      title="Administrator Guide & Documentation"
+      description="Complete administrative control center documentation and best practices"
+    >
+      <div className="h-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <TabsList className="grid grid-cols-4 w-full">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              Admin Overview
+            </TabsTrigger>
+            <TabsTrigger value="functions" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Core Functions
+            </TabsTrigger>
+            <TabsTrigger value="workflows" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Workflows & Best Practices
+            </TabsTrigger>
+            <TabsTrigger value="terminology" className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4" />
+              Technical Terms
+            </TabsTrigger>
+          </TabsList>
 
-            <div className="flex-1 overflow-hidden">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                <TabsList className="grid grid-cols-4 w-full bg-muted/50 border-b border-border">
-                  <TabsTrigger value="overview" className="flex items-center gap-2">
-                    <Target className="w-4 h-4" />
-                    Admin Overview
-                  </TabsTrigger>
-                  <TabsTrigger value="functions" className="flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    Core Functions
-                  </TabsTrigger>
-                  <TabsTrigger value="workflows" className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Workflows & Best Practices
-                  </TabsTrigger>
-                  <TabsTrigger value="terminology" className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4" />
-                    Technical Terms
-                  </TabsTrigger>
-                </TabsList>
+          <div className="flex-1 min-h-0">
+            <TabsContent value="overview" className="h-full">
+              <ScrollArea className="h-full">
+                <div className="space-y-8 p-6">
+                  {/* Header Section */}
+                  <div className="text-center space-y-4">
+                    <h2 className="text-3xl font-bold text-foreground">Administrator Panel Overview</h2>
+                    <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
+                      Complete administrative control center for managing projects, users, content, and system operations. 
+                      This guide covers all administrative functions, workflows, and best practices.
+                    </p>
+                  </div>
 
-                <div className="flex-1 overflow-y-auto">
-                  <TabsContent value="overview" className="p-6 space-y-6">
-                    <div className="text-center space-y-4">
-                      <h2 className="text-3xl font-bold text-foreground">Administrator Panel Overview</h2>
-                      <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
-                        Complete administrative control center for managing projects, users, content, and system operations. 
-                        This guide covers all administrative functions, workflows, and best practices.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Settings className="w-5 h-5 text-primary" />
-                            Content Management
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground">
-                            Manage project templates, tools/materials catalog, and knowledge base content with full revision control.
-                          </p>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="border-secondary/20 bg-gradient-to-br from-secondary/5 to-secondary/10">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Users className="w-5 h-5 text-secondary" />
-                            User & Security Management
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground">
-                            Control user access, monitor security events, manage agreements, and maintain system security posture.
-                          </p>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-accent" />
-                            Analytics & Insights
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground">
-                            Monitor project performance, user engagement, and system health with comprehensive analytics and reporting.
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    <Card className="border-info/20 bg-gradient-to-br from-info/5 to-info/10">
+                  {/* Main Feature Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                          <Info className="w-5 h-5 text-info" />
-                          Getting Started as an Administrator
+                          <Settings className="w-5 h-5 text-primary" />
+                          Content Management
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <h4 className="font-semibold mb-2">Essential First Steps:</h4>
-                            <ul className="space-y-1 text-muted-foreground">
-                              <li>• Review current project templates and user activity</li>
-                              <li>• Check security dashboard for any pending issues</li>
-                              <li>• Verify tools/materials catalog is up to date</li>
-                              <li>• Review recent analytics for system health</li>
-                            </ul>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold mb-2">Regular Maintenance Tasks:</h4>
-                            <ul className="space-y-1 text-muted-foreground">
-                              <li>• Weekly security and user activity review</li>
-                              <li>• Monthly analytics analysis and reporting</li>
-                              <li>• Quarterly template performance evaluation</li>
-                              <li>• Ongoing knowledge base and catalog updates</li>
-                            </ul>
-                          </div>
-                        </div>
-                        <div className="pt-4 border-t">
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setOpenUserDocs(true)}
-                            className="flex items-center gap-2"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                            View User Documentation
-                          </Button>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Understanding the user experience helps inform administrative decisions
-                          </p>
-                        </div>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          Manage project templates, tools/materials catalog, and knowledge base content with full revision control.
+                        </p>
                       </CardContent>
                     </Card>
-                  </TabsContent>
 
-                  <TabsContent value="functions" className="p-6 space-y-6">
-                    <div className="text-center space-y-2 mb-8">
-                      <h2 className="text-2xl font-bold">Administrative Functions Guide</h2>
-                      <p className="text-muted-foreground">Detailed breakdown of each administrative function and its capabilities</p>
-                    </div>
+                    <Card className="border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Users className="w-5 h-5 text-accent" />
+                          User & Security Management
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          Control user access, monitor security events, manage agreements, and maintain system security posture.
+                        </p>
+                      </CardContent>
+                    </Card>
 
-                    <div className="grid grid-cols-1 gap-6">
-                      {adminFunctions.map((func) => (
-                        <Card key={func.id} className="border-l-4 border-l-primary">
-                          <CardHeader>
-                            <CardTitle className="flex items-center gap-3">
-                              <func.icon className="w-6 h-6 text-primary" />
-                              {func.name}
-                            </CardTitle>
-                            <p className="text-muted-foreground">{func.description}</p>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
-                              <div>
-                                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                                  <Zap className="w-4 h-4" />
-                                  Key Features
-                                </h4>
-                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm text-muted-foreground">
-                                  {func.keyFeatures.map((feature, index) => (
-                                    <li key={index} className="flex items-start">
-                                      <span className="text-primary mr-2">•</span>
-                                      {feature}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </TabsContent>
+                    <Card className="border-secondary/20 bg-gradient-to-br from-secondary/5 to-secondary/10">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BarChart3 className="w-5 h-5 text-secondary" />
+                          Analytics & Insights
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          Monitor project performance, user engagement, and system health with comprehensive analytics and reporting.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-                  <TabsContent value="workflows" className="p-6 space-y-6">
-                    <div className="text-center space-y-2 mb-8">
-                      <h2 className="text-2xl font-bold">Administrative Workflows & Best Practices</h2>
-                      <p className="text-muted-foreground">Common administrative tasks and recommended approaches</p>
-                    </div>
+                  {/* Getting Started Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Info className="w-5 h-5 text-primary" />
+                        Getting Started as an Administrator
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold mb-3 flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            Essential First Steps
+                          </h4>
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            <li className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              Review current project templates and user activity
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              Check security dashboard for any pending issues
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              Verify tools/materials catalog is up to date
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              Review recent analytics for system health
+                            </li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold mb-3 flex items-center gap-2">
+                            <RefreshCw className="w-4 h-4 text-blue-500" />
+                            Regular Maintenance Tasks
+                          </h4>
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            <li className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              Weekly security and user activity review
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              Monthly analytics analysis and reporting
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              Quarterly template performance evaluation
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              Ongoing knowledge base and catalog updates
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </ScrollArea>
+            </TabsContent>
 
-                    <Accordion type="single" collapsible className="space-y-4">
-                      {adminFunctions.map((func) => (
-                        <AccordionItem key={func.id} value={func.id} className="border rounded-lg px-4">
-                          <AccordionTrigger className="hover:no-underline">
-                            <div className="flex items-center gap-3">
-                              <func.icon className="w-5 h-5 text-primary" />
-                              <span className="font-semibold">{func.name} Workflows</span>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="pt-4">
-                            <div className="space-y-4">
-                              <h4 className="font-semibold text-primary">Common Administrative Tasks:</h4>
-                              <ul className="space-y-2">
-                                {func.workflows.map((workflow, index) => (
-                                  <li key={index} className="flex items-start text-sm">
-                                    <Badge variant="outline" className="mr-3 mt-0.5 text-xs">
-                                      {index + 1}
-                                    </Badge>
-                                    <span className="text-muted-foreground">{workflow}</span>
+            <TabsContent value="functions" className="h-full">
+              <ScrollArea className="h-full">
+                <div className="space-y-6 p-6">
+                  <div className="text-center space-y-2 mb-8">
+                    <h2 className="text-2xl font-bold">Administrative Functions Guide</h2>
+                    <p className="text-muted-foreground">Detailed breakdown of each administrative function and its capabilities</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6">
+                    {adminFunctions.map((func) => (
+                      <Card key={func.id} className="border-l-4 border-l-primary">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-3">
+                            <func.icon className="w-6 h-6 text-primary" />
+                            {func.name}
+                          </CardTitle>
+                          <p className="text-muted-foreground">{func.description}</p>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-primary" />
+                                Key Features
+                              </h4>
+                              <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                {func.keyFeatures.map((feature, index) => (
+                                  <li key={index} className="flex items-start gap-2">
+                                    <span className="text-primary text-xs mt-1">•</span>
+                                    <span className="text-muted-foreground">{feature}</span>
                                   </li>
                                 ))}
                               </ul>
                             </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </TabsContent>
-
-                  <TabsContent value="terminology" className="p-6 space-y-6">
-                    <div className="text-center space-y-2 mb-8">
-                      <h2 className="text-2xl font-bold">Technical Terminology</h2>
-                      <p className="text-muted-foreground">Key terms and definitions for administrative functions</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {adminFunctions.map((func) => (
-                        <Card key={func.id}>
-                          <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg">
-                              <func.icon className="w-5 h-5 text-primary" />
-                              {func.name}
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-3">
-                              {func.terminology.map((term, index) => (
-                                <div key={index} className="border-l-2 border-l-muted pl-4">
-                                  <h5 className="font-semibold text-sm text-primary">{term.term}</h5>
-                                  <p className="text-xs text-muted-foreground mt-1">{term.definition}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </TabsContent>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-              </Tabs>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+              </ScrollArea>
+            </TabsContent>
 
-      {/* User Documentation Access */}
-      <Dialog open={openUserDocs} onOpenChange={setOpenUserDocs}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Access User Documentation</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              The user documentation provides insight into how end users experience the application. 
-              This can help inform administrative decisions and support user needs.
-            </p>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => {
-                  setOpenUserDocs(false);
-                  // This would trigger opening the user documentation
-                  window.dispatchEvent(new CustomEvent('open-user-documentation'));
-                }}
-                className="flex-1"
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                Open User Guide
-              </Button>
-              <Button variant="outline" onClick={() => setOpenUserDocs(false)}>
-                Cancel
-              </Button>
-            </div>
+            <TabsContent value="workflows" className="h-full">
+              <ScrollArea className="h-full">
+                <div className="space-y-6 p-6">
+                  <div className="text-center space-y-2 mb-8">
+                    <h2 className="text-2xl font-bold">Administrative Workflows & Best Practices</h2>
+                    <p className="text-muted-foreground">Common administrative tasks and recommended approaches</p>
+                  </div>
+
+                  <Accordion type="single" collapsible className="space-y-4">
+                    {adminFunctions.map((func) => (
+                      <AccordionItem key={func.id} value={func.id} className="border rounded-lg px-4">
+                        <AccordionTrigger className="hover:no-underline">
+                          <div className="flex items-center gap-3">
+                            <func.icon className="w-5 h-5 text-primary" />
+                            <span className="font-semibold">{func.name} Workflows</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-4">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-primary">Common Administrative Tasks:</h4>
+                            <ul className="space-y-3">
+                              {func.workflows.map((workflow, index) => (
+                                <li key={index} className="flex items-start gap-3">
+                                  <Badge variant="outline" className="mt-0.5 text-xs">
+                                    {index + 1}
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground flex-1">{workflow}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="terminology" className="h-full">
+              <ScrollArea className="h-full">
+                <div className="space-y-6 p-6">
+                  <div className="text-center space-y-2 mb-8">
+                    <h2 className="text-2xl font-bold">Technical Terminology</h2>
+                    <p className="text-muted-foreground">Key terms and definitions for administrative functions</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {adminFunctions.map((func) => (
+                      <Card key={func.id}>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <func.icon className="w-5 h-5 text-primary" />
+                            {func.name}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {func.terminology.map((term, index) => (
+                              <div key={index} className="border-l-2 border-l-primary/30 pl-4 py-2">
+                                <h5 className="font-semibold text-sm text-primary mb-1">{term.term}</h5>
+                                <p className="text-xs text-muted-foreground leading-relaxed">{term.definition}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </ScrollArea>
+            </TabsContent>
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+        </Tabs>
+      </div>
+    </FullScreenDialog>
   );
 }
