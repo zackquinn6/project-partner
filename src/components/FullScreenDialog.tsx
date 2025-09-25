@@ -27,18 +27,18 @@ export function FullScreenDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <DialogOverlay />
+        <DialogOverlay className="bg-black/50 backdrop-blur-sm fixed inset-0 z-50" />
         <div
           className={cn(
             "fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]",
             "w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh]",
             "bg-background border rounded-lg shadow-lg",
-            "flex flex-col",
+            "flex flex-col overflow-hidden",
             className
           )}
         >
           {(title || description) && (
-            <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between">
+            <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
               <div>
                 {title && (
                   <DialogTitle className="text-lg md:text-xl font-bold">
@@ -74,7 +74,12 @@ export function FullScreenDialog({
             </div>
           )}
           
-          <div className="flex-1 min-h-0 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div 
+            className="flex-1 overflow-y-scroll p-4 md:p-6" 
+            style={{ 
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
             {children}
           </div>
         </div>
