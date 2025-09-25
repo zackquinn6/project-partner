@@ -546,12 +546,12 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
       {/* Manage Attributes Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between text-base">
+          <CardTitle className="flex items-center text-base">
             Variation Attributes
-            <div className="space-x-2">
+            <div className="flex space-x-2 ml-auto pl-8">
               <Dialog open={showAttributeDialog} onOpenChange={setShowAttributeDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="h-8 px-3 py-1">
                     <Plus className="h-4 w-4 mr-1" />
                     Add Attribute
                   </Button>
@@ -613,7 +613,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
 
               <Dialog open={showValueDialog} onOpenChange={setShowValueDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="h-8 px-3 py-1">
                     <Plus className="h-4 w-4 mr-1" />
                     Add Value
                   </Button>
