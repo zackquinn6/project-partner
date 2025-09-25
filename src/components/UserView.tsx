@@ -21,7 +21,7 @@ import ProjectListing from './ProjectListing';
 import { OutputDetailPopup } from './OutputDetailPopup';
 import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { PhaseRatingPopup } from './PhaseRatingPopup';
-import { HelpPopup } from './HelpPopup';
+import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { OrderingWindow } from './OrderingWindow';
 import { KickoffWorkflow } from './KickoffWorkflow';
@@ -78,7 +78,7 @@ export default function UserView({
   const [reportComments, setReportComments] = useState("");
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
   const [outputPopupOpen, setOutputPopupOpen] = useState(false);
-  const [helpPopupOpen, setHelpPopupOpen] = useState(false);
+  const [expertHelpOpen, setExpertHelpOpen] = useState(false);
   const [showProfileManager, setShowProfileManager] = useState(false);
 
   // Handle showProfile prop - don't switch to workflow if profile should be shown
@@ -1115,7 +1115,7 @@ export default function UserView({
                 });
               }
             }}
-            onHelpClick={() => setHelpPopupOpen(true)}
+            onHelpClick={() => setExpertHelpOpen(true)}
             onUnplannedWorkClick={() => {
               setDecisionRollupMode('unplanned-work');
               setDecisionRollupOpen(true);
@@ -1563,10 +1563,10 @@ export default function UserView({
         }}
       />
       
-      {/* Help Popup */}
-      <HelpPopup
-        isOpen={helpPopupOpen}
-        onClose={() => setHelpPopupOpen(false)}
+      {/* Expert Help Window */}
+      <ExpertHelpWindow
+        isOpen={expertHelpOpen}
+        onClose={() => setExpertHelpOpen(false)}
       />
       
       {/* Unplanned Work Window */}

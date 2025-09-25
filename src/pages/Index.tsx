@@ -29,7 +29,6 @@ import { HomeMaintenanceWindow } from '@/components/HomeMaintenanceWindow';
 import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow';
 import { ToolsMaterialsLibraryView } from '@/components/ToolsMaterialsLibraryView';
 import ProfileManager from '@/components/ProfileManager';
-import { HelpPopup } from '@/components/HelpPopup';
 import { ExpertHelpWindow } from '@/components/ExpertHelpWindow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
@@ -62,7 +61,6 @@ const Index = () => {
   const [isRapidAssessmentOpen, setIsRapidAssessmentOpen] = useState(false);
   const [isAIRepairOpen, setIsAIRepairOpen] = useState(false);
   const [isContractorFinderOpen, setIsContractorFinderOpen] = useState(false);
-  const [isHelpPopupOpen, setIsHelpPopupOpen] = useState(false);
   const [isExpertHelpOpen, setIsExpertHelpOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isToolsLibraryGridOpen, setIsToolsLibraryGridOpen] = useState(false);
@@ -177,10 +175,10 @@ const Index = () => {
       setIsContractorFinderOpen(true);
     };
 
-    const handleHelpPopupEvent = (event: Event) => {
-      console.log('❓ Opening Help Popup');
+    const handleExpertHelpEvent = (event: Event) => {
+      console.log('💡 Opening Expert Help');
       event.stopPropagation();
-      setIsHelpPopupOpen(true);
+      setIsExpertHelpOpen(true);
     };
 
     const handleToolsLibraryGridEvent = (event: Event) => {
@@ -200,7 +198,7 @@ const Index = () => {
     window.addEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
     window.addEventListener('show-ai-repair', handleAIRepairEvent);
     window.addEventListener('show-contractor-finder', handleContractorFinderEvent);
-    window.addEventListener('show-help-popup', handleHelpPopupEvent);
+    window.addEventListener('show-expert-help', handleExpertHelpEvent);
     window.addEventListener('show-tools-library-grid', handleToolsLibraryGridEvent);
 
     return () => {
@@ -214,7 +212,7 @@ const Index = () => {
       window.removeEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
       window.removeEventListener('show-ai-repair', handleAIRepairEvent);
       window.removeEventListener('show-contractor-finder', handleContractorFinderEvent);
-      window.removeEventListener('show-help-popup', handleHelpPopupEvent);
+      window.removeEventListener('show-expert-help', handleExpertHelpEvent);
       window.removeEventListener('show-tools-library-grid', handleToolsLibraryGridEvent);
     };
   }, []);
@@ -337,7 +335,7 @@ const Index = () => {
         // Don't set showProfileManager here, Navigation handles this
         break;
       case 'help':
-        window.dispatchEvent(new CustomEvent('show-help-popup'));
+        window.dispatchEvent(new CustomEvent('show-expert-help'));
         break;
       case 'expert':
         setIsExpertHelpOpen(true);
@@ -510,11 +508,6 @@ const Index = () => {
         onOpenChange={setIsContractorFinderOpen}
       />
       
-      <HelpPopup 
-        isOpen={isHelpPopupOpen}
-        onClose={() => setIsHelpPopupOpen(false)}
-      />
-
       <ExpertHelpWindow 
         isOpen={isExpertHelpOpen}
         onClose={() => setIsExpertHelpOpen(false)}

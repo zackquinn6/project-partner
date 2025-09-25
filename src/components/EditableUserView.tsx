@@ -15,7 +15,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Output } from '@/interfaces/Project';
 import { OutputDetailPopup } from './OutputDetailPopup';
 import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
-import { HelpPopup } from './HelpPopup';
+import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { OrderingWindow } from './OrderingWindow';
 import { SignatureCapture } from './SignatureCapture';
@@ -63,7 +63,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
   const [outputPopupOpen, setOutputPopupOpen] = useState(false);
   const [accountabilityPopupOpen, setAccountabilityPopupOpen] = useState(false);
   const [messageType, setMessageType] = useState<'phase-complete' | 'issue-report'>('phase-complete');
-  const [helpPopupOpen, setHelpPopupOpen] = useState(false);
+  const [expertHelpOpen, setExpertHelpOpen] = useState(false);
   const [phaseCompletionPopupOpen, setPhaseCompletionPopupOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<any>(null);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set());
@@ -505,7 +505,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
               {/* Help button prominently at top */}
               <Button 
                 variant="outline" 
-                onClick={() => setHelpPopupOpen(true)}
+                onClick={() => setExpertHelpOpen(true)}
                 className="w-full bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
               >
                 Expert Virtual Consults
@@ -949,10 +949,10 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
         projectName={currentProject?.name}
       />
       
-      {/* Help Popup */}
-      <HelpPopup
-        isOpen={helpPopupOpen}
-        onClose={() => setHelpPopupOpen(false)}
+      {/* Expert Help Window */}
+      <ExpertHelpWindow
+        isOpen={expertHelpOpen}
+        onClose={() => setExpertHelpOpen(false)}
       />
 
       {/* Phase Completion Popup */}

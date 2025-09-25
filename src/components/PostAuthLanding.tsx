@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
-import { HelpPopup } from '@/components/HelpPopup';
+import { ExpertHelpWindow } from '@/components/ExpertHelpWindow';
 import { RapidProjectAssessmentWindow } from '@/components/RapidProjectAssessmentWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
@@ -23,7 +23,7 @@ export const PostAuthLanding = () => {
   } = useUserRole();
   const [userNickname, setUserNickname] = useState<string>('');
   const [showToolRentals, setShowToolRentals] = useState(false);
-  const [showHelpPopup, setShowHelpPopup] = useState(false);
+  const [showExpertHelp, setShowExpertHelp] = useState(false);
   const [showProjectPlanning, setShowProjectPlanning] = useState(false);
   const [showCodePermits, setShowCodePermits] = useState(false);
   const [showContractorFinder, setShowContractorFinder] = useState(false);
@@ -163,7 +163,7 @@ export const PostAuthLanding = () => {
   }, {
     icon: HelpCircle,
     title: "Expert Help",
-    action: () => setShowHelpPopup(true),
+    action: () => setShowExpertHelp(true),
     color: "bg-green-600",
     textColor: "text-white"
   }];
@@ -275,7 +275,7 @@ Pick up where you left off or start your next winning project.</p>
         
         <ToolRentalsWindow isOpen={showToolRentals} onClose={() => setShowToolRentals(false)} />
         
-        <HelpPopup isOpen={showHelpPopup} onClose={() => setShowHelpPopup(false)} />
+        <ExpertHelpWindow isOpen={showExpertHelp} onClose={() => setShowExpertHelp(false)} />
         
         <CodePermitsWindow open={showCodePermits} onOpenChange={setShowCodePermits} />
         
