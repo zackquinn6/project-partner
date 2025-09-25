@@ -245,21 +245,47 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
           throw insertError;
         }
 
-        // Now create a placeholder value to associate this attribute with the tool
-        const { error: valueError } = await supabase
-          .from('variation_attribute_values')
-          .insert({
-            attribute_id: attributeId,
-            value: '_placeholder_',
-            display_value: 'No values yet',
-            sort_order: 999,
-            core_item_id: coreItemId
-          })
-          .select();
+        // Now create values for this attribute
+        if (attrData.name === 'power_source') {
+          // For power source, create default Battery and Electric values
+          const defaultValues = [
+            { value: 'battery', display_value: 'Battery', sort_order: 1 },
+            { value: 'electric', display_value: 'Electric', sort_order: 2 }
+          ];
 
-        // Ignore if placeholder already exists
-        if (valueError && valueError.code !== '23505') {
-          throw valueError;
+          for (const defaultValue of defaultValues) {
+            const { error: valueError } = await supabase
+              .from('variation_attribute_values')
+              .insert({
+                attribute_id: attributeId,
+                value: defaultValue.value,
+                display_value: defaultValue.display_value,
+                sort_order: defaultValue.sort_order,
+                core_item_id: coreItemId
+              });
+
+            // Ignore if value already exists
+            if (valueError && valueError.code !== '23505') {
+              throw valueError;
+            }
+          }
+        } else {
+          // For other attributes, create a placeholder value
+          const { error: valueError } = await supabase
+            .from('variation_attribute_values')
+            .insert({
+              attribute_id: attributeId,
+              value: '_placeholder_',
+              display_value: 'No values yet',
+              sort_order: 999,
+              core_item_id: coreItemId
+            })
+            .select();
+
+          // Ignore if placeholder already exists
+          if (valueError && valueError.code !== '23505') {
+            throw valueError;
+          }
         }
       }
 
@@ -302,6 +328,27 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
         throw error;
       }
 
+      // Check if this is a power source attribute and auto-create default values
+      const selectedAttribute = attributes.find(attr => attr.id === selectedAttributeId);
+      if (selectedAttribute?.name === 'power_source' && selectedAttribute.values.length === 0) {
+        // Auto-create Battery and Electric values for power source
+        const defaultValues = [
+          { value: 'battery', display_value: 'Battery', sort_order: 1 },
+          { value: 'electric', display_value: 'Electric', sort_order: 2 }
+        ];
+
+        for (const defaultValue of defaultValues) {
+          await supabase
+            .from('variation_attribute_values')
+            .insert({
+              attribute_id: selectedAttributeId,
+              value: defaultValue.value,
+              display_value: defaultValue.display_value,
+              sort_order: defaultValue.sort_order,
+              core_item_id: coreItemId
+            });
+        }
+      }
       
       setNewValueText('');
       setSelectedAttributeId('');
@@ -323,6 +370,19 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
 
     setLoading(true);
     try {
+      // Determine automatic warning flags based on attributes
+      const automaticWarningFlags: string[] = [];
+      
+      // Check if power source attribute is selected
+      if (selectedAttributes.power_source) {
+        automaticWarningFlags.push('powered');
+        
+        // If battery is selected within power source, add battery warning
+        if (selectedAttributes.power_source === 'battery') {
+          automaticWarningFlags.push('battery');
+        }
+      }
+
       const { data: variationData, error } = await supabase
         .from('variation_instances')
         .insert({
@@ -332,7 +392,8 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
           description: variationDescription || null,
           sku: variationSku || null,
           photo_url: variationPhotoUrl || null,
-          attributes: selectedAttributes
+          attributes: selectedAttributes,
+          warning_flags: automaticWarningFlags.length > 0 ? automaticWarningFlags : undefined
         })
         .select()
         .single();
