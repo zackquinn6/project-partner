@@ -186,7 +186,7 @@ export function ToolsLibrary() {
             placeholder="Search tools by name or description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 px-4 py-3"
+            className="pl-12 px-6 py-4"
           />
         </div>
         <AlertDialog>
