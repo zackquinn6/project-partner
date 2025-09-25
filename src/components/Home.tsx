@@ -37,7 +37,9 @@ export default function Home({
   const {
     user
   } = useAuth();
-  const { projectRuns } = useProject();
+  const {
+    projectRuns
+  } = useProject();
   const navigate = useNavigate();
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isDIYQuizOpen, setIsDIYQuizOpen] = useState(false);
@@ -55,14 +57,16 @@ export default function Home({
     if (projectRuns) {
       const active = projectRuns.filter(run => (run.progress || 0) < 100).length;
       const completed = projectRuns.filter(run => (run.progress || 0) >= 100).length;
-
       console.log('🔍 Debug - Home stats calculation:', {
         totalProjectRuns: projectRuns.length,
         activeProjects: active,
         completedProjects: completed,
-        projectRunsData: projectRuns.map(run => ({ id: run.id, progress: run.progress, status: run.status }))
+        projectRunsData: projectRuns.map(run => ({
+          id: run.id,
+          progress: run.progress,
+          status: run.status
+        }))
       });
-
       setStats({
         activeProjects: active,
         completedProjects: completed
@@ -341,7 +345,7 @@ export default function Home({
       <section id="features" className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 text-primary border-primary">🎯 DIY Apps</Badge>
+            
             <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
               Everything You Need in One Place
             </h2>
@@ -352,15 +356,8 @@ export default function Home({
             {/* Key Characteristics Section */}
             <div className="bg-gradient-subtle p-6 rounded-lg max-w-4xl mx-auto mb-12">
               <h3 className="text-xl font-semibold text-foreground mb-3">🔑 Key Characteristics: Engineered Processes, Personalized</h3>
-              <p className="text-muted-foreground mb-4">
-                KCs are how we personalize our projects to each builder. We tailor detail to skill level: first‑timers get the full play‑by‑play, while seasoned DIYers aren't stuck reading what a miter saw looks like.
-              </p>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsKCExplainerOpen(true)}
-                className="text-primary border-primary hover:bg-primary/10"
-              >
+              
+              <Button variant="outline" size="sm" onClick={() => setIsKCExplainerOpen(true)} className="text-primary border-primary hover:bg-primary/10">
                 Learn More About Key Characteristics
               </Button>
             </div>
