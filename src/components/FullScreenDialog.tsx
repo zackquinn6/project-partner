@@ -29,10 +29,14 @@ export function FullScreenDialog({
       <DialogPortal>
         <DialogOverlay 
           className={cn(
-            "dialog-overlay bg-black/50 backdrop-blur-sm fixed inset-0 z-50 transition-opacity duration-300",
-            open ? "opacity-100" : "opacity-0 pointer-events-none"
+            "dialog-overlay bg-black/60 backdrop-blur-md fixed inset-0 z-50 transition-all duration-300",
+            open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           )}
           data-state={open ? "open" : "closed"}
+          style={{ 
+            backdropFilter: open ? 'blur(8px)' : 'none',
+            background: open ? 'rgba(0, 0, 0, 0.6)' : 'transparent'
+          }}
         />
         <div
           className={cn(

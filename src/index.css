@@ -320,14 +320,17 @@ All colors MUST be HSL.
     pointer-events: none !important;
   }
 
-  /* Prevent background interaction when dialog is open */
-  body:has([data-state="open"]) {
+  /* Prevent background interaction when dialog is open, but allow dialog scrolling */
+  body:has(.dialog-overlay[data-state="open"]) > *:not([data-radix-portal]) {
     pointer-events: none;
   }
   
-  body:has([data-state="open"]) [role="dialog"],
-  body:has([data-state="open"]) [data-state="open"] {
-    pointer-events: auto;
+  /* Ensure all dialog content is interactive */
+  [data-radix-portal],
+  [role="dialog"],
+  .dialog-overlay,
+  .enhanced-scroll {
+    pointer-events: auto !important;
   }
     
     .text-responsive {
