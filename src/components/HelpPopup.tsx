@@ -1,17 +1,12 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
 import { 
-  Video, 
-  Calendar, 
-  Clock, 
-  Star, 
-  CheckCircle, 
+  HelpCircle, 
+  MessageCircle, 
+  BookOpen, 
   Users,
-  Shield,
-  Headphones,
   ArrowRight
 } from 'lucide-react';
 
@@ -21,156 +16,66 @@ interface HelpPopupProps {
 }
 
 export const HelpPopup: React.FC<HelpPopupProps> = ({ isOpen, onClose }) => {
-  const features = [
+  const helpOptions = [
     {
-      icon: Video,
-      title: "HD Video Calls",
-      description: "Face-to-face consultations with certified DIY experts"
+      icon: MessageCircle,
+      title: "Send Feedback",
+      description: "Report issues or suggest improvements",
+      action: () => {
+        window.dispatchEvent(new CustomEvent('show-feedback-dialog'));
+        onClose();
+      }
     },
     {
-      icon: Calendar,
-      title: "Flexible Scheduling", 
-      description: "Book appointments that fit your schedule"
+      icon: BookOpen,
+      title: "Documentation",
+      description: "Learn how to use the platform effectively",
+      action: () => {
+        window.dispatchEvent(new CustomEvent('show-documentation'));
+        onClose();
+      }
     },
     {
-      icon: Clock,
-      title: "30-60 Min Sessions",
-      description: "Comprehensive reviews of your project needs"
-    },
-    {
-      icon: Shield,
-      title: "Satisfaction Guaranteed",
-      description: "100% money-back guarantee on all consultations"
+      icon: Users,
+      title: "Community",
+      description: "Connect with other DIY enthusiasts",
+      action: () => {
+        window.dispatchEvent(new CustomEvent('show-community'));
+        onClose();
+      }
     }
-  ];
-
-  const benefits = [
-    "Get expert project assessment and planning",
-    "Receive personalized tool and material recommendations", 
-    "Avoid costly mistakes with professional guidance",
-    "Learn time-saving techniques from the pros"
   ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mb-2">
-            <Video className="w-8 h-8 text-primary" />
+          <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mb-2">
+            <HelpCircle className="w-6 h-6 text-primary" />
           </div>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Expert Virtual Consults
-          </DialogTitle>
-          <p className="text-muted-foreground text-lg">
-            Connect with certified DIY professionals for personalized project guidance
+          <DialogTitle className="text-xl font-bold">How can we help?</DialogTitle>
+          <p className="text-muted-foreground">
+            Choose from the options below to get the assistance you need
           </p>
         </DialogHeader>
         
-        <div className="space-y-6">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 py-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">500+</div>
-              <div className="text-sm text-muted-foreground">Happy Customers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">4.9★</div>
-              <div className="text-sm text-muted-foreground">Average Rating</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">24hr</div>
-              <div className="text-sm text-muted-foreground">Avg Response</div>
-            </div>
-          </div>
-
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {features.map((feature, index) => (
-              <Card key={index} className="border-2 hover:border-primary/50 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <feature.icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-sm">{feature.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1">{feature.description}</p>
-                    </div>
+        <div className="space-y-3">
+          {helpOptions.map((option, index) => (
+            <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow" onClick={option.action}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <option.icon className="w-5 h-5 text-primary" />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Benefits */}
-          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                <Star className="w-5 h-5 text-primary" />
-                What You'll Get
-              </h3>
-              <div className="space-y-2">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <span className="text-sm">{benefit}</span>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-sm">{option.title}</h4>
+                    <p className="text-xs text-muted-foreground mt-1">{option.description}</p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Pricing */}
-          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-primary/5">
-            <CardContent className="p-6 text-center">
-              <div className="space-y-2 mb-4">
-                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                  Limited Time Offer
-                </Badge>
-                <div className="text-3xl font-bold">$49</div>
-                <div className="text-sm text-muted-foreground">
-                  <span className="line-through">$99</span> per consultation
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
                 </div>
-              </div>
-              
-              <a 
-                href="https://app.acuityscheduling.com/schedule.php?owner=36845722" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block w-full"
-              >
-                <Button 
-                  size="lg"
-                  className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    Schedule Your Consultation
-                    <ArrowRight className="w-4 h-4" />
-                  </span>
-                </Button>
-              </a>
-              
-              <p className="text-xs text-muted-foreground mt-3">
-                No commitment required • Cancel anytime • Secure payment
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Trust indicators */}
-          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
-            <div className="flex items-center gap-1">
-              <Shield className="w-3 h-3" />
-              Secure & Private
-            </div>
-            <div className="flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              Certified Experts
-            </div>
-            <div className="flex items-center gap-1">
-              <Headphones className="w-3 h-3" />
-              24/7 Support
-            </div>
-          </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </DialogContent>
     </Dialog>

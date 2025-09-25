@@ -30,6 +30,7 @@ import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow'
 import { ToolsMaterialsLibraryView } from '@/components/ToolsMaterialsLibraryView';
 import ProfileManager from '@/components/ProfileManager';
 import { HelpPopup } from '@/components/HelpPopup';
+import { ExpertHelpWindow } from '@/components/ExpertHelpWindow';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
 import { Button } from '@/components/ui/button';
@@ -339,7 +340,7 @@ const Index = () => {
         window.dispatchEvent(new CustomEvent('show-help-popup'));
         break;
       case 'expert':
-        setIsHelpPopupOpen(true);
+        setIsExpertHelpOpen(true);
         break;
     }
   };
@@ -512,6 +513,11 @@ const Index = () => {
       <HelpPopup 
         isOpen={isHelpPopupOpen}
         onClose={() => setIsHelpPopupOpen(false)}
+      />
+
+      <ExpertHelpWindow 
+        isOpen={isExpertHelpOpen}
+        onClose={() => setIsExpertHelpOpen(false)}
       />
 
       <ProfileManager 
