@@ -316,8 +316,8 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
   };
 
   const handleCreateVariation = async () => {
-    if (!variationName.trim() || Object.keys(selectedAttributes).length === 0) {
-      toast.error('Variation name and at least one attribute are required');
+    if (!variationName.trim()) {
+      toast.error('Variation name is required');
       return;
     }
 
@@ -513,8 +513,14 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
       });
     };
     
-    const generatedName = toTitleCaseWithAcronyms(`${attributeStrings.join(' ')} ${coreItemName}`);
-    setVariationName(generatedName);
+    // If no attributes are selected, generate a "Standard" variation name
+    if (attributeStrings.length === 0) {
+      const generatedName = toTitleCaseWithAcronyms(`Standard ${coreItemName}`);
+      setVariationName(generatedName);
+    } else {
+      const generatedName = toTitleCaseWithAcronyms(`${attributeStrings.join(' ')} ${coreItemName}`);
+      setVariationName(generatedName);
+    }
   };
 
   // Get all global attributes for the add value dialog
@@ -722,35 +728,70 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                 <div className="space-y-4">
                   {/* Attribute Selection */}
                   <div className="space-y-3">
-                    <Label>Select Attributes</Label>
-                    {attributes.filter(attr => attr.values.length > 0).map(attr => (
-                      <div key={attr.id} className="space-y-2">
-                        <Label className="text-sm font-medium">{attr.display_name}</Label>
-                        <Select
-                          value={selectedAttributes[attr.name] || ''}
-                          onValueChange={(value) => {
-                            setSelectedAttributes(prev => ({
-                              ...prev,
-                              [attr.name]: value
-                            }));
-                          }}
-                        >
+                    <Label>Select Attributes (Optional)</Label>
+                    {attributes.filter(attr => attr.values.length > 0).length > 0 ? (
+                      <>
+                        {/* Standard Option */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Type</Label>
+                          <Select
+                            value={Object.keys(selectedAttributes).length === 0 ? 'standard' : ''}
+                            onValueChange={(value) => {
+                              if (value === 'standard') {
+                                setSelectedAttributes({});
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select variation type" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border z-50">
+                              <SelectItem value="standard">Standard</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Attribute Options */}
+                        {attributes.filter(attr => attr.values.length > 0).map(attr => (
+                          <div key={attr.id} className="space-y-2">
+                            <Label className="text-sm font-medium">{attr.display_name}</Label>
+                            <Select
+                              value={selectedAttributes[attr.name] || ''}
+                              onValueChange={(value) => {
+                                setSelectedAttributes(prev => ({
+                                  ...prev,
+                                  [attr.name]: value
+                                }));
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={`Select ${attr.display_name.toLowerCase()}`} />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background border z-50">
+                                {attr.values.map(value => (
+                                  <SelectItem key={value.id} value={value.value}>
+                                    {value.display_value}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Type</Label>
+                        <Select value="standard" disabled>
                           <SelectTrigger>
-                            <SelectValue placeholder={`Select ${attr.display_name.toLowerCase()}`} />
+                            <SelectValue placeholder="Standard (no attributes configured)" />
                           </SelectTrigger>
-                          <SelectContent>
-                            {attr.values.map(value => (
-                              <SelectItem key={value.id} value={value.value}>
-                                {value.display_value}
-                              </SelectItem>
-                            ))}
+                          <SelectContent className="bg-background border z-50">
+                            <SelectItem value="standard">Standard</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-                    ))}
-                    {attributes.filter(attr => attr.values.length > 0).length === 0 && (
-                      <div className="text-sm text-muted-foreground">
-                        No attributes with values available. Create attribute values first.
+                        <div className="text-xs text-muted-foreground">
+                          No attributes configured yet. This will create a standard variation.
+                        </div>
                       </div>
                     )}
                   </div>
@@ -764,7 +805,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                         onChange={(e) => setVariationName(e.target.value)}
                         placeholder="Enter variation name"
                       />
-                      <Button variant="outline" onClick={generateVariationName} disabled={Object.keys(selectedAttributes).length === 0}>
+                      <Button variant="outline" onClick={generateVariationName}>
                         Auto-generate
                       </Button>
                     </div>
