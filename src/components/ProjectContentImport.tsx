@@ -73,10 +73,15 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Length*Angle,Cut 
     const requiredHeaders = ['phase', 'operation', 'step'];
     const errors: string[] = [];
 
+    // Debug: Log header information
+    console.log('CSV Headers found:', headers);
+    console.log('Expected headers:', requiredHeaders);
+
     // Validate headers
     const hasRequiredHeaders = requiredHeaders.every(header => headers.includes(header));
     if (!hasRequiredHeaders) {
-      errors.push(`CSV must include required headers: ${requiredHeaders.join(', ')}`);
+      const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+      errors.push(`CSV must include required headers: ${missingHeaders.join(', ')}. Found headers: ${headers.join(', ')}`);
       return { phases: [], errors };
     }
 
@@ -92,23 +97,32 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Length*Angle,Cut 
       try {
         values = parseCsvLine(line);
         
+        // Debug: Log raw parsing results
+        console.log(`Row ${i + 1} raw values:`, values);
+        console.log(`Row ${i + 1} values count:`, values.length, 'vs headers count:', headers.length);
+        
         headers.forEach((header, index) => {
           rowData[header] = (values[index] || '').trim();
         });
       } catch (parseError) {
-        errors.push(`Row ${i + 1}: Malformed CSV data`);
+        errors.push(`Row ${i + 1}: Malformed CSV data - ${parseError}`);
         continue;
       }
 
       // Debug logging for field validation
-      console.log(`Row ${i + 1} data:`, {
+      console.log(`Row ${i + 1} parsed data:`, {
         phase: rowData.phase,
         operation: rowData.operation,
         step: rowData.step,
-        allFields: rowData,
-        values: values,
-        headers: headers
+        allFields: rowData
       });
+
+      // Skip rows that appear to be empty or contain only commas/asterisks
+      if (!rowData.phase || rowData.phase.match(/^[,*\s]*$/) || 
+          (!rowData.operation && !rowData.step && Object.values(rowData).every(val => !val || typeof val === 'string' && val.match(/^[,*\s]*$/)))) {
+        console.log(`Row ${i + 1}: Skipping empty or malformed row`);
+        continue;
+      }
 
       if (!rowData.phase || !rowData.operation || !rowData.step) {
         const missingFields = [];
