@@ -23,11 +23,8 @@ export function ResponsiveDialog({
   children, 
   className 
 }: ResponsiveDialogProps) {
-  console.log('ResponsiveDialog render - size:', size);
-  
   // Use FullScreenDialog for content-large to avoid override conflicts
   if (size === 'content-large') {
-    console.log('Using FullScreenDialog for content-large size');
     return (
       <FullScreenDialog
         open={open}
@@ -40,8 +37,6 @@ export function ResponsiveDialog({
       </FullScreenDialog>
     );
   }
-
-  console.log('Using standard Dialog for size:', size);
 
   // Use standard Dialog for all other sizes
   const sizeClasses = {

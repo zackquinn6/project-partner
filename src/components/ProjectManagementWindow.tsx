@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ResponsiveDialog } from "@/components/ResponsiveDialog";
+import { FullScreenDialog } from "@/components/FullScreenDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 
@@ -795,14 +795,13 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
 
   if (!currentProject) {
     return (
-      <ResponsiveDialog 
+      <FullScreenDialog 
         open={open} 
         onOpenChange={onOpenChange}
-        size="content-large"
         title="Project Management"
       >
         {renderProjectSelector()}
-      </ResponsiveDialog>
+      </FullScreenDialog>
     );
   }
 
@@ -867,13 +866,12 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   };
 
   return (
-    <ResponsiveDialog 
+    <FullScreenDialog 
       open={open} 
       onOpenChange={onOpenChange}
-      size="content-large"
       title="Project Management"
     >
       {renderView()}
-    </ResponsiveDialog>
+    </FullScreenDialog>
   );
 };
