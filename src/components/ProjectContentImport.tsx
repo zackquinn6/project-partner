@@ -100,8 +100,23 @@ Execution,Installation,Cut Materials,Cut materials to size,Cut Length*Angle,Cut 
         continue;
       }
 
+      // Debug logging for field validation
+      console.log(`Row ${i + 1} data:`, {
+        phase: rowData.phase,
+        operation: rowData.operation,
+        step: rowData.step,
+        allFields: rowData,
+        values: values,
+        headers: headers
+      });
+
       if (!rowData.phase || !rowData.operation || !rowData.step) {
-        errors.push(`Row ${i + 1}: Missing required fields (phase, operation, step)`);
+        const missingFields = [];
+        if (!rowData.phase) missingFields.push('phase');
+        if (!rowData.operation) missingFields.push('operation');
+        if (!rowData.step) missingFields.push('step');
+        
+        errors.push(`Row ${i + 1}: Missing required fields (${missingFields.join(', ')}). Found: phase="${rowData.phase}", operation="${rowData.operation}", step="${rowData.step}"`);
         continue;
       }
 
