@@ -11,7 +11,7 @@ import { DataPrivacyManager } from './DataPrivacyManager';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { AppDocumentationWindow } from './AppDocumentationWindow';
 import { ToolsMaterialsWindow } from './ToolsMaterialsWindow';
-import { ExpertHelpWindow } from './ExpertHelpWindow';
+import { HelpPopup } from './HelpPopup';
 
 interface NavigationProps {
   currentView: 'home' | 'admin' | 'user' | 'editWorkflow';
@@ -32,7 +32,7 @@ export default function Navigation({
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [isDocumentationOpen, setIsDocumentationOpen] = useState(false);
   const [isToolsLibraryOpen, setIsToolsLibraryOpen] = useState(false);
-  const [isExpertHelpOpen, setIsExpertHelpOpen] = useState(false);
+  const [isHelpPopupOpen, setIsHelpPopupOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   
   // Add error boundary for useProject hook
@@ -180,7 +180,7 @@ export default function Navigation({
           <div className="flex items-center space-x-2">
             {/* Get Expert Help Button - Prominent CTA */}
             <Button 
-              onClick={() => setIsExpertHelpOpen(true)}
+              onClick={() => setIsHelpPopupOpen(true)}
               className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
               size="sm"
             >
@@ -262,15 +262,15 @@ export default function Navigation({
          onOpenChange={setIsDocumentationOpen}
        />
       
-      <ToolsMaterialsWindow 
-        open={isToolsLibraryOpen}
-        onOpenChange={setIsToolsLibraryOpen}
-      />
-      
-      <ExpertHelpWindow 
-        open={isExpertHelpOpen}
-        onOpenChange={setIsExpertHelpOpen}
-      />
+        <ToolsMaterialsWindow 
+          open={isToolsLibraryOpen}
+          onOpenChange={setIsToolsLibraryOpen}
+        />
+        
+        <HelpPopup 
+          isOpen={isHelpPopupOpen}
+          onClose={() => setIsHelpPopupOpen(false)}
+        />
     </>
   );
 }
