@@ -308,6 +308,27 @@ All colors MUST be HSL.
     overflow-y: auto !important;
     touch-action: pan-y !important;
   }
+
+  /* Ensure dialog overlay is always visible when open */
+  .dialog-overlay[data-state="open"] {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  
+  .dialog-overlay[data-state="closed"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Prevent background interaction when dialog is open */
+  body:has([data-state="open"]) {
+    pointer-events: none;
+  }
+  
+  body:has([data-state="open"]) [role="dialog"],
+  body:has([data-state="open"]) [data-state="open"] {
+    pointer-events: auto;
+  }
     
     .text-responsive {
       @apply text-base md:text-lg;
