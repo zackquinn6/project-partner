@@ -82,10 +82,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             <p className="mt-1 text-muted-foreground">
               {currentProjectRun?.diyLengthChallenges || currentProject?.diyLengthChallenges || 'None specified'}
             </p>
-            {/* Debug: Show raw data */}
-            <div className="text-xs text-gray-400 mt-1">
-              Debug - Run: {currentProjectRun?.diyLengthChallenges || 'null'} | Project: {currentProject?.diyLengthChallenges || 'null'}
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t">
