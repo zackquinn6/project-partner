@@ -144,7 +144,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     cacheKey: 'projects'
   });
 
-  // Fetch project runs data with explicit refetch to get latest data
+  // Fetch project runs data with proper error handling
   const {
     data: projectRuns,
     loading: projectRunsLoading,
@@ -158,7 +158,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     orderBy: { column: 'created_at', ascending: false },
     transform: transformProjectRuns,
     dependencies: [user?.id],
-    cacheKey: user ? `project_runs_${user.id}_${Date.now()}` : undefined // Force refresh with timestamp
+    cacheKey: user ? `project_runs_${user.id}` : undefined
   });
 
   const value = {
