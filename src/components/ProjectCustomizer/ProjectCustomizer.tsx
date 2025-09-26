@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { ScrollableDialog } from '../ScrollableDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -98,13 +98,14 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           newWorkflowOrder.push(...phases.map(p => p.id));
         }
       }
-
+      
       return {
         ...prev,
         customPlannedWork: newCustomPlanned,
         workflowOrder: newWorkflowOrder
       };
     });
+    setShowPhaseBrowser(false);
   };
 
   const handleAddCustomUnplannedWork = (phase: Phase, insertAfterPhaseId?: string) => {
@@ -116,37 +117,39 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         const insertIndex = newWorkflowOrder.findIndex(id => id === insertAfterPhaseId) + 1;
         newWorkflowOrder.splice(insertIndex, 0, phase.id);
       } else {
-        newWorkflowOrder.push(phase.id);
+        // Insert before close phase
+        const closePhaseIndex = newWorkflowOrder.findIndex(id => 
+          currentProjectRun?.phases?.find(p => p.id === id)?.name.toLowerCase().includes('close')
+        );
+        if (closePhaseIndex !== -1) {
+          newWorkflowOrder.splice(closePhaseIndex, 0, phase.id);
+        } else {
+          newWorkflowOrder.push(phase.id);
+        }
       }
-
+      
       return {
         ...prev,
         customUnplannedWork: newCustomUnplanned,
         workflowOrder: newWorkflowOrder
       };
     });
-  };
-
-  const handleReorderPhases = (newOrder: string[]) => {
-    setCustomizationState(prev => ({
-      ...prev,
-      workflowOrder: newOrder
-    }));
+    setShowCustomWorkManager(false);
   };
 
   const handleSaveCustomization = async () => {
     if (!currentProjectRun) return;
 
     try {
-      // Build the new phases array based on customization
+      // Apply customizations to project run phases
       let newPhases = [...(currentProjectRun.phases || [])];
-      
-      // Apply standard decisions and if-necessary work modifications
+
+      // Apply standard decisions and if-necessary work
       newPhases = newPhases.map(phase => {
         const standardChoices = customizationState.standardDecisions[phase.id] || [];
         const ifNecessaryChoices = customizationState.ifNecessaryWork[phase.id] || [];
-        
-        // Modify phase operations based on decisions
+
+        // Apply operation filtering based on choices
         let modifiedOperations = [...phase.operations];
         
         // Filter operations based on standard decisions
@@ -231,66 +234,60 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-7xl h-[90vh] p-0 z-[60] [&>button]:hidden">
-          <DialogHeader className="p-6 pb-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  {getModeTitle()}
-                </DialogTitle>
-                <DialogDescription className="mt-2">
-                  {getModeDescription()}
-                </DialogDescription>
-              </div>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
+      <ScrollableDialog 
+        open={open} 
+        onOpenChange={onOpenChange}
+        title={getModeTitle()}
+        description={getModeDescription()}
+      >
+        <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 h-full">
+            {/* Tab Headers - Fixed */}
+            <div className="shrink-0 border-b">
+              <TabsList className="grid w-full grid-cols-3 h-12">
+                <TabsTrigger value="decisions" className="text-xs md:text-sm px-2 py-3">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Workflow Decisions
+                </TabsTrigger>
+                <TabsTrigger value="custom-planned" className="text-xs md:text-sm px-2 py-3">
+                  <GitBranch className="w-4 h-4 mr-2" />
+                  Add Planned Work
+                </TabsTrigger>
+                <TabsTrigger value="custom-unplanned" className="text-xs md:text-sm px-2 py-3">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Novel Work
+                </TabsTrigger>
+              </TabsList>
             </div>
-          </DialogHeader>
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="mx-6 w-fit">
-              <TabsTrigger value="decisions" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                Standard Decisions
-              </TabsTrigger>
-              <TabsTrigger value="planned-work" className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add Planned Work
-              </TabsTrigger>
-              <TabsTrigger value="unplanned-work" className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
-                Add Unplanned Work
-              </TabsTrigger>
-              <TabsTrigger value="workflow" className="flex items-center gap-2">
-                <GitBranch className="w-4 h-4" />
-                Review Workflow
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="decisions" className="flex-1 overflow-hidden mt-0">
+
+            {/* Tab Content - Scrollable */}
+            <TabsContent value="decisions" className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
               <WorkflowDecisionEngine
                 projectRun={currentProjectRun}
                 onStandardDecision={handleStandardDecision}
                 onIfNecessaryWork={handleIfNecessaryWork}
-                customizationState={customizationState}
+                customizationState={{
+                  standardDecisions: customizationState.standardDecisions,
+                  ifNecessaryWork: customizationState.ifNecessaryWork
+                }}
               />
             </TabsContent>
-            
-            <TabsContent value="planned-work" className="flex-1 overflow-hidden mt-0">
-              <div className="p-6 space-y-4">
+
+            <TabsContent value="custom-planned" className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+              <div className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Add Conventional Work</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Add phases from other related projects that make sense for your workflow.
-                    </p>
+                    <CardTitle className="flex items-center gap-2">
+                      <GitBranch className="w-5 h-5" />
+                      Add Conventional Work
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Button onClick={() => setShowPhaseBrowser(true)}>
-                      Browse Available Phases
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Browse phases from related projects and add them to your workflow.
+                    </p>
+                    <Button onClick={() => setShowPhaseBrowser(true)} variant="outline" size="sm">
+                      Browse Related Project Phases
                     </Button>
                   </CardContent>
                 </Card>
@@ -300,43 +297,37 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     <CardHeader>
                       <CardTitle>Added Planned Work</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <ScrollArea className="h-40">
-                        {customizationState.customPlannedWork.map((phase, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 border rounded mb-2">
-                            <div>
-                              <span className="font-medium">{phase.name}</span>
-                              <p className="text-sm text-muted-foreground">{phase.description}</p>
-                            </div>
-                            <Badge variant="secondary">Planned</Badge>
+                    <CardContent className="space-y-2">
+                      {customizationState.customPlannedWork.map((phase, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <div>
+                            <h4 className="font-medium">{phase.name}</h4>
+                            <p className="text-sm text-muted-foreground">{phase.description}</p>
                           </div>
-                        ))}
-                      </ScrollArea>
+                          <Badge variant="secondary">Planned</Badge>
+                        </div>
+                      ))}
                     </CardContent>
                   </Card>
                 )}
               </div>
             </TabsContent>
-            
-            <TabsContent value="unplanned-work" className="flex-1 overflow-hidden mt-0">
-              <div className="p-6 space-y-4">
-                <Card className="border-orange-200 bg-orange-50">
+
+            <TabsContent value="custom-unplanned" className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+              <div className="space-y-4">
+                <Card className="border-orange-200 bg-orange-50/50">
                   <CardHeader>
-                    <CardTitle className="text-orange-800 flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-orange-800">
                       <AlertTriangle className="w-5 h-5" />
-                      Unplanned Work Warning
+                      Add Novel Work
                     </CardTitle>
-                    <p className="text-sm text-orange-700">
-                      Adding unplanned work may affect your project success guarantee. 
-                      Custom work should be well-researched and tested.
-                    </p>
                   </CardHeader>
                   <CardContent>
-                    <Button 
-                      variant="outline" 
-                      className="border-orange-300 hover:bg-orange-100"
-                      onClick={() => setShowCustomWorkManager(true)}
-                    >
+                    <p className="text-sm text-orange-700 mb-4">
+                      Create completely new work that's not in our standard project library. 
+                      Use with caution - this may affect project timeline and safety.
+                    </p>
+                    <Button onClick={() => setShowCustomWorkManager(true)} variant="outline" size="sm">
                       Create Custom Work
                     </Button>
                   </CardContent>
@@ -345,79 +336,48 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 {customizationState.customUnplannedWork.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Added Unplanned Work</CardTitle>
+                      <CardTitle>Added Novel Work</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <ScrollArea className="h-40">
-                        {customizationState.customUnplannedWork.map((phase, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 border rounded mb-2">
-                            <div>
-                              <span className="font-medium">{phase.name}</span>
-                              <p className="text-sm text-muted-foreground">{phase.description}</p>
-                            </div>
-                            <Badge variant="destructive">Unplanned</Badge>
+                    <CardContent className="space-y-2">
+                      {customizationState.customUnplannedWork.map((phase, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <div>
+                            <h4 className="font-medium">{phase.name}</h4>
+                            <p className="text-sm text-muted-foreground">{phase.description}</p>
                           </div>
-                        ))}
-                      </ScrollArea>
+                          <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                            Novel
+                          </Badge>
+                        </div>
+                      ))}
                     </CardContent>
                   </Card>
                 )}
               </div>
             </TabsContent>
-            
-            <TabsContent value="workflow" className="flex-1 overflow-hidden mt-0">
-              <div className="p-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Final Workflow Order</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Review the complete customized workflow. Phases will be executed in this order.
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-60">
-                      {customizationState.workflowOrder.map((phaseId, index) => {
-                        const phase = [
-                          ...(currentProjectRun.phases || []),
-                          ...customizationState.customPlannedWork,
-                          ...customizationState.customUnplannedWork
-                        ].find(p => p.id === phaseId);
-
-                        if (!phase) return null;
-
-                        return (
-                          <div key={phaseId} className="flex items-center gap-3 p-3 border rounded mb-2">
-                            <Badge variant="outline">{index + 1}</Badge>
-                            <div className="flex-1">
-                              <span className="font-medium">{phase.name}</span>
-                              <p className="text-sm text-muted-foreground">{phase.description}</p>
-                            </div>
-                            {customizationState.customPlannedWork.find(p => p.id === phaseId) && (
-                              <Badge variant="secondary">Planned</Badge>
-                            )}
-                            {customizationState.customUnplannedWork.find(p => p.id === phaseId) && (
-                              <Badge variant="destructive">Unplanned</Badge>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-
-                <div className="mt-6 flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSaveCustomization}>
-                    Save Customization
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
           </Tabs>
-        </DialogContent>
-      </Dialog>
+
+          {/* Footer with action buttons - Fixed */}
+          <div className="shrink-0 border-t p-4 flex justify-between items-center bg-muted/30">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                {mode === 'initial-plan' ? 'Planning Phase' : 
+                 mode === 'final-plan' ? 'Final Review' : 
+                 mode === 'unplanned-work' ? 'Adding New Work' : 'Re-planning'}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} size="sm">
+                Cancel
+              </Button>
+              <Button onClick={handleSaveCustomization} size="sm">
+                Apply Changes
+              </Button>
+            </div>
+          </div>
+        </div>
+      </ScrollableDialog>
 
       <PhaseBrowser
         open={showPhaseBrowser}
