@@ -329,10 +329,6 @@ export default function Home({
                   <Star className="mr-2 h-4 w-4" />
                   Start Your Free Account
                 </Button>
-                <Button variant="outline" size="lg" className="px-6 md:px-8 text-base md:text-lg border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 shadow-elegant" onClick={() => setIsDIYQuizOpen(true)}>
-                  <HelpCircle className="mr-2 h-4 w-4" />
-                  Take DIY Quiz
-                </Button>
               </div>
             </div>
             
@@ -361,9 +357,17 @@ export default function Home({
             <div className="bg-gradient-subtle p-6 rounded-lg max-w-4xl mx-auto mb-12">
               <h3 className="text-xl font-semibold text-foreground mb-3">🔑 Engineered Processes, Personalized</h3>
               
-              <Button variant="outline" size="default" onClick={() => setIsKCExplainerOpen(true)} className="text-primary border-primary hover:bg-primary/10">
-                Learn More About Our Approach to Personalization
+              <Button variant="outline" size="default" onClick={() => setIsKCExplainerOpen(true)} className="text-primary border-primary hover:bg-primary/10 mb-4">
+                <span className="hidden sm:inline">Learn More About Our Approach to Personalization</span>
+                <span className="sm:hidden">Learn More</span>
               </Button>
+              
+              <div>
+                <Button variant="outline" size="default" onClick={() => setIsDIYQuizOpen(true)} className="text-primary border-primary hover:bg-primary/10">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Take DIY Quiz
+                </Button>
+              </div>
             </div>
             
             {/* App List */}
