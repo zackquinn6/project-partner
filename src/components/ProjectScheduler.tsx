@@ -455,7 +455,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-none h-[85vh] p-0 gap-0">
+      <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-none h-[85vh] p-0 gap-0 [&>button]:hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-gradient-subtle">
           <div className="flex items-center gap-3">
@@ -469,9 +469,15 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            <X className="w-4 h-4" />
-          </Button>
+          {isMobile ? (
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              <X className="w-4 h-4" />
+            </Button>
+          )}
         </div>
 
         <ScrollArea className="flex-1 p-4">
