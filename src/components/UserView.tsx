@@ -906,7 +906,9 @@ export default function UserView({
             }
             // Legacy support for 'workflow' string - now handled by useEffect above
             if (project === 'workflow') {
-              console.log("🎯 Received workflow signal - useEffect will handle the switch");
+              console.log("🎯 Received workflow signal - FORCING WORKFLOW MODE NOW!");
+              setViewMode('workflow');
+              onProjectSelected?.();
               return;
             }
             console.log("🎯 Setting workflow mode for project selection");
@@ -933,10 +935,12 @@ export default function UserView({
           setViewMode('listing');
           return;
         }
-        if (project === 'workflow') {
-          console.log("🎯 Received workflow signal from error recovery - useEffect will handle the switch");
-          return;
-        }
+          if (project === 'workflow') {
+            console.log("🎯 Received workflow signal from error recovery - FORCING WORKFLOW MODE NOW!");
+            setViewMode('workflow');
+            onProjectSelected?.();
+            return;
+          }
         console.log("🎯 Setting workflow mode for project selection from error recovery");
         setViewMode('workflow');
         onProjectSelected?.();
@@ -969,7 +973,9 @@ export default function UserView({
           return;
         }
         if (project === 'workflow') {
-          console.log("🎯 Received workflow signal from main listing - useEffect will handle the switch");
+          console.log("🎯 Received workflow signal from main listing - FORCING WORKFLOW MODE NOW!");
+          setViewMode('workflow');
+          onProjectSelected?.();
           return;
         }
         console.log("🎯 Setting workflow mode for project selection from main listing");

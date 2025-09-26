@@ -79,8 +79,10 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
       window.history.replaceState({}, document.title, window.location.pathname);
       console.log("🎯 History state cleared");
       
-      // The UserView will automatically switch to workflow mode via useEffect when currentProjectRun changes
-      console.log("🎯 Waiting for useEffect to trigger workflow switch...");
+      // Force workflow switch by calling the callback directly
+      console.log("🎯 Forcing workflow switch via onProjectSelect callback");
+      onProjectSelect?.('workflow' as any);
+      
     } catch (error) {
       console.error("🎯 Error in handleOpenProjectRun:", error);
     }
