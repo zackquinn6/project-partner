@@ -25,14 +25,28 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
   // Effect to find and navigate to the operation containing the current step
   React.useEffect(() => {
     if (currentStepId && operations.length > 0) {
+      console.log('🔍 KC Window: Looking for operation containing step:', currentStepId);
+      
       const operationIndex = operations.findIndex(operation => 
         operation.steps.some(step => step.id === currentStepId)
       );
-      if (operationIndex >= 0) {
+      
+      console.log('🎯 KC Window: Found operation index:', operationIndex, 'for step:', currentStepId);
+      
+      if (operationIndex >= 0 && operationIndex !== selectedOperationIndex) {
+        console.log('📍 KC Window: Switching to operation:', operations[operationIndex].name);
         setSelectedOperationIndex(operationIndex);
       }
     }
-  }, [currentStepId, operations]);
+  }, [currentStepId, operations, open]);
+
+  // Reset to first operation if no current step when window opens
+  React.useEffect(() => {
+    if (open && operations.length > 0 && !currentStepId) {
+      console.log('🔄 KC Window: No current step, resetting to first operation');
+      setSelectedOperationIndex(0);
+    }
+  }, [open, operations.length, currentStepId]);
 
   const getCurrentOperation = () => operations[selectedOperationIndex];
   
