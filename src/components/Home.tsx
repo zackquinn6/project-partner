@@ -304,9 +304,6 @@ export default function Home({
               <Button variant="accent" size="sm" className="ml-1 text-xs sm:text-sm px-2 sm:px-3" onClick={() => navigate('/auth?mode=signup')}>
                 Sign Up
               </Button>
-              <Button variant="outline" size="sm" className="ml-1 text-xs sm:text-sm px-2 sm:px-3" onClick={() => setIsDIYQuizOpen(true)}>
-                DIY Quiz
-              </Button>
             </div>
           </div>
         </nav>
@@ -331,6 +328,10 @@ export default function Home({
                 <Button variant="secondary" size="lg" className="px-6 md:px-8 text-base md:text-lg bg-accent text-accent-foreground hover:bg-accent-light border-0 shadow-accent" onClick={() => navigate('/auth?mode=signup')}>
                   <Star className="mr-2 h-4 w-4" />
                   Start Your Free Account
+                </Button>
+                <Button variant="outline" size="lg" className="px-6 md:px-8 text-base md:text-lg border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 shadow-elegant" onClick={() => setIsDIYQuizOpen(true)}>
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Take DIY Quiz
                 </Button>
               </div>
             </div>
