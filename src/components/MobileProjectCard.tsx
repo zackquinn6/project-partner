@@ -15,6 +15,7 @@ import { ChevronRight, Play, CheckCircle, Clock, AlertTriangle, Trash2 } from 'l
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
+import { useButtonTracker } from '@/hooks/useButtonTracker';
 
 interface MobileProjectCardProps {
   project: Project | ProjectRun;
@@ -25,6 +26,7 @@ interface MobileProjectCardProps {
 
 export function MobileProjectCard({ project, onSelect, variant = 'project', onDelete }: MobileProjectCardProps) {
   const { deleteProjectRun } = useProject();
+  const { trackClick } = useButtonTracker();
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -74,12 +76,23 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
   };
   
   const handleClick = (e: React.MouseEvent) => {
+    console.log("🎯 Card clicked - target:", e.target, "currentTarget:", e.currentTarget);
+    
+    // Don't handle card clicks if clicking on a button
+    if ((e.target as HTMLElement).closest('button')) {
+      console.log("🎯 Click on button detected, ignoring card click");
+      return;
+    }
+    
     // If delete button is showing, don't trigger onSelect
     if (swipeOffset > 50) {
+      console.log("🎯 Delete button showing, preventing onSelect");
       e.preventDefault();
       e.stopPropagation();
       return;
     }
+    
+    console.log("🎯 Calling onSelect from card click");
     onSelect();
   };
   
@@ -192,7 +205,7 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
                     <span>{project.phases.length} phases</span>
                   )}
                 </div>
-                <ActionButton status={status} progress={progress} />
+                <ActionButton status={status} progress={progress} onSelect={onSelect} />
               </div>
             </div>
           </CardContent>
@@ -272,10 +285,17 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function ActionButton({ status, progress }: { status: string; progress: number }) {
+function ActionButton({ status, progress, onSelect }: { status: string; progress: number; onSelect: () => void }) {
+  const { trackClick } = useButtonTracker();
+  
   if (status === 'completed') {
     return (
-      <Button variant="outline" size="sm" className="text-xs px-3 py-1 h-7">
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="text-xs px-3 py-1 h-7"
+        onClick={trackClick('View Project', onSelect)}
+      >
         View
       </Button>
     );
@@ -283,14 +303,24 @@ function ActionButton({ status, progress }: { status: string; progress: number }
   
   if (status === 'in-progress') {
     return (
-      <Button variant="default" size="sm" className="text-xs px-3 py-1 h-7">
+      <Button 
+        variant="default" 
+        size="sm" 
+        className="text-xs px-3 py-1 h-7"
+        onClick={trackClick('Continue Project', onSelect)}
+      >
         Continue
       </Button>
     );
   }
   
   return (
-    <Button variant="outline" size="sm" className="text-xs px-3 py-1 h-7">
+    <Button 
+      variant="outline" 
+      size="sm" 
+      className="text-xs px-3 py-1 h-7"
+      onClick={trackClick('Start Project', onSelect)}
+    >
       Start
     </Button>
   );

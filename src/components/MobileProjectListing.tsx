@@ -8,6 +8,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { MobileProjectCard } from './MobileProjectCard';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
+import { useButtonTracker } from '@/hooks/useButtonTracker';
 
 interface MobileProjectListingProps {
   onProjectSelect: (project: Project | ProjectRun) => void;
@@ -17,6 +18,7 @@ interface MobileProjectListingProps {
 
 export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }: MobileProjectListingProps) {
   const { projects, projectRuns, currentProjectRun } = useProject();
+  const { trackClick } = useButtonTracker();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'progress'>('recent');
@@ -118,7 +120,7 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => onProjectSelect(currentProjectRun)}
+                onClick={trackClick('Continue Current Project', () => onProjectSelect(currentProjectRun))}
                 className="ml-3"
               >
                 Continue
