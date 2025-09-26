@@ -74,8 +74,10 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     // Clear any conflicting navigation state
     window.history.replaceState({}, document.title, window.location.pathname);
     
-    // Signal parent that we want to switch to workflow
-    onProjectSelect?.('workflow' as any);
+    // Signal parent that we want to switch to workflow - use setTimeout to ensure state updates complete
+    setTimeout(() => {
+      onProjectSelect?.('workflow' as any);
+    }, 0);
   };
 
   const handleDeleteProjectRun = (projectRunId: string) => {

@@ -331,8 +331,8 @@ export default function UserView({
       return;
     }
 
-    // Priority 4: Project run selected - switch to workflow (Continue button case)
-    if (currentProjectRun && !resetToListing) {
+    // Priority 4: Project run selected - switch to workflow (Continue button case) - HIGHER PRIORITY
+    if (currentProjectRun && !showProfile && !forceListingMode) {
       console.log("🔄 UserView: Project run active, switching to workflow mode");
       setViewMode('workflow');
       onProjectSelected?.();
