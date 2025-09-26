@@ -79,8 +79,11 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
       window.history.replaceState({}, document.title, window.location.pathname);
       console.log("🎯 History state cleared");
       
-      // Remove manual workflow switch - let useEffect handle it automatically
-      console.log("🎯 Letting useEffect handle workflow switch automatically");
+      // Use setTimeout to ensure state update happens first
+      setTimeout(() => {
+        console.log("🎯 Triggering workflow switch after state update");
+        onProjectSelect?.('workflow' as any);
+      }, 0);
       
     } catch (error) {
       console.error("🎯 Error in handleOpenProjectRun:", error);
