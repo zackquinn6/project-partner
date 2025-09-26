@@ -275,10 +275,12 @@ export default function UserView({
     console.log('🔄 UserView: resetToListing useEffect triggered:', { 
       resetToListing, 
       currentProjectRun: !!currentProjectRun,
-      showProfile 
+      showProfile,
+      viewMode
     });
     
-    if (resetToListing && !showProfile) {
+    // Don't reset to listing if we're transitioning to workflow mode with a current project run
+    if (resetToListing && !showProfile && !(currentProjectRun && viewMode === 'workflow')) {
       console.log("🔄 UserView: Resetting to listing mode due to resetToListing prop");
       setViewMode('listing');
       setShowProfileManager(false); // Ensure profile manager is closed when switching to listing
@@ -287,8 +289,10 @@ export default function UserView({
       console.log("🔄 UserView: Profile mode requested - keeping current view");
       // Don't switch to workflow if profile should be shown
       setViewMode('listing');
+    } else if (resetToListing && currentProjectRun && viewMode === 'workflow') {
+      console.log("🔄 UserView: Ignoring resetToListing because we're in workflow mode with project run");
     }
-  }, [resetToListing, showProfile]);
+  }, [resetToListing, showProfile, currentProjectRun, viewMode]);
 
   // Auto-switch to workflow view when a project run is selected from Continue button
   useEffect(() => {
@@ -299,8 +303,8 @@ export default function UserView({
     console.log("🔄 showProfile:", showProfile);
     console.log("🔄 viewMode:", viewMode);
     
-    // Only auto-switch if we have a project run and we're not being forced to stay in listing mode
-    if (currentProjectRun && !resetToListing && !forceListingMode && !showProfile && viewMode !== 'workflow') {
+    // Auto-switch if we have a project run - allow workflow mode even with resetToListing
+    if (currentProjectRun && !forceListingMode && !showProfile && viewMode !== 'workflow') {
       console.log("🔄 SWITCHING TO WORKFLOW MODE!");
       console.log("🔄 UserView: Auto-switching to workflow mode for selected project run:", currentProjectRun.id, {
         resetToListing,
