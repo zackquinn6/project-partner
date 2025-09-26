@@ -101,6 +101,24 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
     newCompletedKickoffSteps.add(stepIndex);
     setCompletedKickoffSteps(newCompletedKickoffSteps);
 
+    // Automatically mark outputs as complete for this step
+    setCheckedOutputs(prev => {
+      const newOutputs = { ...prev };
+      const outputMap: Record<string, string[]> = {
+        'kickoff-step-1': ['overview-output'],
+        'kickoff-step-2': ['overview-complete-output'], 
+        'kickoff-step-3': ['planning-output'],
+        'kickoff-step-4': ['agreement-output']
+      };
+      
+      if (outputMap[stepId]) {
+        newOutputs[stepId] = new Set(outputMap[stepId]);
+      }
+      
+      console.log("✅ Auto-marked outputs complete for step:", stepId, newOutputs[stepId]);
+      return newOutputs;
+    });
+
     console.log("KickoffWorkflow - Updating project run with steps:", newCompletedSteps);
 
     try {
