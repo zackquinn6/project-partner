@@ -183,9 +183,9 @@ export const createOrderingPhase = (): Phase => {
       step: 'Tool & Material Ordering',
       description: 'Order all required tools and materials for your project using the integrated shopping browser',
       contentType: 'text' as const,
-      content: 'Use the shopping browser to purchase all required tools and materials. Check off items as you order them to track your progress.',
-      materials: [],
-      tools: [],
+      content: 'Use our integrated shopping browser to purchase all required tools and materials for your project. Our system will help you find the best prices and ensure you get everything you need.',
+      materials: [], // No materials needed for ordering step
+      tools: [], // No tools needed for ordering step
       outputs: [{
         id: 'ordering-output',
         name: 'All Items Ordered',

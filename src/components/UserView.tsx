@@ -833,6 +833,38 @@ export default function UserView({
   };
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
+    
+    // Special case for ordering step - add Shop Online button in content
+    if (step.step === 'Tool & Material Ordering' || 
+        step.phaseName === 'Ordering' || 
+        step.id === 'ordering-step-1') {
+      return (
+        <div className="space-y-6">
+          <div className="prose prose-base max-w-none">
+            <p>
+              Use our integrated shopping browser to purchase all required tools and materials for your project. 
+              Our system will help you find the best prices and ensure you get everything you need.
+            </p>
+          </div>
+          
+          {/* Shop Online Button - styled to match Project Customizer button */}
+          <div className="flex justify-center pt-4">
+            <Button 
+              onClick={() => {
+                console.log('Opening ordering window for step:', step.step);
+                setOrderingWindowOpen(true);
+              }}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Shop Online
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    
     switch (step.contentType) {
       case 'document':
         return <div className="space-y-4">
@@ -1211,30 +1243,18 @@ export default function UserView({
                   </CardDescription>}
                 </div>
                 
-                {/* Show ordering button for ordering steps */}
-                {currentStep && (
-                  currentStep.step === 'Tool & Material Ordering' || 
-                  currentStep.phaseName === 'Ordering' ||
-                  currentStep.id === 'ordering-step-1'
-                ) && (
-                  <Button 
-                    onClick={() => {
-                      console.log('Opening ordering window for step:', currentStep.step);
-                      setOrderingWindowOpen(true);
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Shop Online
-                  </Button>
-                )}
+                {/* Don't show ordering button for ordering steps since it's now in content */}
 
               </div>
             </CardHeader>
           </Card>
 
-              {/* Tools & Materials Section - At Top */}
-              {currentStep && (currentStep.materials?.length > 0 || currentStep.tools?.length > 0) && (
+              {/* Tools & Materials Section - Hide for ordering steps since they don't need materials/tools */}
+              {currentStep && 
+                !(currentStep.step === 'Tool & Material Ordering' || 
+                  currentStep.phaseName === 'Ordering' || 
+                  currentStep.id === 'ordering-step-1') &&
+                (currentStep.materials?.length > 0 || currentStep.tools?.length > 0) && (
                 <ToolsMaterialsSection
                   currentStep={currentStep}
                   checkedMaterials={checkedMaterials[currentStep.id] || new Set()}

@@ -667,22 +667,8 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                     Edit Step
                   </Button>
 
-                  {/* Show ordering button for ordering steps */}
-                  {currentStep && (
-                    currentStep.step === 'Tool & Material Ordering' || 
-                    currentStep.phaseName === 'Ordering' ||
-                    currentStep.id === 'ordering-step-1'
-                  ) && (
-                    <Button 
-                      onClick={() => {
-                        setOrderingWindowOpen(true);
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      Shop Online
-                    </Button>
-                  )}
+                  
+                  {/* Don't show ordering button for ordering steps since it's now in content */}
                   
                   {/* Debug button to always show ordering - remove after testing */}
                   <Button 
@@ -722,8 +708,12 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
             </CardContent>
           </Card>
 
-          {/* Materials, Tools, and Outputs */}
-          {currentStep && (currentStep.materials?.length > 0 || currentStep.tools?.length > 0 || currentStep.outputs?.length > 0) && (
+          {/* Materials, Tools, and Outputs - Hide for ordering steps since they don't need materials/tools */}
+          {currentStep && 
+            !(currentStep.step === 'Tool & Material Ordering' || 
+              currentStep.phaseName === 'Ordering' || 
+              currentStep.id === 'ordering-step-1') &&
+            (currentStep.materials?.length > 0 || currentStep.tools?.length > 0 || currentStep.outputs?.length > 0) && (
             <Card className="gradient-card border-0 shadow-card">
               <CardContent className="p-6">
                 <Accordion type="multiple" defaultValue={["materials", "tools", "outputs"]} className="w-full">
