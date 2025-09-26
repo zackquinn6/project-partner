@@ -1,33 +1,31 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Calendar as CalendarIcon, 
   Clock, 
   CheckCircle, 
   Plus, 
-  AlertTriangle,
   Users,
   Settings,
   Zap,
   Trash2,
-  Edit2
+  Save,
+  X
 } from 'lucide-react';
-import { format, addDays, parseISO, isSameDay, startOfDay, addHours, isAfter, isBefore } from 'date-fns';
+import { format, addDays, parseISO, addHours } from 'date-fns';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface ProjectSchedulerProps {
   open: boolean;
@@ -85,9 +83,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 }) => {
   const { updateProjectRun } = useProject();
   const { toast } = useToast();
+  const { isMobile } = useResponsive();
   
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [activeTab, setActiveTab] = useState('overview');
   const [selectedScenario, setSelectedScenario] = useState<string>('Typical');
   
   // Team management
@@ -107,8 +104,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   
   // Sessions
   const [scheduledSessions, setScheduledSessions] = useState<ScheduledSession[]>([]);
-  const [newSessionDate, setNewSessionDate] = useState<Date>(new Date());
-  const [showAddSession, setShowAddSession] = useState(false);
 
   // Calculate time estimates with scenarios
   const timeEstimates = useMemo(() => {
@@ -301,12 +296,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     }
   };
 
-  // Get sessions for a specific date
-  const getDateSessions = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return scheduledSessions.filter(session => session.date === dateStr);
-  };
-
   const formatTime = (hours: number): string => {
     if (hours < 1) return `${Math.round(hours * 60)}m`;
     if (hours < 24) return `${Math.round(hours * 10) / 10}h`;
@@ -317,306 +306,317 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5" />
-            Project Scheduler - {project.name}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="w-[90vw] max-w-none h-[85vh] p-0 gap-0">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b bg-gradient-subtle">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <CalendarIcon className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Project Scheduler</h2>
+              <p className="text-sm text-muted-foreground">{project.name}</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
-            <TabsTrigger value="schedule">Schedule</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Time Estimates & Scenarios
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {timeEstimates.map((estimate) => (
-                    <Card key={estimate.scenario} className={`cursor-pointer transition-all ${
-                      selectedScenario === estimate.scenario ? 'ring-2 ring-primary' : ''
-                    }`} onClick={() => setSelectedScenario(estimate.scenario)}>
-                      <CardHeader className="pb-3">
+        <ScrollArea className="flex-1 p-6">
+          <div className="space-y-8">
+            {/* Time Estimates Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-semibold">Time Estimates & Scenarios</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {timeEstimates.map((estimate) => (
+                  <Card 
+                    key={estimate.scenario} 
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedScenario === estimate.scenario 
+                        ? 'ring-2 ring-primary bg-primary/5' 
+                        : 'hover:bg-muted/50'
+                    }`} 
+                    onClick={() => setSelectedScenario(estimate.scenario)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
                         <CardTitle className={`text-lg ${estimate.color}`}>
                           {estimate.scenario}
                         </CardTitle>
-                        <p className="text-sm text-muted-foreground">{estimate.description}</p>
-                      </CardHeader>
-                      <CardContent>
+                        {selectedScenario === estimate.scenario && (
+                          <CheckCircle className="w-5 h-5 text-primary" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{estimate.description}</p>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Work Time:</span>
+                        <Badge variant="secondary">{formatTime(estimate.totalWorkTime)}</Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Wait Time:</span>
+                        <Badge variant="outline">{formatTime(estimate.totalLagTime)}</Badge>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between items-center font-semibold">
+                        <span>Total Time:</span>
+                        <Badge className="bg-primary">{formatTime(estimate.totalTime)}</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Working Hours Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Settings className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-semibold">Working Hours & Availability</h3>
+              </div>
+              
+              <Card>
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Button 
+                      variant={quickPreset === 'weekends' ? 'default' : 'outline'}
+                      onClick={() => applyQuickPreset('weekends')}
+                      className="flex items-center gap-2 h-12"
+                    >
+                      <Zap className="w-4 h-4" />
+                      Weekends Only
+                    </Button>
+                    <Button 
+                      variant={quickPreset === 'evenings' ? 'default' : 'outline'}
+                      onClick={() => applyQuickPreset('evenings')}
+                      className="flex items-center gap-2 h-12"
+                    >
+                      <Zap className="w-4 h-4" />
+                      After 5pm Only
+                    </Button>
+                    <Button 
+                      variant={quickPreset === 'flexible' ? 'default' : 'outline'}
+                      onClick={() => applyQuickPreset('flexible')}
+                      className="flex items-center gap-2 h-12"
+                    >
+                      <Zap className="w-4 h-4" />
+                      Flexible Schedule
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Start Time</Label>
+                      <Input 
+                        type="time" 
+                        value={workingHours.start}
+                        onChange={(e) => setWorkingHours({...workingHours, start: e.target.value})}
+                        className="h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">End Time</Label>
+                      <Input 
+                        type="time" 
+                        value={workingHours.end}
+                        onChange={(e) => setWorkingHours({...workingHours, end: e.target.value})}
+                        className="h-12"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Team Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Team Members</h3>
+                </div>
+                <Button onClick={addTeamMember} size="sm" className="h-10">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Member
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                {teamMembers.map((member, index) => (
+                  <Card key={member.id} className="border border-border">
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span>Work Time:</span>
-                            <span className="font-medium">{formatTime(estimate.totalWorkTime)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Wait Time:</span>
-                            <span className="font-medium">{formatTime(estimate.totalLagTime)}</span>
-                          </div>
-                          <Separator />
-                          <div className="flex justify-between font-semibold">
-                            <span>Total Time:</span>
-                            <span>{formatTime(estimate.totalTime)}</span>
-                          </div>
+                          <Label className="text-sm font-medium">Name</Label>
+                          <Input 
+                            value={member.name}
+                            onChange={(e) => {
+                              const updated = [...teamMembers];
+                              updated[index].name = e.target.value;
+                              setTeamMembers(updated);
+                            }}
+                            className="h-10"
+                          />
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Working Hours & Availability</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button 
-                    variant={quickPreset === 'weekends' ? 'default' : 'outline'}
-                    onClick={() => applyQuickPreset('weekends')}
-                    className="flex items-center gap-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    Weekends Only
-                  </Button>
-                  <Button 
-                    variant={quickPreset === 'evenings' ? 'default' : 'outline'}
-                    onClick={() => applyQuickPreset('evenings')}
-                    className="flex items-center gap-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    After 5pm Only
-                  </Button>
-                  <Button 
-                    variant={quickPreset === 'flexible' ? 'default' : 'outline'}
-                    onClick={() => applyQuickPreset('flexible')}
-                    className="flex items-center gap-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    Flexible Schedule
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Start Time</Label>
-                    <Input 
-                      type="time" 
-                      value={workingHours.start}
-                      onChange={(e) => setWorkingHours({...workingHours, start: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label>End Time</Label>
-                    <Input 
-                      type="time" 
-                      value={workingHours.end}
-                      onChange={(e) => setWorkingHours({...workingHours, end: e.target.value})}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="team" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    Team Members
-                  </span>
-                  <Button onClick={addTeamMember} size="sm">
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Member
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {teamMembers.map((member, index) => (
-                    <Card key={member.id}>
-                      <CardContent className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div>
-                            <Label>Name</Label>
-                            <Input 
-                              value={member.name}
-                              onChange={(e) => {
-                                const updated = [...teamMembers];
-                                updated[index].name = e.target.value;
-                                setTeamMembers(updated);
-                              }}
-                            />
-                          </div>
-                          <div>
-                            <Label>Skill Level</Label>
-                            <Select 
-                              value={member.skillLevel}
-                              onValueChange={(value: any) => {
-                                const updated = [...teamMembers];
-                                updated[index].skillLevel = value;
-                                setTeamMembers(updated);
-                              }}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Skill Level</Label>
+                          <Select 
+                            value={member.skillLevel}
+                            onValueChange={(value: any) => {
+                              const updated = [...teamMembers];
+                              updated[index].skillLevel = value;
+                              setTeamMembers(updated);
+                            }}
+                          >
+                            <SelectTrigger className="h-10">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="novice">Novice</SelectItem>
+                              <SelectItem value="intermediate">Intermediate</SelectItem>
+                              <SelectItem value="expert">Expert</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Hours/Day</Label>
+                          <Input 
+                            type="number"
+                            min="1"
+                            max="12"
+                            value={member.hoursAvailable}
+                            onChange={(e) => {
+                              const updated = [...teamMembers];
+                              updated[index].hoursAvailable = parseInt(e.target.value) || 1;
+                              setTeamMembers(updated);
+                            }}
+                            className="h-10"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          {teamMembers.length > 1 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setTeamMembers(teamMembers.filter((_, i) => i !== index))}
+                              className="h-10 w-10 p-0 text-destructive hover:bg-destructive/10"
                             >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="novice">Novice</SelectItem>
-                                <SelectItem value="intermediate">Intermediate</SelectItem>
-                                <SelectItem value="expert">Expert</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label>Hours/Day</Label>
-                            <Input 
-                              type="number"
-                              min="1"
-                              max="12"
-                              value={member.hoursAvailable}
-                              onChange={(e) => {
-                                const updated = [...teamMembers];
-                                updated[index].hoursAvailable = parseInt(e.target.value) || 4;
-                                setTeamMembers(updated);
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-end">
-                            {teamMembers.length > 1 && (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setTeamMembers(teamMembers.filter(m => m.id !== member.id))}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Schedule Generation Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <CalendarIcon className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-semibold">Generate Schedule</h3>
+              </div>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Selected scenario: <strong>{selectedScenario}</strong>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {scheduledSessions.length > 0 
+                          ? `${scheduledSessions.length} sessions scheduled`
+                          : 'No schedule generated yet'
+                        }
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
+                      {scheduledSessions.length > 0 && (
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setScheduledSessions([])}
+                          className="h-12"
+                        >
+                          Clear Schedule
+                        </Button>
+                      )}
+                      <Button 
+                        onClick={generateSchedule} 
+                        className="h-12 px-6"
+                      >
+                        <Zap className="w-4 h-4 mr-2" />
+                        Generate Schedule
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Schedule Preview */}
+            {scheduledSessions.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Schedule Preview</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
+                  {scheduledSessions.slice(0, 10).map((session) => (
+                    <Card key={session.id} className="border border-border">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge variant="outline">{format(parseISO(session.date + 'T00:00:00'), 'MMM d, yyyy')}</Badge>
+                          <Badge className="bg-primary/10 text-primary">
+                            {session.startTime} - {session.endTime}
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-medium">{session.notes}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {session.estimatedHours}h session
+                        </p>
                       </CardContent>
                     </Card>
                   ))}
+                  {scheduledSessions.length > 10 && (
+                    <Card className="border-dashed">
+                      <CardContent className="p-4 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          +{scheduledSessions.length - 10} more sessions
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="schedule" className="space-y-6">
-            <div className="flex gap-4">
-              <Button onClick={generateSchedule} className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                Generate Schedule ({selectedScenario})
-              </Button>
-              <Button onClick={() => setScheduledSessions([])} variant="outline">
-                Clear Schedule
-              </Button>
-            </div>
-
-            {scheduledSessions.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Generated Schedule</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {scheduledSessions.map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-3 border rounded">
-                        <div>
-                          <div className="font-medium">
-                            {format(parseISO(session.date), 'MMM d, yyyy')} 
-                            {' '}{session.startTime} - {session.endTime}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {session.notes} ({formatTime(session.estimatedHours)})
-                          </div>
-                        </div>
-                        <Badge variant="outline">{session.sessionType}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              </div>
             )}
-          </TabsContent>
+          </div>
+        </ScrollArea>
 
-          <TabsContent value="calendar" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Calendar View</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
-                    className="rounded-md border pointer-events-auto"
-                    modifiers={{
-                      scheduled: scheduledSessions.map(s => parseISO(s.date))
-                    }}
-                    modifiersStyles={{
-                      scheduled: { backgroundColor: 'var(--primary)', color: 'white' }
-                    }}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {format(selectedDate, 'MMM d, yyyy')} Sessions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {getDateSessions(selectedDate).map((session) => (
-                      <div key={session.id} className="p-3 border rounded">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">
-                              {session.startTime} - {session.endTime}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {session.notes}
-                            </div>
-                          </div>
-                          <Badge>{formatTime(session.estimatedHours)}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                    {getDateSessions(selectedDate).length === 0 && (
-                      <p className="text-muted-foreground text-center py-4">
-                        No sessions scheduled for this date
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <div className="flex justify-between pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={saveSchedule} disabled={scheduledSessions.length === 0}>
-            Save Schedule
-          </Button>
+        {/* Footer */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-6 border-t bg-muted/30">
+          <div className="text-sm text-muted-foreground">
+            {selectedScenario} scenario selected • {teamMembers.length} team member{teamMembers.length !== 1 ? 's' : ''}
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="h-12 px-6">
+              Cancel
+            </Button>
+            <Button 
+              onClick={saveSchedule} 
+              disabled={scheduledSessions.length === 0}
+              className="h-12 px-6"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Schedule
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
