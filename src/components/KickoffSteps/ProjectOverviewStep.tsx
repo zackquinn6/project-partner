@@ -5,17 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Edit3, Save, X } from 'lucide-react';
+import { CheckCircle, Edit3, Save, X, Target } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 
 interface ProjectOverviewStepProps {
   onComplete: () => void;
   isCompleted: boolean;
+  checkedOutputs?: Set<string>;
+  onOutputToggle?: (outputId: string) => void;
 }
 
 export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   onComplete,
-  isCompleted
+  isCompleted,
+  checkedOutputs = new Set(),
+  onOutputToggle
 }) => {
   const { currentProjectRun, updateProjectRun, currentProject } = useProject();
   const [isEditing, setIsEditing] = useState(false);
@@ -151,6 +155,28 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               <p className="text-green-800 text-sm">Project Overview Completed ✓</p>
             </div>
           )}
+
+          {/* Step Outputs */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Target className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">Step Outputs</span>
+            </div>
+            <div className="space-y-2">
+              <div 
+                className="flex items-center gap-3 p-3 rounded-lg border bg-background/50 hover:bg-background/80 transition-colors cursor-pointer"
+                onClick={() => onOutputToggle?.('overview-complete-output')}
+              >
+                <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${checkedOutputs.has('overview-complete-output') ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
+                  {checkedOutputs.has('overview-complete-output') && <CheckCircle className="w-3 h-3 text-white" />}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">Project Overview Review Complete</div>
+                  <div className="text-xs text-muted-foreground">Project overview has been reviewed and confirmed</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

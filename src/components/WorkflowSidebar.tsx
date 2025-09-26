@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, EyeOff } from "lucide-react";
+import { CheckCircle, EyeOff, MessageCircle, Key, Settings } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import {
   Sidebar,
@@ -73,33 +73,36 @@ export function WorkflowSidebar({
                 {/* DIY Tools Section */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-primary">DIY Tools</h3>
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className="flex gap-2">
                     <Button 
                       onClick={onHelpClick}
                       variant="outline"
-                      className="h-12 w-full flex flex-col items-center justify-center gap-0.5 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900"
+                      size="sm"
+                      className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900 rounded-lg"
                     >
-                      <div className="text-xs font-semibold">Talk to a Pro</div>
-                      <div className="text-[9px] opacity-75">Get Expert Help</div>
+                      <MessageCircle className="w-4 h-4" />
+                      <div className="text-[10px] font-semibold">Chat</div>
                     </Button>
                     
                     <Button 
                       onClick={onKeysToSuccessClick}
                       variant="outline"
-                      className="h-12 w-full flex flex-col items-center justify-center gap-0.5 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border-green-200 hover:border-green-300 transition-all shadow-sm hover:shadow-md text-green-800 hover:text-green-900"
+                      size="sm"
+                      className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border-green-200 hover:border-green-300 transition-all shadow-sm hover:shadow-md text-green-800 hover:text-green-900 rounded-lg"
                     >
-                      <div className="text-xs font-semibold">Pro Tips</div>
-                      <div className="text-[9px] opacity-75">Get To What Really Matters</div>
+                      <Key className="w-4 h-4" />
+                      <div className="text-[10px] font-semibold">Keys</div>
                     </Button>
                     
                     {isKickoffComplete && (
                       <Button 
                         onClick={onUnplannedWorkClick}
                         variant="outline"
-                        className="h-12 w-full flex flex-col items-center justify-center gap-0.5 bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-150 border-orange-200 hover:border-orange-300 transition-all shadow-sm hover:shadow-md text-orange-800 hover:text-orange-900"
+                        size="sm"
+                        className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-150 border-orange-200 hover:border-orange-300 transition-all shadow-sm hover:shadow-md text-orange-800 hover:text-orange-900 rounded-lg"
                       >
-                        <div className="text-xs font-semibold">Change the Plan</div>
-                        <div className="text-[9px] opacity-75">Update With Learnings</div>
+                        <Settings className="w-4 h-4" />
+                        <div className="text-[10px] font-semibold">Re-Plan</div>
                       </Button>
                     )}
                   </div>

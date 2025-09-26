@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CheckCircle, FileText, PenTool, Download } from 'lucide-react';
+import { CheckCircle, FileText, PenTool, Download, Target } from 'lucide-react';
 import { SignatureCapture } from '@/components/SignatureCapture';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
@@ -14,6 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface ProjectAgreementStepProps {
   onComplete: () => void;
   isCompleted: boolean;
+  checkedOutputs?: Set<string>;
+  onOutputToggle?: (outputId: string) => void;
 }
 
 interface Agreement {
@@ -25,7 +27,9 @@ interface Agreement {
 
 export const ProjectAgreementStep: React.FC<ProjectAgreementStepProps> = ({
   onComplete,
-  isCompleted
+  isCompleted,
+  checkedOutputs = new Set(),
+  onOutputToggle
 }) => {
   const { user } = useAuth();
   const { currentProjectRun, updateProjectRun } = useProject();
@@ -273,6 +277,28 @@ Date: ${new Date().toLocaleDateString()}
               </DialogContent>
             </Dialog>
           )}
+
+          {/* Step Outputs */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Target className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">Step Outputs</span>
+            </div>
+            <div className="space-y-2">
+              <div 
+                className="flex items-center gap-3 p-3 rounded-lg border bg-background/50 hover:bg-background/80 transition-colors cursor-pointer"
+                onClick={() => onOutputToggle?.('agreement-output')}
+              >
+                <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${checkedOutputs.has('agreement-output') ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
+                  {checkedOutputs.has('agreement-output') && <CheckCircle className="w-3 h-3 text-white" />}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">Signed Project Agreement</div>
+                  <div className="text-xs text-muted-foreground">Project agreement has been signed and documented</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -18,6 +18,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
   const { currentProjectRun, updateProjectRun } = useProject();
   const [currentKickoffStep, setCurrentKickoffStep] = useState(0);
   const [completedKickoffSteps, setCompletedKickoffSteps] = useState<Set<number>>(new Set());
+  const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
 
   const kickoffSteps = [
     {
@@ -168,10 +169,27 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
   const allKickoffStepsComplete = completedKickoffSteps.size === kickoffSteps.length;
   const progress = (completedKickoffSteps.size / kickoffSteps.length) * 100;
 
+  const handleOutputToggle = (stepId: string, outputId: string) => {
+    setCheckedOutputs(prev => {
+      const stepOutputs = new Set(prev[stepId] || []);
+      if (stepOutputs.has(outputId)) {
+        stepOutputs.delete(outputId);
+      } else {
+        stepOutputs.add(outputId);
+      }
+      return {
+        ...prev,
+        [stepId]: stepOutputs
+      };
+    });
+  };
+
   const renderCurrentStep = () => {
     const stepProps = {
       onComplete: () => handleStepComplete(currentKickoffStep),
-      isCompleted: isStepCompleted(currentKickoffStep)
+      isCompleted: isStepCompleted(currentKickoffStep),
+      checkedOutputs: checkedOutputs[kickoffSteps[currentKickoffStep].id] || new Set(),
+      onOutputToggle: (outputId: string) => handleOutputToggle(kickoffSteps[currentKickoffStep].id, outputId)
     };
 
     switch (currentKickoffStep) {
