@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, EyeOff, MessageCircle, Key, Settings, GitBranch } from "lucide-react";
+import { CheckCircle, EyeOff, MessageCircle, Key, Settings } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import {
   Sidebar,
@@ -27,7 +27,6 @@ interface WorkflowSidebarProps {
   onHelpClick: () => void;
   onUnplannedWorkClick: () => void;
   onKeysToSuccessClick: () => void;
-  onDecisionTreeClick?: () => void;
 }
 
 export function WorkflowSidebar({
@@ -41,8 +40,7 @@ export function WorkflowSidebar({
   onStepClick,
   onHelpClick,
   onUnplannedWorkClick,
-  onKeysToSuccessClick,
-  onDecisionTreeClick
+  onKeysToSuccessClick
 }: WorkflowSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -96,17 +94,6 @@ export function WorkflowSidebar({
                       <div className="text-[10px] font-semibold">Keys</div>
                     </Button>
                     
-                    <Button 
-                      onClick={onDecisionTreeClick}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 transition-all shadow-sm hover:shadow-md text-purple-800 hover:text-purple-900 rounded-lg"
-                    >
-                      <GitBranch className="w-4 h-4" />
-                      <div className="text-[10px] font-semibold">Tree</div>
-                    </Button>
-                  </div>
-                  <div className="flex gap-2 mt-2">
                     {isKickoffComplete && (
                       <Button 
                         onClick={onUnplannedWorkClick}

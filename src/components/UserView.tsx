@@ -32,7 +32,6 @@ import { ToolsMaterialsSection } from './ToolsMaterialsSection';
 import ProfileManager from './ProfileManager';
 import { DecisionRollupWindow } from './DecisionRollupWindow';
 import { KeyCharacteristicsWindow } from './KeyCharacteristicsWindow';
-import { DecisionTreeFlowchart } from './DecisionTreeFlowchart';
 import { isKickoffPhaseComplete, addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 interface UserViewProps {
   resetToListing?: boolean;
@@ -111,7 +110,6 @@ export default function UserView({
   const [decisionRollupOpen, setDecisionRollupOpen] = useState(false);
   const [decisionRollupMode, setDecisionRollupMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work'>('initial-plan');
   const [keyCharacteristicsOpen, setKeyCharacteristicsOpen] = useState(false);
-  const [showDecisionTreeView, setShowDecisionTreeView] = useState(false);
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
@@ -1123,7 +1121,6 @@ export default function UserView({
               setDecisionRollupOpen(true);
             }}
             onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
-            onDecisionTreeClick={() => setShowDecisionTreeView(true)}
           />
 
           <main className="flex-1 overflow-auto">
@@ -1635,23 +1632,6 @@ export default function UserView({
           onOpenChange={setKeyCharacteristicsOpen}
           operations={activeProject.phases?.flatMap(phase => phase.operations) || []}
         />
-      )}
-
-      {/* Decision Tree Modal */}
-      {showDecisionTreeView && currentProject && currentProjectRun && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <DecisionTreeFlowchart
-            phases={currentProjectRun.phases}
-            onBack={() => setShowDecisionTreeView(false)}
-            onUpdatePhases={async (updatedPhases) => {
-              await updateProjectRun({
-                ...currentProjectRun,
-                phases: updatedPhases,
-                updatedAt: new Date()
-              });
-            }}
-          />
-        </div>
       )}
     </>
   );
