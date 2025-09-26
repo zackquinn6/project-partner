@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -18,7 +19,8 @@ import {
   Zap,
   Trash2,
   Save,
-  X
+  X,
+  Target
 } from 'lucide-react';
 import { format, addDays, parseISO, addHours } from 'date-fns';
 import { Project } from '@/interfaces/Project';
@@ -67,6 +69,8 @@ interface WorkingHours {
   start: string;
   end: string;
   daysOfWeek: number[];
+  weekendsOnly: boolean;
+  afterHoursOnly: boolean;
 }
 
 const scenarios: ScenarioEstimate[] = [
@@ -96,7 +100,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [workingHours, setWorkingHours] = useState<WorkingHours>({
     start: '09:00',
     end: '17:00',
-    daysOfWeek: [1, 2, 3, 4, 5] // Monday-Friday
+    daysOfWeek: [1, 2, 3, 4, 5], // Monday-Friday
+    weekendsOnly: false,
+    afterHoursOnly: false
   });
   
   // Quick presets
@@ -159,37 +165,55 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     });
   }, [project, projectRun]);
 
-  // Apply quick presets
-  const applyQuickPreset = (preset: string) => {
-    switch (preset) {
-      case 'weekends':
-        setWorkingHours({
-          start: '09:00',
-          end: '17:00',
-          daysOfWeek: [0, 6] // Saturday, Sunday
-        });
-        break;
-      case 'evenings':
-        setWorkingHours({
-          start: '18:00',
-          end: '22:00',
-          daysOfWeek: [1, 2, 3, 4, 5] // Monday-Friday
-        });
-        break;
-      case 'flexible':
-        setWorkingHours({
-          start: '09:00',
-          end: '17:00',
-          daysOfWeek: [1, 2, 3, 4, 5, 6] // Monday-Saturday
-        });
-        break;
-    }
-    setQuickPreset(preset);
-    toast({
-      title: "Working hours updated",
-      description: `Applied ${preset} schedule preset.`
-    });
+  // Handle weekends only toggle
+  const handleWeekendsOnly = (checked: boolean) => {
+    setWorkingHours(prev => ({
+      ...prev,
+      weekendsOnly: checked,
+      daysOfWeek: checked ? [0, 6] : [1, 2, 3, 4, 5],
+      afterHoursOnly: checked ? false : prev.afterHoursOnly
+    }));
   };
+
+  // Handle after hours only toggle
+  const handleAfterHoursOnly = (checked: boolean) => {
+    setWorkingHours(prev => ({
+      ...prev,
+      afterHoursOnly: checked,
+      start: checked ? '17:00' : '09:00',
+      end: checked ? '22:00' : '17:00',
+      weekendsOnly: checked ? false : prev.weekendsOnly
+    }));
+  };
+
+  // Calculate target completion date
+  const targetCompletionDate = useMemo(() => {
+    const estimate = timeEstimates.find(e => e.scenario === selectedScenario);
+    if (!estimate) return null;
+    
+    const workDays = Math.ceil(estimate.totalWorkTime / 8); // Assume 8 hours per work day
+    const startDate = projectRun.startDate ? new Date(projectRun.startDate) : new Date();
+    
+    // Add business days
+    let completionDate = new Date(startDate);
+    let daysAdded = 0;
+    
+    while (daysAdded < workDays) {
+      completionDate = addDays(completionDate, 1);
+      // Skip weekends unless working weekends only
+      if (workingHours.weekendsOnly) {
+        if (completionDate.getDay() === 0 || completionDate.getDay() === 6) {
+          daysAdded++;
+        }
+      } else {
+        if (completionDate.getDay() !== 0 && completionDate.getDay() !== 6) {
+          daysAdded++;
+        }
+      }
+    }
+    
+    return completionDate;
+  }, [timeEstimates, selectedScenario, projectRun.startDate, workingHours.weekendsOnly]);
 
   // Add team member
   const addTeamMember = () => {
@@ -308,14 +332,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-none h-[85vh] p-0 gap-0">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-subtle">
+        <div className="flex items-center justify-between p-4 border-b bg-gradient-subtle">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
-              <CalendarIcon className="w-5 h-5 text-primary" />
+              <CalendarIcon className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Project Scheduler</h2>
-              <p className="text-sm text-muted-foreground">{project.name}</p>
+              <h2 className="text-lg font-semibold text-foreground">Project Scheduler</h2>
+              <p className="text-xs text-muted-foreground">{project.name}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
@@ -323,16 +347,35 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           </Button>
         </div>
 
-        <ScrollArea className="flex-1 p-6">
-          <div className="space-y-8">
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-6">
+            {/* Target Completion Date */}
+            {targetCompletionDate && (
+              <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/20">
+                      <Target className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Target Completion Date</p>
+                      <p className="text-lg font-semibold text-primary">
+                        {format(targetCompletionDate, 'EEEE, MMMM d, yyyy')}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Time Estimates Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-semibold">Time Estimates & Scenarios</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-primary" />
+                <h3 className="text-base font-semibold">Time Estimates & Scenarios</h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {timeEstimates.map((estimate) => (
                   <Card 
                     key={estimate.scenario} 
@@ -343,30 +386,30 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                     }`} 
                     onClick={() => setSelectedScenario(estimate.scenario)}
                   >
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
-                        <CardTitle className={`text-lg ${estimate.color}`}>
+                        <CardTitle className={`text-sm font-medium ${estimate.color}`}>
                           {estimate.scenario}
                         </CardTitle>
                         {selectedScenario === estimate.scenario && (
-                          <CheckCircle className="w-5 h-5 text-primary" />
+                          <CheckCircle className="w-4 h-4 text-primary" />
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">{estimate.description}</p>
+                      <p className="text-xs text-muted-foreground">{estimate.description}</p>
                     </CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="space-y-2 pt-0">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm">Work Time:</span>
-                        <Badge variant="secondary">{formatTime(estimate.totalWorkTime)}</Badge>
+                        <span className="text-xs">Work:</span>
+                        <Badge variant="secondary" className="text-xs h-5">{formatTime(estimate.totalWorkTime)}</Badge>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm">Wait Time:</span>
-                        <Badge variant="outline">{formatTime(estimate.totalLagTime)}</Badge>
+                        <span className="text-xs">Wait:</span>
+                        <Badge variant="outline" className="text-xs h-5">{formatTime(estimate.totalLagTime)}</Badge>
                       </div>
                       <Separator />
-                      <div className="flex justify-between items-center font-semibold">
-                        <span>Total Time:</span>
-                        <Badge className="bg-primary">{formatTime(estimate.totalTime)}</Badge>
+                      <div className="flex justify-between items-center font-medium">
+                        <span className="text-xs">Total:</span>
+                        <Badge className="bg-primary text-xs h-5">{formatTime(estimate.totalTime)}</Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -375,58 +418,54 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
 
             {/* Working Hours Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Settings className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-semibold">Working Hours & Availability</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Settings className="w-4 h-4 text-primary" />
+                <h3 className="text-base font-semibold">Working Hours & Availability</h3>
               </div>
               
               <Card>
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <Button 
-                      variant={quickPreset === 'weekends' ? 'default' : 'outline'}
-                      onClick={() => applyQuickPreset('weekends')}
-                      className="flex items-center gap-2 h-12"
-                    >
-                      <Zap className="w-4 h-4" />
-                      Weekends Only
-                    </Button>
-                    <Button 
-                      variant={quickPreset === 'evenings' ? 'default' : 'outline'}
-                      onClick={() => applyQuickPreset('evenings')}
-                      className="flex items-center gap-2 h-12"
-                    >
-                      <Zap className="w-4 h-4" />
-                      After 5pm Only
-                    </Button>
-                    <Button 
-                      variant={quickPreset === 'flexible' ? 'default' : 'outline'}
-                      onClick={() => applyQuickPreset('flexible')}
-                      className="flex items-center gap-2 h-12"
-                    >
-                      <Zap className="w-4 h-4" />
-                      Flexible Schedule
-                    </Button>
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="weekends-only"
+                        checked={workingHours.weekendsOnly}
+                        onCheckedChange={handleWeekendsOnly}
+                      />
+                      <Label htmlFor="weekends-only" className="text-sm font-medium">
+                        Weekends Only
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="after-hours"
+                        checked={workingHours.afterHoursOnly}
+                        onCheckedChange={handleAfterHoursOnly}
+                      />
+                      <Label htmlFor="after-hours" className="text-sm font-medium">
+                        After 5pm Only
+                      </Label>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Start Time</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium">Start Time</Label>
                       <Input 
                         type="time" 
                         value={workingHours.start}
                         onChange={(e) => setWorkingHours({...workingHours, start: e.target.value})}
-                        className="h-12"
+                        className="h-8 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">End Time</Label>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium">End Time</Label>
                       <Input 
                         type="time" 
                         value={workingHours.end}
                         onChange={(e) => setWorkingHours({...workingHours, end: e.target.value})}
-                        className="h-12"
+                        className="h-8 text-sm"
                       />
                     </div>
                   </div>
@@ -435,25 +474,25 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
 
             {/* Team Section */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Team Members</h3>
+                  <Users className="w-4 h-4 text-primary" />
+                  <h3 className="text-base font-semibold">Team Members</h3>
                 </div>
-                <Button onClick={addTeamMember} size="sm" className="h-10">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Member
+                <Button onClick={addTeamMember} size="sm" className="h-8">
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add
                 </Button>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {teamMembers.map((member, index) => (
                   <Card key={member.id} className="border border-border">
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Name</Label>
+                    <CardContent className="p-3">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium">Name</Label>
                           <Input 
                             value={member.name}
                             onChange={(e) => {
@@ -461,11 +500,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                               updated[index].name = e.target.value;
                               setTeamMembers(updated);
                             }}
-                            className="h-10"
+                            className="h-8 text-sm"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Skill Level</Label>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium">Skill Level</Label>
                           <Select 
                             value={member.skillLevel}
                             onValueChange={(value: any) => {
@@ -474,7 +513,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                               setTeamMembers(updated);
                             }}
                           >
-                            <SelectTrigger className="h-10">
+                            <SelectTrigger className="h-8 text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -484,8 +523,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Hours/Day</Label>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium">Hours/Day</Label>
                           <Input 
                             type="number"
                             min="1"
@@ -496,18 +535,18 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                               updated[index].hoursAvailable = parseInt(e.target.value) || 1;
                               setTeamMembers(updated);
                             }}
-                            className="h-10"
+                            className="h-8 text-sm"
                           />
                         </div>
                         <div className="flex items-end">
                           {teamMembers.length > 1 && (
                             <Button 
-                              variant="ghost" 
+                              variant="outline" 
                               size="sm"
                               onClick={() => setTeamMembers(teamMembers.filter((_, i) => i !== index))}
-                              className="h-10 w-10 p-0 text-destructive hover:bg-destructive/10"
+                              className="h-8 w-8 p-0"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3 h-3" />
                             </Button>
                           )}
                         </div>
@@ -519,42 +558,42 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
 
             {/* Schedule Generation Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <CalendarIcon className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-semibold">Generate Schedule</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-3">
+                <CalendarIcon className="w-4 h-4 text-primary" />
+                <h3 className="text-base font-semibold">Generate Schedule</h3>
               </div>
               
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <CardContent className="p-4">
+                  <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm text-muted-foreground mb-2">
+                      <p className="text-xs text-muted-foreground mb-1">
                         Selected scenario: <strong>{selectedScenario}</strong>
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {scheduledSessions.length > 0 
                           ? `${scheduledSessions.length} sessions scheduled`
                           : 'No schedule generated yet'
                         }
                       </p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-2">
                       {scheduledSessions.length > 0 && (
                         <Button 
                           variant="outline" 
                           onClick={() => setScheduledSessions([])}
-                          className="h-12"
+                          className="h-8"
                         >
-                          Clear Schedule
+                          Clear
                         </Button>
                       )}
                       <Button 
                         onClick={generateSchedule} 
-                        className="h-12 px-6"
+                        className="h-8"
                       >
-                        <Zap className="w-4 h-4 mr-2" />
-                        Generate Schedule
+                        <Zap className="w-3 h-3 mr-1" />
+                        Generate
                       </Button>
                     </div>
                   </div>
@@ -564,20 +603,20 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
             {/* Schedule Preview */}
             {scheduledSessions.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Schedule Preview</h3>
+              <div className="space-y-3">
+                <h3 className="text-base font-semibold">Schedule Preview</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                   {scheduledSessions.slice(0, 10).map((session) => (
                     <Card key={session.id} className="border border-border">
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <div className="flex justify-between items-start mb-2">
-                          <Badge variant="outline">{format(parseISO(session.date + 'T00:00:00'), 'MMM d, yyyy')}</Badge>
-                          <Badge className="bg-primary/10 text-primary">
+                          <Badge variant="outline" className="text-xs h-5">{format(parseISO(session.date + 'T00:00:00'), 'MMM d')}</Badge>
+                          <Badge className="bg-primary/10 text-primary text-xs h-5">
                             {session.startTime} - {session.endTime}
                           </Badge>
                         </div>
-                        <p className="text-sm font-medium">{session.notes}</p>
+                        <p className="text-xs font-medium">{session.notes}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {session.estimatedHours}h session
                         </p>
@@ -586,8 +625,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   ))}
                   {scheduledSessions.length > 10 && (
                     <Card className="border-dashed">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-sm text-muted-foreground">
+                      <CardContent className="p-3 text-center">
+                        <p className="text-xs text-muted-foreground">
                           +{scheduledSessions.length - 10} more sessions
                         </p>
                       </CardContent>
@@ -600,21 +639,21 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         </ScrollArea>
 
         {/* Footer */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 p-6 border-t bg-muted/30">
-          <div className="text-sm text-muted-foreground">
-            {selectedScenario} scenario selected • {teamMembers.length} team member{teamMembers.length !== 1 ? 's' : ''}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3 p-4 border-t bg-muted/20">
+          <div className="text-xs text-muted-foreground">
+            {selectedScenario} scenario • {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="h-12 px-6">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="h-8">
               Cancel
             </Button>
             <Button 
               onClick={saveSchedule} 
               disabled={scheduledSessions.length === 0}
-              className="h-12 px-6"
+              className="h-8"
             >
-              <Save className="w-4 h-4 mr-2" />
-              Save Schedule
+              <Save className="w-3 h-3 mr-1" />
+              Save
             </Button>
           </div>
         </div>
