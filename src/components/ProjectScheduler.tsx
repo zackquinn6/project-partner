@@ -623,7 +623,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </div>
             </div>
 
-            {/* Step 5: Team Members & Working Hours */}
+            {/* Step 5: Team Members & Availability */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -640,126 +640,35 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               
               <div className="space-y-3">
                 {teamMembers.map((member, index) => (
-                  <Card key={member.id} className="border border-border">
-                    <CardContent className="p-4">
-                      <div className="space-y-4">
-                        {/* Basic Info */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-xs font-medium">Name</Label>
-                            <Input 
-                              value={member.name}
-                              onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs font-medium">Skill Level</Label>
-                            <Select 
-                              value={member.skillLevel}
-                              onValueChange={(value: any) => updateTeamMember(member.id, { skillLevel: value })}
-                            >
-                              <SelectTrigger className="h-8 text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="novice">Novice</SelectItem>
-                                <SelectItem value="intermediate">Intermediate</SelectItem>
-                                <SelectItem value="expert">Expert</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs font-medium">Max Total Hours (Project)</Label>
-                            <Input 
-                              type="number"
-                              min="1"
-                              value={member.maxTotalHours}
-                              onChange={(e) => updateTeamMember(member.id, { 
-                                maxTotalHours: parseInt(e.target.value) || 1 
-                              })}
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Working Hours */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-xs font-medium">Start Time</Label>
-                            <Input 
-                              type="time" 
-                              value={member.workingHours.start}
-                              onChange={(e) => updateTeamMember(member.id, {
-                                workingHours: { ...member.workingHours, start: e.target.value }
-                              })}
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs font-medium">End Time</Label>
-                            <Input 
-                              type="time" 
-                              value={member.workingHours.end}
-                              onChange={(e) => updateTeamMember(member.id, {
-                                workingHours: { ...member.workingHours, end: e.target.value }
-                              })}
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Availability Options */}
-                        <div className="flex flex-wrap gap-4 items-center">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id={`weekends-only-${member.id}`}
-                              checked={member.weekendsOnly}
-                              onCheckedChange={(checked) => updateTeamMember(member.id, { 
-                                weekendsOnly: checked as boolean,
-                                weekdaysAfterFivePm: false
-                              })}
-                            />
-                            <Label htmlFor={`weekends-only-${member.id}`} className="text-sm font-medium">
-                              Weekends Only
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id={`weekdays-after-5-${member.id}`}
-                              checked={member.weekdaysAfterFivePm}
-                              onCheckedChange={(checked) => updateTeamMember(member.id, { 
-                                weekdaysAfterFivePm: checked as boolean,
-                                weekendsOnly: false
-                              })}
-                            />
-                            <Label htmlFor={`weekdays-after-5-${member.id}`} className="text-sm font-medium">
-                              Weekdays After 5pm
-                            </Label>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => openCalendar(member.id)}
-                            className="h-8"
-                          >
-                            <CalendarIcon className="w-3 h-3 mr-1" />
-                            Calendar ({Object.keys(member.availability).length})
-                          </Button>
-                          {teamMembers.length > 1 && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => removeTeamMember(member.id)}
-                              className="h-8"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div key={member.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border">
+                    <div className="flex-1">
+                      <Input 
+                        placeholder="Team member name"
+                        value={member.name}
+                        onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
+                        className="h-10"
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => openCalendar(member.id)}
+                      className="h-10 px-4"
+                    >
+                      <CalendarIcon className="w-4 h-4 mr-2" />
+                      Calendar ({Object.keys(member.availability).length})
+                    </Button>
+                    {teamMembers.length > 1 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => removeTeamMember(member.id)}
+                        className="h-10 px-3"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -821,103 +730,198 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       {/* Enhanced Calendar Dialog for Team Member Availability */}
       {calendarOpen && (
         <Dialog open={!!calendarOpen} onOpenChange={cancelCalendarChanges}>
-          <DialogContent className="max-w-[90vw] md:max-w-[600px] max-h-[90vh] p-0">
+          <DialogContent className="max-w-[95vw] md:max-w-[1000px] max-h-[90vh] p-0">
             <DialogHeader className="p-6 pb-0">
               <DialogTitle className="flex items-center gap-2">
                 <CalendarIcon className="w-5 h-5 text-primary" />
-                {teamMembers.find(m => m.id === calendarOpen)?.name} - Availability Calendar
+                {teamMembers.find(m => m.id === calendarOpen)?.name} - Availability Settings
               </DialogTitle>
-              <p className="text-sm text-muted-foreground mt-2">
-                Select dates to set custom availability. Selected dates will override default working hours.
-              </p>
             </DialogHeader>
             
-            <ScrollArea className="flex-1 px-6">
-              <div className="space-y-6 pb-6">
-                {/* Calendar Section */}
-                <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row gap-4 items-start">
-                    <div className="flex-1">
-                      <div className="bg-background border rounded-lg p-4">
-                        <CalendarComponent
-                          mode="multiple"
-                          selected={selectedDates}
-                          onSelect={handleDateSelect}
-                          className="w-full pointer-events-auto"
-                          classNames={{
-                            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                            day_today: "bg-accent text-accent-foreground",
-                          }}
+            <div className="flex flex-col md:flex-row flex-1 min-h-0">
+              {/* Left Side - Calendar View */}
+              <div className="flex-1 p-6 border-r">
+                <div className="h-full flex flex-col">
+                  <h3 className="font-semibold text-lg mb-4">Select Available Dates</h3>
+                  <div className="flex-1 flex justify-center">
+                    <CalendarComponent
+                      mode="multiple"
+                      selected={selectedDates}
+                      onSelect={handleDateSelect}
+                      className="w-full max-w-md"
+                      classNames={{
+                        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground ring-2 ring-primary/20",
+                        day_today: "bg-accent text-accent-foreground font-bold",
+                        day: "h-9 w-9 text-sm hover:bg-accent hover:text-accent-foreground",
+                      }}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-4 text-center">
+                    Click dates to toggle availability. Highlighted dates show custom availability.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Right Side - Settings Panel */}
+              <div className="w-full md:w-80 p-6 bg-muted/20">
+                <div className="space-y-6">
+                  {/* Global Settings */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-base border-b pb-2">Global Settings</h4>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox 
+                          id="weekends-only"
+                          checked={teamMembers.find(m => m.id === calendarOpen)?.weekendsOnly || false}
+                          onCheckedChange={(checked) => updateTeamMember(calendarOpen!, { 
+                            weekendsOnly: checked as boolean,
+                            weekdaysAfterFivePm: false
+                          })}
+                        />
+                        <Label htmlFor="weekends-only" className="text-sm font-medium">
+                          Weekends Only
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3">
+                        <Checkbox 
+                          id="weekdays-after-5"
+                          checked={teamMembers.find(m => m.id === calendarOpen)?.weekdaysAfterFivePm || false}
+                          onCheckedChange={(checked) => updateTeamMember(calendarOpen!, { 
+                            weekdaysAfterFivePm: checked as boolean,
+                            weekendsOnly: false
+                          })}
+                        />
+                        <Label htmlFor="weekdays-after-5" className="text-sm font-medium">
+                          Weekdays After 5pm
+                        </Label>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Max Total Hours</Label>
+                        <Input 
+                          type="number"
+                          min="1"
+                          value={teamMembers.find(m => m.id === calendarOpen)?.maxTotalHours || 40}
+                          onChange={(e) => updateTeamMember(calendarOpen!, { 
+                            maxTotalHours: parseInt(e.target.value) || 40
+                          })}
+                          className="h-9"
                         />
                       </div>
                     </div>
+                  </div>
+                  
+                  {/* Daily Settings */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-base border-b pb-2">Daily Settings</h4>
                     
-                    {/* Selected Dates Info - Mobile Responsive */}
-                    <div className="w-full sm:w-80 space-y-3">
-                      <div className="bg-muted/50 p-4 rounded-lg">
-                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-primary" />
-                          Selected Dates ({selectedDates.length})
-                        </h4>
-                        {selectedDates.length > 0 ? (
-                          <div className="space-y-2 max-h-32 overflow-y-auto">
-                            {selectedDates.slice(0, 5).map(date => (
-                              <div key={date.toISOString()} className="text-xs bg-background p-2 rounded border">
-                                <div className="font-medium">{format(date, 'MMM dd, yyyy')}</div>
-                                <div className="text-muted-foreground">
-                                  {tempAvailability[format(date, 'yyyy-MM-dd')]?.[0] ? 
-                                    `${tempAvailability[format(date, 'yyyy-MM-dd')][0].start} - ${tempAvailability[format(date, 'yyyy-MM-dd')][0].end}` :
-                                    '09:00 - 17:00'
-                                  }
+                    {selectedDates.length > 0 ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Settings for {selectedDates.length} selected date(s)
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium">Start Time</Label>
+                            <Input 
+                              type="time"
+                              value={selectedDates.length > 0 && tempAvailability[format(selectedDates[0], 'yyyy-MM-dd')]?.[0]?.start || '09:00'}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                selectedDates.forEach(date => {
+                                  const dateStr = format(date, 'yyyy-MM-dd');
+                                  setTempAvailability(prev => ({
+                                    ...prev,
+                                    [dateStr]: [{
+                                      start: newValue,
+                                      end: prev[dateStr]?.[0]?.end || '17:00',
+                                      available: true
+                                    }]
+                                  }));
+                                });
+                              }}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium">End Time</Label>
+                            <Input 
+                              type="time"
+                              value={selectedDates.length > 0 && tempAvailability[format(selectedDates[0], 'yyyy-MM-dd')]?.[0]?.end || '17:00'}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                selectedDates.forEach(date => {
+                                  const dateStr = format(date, 'yyyy-MM-dd');
+                                  setTempAvailability(prev => ({
+                                    ...prev,
+                                    [dateStr]: [{
+                                      start: prev[dateStr]?.[0]?.start || '09:00',
+                                      end: newValue,
+                                      available: true
+                                    }]
+                                  }));
+                                });
+                              }}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="bg-background p-3 rounded-lg border">
+                          <h5 className="text-xs font-medium mb-2">Selected Dates Preview</h5>
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {selectedDates.slice(0, 5).map(date => {
+                              const dateStr = format(date, 'yyyy-MM-dd');
+                              const timeSlot = tempAvailability[dateStr]?.[0];
+                              return (
+                                <div key={date.toISOString()} className="text-xs flex justify-between">
+                                  <span>{format(date, 'MMM dd')}</span>
+                                  <span className="text-muted-foreground">
+                                    {timeSlot ? `${timeSlot.start} - ${timeSlot.end}` : '09:00 - 17:00'}
+                                  </span>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                             {selectedDates.length > 5 && (
                               <div className="text-xs text-muted-foreground text-center">
-                                +{selectedDates.length - 5} more dates
+                                +{selectedDates.length - 5} more
                               </div>
                             )}
                           </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">No dates selected</p>
-                        )}
+                        </div>
                       </div>
-                      
-                      {/* Default Hours Info */}
-                      <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                        <h4 className="font-medium text-sm text-blue-700 mb-1">Default Hours</h4>
-                        <p className="text-xs text-blue-600">
-                          {teamMembers.find(m => m.id === calendarOpen)?.workingHours.start} - {teamMembers.find(m => m.id === calendarOpen)?.workingHours.end}
-                        </p>
-                        <p className="text-xs text-blue-500 mt-1">
-                          Used for unselected dates
-                        </p>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Click on calendar dates to configure daily settings
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Summary */}
+                  <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
+                    <h5 className="text-sm font-medium text-primary mb-1">Summary</h5>
+                    <p className="text-xs text-primary/80">
+                      {selectedDates.length} custom dates configured
+                    </p>
                   </div>
                 </div>
-                
-                {/* Instructions */}
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription className="text-sm">
-                    <strong>How to use:</strong> Click dates to toggle custom availability. 
-                    Selected dates will use custom time slots, while unselected dates use default working hours.
-                  </AlertDescription>
-                </Alert>
               </div>
-            </ScrollArea>
+            </div>
             
             {/* Action Buttons */}
             <div className="flex justify-between items-center p-6 pt-0 border-t">
-              <div className="text-xs text-muted-foreground">
-                {selectedDates.length} custom availability dates
+              <div className="text-sm text-muted-foreground">
+                {selectedDates.length} dates with custom availability
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={cancelCalendarChanges} size="sm">
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={cancelCalendarChanges}>
                   Cancel
                 </Button>
-                <Button onClick={saveCalendarChanges} size="sm">
+                <Button onClick={saveCalendarChanges} className="min-w-[120px]">
                   <Save className="w-4 h-4 mr-2" />
                   Save Changes
                 </Button>
