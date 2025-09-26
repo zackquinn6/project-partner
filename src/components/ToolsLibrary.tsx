@@ -245,7 +245,7 @@ export function ToolsLibrary() {
             <TableHeader className="bg-background border-b">
               <TableRow>
                 <TableHead className="w-12 bg-background sticky top-0 z-20">Photo</TableHead>
-                <TableHead className="bg-background sticky top-0 z-20">
+                <TableHead className="w-32 bg-background sticky top-0 z-20">
                   <Button
                     variant="ghost"
                     onClick={() => handleSort('item')}
@@ -298,28 +298,28 @@ export function ToolsLibrary() {
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="font-medium capitalize py-2">{tool.item}</TableCell>
-                <TableCell className="text-sm text-muted-foreground py-2 max-w-xs">
-                  <div className="truncate" title={tool.description || '-'}>
+                <TableCell className="font-medium capitalize py-2 w-32 break-words">{tool.item}</TableCell>
+                <TableCell className="text-xs text-muted-foreground py-2">
+                  <div className="break-words" title={tool.description || '-'}>
                     {tool.description || '-'}
                   </div>
                 </TableCell>
-                <TableCell className="text-sm py-2 max-w-xs">
+                <TableCell className="text-xs py-2">
                   {tool.variations && tool.variations.length > 0 ? (
-                    <div className="flex flex-wrap gap-1 max-h-8 overflow-hidden">
-                      {tool.variations.slice(0, 2).map((variation) => (
+                    <div className="flex flex-wrap gap-1">
+                      {tool.variations.slice(0, 4).map((variation) => (
                         <Badge key={variation.id} variant="secondary" className="text-xs whitespace-nowrap">
                           {variation.name}
                         </Badge>
                       ))}
-                      {tool.variations.length > 2 && (
+                      {tool.variations.length > 4 && (
                         <Badge variant="outline" className="text-xs">
-                          +{tool.variations.length - 2} more
+                          +{tool.variations.length - 4} more
                         </Badge>
                       )}
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">No variants</span>
+                    <span className="text-muted-foreground text-xs">No variants</span>
                   )}
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>

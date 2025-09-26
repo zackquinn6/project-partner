@@ -206,7 +206,7 @@ export function MaterialsLibrary() {
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
               <TableHead className="w-12">Photo</TableHead>
-              <TableHead>
+              <TableHead className="w-32">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('item')}
@@ -255,11 +255,11 @@ export function MaterialsLibrary() {
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="font-medium capitalize">{material.item}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="font-medium capitalize w-32 break-words">{material.item}</TableCell>
+                <TableCell className="text-xs text-muted-foreground break-words">
                   {material.description || '-'}
                 </TableCell>
-                <TableCell className="text-sm">
+                <TableCell className="text-xs">
                   {material.unit_size ? (
                     <Badge variant="secondary" className="text-xs">
                       {material.unit_size}
