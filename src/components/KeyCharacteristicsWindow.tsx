@@ -1,4 +1,5 @@
 import { useState } from "react";
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,13 +13,26 @@ interface KeyCharacteristicsWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   operations: Operation[];
+  currentStepId?: string;
 }
 
-export function KeyCharacteristicsWindow({ open, onOpenChange, operations }: KeyCharacteristicsWindowProps) {
+export function KeyCharacteristicsWindow({ open, onOpenChange, operations, currentStepId }: KeyCharacteristicsWindowProps) {
   const [selectedOperationIndex, setSelectedOperationIndex] = useState(0);
   const [showHelpPopup, setShowHelpPopup] = useState(false);
   const [showKCExplainer, setShowKCExplainer] = useState(false);
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
+
+  // Effect to find and navigate to the operation containing the current step
+  React.useEffect(() => {
+    if (currentStepId && operations.length > 0) {
+      const operationIndex = operations.findIndex(operation => 
+        operation.steps.some(step => step.id === currentStepId)
+      );
+      if (operationIndex >= 0) {
+        setSelectedOperationIndex(operationIndex);
+      }
+    }
+  }, [currentStepId, operations]);
 
   const getCurrentOperation = () => operations[selectedOperationIndex];
   

@@ -117,6 +117,23 @@ export default function UserView({
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
+
+  // Add event listeners for Re-plan window actions
+  useEffect(() => {
+    const handleOpenProjectScheduler = () => setProjectSchedulerOpen(true);
+    const handleOpenOrderingWindow = () => setOrderingWindowOpen(true);
+    const handleOpenProjectCustomizer = () => setProjectCustomizerOpen(true);
+
+    window.addEventListener('openProjectScheduler', handleOpenProjectScheduler);
+    window.addEventListener('openOrderingWindow', handleOpenOrderingWindow);
+    window.addEventListener('openProjectCustomizer', handleOpenProjectCustomizer);
+
+    return () => {
+      window.removeEventListener('openProjectScheduler', handleOpenProjectScheduler);
+      window.removeEventListener('openOrderingWindow', handleOpenOrderingWindow);
+      window.removeEventListener('openProjectCustomizer', handleOpenProjectCustomizer);
+    };
+  }, []);
   
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
@@ -1732,6 +1749,7 @@ export default function UserView({
           open={keyCharacteristicsOpen}
           onOpenChange={setKeyCharacteristicsOpen}
           operations={activeProject.phases?.flatMap(phase => phase.operations) || []}
+          currentStepId={currentStep?.id}
         />
       )}
     </>

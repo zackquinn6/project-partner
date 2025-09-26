@@ -214,26 +214,21 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
   // Handle audible options
   const handleAudibleOptionSelect = (option: string) => {
     setSelectedAudibleOption(option);
+    onOpenChange(false);
     
+    // Emit custom events for the UserView to handle these window openings
     switch (option) {
-      case 'New work needed':
       case 'Schedule update needed':
-        // Navigate to "Finalize Project Plan" step
-        const finalPlanStepId = 'final-planning-step-1';
-        if (onNavigateToStep) {
-          onNavigateToStep(finalPlanStepId);
-          onOpenChange(false);
-        } else {
-          onOpenChange(false);
-        }
+        window.dispatchEvent(new CustomEvent('openProjectScheduler'));
         break;
       case 'New materials needed':
-        // Close this dialog and open materials window
-        onOpenChange(false);
-        setTimeout(() => setShowMaterialsWindow(true), 100);
+        window.dispatchEvent(new CustomEvent('openOrderingWindow'));
+        break;
+      case 'New work needed':
+        window.dispatchEvent(new CustomEvent('openProjectCustomizer'));
         break;
       default:
-        onOpenChange(false);
+        break;
     }
   };
 

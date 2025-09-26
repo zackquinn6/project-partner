@@ -154,10 +154,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     const projectSize = parseFloat(projectRun?.projectSize || '1') || 1;
     const scalingFactor = projectRun?.scalingFactor || 1;
     const skillMultiplier = projectRun?.skillLevelMultiplier || 1;
+    const completedSteps = projectRun?.completedSteps || [];
 
     project.phases.forEach(phase => {
       phase.operations.forEach(operation => {
         operation.steps.forEach((step, index) => {
+          // Skip steps that are already completed
+          if (completedSteps.includes(step.id)) {
+            return;
+          }
+
           const baseTimeLow = step.timeEstimation?.variableTime?.low || 1;
           const baseTimeMed = step.timeEstimation?.variableTime?.medium || 1;
           const baseTimeHigh = step.timeEstimation?.variableTime?.high || 1;
