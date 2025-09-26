@@ -294,9 +294,22 @@ export default function UserView({
   useEffect(() => {
     // Only auto-switch if we have a project run and we're not being forced to stay in listing mode
     if (currentProjectRun && !resetToListing && !forceListingMode && !showProfile && viewMode !== 'workflow') {
-      console.log("🔄 UserView: Auto-switching to workflow mode for selected project run:", currentProjectRun.id);
+      console.log("🔄 UserView: Auto-switching to workflow mode for selected project run:", currentProjectRun.id, {
+        resetToListing,
+        forceListingMode, 
+        showProfile,
+        viewMode
+      });
       setViewMode('workflow');
       onProjectSelected?.();
+    } else if (currentProjectRun && viewMode !== 'workflow') {
+      console.log("🚫 UserView: Not auto-switching because:", {
+        currentProjectRun: !!currentProjectRun,
+        resetToListing,
+        forceListingMode,
+        showProfile,
+        viewMode
+      });
     }
   }, [currentProjectRun, resetToListing, forceListingMode, showProfile, viewMode, onProjectSelected]);
 
@@ -870,16 +883,17 @@ export default function UserView({
       <div className="min-h-screen">
         <ProjectListing 
           onProjectSelect={project => {
-            console.log("Project selected from My Projects:", project);
+            console.log("🎯 Project selected from My Projects:", project, {currentProjectRun: !!currentProjectRun});
             if (project === null) {
               setViewMode('listing');
               return;
             }
             // Legacy support for 'workflow' string - now handled by useEffect above
             if (project === 'workflow') {
-              console.log("Received workflow signal - useEffect will handle the switch");
+              console.log("🎯 Received workflow signal - useEffect will handle the switch");
               return;
             }
+            console.log("🎯 Setting workflow mode for project selection");
             setViewMode('workflow');
             onProjectSelected?.();
           }}
@@ -898,18 +912,19 @@ export default function UserView({
     
     return <ProjectListing 
       onProjectSelect={project => {
-        console.log("Project selected from error recovery:", project);
+        console.log("🎯 Project selected from error recovery:", project, {currentProjectRun: !!currentProjectRun});
         if (project === null) {
           setViewMode('listing');
           return;
         }
         if (project === 'workflow') {
-          setViewMode('workflow');
+          console.log("🎯 Received workflow signal from error recovery - useEffect will handle the switch");
           return;
         }
+        console.log("🎯 Setting workflow mode for project selection from error recovery");
         setViewMode('workflow');
         onProjectSelected?.();
-      }} 
+      }}
     />;
   }
   
@@ -932,18 +947,19 @@ export default function UserView({
     console.log("📋 UserView: Showing project listing (no project selected)");
     return <ProjectListing 
       onProjectSelect={project => {
-        console.log("Project selected:", project);
+        console.log("🎯 Project selected from main listing:", project, {currentProjectRun: !!currentProjectRun});
         if (project === null) {
           setViewMode('listing');
           return;
         }
         if (project === 'workflow') {
-          setViewMode('workflow');
+          console.log("🎯 Received workflow signal from main listing - useEffect will handle the switch");
           return;
         }
+        console.log("🎯 Setting workflow mode for project selection from main listing");
         setViewMode('workflow');
         onProjectSelected?.();
-      }} 
+      }}
     />;
   }
   
@@ -1213,8 +1229,8 @@ export default function UserView({
                       </Button>
                     )}
 
-                    {/* Show Project Scheduler button for Planning and Scope steps */}
-                    {(currentStep.step?.toLowerCase().includes('project') && (currentStep.step?.toLowerCase().includes('plan') || currentStep.step?.toLowerCase().includes('scope'))) && (
+                    {/* Show Project Scheduler button only for Project Scheduling step */}
+                    {currentStep.step?.toLowerCase().includes('scheduling') && (
                       <Button 
                         onClick={() => setProjectSchedulerOpen(true)}
                         variant="outline"

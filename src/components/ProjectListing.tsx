@@ -66,11 +66,12 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   };
 
   const handleOpenProjectRun = (projectRun: ProjectRun) => {
-    console.log("🎯 ProjectListing: Opening project run:", projectRun.id);
+    console.log("🎯 ProjectListing: Opening project run:", projectRun.id, "Current project run:", currentProjectRun?.id);
     setCurrentProjectRun(projectRun);
     // Clear any navigation state to ensure clean transition
     window.history.replaceState({}, document.title, window.location.pathname);
     // The UserView will automatically switch to workflow mode via useEffect when currentProjectRun changes
+    console.log("🎯 ProjectListing: Project run set, triggering workflow switch");
   };
 
   const handleDeleteProjectRun = (projectRunId: string) => {
@@ -199,7 +200,11 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                         {projectRun.status !== 'complete' && !projectRun.isManualEntry && (
                           <Button 
                             size="sm" 
-                            onClick={() => handleOpenProjectRun(projectRun)}
+                            onClick={() => {
+                              console.log("🔥 Continue button clicked for project run:", projectRun.id);
+                              console.log("🔥 Current project run before click:", currentProjectRun?.id);
+                              handleOpenProjectRun(projectRun);
+                            }}
                             className="flex-1"
                           >
                             <Play className="w-4 h-4 mr-2" />
@@ -345,7 +350,11 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                           {projectRun.status !== 'complete' && !projectRun.isManualEntry && (
                             <Button 
                               size="sm" 
-                              onClick={() => handleOpenProjectRun(projectRun)}
+                              onClick={() => {
+                                console.log("🔥 Continue button clicked (mobile) for project run:", projectRun.id);
+                                console.log("🔥 Current project run before click (mobile):", currentProjectRun?.id);
+                                handleOpenProjectRun(projectRun);
+                              }}
                               className="transition-fast"
                             >
                               <Play className="w-4 h-4 mr-2" />
