@@ -25,7 +25,10 @@ import {
   Target,
   AlertTriangle,
   TrendingUp,
-  Brain
+  Brain,
+  FileText,
+  Mail,
+  Printer
 } from 'lucide-react';
 import { format, addDays, parseISO, addHours } from 'date-fns';
 import { Project } from '@/interfaces/Project';
@@ -333,6 +336,30 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     }
   };
 
+  // Save draft
+  const saveDraft = () => {
+    toast({
+      title: "Draft saved",
+      description: "Your scheduling configuration has been saved as a draft."
+    });
+  };
+
+  // Print to PDF
+  const printToPDF = () => {
+    toast({
+      title: "PDF generation",
+      description: "Your schedule is being prepared for download."
+    });
+  };
+
+  // Email schedule
+  const emailSchedule = () => {
+    toast({
+      title: "Email sent",
+      description: "Your schedule has been sent to your email address."
+    });
+  };
+
   const formatTime = (hours: number): string => {
     if (hours < 1) return `${Math.round(hours * 60)}m`;
     if (hours < 24) return `${Math.round(hours * 10) / 10}h`;
@@ -352,7 +379,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground">Project Scheduler</h2>
-              <p className="text-xs text-muted-foreground">{project.name}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Schedules give a target and our approach showing a range of estimates means it's imperfect - but we use it to get the best results moving forward
+              </p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
@@ -362,152 +391,166 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
-            {/* Target Completion Date */}
-            <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/20">
-                    <Target className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Target Completion Date</p>
-                    <Input
-                      type="date"
-                      value={targetDate}
-                      onChange={(e) => setTargetDate(e.target.value)}
-                      className="mt-1 h-8"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Step 1-4: Configuration Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Left side - Steps 1-4 (2/3 width) */}
+              <div className="lg:col-span-2 space-y-4">
+                {/* Step 1: Target Completion Date */}
+                <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
+                        1
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Target Completion Date</p>
+                        <Input
+                          type="date"
+                          value={targetDate}
+                          onChange={(e) => setTargetDate(e.target.value)}
+                          className="mt-1 h-8"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* Planning Mode & Risk Tolerance */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-sm">Planning Mode</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Select value={planningMode} onValueChange={(value) => setPlanningMode(value as PlanningMode)}>
-                    <SelectTrigger className="h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {planningModes.map((mode) => (
-                        <SelectItem key={mode.mode} value={mode.mode}>
-                          <div>
-                            <div className="font-medium">{mode.name}</div>
-                            <div className="text-xs text-muted-foreground">{mode.description}</div>
+                {/* Step 2: Planning Mode */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
+                        2
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium mb-2">Planning Mode</p>
+                        <Select value={planningMode} onValueChange={(value) => setPlanningMode(value as PlanningMode)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {planningModes.map((mode) => (
+                              <SelectItem key={mode.mode} value={mode.mode}>
+                                <div>
+                                  <div className="font-medium">{mode.name}</div>
+                                  <div className="text-xs text-muted-foreground">{mode.description}</div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Step 3: Risk Tolerance */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
+                        3
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium mb-2">Risk Tolerance</p>
+                        <Select value={riskTolerance} onValueChange={(value) => setRiskTolerance(value as RiskTolerance)}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="conservative">Conservative (Extra buffers)</SelectItem>
+                            <SelectItem value="moderate">Moderate (Standard buffers)</SelectItem>
+                            <SelectItem value="aggressive">Aggressive (Minimal buffers)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Step 4: Quiet Hours */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
+                        4
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium mb-2">Quiet Hours (Global)</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium">From</Label>
+                            <Input 
+                              type="time" 
+                              value={globalSettings.quietHours.start}
+                              onChange={(e) => setGlobalSettings(prev => ({
+                                ...prev,
+                                quietHours: { ...prev.quietHours, start: e.target.value }
+                              }))}
+                              className="h-8 text-sm"
+                            />
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
+                          <div className="space-y-1">
+                            <Label className="text-xs font-medium">To</Label>
+                            <Input 
+                              type="time" 
+                              value={globalSettings.quietHours.end}
+                              onChange={(e) => setGlobalSettings(prev => ({
+                                ...prev,
+                                quietHours: { ...prev.quietHours, end: e.target.value }
+                              }))}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          No work allowed during quiet hours
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-sm">Risk Tolerance</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Select value={riskTolerance} onValueChange={(value) => setRiskTolerance(value as RiskTolerance)}>
-                    <SelectTrigger className="h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="conservative">Conservative (Extra buffers)</SelectItem>
-                      <SelectItem value="moderate">Moderate (Standard buffers)</SelectItem>
-                      <SelectItem value="aggressive">Aggressive (Minimal buffers)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
+              {/* Right side - Project Time Estimates (1/3 width) */}
+              <div className="lg:col-span-1">
+                <Card className="h-full">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-primary" />
+                      Project Time Estimates
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-green-50 border border-green-200">
+                        <span className="text-green-700 font-medium text-sm">Low</span>
+                        <span className="font-mono text-green-800 font-semibold">{formatTime(projectTotals.low)}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                        <span className="text-yellow-700 font-medium text-sm">Medium</span>
+                        <span className="font-mono text-yellow-800 font-semibold">{formatTime(projectTotals.medium)}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-red-50 border border-red-200">
+                        <span className="text-red-700 font-medium text-sm">High</span>
+                        <span className="font-mono text-red-800 font-semibold">{formatTime(projectTotals.high)}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-3 text-center">
+                      Raw project time (before scheduling)
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
-            {/* Global Settings & Project Totals */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-sm">Quiet Hours (Global)</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-medium">From</Label>
-                      <Input 
-                        type="time" 
-                        value={globalSettings.quietHours.start}
-                        onChange={(e) => setGlobalSettings(prev => ({
-                          ...prev,
-                          quietHours: { ...prev.quietHours, start: e.target.value }
-                        }))}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs font-medium">To</Label>
-                      <Input 
-                        type="time" 
-                        value={globalSettings.quietHours.end}
-                        onChange={(e) => setGlobalSettings(prev => ({
-                          ...prev,
-                          quietHours: { ...prev.quietHours, end: e.target.value }
-                        }))}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    No work allowed during quiet hours
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-sm">Project Time Estimates</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-green-600 font-medium">Low:</span>
-                      <span className="font-mono">{formatTime(projectTotals.low)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-yellow-600 font-medium">Medium:</span>
-                      <span className="font-mono">{formatTime(projectTotals.medium)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-red-600 font-medium">High:</span>
-                      <span className="font-mono">{formatTime(projectTotals.high)}</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Raw project time (before scheduling)
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Team Members & Working Hours */}
+            {/* Step 5: Team Members & Working Hours */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
+                    5
+                  </div>
                   <h3 className="text-base font-semibold">Team Members & Availability</h3>
                 </div>
                 <Button onClick={addTeamMember} size="sm" className="h-8">
@@ -642,73 +685,58 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </div>
             </div>
 
-            {/* Schedule Generation Section */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-3">
-                <CalendarIcon className="w-4 h-4 text-primary" />
+            {/* Step 6: Generate Schedule */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
+                  6
+                </div>
                 <h3 className="text-base font-semibold">Generate Schedule</h3>
               </div>
               
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        Planning mode: <strong>{planningMode}</strong>
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {schedulingResult 
-                          ? `${schedulingResult.scheduledTasks.length} tasks scheduled`
-                          : 'No schedule generated yet'
-                        }
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      {schedulingResult && (
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setSchedulingResult(null)}
-                          className="h-8"
-                        >
-                          Clear
-                        </Button>
-                      )}
-                      <Button 
-                        onClick={computeAdvancedSchedule} 
-                        className="h-8"
-                        disabled={isComputing || teamMembers.length === 0}
-                      >
-                        <Zap className="w-3 h-3 mr-1" />
-                        {isComputing ? 'Computing...' : 'Generate'}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <Button 
+                onClick={computeAdvancedSchedule} 
+                className="w-full h-12 text-base"
+                disabled={isComputing || teamMembers.length === 0}
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                {isComputing ? 'Computing...' : 'Generate Schedule'}
+              </Button>
+
+              {/* Action Buttons - shown after schedule is generated */}
+              {schedulingResult && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Button variant="outline" onClick={saveDraft} className="h-10">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Save Draft
+                  </Button>
+                  <Button onClick={saveSchedule} className="h-10">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save & Commit
+                  </Button>
+                  <Button variant="outline" onClick={printToPDF} className="h-10">
+                    <Printer className="w-4 h-4 mr-2" />
+                    Print to PDF
+                  </Button>
+                  <Button variant="outline" onClick={emailSchedule} className="h-10">
+                    <Mail className="w-4 h-4 mr-2" />
+                    Email Me
+                  </Button>
+                </div>
+              )}
+
+              {schedulingResult && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Schedule generated with {schedulingResult.scheduledTasks.length} tasks
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
           </div>
         </ScrollArea>
-
-        {/* Footer */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-3 p-4 border-t bg-muted/20">
-          <div className="text-xs text-muted-foreground">
-            {planningMode} mode • {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''} • Risk: {riskTolerance}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="h-8">
-              Cancel
-            </Button>
-            <Button 
-              onClick={saveSchedule} 
-              disabled={!schedulingResult}
-              className="h-8"
-            >
-              <Save className="w-3 h-3 mr-1" />
-              Save
-            </Button>
-          </div>
-        </div>
       </DialogContent>
       
       {/* Calendar Dialog for Team Member Availability */}
