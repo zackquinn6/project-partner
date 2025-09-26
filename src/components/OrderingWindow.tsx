@@ -20,7 +20,8 @@ interface OrderingWindowProps {
   onOpenChange: (open: boolean) => void;
   project: Project | null;
   projectRun?: any; // ProjectRun object as fallback
-  userOwnedTools: string[];
+  userOwnedTools: any[];
+  completedSteps?: Set<string>;
   onOrderingComplete?: () => void;
 }
 
@@ -38,7 +39,7 @@ const SHOPPING_SITES: ShoppingSite[] = [
   { name: "Toolio.us", url: "https://toolio.us", color: "bg-green-600 hover:bg-green-700" },
 ];
 
-export function OrderingWindow({ open, onOpenChange, project, projectRun, userOwnedTools, onOrderingComplete }: OrderingWindowProps) {
+export function OrderingWindow({ open, onOpenChange, project, projectRun, userOwnedTools, completedSteps, onOrderingComplete }: OrderingWindowProps) {
   const [currentUrl, setCurrentUrl] = useState<string>(SHOPPING_SITES[0].url);
   const [urlInput, setUrlInput] = useState<string>("");
   const [checklistVisible, setChecklistVisible] = useState(true);
@@ -118,8 +119,12 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
         }
         
         operation.steps.forEach((step, stepIndex) => {
+          // Only include materials/tools from incomplete steps
+          const stepId = step.id || `step-${phaseIndex}-${opIndex}-${stepIndex}`;
+          const isStepComplete = completedSteps?.has(stepId) || false;
+          
           // Process materials - add quantities (materials are consumed per step)
-          if (step.materials && Array.isArray(step.materials) && step.materials.length > 0) {
+          if (!isStepComplete && step.materials && Array.isArray(step.materials) && step.materials.length > 0) {
             step.materials.forEach((material, materialIndex) => {
               const key = material.id || material.name || `material-${materialIndex}-${Date.now()}`;
               if (materialsMap.has(key)) {
@@ -142,7 +147,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
           }
 
           // Process tools - track max quantity needed in any single step (tools are reused)
-          if (step.tools && Array.isArray(step.tools) && step.tools.length > 0) {
+          if (!isStepComplete && step.tools && Array.isArray(step.tools) && step.tools.length > 0) {
             step.tools.forEach((tool, toolIndex) => {
               const key = tool.id || tool.name || `tool-${toolIndex}-${Date.now()}`;
               const toolQuantity = 1; // Default quantity per step
@@ -182,13 +187,16 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
   useEffect(() => {
     const ownedToolIds = new Set<string>();
     uniqueTools.forEach(tool => {
-      const ownedTools = userProfile?.owned_tools || [];
-      if (ownedTools.some((ownedTool: any) => ownedTool.tool === tool.name || ownedTool.name === tool.name)) {
+      // Check if user owns this tool using the userOwnedTools prop
+      if (userOwnedTools.some((ownedTool: any) => 
+        ownedTool.tool === tool.name || 
+        ownedTool.name === tool.name ||
+        ownedTool === tool.name)) {
         ownedToolIds.add(tool.id);
       }
     });
     setOrderedTools(ownedToolIds);
-  }, [uniqueTools, userProfile]);
+  }, [uniqueTools, userOwnedTools]);
 
   const handleToolToggle = (toolId: string) => {
     setOrderedTools(prev => {
@@ -334,7 +342,10 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                                 className="rounded"
                               />
                               <h4 className="font-medium text-sm truncate">{tool.name}</h4>
-                              {userProfile?.owned_tools?.some((ownedTool: any) => ownedTool.tool === tool.name || ownedTool.name === tool.name) && (
+                              {userOwnedTools.some((ownedTool: any) => 
+                                ownedTool.tool === tool.name || 
+                                ownedTool.name === tool.name ||
+                                ownedTool === tool.name) && (
                                 <Badge variant="secondary" className="text-xs">Already Owned</Badge>
                               )}
                             </div>

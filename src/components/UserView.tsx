@@ -35,6 +35,7 @@ import { KeyCharacteristicsWindow } from './KeyCharacteristicsWindow';
 import { ProjectCustomizer } from './ProjectCustomizer/ProjectCustomizer';
 import { ProjectScheduler } from './ProjectScheduler';
 import { isKickoffPhaseComplete, addStandardPhasesToProjectRun } from '@/utils/projectUtils';
+import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -114,6 +115,7 @@ export default function UserView({
   const [keyCharacteristicsOpen, setKeyCharacteristicsOpen] = useState(false);
   const [projectCustomizerOpen, setProjectCustomizerOpen] = useState(false);
   const [projectSchedulerOpen, setProjectSchedulerOpen] = useState(false);
+  const [previousToolsAndMaterials, setPreviousToolsAndMaterials] = useState<{ tools: any[], materials: any[] } | null>(null);
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
@@ -1642,6 +1644,7 @@ export default function UserView({
         project={currentProject}
         projectRun={currentProjectRun}
         userOwnedTools={[]}
+        completedSteps={completedSteps}
         onOrderingComplete={() => {
           console.log("Ordering window completed for step:", currentStep?.step);
           // Mark the ordering step as complete
@@ -1717,7 +1720,26 @@ export default function UserView({
       {projectCustomizerOpen && currentProjectRun && (
         <ProjectCustomizer
           open={projectCustomizerOpen}
-          onOpenChange={setProjectCustomizerOpen}
+          onOpenChange={(open) => {
+            setProjectCustomizerOpen(open);
+            
+            // When customizer closes, check if shopping is needed
+            if (!open && currentProjectRun) {
+              // Store current tools/materials for shopping comparison
+              const currentRequirements = extractProjectToolsAndMaterials(currentProjectRun);
+              
+              // Check if shopping is needed and mark ordering step incomplete if necessary
+              markOrderingStepIncompleteIfNeeded(
+                currentProjectRun,
+                completedSteps,
+                setCompletedSteps,
+                previousToolsAndMaterials
+              );
+              
+              // Update previous tools/materials for next comparison
+              setPreviousToolsAndMaterials(currentRequirements);
+            }
+          }}
           currentProjectRun={currentProjectRun}
           mode={currentStep?.step.includes('Project Work Scope') ? 'initial-plan' : 
                 currentStep?.step.includes('Finalize Project Plan') ? 'final-plan' : 
