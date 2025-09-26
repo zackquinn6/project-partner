@@ -323,13 +323,18 @@ export default function UserView({
     }
   }, [currentProjectRun, forceListingMode, showProfile, onProjectSelected]);
 
-  // Separate useEffect for resetToListing
+  // Handle resetToListing with proper conditions
   useEffect(() => {
-    if (resetToListing) {
-      console.log("🔄 UserView: Reset to listing requested");
+    console.log("🔄 UserView: resetToListing effect:", { resetToListing, viewMode, hasProjectRun: !!currentProjectRun });
+    
+    // Only reset to listing if we don't have an active project run or if we're not in workflow mode
+    if (resetToListing && (!currentProjectRun || viewMode !== 'workflow')) {
+      console.log("🔄 UserView: Reset to listing requested - switching to listing");
       setViewMode('listing');
+    } else if (resetToListing && currentProjectRun && viewMode === 'workflow') {
+      console.log("🔄 UserView: Ignoring resetToListing - staying in workflow with active project");
     }
-  }, [resetToListing]);
+  }, [resetToListing, currentProjectRun, viewMode]);
 
   // Auto-switch to workflow view when a project or project run is selected (but respect resetToListing and forceListingMode)
   useEffect(() => {

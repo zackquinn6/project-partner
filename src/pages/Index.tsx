@@ -233,6 +233,18 @@ const Index = () => {
     };
   }, []);
 
+  // Listen for clear reset flags event
+  useEffect(() => {
+    const handleClearResetFlags = () => {
+      console.log('🔄 Index: Clearing reset flags');
+      setResetUserView(false);
+      setForceListingMode(false);
+    };
+
+    window.addEventListener('clear-reset-flags', handleClearResetFlags);
+    return () => window.removeEventListener('clear-reset-flags', handleClearResetFlags);
+  }, []);
+
   // Listen for edit workflow navigation event
   useEffect(() => {
     const handleEditWorkflowNavigation = () => {

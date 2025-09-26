@@ -124,6 +124,8 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
                   e.preventDefault();
                   e.stopPropagation();
                   console.log('🎯 Continue Current Project clicked');
+                  // Clear resetToListing immediately when continuing a project
+                  window.dispatchEvent(new CustomEvent('clear-reset-flags'));
                   onProjectSelect(currentProjectRun);
                 }}
                 className="ml-3"
