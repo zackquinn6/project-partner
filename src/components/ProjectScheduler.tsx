@@ -306,7 +306,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90%] max-w-none h-[85vh] p-0 gap-0">
+      <DialogContent className="w-[90vw] max-w-[90vw] h-[85vh] p-0 gap-0">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b bg-gradient-subtle">
           <div className="flex items-center gap-3">
