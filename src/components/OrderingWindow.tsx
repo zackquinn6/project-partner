@@ -244,31 +244,45 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
   }, [uniqueTools, userOwnedTools]);
 
   const handleToolToggle = (toolId: string) => {
-    setOrderedTools(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(toolId)) {
+    // Check if item is currently shopped
+    if (shoppedTools.has(toolId)) {
+      // Move from shopped back to active
+      setShoppedTools(prev => {
+        const newSet = new Set(prev);
         newSet.delete(toolId);
-        // Move to shopped when checked off
-        setShoppedTools(shoppedPrev => new Set(shoppedPrev).add(toolId));
-      } else {
-        newSet.add(toolId);
-      }
-      return newSet;
-    });
+        return newSet;
+      });
+      setOrderedTools(prev => new Set(prev).add(toolId));
+    } else {
+      // Move to shopped when checked off
+      setOrderedTools(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(toolId);
+        return newSet;
+      });
+      setShoppedTools(prev => new Set(prev).add(toolId));
+    }
   };
 
   const handleMaterialToggle = (materialId: string) => {
-    setOrderedMaterials(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(materialId)) {
+    // Check if item is currently shopped
+    if (shoppedMaterials.has(materialId)) {
+      // Move from shopped back to active
+      setShoppedMaterials(prev => {
+        const newSet = new Set(prev);
         newSet.delete(materialId);
-        // Move to shopped when checked off
-        setShoppedMaterials(shoppedPrev => new Set(shoppedPrev).add(materialId));
-      } else {
-        newSet.add(materialId);
-      }
-      return newSet;
-    });
+        return newSet;
+      });
+      setOrderedMaterials(prev => new Set(prev).add(materialId));
+    } else {
+      // Move to shopped when checked off
+      setOrderedMaterials(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(materialId);
+        return newSet;
+      });
+      setShoppedMaterials(prev => new Set(prev).add(materialId));
+    }
   };
 
   const handleItemDetails = (item: any, type: 'tool' | 'material') => {
@@ -367,7 +381,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                               <div className="flex items-center gap-2">
                                 <input
                                   type="checkbox"
-                                  checked={orderedMaterials.has(material.id)}
+                                  checked={shoppedMaterials.has(material.id)}
                                   onChange={() => handleMaterialToggle(material.id)}
                                   className="rounded"
                                 />
@@ -453,7 +467,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                               <div className="flex items-center gap-2">
                                 <input
                                   type="checkbox"
-                                  checked={orderedTools.has(tool.id)}
+                                  checked={shoppedTools.has(tool.id)}
                                   onChange={() => handleToolToggle(tool.id)}
                                   className="rounded"
                                 />
@@ -835,7 +849,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                                   <div className="flex items-center gap-2">
                                     <input
                                       type="checkbox"
-                                      checked={orderedTools.has(tool.id)}
+                                      checked={shoppedTools.has(tool.id)}
                                       onChange={() => handleToolToggle(tool.id)}
                                       className="rounded"
                                     />
