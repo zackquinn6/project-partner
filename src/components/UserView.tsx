@@ -32,6 +32,7 @@ import { ToolsMaterialsSection } from './ToolsMaterialsSection';
 import ProfileManager from './ProfileManager';
 import { DecisionRollupWindow } from './DecisionRollupWindow';
 import { KeyCharacteristicsWindow } from './KeyCharacteristicsWindow';
+import { DecisionTreeFlowchart } from './DecisionTreeFlowchart';
 import { isKickoffPhaseComplete, addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 interface UserViewProps {
   resetToListing?: boolean;
@@ -110,6 +111,7 @@ export default function UserView({
   const [decisionRollupOpen, setDecisionRollupOpen] = useState(false);
   const [decisionRollupMode, setDecisionRollupMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work'>('initial-plan');
   const [keyCharacteristicsOpen, setKeyCharacteristicsOpen] = useState(false);
+  const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
@@ -1187,17 +1189,27 @@ export default function UserView({
                   <div className="flex gap-3 justify-center">
                     {/* Show Review Decisions button for Project Planning */}
                     {(currentStep.step?.toLowerCase().includes('project') && currentStep.step?.toLowerCase().includes('plan')) && (
-                      <Button 
-                        onClick={() => {
-                          setDecisionRollupMode('initial-plan');
-                          setDecisionRollupOpen(true);
-                        }}
-                        variant="outline"
-                        className="flex items-center gap-2"
-                      >
-                        <HelpCircle className="w-4 h-4" />
-                        Review Decisions
-                      </Button>
+                      <>
+                        <Button 
+                          onClick={() => {
+                            setDecisionRollupMode('initial-plan');
+                            setDecisionRollupOpen(true);
+                          }}
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                          Review Decisions
+                        </Button>
+                        <Button 
+                          onClick={() => setDecisionTreeOpen(true)}
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Decision Tree
+                        </Button>
+                      </>
                     )}
 
                   </div>
@@ -1598,6 +1610,35 @@ export default function UserView({
           }
           onNavigateToStep={navigateToStep}
         />
+      )}
+
+      {/* Decision Tree Flowchart */}
+      {decisionTreeOpen && currentProjectRun && (
+        <Dialog open={decisionTreeOpen} onOpenChange={setDecisionTreeOpen}>
+          <DialogContent className="max-w-7xl h-[90vh] p-0">
+            <DialogHeader className="p-6 pb-0">
+              <DialogTitle>Project Decision Tree</DialogTitle>
+              <DialogDescription>
+                Customize your workflow by defining decision points and alternate paths
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden">
+              <DecisionTreeFlowchart
+                phases={activeProject.phases || []}
+                onBack={() => setDecisionTreeOpen(false)}
+                onUpdatePhases={(updatedPhases) => {
+                  if (currentProjectRun) {
+                    updateProjectRun({
+                      ...currentProjectRun,
+                      phases: updatedPhases,
+                      updatedAt: new Date()
+                    });
+                  }
+                }}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Completion Certificate */}
