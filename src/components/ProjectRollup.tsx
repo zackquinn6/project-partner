@@ -71,8 +71,8 @@ const RollupSection: React.FC<RollupSectionProps> = ({
   items,
   type
 }) => {
-  const itemsWithAlternates = items.filter(item => item.alternates && item.alternates.length > 0);
-  const itemsWithoutAlternates = items.filter(item => !item.alternates || item.alternates.length === 0);
+  const requiredItems = items.filter(item => item.alternates && item.alternates.length > 0);
+  const optionalItems = items.filter(item => !item.alternates || item.alternates.length === 0);
   const getCategoryColor = (category: string) => {
     const colors = {
       'Hardware': 'bg-blue-100 text-blue-800',
