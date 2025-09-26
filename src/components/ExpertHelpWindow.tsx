@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { ScrollableDialog } from './ScrollableDialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { 
@@ -15,17 +15,19 @@ interface ExpertHelpWindowProps {
 
 export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onClose }) => {
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mb-2">
+    <ScrollableDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      title="Expert Virtual Consults"
+      description="Get personalized project guidance from certified DIY professionals"
+      className="w-[90vw] max-w-md h-auto max-h-[90vh]"
+    >
+      <div className="space-y-6">
+        <div className="text-center">
+          <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mb-4">
             <Video className="w-6 h-6 text-primary" />
           </div>
-          <DialogTitle className="text-xl font-bold">Expert Virtual Consults</DialogTitle>
-          <p className="text-muted-foreground">
-            Get personalized project guidance from certified DIY professionals
-          </p>
-        </DialogHeader>
+        </div>
         
         <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-primary/5">
           <CardHeader className="text-center pb-3">
@@ -61,7 +63,7 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onCl
             </p>
           </CardContent>
         </Card>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </ScrollableDialog>
   );
 };

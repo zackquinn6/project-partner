@@ -327,7 +327,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           </Button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto space-y-2 pb-3 px-3 md:px-6 min-h-0" onClick={() => setSwipedTaskId(null)}>
+                        <div className="flex-1 overflow-y-auto space-y-2 pb-3 px-3 md:px-6 min-h-0" 
+                             style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}>
                       {loading ? (
                         <div className="text-center py-8">Loading tasks...</div>
                       ) : getFilteredTasks().length === 0 ? (
@@ -363,6 +364,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                 onTouchStart={handleTouchStart}
                                 onTouchMove={handleTouchMove}
                                 onTouchEnd={() => handleTouchEnd(task.id)}
+                                onClick={(e) => {
+                                  // Only dismiss swipe on direct click, not during scroll gestures
+                                  if (!touchStart || Math.abs(touchStart - (touchEnd || touchStart)) < 10) {
+                                    setSwipedTaskId(null);
+                                  }
+                                }}
                               >
                                 <div className="flex items-center justify-between gap-3">
                                   <div className="flex-1 min-w-0">
