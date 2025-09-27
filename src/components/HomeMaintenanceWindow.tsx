@@ -264,14 +264,15 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       open={open} 
       onOpenChange={onOpenChange}
       size="xlarge"
+      className="[&>button]:md:block [&>button]:hidden"
     >
       <div className="flex flex-col h-full">
         {/* Header with title and close button */}
         <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg md:text-xl font-bold">Home Maintenance Tracker</h2>
           
-          {/* Close button */}
-          {isMobile ? (
+          {/* Close button - only show Close text on mobile */}
+          {isMobile && (
             <Button 
               variant="outline" 
               size="sm"
@@ -279,15 +280,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               className="ml-4 flex-shrink-0"
             >
               Close
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="h-8 w-8 p-0 ml-4 flex-shrink-0"
-            >
-              <X className="h-4 w-4" />
             </Button>
           )}
         </div>
