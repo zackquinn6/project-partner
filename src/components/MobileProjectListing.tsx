@@ -138,7 +138,8 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('🎯 Continue Current Project clicked - force clearing all reset flags');
+                  console.log('🎯 CONTINUE CLICKED - Clearing all reset flags and going to project');
+                  console.log('🎯 CONTINUE CLICKED - currentProjectRun:', currentProjectRun?.name);
                   
                   // Immediately clear reset flags
                   setResetUserView(false);
@@ -147,7 +148,8 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
                   // Also dispatch the clear event
                   window.dispatchEvent(new CustomEvent('clear-reset-flags'));
                   
-                  // Select the project
+                  // Select the project - this should go directly to workflow
+                  console.log('🎯 CONTINUE CLICKED - Calling onProjectSelect with:', currentProjectRun?.name);
                   onProjectSelect(currentProjectRun);
                 }}
                 className="ml-3"

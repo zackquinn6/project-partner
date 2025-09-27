@@ -975,6 +975,12 @@ export default function UserView({
     console.log("Available project run IDs:", projectRuns.map(pr => pr.id));
     console.log("Looking for projectRunId:", projectRunId);
     
+    // MOBILE FIX: Never show ProjectListing error recovery on mobile
+    if (isMobile) {
+      console.log("🚨 SECOND WINDOW BLOCKED - Mobile error recovery should not render ProjectListing");
+      return null;
+    }
+    
     // Clear the invalid projectRunId and go to listing
     console.log("🧹 Clearing invalid projectRunId and redirecting to listing");
     window.history.replaceState({ view: 'user' }, document.title, window.location.pathname);
@@ -1015,6 +1021,15 @@ export default function UserView({
   
   // THIRD: If no projects at all or explicitly in listing mode, show project listing
   if (viewMode === 'listing' || (!currentProject && !currentProjectRun && !projectRunId && projectRuns.length === 0)) {
+    console.log("📋 UserView: Checking if should show project listing...");
+    console.log("📋 viewMode:", viewMode, "currentProject:", !!currentProject, "currentProjectRun:", !!currentProjectRun, "projectRunId:", projectRunId);
+    
+    // MOBILE FIX: Never show ProjectListing on mobile - Index handles all mobile project listing
+    if (isMobile) {
+      console.log("🚨 SECOND WINDOW BLOCKED - Mobile should not render ProjectListing in UserView");
+      return null;
+    }
+    
     console.log("📋 UserView: Showing project listing (no project selected)");
     return <ProjectListing 
       onProjectSelect={project => {
