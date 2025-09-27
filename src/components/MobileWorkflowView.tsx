@@ -178,27 +178,63 @@ export function MobileWorkflowView({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {currentStep.description && (
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {currentStep.description}
-                </p>
-              )}
-              
-              {currentStep.instructions && (
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Instructions</h4>
-                  <div className="text-sm leading-relaxed space-y-2">
-                    {currentStep.instructions.split('\n').map((line: string, index: number) => (
-                      <p key={index}>{line}</p>
-                    ))}
+              {/* Special case for ordering step - add Shopping List button */}
+              {(currentStep.step === 'Tool & Material Ordering' || 
+                currentStep.phaseName === 'Ordering' || 
+                currentStep.id === 'ordering-step-1') ? (
+                <div className="space-y-4">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Use our integrated shopping browser to purchase all required tools and materials for your project. 
+                    Our system will help you find the best prices and ensure you get everything you need.
+                  </p>
+                  
+                  {/* Shopping List Button */}
+                  <div className="flex justify-center pt-2">
+                    <Button 
+                      onClick={() => {
+                        console.log('Opening ordering window for mobile step:', currentStep.step);
+                        // This would need to be passed down as a prop or use a global state
+                        window.dispatchEvent(new CustomEvent('open-ordering-window'));
+                      }}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      size="sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Shopping List
+                    </Button>
                   </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {currentStep.description && (
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {currentStep.description}
+                    </p>
+                  )}
+                  
+                  {currentStep.instructions && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Instructions</h4>
+                      <div className="text-sm leading-relaxed space-y-2">
+                        {currentStep.instructions.split('\n').map((line: string, index: number) => (
+                          <p key={index}>{line}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Materials */}
-          {currentStep.materials && currentStep.materials.length > 0 && (
+          {/* Materials - Hide for ordering steps */}
+          {currentStep.materials && currentStep.materials.length > 0 && 
+            !(currentStep.step === 'Tool & Material Ordering' || 
+              currentStep.phaseName === 'Ordering' || 
+              currentStep.id === 'ordering-step-1') && (
             <Collapsible
               open={expandedSections.has('materials')}
               onOpenChange={() => toggleSection('materials')}
@@ -262,8 +298,11 @@ export function MobileWorkflowView({
             </Collapsible>
           )}
 
-          {/* Tools */}
-          {currentStep.tools && currentStep.tools.length > 0 && (
+          {/* Tools - Hide for ordering steps */}
+          {currentStep.tools && currentStep.tools.length > 0 && 
+            !(currentStep.step === 'Tool & Material Ordering' || 
+              currentStep.phaseName === 'Ordering' || 
+              currentStep.id === 'ordering-step-1') && (
             <Collapsible
               open={expandedSections.has('tools')}
               onOpenChange={() => toggleSection('tools')}

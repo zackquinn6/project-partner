@@ -824,7 +824,7 @@ export default function UserView({
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
     
-    // Special case for ordering step - add Shop Online button in content
+    // Special case for ordering step - add Shopping List button in content
     if (step.step === 'Tool & Material Ordering' || 
         step.phaseName === 'Ordering' || 
         step.id === 'ordering-step-1') {
@@ -837,7 +837,7 @@ export default function UserView({
             </p>
           </div>
           
-          {/* Shop Online Button - styled to match Project Customizer button */}
+          {/* Shopping List Button - styled to match Project Customizer button */}
           <div className="flex justify-center pt-4">
             <Button 
               onClick={() => {
@@ -848,7 +848,7 @@ export default function UserView({
               className="flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
-              Shop Online
+              Shopping List
             </Button>
           </div>
         </div>
