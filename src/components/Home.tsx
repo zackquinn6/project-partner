@@ -304,10 +304,10 @@ export default function Home({
             <div className="text-center lg:text-left">
               
               
-              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4">DIY, Delivered</h1>
+              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4">DIY Done Smarter</h1>
               <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6">Everything You Need in One Place</h2>
               
-              <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">Your all‑in‑one app for projects, tools, and expert backup—delivering the right gear and guidance exactly when you need it.</p>
+              <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">The Go-to App for DIY Home Improvement</p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button variant="secondary" size="lg" className="px-6 md:px-8 text-base md:text-lg bg-primary-foreground text-primary hover:bg-primary-foreground/90 border-0 shadow-elegant" asChild>
