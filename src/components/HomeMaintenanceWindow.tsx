@@ -262,7 +262,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       onOpenChange={onOpenChange}
       title="Home Maintenance Tracker"
     >
-      <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+      <div className="flex flex-col h-full max-h-[90vh] overflow-hidden">
         {/* Home Selection - Fixed at top */}
         <div className="px-3 md:px-6 py-3 shrink-0 bg-background border-b">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
@@ -292,7 +292,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {/* Tabs - Scrollable content */}
             {selectedHomeId && (
               <div className="flex flex-col flex-1 min-h-0">
-                <Tabs defaultValue="tasks" className="flex flex-col flex-1 h-full">
+                <Tabs defaultValue="tasks" className="flex flex-col flex-1 overflow-hidden h-full">
                   <div className="px-3 md:px-6 py-3 bg-background border-b shrink-0">
                     <TabsList className="grid grid-cols-3 w-full h-12">
                       <TabsTrigger value="tasks" className="text-xs md:text-sm px-2 py-3">Active</TabsTrigger>
@@ -301,7 +301,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </TabsList>
                   </div>
 
-                   <TabsContent value="tasks" className="min-h-0">
+                   <TabsContent value="tasks" className="flex-1 overflow-hidden">
                       <div className="flex flex-col h-full">
                         {/* Category Filter */}
                         <div className="flex items-center gap-2 py-3 shrink-0 px-3 md:px-6">
@@ -310,7 +310,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
                               <SelectValue placeholder="Filter by category" />
                             </SelectTrigger>
-                            <SelectContent className="z-[100]">
+                            <SelectContent className="z-[200] bg-popover border">
                               <SelectItem value="all">All Categories ({tasks.length})</SelectItem>
                               {categories.map(category => {
                             const count = tasks.filter(task => task.category === category).length;
@@ -326,8 +326,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           </Button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto space-y-2 pb-3 px-3 md:px-6 min-h-0" 
-                             style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+                        <div className="flex-1 overflow-y-auto space-y-2 pb-3 px-3 md:px-6" 
+                             style={{ 
+                               touchAction: 'pan-y', 
+                               WebkitOverflowScrolling: 'touch', 
+                               overscrollBehavior: 'contain',
+                               height: 'auto',
+                               maxHeight: '60vh'
+                             }}>
                       {loading ? (
                         <div className="text-center py-8">Loading tasks...</div>
                       ) : getFilteredTasks().length === 0 ? (
@@ -423,7 +429,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                       </div>
                     </TabsContent>
 
-                   <TabsContent value="history" className="min-h-0">
+                   <TabsContent value="history" className="flex-1 overflow-hidden">
                       <div className="flex flex-col h-full">
                         {/* Category Filter */}
                         <div className="flex items-center gap-2 py-3 shrink-0 px-3 md:px-6">
