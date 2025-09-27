@@ -161,12 +161,8 @@ export default function Auth() {
 
   const handleGuestSignIn = () => {
     continueAsGuest();
-    const returnPath = searchParams.get('return');
-    if (returnPath === 'projects') {
-      navigate('/projects');
-    } else {
-      navigate('/');
-    }
+    // Always navigate to home for guest users
+    navigate('/');
   };
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
@@ -196,12 +192,13 @@ export default function Auth() {
             replace: true
           });
         }} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-12">
-              <TabsTrigger value="signin" className="py-3">Sign In</TabsTrigger>
-              <TabsTrigger value="signup" className="py-3">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="signin" className="h-12 text-base font-medium">Sign In</TabsTrigger>
+              <TabsTrigger value="signup" className="h-12 text-base font-medium">Sign Up</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="signin" className="mt-8">
+            <div className="mt-6">
+              <TabsContent value="signin" className="mt-0">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
@@ -243,9 +240,9 @@ export default function Auth() {
                   Sign In
                 </Button>
               </form>
-            </TabsContent>
-            
-            <TabsContent value="signup" className="mt-8">
+              </TabsContent>
+              
+              <TabsContent value="signup" className="mt-0">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
@@ -307,7 +304,8 @@ export default function Auth() {
                   Sign Up
                 </Button>
               </form>
-            </TabsContent>
+              </TabsContent>
+            </div>
           </Tabs>
 
           <div className="mt-6">
