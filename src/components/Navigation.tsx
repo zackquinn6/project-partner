@@ -145,6 +145,7 @@ export default function Navigation({
               </Button>
             </div>
             
+            {/* Project selector dropdown - only show on desktop */}
             {!isMobile && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -153,7 +154,11 @@ export default function Navigation({
                     <ChevronDown className="h-4 w-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-80">
+                <DropdownMenuContent 
+                  align="start" 
+                  className="w-80 z-50 bg-background border shadow-lg"
+                  sideOffset={8}
+                >
                   {activeProjectRuns.length > 0 ? (
                     activeProjectRuns.map((run) => (
                       <DropdownMenuItem
@@ -185,11 +190,11 @@ export default function Navigation({
                 setIsExpertHelpOpen(true);
               }}
               className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-              size="sm"
+              size={isMobile ? "default" : "sm"}
             >
-              <Headphones className="h-4 w-4 mr-0 sm:mr-2" />
+              <Headphones className={isMobile ? "h-5 w-5 mr-0 sm:mr-2" : "h-4 w-4 mr-0 sm:mr-2"} />
               <span className="hidden sm:inline">Get Expert Help</span>
-              <span className="sm:hidden">Help</span>
+              <span className="sm:hidden">{isMobile ? "" : "Help"}</span>
             </Button>
             
             <DropdownMenu>
@@ -197,14 +202,14 @@ export default function Navigation({
                 <Button 
                   variant="ghost" 
                   size={isMobile ? "default" : "sm"}
-                  className={isMobile ? "h-10 w-10" : ""}
+                  className={isMobile ? "h-10 w-10 p-0" : ""}
                 >
                   <Settings className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
                 align="end" 
-                className="z-50 bg-background border shadow-lg"
+                className="z-[100] bg-background/95 backdrop-blur-sm border shadow-lg min-w-[200px]"
                 sideOffset={8}
               >
                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
@@ -233,14 +238,14 @@ export default function Navigation({
                 <Button 
                   variant="ghost" 
                   size={isMobile ? "default" : "sm"}
-                  className={isMobile ? "h-10 w-10" : ""}
+                  className={isMobile ? "h-10 w-10 p-0" : ""}
                 >
                   <HelpCircle className={isMobile ? "h-5 w-5" : "h-4 w-4"} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
                 align="end" 
-                className="z-50 bg-background border shadow-lg"
+                className="z-[100] bg-background/95 backdrop-blur-sm border shadow-lg min-w-[200px]"
                 sideOffset={8}
               >
                 <DropdownMenuItem onClick={() => setShowFeedback(true)}>

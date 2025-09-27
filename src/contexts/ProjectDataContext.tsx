@@ -168,7 +168,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
 
   const value = {
     projects,
-    projectRuns: isGuest ? guestData.projectRuns : (shouldFetchProjectRuns ? projectRuns : []),
+    projectRuns: isGuest ? guestData.projectRuns : projectRuns, // Always use fetched data when not guest
     loading: projectsLoading || (shouldFetchProjectRuns ? projectRunsLoading : false),
     error: projectsError || (shouldFetchProjectRuns ? projectRunsError : null),
     refetchProjects,
