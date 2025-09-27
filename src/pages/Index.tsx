@@ -272,17 +272,6 @@ const Index = () => {
       setShowKCExplainer(true);
     };
 
-    const handleProjectsNavigation = () => {
-      console.log('🔄 Index: "My Projects" clicked from PostAuthLanding');
-      console.log('🔄 Index: Current view before switch:', currentView);
-      console.log('🔄 Index: Current project before clear:', currentProject?.name);
-      console.log('🔄 Index: Current project run before clear:', currentProjectRun?.name);
-      if (isMobile) {
-        setMobileView('projects');
-      }
-      handleProjectsView();
-    };
-
     const handleProfileNavigation = () => {
       console.log('🔄 Index: "My Profile" clicked - dispatching to Navigation');
       // Let Navigation.tsx handle this
@@ -303,7 +292,7 @@ const Index = () => {
 
     window.addEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
     window.addEventListener('navigate-to-kickoff', handleKickoffNavigation as EventListener);
-    window.addEventListener('navigate-to-projects', handleProjectsNavigation);
+    // Note: 'navigate-to-projects' is handled by Navigation.tsx to avoid conflicts
     window.addEventListener('show-profile', handleProfileNavigation);
     window.addEventListener('show-tools-materials', handleToolLibraryNavigation);
     window.addEventListener('show-admin-panel', handleAdminPanelNavigation);
@@ -314,7 +303,7 @@ const Index = () => {
     return () => {
       window.removeEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
       window.removeEventListener('navigate-to-kickoff', handleKickoffNavigation as EventListener);
-      window.removeEventListener('navigate-to-projects', handleProjectsNavigation);
+      // Note: 'navigate-to-projects' listener removed to prevent conflicts
       window.removeEventListener('show-profile', handleProfileNavigation);
       window.removeEventListener('show-tools-materials', handleToolLibraryNavigation);
       window.removeEventListener('show-admin-panel', handleAdminPanelNavigation);
@@ -330,6 +319,13 @@ const Index = () => {
     setResetUserView(true);
     setForceListingMode(true);
     setCurrentView('user');
+    
+    // Set mobile view for mobile devices
+    if (isMobile) {
+      console.log('📱 Index: Setting mobile view to projects');
+      setMobileView('projects');
+    }
+    
     // Clear projectRunId by replacing location state
     navigate('/', { replace: true, state: {} });
   };
