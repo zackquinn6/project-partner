@@ -1428,9 +1428,14 @@ export default function UserView({
                         Mark Complete
                       </Button>
                     ) : (
-                      <Button disabled className="opacity-50 cursor-not-allowed">
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Complete All Outputs First
+                      <Button 
+                        disabled 
+                        className="opacity-50 cursor-not-allowed" 
+                        size={isMobile ? "sm" : "default"}
+                        title={isMobile ? "Complete All Outputs First" : undefined}
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        {!isMobile && <span className="ml-2">Complete All Outputs First</span>}
                       </Button>
                     )
                   )}
@@ -1438,9 +1443,13 @@ export default function UserView({
                   {/* Report Issue Button */}
                   <Dialog open={issueReportOpen} onOpenChange={setIssueReportOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline">
-                        <AlertTriangle className="w-4 h-4 mr-2" />
-                        Report Issue
+                      <Button 
+                        variant="outline" 
+                        size={isMobile ? "sm" : "default"}
+                        title={isMobile ? "Report Issue" : undefined}
+                      >
+                        <AlertTriangle className="w-4 h-4" />
+                        {!isMobile && <span className="ml-2">Report Issue</span>}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
