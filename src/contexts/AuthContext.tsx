@@ -4,6 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { checkAuthRateLimit, recordAuthAttempt } from '@/utils/securityUtils';
 import { sanitizeInput } from '@/utils/inputSanitization';
 import { logAuthenticationEvent, logSecurityViolation } from '@/utils/enhancedSecurityLogger';
+import { 
+  generateSessionFingerprint, 
+  storeSessionFingerprint, 
+  validateSessionIntegrity,
+  cleanupSessionData
+} from '@/utils/sessionSecurity';
 
 interface AuthContextType {
   user: User | null;
@@ -33,8 +39,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Generate and store session fingerprint
+          const fingerprint = generateSessionFingerprint();
+          await storeSessionFingerprint(fingerprint, session.user.id);
+          
+          // Validate session integrity
+          const isValid = await validateSessionIntegrity(session.user.id);
+          if (!isValid) {
+            console.warn('Session integrity validation failed');
+            await supabase.auth.signOut();
+            return;
+          }
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          await cleanupSessionData(user?.id);
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -42,15 +67,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.email);
+      
+      if (session?.user) {
+        // Validate existing session integrity
+        const isValid = await validateSessionIntegrity(session.user.id);
+        if (!isValid) {
+          console.warn('Existing session integrity validation failed');
+          await supabase.auth.signOut();
+          return;
+        }
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [user?.id]);
 
   const signUp = async (email: string, password: string) => {
     // Sanitize inputs
@@ -215,6 +251,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    // Clean up session data before signing out
+    await cleanupSessionData(user?.id);
     await supabase.auth.signOut();
   };
 

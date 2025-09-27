@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSecureInput } from '@/hooks/useSecureInput';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 export default function Auth() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -21,6 +22,7 @@ export default function Auth() {
     signInWithGoogle,
     loading
   } = useAuth();
+  const { validateAndSanitize, startFormTracking, trackFormSubmission, commonRules } = useSecureInput();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +31,7 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [showGoogleErrorDialog, setShowGoogleErrorDialog] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Update form when URL changes
   useEffect(() => {
@@ -52,18 +55,35 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    const {
-      error
-    } = await signIn(email, password);
+    setValidationErrors({});
+    
+    // Start form tracking
+    startFormTracking();
+    
+    // Validate and sanitize inputs
+    const validation = validateAndSanitize({ email, password }, {
+      email: commonRules.email,
+      password: { required: true, minLength: 1, maxLength: 128 }
+    });
+    
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Track form submission timing
+    trackFormSubmission('signin');
+    
+    const { error } = await signIn(validation.sanitizedData.email, password);
     if (error) {
       setError(error.message);
 
       // Log failed login attempt
       try {
         await supabase.rpc('log_failed_login', {
-          user_email: email,
+          user_email: validation.sanitizedData.email,
           ip_addr: null,
-          // Client-side doesn't have direct access to IP
           user_agent_string: navigator.userAgent
         });
       } catch (logError) {
@@ -87,14 +107,35 @@ export default function Auth() {
     setIsLoading(true);
     setError(null);
     setMessage(null);
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    setValidationErrors({});
+    
+    // Start form tracking
+    startFormTracking();
+    
+    // Validate and sanitize inputs
+    const validation = validateAndSanitize({ email, password, confirmPassword }, {
+      email: commonRules.email,
+      password: commonRules.password,
+      confirmPassword: { required: true, minLength: 8, maxLength: 128 }
+    });
+    
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
       setIsLoading(false);
       return;
     }
-    const {
-      error
-    } = await signUp(email, password);
+    
+    // Check password match
+    if (password !== confirmPassword) {
+      setValidationErrors({ confirmPassword: 'Passwords do not match' });
+      setIsLoading(false);
+      return;
+    }
+    
+    // Track form submission timing
+    trackFormSubmission('signup');
+    
+    const { error } = await signUp(validation.sanitizedData.email, password);
     if (error) {
       setError(error.message);
     } else {
@@ -143,11 +184,38 @@ export default function Auth() {
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
-                  <Input id="signin-email" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                  <Input 
+                    id="signin-email" 
+                    type="email" 
+                    placeholder="your@email.com" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                    required 
+                    className={validationErrors.email ? "border-destructive" : ""}
+                  />
+                  {validationErrors.email && (
+                    <div className="flex items-center text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {validationErrors.email}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Password</Label>
-                  <Input id="signin-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                  <Input 
+                    id="signin-password" 
+                    type="password" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    required 
+                    className={validationErrors.password ? "border-destructive" : ""}
+                  />
+                  {validationErrors.password && (
+                    <div className="flex items-center text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {validationErrors.password}
+                    </div>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -160,15 +228,58 @@ export default function Auth() {
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
-                  <Input id="signup-email" type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                  <Input 
+                    id="signup-email" 
+                    type="email" 
+                    placeholder="your@email.com" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                    required 
+                    className={validationErrors.email ? "border-destructive" : ""}
+                  />
+                  {validationErrors.email && (
+                    <div className="flex items-center text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {validationErrors.email}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input id="signup-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                  <Input 
+                    id="signup-password" 
+                    type="password" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    required 
+                    className={validationErrors.password ? "border-destructive" : ""}
+                  />
+                  {validationErrors.password && (
+                    <div className="flex items-center text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {validationErrors.password}
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground">
+                    Password must contain at least 8 characters with uppercase, lowercase, and numbers
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm Password</Label>
-                  <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                  <Input 
+                    id="confirm-password" 
+                    type="password" 
+                    value={confirmPassword} 
+                    onChange={e => setConfirmPassword(e.target.value)} 
+                    required 
+                    className={validationErrors.confirmPassword ? "border-destructive" : ""}
+                  />
+                  {validationErrors.confirmPassword && (
+                    <div className="flex items-center text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {validationErrors.confirmPassword}
+                    </div>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
