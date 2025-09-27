@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollableDialog } from '@/components/ScrollableDialog';
+import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -257,12 +257,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   };
   return <>
-    <ScrollableDialog 
+    <ResponsiveDialog 
       open={open} 
       onOpenChange={onOpenChange}
       title="Home Maintenance Tracker"
+      size="xlarge"
     >
-      <div className="flex flex-col h-full max-h-[90vh] overflow-hidden">
+      <div className="flex flex-col h-full">
         {/* Home Selection - Fixed at top */}
         <div className="px-3 md:px-6 py-3 shrink-0 bg-background border-b">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
@@ -291,8 +292,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
             {/* Tabs - Scrollable content */}
             {selectedHomeId && (
-              <div className="flex flex-col flex-1 min-h-0">
-                <Tabs defaultValue="tasks" className="flex flex-col flex-1 overflow-hidden h-full">
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <Tabs defaultValue="tasks" className="flex flex-col flex-1 h-full overflow-hidden">
                   <div className="px-3 md:px-6 py-3 bg-background border-b shrink-0">
                     <TabsList className="grid grid-cols-3 w-full h-12">
                       <TabsTrigger value="tasks" className="text-xs md:text-sm px-2 py-3">Active</TabsTrigger>
@@ -475,7 +476,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               </div>
             )}
           </div>
-    </ScrollableDialog>
+    </ResponsiveDialog>
 
       {/* Dialogs */}
       <AddMaintenanceTaskDialog open={showAddTask} onOpenChange={setShowAddTask} homeId={selectedHomeId} onTaskAdded={fetchTasks} />
