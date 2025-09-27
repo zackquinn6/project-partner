@@ -272,6 +272,13 @@ const Index = () => {
       setShowKCExplainer(true);
     };
 
+    // Mobile-specific projects navigation (Navigation.tsx only handles desktop)
+    const handleProjectsNavigationMobile = () => {
+      if (!isMobile) return; // Only handle on mobile
+      console.log('📱 Index: Mobile "My Projects" clicked');
+      handleProjectsView();
+    };
+
     const handleProfileNavigation = () => {
       console.log('🔄 Index: "My Profile" clicked - dispatching to Navigation');
       // Let Navigation.tsx handle this
@@ -292,7 +299,10 @@ const Index = () => {
 
     window.addEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
     window.addEventListener('navigate-to-kickoff', handleKickoffNavigation as EventListener);
-    // Note: 'navigate-to-projects' is handled by Navigation.tsx to avoid conflicts
+    // Mobile-specific projects navigation (Navigation.tsx handles desktop)
+    if (isMobile) {
+      window.addEventListener('navigate-to-projects', handleProjectsNavigationMobile);
+    }
     window.addEventListener('show-profile', handleProfileNavigation);
     window.addEventListener('show-tools-materials', handleToolLibraryNavigation);
     window.addEventListener('show-admin-panel', handleAdminPanelNavigation);
@@ -303,7 +313,10 @@ const Index = () => {
     return () => {
       window.removeEventListener('navigate-to-edit-workflow', handleEditWorkflowNavigation);
       window.removeEventListener('navigate-to-kickoff', handleKickoffNavigation as EventListener);
-      // Note: 'navigate-to-projects' listener removed to prevent conflicts
+      // Clean up mobile projects listener
+      if (isMobile) {
+        window.removeEventListener('navigate-to-projects', handleProjectsNavigationMobile);
+      }
       window.removeEventListener('show-profile', handleProfileNavigation);
       window.removeEventListener('show-tools-materials', handleToolLibraryNavigation);
       window.removeEventListener('show-admin-panel', handleAdminPanelNavigation);
