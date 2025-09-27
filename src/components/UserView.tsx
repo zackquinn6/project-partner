@@ -19,6 +19,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { Output, Project } from '@/interfaces/Project';
 import ProjectListing from './ProjectListing';
 import { MobileProjectListing } from './MobileProjectListing';
+import { MobileWorkflowView } from './MobileWorkflowView';
 import { OutputDetailPopup } from './OutputDetailPopup';
 import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { PhaseRatingPopup } from './PhaseRatingPopup';
@@ -1196,8 +1197,40 @@ export default function UserView({
   }
   return (
     <>
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
+      {/* Mobile Workflow View */}
+      {isMobile ? (
+        <MobileWorkflowView
+          projectName={activeProject?.name || 'Project'}
+          currentStep={currentStep}
+          currentStepIndex={currentStepIndex}
+          totalSteps={allSteps.length}
+          progress={progress}
+          completedSteps={completedSteps}
+          onBack={() => {
+            // Go back to projects listing  
+            console.log('🔄 Mobile workflow: Back button clicked');
+            window.dispatchEvent(new CustomEvent('navigate-to-projects'));
+          }}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
+          onStepComplete={handleStepComplete}
+          onNavigateToStep={(stepIndex) => {
+            console.log('🎯 Mobile: Navigating to step:', stepIndex);
+            if (stepIndex >= 0 && isKickoffComplete) {
+              setCurrentStepIndex(stepIndex);
+              startTimeTracking('step', allSteps[stepIndex].id);
+            }
+          }}
+          allSteps={allSteps}
+          checkedMaterials={checkedMaterials}
+          checkedTools={checkedTools}
+          onToggleMaterial={toggleMaterialCheck}
+          onToggleTool={toggleToolCheck}
+        />
+      ) : (
+        /* Desktop Workflow View */
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full">
           <WorkflowSidebar
             allSteps={allSteps}
             currentStep={currentStep}
@@ -1603,9 +1636,10 @@ export default function UserView({
             </div>
           </main>
         </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      )}
 
-      {/* Popups and Dialogs - Outside of sidebar */}
+      {/* Popups and Dialogs - Outside of sidebar/mobile view */}
       {/* Output Detail Popup */}
       {selectedOutput && (
         <OutputDetailPopup
