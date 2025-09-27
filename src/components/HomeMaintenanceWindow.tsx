@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
+import { useResponsive } from '@/hooks/useResponsive';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -74,6 +76,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [touchEnd, setTouchEnd] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>('date-desc');
   const [historyCategoryFilter, setHistoryCategoryFilter] = useState<string>('all');
+  const { isMobile } = useResponsive();
   useEffect(() => {
     if (open && user) {
       fetchHomes();
@@ -260,10 +263,35 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     <ResponsiveDialog 
       open={open} 
       onOpenChange={onOpenChange}
-      title="Home Maintenance Tracker"
       size="xlarge"
     >
       <div className="flex flex-col h-full">
+        {/* Header with title and close button */}
+        <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
+          <h2 className="text-lg md:text-xl font-bold">Home Maintenance Tracker</h2>
+          
+          {/* Close button */}
+          {isMobile ? (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="ml-4 flex-shrink-0"
+            >
+              Close
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="h-8 w-8 p-0 ml-4 flex-shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        
         {/* Home Selection - Fixed at top */}
         <div className="px-3 md:px-6 py-3 shrink-0 bg-background border-b">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
