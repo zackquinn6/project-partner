@@ -10,6 +10,7 @@ interface UseDataFetchOptions<T> {
   transform?: (data: any[]) => T[];
   dependencies?: any[];
   cacheKey?: string;
+  enabled?: boolean; // Add enabled parameter to interface
 }
 
 interface UseDataFetchResult<T> {
@@ -30,10 +31,11 @@ export function useDataFetch<T = any>({
   orderBy,
   transform,
   dependencies = [],
-  cacheKey
+  cacheKey,
+  enabled = true // Add enabled parameter
 }: UseDataFetchOptions<T>): UseDataFetchResult<T> {
   const [data, setData] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled); // Only load if enabled
   const [error, setError] = useState<Error | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastFetchParams = useRef<string>('');
@@ -45,11 +47,20 @@ export function useDataFetch<T = any>({
       select,
       filters,
       orderBy,
-      cacheKey
+      cacheKey,
+      enabled
     });
-  }, [table, select, filters, orderBy, cacheKey]);
+  }, [table, select, filters, orderBy, cacheKey, enabled]);
 
   const fetchData = useCallback(async (useCache = true) => {
+    // Skip fetch if disabled
+    if (!enabled) {
+      setData([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     // Prevent duplicate fetches with same parameters
     if (fetchParams === lastFetchParams.current && data.length > 0 && !loading) {
       return;
@@ -128,7 +139,7 @@ export function useDataFetch<T = any>({
     } finally {
       setLoading(false);
     }
-  }, [table, select, filters, orderBy, cacheKey, transform, fetchParams, data.length, loading]);
+  }, [table, select, filters, orderBy, cacheKey, transform, fetchParams, data.length, loading, enabled]);
 
   const refetch = useCallback(() => fetchData(false), [fetchData]);
 
@@ -140,13 +151,20 @@ export function useDataFetch<T = any>({
   }, [cacheKey]);
 
   useEffect(() => {
-    fetchData();
+    if (enabled) {
+      fetchData();
+    } else {
+      // Clean up when disabled
+      setData([]);
+      setLoading(false);
+      setError(null);
+    }
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [fetchData, ...dependencies]);
+  }, [fetchData, enabled, ...dependencies]);
 
   return { data, loading, error, refetch, mutate };
 }

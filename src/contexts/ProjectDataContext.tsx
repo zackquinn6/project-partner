@@ -158,11 +158,12 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
   } = useDataFetch<ProjectRun>({
     table: 'project_runs',
     select: '*',
-    filters: shouldFetchProjectRuns ? [{ column: 'user_id', value: user.id }] : [{ column: 'id', value: 'never-match' }], // Prevent fetching for guests
+    filters: shouldFetchProjectRuns ? [{ column: 'user_id', value: user.id }] : [],
     orderBy: { column: 'created_at', ascending: false },
     transform: transformProjectRuns,
     dependencies: [user?.id, shouldFetchProjectRuns],
-    cacheKey: shouldFetchProjectRuns ? `project_runs_${user.id}` : undefined
+    cacheKey: shouldFetchProjectRuns ? `project_runs_${user.id}` : undefined,
+    enabled: shouldFetchProjectRuns // Prevent fetch when disabled
   });
 
   const value = {
