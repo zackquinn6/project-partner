@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ScrollableDialog } from "@/components/ScrollableDialog";
+import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Project, Material, Tool } from "@/interfaces/Project";
 import { supabase } from "@/integrations/supabase/client";
 import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
+import { useResponsive } from "@/hooks/useResponsive";
 
 interface OrderingWindowProps {
   open: boolean;
@@ -293,303 +294,300 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
   // Handle case where no tools or materials exist
   if (uniqueTools.length === 0 && uniqueMaterials.length === 0) {
     return (
-      <ScrollableDialog
+      <ResponsiveDialog
         open={open}
         onOpenChange={onOpenChange}
         title="No Items to Order"
-        className="w-[90vw] max-w-md"
+        size="modal-sm"
       >
         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
           <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">No Items to Order</h3>
           <p className="text-sm text-center">This project doesn't have any tools or materials defined.</p>
         </div>
-      </ScrollableDialog>
+      </ResponsiveDialog>
     );
   }
 
+  const { isMobile } = useResponsive();
+
   return (
-    <ScrollableDialog
+    <ResponsiveDialog
       open={open}
       onOpenChange={onOpenChange}
       title="Shopping Checklist"
-      className="w-[90vw] max-w-4xl"
+      size={isMobile ? "content-full" : "large"}
     >
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full space-y-4">
         {/* Shopping Sites and Search */}
-        <div className="p-4 border-b bg-muted/30 flex-shrink-0">
-          <div className="space-y-4">
-            {/* Shopping Sites */}
-            <div>
-              <h4 className="font-medium text-sm mb-2">Shopping Websites</h4>
-              <div className="flex flex-wrap gap-2">
-                {SHOPPING_SITES.map((site) => (
-                  <Button
-                    key={site.name}
-                    onClick={() => window.open(site.url, '_blank')}
-                    size="sm"
-                    className={`text-xs ${site.color} text-white`}
-                  >
-                    <ExternalLink className="w-3 h-3 mr-1" />
-                    {site.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Google Search */}
-            <div>
-              <h4 className="font-medium text-sm mb-2">Search Products</h4>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Search for products on Google..."
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  onKeyPress={handleUrlKeyPress}
-                  className="text-sm flex-1"
-                />
-                <Button onClick={handleGoogleSearch} size="sm" variant="outline">
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  Search
+        <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+          {/* Shopping Sites */}
+          <div>
+            <h4 className="font-medium text-sm mb-2">Shopping Websites</h4>
+            <div className="flex flex-wrap gap-2">
+              {SHOPPING_SITES.map((site) => (
+                <Button
+                  key={site.name}
+                  onClick={() => window.open(site.url, '_blank')}
+                  size="sm"
+                  className={`text-xs ${site.color} text-white`}
+                >
+                  <ExternalLink className="w-3 h-3 mr-1" />
+                  {site.name}
                 </Button>
-              </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Google Search */}
+          <div>
+            <h4 className="font-medium text-sm mb-2">Search Products</h4>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Search for products on Google..."
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyPress={handleUrlKeyPress}
+                className="text-sm flex-1"
+              />
+              <Button onClick={handleGoogleSearch} size="sm" variant="outline">
+                <ExternalLink className="w-4 h-4 mr-1" />
+                Search
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Shopping Checklist */}
-        <div className="flex-1 min-h-0">
-          <div className="p-4 border-b bg-muted/30">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-base">Shopping Checklist</h3>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">{uniqueTools.length + uniqueMaterials.length} items</Badge>
-                <Badge variant="outline" className="text-xs">{shoppedToolsList.length + shoppedMaterialsList.length} shopped</Badge>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                <div>Tools: {activeTools.length}/{uniqueTools.length}</div>
-                <div>Materials: {activeMaterials.length}/{uniqueMaterials.length}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox 
-                  id="show-shopped-main"
-                  checked={showShopped}
-                  onCheckedChange={(checked) => setShowShopped(checked === true)}
-                />
-                <label htmlFor="show-shopped-main" className="text-xs">Show shopped</label>
-              </div>
-            </div>
+        {/* Shopping Checklist Stats */}
+        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+          <div className="flex items-center gap-4">
+            <Badge variant="secondary" className="text-xs">
+              {uniqueTools.length + uniqueMaterials.length} items
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {shoppedToolsList.length + shoppedMaterialsList.length} shopped
+            </Badge>
           </div>
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="show-shopped-main"
+              checked={showShopped}
+              onCheckedChange={(checked) => setShowShopped(checked === true)}
+            />
+            <label htmlFor="show-shopped-main" className="text-xs">Show completed</label>
+          </div>
+        </div>
 
-          <Tabs defaultValue="materials" className="flex flex-col flex-1 h-full">
-            <div className="px-4 py-3 border-b">
-              <TabsList className="grid w-full grid-cols-2 h-10">
-                <TabsTrigger value="materials" className="text-sm">
-                  Materials ({activeMaterials.length + (showShopped ? shoppedMaterialsList.length : 0)})
-                </TabsTrigger>
-                <TabsTrigger value="tools" className="text-sm">
-                  Tools ({activeTools.length + (showShopped ? shoppedToolsList.length : 0)})
-                </TabsTrigger>
-              </TabsList>
-            </div>
+        {/* Shopping Items - Mobile Optimized Tabs */}
+        <div className="flex-1 min-h-0">
+          <Tabs defaultValue="materials" className="flex flex-col h-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="materials" className="text-sm">
+                Materials ({activeMaterials.length + (showShopped ? shoppedMaterialsList.length : 0)})
+              </TabsTrigger>
+              <TabsTrigger value="tools" className="text-sm">
+                Tools ({activeTools.length + (showShopped ? shoppedToolsList.length : 0)})
+              </TabsTrigger>
+            </TabsList>
             
-            <TabsContent value="materials" className="flex-1 overflow-y-auto px-4 min-h-0">
-              <div className="space-y-3 py-4">
-                {activeMaterials.length === 0 && (!showShopped || shoppedMaterialsList.length === 0) ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-sm">No materials to order for this project</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Active Materials */}
-                    {activeMaterials.map((material, index) => (
-                      <div key={`active-${material.id}-${index}`} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="checkbox"
-                                checked={shoppedMaterials.has(material.id)}
-                                onChange={() => handleMaterialToggle(material.id)}
-                                className="rounded w-4 h-4"
-                              />
-                              <h4 className="font-medium text-sm">{material.name}</h4>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2 ml-7">
-                              {material.description}
-                            </p>
-                            {material.totalQuantity && (
-                              <Badge variant="secondary" className="text-xs mt-2 ml-7">
-                                Qty: {material.totalQuantity} {material.unit || 'pieces'}
-                              </Badge>
-                            )}
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleItemDetails(material, 'material')}
-                            className="ml-2 flex-shrink-0"
-                          >
-                            <Info className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Shopped Materials */}
-                    {showShopped && shoppedMaterialsList.length > 0 && (
-                      <>
-                        {activeMaterials.length > 0 && <Separator className="my-4" />}
-                        <div className="mb-3">
-                          <h3 className="text-sm font-medium text-muted-foreground">Shopped Items</h3>
-                        </div>
-                        {shoppedMaterialsList.map((material, index) => (
-                          <div key={`shopped-${material.id}-${index}`} className="border rounded-lg p-4 bg-muted/30 opacity-60">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3">
-                                  <Check className="w-4 h-4 text-green-600" />
-                                  <h4 className="font-medium text-sm line-through">{material.name}</h4>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-2 ml-7 line-through">
-                                  {material.description}
-                                </p>
-                                {material.totalQuantity && (
-                                  <Badge variant="secondary" className="text-xs mt-2 ml-7 line-through">
-                                    Qty: {material.totalQuantity} {material.unit || 'pieces'}
-                                  </Badge>
-                                )}
+            <TabsContent value="materials" className="flex-1">
+              <ScrollArea className="h-[60vh] md:h-[50vh]">
+                <div className="space-y-3 pr-3">
+                  {activeMaterials.length === 0 && (!showShopped || shoppedMaterialsList.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-sm">No materials to order for this project</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Active Materials */}
+                      {activeMaterials.map((material, index) => (
+                        <div key={`active-${material.id}-${index}`} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={shoppedMaterials.has(material.id)}
+                                  onChange={() => handleMaterialToggle(material.id)}
+                                  className="rounded w-4 h-4 flex-shrink-0"
+                                />
+                                <h4 className="font-medium text-sm">{material.name}</h4>
                               </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleItemDetails(material, 'material')}
-                                className="ml-2 flex-shrink-0"
-                              >
-                                <Info className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="tools" className="flex-1 overflow-y-auto px-4 min-h-0">
-              <div className="space-y-3 py-4">
-                {activeTools.length === 0 && (!showShopped || shoppedToolsList.length === 0) ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-sm">No tools to order for this project</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Active Tools */}
-                    {activeTools.map((tool, index) => (
-                      <div key={`active-${tool.id}-${index}`} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="checkbox"
-                                checked={shoppedTools.has(tool.id)}
-                                onChange={() => handleToolToggle(tool.id)}
-                                className="rounded w-4 h-4"
-                              />
-                              <h4 className="font-medium text-sm">{tool.name}</h4>
-                              {userOwnedTools.some((ownedTool: any) => 
-                                ownedTool.tool === tool.name || 
-                                ownedTool.name === tool.name ||
-                                ownedTool === tool.name) && (
-                                <Badge variant="secondary" className="text-xs">Already Owned</Badge>
+                              <p className="text-xs text-muted-foreground mt-2 ml-7">
+                                {material.description}
+                              </p>
+                              {material.totalQuantity && (
+                                <Badge variant="secondary" className="text-xs mt-2 ml-7">
+                                  Qty: {material.totalQuantity} {material.unit || 'pieces'}
+                                </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2 ml-7">
-                              {tool.description}
-                            </p>
-                            {tool.maxQuantity && (
-                              <Badge variant="secondary" className="text-xs mt-2 ml-7">
-                                Qty: {tool.maxQuantity}
-                              </Badge>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleItemDetails(material, 'material')}
+                              className="ml-2 flex-shrink-0"
+                            >
+                              <Info className="w-4 h-4" />
+                            </Button>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleItemDetails(tool, 'tool')}
-                            className="ml-2 flex-shrink-0"
-                          >
-                            <Info className="w-4 h-4" />
-                          </Button>
                         </div>
-                      </div>
-                    ))}
-                    
-                    {/* Shopped Tools */}
-                    {showShopped && shoppedToolsList.length > 0 && (
-                      <>
-                        {activeTools.length > 0 && <Separator className="my-4" />}
-                        <div className="mb-3">
-                          <h3 className="text-sm font-medium text-muted-foreground">Shopped Items</h3>
-                        </div>
-                        {shoppedToolsList.map((tool, index) => (
-                          <div key={`shopped-${tool.id}-${index}`} className="border rounded-lg p-4 bg-muted/30 opacity-60">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3">
-                                  <Check className="w-4 h-4 text-green-600" />
-                                  <h4 className="font-medium text-sm line-through">{tool.name}</h4>
-                                  {userOwnedTools.some((ownedTool: any) => 
-                                    ownedTool.tool === tool.name || 
-                                    ownedTool.name === tool.name ||
-                                    ownedTool === tool.name) && (
-                                    <Badge variant="secondary" className="text-xs line-through">Already Owned</Badge>
+                      ))}
+                      
+                      {/* Shopped Materials */}
+                      {showShopped && shoppedMaterialsList.length > 0 && (
+                        <>
+                          {activeMaterials.length > 0 && <Separator className="my-4" />}
+                          <div className="mb-3">
+                            <h3 className="text-sm font-medium text-muted-foreground">Completed Items</h3>
+                          </div>
+                          {shoppedMaterialsList.map((material, index) => (
+                            <div key={`shopped-${material.id}-${index}`} className="border rounded-lg p-3 bg-muted/30 opacity-60">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-3">
+                                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                    <h4 className="font-medium text-sm line-through">{material.name}</h4>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-2 ml-7 line-through">
+                                    {material.description}
+                                  </p>
+                                  {material.totalQuantity && (
+                                    <Badge variant="secondary" className="text-xs mt-2 ml-7 line-through">
+                                      Qty: {material.totalQuantity} {material.unit || 'pieces'}
+                                    </Badge>
                                   )}
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-2 ml-7 line-through">
-                                  {tool.description}
-                                </p>
-                                {tool.maxQuantity && (
-                                  <Badge variant="secondary" className="text-xs mt-2 ml-7 line-through">
-                                    Qty: {tool.maxQuantity}
-                                  </Badge>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleItemDetails(material, 'material')}
+                                  className="ml-2 flex-shrink-0"
+                                >
+                                  <Info className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            
+            <TabsContent value="tools" className="flex-1">
+              <ScrollArea className="h-[60vh] md:h-[50vh]">
+                <div className="space-y-3 pr-3">
+                  {activeTools.length === 0 && (!showShopped || shoppedToolsList.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-sm">No tools to order for this project</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Active Tools */}
+                      {activeTools.map((tool, index) => (
+                        <div key={`active-${tool.id}-${index}`} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={shoppedTools.has(tool.id)}
+                                  onChange={() => handleToolToggle(tool.id)}
+                                  className="rounded w-4 h-4 flex-shrink-0"
+                                />
+                                <h4 className="font-medium text-sm">{tool.name}</h4>
+                                {userOwnedTools.some((ownedTool: any) => 
+                                  ownedTool.tool === tool.name || 
+                                  ownedTool.name === tool.name ||
+                                  ownedTool === tool.name) && (
+                                  <Badge variant="secondary" className="text-xs">Owned</Badge>
                                 )}
                               </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleItemDetails(tool, 'tool')}
-                                className="ml-2 flex-shrink-0"
-                              >
-                                <Info className="w-4 h-4" />
-                              </Button>
+                              <p className="text-xs text-muted-foreground mt-2 ml-7">
+                                {tool.description}
+                              </p>
+                              {tool.maxQuantity && (
+                                <Badge variant="secondary" className="text-xs mt-2 ml-7">
+                                  Qty: {tool.maxQuantity}
+                                </Badge>
+                              )}
                             </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleItemDetails(tool, 'tool')}
+                              className="ml-2 flex-shrink-0"
+                            >
+                              <Info className="w-4 h-4" />
+                            </Button>
                           </div>
-                        ))}
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
+                        </div>
+                      ))}
+                      
+                      {/* Shopped Tools */}
+                      {showShopped && shoppedToolsList.length > 0 && (
+                        <>
+                          {activeTools.length > 0 && <Separator className="my-4" />}
+                          <div className="mb-3">
+                            <h3 className="text-sm font-medium text-muted-foreground">Completed Items</h3>
+                          </div>
+                          {shoppedToolsList.map((tool, index) => (
+                            <div key={`shopped-${tool.id}-${index}`} className="border rounded-lg p-3 bg-muted/30 opacity-60">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-3">
+                                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                    <h4 className="font-medium text-sm line-through">{tool.name}</h4>
+                                    {userOwnedTools.some((ownedTool: any) => 
+                                      ownedTool.tool === tool.name || 
+                                      ownedTool.name === tool.name ||
+                                      ownedTool === tool.name) && (
+                                      <Badge variant="secondary" className="text-xs line-through">Owned</Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-2 ml-7 line-through">
+                                    {tool.description}
+                                  </p>
+                                  {tool.maxQuantity && (
+                                    <Badge variant="secondary" className="text-xs mt-2 ml-7 line-through">
+                                      Qty: {tool.maxQuantity}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleItemDetails(tool, 'tool')}
+                                  className="ml-2 flex-shrink-0"
+                                >
+                                  <Info className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </ScrollArea>
             </TabsContent>
           </Tabs>
         </div>
 
         {/* Footer with Complete Button */}
-        <div className="p-4 border-t bg-muted/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-shrink-0">
-          <div className="text-sm text-muted-foreground">
-            Progress: {shoppedTools.size + shoppedMaterials.size}/{uniqueTools.length + uniqueMaterials.length} items checked
-          </div>
-          
-          {onOrderingComplete && (
+        {onOrderingComplete && (
+          <div className="p-4 border rounded-lg bg-muted/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="text-sm text-muted-foreground">
+              Progress: {shoppedTools.size + shoppedMaterials.size}/{uniqueTools.length + uniqueMaterials.length} items checked
+            </div>
+            
             <Button
               onClick={onOrderingComplete}
               disabled={shoppedTools.size + shoppedMaterials.size < uniqueTools.length + uniqueMaterials.length}
@@ -598,8 +596,8 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
               <Check className="w-4 h-4 mr-2" />
               Complete Shopping
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
       
       {/* Item Details Dialog */}
@@ -655,6 +653,6 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
           </div>
         </DialogContent>
       </Dialog>
-    </ScrollableDialog>
+    </ResponsiveDialog>
   );
 }
