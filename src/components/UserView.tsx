@@ -39,6 +39,7 @@ import { ProjectScheduler } from './ProjectScheduler';
 import { useResponsive } from '@/hooks/useResponsive';
 import { isKickoffPhaseComplete, addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
+import { MobileDIYDropdown } from './MobileDIYDropdown';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -1197,6 +1198,19 @@ export default function UserView({
   }
   return (
     <>
+      {/* Mobile DIY Dropdown */}
+      {isMobile && activeProject && (
+        <MobileDIYDropdown
+          onHelpClick={() => setExpertHelpOpen(true)}
+          onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
+          onUnplannedWorkClick={() => {
+            setDecisionRollupMode('unplanned-work');
+            setDecisionRollupOpen(true);
+          }}
+          isKickoffComplete={isKickoffComplete}
+        />
+      )}
+
       {/* Mobile Workflow View */}
       {isMobile ? (
         <MobileWorkflowView
