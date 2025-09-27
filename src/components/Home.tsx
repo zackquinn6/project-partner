@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
 import { PricingWindow } from '@/components/PricingWindow';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
+import PreSignInDIYQuiz from '@/components/PreSignInDIYQuiz';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
@@ -464,7 +465,11 @@ export default function Home({
       {/* Modals */}
       <PricingWindow open={isPricingOpen} onOpenChange={open => setIsPricingOpen(open)} />
       
-      <DIYSurveyPopup open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} />
+      {user ? (
+        <DIYSurveyPopup open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} />
+      ) : (
+        <PreSignInDIYQuiz open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} />
+      )}
 
       <AIRepairWindow open={isAIRepairOpen} onOpenChange={open => setIsAIRepairOpen(open)} />
 
