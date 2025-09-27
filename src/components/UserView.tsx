@@ -932,35 +932,23 @@ export default function UserView({
     projectRunsIds: projectRuns.map(pr => pr.id)
   });
   
-  // Fix My Projects navigation - use mobile component on mobile devices
+  // Fix My Projects navigation - delegate to Index component for mobile
   if (resetToListing) {
     console.log("🔄 My Projects clicked - showing project listing");
     
+    // For mobile, delegate back to Index component which already handles mobile project listing
+    if (isMobile) {
+      console.log("🔄 Mobile: Delegating projects view back to Index component");
+      // Clear the reset flag and navigate to projects view
+      onProjectSelected?.();
+      // Dispatch event to switch to projects view
+      window.dispatchEvent(new CustomEvent('navigate-to-projects'));
+      return null;
+    }
+    
     return (
       <div className="min-h-screen">
-        {isMobile ? (
-          <MobileProjectListing 
-            onProjectSelect={(project) => {
-              console.log("🎯 Mobile Project selected from My Projects:", project, {currentProjectRun: !!currentProjectRun});
-              if (project === null) {
-                setViewMode('listing');
-                return;
-              }
-              // For mobile, directly navigate to workflow when project is selected
-              console.log("🎯 Mobile: Setting workflow mode for project selection");
-              setViewMode('workflow');
-              onProjectSelected?.();
-            }}
-            onNewProject={() => {
-              console.log("🎯 Mobile: New project requested from listing");
-              window.location.href = '/projects';
-            }}
-            onClose={() => {
-              console.log("🎯 Mobile: Closing project listing");
-              setViewMode('workflow');
-            }}
-          />
-        ) : (
+        {(
           <ProjectListing 
             onProjectSelect={project => {
               console.log("🎯 Desktop Project selected from My Projects:", project, {currentProjectRun: !!currentProjectRun});
