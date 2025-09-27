@@ -190,11 +190,11 @@ export function MobileWorkflowView({
                   
                   {/* Shopping List Button */}
                   <div className="flex justify-center pt-2">
-                    <Button 
-                      onClick={() => {
-                        console.log('Opening ordering window for mobile step:', currentStep.step);
-                        window.dispatchEvent(new CustomEvent('open-ordering-window'));
-                      }}
+                     <Button 
+                       onClick={() => {
+                         console.log('Opening ordering window for mobile step:', currentStep.step);
+                         window.dispatchEvent(new CustomEvent('openOrderingWindow'));
+                       }}
                       variant="outline"
                       className="flex items-center gap-2"
                       size="sm"
