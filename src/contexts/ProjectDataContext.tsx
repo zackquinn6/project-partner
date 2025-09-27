@@ -3,6 +3,7 @@ import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useDataFetch } from '@/hooks/useDataFetch';
 import { useAuth } from './AuthContext';
+import { useGuest } from './GuestContext';
 
 interface ProjectDataContextType {
   projects: Project[];
@@ -31,6 +32,7 @@ interface ProjectDataProviderProps {
 
 export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ children }) => {
   const { user } = useAuth();
+  const { isGuest, guestData } = useGuest();
 
   // Memoized transform function for projects with better error handling
   const transformProjects = React.useMemo(() => (data: any[]): Project[] => {
@@ -163,7 +165,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
 
   const value = {
     projects,
-    projectRuns: user ? projectRuns : [],
+    projectRuns: isGuest ? guestData.projectRuns : (user ? projectRuns : []),
     loading: projectsLoading || projectRunsLoading,
     error: projectsError || projectRunsError,
     refetchProjects,

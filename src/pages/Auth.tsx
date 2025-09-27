@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertCircle, User } from 'lucide-react';
+import { useGuest } from '@/contexts/GuestContext';
 export default function Auth() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -20,9 +21,11 @@ export default function Auth() {
     signIn,
     signUp,
     signInWithGoogle,
+    continueAsGuest,
     loading
   } = useAuth();
   const { validateAndSanitize, startFormTracking, trackFormSubmission, commonRules } = useSecureInput();
+  const { guestData, transferGuestDataToUser } = useGuest();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -135,17 +138,35 @@ export default function Auth() {
     // Track form submission timing
     trackFormSubmission('signup');
     
-    const { error } = await signUp(validation.sanitizedData.email, password);
+    // Transfer guest data if converting from guest
+    const dataToTransfer = guestData.projectRuns.length > 0 ? guestData : undefined;
+    
+    const { error } = await signUp(validation.sanitizedData.email, password, dataToTransfer);
     if (error) {
       setError(error.message);
     } else {
-      setMessage('Check your email for a confirmation link');
+      if (dataToTransfer) {
+        await transferGuestDataToUser('converting');
+        setMessage('Account created! Your guest data has been saved.');
+      } else {
+        setMessage('Check your email for a confirmation link');
+      }
     }
     setIsLoading(false);
   };
   const handleGoogleSignIn = async () => {
     // Google provider is not configured, show error dialog
     setShowGoogleErrorDialog(true);
+  };
+
+  const handleGuestSignIn = () => {
+    continueAsGuest();
+    const returnPath = searchParams.get('return');
+    if (returnPath === 'projects') {
+      navigate('/projects');
+    } else {
+      navigate('/');
+    }
   };
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
@@ -217,7 +238,7 @@ export default function Auth() {
                     </div>
                   )}
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full mb-6" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign In
                 </Button>
@@ -281,7 +302,7 @@ export default function Auth() {
                     </div>
                   )}
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full mb-6" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign Up
                 </Button>
@@ -307,6 +328,17 @@ export default function Auth() {
                 </svg>}
               Continue with Google
             </Button>
+            
+            <Button type="button" variant="secondary" className="w-full mt-3" onClick={handleGuestSignIn} disabled={isLoading}>
+              <User className="mr-2 h-4 w-4" />
+              Continue as Guest
+            </Button>
+            
+            {guestData.projectRuns.length > 0 && (
+              <div className="mt-2 text-xs text-center text-muted-foreground">
+                You have {guestData.projectRuns.length} project(s) saved as a guest. Sign up to keep them permanently.
+              </div>
+            )}
           </div>
 
           {error && <Alert className="mt-4 border-destructive">

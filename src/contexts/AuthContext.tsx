@@ -10,15 +10,17 @@ import {
   validateSessionIntegrity,
   cleanupSessionData
 } from '@/utils/sessionSecurity';
+import { useGuest } from './GuestContext';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, guestData?: any) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  continueAsGuest: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const { setGuestMode, transferGuestDataToUser } = useGuest();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -88,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, [user?.id]);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, guestData?: any) => {
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
     
@@ -115,6 +118,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'medium',
         { email: sanitizedEmail, errorCode: error.message }
       );
+    } else if (guestData) {
+      // Transfer guest data after successful signup
+      try {
+        const user = (await supabase.auth.getUser()).data.user;
+        if (user && guestData.projectRuns?.length > 0) {
+          // Transfer guest project runs to real user
+          for (const projectRun of guestData.projectRuns) {
+            const { id, createdAt, updatedAt, ...runData } = projectRun;
+            await supabase.from('project_runs').insert({
+              ...runData,
+              user_id: user.id,
+              phases: JSON.stringify(runData.phases),
+              completed_steps: JSON.stringify(runData.completedSteps)
+            });
+          }
+        }
+      } catch (transferError) {
+        console.error('Failed to transfer guest data:', transferError);
+      }
     }
 
     return { error };
@@ -256,6 +278,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
+  const continueAsGuest = () => {
+    setGuestMode(true);
+    setLoading(false);
+  };
+
   const value = {
     user,
     session,
@@ -264,6 +291,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signInWithGoogle,
     signOut,
+    continueAsGuest,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

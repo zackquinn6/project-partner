@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectData } from './ProjectDataContext';
+import { useGuest } from './GuestContext';
 import { toast } from '@/components/ui/use-toast';
 import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 import { useOptimizedState } from '@/hooks/useOptimizedState';
@@ -41,6 +42,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const { refetchProjects, refetchProjectRuns, updateProjectsCache, updateProjectRunsCache, projects, projectRuns } = useProjectData();
+  const { isGuest, addGuestProjectRun, updateGuestProjectRun, deleteGuestProjectRun } = useGuest();
   
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentProjectRun, setCurrentProjectRun] = useState<ProjectRun | null>(null);
@@ -147,6 +149,20 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     projectRunData: Omit<ProjectRun, 'id' | 'createdAt' | 'updatedAt'>, 
     onSuccess?: (projectRunId: string) => void
   ) => {
+    if (isGuest) {
+      // Handle guest mode
+      addGuestProjectRun(projectRunData);
+      const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (onSuccess) {
+        onSuccess(guestId);
+      }
+      toast({
+        title: "Success",
+        description: "Project run saved temporarily (sign up to keep permanently)"
+      });
+      return;
+    }
+
     if (!user) return;
 
     try {
@@ -190,6 +206,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           templateId: projectRunData.templateId,
           name: projectRunData.name,
           description: projectRunData.description,
+          diyLengthChallenges: projectRunData.diyLengthChallenges,
+          isManualEntry: projectRunData.isManualEntry,
           createdAt: new Date(),
           updatedAt: new Date(),
           startDate: projectRunData.startDate,
@@ -233,7 +251,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         variant: "destructive",
       });
     }
-  }, [user, updateProjectRunsCache, projectRuns]);
+  }, [isGuest, addGuestProjectRun, user, updateProjectRunsCache, projectRuns]);
 
   const updateProject = useCallback(async (project: Project) => {
     if (!user || !isAdmin) {
@@ -287,6 +305,16 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
   }, [user, isAdmin, projects, updateProjectsCache, currentProject, setCurrentProject]);
 
   const updateProjectRun = useCallback(async (projectRun: ProjectRun) => {
+    if (isGuest) {
+      // Handle guest mode
+      updateGuestProjectRun(projectRun);
+      toast({
+        title: "Success",
+        description: "Project run updated (sign up to keep permanently)"
+      });
+      return;
+    }
+
     if (!user) return;
 
     // Create a unique key for this update to detect duplicates
@@ -368,7 +396,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         updateInProgressRef.current = false;
       }
     }, 300); // 300ms debounce
-  }, [user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
+  }, [isGuest, updateGuestProjectRun, user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
 
   const deleteProject = useCallback(async (projectId: string) => {
     if (!user || !isAdmin) {
@@ -411,6 +439,16 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
   }, [user, isAdmin, projects, updateProjectsCache, currentProject, setCurrentProject]);
 
   const deleteProjectRun = useCallback(async (projectRunId: string) => {
+    if (isGuest) {
+      // Handle guest mode
+      deleteGuestProjectRun(projectRunId);
+      toast({
+        title: "Success",
+        description: "Project run deleted"
+      });
+      return;
+    }
+
     if (!user) return;
 
     try {
@@ -439,7 +477,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         variant: "destructive",
       });
     }
-  }, [user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
+  }, [isGuest, deleteGuestProjectRun, user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
 
   const value = {
     currentProject,
