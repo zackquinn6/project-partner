@@ -51,10 +51,10 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onCl
             >
               <Button 
                 size="lg"
-                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 <span className="flex items-center justify-center gap-2">
-                  Schedule Now
+                  Learn More
                   <ArrowRight className="w-4 h-4" />
                 </span>
               </Button>
