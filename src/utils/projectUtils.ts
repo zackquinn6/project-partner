@@ -354,19 +354,43 @@ export const createCloseProjectPhase = (): Phase => {
 
 // NEW: Function to ensure standard phases for new project creation only
 export const ensureStandardPhasesForNewProject = (phases: Phase[]): Phase[] => {
-  const standardPhases = [
-    createKickoffPhase(),
-    createPlanningPhase(),
-    createOrderingPhase()
-  ];
+  const result: Phase[] = [];
+  const phaseNames = phases.map(p => p.name);
   
-  // Add user's custom phases after ordering, before close project
-  const customPhases = [...phases];
+  // Always add Kickoff first if not present
+  if (!phaseNames.includes('Kickoff')) {
+    result.push(createKickoffPhase());
+  } else {
+    result.push(phases.find(p => p.name === 'Kickoff')!);
+  }
   
-  // Close project always goes at the end
-  const allPhases = [...standardPhases, ...customPhases, createCloseProjectPhase()];
+  // Add Planning phase if not present
+  if (!phaseNames.includes('Planning')) {
+    result.push(createPlanningPhase());
+  } else {
+    result.push(phases.find(p => p.name === 'Planning')!);
+  }
   
-  return allPhases;
+  // Add Ordering phase if not present
+  if (!phaseNames.includes('Ordering')) {
+    result.push(createOrderingPhase());
+  } else {
+    result.push(phases.find(p => p.name === 'Ordering')!);
+  }
+  
+  // Add any custom phases (excluding standard ones)
+  const standardNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+  const customPhases = phases.filter(p => !standardNames.includes(p.name));
+  result.push(...customPhases);
+  
+  // Always add Close Project at the end if not present
+  if (!phaseNames.includes('Close Project')) {
+    result.push(createCloseProjectPhase());
+  } else {
+    result.push(phases.find(p => p.name === 'Close Project')!);
+  }
+  
+  return result;
 };
 
 // NEW: Function to check if project has all standard phases
