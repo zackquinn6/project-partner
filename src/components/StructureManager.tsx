@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save } from 'lucide-react';
 import { FlowTypeSelector, getFlowTypeBadge } from './FlowTypeSelector';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -39,37 +38,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   const [showDecisionTreeView, setShowDecisionTreeView] = useState(false);
   const [showDecisionEditor, setShowDecisionEditor] = useState<{ step: WorkflowStep } | null>(null);
   const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
-  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
-  const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
 
   if (!currentProject) {
     return <div>No project selected</div>;
   }
-
-  // Toggle functions for collapsible content
-  const togglePhaseExpansion = (phaseId: string) => {
-    setExpandedPhases(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(phaseId)) {
-        newSet.delete(phaseId);
-      } else {
-        newSet.add(phaseId);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleOperationExpansion = (operationId: string) => {
-    setExpandedOperations(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(operationId)) {
-        newSet.delete(operationId);
-      } else {
-        newSet.add(operationId);
-      }
-      return newSet;
-    });
-  };
 
   // Get processed phases including standard phases (kickoff, planning, ordering)
   const displayPhases = addStandardPhasesToProjectRun(currentProject.phases || []);
@@ -484,43 +456,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                     <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
                                   </div>
                                 )}
-                                 {(isStandardPhase || isCloseProjectPhase) && <div className="w-5" />}
-                                 
-                                 {isEditing ? (
-                                   <div className="flex-1 space-y-2">
-                                     <Input
-                                       value={editingItem.data.name}
-                                       onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
-                                       placeholder="Phase name"
-                                     />
-                                     <Textarea
-                                       value={editingItem.data.description}
-                                       onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
-                                       placeholder="Phase description"
-                                       rows={2}
-                                     />
-                                   </div>
-                                 ) : (
-                                   <div className="flex-1">
-                                      <CardTitle className="flex items-center gap-2">
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => togglePhaseExpansion(phase.id)}
-                                          className="p-0 h-auto"
-                                        >
-                                          {expandedPhases.has(phase.id) ? (
-                                            <ChevronDown className="w-4 h-4" />
-                                          ) : (
-                                            <ChevronRight className="w-4 h-4" />
-                                          )}
-                                        </Button>
-                                        {phase.name}
-                                        {isStandardPhase && <Badge variant="secondary" className="text-xs">Standard</Badge>}
-                                      </CardTitle>
-                                     <p className="text-muted-foreground text-sm">{phase.description}</p>
-                                   </div>
-                                 )}
+                                {(isStandardPhase || isCloseProjectPhase) && <div className="w-5" />}
+                                
+                                {isEditing ? (
+                                  <div className="flex-1 space-y-2">
+                                    <Input
+                                      value={editingItem.data.name}
+                                      onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
+                                      placeholder="Phase name"
+                                    />
+                                    <Textarea
+                                      value={editingItem.data.description}
+                                      onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
+                                      placeholder="Phase description"
+                                      rows={2}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="flex-1">
+                                     <CardTitle className="flex items-center gap-2">
+                                       {phase.name}
+                                       {isStandardPhase && <Badge variant="secondary" className="text-xs">Standard</Badge>}
+                                     </CardTitle>
+                                    <p className="text-muted-foreground text-sm">{phase.description}</p>
+                                  </div>
+                                )}
                               </div>
                               
                               <div className="flex items-center gap-2">
@@ -573,15 +533,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                             </div>
                           </CardHeader>
                           
-                          <Collapsible open={expandedPhases.has(phase.id)} onOpenChange={() => togglePhaseExpansion(phase.id)}>
-                            <CollapsibleContent>
-                              <CardContent>
-                                <div className="flex items-center gap-2 mb-4">
-                                   <Button onClick={() => addOperation(phase.id)} className="flex items-center gap-2">
-                                     <Plus className="w-3 h-3" />
-                                     Add Operation
-                                   </Button>
-                                </div>
+                            <CardContent>
+                              <div className="flex items-center gap-2 mb-4">
+                                 <Button onClick={() => addOperation(phase.id)} className="flex items-center gap-2">
+                                   <Plus className="w-3 h-3" />
+                                   Add Operation
+                                 </Button>
+                              </div>
                             
                             <Droppable droppableId={`operations-${phase.id}`} type="operations">
                               {(provided) => (
@@ -606,42 +564,28 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                     </div>
                                                   )}
                                                   
-                                                   {isOperationEditing ? (
-                                                     <div className="flex-1 space-y-2">
-                                                       <Input
-                                                         value={editingItem.data.name}
-                                                         onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
-                                                         placeholder="Operation name"
-                                                         className="text-sm"
-                                                       />
-                                                       <Textarea
-                                                         value={editingItem.data.description}
-                                                         onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
-                                                         placeholder="Operation description"
-                                                         rows={1}
-                                                         className="text-sm"
-                                                       />
-                                                     </div>
-                                                   ) : (
-                                                     <div className="flex-1">
-                                                       <h4 className="font-medium text-sm flex items-center gap-2">
-                                                         <Button
-                                                           variant="ghost"
-                                                           size="sm"
-                                                           onClick={() => toggleOperationExpansion(operation.id)}
-                                                           className="p-0 h-auto"
-                                                         >
-                                                           {expandedOperations.has(operation.id) ? (
-                                                             <ChevronDown className="w-3 h-3" />
-                                                           ) : (
-                                                             <ChevronRight className="w-3 h-3" />
-                                                           )}
-                                                         </Button>
-                                                         {operation.name}
-                                                       </h4>
-                                                       <p className="text-muted-foreground text-xs">{operation.description}</p>
-                                                     </div>
-                                                   )}
+                                                  {isOperationEditing ? (
+                                                    <div className="flex-1 space-y-2">
+                                                      <Input
+                                                        value={editingItem.data.name}
+                                                        onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value } })}
+                                                        placeholder="Operation name"
+                                                        className="text-sm"
+                                                      />
+                                                      <Textarea
+                                                        value={editingItem.data.description}
+                                                        onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })}
+                                                        placeholder="Operation description"
+                                                        rows={1}
+                                                        className="text-sm"
+                                                      />
+                                                    </div>
+                                                  ) : (
+                                                    <div className="flex-1">
+                                                      <h4 className="font-medium text-sm">{operation.name}</h4>
+                                                      <p className="text-muted-foreground text-xs">{operation.description}</p>
+                                                    </div>
+                                                  )}
                                                 </div>
                                                 
                                                 <div className="flex items-center gap-1">
@@ -692,22 +636,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                   )}
                                                 </div>
                                               </div>
-                                             </CardHeader>
-                                             
-                                             <Collapsible open={expandedOperations.has(operation.id)} onOpenChange={() => toggleOperationExpansion(operation.id)}>
-                                               <CollapsibleContent>
-                                                 <CardContent className="pt-0">
-                                                   <div className="flex items-center gap-2 mb-3">
-                                                     <Button
-                                                       size="sm"
-                                                       variant="outline"
-                                                       onClick={() => addStep(phase.id, operation.id)}
-                                                       className="flex items-center gap-1 text-xs"
-                                                     >
-                                                       <Plus className="w-3 h-3" />
-                                                       Add Step
-                                                     </Button>
-                                                   </div>
+                                            </CardHeader>
+                                            
+                                             <CardContent className="pt-0">
+                                               <div className="flex items-center gap-2 mb-3">
+                                                 <Button
+                                                   size="sm"
+                                                   variant="outline"
+                                                   onClick={() => addStep(phase.id, operation.id)}
+                                                   className="flex items-center gap-1 text-xs"
+                                                 >
+                                                   <Plus className="w-3 h-3" />
+                                                   Add Step
+                                                 </Button>
+                                               </div>
                                               
                                               <Droppable droppableId={`steps-${phase.id}-${operation.id}`} type="steps">
                                                 {(provided) => (
@@ -845,24 +787,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                     })}
                                                     {provided.placeholder}
                                                   </div>
-                                               )}
-                                             </Droppable>
-                                                 </CardContent>
-                                               </CollapsibleContent>
-                                             </Collapsible>
-                                           </Card>
+                                                )}
+                                              </Droppable>
+                                            </CardContent>
+                                          </Card>
                                         )}
                                       </Draggable>
                                     );
                                   })}
                                   {provided.placeholder}
                                 </div>
-                               )}
-                             </Droppable>
-                              </CardContent>
-                            </CollapsibleContent>
-                          </Collapsible>
-                         </Card>
+                              )}
+                            </Droppable>
+                          </CardContent>
+                        </Card>
                       )}
                     </Draggable>
                   );
