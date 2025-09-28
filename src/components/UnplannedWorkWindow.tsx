@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -179,15 +178,16 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
   const hasManualPhases = selectedPhases.some(phase => phase.id.startsWith('manual-'));
 
   return (
-    <ResponsiveDialog
-      open={isOpen}
-      onOpenChange={onClose}
-      size="content-large"
-      title="Add Unplanned Work"
-      description="Add additional phases to handle unexpected work discovered during your project"
-    >
-        <div className="flex flex-col h-full max-h-[80vh] overflow-hidden">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1 min-h-0">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-full h-full max-w-[90vw] max-h-[90vh] p-0 [&>button]:hidden overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+          <DialogTitle className="text-xl font-bold">Add Unplanned Work</DialogTitle>
+          <DialogDescription className="text-base">
+            Add additional phases to handle unexpected work discovered during your project
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col flex-1 min-h-0 px-6 pb-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1 min-h-0 overflow-hidden">
             {/* Available Phases Library */}
             <Card className="flex flex-col min-h-0">
               <CardHeader className="flex-shrink-0 pb-3">
@@ -200,7 +200,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 min-h-0 flex flex-col">
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-2">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
                   {availablePhases.map(phase => (
                     <Card 
                       key={`${phase.sourceProjectId}-${phase.id}`} 
@@ -310,7 +310,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
               </CardHeader>
               <CardContent className="flex-1 min-h-0 flex flex-col">
                 <div 
-                  className="flex-1 min-h-0 overflow-y-auto space-y-1 p-3 border-2 border-dashed border-muted-foreground/20 rounded-lg transition-colors pr-2" 
+                  className="flex-1 min-h-0 overflow-y-auto space-y-1 p-3 border-2 border-dashed border-muted-foreground/20 rounded-lg transition-colors" 
                   onDragOver={handleDragOver} 
                   onDrop={handleDrop} 
                   onDragEnd={handleDragEnd}
@@ -479,6 +479,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
             </Card>
           </div>
         </div>
-    </ResponsiveDialog>
+      </DialogContent>
+    </Dialog>
   );
 };

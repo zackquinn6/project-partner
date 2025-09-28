@@ -45,6 +45,7 @@ export function ResponsiveDialog({
     xlarge: responsiveDialogClasses.contentXLarge,
     'modal-sm': responsiveDialogClasses.modalSm,
     'modal-md': responsiveDialogClasses.modalMd,
+    'content-large': responsiveDialogClasses.contentLarge,
     'content-full': responsiveDialogClasses.contentFull,
   };
 
@@ -54,6 +55,7 @@ export function ResponsiveDialog({
     xlarge: responsiveDialogClasses.padding,
     'modal-sm': responsiveDialogClasses.paddingSmall,
     'modal-md': responsiveDialogClasses.padding,
+    'content-large': responsiveDialogClasses.padding,
     'content-full': responsiveDialogClasses.padding,
   };
 

@@ -121,18 +121,15 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={isMobile 
-        ? "w-full h-full max-w-full max-h-full rounded-none border-0 p-0 [&>button]:hidden" 
-        : "w-full h-full max-w-[90vw] max-h-[90vh] p-0 [&>button]:hidden"
-      }>
-        <DialogHeader className={`${isMobile ? 'p-4 pb-3' : 'p-6 pb-4'} border-b flex-shrink-0`}>
+      <DialogContent className="w-full h-full max-w-[90vw] max-h-[90vh] p-0 [&>button]:hidden overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <DialogTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
+              <DialogTitle className="flex items-center gap-2 text-xl font-bold">
                 <Package className="w-5 h-5" />
                 Browse Available Phases
               </DialogTitle>
-              <DialogDescription className={`mt-2 ${isMobile ? 'text-sm' : ''}`}>
+              <DialogDescription className="mt-2 text-base">
                 Select phases from other projects to add to your workflow. These are conventional, tested phases.
               </DialogDescription>
             </div>
@@ -142,20 +139,20 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
           </div>
         </DialogHeader>
 
-        <div className={`flex-1 flex flex-col min-h-0 ${isMobile ? 'px-4' : 'px-6'}`}>
+        <div className="flex-1 flex flex-col min-h-0 px-6 pb-6">
           {/* Search and Filter Controls */}
-          <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-3 mb-4 flex-shrink-0`}>
+          <div className="flex flex-row gap-3 mb-4 flex-shrink-0">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={isMobile ? "Search phases..." : "Search phases by name, description, or project..."}
+                placeholder="Search phases by name, description, or project..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
               />
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className={isMobile ? 'w-full' : 'w-48'}>
+              <SelectTrigger className="w-48">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -240,29 +237,27 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
           </ScrollArea>
 
           {/* Action Bar */}
-          <div className={`border-t ${isMobile ? 'pt-3 pb-4' : 'pt-4 pb-6'} flex-shrink-0`}>
-            <div className={`flex ${isMobile ? 'flex-col' : 'items-center justify-between'} gap-3`}>
-              <div className={`text-sm text-muted-foreground ${isMobile ? 'text-center' : ''}`}>
+          <div className="border-t pt-4 pb-0 flex-shrink-0">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-muted-foreground">
                 {selectedPhases.length > 0 
                   ? `${selectedPhases.length} phase${selectedPhases.length === 1 ? '' : 's'} selected`
                   : 'Select phases to add to your project'
                 }
               </div>
-              <div className={`flex gap-3 ${isMobile ? 'w-full' : ''}`}>
+              <div className="flex gap-3">
                 <Button 
                   variant="outline" 
                   onClick={() => setSelectedPhases([])}
                   disabled={selectedPhases.length === 0}
-                  className={isMobile ? 'flex-1' : ''}
-                  size={isMobile ? 'default' : 'default'}
+                  size="default"
                 >
                   Clear Selection
                 </Button>
                 <Button 
                   onClick={handleAddSelectedPhases}
                   disabled={selectedPhases.length === 0}
-                  className={isMobile ? 'flex-1' : ''}
-                  size={isMobile ? 'default' : 'default'}
+                  size="default"
                 >
                   Add {selectedPhases.length} Phase{selectedPhases.length === 1 ? '' : 's'}
                 </Button>
