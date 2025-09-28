@@ -64,13 +64,14 @@ export function ResponsiveDialog({
         className={cn(
           "dialog-content-base",
           sizeClasses[size],
-          paddingClasses[size],
+          // Remove default padding for content-full to avoid spacing issues
+          size === 'content-full' ? 'p-0' : paddingClasses[size],
           "overflow-hidden",
           className
         )}
       >
         {(title || description) && (
-          <DialogHeader className="space-y-1 pb-2">
+          <DialogHeader className={`space-y-1 ${size === 'content-full' ? 'px-4 pt-4 pb-2' : 'pb-2'}`}>
             {title && (
               <DialogTitle className="text-lg md:text-xl font-bold">
                 {title}
@@ -84,7 +85,7 @@ export function ResponsiveDialog({
           </DialogHeader>
         )}
         
-        <div className="flex flex-col min-h-0 flex-1 -mt-2">
+        <div className={`flex flex-col min-h-0 flex-1 ${size === 'content-full' ? 'px-4 pb-4' : ''}`}>
           {children}
         </div>
       </DialogContent>
