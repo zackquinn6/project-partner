@@ -246,8 +246,8 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         <div className="flex flex-col h-full">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             {/* Tab Headers - Fixed positioning */}
-            <div className="shrink-0 border-b bg-background sticky top-0 z-10 min-h-[60px] flex items-end">
-              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'h-auto p-1 m-1' : 'h-12 p-1 m-1'}`}>
+            <div className="shrink-0 border-b bg-background">
+              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'h-auto' : 'h-12'}`}>
                 {isMobile ? (
                   // Mobile: Dropdown-style tab selection
                   <div className="space-y-2 p-2">
