@@ -85,9 +85,29 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     const updatedProject = { ...currentProject };
     
     if (type === 'phases') {
-      // Only allow reordering of non-standard phases (after index 2: kickoff, planning, ordering)
-      const standardPhaseCount = 3;
-      if (source.index >= standardPhaseCount && destination.index >= standardPhaseCount) {
+      // Find Close Project phase index (should always be last)
+      const closeProjectIndex = displayPhases.findIndex(phase => 
+        phase.name === 'Close Project' || phase.id === 'close-project-phase'
+      );
+      
+      // Prevent moving Close Project phase
+      if (source.index === closeProjectIndex) {
+        toast.error('Close Project phase must remain as the last phase');
+        return;
+      }
+      
+      // Prevent moving phases to after Close Project
+      if (destination.index >= closeProjectIndex) {
+        toast.error('Cannot move phases after Close Project. Close Project must be the last phase.');
+        return;
+      }
+      
+      // Only allow reordering of non-standard phases (after kickoff, planning, ordering but before close project)
+      const standardPhaseCount = 3; // kickoff, planning, ordering
+      const maxAllowedIndex = closeProjectIndex - 1; // Before Close Project
+      
+      if (source.index >= standardPhaseCount && destination.index >= standardPhaseCount &&
+          source.index < closeProjectIndex && destination.index <= maxAllowedIndex) {
         const newPhases = Array.from(updatedProject.phases);
         const sourceIndex = source.index - standardPhaseCount;
         const destIndex = destination.index - standardPhaseCount;
@@ -97,6 +117,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         updatedProject.phases = newPhases;
         updateProject(updatedProject);
         toast.success('Phase reordered successfully');
+      } else {
+        toast.error('Cannot reorder standard phases or move phases after Close Project');
       }
     } else if (type === 'operations') {
       const phaseId = source.droppableId.split('-')[1];
@@ -183,9 +205,27 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       operations: []
     };
     
+    // Find Close Project phase index to insert before it
+    const closeProjectIndex = currentProject.phases.findIndex(phase => 
+      phase.name === 'Close Project' || phase.id === 'close-project-phase'
+    );
+    
+    let updatedPhases;
+    if (closeProjectIndex !== -1) {
+      // Insert before Close Project phase
+      updatedPhases = [
+        ...currentProject.phases.slice(0, closeProjectIndex),
+        newPhase,
+        ...currentProject.phases.slice(closeProjectIndex)
+      ];
+    } else {
+      // Fallback: add at end if Close Project not found (shouldn't happen)
+      updatedPhases = [...currentProject.phases, newPhase];
+    }
+    
     const updatedProject = {
       ...currentProject,
-      phases: [...currentProject.phases, newPhase],
+      phases: updatedPhases,
       updatedAt: new Date()
     };
     
@@ -264,6 +304,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   // Delete operations
   const deletePhase = (phaseId: string) => {
     if (!currentProject) return;
+    
+    // Prevent deleting Close Project phase
+    const phaseToDelete = currentProject.phases.find(phase => phase.id === phaseId);
+    if (phaseToDelete && (phaseToDelete.name === 'Close Project' || phaseToDelete.id === 'close-project-phase')) {
+      toast.error('Cannot delete Close Project phase. It must remain as the last phase of every project.');
+      return;
+    }
     
     const updatedProject = {
       ...currentProject,
@@ -554,17 +601,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                           <X className="w-4 h-4" />
                                         </Button>
                                       </>
-                                    ) : (
-                                      <>
-                                        <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
-                                          <Edit className="w-4 h-4" />
-                                        </Button>
-                                        
-                                        <Button size="sm" variant="ghost" onClick={() => deletePhase(phase.id)}>
-                                          <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                      </>
-                                    )}
+                                     ) : (
+                                       <>
+                                         <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
+                                           <Edit className="w-4 h-4" />
+                                         </Button>
+                                         
+                                         {!isCloseProjectPhase && (
+                                           <Button size="sm" variant="ghost" onClick={() => deletePhase(phase.id)}>
+                                             <Trash2 className="w-4 h-4" />
+                                           </Button>
+                                         )}
+                                       </>
+                                     )}
                                   </>
                                 )}
                                 
