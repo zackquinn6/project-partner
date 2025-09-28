@@ -19,6 +19,7 @@ import { MultiContentEditor } from './MultiContentEditor';
 import { MultiContentRenderer } from './MultiContentRenderer';
 import { DecisionTreeFlowchart } from './DecisionTreeFlowchart';
 import { DecisionPointEditor } from './DecisionPointEditor';
+import { PhaseIncorporationDialog } from './PhaseIncorporationDialog';
 import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 interface StructureManagerProps {
   onBack: () => void;
@@ -55,6 +56,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [showDecisionEditor, setShowDecisionEditor] = useState<{
     step: WorkflowStep;
   } | null>(null);
+  const [showIncorporationDialog, setShowIncorporationDialog] = useState(false);
   const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
 
   // Collapsible state
@@ -232,13 +234,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       id: `phase-${Date.now()}`,
       name: 'New Phase',
       description: 'Phase description',
-      operations: []
+      operations: [],
+      isLinked: false
     };
     const updatedProject = {
       ...currentProject,
       phases: [...currentProject.phases, newPhase],
       updatedAt: new Date()
     };
+    updateProject(updatedProject);
+  };
+
+  const handleIncorporatePhase = (incorporatedPhase: Phase & { sourceProjectId: string; sourceProjectName: string; incorporatedRevision: number }) => {
+    if (!currentProject) return;
+
+    const linkedPhase: Phase = {
+      ...incorporatedPhase,
+      isLinked: true,
+      sourceProjectId: incorporatedPhase.sourceProjectId,
+      sourceProjectName: incorporatedPhase.sourceProjectName,
+      incorporatedRevision: incorporatedPhase.incorporatedRevision
+    };
+
+    const updatedProject = {
+      ...currentProject,
+      phases: [...currentProject.phases, linkedPhase],
+      updatedAt: new Date()
+    };
+
     updateProject(updatedProject);
   };
   const addOperation = (phaseId: string) => {
@@ -471,10 +494,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                   <ClipboardCheck className="w-3 h-3" />
                   {clipboard.type} copied
                 </Badge>}
-               <Button variant="outline" onClick={() => setShowDecisionTreeView(true)} className="flex items-center gap-2">
-                 🔀 Decision Tree
-               </Button>
-               <Button variant="outline" onClick={() => setExpandedPhases(expandedPhases.size === displayPhases.length ? new Set() : new Set(displayPhases.map(p => p.id)))} className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => setShowDecisionTreeView(true)} className="flex items-center gap-2">
+                  <GitBranch className="w-4 h-4" />
+                  Decision Tree
+                </Button>
+                <Button variant="outline" onClick={() => setShowIncorporationDialog(true)} className="flex items-center gap-2">
+                  <Link className="w-4 h-4" />
+                  Incorporate Phase
+                </Button>
+                <Button variant="outline" onClick={() => setExpandedPhases(expandedPhases.size === displayPhases.length ? new Set() : new Set(displayPhases.map(p => p.id)))} className="flex items-center gap-2">
                  {expandedPhases.size === displayPhases.length ? <>
                      <ChevronRight className="w-4 h-4" />
                      Collapse All
@@ -834,6 +862,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       {/* Decision Point Editor Dialog */}
       {showDecisionEditor && <DecisionPointEditor open={!!showDecisionEditor} onOpenChange={() => setShowDecisionEditor(null)} step={showDecisionEditor.step} availableSteps={getAllAvailableSteps()} onSave={handleDecisionEditorSave} />}
+      
+      {/* Phase Incorporation Dialog */}
+      <PhaseIncorporationDialog
+        open={showIncorporationDialog}
+        onOpenChange={setShowIncorporationDialog}
+        onIncorporatePhase={handleIncorporatePhase}
+      />
     </div>
     </div>;
 };
