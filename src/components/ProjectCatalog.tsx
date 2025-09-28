@@ -108,27 +108,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   useEffect(() => {
     if (!user && !isAdminMode) {
       const fetchPublicProjects = async () => {
-        console.log('🔍 Fetching public projects for anonymous user...');
         const { data, error } = await supabase
           .from('projects')
           .select('*')
           .in('publish_status', ['published', 'beta-testing']);
         
-        console.log('📊 Public projects query result:', { data, error, count: data?.length });
-        
         if (data && !error) {
-          // Map snake_case fields to camelCase for frontend compatibility
-          const mappedData = data.map(project => ({
-            ...project,
-            publishStatus: project.publish_status,
-            effortLevel: project.effort_level,
-            skillLevel: project.skill_level,
-            estimatedTime: project.estimated_time
-          }));
-          console.log('📊 Mapped public projects:', mappedData.length);
-          setPublicProjects(mappedData);
-        } else if (error) {
-          console.error('❌ Error fetching public projects:', error);
+          setPublicProjects(data);
         }
       };
       
@@ -140,15 +126,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const availableProjects = user ? projects : publicProjects;
   
   // Filter projects to show published and beta projects or all projects in admin mode
-  const publishedProjects = useMemo(() => {
-    console.log('🔍 Computing publishedProjects...', { 
-      user: !!user, 
-      isAdminMode, 
-      projectsCount: projects.length, 
-      publicProjectsCount: publicProjects.length 
-    });
-    
-    const result = user 
+  const publishedProjects = useMemo(() => 
+    user 
       ? projects.filter(project => {
           const isValidStatus = (
             project.publishStatus === 'published' || 
@@ -159,19 +138,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           
           return isValidStatus && isNotManualTemplate;
         })
-      : publicProjects.filter(project => {
-          console.log('🔍 Checking public project:', { 
-            id: project.id, 
-            name: project.name, 
-            publish_status: project.publish_status,
-            publishStatus: project.publishStatus 
-          });
-          return project.id !== '00000000-0000-0000-0000-000000000000'; // Hide manual project template
-        });
-    
-    console.log('📊 Published projects result:', { count: result.length, projects: result.map(p => ({ id: p.id, name: p.name })) });
-    return result;
-  }, [projects, user, isAdminMode, publicProjects]);
+      : publicProjects.filter(project => 
+          project.id !== '00000000-0000-0000-0000-000000000000' // Hide manual project template
+        ), [projects, user, isAdminMode, publicProjects]);
 
   // Get unique filter options
   const availableCategories = useMemo(() => 
@@ -185,21 +154,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   );
   
   const availableEffortLevels = useMemo(() => 
-    [...new Set(publishedProjects.map(p => p.effortLevel || p.effort_level).filter(Boolean))], 
+    [...new Set(publishedProjects.map(p => p.effortLevel).filter(Boolean))], 
     [publishedProjects]
   );
 
   // Filtered projects based on search and filters
   const filteredProjects = useMemo(() => {
-    console.log('🔍 Computing filteredProjects...', { 
-      publishedProjectsCount: publishedProjects.length,
-      searchTerm,
-      selectedCategories,
-      selectedDifficulties,
-      selectedEffortLevels
-    });
-    
-    const result = publishedProjects.filter(project => {
+    return publishedProjects.filter(project => {
       // Search filter
       const matchesSearch = !searchTerm || 
         project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -214,30 +175,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       const matchesDifficulty = selectedDifficulties.length === 0 || 
         (project.difficulty && selectedDifficulties.includes(project.difficulty));
 
-      // Effort level filter - Check both camelCase and snake_case
+      // Effort level filter
       const matchesEffortLevel = selectedEffortLevels.length === 0 || 
-        (project.effortLevel && selectedEffortLevels.includes(project.effortLevel)) ||
-        (project.effort_level && selectedEffortLevels.includes(project.effort_level));
+        (project.effortLevel && selectedEffortLevels.includes(project.effortLevel));
 
-      const matches = matchesSearch && matchesCategory && matchesDifficulty && matchesEffortLevel;
-      
-      if (!matches) {
-        console.log('🚫 Project filtered out:', { 
-          name: project.name, 
-          matchesSearch, 
-          matchesCategory, 
-          matchesDifficulty, 
-          matchesEffortLevel,
-          effortLevel: project.effortLevel,
-          effort_level: project.effort_level
-        });
-      }
-      
-      return matches;
+      return matchesSearch && matchesCategory && matchesDifficulty && matchesEffortLevel;
     });
-    
-    console.log('📊 Filtered projects result:', { count: result.length });
-    return result;
   }, [publishedProjects, searchTerm, selectedCategories, selectedDifficulties, selectedEffortLevels]);
 
   // Filter handlers
