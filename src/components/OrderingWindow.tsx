@@ -318,7 +318,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
       title="Shopping Checklist"
       size={isMobile ? "content-full" : "large"}
     >
-      <div className="flex flex-col h-full space-y-2">
+      <div className="flex flex-col h-full space-y-2 -mt-4">
         {/* Shopping Sites and Search */}
         <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
           {/* Shopping Sites */}
