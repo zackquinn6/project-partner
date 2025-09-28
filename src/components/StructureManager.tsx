@@ -507,38 +507,38 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 const isEditing = editingItem?.type === 'phase' && editingItem.id === phase.id;
                 return <Draggable key={phase.id} draggableId={phase.id} index={phaseIndex} isDragDisabled={isStandardPhase}>
                       {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`border-2 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-blue-50 border-blue-200' : ''}`}>
-                          <CardHeader>
+                          <CardHeader className="py-1 px-2">
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3 flex-1">
+                              <div className="flex items-center gap-1 flex-1">
                                 {!isStandardPhase && phase.name !== 'Close Project' && <div {...provided.dragHandleProps}>
-                                    <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
+                                    <GripVertical className="w-3 h-3 text-muted-foreground cursor-grab" />
                                   </div>}
-                                {(isStandardPhase || phase.name === 'Close Project') && <div className="w-5" />}
+                                {(isStandardPhase || phase.name === 'Close Project') && <div className="w-3" />}
                                 
-                                {isEditing ? <div className="flex-1 space-y-2">
+                                {isEditing ? <div className="flex-1 space-y-1">
                                     <Input value={editingItem.data.name} onChange={e => setEditingItem({
                               ...editingItem,
                               data: {
                                 ...editingItem.data,
                                 name: e.target.value
                               }
-                            })} placeholder="Phase name" />
+                            })} placeholder="Phase name" className="text-xs h-6" />
                                     <Textarea value={editingItem.data.description} onChange={e => setEditingItem({
                               ...editingItem,
                               data: {
                                 ...editingItem.data,
                                 description: e.target.value
                               }
-                            })} placeholder="Phase description" rows={2} />
+                            })} placeholder="Phase description" rows={1} className="text-xs" />
                                   </div> : <div className="flex-1">
-                                      <CardTitle className="flex items-center gap-2">
-                                        <Button variant="ghost" size="sm" onClick={() => togglePhaseExpansion(phase.id)} className="p-1 h-auto">
-                                          {expandedPhases.has(phase.id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                      <CardTitle className="flex items-center gap-1 text-xs">
+                                        <Button variant="ghost" size="sm" onClick={() => togglePhaseExpansion(phase.id)} className="p-0.5 h-auto">
+                                          {expandedPhases.has(phase.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                                         </Button>
                                         {phase.name}
                                         {isStandardPhase}
                                       </CardTitle>
-                                     <p className="text-muted-foreground text-sm">{phase.description}</p>
+                                     <p className="text-muted-foreground text-xs">{phase.description}</p>
                                    </div>}
                               </div>
                               
