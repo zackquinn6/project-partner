@@ -18,8 +18,8 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onCl
     <ScrollableDialog
       open={isOpen}
       onOpenChange={onClose}
-      title="Expert Virtual Consults"
-      description="Get personalized project guidance from certified DIY professionals"
+      title="Video Chat's With a Pro"
+      description="Get a human expert to guide you through your next project"
       className="w-[90vw] max-w-md h-auto max-h-[90vh]"
     >
       <div className="space-y-6">
@@ -27,7 +27,7 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onCl
           <img 
             src={toolioLogo} 
             alt="Toolio Logo" 
-            className="mx-auto w-16 h-auto mb-4"
+            className="mx-auto w-48 h-auto mb-4"
           />
         </div>
         
@@ -35,12 +35,12 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onCl
           <CardHeader className="text-center pb-3">
             <CardTitle className="text-lg flex items-center justify-center gap-2">
               <Calendar className="w-5 h-5 text-primary" />
-              Schedule Your Consultation
+              Schedule Your Chat
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">40min planning and 20min mid-project calls to enable success</div>
+              <div className="text-sm text-muted-foreground">Your choice of 20 or 40min calls to kickstart your project or solve a problem mid-project</div>
             </div>
             
             <a 
