@@ -68,17 +68,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Get phases directly from project and ensure no duplicates
   const deduplicatePhases = (phases: Phase[]): Phase[] => {
+    console.log('🔍 Deduplicating phases. Input count:', phases.length);
     const seen = new Set<string>();
     const result: Phase[] = [];
     for (const phase of phases) {
-      if (!seen.has(phase.name)) {
-        seen.add(phase.name);
+      // Use ID for deduplication instead of name to allow multiple phases with same name but different IDs
+      const key = phase.isLinked ? `${phase.id}-${phase.sourceProjectId}` : phase.id;
+      if (!seen.has(key)) {
+        seen.add(key);
         result.push(phase);
+      } else {
+        console.log('🔍 Duplicate phase filtered out:', phase.name, 'Key:', key);
       }
     }
+    console.log('🔍 Deduplicated phases. Output count:', result.length);
     return result;
   };
   const displayPhases = deduplicatePhases(currentProject?.phases || []);
+  console.log('🔍 Display phases count:', displayPhases.length);
 
   // Toggle functions for collapsible sections
   const togglePhaseExpansion = (phaseId: string) => {
@@ -248,19 +255,41 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const handleIncorporatePhase = (incorporatedPhase: Phase & { sourceProjectId: string; sourceProjectName: string; incorporatedRevision: number }) => {
     if (!currentProject) return;
 
+    console.log('🔍 Incorporating phase:', incorporatedPhase);
+    console.log('🔍 Current project phases:', currentProject.phases.length);
+
+    // Check if incorporating from same project
+    if (incorporatedPhase.sourceProjectId === currentProject.id) {
+      console.warn('⚠️ Warning: Incorporating phase from same project');
+    }
+
+    // Check for duplicate phase names
+    const existingPhaseNames = currentProject.phases.map(p => p.name);
+    if (existingPhaseNames.includes(incorporatedPhase.name)) {
+      console.warn('⚠️ Warning: Phase with same name already exists:', incorporatedPhase.name);
+    }
+
+    // Generate new ID to avoid conflicts
+    const newPhaseId = `linked-phase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     const linkedPhase: Phase = {
       ...incorporatedPhase,
+      id: newPhaseId, // Use new ID to avoid conflicts
       isLinked: true,
       sourceProjectId: incorporatedPhase.sourceProjectId,
       sourceProjectName: incorporatedPhase.sourceProjectName,
       incorporatedRevision: incorporatedPhase.incorporatedRevision
     };
 
+    console.log('🔍 Created linked phase:', linkedPhase);
+
     const updatedProject = {
       ...currentProject,
       phases: [...currentProject.phases, linkedPhase],
       updatedAt: new Date()
     };
+
+    console.log('🔍 Updated project phases count:', updatedProject.phases.length);
 
     updateProject(updatedProject);
   };
