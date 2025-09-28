@@ -247,7 +247,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             {/* Tab Headers - Positioned directly after header */}
             <div className="shrink-0 border-b bg-background pb-4">
-              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'h-auto' : 'h-16'}`}>
+              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'h-auto' : 'h-8'}`}>
                 {isMobile ? (
                   // Mobile: Dropdown-style tab selection
                   <div className="space-y-2 p-2">
@@ -273,11 +273,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 ) : (
                   // Desktop: Traditional tabs
                   <>
-                    <TabsTrigger value="decisions" className="text-xs md:text-sm px-2 py-4">
+                    <TabsTrigger value="decisions" className="text-xs md:text-sm px-2 py-2">
                       <Settings className="w-4 h-4 mr-2" />
                       Workflow Decisions
                     </TabsTrigger>
-                    <TabsTrigger value="custom-work" className="text-xs md:text-sm px-2 py-4">
+                    <TabsTrigger value="custom-work" className="text-xs md:text-sm px-2 py-2">
                       <Plus className="w-4 h-4 mr-2" />
                       Add Custom Work
                     </TabsTrigger>
