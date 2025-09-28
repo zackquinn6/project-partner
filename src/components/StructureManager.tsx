@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Material, Tool, Output, Phase, Operation } from '@/interfaces/Project';
@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save } from 'lucide-react';
+import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight } from 'lucide-react';
 import { FlowTypeSelector, getFlowTypeBadge } from './FlowTypeSelector';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { OutputEditForm } from './OutputEditForm';
 import { MultiContentEditor } from './MultiContentEditor';
 import { MultiContentRenderer } from './MultiContentRenderer';
@@ -38,6 +39,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   const [showDecisionTreeView, setShowDecisionTreeView] = useState(false);
   const [showDecisionEditor, setShowDecisionEditor] = useState<{ step: WorkflowStep } | null>(null);
   const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
+  
+  // Collapsible state
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
+  const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
 
   if (!currentProject) {
     return <div>No project selected</div>;
@@ -58,6 +63,65 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   };
   
   const displayPhases = deduplicatePhases(currentProject?.phases || []);
+
+  // Toggle functions for collapsible sections
+  const togglePhaseExpansion = (phaseId: string) => {
+    setExpandedPhases(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(phaseId)) {
+        newSet.delete(phaseId);
+      } else {
+        newSet.add(phaseId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleOperationExpansion = (operationId: string) => {
+    setExpandedOperations(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(operationId)) {
+        newSet.delete(operationId);
+      } else {
+        newSet.add(operationId);
+      }
+      return newSet;
+    });
+  };
+
+  // Initialize all phases and operations as expanded
+  useEffect(() => {
+    if (displayPhases.length > 0) {
+      const allPhaseIds = new Set(displayPhases.map(p => p.id));
+      const allOperationIds = new Set(
+        displayPhases.flatMap(p => p.operations.map(op => op.id))
+      );
+      
+      if (expandedPhases.size === 0) {
+        setExpandedPhases(allPhaseIds);
+      }
+      if (expandedOperations.size === 0) {
+        setExpandedOperations(allOperationIds);
+      }
+    }
+  }, [displayPhases.length, expandedPhases.size, expandedOperations.size]);
+
+  // Initialize all phases and operations as expanded
+  React.useEffect(() => {
+    if (displayPhases.length > 0) {
+      const allPhaseIds = new Set(displayPhases.map(p => p.id));
+      const allOperationIds = new Set(
+        displayPhases.flatMap(p => p.operations.map(op => op.id))
+      );
+      
+      if (expandedPhases.size === 0) {
+        setExpandedPhases(allPhaseIds);
+      }
+      if (expandedOperations.size === 0) {
+        setExpandedOperations(allOperationIds);
+      }
+    }
+  }, [displayPhases.length]);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination || !currentProject) return;
@@ -441,13 +505,30 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   {clipboard.type} copied
                 </Badge>
               )}
-              <Button
-                variant="outline"
-                onClick={() => setShowDecisionTreeView(true)}
-                className="flex items-center gap-2"
-              >
-                🔀 Decision Tree
-              </Button>
+               <Button
+                 variant="outline"
+                 onClick={() => setShowDecisionTreeView(true)}
+                 className="flex items-center gap-2"
+               >
+                 🔀 Decision Tree
+               </Button>
+               <Button
+                 variant="outline"
+                 onClick={() => setExpandedPhases(expandedPhases.size === displayPhases.length ? new Set() : new Set(displayPhases.map(p => p.id)))}
+                 className="flex items-center gap-2"
+               >
+                 {expandedPhases.size === displayPhases.length ? (
+                   <>
+                     <ChevronRight className="w-4 h-4" />
+                     Collapse All
+                   </>
+                 ) : (
+                   <>
+                     <ChevronDown className="w-4 h-4" />
+                     Expand All
+                   </>
+                 )}
+               </Button>
               <Button onClick={addPhase} className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Add Phase
@@ -505,13 +586,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                     />
                                   </div>
                                 ) : (
-                                  <div className="flex-1">
-                                     <CardTitle className="flex items-center gap-2">
-                                       {phase.name}
-                                       {isStandardPhase && <Badge variant="secondary" className="text-xs">Standard</Badge>}
-                                     </CardTitle>
-                                    <p className="text-muted-foreground text-sm">{phase.description}</p>
-                                  </div>
+                                   <div className="flex-1">
+                                      <CardTitle className="flex items-center gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => togglePhaseExpansion(phase.id)}
+                                          className="p-1 h-auto"
+                                        >
+                                          {expandedPhases.has(phase.id) ? (
+                                            <ChevronDown className="w-4 h-4" />
+                                          ) : (
+                                            <ChevronRight className="w-4 h-4" />
+                                          )}
+                                        </Button>
+                                        {phase.name}
+                                        {isStandardPhase && <Badge variant="secondary" className="text-xs">Standard</Badge>}
+                                      </CardTitle>
+                                     <p className="text-muted-foreground text-sm">{phase.description}</p>
+                                   </div>
                                 )}
                               </div>
                               
@@ -563,9 +656,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                 
                               </div>
                             </div>
-                          </CardHeader>
-                          
-                            <CardContent>
+                           </CardHeader>
+                           
+                           <Collapsible open={expandedPhases.has(phase.id)}>
+                             <CollapsibleContent>
+                               <CardContent>
                               <div className="flex items-center gap-2 mb-4">
                                  <Button onClick={() => addOperation(phase.id)} className="flex items-center gap-2">
                                    <Plus className="w-3 h-3" />
@@ -613,10 +708,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                       />
                                                     </div>
                                                   ) : (
-                                                    <div className="flex-1">
-                                                      <h4 className="font-medium text-sm">{operation.name}</h4>
-                                                      <p className="text-muted-foreground text-xs">{operation.description}</p>
-                                                    </div>
+                                                     <div className="flex-1">
+                                                       <h4 className="font-medium text-sm flex items-center gap-2">
+                                                         <Button
+                                                           variant="ghost"
+                                                           size="sm"
+                                                           onClick={() => toggleOperationExpansion(operation.id)}
+                                                           className="p-1 h-auto"
+                                                         >
+                                                           {expandedOperations.has(operation.id) ? (
+                                                             <ChevronDown className="w-3 h-3" />
+                                                           ) : (
+                                                             <ChevronRight className="w-3 h-3" />
+                                                           )}
+                                                         </Button>
+                                                         {operation.name}
+                                                       </h4>
+                                                       <p className="text-muted-foreground text-xs">{operation.description}</p>
+                                                     </div>
                                                   )}
                                                 </div>
                                                 
@@ -668,9 +777,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                   )}
                                                 </div>
                                               </div>
-                                            </CardHeader>
-                                            
-                                             <CardContent className="pt-0">
+                                             </CardHeader>
+                                             
+                                             <Collapsible open={expandedOperations.has(operation.id)}>
+                                               <CollapsibleContent>
+                                                 <CardContent className="pt-0">
                                                <div className="flex items-center gap-2 mb-3">
                                                  <Button
                                                    size="sm"
@@ -820,8 +931,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                     {provided.placeholder}
                                                   </div>
                                                 )}
-                                              </Droppable>
-                                            </CardContent>
+                                               </Droppable>
+                                                 </CardContent>
+                                               </CollapsibleContent>
+                                             </Collapsible>
                                           </Card>
                                         )}
                                       </Draggable>
@@ -830,8 +943,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                   {provided.placeholder}
                                 </div>
                               )}
-                            </Droppable>
-                          </CardContent>
+                             </Droppable>
+                               </CardContent>
+                             </CollapsibleContent>
+                           </Collapsible>
                         </Card>
                       )}
                     </Draggable>
