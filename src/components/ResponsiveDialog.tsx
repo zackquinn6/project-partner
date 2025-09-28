@@ -66,7 +66,7 @@ export function ResponsiveDialog({
           sizeClasses[size],
           // Remove default padding for content-full to avoid spacing issues
           size === 'content-full' ? 'p-0' : paddingClasses[size],
-          "overflow-hidden",
+          "overflow-hidden gap-0", // Remove the default gap-4 that creates spacing
           className
         )}
       >
