@@ -18,7 +18,7 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onCl
     <ScrollableDialog
       open={isOpen}
       onOpenChange={onClose}
-      title="Video Chats With a Pro"
+      title="Video Chat With a Pro"
       description="Get a human expert to guide you through your next project"
       className="w-[90vw] max-w-md h-auto max-h-[90vh]"
     >
