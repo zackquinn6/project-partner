@@ -39,9 +39,9 @@ export function MobileDIYDropdown({
           <Button 
             variant="ghost"
             size="sm"
-            className="h-10 px-3 hover:bg-accent text-foreground"
+            className="h-10 px-3 hover:bg-accent text-foreground font-bold"
           >
-            <AlertCircle className="h-4 w-4 text-orange-500" />
+            <span className="text-orange-500 text-lg">!</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent 
