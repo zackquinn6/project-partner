@@ -43,8 +43,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     return <div>No project selected</div>;
   }
 
-  // Get phases directly from project - no dynamic addition needed
-  const displayPhases = currentProject?.phases || [];
+  // Get phases directly from project and ensure no duplicates
+  const deduplicatePhases = (phases: Phase[]): Phase[] => {
+    const seen = new Set<string>();
+    const result: Phase[] = [];
+    
+    for (const phase of phases) {
+      if (!seen.has(phase.name)) {
+        seen.add(phase.name);
+        result.push(phase);
+      }
+    }
+    return result;
+  };
+  
+  const displayPhases = deduplicatePhases(currentProject?.phases || []);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination || !currentProject) return;

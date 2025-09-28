@@ -352,42 +352,60 @@ export const createCloseProjectPhase = (): Phase => {
   return closeProjectPhase;
 };
 
-// NEW: Function to ensure standard phases for new project creation only
+// Function to ensure standard phases for new project creation only - with deduplication
 export const ensureStandardPhasesForNewProject = (phases: Phase[]): Phase[] => {
   const result: Phase[] = [];
+  const seenNames = new Set<string>();
   const phaseNames = phases.map(p => p.name);
   
   // Always add Kickoff first if not present
   if (!phaseNames.includes('Kickoff')) {
     result.push(createKickoffPhase());
+    seenNames.add('Kickoff');
   } else {
-    result.push(phases.find(p => p.name === 'Kickoff')!);
+    const kickoffPhase = phases.find(p => p.name === 'Kickoff')!;
+    result.push(kickoffPhase);
+    seenNames.add('Kickoff');
   }
   
   // Add Planning phase if not present
   if (!phaseNames.includes('Planning')) {
     result.push(createPlanningPhase());
+    seenNames.add('Planning');
   } else {
-    result.push(phases.find(p => p.name === 'Planning')!);
+    const planningPhase = phases.find(p => p.name === 'Planning')!;
+    result.push(planningPhase);
+    seenNames.add('Planning');
   }
   
   // Add Ordering phase if not present
   if (!phaseNames.includes('Ordering')) {
     result.push(createOrderingPhase());
+    seenNames.add('Ordering');
   } else {
-    result.push(phases.find(p => p.name === 'Ordering')!);
+    const orderingPhase = phases.find(p => p.name === 'Ordering')!;
+    result.push(orderingPhase);
+    seenNames.add('Ordering');
   }
   
-  // Add any custom phases (excluding standard ones)
+  // Add any custom phases (excluding standard ones and avoiding duplicates)
   const standardNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-  const customPhases = phases.filter(p => !standardNames.includes(p.name));
-  result.push(...customPhases);
+  const customPhases = phases.filter(p => !standardNames.includes(p.name) && !seenNames.has(p.name));
+  customPhases.forEach(phase => {
+    if (!seenNames.has(phase.name)) {
+      result.push(phase);
+      seenNames.add(phase.name);
+    }
+  });
   
   // Always add Close Project at the end if not present
   if (!phaseNames.includes('Close Project')) {
     result.push(createCloseProjectPhase());
+    seenNames.add('Close Project');
   } else {
-    result.push(phases.find(p => p.name === 'Close Project')!);
+    const closePhase = phases.find(p => p.name === 'Close Project')!;
+    result.push(closePhase);
+    seenNames.add('Close Project');
   }
   
   return result;
