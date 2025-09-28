@@ -212,7 +212,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
   const getModeTitle = () => {
     switch (mode) {
-      case 'initial-plan': return 'Project Work Scope';
+      case 'initial-plan': return 'Project Customizer';
       case 'final-plan': return 'Finalize Project Plan';
       case 'unplanned-work': return 'Add New Work';
       case 'replan': return 'Re-plan Project';
@@ -243,11 +243,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         description={getModeDescription()}
         size={isMobile ? "content-full" : "large"}
       >
-        <div className="flex flex-col h-full space-y-4">
+        <div className="flex flex-col h-full">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 h-full">
-            {/* Tab Headers - Mobile optimized */}
-            <div className="shrink-0 border-b">
-              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} ${isMobile ? 'h-auto' : 'h-12'}`}>
+            {/* Tab Headers - Fixed positioning */}
+            <div className="shrink-0 border-b bg-background">
+              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'h-auto' : 'h-12'}`}>
                 {isMobile ? (
                   // Mobile: Dropdown-style tab selection
                   <div className="space-y-2 p-2">
@@ -261,22 +261,13 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                       Workflow Decisions
                     </Button>
                     <Button
-                      variant={activeTab === 'custom-planned' ? 'default' : 'outline'}
-                      onClick={() => setActiveTab('custom-planned')}
-                      className="w-full justify-start text-sm py-3"
-                      size="sm"
-                    >
-                      <GitBranch className="w-4 h-4 mr-2" />
-                      Add Planned Work
-                    </Button>
-                    <Button
-                      variant={activeTab === 'custom-unplanned' ? 'default' : 'outline'}
-                      onClick={() => setActiveTab('custom-unplanned')}
+                      variant={activeTab === 'custom-work' ? 'default' : 'outline'}
+                      onClick={() => setActiveTab('custom-work')}
                       className="w-full justify-start text-sm py-3"
                       size="sm"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Novel Work
+                      Add Custom Work
                     </Button>
                   </div>
                 ) : (
@@ -286,21 +277,17 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                       <Settings className="w-4 h-4 mr-2" />
                       Workflow Decisions
                     </TabsTrigger>
-                    <TabsTrigger value="custom-planned" className="text-xs md:text-sm px-2 py-3">
-                      <GitBranch className="w-4 h-4 mr-2" />
-                      Add Planned Work
-                    </TabsTrigger>
-                    <TabsTrigger value="custom-unplanned" className="text-xs md:text-sm px-2 py-3">
+                    <TabsTrigger value="custom-work" className="text-xs md:text-sm px-2 py-3">
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Novel Work
+                      Add Custom Work
                     </TabsTrigger>
                   </>
                 )}
               </TabsList>
             </div>
 
-            {/* Tab Content - Mobile optimized with proper scrolling */}
-            <TabsContent value="decisions" className="flex-1 min-h-0">
+            {/* Tab Content - Fixed height with proper scrolling */}
+            <TabsContent value="decisions" className="flex-1 min-h-0 mt-0">
               <ScrollArea className="h-full">
                 <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4 pr-3`}>
                   <WorkflowDecisionEngine
@@ -316,9 +303,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="custom-planned" className="flex-1 min-h-0">
+            <TabsContent value="custom-work" className="flex-1 min-h-0 mt-0">
               <ScrollArea className="h-full">
                 <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4 pr-3`}>
+                  {/* Planned Work Section */}
                   <Card>
                     <CardHeader className={isMobile ? 'pb-3' : ''}>
                       <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
@@ -341,31 +329,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     </CardContent>
                   </Card>
 
-                  {customizationState.customPlannedWork.length > 0 && (
-                    <Card>
-                      <CardHeader className={isMobile ? 'pb-3' : ''}>
-                        <CardTitle className={isMobile ? 'text-base' : ''}>Added Planned Work</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {customizationState.customPlannedWork.map((phase, index) => (
-                          <div key={index} className={`flex flex-col sm:flex-row sm:items-center justify-between ${isMobile ? 'p-4' : 'p-3'} bg-muted rounded-lg gap-3`}>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm">{phase.name}</h4>
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{phase.description}</p>
-                            </div>
-                            <Badge variant="secondary" className="self-start sm:self-center">Planned</Badge>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent value="custom-unplanned" className="flex-1 min-h-0">
-              <ScrollArea className="h-full">
-                <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4 pr-3`}>
+                  {/* Novel Work Section */}
                   <Card className="border-orange-200 bg-orange-50/50">
                     <CardHeader className={isMobile ? 'pb-3' : ''}>
                       <CardTitle className={`flex items-center gap-2 text-orange-800 ${isMobile ? 'text-base' : ''}`}>
@@ -389,6 +353,27 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     </CardContent>
                   </Card>
 
+                  {/* Added Planned Work */}
+                  {customizationState.customPlannedWork.length > 0 && (
+                    <Card>
+                      <CardHeader className={isMobile ? 'pb-3' : ''}>
+                        <CardTitle className={isMobile ? 'text-base' : ''}>Added Planned Work</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {customizationState.customPlannedWork.map((phase, index) => (
+                          <div key={index} className={`flex flex-col sm:flex-row sm:items-center justify-between ${isMobile ? 'p-4' : 'p-3'} bg-muted rounded-lg gap-3`}>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm">{phase.name}</h4>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{phase.description}</p>
+                            </div>
+                            <Badge variant="secondary" className="self-start sm:self-center">Planned</Badge>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Added Novel Work */}
                   {customizationState.customUnplannedWork.length > 0 && (
                     <Card>
                       <CardHeader className={isMobile ? 'pb-3' : ''}>
