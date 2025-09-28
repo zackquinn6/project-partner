@@ -360,16 +360,30 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
         </div>
 
         {/* Shopping Checklist Stats with Complete Button */}
-        <div className="flex flex-col gap-3 p-4 border rounded-lg bg-muted/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="text-xs">
-                {uniqueTools.length + uniqueMaterials.length} items
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {shoppedToolsList.length + shoppedMaterialsList.length} shopped
-              </Badge>
-            </div>
+        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+          <div className="flex items-center gap-4">
+            <Badge variant="secondary" className="text-xs">
+              {uniqueTools.length + uniqueMaterials.length} items
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {shoppedToolsList.length + shoppedMaterialsList.length} shopped
+            </Badge>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* Complete Shopping Button - Same row, reduced size */}
+            {onOrderingComplete && (
+              <Button
+                onClick={onOrderingComplete}
+                disabled={shoppedTools.size + shoppedMaterials.size < uniqueTools.length + uniqueMaterials.length}
+                className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 h-auto"
+                size="sm"
+              >
+                <Check className="w-3 h-3 mr-1.5" />
+                Complete Shopping
+              </Button>
+            )}
+            
             <div className="flex items-center gap-2">
               <Checkbox 
                 id="show-shopped-main"
@@ -379,20 +393,6 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
               <label htmlFor="show-shopped-main" className="text-xs">Show completed</label>
             </div>
           </div>
-          
-          {/* Complete Shopping Button - Centered within stats section */}
-          {onOrderingComplete && (
-            <div className="flex justify-center">
-              <Button
-                onClick={onOrderingComplete}
-                disabled={shoppedTools.size + shoppedMaterials.size < uniqueTools.length + uniqueMaterials.length}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Check className="w-4 h-4 mr-2" />
-                Complete Shopping
-              </Button>
-            </div>
-          )}
         </div>
 
         {/* Shopping Items - Mobile Optimized Tabs */}
