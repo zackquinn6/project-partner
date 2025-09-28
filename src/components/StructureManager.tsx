@@ -460,13 +460,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       <div className="h-full overflow-y-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-2 py-1">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold">Structure Manager</h2>
-              <p className="text-muted-foreground">Drag and drop to reorder, copy/paste to duplicate</p>
+              <h2 className="text-sm font-bold">Structure Manager</h2>
+              <p className="text-muted-foreground text-xs">Drag and drop to reorder, copy/paste to duplicate</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {clipboard && <Badge variant="outline" className="flex items-center gap-1">
                   <ClipboardCheck className="w-3 h-3" />
                   {clipboard.type} copied
@@ -498,9 +498,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       {/* Main Content */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="container mx-auto px-6 py-8">
+        <div className="container mx-auto px-2 py-2">
           <Droppable droppableId="phases" type="phases">
-            {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+            {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1">
                 {displayPhases.map((phase, phaseIndex) => {
                 const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
                 const isStandardPhase = standardPhaseNames.includes(phase.name);
@@ -509,65 +509,65 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                       {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`border-2 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-blue-50 border-blue-200' : ''}`}>
                           <CardHeader>
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3 flex-1">
+                              <div className="flex items-center gap-1 flex-1">
                                 {!isStandardPhase && phase.name !== 'Close Project' && <div {...provided.dragHandleProps}>
-                                    <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
+                                    <GripVertical className="w-3 h-3 text-muted-foreground cursor-grab" />
                                   </div>}
-                                {(isStandardPhase || phase.name === 'Close Project') && <div className="w-5" />}
+                                {(isStandardPhase || phase.name === 'Close Project') && <div className="w-3" />}
                                 
-                                {isEditing ? <div className="flex-1 space-y-2">
-                                    <Input value={editingItem.data.name} onChange={e => setEditingItem({
-                              ...editingItem,
-                              data: {
-                                ...editingItem.data,
-                                name: e.target.value
-                              }
-                            })} placeholder="Phase name" />
-                                    <Textarea value={editingItem.data.description} onChange={e => setEditingItem({
-                              ...editingItem,
-                              data: {
-                                ...editingItem.data,
-                                description: e.target.value
-                              }
-                            })} placeholder="Phase description" rows={2} />
+                                 {isEditing ? <div className="flex-1 space-y-1">
+                                     <Input value={editingItem.data.name} onChange={e => setEditingItem({
+                               ...editingItem,
+                               data: {
+                                 ...editingItem.data,
+                                 name: e.target.value
+                               }
+                             })} placeholder="Phase name" className="text-xs h-6" />
+                                     <Textarea value={editingItem.data.description} onChange={e => setEditingItem({
+                               ...editingItem,
+                               data: {
+                                 ...editingItem.data,
+                                 description: e.target.value
+                               }
+                             })} placeholder="Phase description" rows={1} className="text-xs" />
                                   </div> : <div className="flex-1">
-                                      <CardTitle className="flex items-center gap-2">
-                                        <Button variant="ghost" size="sm" onClick={() => togglePhaseExpansion(phase.id)} className="p-1 h-auto">
-                                          {expandedPhases.has(phase.id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                      <CardTitle className="flex items-center gap-1 text-sm">
+                                        <Button variant="ghost" size="sm" onClick={() => togglePhaseExpansion(phase.id)} className="p-0 h-4 w-4">
+                                          {expandedPhases.has(phase.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                                         </Button>
                                         {phase.name}
                                         {isStandardPhase}
                                       </CardTitle>
-                                     <p className="text-muted-foreground text-sm">{phase.description}</p>
+                                     <p className="text-muted-foreground text-xs">{phase.description}</p>
                                    </div>}
                               </div>
                               
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline">{phase.operations.length} operations</Badge>
+                              <div className="flex items-center gap-1">
+                                <Badge variant="outline" className="text-xs h-4">{phase.operations.length} operations</Badge>
                                 
                                 {!isStandardPhase && phase.name !== 'Close Project' && <>
-                                    <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
-                                      <Copy className="w-4 h-4" />
+                                    <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)} className="h-6 w-6 p-0">
+                                      <Copy className="w-3 h-3" />
                                     </Button>
                                     
-                                    {clipboard?.type === 'phase' && <Button size="sm" variant="ghost" onClick={() => pasteItem('phase')}>
-                                        <Clipboard className="w-4 h-4" />
+                                    {clipboard?.type === 'phase' && <Button size="sm" variant="ghost" onClick={() => pasteItem('phase')} className="h-6 w-6 p-0">
+                                        <Clipboard className="w-3 h-3" />
                                       </Button>}
                                     
                                     {isEditing ? <>
-                                        <Button size="sm" onClick={saveEdit}>
-                                          <Check className="w-4 h-4" />
+                                        <Button size="sm" onClick={saveEdit} className="h-6 w-6 p-0">
+                                          <Check className="w-3 h-3" />
                                         </Button>
-                                        <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
-                                          <X className="w-4 h-4" />
+                                        <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)} className="h-6 w-6 p-0">
+                                          <X className="w-3 h-3" />
                                         </Button>
                                       </> : <>
-                                        <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
-                                          <Edit className="w-4 h-4" />
+                                        <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)} className="h-6 w-6 p-0">
+                                          <Edit className="w-3 h-3" />
                                         </Button>
                                         
-                                        <Button size="sm" variant="ghost" onClick={() => deletePhase(phase.id)}>
-                                          <Trash2 className="w-4 h-4" />
+                                        <Button size="sm" variant="ghost" onClick={() => deletePhase(phase.id)} className="h-6 w-6 p-0">
+                                          <Trash2 className="w-3 h-3" />
                                         </Button>
                                       </>}
                                   </>}
@@ -578,16 +578,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                            
                            <Collapsible open={expandedPhases.has(phase.id)}>
                              <CollapsibleContent>
-                               <CardContent>
-                              <div className="flex items-center gap-2 mb-4">
-                                 <Button onClick={() => addOperation(phase.id)} className="flex items-center gap-2">
-                                   <Plus className="w-3 h-3" />
+                                <CardContent className="py-2">
+                              <div className="flex items-center gap-1 mb-2">
+                                 <Button onClick={() => addOperation(phase.id)} className="flex items-center gap-1 text-xs h-6">
+                                   <Plus className="w-2 h-2" />
                                    Add Operation
                                  </Button>
                               </div>
                             
                             <Droppable droppableId={`operations-${phase.id}`} type="operations">
-                              {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                              {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1">
                                   {phase.operations.map((operation, operationIndex) => {
                                 const isOperationEditing = editingItem?.type === 'operation' && editingItem.id === operation.id;
                                 return <Draggable key={operation.id} draggableId={operation.id} index={operationIndex} isDragDisabled={isStandardPhase || phase.name === 'Close Project'}>
@@ -615,9 +615,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                               }
                                             })} placeholder="Operation description" rows={1} className="text-sm" />
                                                     </div> : <div className="flex-1">
-                                                       <h4 className="font-medium text-sm flex items-center gap-2">
-                                                         <Button variant="ghost" size="sm" onClick={() => toggleOperationExpansion(operation.id)} className="p-1 h-auto">
-                                                           {expandedOperations.has(operation.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                                       <h4 className="font-medium text-xs flex items-center gap-1">
+                                                         <Button variant="ghost" size="sm" onClick={() => toggleOperationExpansion(operation.id)} className="p-0 h-3 w-3">
+                                                           {expandedOperations.has(operation.id) ? <ChevronDown className="w-2 h-2" /> : <ChevronRight className="w-2 h-2" />}
                                                          </Button>
                                                          {operation.name}
                                                        </h4>
@@ -626,32 +626,32 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                 </div>
                                                 
                                                 <div className="flex items-center gap-1">
-                                                  <Badge variant="outline" className="text-xs">{operation.steps.length} steps</Badge>
+                                                  <Badge variant="outline" className="text-xs h-4">{operation.steps.length} steps</Badge>
                                                   
                                                   {!isStandardPhase && phase.name !== 'Close Project' && <>
-                                                      <Button size="sm" variant="ghost" onClick={() => copyItem('operation', operation)}>
-                                                        <Copy className="w-3 h-3" />
+                                                      <Button size="sm" variant="ghost" onClick={() => copyItem('operation', operation)} className="h-5 w-5 p-0">
+                                                        <Copy className="w-2 h-2" />
                                                       </Button>
                                                       
                                                       {clipboard?.type === 'operation' && <Button size="sm" variant="ghost" onClick={() => pasteItem('operation', {
                                               phaseId: phase.id
-                                            })}>
-                                                          <Clipboard className="w-3 h-3" />
+                                            })} className="h-5 w-5 p-0">
+                                                          <Clipboard className="w-2 h-2" />
                                                         </Button>}
                                                       
                                                       {isOperationEditing ? <>
-                                                          <Button size="sm" onClick={saveEdit}>
-                                                            <Check className="w-3 h-3" />
+                                                          <Button size="sm" onClick={saveEdit} className="h-5 w-5 p-0">
+                                                            <Check className="w-2 h-2" />
                                                           </Button>
-                                                          <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
-                                                            <X className="w-3 h-3" />
+                                                          <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)} className="h-5 w-5 p-0">
+                                                            <X className="w-2 h-2" />
                                                           </Button>
                                                         </> : <>
-                                                          <Button size="sm" variant="ghost" onClick={() => startEdit('operation', operation.id, operation)}>
-                                                            <Edit className="w-3 h-3" />
+                                                          <Button size="sm" variant="ghost" onClick={() => startEdit('operation', operation.id, operation)} className="h-5 w-5 p-0">
+                                                            <Edit className="w-2 h-2" />
                                                           </Button>
-                                                          {phase.name !== 'Close Project' && <Button size="sm" variant="ghost" onClick={() => deleteOperation(phase.id, operation.id)}>
-                                                              <Trash2 className="w-3 h-3" />
+                                                          {phase.name !== 'Close Project' && <Button size="sm" variant="ghost" onClick={() => deleteOperation(phase.id, operation.id)} className="h-5 w-5 p-0">
+                                                              <Trash2 className="w-2 h-2" />
                                                             </Button>}
                                                         </>}
                                                     </>}
@@ -661,43 +661,43 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                              
                                              <Collapsible open={expandedOperations.has(operation.id)}>
                                                <CollapsibleContent>
-                                                 <CardContent className="pt-0">
-                                               <div className="flex items-center gap-2 mb-3">
-                                                 <Button size="sm" variant="outline" onClick={() => addStep(phase.id, operation.id)} className="flex items-center gap-1 text-xs">
-                                                   <Plus className="w-3 h-3" />
+                                                 <CardContent className="py-1 px-2">
+                                               <div className="flex items-center gap-1 mb-1">
+                                                 <Button size="sm" variant="outline" onClick={() => addStep(phase.id, operation.id)} className="flex items-center gap-1 text-xs h-5">
+                                                   <Plus className="w-2 h-2" />
                                                    Add Step
                                                  </Button>
                                                </div>
                                               
                                               <Droppable droppableId={`steps-${phase.id}-${operation.id}`} type="steps">
-                                                {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                                                {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1">
                                                     {operation.steps.map((step, stepIndex) => {
                                                 const isStepEditing = editingItem?.type === 'step' && editingItem.id === step.id;
                                                 return <Draggable key={step.id} draggableId={step.id} index={stepIndex} isDragDisabled={isStandardPhase || phase.name === 'Close Project'}>
                                                           {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`ml-4 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/10' : ''}`}>
                                                               <CardContent className="p-3">
                                                                 <div className="flex items-center justify-between">
-                                                                  <div className="flex items-center gap-2 flex-1">
-                                                                    {!isStandardPhase && phase.name !== 'Close Project' && <div {...provided.dragHandleProps}>
-                                                                        <GripVertical className="w-3 h-3 text-muted-foreground cursor-grab" />
-                                                                      </div>}
-                                                                    
-                                                                     {isStepEditing ? <div className="flex-1 space-y-2">
-                                                                         <Input value={editingItem.data.step} onChange={e => setEditingItem({
-                                                              ...editingItem,
-                                                              data: {
-                                                                ...editingItem.data,
-                                                                step: e.target.value
-                                                              }
-                                                            })} placeholder="Step name" className="text-xs" />
-                                                                         <Textarea value={editingItem.data.description} onChange={e => setEditingItem({
-                                                              ...editingItem,
-                                                              data: {
-                                                                ...editingItem.data,
-                                                                description: e.target.value
-                                                              }
-                                                            })} placeholder="Step description" rows={1} className="text-xs" />
-                                                                         <div className="text-xs">
+                                                                  <div className="flex items-center gap-1 flex-1">
+                                                                     {!isStandardPhase && phase.name !== 'Close Project' && <div {...provided.dragHandleProps}>
+                                                                         <GripVertical className="w-2 h-2 text-muted-foreground cursor-grab" />
+                                                                       </div>}
+                                                                     
+                                                                      {isStepEditing ? <div className="flex-1 space-y-1">
+                                                                          <Input value={editingItem.data.step} onChange={e => setEditingItem({
+                                                               ...editingItem,
+                                                               data: {
+                                                                 ...editingItem.data,
+                                                                 step: e.target.value
+                                                               }
+                                                             })} placeholder="Step name" className="text-xs h-4" />
+                                                                          <Textarea value={editingItem.data.description} onChange={e => setEditingItem({
+                                                               ...editingItem,
+                                                               data: {
+                                                                 ...editingItem.data,
+                                                                 description: e.target.value
+                                                               }
+                                                             })} placeholder="Step description" rows={1} className="text-xs" />
+                                                                          <div className="text-xs">
                                                                            <FlowTypeSelector value={editingItem.data.flowType} onValueChange={value => setEditingItem({
                                                                 ...editingItem,
                                                                 data: {
@@ -706,28 +706,28 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                                 }
                                                               })} />
                                                                          </div>
-                                                                       </div> : <div className="flex-1">
-                                                                         <div className="flex items-center gap-2">
-                                                                           <p className="font-medium text-xs">{step.step}</p>
-                                                                           {getFlowTypeBadge(step.flowType)}
-                                                                         </div>
-                                                                         <p className="text-muted-foreground text-xs">{step.description}</p>
-                                                                       </div>}
+                                                                        </div> : <div className="flex-1">
+                                                                          <div className="flex items-center gap-1">
+                                                                            <p className="font-medium text-xs">{step.step}</p>
+                                                                            {getFlowTypeBadge(step.flowType)}
+                                                                          </div>
+                                                                          <p className="text-muted-foreground text-xs">{step.description}</p>
+                                                                        </div>}
                                                                   </div>
                                                                   
-                                                                   <div className="flex items-center gap-1">
-                                                                     <div className="flex items-center gap-1">
-                                                                       {step.tools?.length > 0 && <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                                                           <Wrench className="w-2 h-2" />
-                                                                           {step.tools.length}
-                                                                         </Badge>}
-                                                                       {step.materials?.length > 0 && <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                                                           <Package className="w-2 h-2" />
-                                                                           {step.materials.length}
-                                                                         </Badge>}
-                                                                       {step.outputs?.length > 0 && <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                                                           <FileOutput className="w-2 h-2" />
-                                                                           {step.outputs.length}
+                                                                    <div className="flex items-center gap-1">
+                                                                      <div className="flex items-center gap-1">
+                                                                        {step.tools?.length > 0 && <Badge variant="outline" className="text-xs h-4 flex items-center gap-1">
+                                                                            <Wrench className="w-2 h-2" />
+                                                                            {step.tools.length}
+                                                                          </Badge>}
+                                                                        {step.materials?.length > 0 && <Badge variant="outline" className="text-xs h-4 flex items-center gap-1">
+                                                                            <Package className="w-2 h-2" />
+                                                                            {step.materials.length}
+                                                                          </Badge>}
+                                                                        {step.outputs?.length > 0 && <Badge variant="outline" className="text-xs h-4 flex items-center gap-1">
+                                                                            <FileOutput className="w-2 h-2" />
+                                                                            {step.outputs.length}
                                                                          </Badge>}
                                                                      </div>
                                                      
