@@ -318,21 +318,21 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
       title="Shopping Checklist"
       size={isMobile ? "content-full" : "large"}
     >
-      <div className="flex flex-col h-full space-y-4">
+      <div className="flex flex-col h-full space-y-2">
         {/* Shopping Sites and Search */}
-        <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+        <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
           {/* Shopping Sites */}
           <div>
-            <h4 className="font-medium text-sm mb-2">Shopping Websites</h4>
-            <div className="flex flex-wrap gap-2">
+            <h4 className="font-medium text-xs mb-2">Shopping Websites</h4>
+            <div className="flex flex-wrap gap-1.5">
               {SHOPPING_SITES.map((site) => (
                 <Button
                   key={site.name}
                   onClick={() => window.open(site.url, '_blank')}
                   size="sm"
-                  className={`text-xs ${site.color} text-white`}
+                  className={`text-xs px-2 py-1 h-auto ${site.color} text-white`}
                 >
-                  <ExternalLink className="w-3 h-3 mr-1" />
+                  <ExternalLink className="w-2.5 h-2.5 mr-1" />
                   {site.name}
                 </Button>
               ))}
@@ -341,7 +341,7 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
 
           {/* Google Search */}
           <div>
-            <h4 className="font-medium text-sm mb-2">Search Products</h4>
+            <h4 className="font-medium text-xs mb-2">Search Products</h4>
             <div className="flex gap-2">
               <Input
                 type="text"
@@ -349,10 +349,10 @@ export function OrderingWindow({ open, onOpenChange, project, projectRun, userOw
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyPress={handleUrlKeyPress}
-                className="text-sm flex-1"
+                className="text-xs flex-1 h-7"
               />
-              <Button onClick={handleGoogleSearch} size="sm" variant="outline">
-                <ExternalLink className="w-4 h-4 mr-1" />
+              <Button onClick={handleGoogleSearch} size="sm" variant="outline" className="h-7 px-2 text-xs">
+                <ExternalLink className="w-3 h-3 mr-1" />
                 Search
               </Button>
             </div>
