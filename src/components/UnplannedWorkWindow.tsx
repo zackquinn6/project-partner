@@ -179,7 +179,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full h-full max-w-[90vw] max-h-[90vh] p-0 [&>button]:hidden overflow-hidden flex flex-col">
+      <DialogContent className="!w-[90vw] !h-[90vh] !max-w-[90vw] !max-h-[90vh] p-0 [&>button]:hidden overflow-hidden flex flex-col !fixed !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%]">
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <DialogTitle className="text-xl font-bold">Add Unplanned Work</DialogTitle>
           <DialogDescription className="text-base">
@@ -199,8 +199,8 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                   Drag phases from other projects to handle unplanned work
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 min-h-0 flex flex-col">
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
+              <CardContent className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
                   {availablePhases.map(phase => (
                     <Card 
                       key={`${phase.sourceProjectId}-${phase.id}`} 
@@ -308,7 +308,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                   Current project phases - drop new phases to add them to your workflow
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 min-h-0 flex flex-col">
+              <CardContent className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <div 
                   className="flex-1 min-h-0 overflow-y-auto space-y-1 p-3 border-2 border-dashed border-muted-foreground/20 rounded-lg transition-colors" 
                   onDragOver={handleDragOver} 

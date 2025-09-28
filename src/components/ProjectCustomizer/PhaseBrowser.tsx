@@ -121,7 +121,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-full max-w-[90vw] max-h-[90vh] p-0 [&>button]:hidden overflow-hidden flex flex-col">
+      <DialogContent className="!w-[90vw] !h-[90vh] !max-w-[90vw] !max-h-[90vh] p-0 [&>button]:hidden overflow-hidden flex flex-col !fixed !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%]">
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
@@ -168,7 +168,8 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
           </div>
 
           {/* Phase List */}
-          <ScrollArea className="flex-1 mb-4 min-h-0">
+          <div className="flex-1 min-h-0 mb-4 overflow-hidden">
+            <div className="h-full overflow-y-auto pr-2">
             {filteredPhases.length === 0 ? (
               <Card>
                 <CardContent className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
@@ -234,7 +235,8 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                 ))}
               </div>
             )}
-          </ScrollArea>
+            </div>
+          </div>
 
           {/* Action Bar */}
           <div className="border-t pt-4 pb-0 flex-shrink-0">
