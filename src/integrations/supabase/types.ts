@@ -146,6 +146,212 @@ export type Database = {
         }
         Relationships: []
       }
+      decision_tree_conditions: {
+        Row: {
+          condition_data: Json
+          condition_type: string
+          created_at: string
+          id: string
+          is_fallback: boolean
+          next_operation_id: string | null
+          operation_id: string
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          condition_data?: Json
+          condition_type: string
+          created_at?: string
+          id?: string
+          is_fallback?: boolean
+          next_operation_id?: string | null
+          operation_id: string
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          condition_data?: Json
+          condition_type?: string
+          created_at?: string
+          id?: string
+          is_fallback?: boolean
+          next_operation_id?: string | null
+          operation_id?: string
+          priority?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_tree_conditions_next_operation_id_fkey"
+            columns: ["next_operation_id"]
+            isOneToOne: false
+            referencedRelation: "decision_tree_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decision_tree_conditions_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "decision_tree_operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_tree_execution_paths: {
+        Row: {
+          chosen_path: string | null
+          created_at: string
+          decision_data: Json | null
+          decision_tree_id: string
+          execution_status: string
+          execution_timestamp: string
+          id: string
+          operation_id: string
+          operation_name: string
+          phase_name: string
+          project_run_id: string
+          user_id: string
+        }
+        Insert: {
+          chosen_path?: string | null
+          created_at?: string
+          decision_data?: Json | null
+          decision_tree_id: string
+          execution_status?: string
+          execution_timestamp?: string
+          id?: string
+          operation_id: string
+          operation_name: string
+          phase_name: string
+          project_run_id: string
+          user_id: string
+        }
+        Update: {
+          chosen_path?: string | null
+          created_at?: string
+          decision_data?: Json | null
+          decision_tree_id?: string
+          execution_status?: string
+          execution_timestamp?: string
+          id?: string
+          operation_id?: string
+          operation_name?: string
+          phase_name?: string
+          project_run_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_tree_execution_paths_decision_tree_id_fkey"
+            columns: ["decision_tree_id"]
+            isOneToOne: false
+            referencedRelation: "decision_trees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decision_tree_execution_paths_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "decision_tree_operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_tree_operations: {
+        Row: {
+          condition_rules: Json | null
+          created_at: string
+          decision_tree_id: string
+          dependencies: string[] | null
+          display_order: number
+          fallback_operation_id: string | null
+          id: string
+          is_optional: boolean
+          notes: string | null
+          operation_name: string
+          operation_type: string
+          parallel_group: string | null
+          phase_name: string
+          updated_at: string
+        }
+        Insert: {
+          condition_rules?: Json | null
+          created_at?: string
+          decision_tree_id: string
+          dependencies?: string[] | null
+          display_order?: number
+          fallback_operation_id?: string | null
+          id?: string
+          is_optional?: boolean
+          notes?: string | null
+          operation_name: string
+          operation_type: string
+          parallel_group?: string | null
+          phase_name: string
+          updated_at?: string
+        }
+        Update: {
+          condition_rules?: Json | null
+          created_at?: string
+          decision_tree_id?: string
+          dependencies?: string[] | null
+          display_order?: number
+          fallback_operation_id?: string | null
+          id?: string
+          is_optional?: boolean
+          notes?: string | null
+          operation_name?: string
+          operation_type?: string
+          parallel_group?: string | null
+          phase_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_tree_operations_decision_tree_id_fkey"
+            columns: ["decision_tree_id"]
+            isOneToOne: false
+            referencedRelation: "decision_trees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_trees: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          project_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          project_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          project_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       failed_login_attempts: {
         Row: {
           attempt_time: string

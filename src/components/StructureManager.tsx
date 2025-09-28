@@ -20,6 +20,7 @@ import { MultiContentRenderer } from './MultiContentRenderer';
 import { DecisionTreeFlowchart } from './DecisionTreeFlowchart';
 import { DecisionPointEditor } from './DecisionPointEditor';
 import { PhaseIncorporationDialog } from './PhaseIncorporationDialog';
+import { DecisionTreeManager } from './DecisionTreeManager';
 import { addStandardPhasesToProjectRun } from '@/utils/projectUtils';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 interface StructureManagerProps {
@@ -1036,6 +1037,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         onOpenChange={setShowIncorporationDialog}
         onIncorporatePhase={handleIncorporatePhase}
       />
+
+      {/* Decision Tree Manager */}
+      {showDecisionTreeView && (
+        <DecisionTreeManager
+          open={showDecisionTreeView}
+          onOpenChange={setShowDecisionTreeView}
+          currentProject={currentProject}
+        />
+      )}
     </div>
     </div>;
 };
