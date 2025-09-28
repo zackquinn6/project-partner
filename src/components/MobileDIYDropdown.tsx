@@ -42,7 +42,6 @@ export function MobileDIYDropdown({
             className="h-10 px-3 hover:bg-accent text-foreground"
           >
             <AlertTriangle className="h-4 w-4" />
-            <ChevronDown className="ml-1 h-4 w-4" />
           </Button>
         </PopoverTrigger>
         <PopoverContent 
