@@ -13,7 +13,8 @@ import { ProjectSelector } from '@/components/ProjectSelector';
 import ProfileManager from '@/components/ProfileManager';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
 import { HomeManager } from '@/components/HomeManager';
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useButtonTracker } from '@/hooks/useButtonTracker';
 import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 import { ManualProjectDialog } from '@/components/ManualProjectDialog';
 import { ManualProjectEditDialog } from '@/components/ManualProjectEditDialog';
@@ -24,6 +25,7 @@ interface ProjectListingProps {
 
 export default function ProjectListing({ onProjectSelect }: ProjectListingProps) {
   const { projectRuns, currentProjectRun, setCurrentProjectRun, deleteProjectRun, fetchProjectRuns } = useProject();
+  const { trackClick } = useButtonTracker();
   const navigate = useNavigate();
   const [showProfileManager, setShowProfileManager] = useState(false);
   const [showToolsLibrary, setShowToolsLibrary] = useState(false);
@@ -65,20 +67,16 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     };
   };
 
-  const handleOpenProjectRun = (projectRun: ProjectRun) => {
+  const handleOpenProjectRun = useCallback((projectRun: ProjectRun) => {
     console.log("🎯 Opening project run:", projectRun.name);
     
-    // Set the project run immediately - no async delays
+    // SYNCHRONOUS navigation - no setTimeout delays
     setCurrentProjectRun(projectRun);
-    
-    // Clear any conflicting navigation state
     window.history.replaceState({}, document.title, window.location.pathname);
+    onProjectSelect?.('workflow' as any);
     
-    // Signal parent that we want to switch to workflow - use setTimeout to ensure state updates complete
-    setTimeout(() => {
-      onProjectSelect?.('workflow' as any);
-    }, 0);
-  };
+    console.log("🎯 Project run navigation completed:", projectRun.name);
+  }, [setCurrentProjectRun, onProjectSelect]);
 
   const handleDeleteProjectRun = (projectRunId: string) => {
     deleteProjectRun(projectRunId);
@@ -206,19 +204,9 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                         {projectRun.status !== 'complete' && !projectRun.isManualEntry && (
                           <Button 
                             size="sm" 
-                            onClick={(e) => {
-                              console.log("🔥🔥🔥 CONTINUE BUTTON CLICKED - START");
-                              console.log("🔥 Event:", e);
-                              console.log("🔥 Project run ID:", projectRun.id);
-                              console.log("🔥 Current project run before:", currentProjectRun?.id);
-                              try {
-                                handleOpenProjectRun(projectRun);
-                                console.log("🔥 handleOpenProjectRun completed");
-                              } catch (error) {
-                                console.error("🔥 Error in handleOpenProjectRun:", error);
-                              }
-                              console.log("🔥🔥🔥 CONTINUE BUTTON CLICKED - END");
-                            }}
+                            onClick={trackClick(`continue-${projectRun.id}`, () => handleOpenProjectRun(projectRun), {
+                              preventBubbling: true
+                            })}
                             className="flex-1"
                           >
                             <Play className="w-4 h-4 mr-2" />
@@ -364,11 +352,9 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                           {projectRun.status !== 'complete' && !projectRun.isManualEntry && (
                             <Button 
                               size="sm" 
-                              onClick={() => {
-                                console.log("🔥 Continue button clicked (mobile) for project run:", projectRun.id);
-                                console.log("🔥 Current project run before click (mobile):", currentProjectRun?.id);
-                                handleOpenProjectRun(projectRun);
-                              }}
+                              onClick={trackClick(`continue-desktop-${projectRun.id}`, () => handleOpenProjectRun(projectRun), {
+                                preventBubbling: true
+                              })}
                               className="transition-fast"
                             >
                               <Play className="w-4 h-4 mr-2" />

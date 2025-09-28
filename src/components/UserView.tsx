@@ -315,9 +315,9 @@ export default function UserView({
     }
   }, [projectRunId, projectRuns, setCurrentProjectRun]);
 
-  // CONSOLIDATED VIEW MODE LOGIC - Single source of truth for view mode decisions
+  // SIMPLIFIED VIEW MODE LOGIC - Single effect to prevent race conditions
   useEffect(() => {
-    console.log('🔄 UserView: Consolidated view mode logic triggered:', { 
+    console.log('🔄 UserView: View mode logic triggered:', { 
       resetToListing, 
       forceListingMode,
       showProfile,
@@ -326,45 +326,26 @@ export default function UserView({
       viewMode
     });
 
-    // Priority 1: Profile mode - always show listing with profile
-    if (showProfile) {
-      console.log("🔄 UserView: Profile mode requested - staying in listing");
-      setViewMode('listing');
-      return;
-    }
+    // Determine new view mode based on priority
+    let newViewMode: 'listing' | 'workflow' = viewMode;
 
-    // Priority 2: Force listing mode - override everything except profile
-    if (forceListingMode) {
-      console.log("🔄 UserView: Force listing mode active");
-      setViewMode('listing');
-      return;
-    }
-
-    // Priority 3: Reset to listing - but NOT if we have an active project run (Continue button case)
-    if (resetToListing && !currentProjectRun) {
-      console.log("🔄 UserView: Reset to listing (no active project run)");
-      setViewMode('listing');
+    if (showProfile || forceListingMode) {
+      newViewMode = 'listing';
+    } else if (resetToListing && !currentProjectRun) {
+      newViewMode = 'listing';
       setShowProfileManager(false);
-      return;
-    }
-
-    // Priority 4: Project run selected - switch to workflow (Continue button case) - HIGHER PRIORITY
-    if (currentProjectRun && !showProfile && !forceListingMode) {
-      console.log("🔄 UserView: Project run active, switching to workflow mode");
-      setViewMode('workflow');
+    } else if (currentProjectRun && !showProfile && !forceListingMode) {
+      newViewMode = 'workflow';
       onProjectSelected?.();
-      return;
+    } else if (projectRunId && currentProjectRun) {
+      newViewMode = 'workflow';
     }
 
-    // Priority 5: Project run ID provided via URL/navigation
-    if (projectRunId && currentProjectRun) {
-      console.log("🔄 UserView: ProjectRunId navigation, switching to workflow");
-      setViewMode('workflow');
-      return;
+    // Only update if view mode actually changed
+    if (newViewMode !== viewMode) {
+      console.log(`🔄 UserView: Changing view mode from ${viewMode} to ${newViewMode}`);
+      setViewMode(newViewMode);
     }
-
-    // Default: Keep current view if no specific conditions are met
-    console.log("🔄 UserView: No conditions met, keeping current view:", viewMode);
     
   }, [resetToListing, forceListingMode, showProfile, currentProjectRun, projectRunId, viewMode, onProjectSelected]);
   

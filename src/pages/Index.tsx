@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
@@ -11,6 +11,7 @@ import { AdminView } from "@/components/AdminView";
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import EditWorkflowView from "@/components/EditWorkflowView";
 import UserView from "@/components/UserView";
+import { ProjectNavigationErrorBoundary } from "@/components/ProjectNavigationErrorBoundary";
 import ProjectCatalog from "@/components/ProjectCatalog";
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -397,30 +398,24 @@ const Index = () => {
     }
   };
 
-  const handleMobileProjectSelect = (project: any) => {
-    console.log('🎯 CONTINUE CLICKED - Index: Mobile project selected:', project);
-    console.log('🎯 CONTINUE CLICKED - Current mobileView before:', mobileView);
-    console.log('🎯 CONTINUE CLICKED - resetUserView:', resetUserView);
-    console.log('🎯 CONTINUE CLICKED - forceListingMode:', forceListingMode);
+  const handleMobileProjectSelect = useCallback((project: any) => {
+    console.log('🎯 Index: Mobile project selected:', project.name);
     
     if ('progress' in project) {
-      console.log('🎯 CONTINUE CLICKED - Setting project run:', project.name);
+      // Project run selected - go directly to workflow
       setCurrentProjectRun(project);
       setMobileView('workflow');
-      // Clear any listing flags
+      setCurrentView('user');
+      // CRITICAL: Clear reset flags for direct navigation
       setResetUserView(false);
       setForceListingMode(false);
     } else {
-      console.log('🎯 CONTINUE CLICKED - Setting project template:', project.name);
+      // Project template selected
       setCurrentProject(project);
       setMobileView('workflow');
-      // Clear any listing flags
-      setResetUserView(false);
-      setForceListingMode(false);
+      setCurrentView('user');
     }
-    
-    console.log('🎯 CONTINUE CLICKED - New mobileView set to: workflow');
-  };
+  }, [setCurrentProjectRun, setCurrentProject]);
 
   const handleMobileQuickAction = () => {
     if (currentProjectRun) {
@@ -507,18 +502,22 @@ const Index = () => {
           hasProjectRunId: !!location.state?.projectRunId,
           currentView: currentView
         });
-        return <UserView 
-          resetToListing={resetUserView && !currentProjectRun} 
-          forceListingMode={forceListingMode}
-          onProjectSelected={() => {
-            console.log('🎯 Index: onProjectSelected called - clearing all reset flags');
-            setForceListingMode(false);
-            setResetUserView(false);
-            setCurrentView('user');
-          }} 
-          projectRunId={location.state?.projectRunId}
-          showProfile={location.state?.showProfile}
-        />;
+        return (
+          <ProjectNavigationErrorBoundary fallbackMessage="Failed to load project view. Please refresh the page.">
+            <UserView 
+              resetToListing={resetUserView && !currentProjectRun} 
+              forceListingMode={forceListingMode}
+              onProjectSelected={() => {
+                console.log('🎯 Index: onProjectSelected called - clearing all reset flags');
+                setForceListingMode(false);
+                setResetUserView(false);
+                setCurrentView('user');
+              }} 
+              projectRunId={location.state?.projectRunId}
+              showProfile={location.state?.showProfile}
+            />
+          </ProjectNavigationErrorBoundary>
+        );
       case 'editWorkflow':
         return <EditWorkflowView onBackToAdmin={() => setCurrentView('admin')} />;
       case 'home':

@@ -288,7 +288,7 @@ function StatusBadge({ status }: { status: string }) {
 function ActionButton({ status, progress, onSelect }: { status: string; progress: number; onSelect: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   
-  const handleClick = async (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -297,12 +297,9 @@ function ActionButton({ status, progress, onSelect }: { status: string; progress
     console.log(`🎯 ActionButton clicked: ${status}`);
     setIsLoading(true);
     
-    try {
-      await new Promise(resolve => setTimeout(resolve, 50)); // Small delay for visual feedback
-      onSelect();
-    } finally {
-      setIsLoading(false);
-    }
+    // REMOVED artificial delay - direct execution
+    onSelect();
+    setIsLoading(false);
   };
   
   if (status === 'completed') {

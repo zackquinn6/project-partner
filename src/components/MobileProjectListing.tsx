@@ -135,23 +135,19 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
               <Button
                 variant="default"
                 size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('🎯 CONTINUE CLICKED - Clearing all reset flags and going to project');
-                  console.log('🎯 CONTINUE CLICKED - currentProjectRun:', currentProjectRun?.name);
+                onClick={trackClick('continue-current-project', () => {
+                  console.log('🎯 CONTINUE CLICKED - Clearing reset flags and navigating');
                   
-                  // Immediately clear reset flags
+                  // Clear reset flags immediately
                   setResetUserView(false);
                   setForceListingMode(false);
-                  
-                  // Also dispatch the clear event
                   window.dispatchEvent(new CustomEvent('clear-reset-flags'));
                   
-                  // Select the project - this should go directly to workflow
-                  console.log('🎯 CONTINUE CLICKED - Calling onProjectSelect with:', currentProjectRun?.name);
-                  onProjectSelect(currentProjectRun);
-                }}
+                  // Navigate to project
+                  if (currentProjectRun) {
+                    onProjectSelect(currentProjectRun);
+                  }
+                }, { preventBubbling: true })}
                 className="ml-3"
               >
                 Continue
