@@ -197,6 +197,27 @@ export class SchedulingEngine {
     const scheduledTasks: ScheduledTask[] = [];
     const reservedSlots = new Set<string>();
     const taskCompletionTimes = new Map<string, Date>();
+    const taskLatestTimes = new Map<string, Date>();
+
+    // Calculate latest completion dates using backward pass
+    const dropDead = inputs.dropDeadDate || inputs.targetCompletionDate;
+    for (let i = tasks.length - 1; i >= 0; i--) {
+      const task = tasks[i];
+      
+      // Find earliest required finish based on dependent tasks
+      let earliestRequiredFinish = dropDead;
+      for (const otherTask of tasks) {
+        if (otherTask.dependencies.includes(task.id)) {
+          const dependentLatest = taskLatestTimes.get(otherTask.id);
+          if (dependentLatest && dependentLatest < earliestRequiredFinish) {
+            earliestRequiredFinish = dependentLatest;
+          }
+        }
+      }
+      
+      const latestCompletion = new Date(earliestRequiredFinish.getTime() - task.estimatedHours * 60 * 60 * 1000);
+      taskLatestTimes.set(task.id, latestCompletion);
+    }
 
     for (const task of tasks) {
       // Determine worker type required
@@ -219,12 +240,15 @@ export class SchedulingEngine {
         // Schedule the task in the latest suitable slot
         const selectedSlot = suitableSlots[0];
         const endTime = new Date(selectedSlot.start.getTime() + task.estimatedHours * 60 * 60 * 1000);
+        const latestCompletion = taskLatestTimes.get(task.id) || dropDead;
         
         const scheduledTask: ScheduledTask = {
           taskId: task.id,
           workerId: selectedSlot.workerId,
           startTime: selectedSlot.start,
           endTime,
+          targetCompletionDate: endTime,
+          latestCompletionDate: latestCompletion,
           status: 'confirmed',
           bufferApplied: this.calculateAppliedBuffer(task)
         };
@@ -236,11 +260,14 @@ export class SchedulingEngine {
         reservedSlots.add(`${selectedSlot.workerId}-${selectedSlot.start.getTime()}`);
       } else {
         // Cannot schedule - mark as conflict
+        const latestCompletion = taskLatestTimes.get(task.id) || dropDead;
         const conflictTask: ScheduledTask = {
           taskId: task.id,
           workerId: inputs.workers[0]?.id || 'unknown',
           startTime: new Date(),
           endTime: new Date(),
+          targetCompletionDate: new Date(),
+          latestCompletionDate: latestCompletion,
           status: 'conflict',
           bufferApplied: 0
         };
@@ -312,19 +339,68 @@ export class SchedulingEngine {
     scheduledTasks: ScheduledTask[], 
     tasks: Task[]
   ): { criticalPath: string[], slackTimes: Record<string, number> } {
-    // Simplified critical path calculation
-    const criticalPath: string[] = [];
-    const slackTimes: Record<string, number> = {};
-
-    // Find the longest path through the dependency graph
     const taskMap = new Map(tasks.map(t => [t.id, t]));
     const scheduledMap = new Map(scheduledTasks.map(st => [st.taskId, st]));
-
+    
+    // Calculate earliest start times (forward pass)
+    const earliestStart = new Map<string, number>();
+    const earliestFinish = new Map<string, number>();
+    
     for (const task of tasks) {
       const scheduled = scheduledMap.get(task.id);
-      if (scheduled && scheduled.status === 'confirmed') {
-        // Calculate slack time (simplified)
-        slackTimes[task.id] = 0; // Would need more complex calculation
+      if (!scheduled || scheduled.status !== 'confirmed') continue;
+      
+      let maxDependencyFinish = 0;
+      for (const depId of task.dependencies) {
+        const depFinish = earliestFinish.get(depId) || 0;
+        maxDependencyFinish = Math.max(maxDependencyFinish, depFinish);
+      }
+      
+      earliestStart.set(task.id, maxDependencyFinish);
+      earliestFinish.set(task.id, maxDependencyFinish + task.estimatedHours);
+    }
+    
+    // Calculate latest start times (backward pass)
+    const latestStart = new Map<string, number>();
+    const latestFinish = new Map<string, number>();
+    const projectEnd = Math.max(...Array.from(earliestFinish.values()));
+    
+    // Initialize all latest finishes to project end
+    for (const task of tasks) {
+      latestFinish.set(task.id, projectEnd);
+    }
+    
+    // Backward pass
+    for (let i = tasks.length - 1; i >= 0; i--) {
+      const task = tasks[i];
+      const scheduled = scheduledMap.get(task.id);
+      if (!scheduled || scheduled.status !== 'confirmed') continue;
+      
+      // Find minimum latest start of dependent tasks
+      let minDependentStart = projectEnd;
+      for (const otherTask of tasks) {
+        if (otherTask.dependencies.includes(task.id)) {
+          const dependentLatest = latestStart.get(otherTask.id) || projectEnd;
+          minDependentStart = Math.min(minDependentStart, dependentLatest);
+        }
+      }
+      
+      latestFinish.set(task.id, minDependentStart);
+      latestStart.set(task.id, minDependentStart - task.estimatedHours);
+    }
+    
+    // Calculate slack times and identify critical path
+    const criticalPath: string[] = [];
+    const slackTimes: Record<string, number> = {};
+    
+    for (const task of tasks) {
+      const es = earliestStart.get(task.id) || 0;
+      const ls = latestStart.get(task.id) || 0;
+      const slack = ls - es;
+      
+      slackTimes[task.id] = slack;
+      
+      if (Math.abs(slack) < 0.1) { // Critical path tasks have near-zero slack
         criticalPath.push(task.id);
       }
     }

@@ -76,6 +76,12 @@ interface TeamMember {
     }[];
   };
   costPerHour?: number;
+  email?: string;
+  phone?: string;
+  notificationPreferences?: {
+    email: boolean;
+    sms: boolean;
+  };
 }
 
 interface GlobalSettings {
@@ -109,6 +115,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [targetDate, setTargetDate] = useState<string>(
     format(addDays(new Date(), 30), 'yyyy-MM-dd')
   );
+  const [dropDeadDate, setDropDeadDate] = useState<string>(
+    format(addDays(new Date(), 45), 'yyyy-MM-dd')
+  );
   
   // Team management
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
@@ -125,7 +134,13 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         end: '17:00'
       },
       availability: {},
-      costPerHour: 0
+      costPerHour: 0,
+      email: '',
+      phone: '',
+      notificationPreferences: {
+        email: false,
+        sms: false
+      }
     }
   ]);
   
@@ -222,6 +237,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       // Prepare scheduling inputs
       const schedulingInputs: SchedulingInputs = {
         targetCompletionDate: new Date(targetDate),
+        dropDeadDate: new Date(dropDeadDate),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         tasks: schedulingTasks,
         workers: teamMembers.map(tm => ({
@@ -438,11 +454,65 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   };
 
   // Email schedule
-  const emailSchedule = () => {
-    toast({
-      title: "Email sent",
-      description: "Your schedule has been sent to your email address."
-    });
+  const emailSchedule = async () => {
+    if (!schedulingResult) {
+      toast({
+        title: "No schedule",
+        description: "Please generate a schedule first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      // Send notifications to team members who opted in
+      for (const member of teamMembers) {
+        if (!member.notificationPreferences?.email || !member.email) continue;
+        
+        // Get tasks assigned to this member
+        const assignedTasks = schedulingResult.scheduledTasks
+          .filter(st => st.workerId === member.id && st.status === 'confirmed')
+          .map(st => {
+            const task = schedulingTasks.find(t => t.id === st.taskId);
+            return {
+              title: task?.title || 'Unknown Task',
+              startTime: format(st.startTime, 'PPp'),
+              endTime: format(st.endTime, 'PPp'),
+              targetCompletion: format(st.targetCompletionDate, 'PPp'),
+              latestCompletion: format(st.latestCompletionDate, 'PPp'),
+              estimatedHours: task?.estimatedHours || 0
+            };
+          });
+        
+        if (assignedTasks.length === 0) continue;
+        
+        // Call edge function to send email
+        await supabase.functions.invoke('send-schedule-notification', {
+          body: {
+            recipientEmail: member.email,
+            recipientName: member.name,
+            projectName: project.name,
+            tasks: assignedTasks,
+            targetDate,
+            dropDeadDate
+          }
+        });
+      }
+      
+      toast({
+        title: "Notifications sent",
+        description: "Schedule notifications have been sent to team members."
+      });
+    } catch (error) {
+      console.error('Error sending notifications:', error);
+      toast({
+        title: "Error sending notifications",
+        description: "Failed to send schedule notifications. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const formatTime = (hours: number): string => {
@@ -486,21 +556,41 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Left side - Steps 1-4 (2/3 width) */}
               <div className="lg:col-span-2 space-y-4">
-                {/* Step 1: Target Completion Date */}
+                {/* Step 1: Target & Drop-Dead Dates */}
                 <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
                         1
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Target Completion Date</p>
-                        <Input
-                          type="date"
-                          value={targetDate}
-                          onChange={(e) => setTargetDate(e.target.value)}
-                          className="mt-1 h-8"
-                        />
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <Target className="w-3 h-3" />
+                            Target Completion Date
+                          </Label>
+                          <Input
+                            type="date"
+                            value={targetDate}
+                            onChange={(e) => setTargetDate(e.target.value)}
+                            className="mt-1 h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs font-medium flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-destructive" />
+                            Drop-Dead Date (Not Later Than)
+                          </Label>
+                          <Input
+                            type="date"
+                            value={dropDeadDate}
+                            onChange={(e) => setDropDeadDate(e.target.value)}
+                            className="mt-1 h-8"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Target is your goal; drop-dead is the absolute latest acceptable date
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -652,35 +742,97 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               
               <div className="space-y-3">
                 {teamMembers.map((member, index) => (
-                  <div key={member.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border">
-                    <div className="flex-1">
-                      <Input 
-                        placeholder="Team member name"
-                        value={member.name}
-                        onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
-                        className="h-10"
-                      />
+                  <Card key={member.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <Label className="text-xs mb-1">Name</Label>
+                          <Input 
+                            placeholder="Team member name"
+                            value={member.name}
+                            onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Label className="text-xs mb-1">Email</Label>
+                          <Input 
+                            type="email"
+                            placeholder="email@example.com"
+                            value={member.email || ''}
+                            onChange={(e) => updateTeamMember(member.id, { email: e.target.value })}
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Label className="text-xs mb-1">Phone</Label>
+                          <Input 
+                            type="tel"
+                            placeholder="(555) 555-5555"
+                            value={member.phone || ''}
+                            onChange={(e) => updateTeamMember(member.id, { phone: e.target.value })}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <Checkbox 
+                            id={`email-${member.id}`}
+                            checked={member.notificationPreferences?.email || false}
+                            onCheckedChange={(checked) => 
+                              updateTeamMember(member.id, { 
+                                notificationPreferences: { 
+                                  ...member.notificationPreferences,
+                                  email: checked as boolean 
+                                } 
+                              })
+                            }
+                          />
+                          <Label htmlFor={`email-${member.id}`} className="text-xs cursor-pointer">
+                            Email notifications
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Checkbox 
+                            id={`sms-${member.id}`}
+                            checked={member.notificationPreferences?.sms || false}
+                            onCheckedChange={(checked) => 
+                              updateTeamMember(member.id, { 
+                                notificationPreferences: { 
+                                  ...member.notificationPreferences,
+                                  sms: checked as boolean 
+                                } 
+                              })
+                            }
+                          />
+                          <Label htmlFor={`sms-${member.id}`} className="text-xs cursor-pointer">
+                            SMS notifications
+                          </Label>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openCalendar(member.id)}
+                          className="h-8 ml-auto"
+                        >
+                          <CalendarIcon className="w-3 h-3 mr-1" />
+                          Calendar ({Object.keys(member.availability).length})
+                        </Button>
+                        {teamMembers.length > 1 && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => removeTeamMember(member.id)}
+                            className="h-8 px-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => openCalendar(member.id)}
-                      className="h-10 px-4"
-                    >
-                      <CalendarIcon className="w-4 h-4 mr-2" />
-                      Calendar ({Object.keys(member.availability).length})
-                    </Button>
-                    {teamMembers.length > 1 && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => removeTeamMember(member.id)}
-                        className="h-10 px-3"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
+                  </Card>
                 ))}
               </div>
             </div>
@@ -726,12 +878,87 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               )}
 
               {schedulingResult && (
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Schedule generated with {schedulingResult.scheduledTasks.length} tasks
-                  </AlertDescription>
-                </Alert>
+                <>
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Schedule generated with {schedulingResult.scheduledTasks.length} tasks
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Detailed Schedule Results */}
+                  <Card className="mt-4">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4" />
+                        Scheduled Tasks Overview
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left p-2 font-medium">Task</th>
+                              <th className="text-left p-2 font-medium">Worker</th>
+                              <th className="text-left p-2 font-medium">Start</th>
+                              <th className="text-left p-2 font-medium">End</th>
+                              <th className="text-left p-2 font-medium text-green-700">Target Complete</th>
+                              <th className="text-left p-2 font-medium text-red-700">Latest Complete</th>
+                              <th className="text-left p-2 font-medium">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {schedulingResult.scheduledTasks
+                              .filter(st => st.status === 'confirmed')
+                              .map((scheduledTask) => {
+                                const task = schedulingTasks.find(t => t.id === scheduledTask.taskId);
+                                const worker = teamMembers.find(w => w.id === scheduledTask.workerId);
+                                return (
+                                  <tr key={scheduledTask.taskId} className="border-b hover:bg-muted/50">
+                                    <td className="p-2">
+                                      <div className="font-medium">{task?.title || 'Unknown'}</div>
+                                    </td>
+                                    <td className="p-2">{worker?.name || 'Unknown'}</td>
+                                    <td className="p-2 text-xs">{format(scheduledTask.startTime, 'MMM dd, h:mm a')}</td>
+                                    <td className="p-2 text-xs">{format(scheduledTask.endTime, 'MMM dd, h:mm a')}</td>
+                                    <td className="p-2 text-xs text-green-700 font-medium">
+                                      {format(scheduledTask.targetCompletionDate, 'MMM dd, h:mm a')}
+                                    </td>
+                                    <td className="p-2 text-xs text-red-700 font-medium">
+                                      {format(scheduledTask.latestCompletionDate, 'MMM dd, h:mm a')}
+                                    </td>
+                                    <td className="p-2">
+                                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                        {scheduledTask.status}
+                                      </Badge>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      {schedulingResult.scheduledTasks.some(st => st.status === 'conflict') && (
+                        <Alert variant="destructive" className="mt-4">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription>
+                            {schedulingResult.scheduledTasks.filter(st => st.status === 'conflict').length} tasks could not be scheduled within the constraints
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      <div className="mt-4 p-3 bg-muted rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Note:</strong> Target dates are your goal completion times based on optimal scheduling. 
+                          Latest dates represent the absolute deadlines based on critical path analysis - completing tasks 
+                          beyond these dates will delay the entire project.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
               )}
             </div>
 

@@ -29,6 +29,12 @@ export interface Worker {
   skillLevel: 'novice' | 'intermediate' | 'expert';
   availability: TimeSlot[];
   costPerHour?: number;
+  email?: string;
+  phone?: string;
+  notificationPreferences?: {
+    email: boolean;
+    sms: boolean;
+  };
 }
 
 export interface SiteConstraints {
@@ -43,6 +49,7 @@ export interface SiteConstraints {
 
 export interface SchedulingInputs {
   targetCompletionDate: Date;
+  dropDeadDate?: Date;
   timezone: string;
   tasks: Task[];
   workers: Worker[];
@@ -58,6 +65,8 @@ export interface ScheduledTask {
   workerId: string;
   startTime: Date;
   endTime: Date;
+  targetCompletionDate: Date;
+  latestCompletionDate: Date;
   status: TaskStatus;
   bufferApplied: number; // Percentage buffer added
   isManualEdit?: boolean;
