@@ -177,29 +177,28 @@ export function TaskCompletionDialog({
             )}
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label>Completion Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal h-10",
                     !completedDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
                   {completedDate ? format(completedDate, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 z-[300]" align="start">
                 <Calendar
                   mode="single"
                   selected={completedDate}
                   onSelect={(date) => date && setCompletedDate(date)}
-                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                  disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
                   initialFocus
-                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
