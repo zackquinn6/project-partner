@@ -72,6 +72,26 @@ export default function EditWorkflowView({
   // Get phases directly from project - no dynamic addition needed
   const displayPhases = currentProject ? currentProject.phases : [];
 
+  // Debug logging
+  useEffect(() => {
+    if (currentProject) {
+      console.log('🔍 EditWorkflowView - currentProject loaded:', {
+        projectId: currentProject.id,
+        projectName: currentProject.name,
+        phaseCount: currentProject.phases?.length,
+        phases: currentProject.phases?.map(p => ({
+          name: p.name,
+          operationCount: p.operations?.length,
+          operations: p.operations?.map(op => ({
+            name: op.name,
+            stepCount: op.steps?.length,
+            steps: op.steps?.map(s => s.step)
+          }))
+        }))
+      });
+    }
+  }, [currentProject?.id]);
+
   // Flatten all steps from all phases and operations for navigation
   const allSteps = displayPhases.flatMap(phase => phase.operations.flatMap(operation => operation.steps.map(step => ({
     ...step,
@@ -80,6 +100,11 @@ export default function EditWorkflowView({
     phaseId: phase.id,
     operationId: operation.id
   }))));
+  
+  console.log('🔍 EditWorkflowView - allSteps flattened:', {
+    totalSteps: allSteps.length,
+    steps: allSteps.map(s => `${s.phaseName} > ${s.operationName} > ${s.step}`)
+  });
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
   useEffect(() => {
