@@ -258,6 +258,45 @@ export function UnifiedProjectManagement() {
     }
   };
 
+  const deleteDraftRevision = async (revisionId: string, revisionNumber: number) => {
+    if (revisionNumber === 0) {
+      toast({
+        title: "Error",
+        description: "Cannot delete the base revision (revision 0)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete this draft revision? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', revisionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Draft revision deleted successfully",
+      });
+
+      fetchProjects();
+      fetchProjectRevisions();
+    } catch (error) {
+      console.error('Error deleting revision:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete revision",
+        variant: "destructive",
+      });
+    }
+  };
+
   const createProject = async () => {
     try {
       const { data, error } = await supabase
@@ -707,6 +746,17 @@ export function UnifiedProjectManagement() {
                                              <ArrowRight className="w-3 h-3" />
                                              Release to Production
                                            </Button>
+                                           {revision.revision_number > 0 && (
+                                             <Button
+                                               size="sm"
+                                               variant="destructive"
+                                               onClick={() => deleteDraftRevision(revision.id, revision.revision_number)}
+                                               className="flex items-center gap-1"
+                                             >
+                                               <X className="w-3 h-3" />
+                                               Delete Draft
+                                             </Button>
+                                           )}
                                         </>
                                       )}
                                       {revision.publish_status === 'beta-testing' && (
