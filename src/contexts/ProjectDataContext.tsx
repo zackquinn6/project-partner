@@ -1,9 +1,10 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useDataFetch } from '@/hooks/useDataFetch';
 import { useAuth } from './AuthContext';
 import { useGuest } from './GuestContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProjectDataContextType {
   projects: Project[];
@@ -33,36 +34,27 @@ interface ProjectDataProviderProps {
 export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const { isGuest, guestData } = useGuest();
+  const [enrichedProjects, setEnrichedProjects] = useState<Project[]>([]);
+  const [isEnriching, setIsEnriching] = useState(false);
 
-  // Memoized transform function for projects with better error handling
+  // Memoized transform function for projects (synchronous, loads from JSON first)
   const transformProjects = React.useMemo(() => (data: any[]): Project[] => {
     return data.map(project => {
       let phases = [];
       if (project.phases) {
         try {
-          // Handle double-encoded JSON strings
           let parsedPhases = project.phases;
           
-          // If it's a string, parse it once
           if (typeof parsedPhases === 'string') {
             parsedPhases = JSON.parse(parsedPhases);
           }
           
-          // If after first parse it's still a string, parse again (double-encoded)
           if (typeof parsedPhases === 'string') {
             console.warn('Phases were double-encoded for project:', project.name);
             parsedPhases = JSON.parse(parsedPhases);
           }
           
           phases = parsedPhases;
-          
-          console.log('Transformed project phases:', {
-            projectId: project.id,
-            projectName: project.name,
-            revisionNumber: project.revision_number,
-            phaseCount: Array.isArray(phases) ? phases.length : 0,
-            firstPhaseOps: phases[0] ? phases[0].operations?.length : 0
-          });
         } catch (e) {
           console.error('Failed to parse phases JSON for project:', project.name, e);
           phases = [];
@@ -94,7 +86,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     });
   }, []);
 
-  // Memoized transform function for project runs with better error handling
+  // Memoized transform function for project runs
   const transformProjectRuns = React.useMemo(() => (data: any[]): ProjectRun[] => {
     return data.map(run => {
       let phases = [];
@@ -166,7 +158,119 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     cacheKey: 'projects'
   });
 
-  // Fetch project runs data with proper error handling - only when authenticated
+  // Enrich projects with normalized data
+  useEffect(() => {
+    const enrichProjects = async () => {
+      if (!projects || projects.length === 0 || isEnriching) return;
+      
+      setIsEnriching(true);
+      
+      try {
+        const enriched = await Promise.all(projects.map(async (project) => {
+          // Try to load from normalized tables
+          try {
+            const { data: operations, error: opsError } = await supabase
+              .from('template_operations')
+              .select(`
+                id,
+                name,
+                description,
+                display_order,
+                standard_phase_id,
+                standard_phases!inner(id, name, description, display_order)
+              `)
+              .eq('project_id', project.id)
+              .order('display_order');
+
+            if (opsError) throw opsError;
+
+            if (operations && operations.length > 0) {
+              // Fetch all steps for these operations
+              const operationIds = operations.map(op => op.id);
+              const { data: steps, error: stepsError } = await supabase
+                .from('template_steps')
+                .select('*')
+                .in('operation_id', operationIds)
+                .order('display_order');
+
+              if (stepsError) throw stepsError;
+
+              // Group operations by phase
+              const phaseMap = new Map();
+              
+              operations.forEach(op => {
+                const phase = op.standard_phases;
+                if (!phase) return;
+                
+                if (!phaseMap.has(phase.id)) {
+                  phaseMap.set(phase.id, {
+                    id: phase.id,
+                    name: phase.name,
+                    description: phase.description,
+                    operations: []
+                  });
+                }
+                
+                const operationSteps = (steps || [])
+                  .filter(step => step.operation_id === op.id)
+                  .map(step => ({
+                    id: step.id,
+                    step: step.step_title,
+                    description: step.description || '',
+                    contentType: 'text',
+                    content: step.content_sections || [],
+                    materials: step.materials || [],
+                    tools: step.tools || [],
+                    outputs: step.outputs || []
+                  }));
+                
+                phaseMap.get(phase.id).operations.push({
+                  id: op.id,
+                  name: op.name,
+                  description: op.description || '',
+                  steps: operationSteps
+                });
+              });
+              
+              // Convert map to array and sort by phase display order
+              const phases = Array.from(phaseMap.values())
+                .sort((a, b) => {
+                  const aPhase = operations.find(op => op.standard_phases?.id === a.id)?.standard_phases;
+                  const bPhase = operations.find(op => op.standard_phases?.id === b.id)?.standard_phases;
+                  return (aPhase?.display_order || 0) - (bPhase?.display_order || 0);
+                });
+
+              console.log('✅ Enriched project from normalized tables:', {
+                projectId: project.id,
+                projectName: project.name,
+                phaseCount: phases.length,
+                totalOperations: operations.length,
+                totalSteps: steps?.length || 0
+              });
+
+              return { ...project, phases };
+            }
+          } catch (e) {
+            console.warn('Failed to load normalized data for project:', project.name, e);
+          }
+
+          // Return original project if enrichment failed
+          return project;
+        }));
+
+        setEnrichedProjects(enriched);
+      } catch (e) {
+        console.error('Failed to enrich projects:', e);
+        setEnrichedProjects(projects);
+      } finally {
+        setIsEnriching(false);
+      }
+    };
+
+    enrichProjects();
+  }, [projects]);
+
+  // Fetch project runs data - only when authenticated
   const shouldFetchProjectRuns = !isGuest && !!user;
   
   const {
@@ -183,13 +287,13 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     transform: transformProjectRuns,
     dependencies: [user?.id, shouldFetchProjectRuns],
     cacheKey: shouldFetchProjectRuns ? `project_runs_${user.id}` : undefined,
-    enabled: shouldFetchProjectRuns // Prevent fetch when disabled
+    enabled: shouldFetchProjectRuns
   });
 
   const value = {
-    projects,
-    projectRuns: isGuest ? guestData.projectRuns : projectRuns, // Always use fetched data when not guest
-    loading: projectsLoading || (shouldFetchProjectRuns ? projectRunsLoading : false),
+    projects: enrichedProjects.length > 0 ? enrichedProjects : projects,
+    projectRuns: isGuest ? guestData.projectRuns : projectRuns,
+    loading: projectsLoading || isEnriching || (shouldFetchProjectRuns ? projectRunsLoading : false),
     error: projectsError || (shouldFetchProjectRuns ? projectRunsError : null),
     refetchProjects,
     refetchProjectRuns,
