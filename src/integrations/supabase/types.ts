@@ -1404,6 +1404,66 @@ export type Database = {
         }
         Relationships: []
       }
+      project_run_steps: {
+        Row: {
+          completed_at: string | null
+          completion_percentage: number | null
+          created_at: string | null
+          custom_materials: Json | null
+          custom_tools: Json | null
+          id: string
+          is_completed: boolean | null
+          project_run_id: string
+          started_at: string | null
+          template_step_id: string
+          updated_at: string | null
+          user_notes: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          custom_materials?: Json | null
+          custom_tools?: Json | null
+          id?: string
+          is_completed?: boolean | null
+          project_run_id: string
+          started_at?: string | null
+          template_step_id: string
+          updated_at?: string | null
+          user_notes?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          custom_materials?: Json | null
+          custom_tools?: Json | null
+          id?: string
+          is_completed?: boolean | null
+          project_run_id?: string
+          started_at?: string | null
+          template_step_id?: string
+          updated_at?: string | null
+          user_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_steps_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_run_steps_template_step_id_fkey"
+            columns: ["template_step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_runs: {
         Row: {
           accountability_partner: string | null
@@ -1738,6 +1798,137 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      standard_phases: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order: number
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      template_operations: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          project_id: string
+          standard_phase_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          project_id: string
+          standard_phase_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          project_id?: string
+          standard_phase_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_operations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_operations_standard_phase_id_fkey"
+            columns: ["standard_phase_id"]
+            isOneToOne: false
+            referencedRelation: "standard_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_steps: {
+        Row: {
+          content_sections: Json | null
+          created_at: string | null
+          description: string | null
+          display_order: number
+          estimated_time_minutes: number | null
+          id: string
+          materials: Json | null
+          operation_id: string
+          outputs: Json | null
+          step_number: number
+          step_title: string
+          tools: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          content_sections?: Json | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          estimated_time_minutes?: number | null
+          id?: string
+          materials?: Json | null
+          operation_id: string
+          outputs?: Json | null
+          step_number: number
+          step_title: string
+          tools?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          content_sections?: Json | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          estimated_time_minutes?: number | null
+          id?: string
+          materials?: Json | null
+          operation_id?: string
+          outputs?: Json | null
+          step_number?: number
+          step_title?: string
+          tools?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_steps_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "template_operations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tool_models: {
         Row: {
