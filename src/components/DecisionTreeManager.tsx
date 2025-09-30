@@ -111,7 +111,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl h-[90vh] p-0">
+      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
