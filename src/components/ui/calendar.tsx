@@ -16,11 +16,11 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3 pointer-events-auto w-full max-w-[280px] sm:max-w-none", className)}
+      className={cn("p-3 pointer-events-auto w-full max-w-[300px] sm:max-w-none", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
         month: "space-y-4 w-full",
-        caption: "flex justify-center pt-1 relative items-center mb-1",
+        caption: "flex justify-center pt-1 relative items-center mb-2",
         caption_label: "text-sm font-medium truncate",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
@@ -29,15 +29,15 @@ function Calendar({
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
-        table: "w-full border-collapse",
-        head_row: "flex w-full justify-between mb-1",
+        table: "w-full border-collapse table-fixed",
+        head_row: "w-full",
         head_cell:
-          "text-muted-foreground rounded-md font-normal text-[0.65rem] sm:text-[0.8rem] flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 shrink-0",
-        row: "flex w-full justify-between mt-0.5",
-        cell: "relative p-0 text-center focus-within:relative focus-within:z-20 w-8 h-8 sm:w-9 sm:h-9 shrink-0 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
+          "text-muted-foreground rounded-md font-normal text-[0.6rem] sm:text-[0.8rem] text-center align-middle h-8 sm:h-9 w-[32px] sm:w-[36px]",
+        row: "w-full",
+        cell: "relative p-0 text-center align-middle h-8 sm:h-9 w-[32px] sm:w-[36px] focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal aria-selected:opacity-100 text-[0.7rem] sm:text-sm hover:bg-accent hover:text-accent-foreground"
+          "h-full w-full p-0 font-normal aria-selected:opacity-100 text-[0.75rem] sm:text-sm hover:bg-accent hover:text-accent-foreground"
         ),
         day_range_end: "day-range-end",
         day_selected:

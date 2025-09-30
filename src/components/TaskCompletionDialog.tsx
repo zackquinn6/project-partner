@@ -193,12 +193,12 @@ export function TaskCompletionDialog({
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
-                className="w-auto p-0" 
+                className="w-auto max-w-[calc(100vw-32px)] p-0" 
                 align="center" 
                 sideOffset={8}
                 side="bottom"
               >
-                <div className="bg-card border rounded-md">
+                <div className="bg-card border rounded-md shadow-lg">
                   <Calendar
                     mode="single"
                     selected={completedDate}
