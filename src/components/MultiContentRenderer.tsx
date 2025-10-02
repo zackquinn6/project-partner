@@ -1,7 +1,7 @@
 import { ExternalLink } from "lucide-react";
 
 interface ContentSection {
-  id: string;
+  id?: string;
   type: 'text' | 'image' | 'video' | 'link';
   content: string;
   title?: string;
@@ -38,9 +38,9 @@ export function MultiContentRenderer({ sections }: MultiContentRendererProps) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4">
-        {sections.map((section) => (
+        {sections.map((section, index) => (
           <div 
-            key={section.id} 
+            key={section.id || `section-${index}`} 
             className={`${getWidthClass(section.width)} ${getAlignmentClass(section.alignment)}`}
           >
             {section.type === 'text' && (

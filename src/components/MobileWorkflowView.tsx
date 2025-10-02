@@ -8,6 +8,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu,
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { MultiContentRenderer } from '@/components/MultiContentRenderer';
 
 interface MobileWorkflowViewProps {
   projectName: string;
@@ -207,7 +208,10 @@ export function MobileWorkflowView({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {currentStep.description && (
+                  {/* Render content_sections using MultiContentRenderer */}
+                  {currentStep.content && Array.isArray(currentStep.content) && currentStep.content.length > 0 ? (
+                    <MultiContentRenderer sections={currentStep.content} />
+                  ) : currentStep.description && (
                     <p className="text-muted-foreground text-sm leading-relaxed">
                       {currentStep.description}
                     </p>

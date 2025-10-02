@@ -18,6 +18,7 @@ import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
+import { MultiContentRenderer } from './MultiContentRenderer';
 import { OrderingWindow } from './OrderingWindow';
 import { SignatureCapture } from './SignatureCapture';
 import { StepCompletionTracker } from './StepCompletionTracker';
@@ -371,7 +372,12 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
       );
     }
 
-    // Regular content display
+    // Check if content is an array (content_sections from normalized tables)
+    if (Array.isArray(step.content) && step.content.length > 0) {
+      return <MultiContentRenderer sections={step.content} />;
+    }
+
+    // Legacy content display based on contentType
     switch (step.contentType) {
       case 'image':
         return (
