@@ -2572,6 +2572,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      rebuild_phases_json_from_templates: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
       request_emergency_data_access: {
         Args: {
           emergency_reason: string
