@@ -324,8 +324,8 @@ export function UnifiedProjectManagement() {
         isStandardTemplate: true
       });
       
-      // Navigate to project catalog with admin mode
-      navigate('/admin');
+      // Navigate to project catalog (no /admin route exists)
+      navigate('/projects');
     } catch (error) {
       console.error('Error loading standard project:', error);
       toast({
