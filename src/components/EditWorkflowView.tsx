@@ -381,9 +381,6 @@ export default function EditWorkflowView({
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold">Workflow Editor: {currentProject?.name || 'Untitled Project'}</h1>
             <div className="flex items-center gap-4">
-              {isEditingStandardProject && <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
-                  🔒 Editing Standard Project
-                </Badge>}
               {editMode && <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                   Editing: {currentStep?.step}
                 </Badge>}
