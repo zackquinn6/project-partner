@@ -269,8 +269,13 @@ export default function EditWorkflowView({
       return <MultiContentRenderer sections={step.contentSections} />;
     }
 
-    // Fallback for steps with legacy content
-    if (step.content && step.content.trim()) {
+    // Handle case where content might be an array (content_sections)
+    if (Array.isArray(step.content) && step.content.length > 0) {
+      return <MultiContentRenderer sections={step.content} />;
+    }
+
+    // Fallback for steps with legacy string content
+    if (typeof step.content === 'string' && step.content.trim()) {
       return <div className="text-muted-foreground whitespace-pre-wrap">
           {step.content}
         </div>;
