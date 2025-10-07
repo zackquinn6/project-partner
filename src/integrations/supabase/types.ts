@@ -1599,6 +1599,7 @@ export type Database = {
           id: string
           image: string | null
           is_current_version: boolean | null
+          is_standard_template: boolean | null
           name: string
           parent_project_id: string | null
           phase_revision_alerts: Json | null
@@ -1632,6 +1633,7 @@ export type Database = {
           id?: string
           image?: string | null
           is_current_version?: boolean | null
+          is_standard_template?: boolean | null
           name: string
           parent_project_id?: string | null
           phase_revision_alerts?: Json | null
@@ -1665,6 +1667,7 @@ export type Database = {
           id?: string
           image?: string | null
           is_current_version?: boolean | null
+          is_standard_template?: boolean | null
           name?: string
           parent_project_id?: string | null
           phase_revision_alerts?: Json | null

@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, 
-  ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw 
+  ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -297,6 +297,45 @@ export function UnifiedProjectManagement() {
     }
   };
 
+  const handleEditStandardProject = async () => {
+    try {
+      // Fetch standard project using RPC
+      const { data: standardData, error: rpcError } = await supabase
+        .rpc('get_standard_project_template');
+      
+      if (rpcError) throw rpcError;
+      if (!standardData || standardData.length === 0) throw new Error('Standard Project not found');
+      
+      const projectData = standardData[0];
+      const parsedPhases = Array.isArray(projectData.phases) ? projectData.phases : 
+        (typeof projectData.phases === 'string' ? JSON.parse(projectData.phases) : []);
+        
+      setCurrentProject({
+        id: projectData.project_id,
+        name: projectData.project_name,
+        description: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        startDate: new Date(),
+        planEndDate: new Date(),
+        status: 'not-started' as const,
+        publishStatus: 'draft' as const,
+        phases: parsedPhases,
+        isStandardTemplate: true
+      });
+      
+      // Navigate to project catalog with admin mode
+      navigate('/admin');
+    } catch (error) {
+      console.error('Error loading standard project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load Standard Project Foundation",
+        variant: "destructive",
+      });
+    }
+  };
+
   const createProject = async () => {
     try {
       // Use new backend function to create project with standard foundation
@@ -416,9 +455,20 @@ export function UnifiedProjectManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={() => setCreateProjectDialogOpen(true)} className="self-end flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-              </Button>
+              <div className="flex gap-2 self-end">
+                <Button onClick={() => setCreateProjectDialogOpen(true)} className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  New Project
+                </Button>
+                <Button 
+                  onClick={handleEditStandardProject}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  Edit Standard
+                </Button>
+              </div>
             </div>
 
             {selectedProject && (
