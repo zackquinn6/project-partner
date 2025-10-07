@@ -429,10 +429,20 @@ export function UnifiedProjectManagement() {
                 <Settings className="w-5 h-5" />
                 Project Management & Revision Control
               </CardTitle>
-              <Button onClick={fetchProjects} variant="outline" className="flex items-center gap-2">
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleEditStandardProject}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  Edit Standard
+                </Button>
+                <Button onClick={fetchProjects} variant="outline" className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col min-h-0 enhanced-scroll">
@@ -455,20 +465,10 @@ export function UnifiedProjectManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex gap-2 self-end">
-                <Button onClick={() => setCreateProjectDialogOpen(true)} className="flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  New Project
-                </Button>
-                <Button 
-                  onClick={handleEditStandardProject}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Lock className="w-4 h-4" />
-                  Edit Standard
-                </Button>
-              </div>
+              <Button onClick={() => setCreateProjectDialogOpen(true)} className="flex items-center gap-2 self-end">
+                <Plus className="w-4 h-4" />
+                New Project
+              </Button>
             </div>
 
             {selectedProject && (
