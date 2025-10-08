@@ -49,7 +49,7 @@ export default function Navigation({
     };
   }
   
-  const { projectRuns, currentProjectRun, setCurrentProjectRun } = projectData;
+  const { projectRuns, currentProjectRun, setCurrentProjectRun, projects, setCurrentProject } = projectData;
   const { signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const isMobile = useIsMobile();
@@ -102,6 +102,14 @@ export default function Navigation({
     const selectedRun = projectRuns.find(run => run.id === projectRunId);
     if (selectedRun) {
       setCurrentProjectRun(selectedRun);
+      
+      // CRITICAL: Also update currentProject to match the template
+      // This ensures EditWorkflowView shows the correct project
+      const matchingProject = projects.find(p => p.id === selectedRun.templateId);
+      if (matchingProject) {
+        setCurrentProject(matchingProject);
+      }
+      
       onViewChange('user');
       onProjectSelected?.();
     }
