@@ -79,11 +79,6 @@ export const CompactAppsSection = ({
                   <p className="text-sm font-medium line-clamp-2 leading-tight">
                     {app.appName}
                   </p>
-                  {app.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                      {app.description}
-                    </p>
-                  )}
                 </div>
                 
                 {app.appType === 'external-link' && (
