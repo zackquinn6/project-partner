@@ -53,6 +53,11 @@ export default function EditWorkflowView({
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
   
+  // Helper to check if a phase is standard by name
+  const isStandardPhase = (phaseName: string) => {
+    return ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(phaseName);
+  };
+  
   // Debug log to check phases
   useEffect(() => {
     if (currentProject) {

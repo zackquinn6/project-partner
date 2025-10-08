@@ -53,6 +53,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
   const lastUpdateRef = useRef<string>('');
 
   const addProject = useCallback(async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
+    console.log('🚀 addProject CALLED:', {
+      projectName: projectData.name,
+      phaseCount: projectData.phases.length,
+      hasUser: !!user,
+      isAdmin,
+      timestamp: new Date().toISOString()
+    });
+    
     if (!user || !isAdmin) {
       toast({
         title: "Error",
@@ -65,6 +73,11 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     try {
       // Merge apps from Standard Project Foundation's standard phases
       let phasesToInsert = projectData.phases;
+      
+      console.log('🔍 Looking for Standard Project Foundation...', {
+        projectsCount: projects.length,
+        projectIds: projects.slice(0, 5).map(p => ({ id: p.id, name: p.name, isStandard: p.isStandardTemplate }))
+      });
       
       // Find Standard Project Foundation template
       const standardProject = projects.find(p => p.id === '00000000-0000-0000-0000-000000000001');

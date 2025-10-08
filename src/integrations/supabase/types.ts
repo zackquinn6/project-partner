@@ -1888,6 +1888,7 @@ export type Database = {
       }
       template_steps: {
         Row: {
+          apps: Json | null
           content_sections: Json | null
           created_at: string | null
           description: string | null
@@ -1903,6 +1904,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          apps?: Json | null
           content_sections?: Json | null
           created_at?: string | null
           description?: string | null
@@ -1918,6 +1920,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          apps?: Json | null
           content_sections?: Json | null
           created_at?: string | null
           description?: string | null

@@ -39,6 +39,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
+  
+  // Helper to check if a phase is standard by name
+  const isStandardPhase = (phaseName: string) => {
+    return ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(phaseName);
+  };
   const [editingItem, setEditingItem] = useState<{
     type: 'phase' | 'operation' | 'step';
     id: string;
@@ -758,7 +763,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
                 {displayPhases.map((phase, phaseIndex) => {
                 const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-                const isStandardPhase = standardPhaseNames.includes(phase.name) && !phase.isLinked;
+                // Check if editing Standard Project Foundation OR if this is a standard phase in any project
+                const isStandardPhase = (standardPhaseNames.includes(phase.name) && !phase.isLinked) || 
+                                       (isEditingStandardProject && standardPhaseNames.includes(phase.name));
                 const isLinkedPhase = phase.isLinked;
                 const isEditing = editingItem?.type === 'phase' && editingItem.id === phase.id;
                 
