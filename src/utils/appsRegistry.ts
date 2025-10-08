@@ -48,6 +48,14 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     description: 'Manage your tool inventory',
     actionKey: 'my-tools',
     displayOrder: 6
+  },
+  'tool-access': {
+    appName: 'Tool Access',
+    appType: 'native',
+    icon: 'Hammer',
+    description: 'Find tool rental locations and access options',
+    actionKey: 'tool-access',
+    displayOrder: 7
   }
 };
 
