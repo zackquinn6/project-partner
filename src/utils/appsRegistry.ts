@@ -25,13 +25,29 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     actionKey: 'shopping-checklist',
     displayOrder: 3
   },
-  'materials-selection': {
-    appName: 'Materials Selection',
+  'my-homes': {
+    appName: 'My Homes',
     appType: 'native',
-    icon: 'Package',
-    description: 'Select and manage project materials',
-    actionKey: 'materials-selection',
+    icon: 'Home',
+    description: 'Manage your home properties',
+    actionKey: 'my-homes',
     displayOrder: 4
+  },
+  'my-profile': {
+    appName: 'My Profile',
+    appType: 'native',
+    icon: 'User',
+    description: 'View and edit your profile',
+    actionKey: 'my-profile',
+    displayOrder: 5
+  },
+  'my-tools': {
+    appName: 'My Tools',
+    appType: 'native',
+    icon: 'Wrench',
+    description: 'Manage your tool inventory',
+    actionKey: 'my-tools',
+    displayOrder: 6
   }
 };
 

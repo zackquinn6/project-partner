@@ -3,11 +3,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AppReference } from '@/interfaces/Project';
 import { getAllNativeApps } from '@/utils/appsRegistry';
 import * as Icons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
-import { Check } from 'lucide-react';
+import { Check, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AppsLibraryDialogProps {
   open: boolean;
@@ -24,6 +29,13 @@ export const AppsLibraryDialog = ({
 }: AppsLibraryDialogProps) => {
   const [tempSelected, setTempSelected] = useState<AppReference[]>(selectedApps);
   const nativeApps = getAllNativeApps();
+  
+  // External app form state
+  const [externalAppName, setExternalAppName] = useState('');
+  const [externalAppType, setExternalAppType] = useState<'external-embed' | 'external-link'>('external-link');
+  const [externalAppUrl, setExternalAppUrl] = useState('');
+  const [externalAppIcon, setExternalAppIcon] = useState('ExternalLink');
+  const [externalAppDescription, setExternalAppDescription] = useState('');
 
   const getIconComponent = (iconName: string): LucideIcon => {
     const Icon = (Icons as any)[iconName];
@@ -52,6 +64,41 @@ export const AppsLibraryDialog = ({
     onOpenChange(false);
   };
 
+  const handleAddExternalApp = () => {
+    if (!externalAppName.trim() || !externalAppUrl.trim()) {
+      toast.error('Please fill in app name and URL');
+      return;
+    }
+
+    const newApp: AppReference = {
+      id: `external-${Date.now()}`,
+      appName: externalAppName,
+      appType: externalAppType,
+      icon: externalAppIcon,
+      description: externalAppDescription || undefined,
+      embedUrl: externalAppType === 'external-embed' ? externalAppUrl : undefined,
+      linkUrl: externalAppType === 'external-link' ? externalAppUrl : undefined,
+      openInNewTab: externalAppType === 'external-link' ? true : undefined,
+      displayOrder: 999
+    };
+
+    setTempSelected([...tempSelected, newApp]);
+    
+    // Reset form
+    setExternalAppName('');
+    setExternalAppUrl('');
+    setExternalAppIcon('ExternalLink');
+    setExternalAppDescription('');
+    
+    toast.success('External app added');
+  };
+
+  // Common icon options for external apps
+  const iconOptions = [
+    'ExternalLink', 'Link', 'Globe', 'Sparkles', 'Zap', 
+    'Tool', 'Settings', 'FileText', 'Image', 'Video'
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -65,7 +112,7 @@ export const AppsLibraryDialog = ({
         <Tabs defaultValue="native" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="native">Native Apps</TabsTrigger>
-            <TabsTrigger value="external" disabled>External Apps (Coming Soon)</TabsTrigger>
+            <TabsTrigger value="external">External Apps</TabsTrigger>
           </TabsList>
 
           <TabsContent value="native" className="space-y-4 mt-4">
@@ -115,11 +162,143 @@ export const AppsLibraryDialog = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="external" className="mt-4">
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
-                External apps support coming soon. You'll be able to add custom embeds and links.
-              </p>
+          <TabsContent value="external" className="mt-4 space-y-4">
+            <Card className="border-2 border-dashed">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Plus className="w-5 h-5" />
+                  <h3 className="font-semibold">Add External App</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="app-name">App Name *</Label>
+                    <Input
+                      id="app-name"
+                      placeholder="e.g., Cost Calculator"
+                      value={externalAppName}
+                      onChange={(e) => setExternalAppName(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="app-description">Description</Label>
+                    <Input
+                      id="app-description"
+                      placeholder="Brief description of the app"
+                      value={externalAppDescription}
+                      onChange={(e) => setExternalAppDescription(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>App Type *</Label>
+                    <RadioGroup 
+                      value={externalAppType} 
+                      onValueChange={(value) => setExternalAppType(value as 'external-embed' | 'external-link')}
+                      className="flex gap-4 mt-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="external-link" id="type-link" />
+                        <Label htmlFor="type-link" className="font-normal cursor-pointer">
+                          Link (Opens in new tab)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="external-embed" id="type-embed" />
+                        <Label htmlFor="type-embed" className="font-normal cursor-pointer">
+                          Embed (iFrame)
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="app-url">
+                      {externalAppType === 'external-embed' ? 'Embed URL *' : 'Link URL *'}
+                    </Label>
+                    <Input
+                      id="app-url"
+                      placeholder="https://..."
+                      value={externalAppUrl}
+                      onChange={(e) => setExternalAppUrl(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="app-icon">Icon</Label>
+                    <Select value={externalAppIcon} onValueChange={setExternalAppIcon}>
+                      <SelectTrigger id="app-icon">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {iconOptions.map((icon) => {
+                          const IconComponent = getIconComponent(icon);
+                          return (
+                            <SelectItem key={icon} value={icon}>
+                              <div className="flex items-center gap-2">
+                                <IconComponent className="w-4 h-4" />
+                                <span>{icon}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button onClick={handleAddExternalApp} className="w-full">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add External App
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Show selected external apps */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Selected External Apps</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {tempSelected
+                  .filter(app => app.appType !== 'native')
+                  .map((app) => {
+                    const IconComponent = getIconComponent(app.icon);
+                    return (
+                      <Card
+                        key={app.id}
+                        className="border-primary bg-primary/5"
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/20">
+                              <IconComponent className="w-6 h-6 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <h4 className="font-medium text-sm">{app.appName}</h4>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setTempSelected(tempSelected.filter(a => a.id !== app.id))}
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                              {app.description && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {app.description}
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {app.appType === 'external-embed' ? 'Embed' : 'Link'}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
