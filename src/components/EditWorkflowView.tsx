@@ -52,6 +52,22 @@ export default function EditWorkflowView({
   
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
+  
+  // Debug log to check phases
+  useEffect(() => {
+    if (currentProject) {
+      console.log('🔍 EditWorkflowView - Project loaded:', {
+        projectId: currentProject.id,
+        projectName: currentProject.name,
+        isEditingStandardProject,
+        phases: currentProject.phases.map(p => ({
+          name: p.name,
+          isStandard: p.isStandard,
+          operationCount: p.operations.length
+        }))
+      });
+    }
+  }, [currentProject?.id, isEditingStandardProject]);
   const [viewMode, setViewMode] = useState<'steps' | 'structure'>('steps');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
@@ -688,6 +704,17 @@ export default function EditWorkflowView({
               </Card>
 
               {/* Apps Section - View Mode */}
+              {(() => {
+                console.log('🎨 Rendering apps section:', {
+                  stepId: currentStep?.id,
+                  stepName: currentStep?.step,
+                  hasApps: !!currentStep?.apps,
+                  appsLength: currentStep?.apps?.length || 0,
+                  apps: currentStep?.apps
+                });
+                return null;
+              })()}
+              
               {currentStep && currentStep.apps && currentStep.apps.length > 0 && (
                 <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-sm">
                   <CardHeader>

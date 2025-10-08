@@ -70,6 +70,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       const standardProject = projects.find(p => p.id === '00000000-0000-0000-0000-000000000001');
       
       if (standardProject) {
+        console.log('🔍 addProject: Found Standard Project Foundation, merging apps...', {
+          standardProjectPhases: standardProject.phases.map(p => p.name)
+        });
+        
         // For each standard phase in the new project, merge apps from Standard Project Foundation
         phasesToInsert = projectData.phases.map(phase => {
           const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
@@ -77,6 +81,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             // Find matching phase in Standard Project Foundation
             const standardPhase = standardProject.phases.find(sp => sp.name === phase.name);
             if (standardPhase) {
+              console.log(`📋 Merging ${phase.name} phase with apps from Standard Project Foundation`);
+              
               // Merge operations and steps with apps
               const mergedOperations = phase.operations.map(operation => {
                 const standardOp = standardPhase.operations.find(sop => sop.name === operation.name);
@@ -85,6 +91,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
                   const mergedSteps = operation.steps.map(step => {
                     const standardStep = standardOp.steps.find(ss => ss.step === step.step);
                     if (standardStep?.apps && standardStep.apps.length > 0) {
+                      console.log(`✅ Copying ${standardStep.apps.length} apps to step "${step.step}"`, standardStep.apps);
                       // Copy apps from standard step
                       return { ...step, apps: standardStep.apps };
                     }
@@ -94,11 +101,21 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
                 }
                 return operation;
               });
+              
+              console.log(`✅ Marked "${phase.name}" as isStandard: true`);
               return { ...phase, operations: mergedOperations, isStandard: true };
             }
           }
           return phase;
         });
+        
+        console.log('📊 Final phasesToInsert:', phasesToInsert.map(p => ({
+          name: p.name,
+          isStandard: p.isStandard,
+          operationCount: p.operations.length,
+          firstOperation: p.operations[0]?.name,
+          firstStepApps: p.operations[0]?.steps[0]?.apps?.length || 0
+        })));
       }
 
       const { error } = await supabase
