@@ -406,8 +406,17 @@ export const createCloseProjectPhase = (): Phase => {
 // This preserves existing phases (including apps) and only adds missing standard phases
 export const ensureStandardPhasesForNewProject = (phases: Phase[]): Phase[] => {
   const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-  const existingPhaseNames = phases.map(p => p.name);
   const missingPhases: Phase[] = [];
+
+  // Mark existing standard phases with isStandard flag
+  const markedPhases = phases.map(phase => {
+    if (standardPhaseNames.includes(phase.name)) {
+      return { ...phase, isStandard: true };
+    }
+    return phase;
+  });
+
+  const existingPhaseNames = markedPhases.map(p => p.name);
 
   // CRITICAL: Only create fresh phases if they don't exist
   // This ensures apps and other data from template phases are preserved
@@ -426,7 +435,7 @@ export const ensureStandardPhasesForNewProject = (phases: Phase[]): Phase[] => {
 
   // Combine existing and missing phases
   // Existing phases (from template) retain all their data including apps
-  const allPhases = [...phases, ...missingPhases];
+  const allPhases = [...markedPhases, ...missingPhases];
   
   // Enforce standard phase ordering using the utility function
   return enforceStandardPhaseOrdering(allPhases);

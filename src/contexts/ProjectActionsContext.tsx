@@ -63,6 +63,44 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
 
     try {
+      // Merge apps from Standard Project Foundation's standard phases
+      let phasesToInsert = projectData.phases;
+      
+      // Find Standard Project Foundation template
+      const standardProject = projects.find(p => p.id === '00000000-0000-0000-0000-000000000001');
+      
+      if (standardProject) {
+        // For each standard phase in the new project, merge apps from Standard Project Foundation
+        phasesToInsert = projectData.phases.map(phase => {
+          const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+          if (standardPhaseNames.includes(phase.name)) {
+            // Find matching phase in Standard Project Foundation
+            const standardPhase = standardProject.phases.find(sp => sp.name === phase.name);
+            if (standardPhase) {
+              // Merge operations and steps with apps
+              const mergedOperations = phase.operations.map(operation => {
+                const standardOp = standardPhase.operations.find(sop => sop.name === operation.name);
+                if (standardOp) {
+                  // Merge steps with apps
+                  const mergedSteps = operation.steps.map(step => {
+                    const standardStep = standardOp.steps.find(ss => ss.step === step.step);
+                    if (standardStep?.apps && standardStep.apps.length > 0) {
+                      // Copy apps from standard step
+                      return { ...step, apps: standardStep.apps };
+                    }
+                    return step;
+                  });
+                  return { ...operation, steps: mergedSteps };
+                }
+                return operation;
+              });
+              return { ...phase, operations: mergedOperations, isStandard: true };
+            }
+          }
+          return phase;
+        });
+      }
+
       const { error } = await supabase
         .from('projects')
         .insert({
@@ -80,7 +118,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           estimated_time: projectData.estimatedTime || null,
           estimated_time_per_unit: projectData.estimatedTimePerUnit || null,
           scaling_unit: projectData.scalingUnit || null,
-          phases: JSON.stringify(projectData.phases),
+          phases: JSON.stringify(phasesToInsert),
           created_by: user.id
         });
 
@@ -89,7 +127,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       await refetchProjects();
       toast({
         title: "Success",
-        description: "Project created successfully",
+        description: "Project created successfully with apps from Standard Project Foundation",
       });
     } catch (error) {
       console.error('Error adding project:', error);
@@ -99,7 +137,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         variant: "destructive",
       });
     }
-  }, [user, isAdmin, refetchProjects]);
+  }, [user, isAdmin, refetchProjects, projects]);
 
   const createProjectRun = useCallback(async (project: Project, customName?: string, homeId?: string): Promise<string | null> => {
     if (!user) return null;
