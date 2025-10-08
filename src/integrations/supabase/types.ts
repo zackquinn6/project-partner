@@ -2446,15 +2446,22 @@ export type Database = {
         Returns: string
       }
       create_project_with_standard_foundation: {
-        Args: {
-          p_category?: string
-          p_description?: string
-          p_difficulty?: string
-          p_effort_level?: string
-          p_estimated_time?: string
-          p_image?: string
-          p_project_name: string
-        }
+        Args:
+          | {
+              p_category?: string
+              p_description?: string
+              p_difficulty?: string
+              p_effort_level?: string
+              p_estimated_time?: string
+              p_image?: string
+              p_project_name: string
+            }
+          | {
+              p_description?: string
+              p_project_name: string
+              p_project_type?: string
+              p_user_id: string
+            }
         Returns: string
       }
       delete_user_data: {
