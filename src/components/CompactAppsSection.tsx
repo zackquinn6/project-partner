@@ -46,7 +46,7 @@ export const CompactAppsSection = ({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
         {apps.map((app) => {
           const IconComponent = getIconComponent(app.icon);
           
