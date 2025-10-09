@@ -291,10 +291,105 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     enabled: shouldFetchProjectRuns
   });
 
+  const [enrichedProjectRuns, setEnrichedProjectRuns] = useState<ProjectRun[]>([]);
+  const [isEnrichingRuns, setIsEnrichingRuns] = useState(false);
+
+  // Enrich project runs with apps data from template steps for standard phases
+  useEffect(() => {
+    const enrichProjectRuns = async () => {
+      if (!projectRuns || projectRuns.length === 0 || isEnrichingRuns) return;
+      
+      setIsEnrichingRuns(true);
+      
+      try {
+        const enriched = await Promise.all(projectRuns.map(async (run) => {
+          if (!run.phases || run.phases.length === 0) return run;
+
+          // Get the template project to check which phases are standard
+          const { data: templateOps, error: opsError } = await supabase
+            .from('template_operations')
+            .select(`
+              id,
+              name,
+              standard_phase_id
+            `)
+            .eq('project_id', run.templateId);
+
+          if (opsError || !templateOps) return run;
+
+          // Get all template steps for these operations
+          const operationIds = templateOps.map(op => op.id);
+          const { data: templateSteps, error: stepsError } = await supabase
+            .from('template_steps')
+            .select('*')
+            .in('operation_id', operationIds);
+
+          if (stepsError || !templateSteps) return run;
+
+          // Enrich the phases with apps data
+          const enrichedPhases = run.phases.map(phase => {
+            // Check if this is a standard phase
+            const standardPhaseOps = templateOps.filter(op => 
+              op.standard_phase_id && phase.id === op.standard_phase_id
+            );
+
+            if (standardPhaseOps.length === 0) return phase; // Not a standard phase, return as is
+
+            // Enrich operations within this phase
+            const enrichedOperations = (phase.operations || []).map(operation => {
+              const templateOp = standardPhaseOps.find(op => op.name === operation.name);
+              if (!templateOp) return operation;
+
+              // Enrich steps with apps data
+              const enrichedSteps = (operation.steps || []).map(step => {
+                const templateStep = templateSteps.find(ts => 
+                  ts.operation_id === templateOp.id && ts.step_title === step.step
+                );
+
+                if (templateStep && templateStep.apps) {
+                  return {
+                    ...step,
+                    apps: (Array.isArray(templateStep.apps) ? templateStep.apps : []) as any
+                  };
+                }
+
+                return step;
+              });
+
+              return {
+                ...operation,
+                steps: enrichedSteps
+              };
+            });
+
+            return {
+              ...phase,
+              operations: enrichedOperations
+            };
+          });
+
+          return {
+            ...run,
+            phases: enrichedPhases
+          };
+        }));
+
+        setEnrichedProjectRuns(enriched);
+      } catch (e) {
+        console.error('Failed to enrich project runs:', e);
+        setEnrichedProjectRuns(projectRuns);
+      } finally {
+        setIsEnrichingRuns(false);
+      }
+    };
+
+    enrichProjectRuns();
+  }, [projectRuns]);
+
   const value = {
     projects: enrichedProjects.length > 0 ? enrichedProjects : projects,
-    projectRuns: isGuest ? guestData.projectRuns : projectRuns,
-    loading: projectsLoading || isEnriching || (shouldFetchProjectRuns ? projectRunsLoading : false),
+    projectRuns: isGuest ? guestData.projectRuns : (enrichedProjectRuns.length > 0 ? enrichedProjectRuns : projectRuns),
+    loading: projectsLoading || isEnriching || isEnrichingRuns || (shouldFetchProjectRuns ? projectRunsLoading : false),
     error: projectsError || (shouldFetchProjectRuns ? projectRunsError : null),
     refetchProjects,
     refetchProjectRuns,
