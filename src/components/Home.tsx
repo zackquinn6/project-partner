@@ -298,7 +298,7 @@ export default function Home({
             <div className="text-center lg:text-left">
               
               
-              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4">DIY Done Smarter</h1>
+              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4">A DIY Project Management App</h1>
               
               <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">The Go-to App for DIY Home Improvement</p>
               
