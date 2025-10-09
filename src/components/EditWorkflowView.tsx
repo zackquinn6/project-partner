@@ -191,11 +191,13 @@ export default function EditWorkflowView({
       });
       return;
     }
-    console.log('SaveEdit: Starting save with:', {
+    console.log('💾 SaveEdit: Starting save with:', {
       stepId: editingStep.id,
       stepName: editingStep.step,
       contentSections: editingStep.contentSections?.length || 0,
-      hasContent: !!editingStep.content
+      hasContent: !!editingStep.content,
+      appsCount: editingStep.apps?.length || 0,
+      apps: editingStep.apps
     });
 
     // Update only custom phases (standard phases are generated dynamically)
@@ -532,7 +534,10 @@ export default function EditWorkflowView({
                   <CardContent>
                     <CompactAppsSection
                       apps={editingStep.apps || []}
-                      onAppsChange={(apps) => updateEditingStep('apps', apps)}
+                      onAppsChange={(apps) => {
+                        console.log('📱 Apps changed:', { count: apps.length, apps });
+                        updateEditingStep('apps', apps);
+                      }}
                       onAddApp={() => setAppsLibraryOpen(true)}
                       onLaunchApp={() => {}}
                       editMode={true}
