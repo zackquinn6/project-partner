@@ -29,6 +29,7 @@ import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
 import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // Extended interfaces for step-level usage
 interface StepMaterial extends Material {
@@ -177,7 +178,7 @@ export default function EditWorkflowView({
       ...currentStep
     });
   };
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingStep || !currentProject) {
       console.error('SaveEdit: Missing data', {
         editingStep: !!editingStep,
@@ -206,8 +207,39 @@ export default function EditWorkflowView({
       })),
       updatedAt: new Date()
     };
+    
     console.log('SaveEdit: Calling updateProject');
     updateProject(updatedProject);
+    
+    // If editing Standard Project Foundation, also update template_steps table
+    if (isEditingStandardProject) {
+      console.log('💾 SaveEdit: Also updating template_steps table for Standard Project');
+      try {
+        const { error } = await supabase
+          .from('template_steps')
+          .update({
+            apps: editingStep.apps || [] as any,
+            materials: editingStep.materials || [] as any,
+            tools: editingStep.tools || [] as any,
+            outputs: editingStep.outputs || [] as any,
+            content_sections: (editingStep.contentSections || editingStep.content) as any,
+            description: editingStep.description,
+            estimated_time_minutes: (editingStep as any).estimated_time || 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingStep.id);
+        
+        if (error) {
+          console.error('SaveEdit: Error updating template_steps:', error);
+          toast.error("Warning: Step saved to project but failed to sync to template. Apps may not appear in new projects.");
+        } else {
+          console.log('SaveEdit: Successfully synced to template_steps');
+        }
+      } catch (err) {
+        console.error('SaveEdit: Exception updating template_steps:', err);
+      }
+    }
+    
     setEditMode(false);
     console.log('SaveEdit: Completed successfully');
   };
