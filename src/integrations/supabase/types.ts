@@ -2633,6 +2633,10 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: Json
       }
+      rebuild_project_from_standard: {
+        Args: { project_id_to_rebuild: string }
+        Returns: undefined
+      }
       request_emergency_data_access: {
         Args: {
           emergency_reason: string
