@@ -1437,16 +1437,13 @@ export default function UserView({
           {/* Apps Section - Positioned prominently after content */}
           {currentStep && currentStep.apps && currentStep.apps.length > 0 && (
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Sparkles className="w-5 h-5" />
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-xs font-medium">
+                  <Sparkles className="w-3 h-3" />
                   Apps for This Step
                 </CardTitle>
-                <CardDescription>
-                  Interactive tools to help you complete this step
-                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-2">
                 <CompactAppsSection
                   apps={currentStep.apps}
                   onAppsChange={() => {}}

@@ -45,8 +45,8 @@ export const CompactAppsSection = ({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div className="space-y-2">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
         {apps.map((app) => {
           const IconComponent = getIconComponent(app.icon);
           
@@ -70,19 +70,19 @@ export const CompactAppsSection = ({
                 </Button>
               )}
               
-              <div className="flex flex-col items-center justify-center p-4 space-y-2">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <IconComponent className="w-6 h-6 text-primary" />
+              <div className="flex flex-col items-center justify-center p-2 space-y-1">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <IconComponent className="w-4 h-4 text-primary" />
                 </div>
                 
                 <div className="text-center">
-                  <p className="text-sm font-medium line-clamp-2 leading-tight">
+                  <p className="text-[10px] font-medium line-clamp-2 leading-tight">
                     {app.appName}
                   </p>
                 </div>
                 
                 {app.appType === 'external-link' && (
-                  <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                  <ExternalLink className="w-2 h-2 text-muted-foreground" />
                 )}
               </div>
             </Card>
