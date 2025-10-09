@@ -167,7 +167,21 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
       
       try {
         const enriched = await Promise.all(projects.map(async (project) => {
-          // Try to load from normalized tables
+          // If project already has complete phases JSON with steps, use it as-is
+          // Don't overwrite with data from template_steps which might be outdated
+          if (project.phases && project.phases.length > 0) {
+            const hasCompleteData = project.phases.some(phase => 
+              phase.operations && phase.operations.length > 0 &&
+              phase.operations.some(op => op.steps && op.steps.length > 0)
+            );
+            
+            if (hasCompleteData) {
+              console.log('✅ Using existing phases JSON for project:', project.name);
+              return project;
+            }
+          }
+          
+          // Try to load from normalized tables (for projects without phases JSON)
           try {
             const { data: operations, error: opsError } = await supabase
               .from('template_operations')
@@ -291,166 +305,12 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     enabled: shouldFetchProjectRuns
   });
 
-  const [enrichedProjectRuns, setEnrichedProjectRuns] = useState<ProjectRun[]>([]);
-  const [isEnrichingRuns, setIsEnrichingRuns] = useState(false);
-
-  // Enrich project runs with apps data from template steps for standard phases
-  useEffect(() => {
-    const enrichProjectRuns = async () => {
-      if (!projectRuns || projectRuns.length === 0 || isEnrichingRuns) return;
-      
-      console.log('🔧 ProjectDataContext: Starting to enrich project runs with apps data', {
-        projectRunsCount: projectRuns.length
-      });
-      
-      setIsEnrichingRuns(true);
-      
-      try {
-        const enriched = await Promise.all(projectRuns.map(async (run) => {
-          console.log('🔧 Enriching project run:', run.name, 'template:', run.templateId);
-          
-          if (!run.phases || run.phases.length === 0) {
-            console.log('⚠️ No phases in project run:', run.name);
-            return run;
-          }
-
-          // Get the template project to check which phases are standard
-          const { data: templateOps, error: opsError } = await supabase
-            .from('template_operations')
-            .select(`
-              id,
-              name,
-              standard_phase_id
-            `)
-            .eq('project_id', run.templateId);
-
-          if (opsError || !templateOps) {
-            console.error('❌ Error fetching template operations:', opsError);
-            return run;
-          }
-          
-          console.log('✅ Found template operations:', templateOps.length);
-
-          // Get all template steps for these operations
-          const operationIds = templateOps.map(op => op.id);
-          const { data: templateSteps, error: stepsError } = await supabase
-            .from('template_steps')
-            .select('*')
-            .in('operation_id', operationIds);
-
-          if (stepsError || !templateSteps) {
-            console.error('❌ Error fetching template steps:', stepsError);
-            return run;
-          }
-          
-          console.log('✅ Found template steps:', templateSteps.length);
-          
-          // Count steps with apps
-          const stepsWithApps = templateSteps.filter(s => s.apps && Array.isArray(s.apps) && (s.apps as any[]).length > 0);
-          console.log('📱 Template steps with apps:', stepsWithApps.length, stepsWithApps.map(s => ({
-            title: s.step_title,
-            appsCount: Array.isArray(s.apps) ? (s.apps as any[]).length : 0
-          })));
-
-          // Enrich the phases with apps data
-          const enrichedPhases = run.phases.map(phase => {
-            // Check if this is a standard phase by matching phase NAME to standard_phases
-            // (we can't match by ID because project run phases get new UUIDs)
-            const standardPhaseOps = templateOps.filter(op => {
-              if (!op.standard_phase_id) return false;
-              
-              // Get the standard phase name from the template operations
-              // We need to match by phase name since phase.id is a new UUID in project runs
-              const matchesByName = ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(phase.name) &&
-                                   op.name && phase.operations?.some(phaseOp => phaseOp.name === op.name);
-              
-              return matchesByName;
-            });
-
-            console.log(`📋 Phase "${phase.name}":`, {
-              phaseId: phase.id,
-              isStandardPhase: ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(phase.name),
-              matchingOps: standardPhaseOps.length,
-              operationsInPhase: phase.operations?.length || 0
-            });
-
-            if (standardPhaseOps.length === 0) {
-              console.log(`⚠️ No standard phase ops found for phase: ${phase.name}`);
-              return phase; // Not a standard phase or no matching ops, return as is
-            }
-
-            // Enrich operations within this phase
-            const enrichedOperations = (phase.operations || []).map(operation => {
-              const templateOp = standardPhaseOps.find(op => op.name === operation.name);
-              if (!templateOp) {
-                console.log(`⚠️ No matching template operation for: ${operation.name}`);
-                return operation;
-              }
-
-              // Enrich steps with apps data
-              const enrichedSteps = (operation.steps || []).map(step => {
-                const templateStep = templateSteps.find(ts => 
-                  ts.operation_id === templateOp.id && ts.step_title === step.step
-                );
-
-                if (templateStep && templateStep.apps && Array.isArray(templateStep.apps)) {
-                  const appsArray = templateStep.apps as any[];
-                  console.log(`✨ Enriching step "${step.step}" with ${appsArray.length} apps`);
-                  return {
-                    ...step,
-                    apps: appsArray
-                  };
-                }
-
-                return step;
-              });
-
-              return {
-                ...operation,
-                steps: enrichedSteps
-              };
-            });
-
-            return {
-              ...phase,
-              operations: enrichedOperations
-            };
-          });
-
-          const result = {
-            ...run,
-            phases: enrichedPhases
-          };
-          
-          // Log final result
-          const totalStepsWithApps = result.phases.flatMap(p => 
-            p.operations?.flatMap(o => o.steps?.filter(s => s.apps && s.apps.length > 0) || []) || []
-          ).length;
-          
-          console.log('✅ Enrichment complete for:', run.name, {
-            totalStepsWithApps
-          });
-          
-          return result;
-        }));
-
-        console.log('🎉 All project runs enriched successfully');
-        setEnrichedProjectRuns(enriched);
-      } catch (e) {
-        console.error('Failed to enrich project runs:', e);
-        setEnrichedProjectRuns(projectRuns);
-      } finally {
-        setIsEnrichingRuns(false);
-      }
-    };
-
-    enrichProjectRuns();
-  }, [projectRuns]);
-
+  // Project runs already have complete phases JSON when created (immutable snapshot)
+  // No need to enrich from template_steps - just use them as-is
   const value = {
     projects: enrichedProjects.length > 0 ? enrichedProjects : projects,
-    projectRuns: isGuest ? guestData.projectRuns : (enrichedProjectRuns.length > 0 ? enrichedProjectRuns : projectRuns),
-    loading: projectsLoading || isEnriching || isEnrichingRuns || (shouldFetchProjectRuns ? projectRunsLoading : false),
+    projectRuns: isGuest ? guestData.projectRuns : projectRuns,
+    loading: projectsLoading || isEnriching || (shouldFetchProjectRuns ? projectRunsLoading : false),
     error: projectsError || (shouldFetchProjectRuns ? projectRunsError : null),
     refetchProjects,
     refetchProjectRuns,
