@@ -254,6 +254,28 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
             </div>
           )}
 
+          {/* Step Outputs */}
+          <div className="border-t pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Target className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">Step Outputs</span>
+            </div>
+            <div className="space-y-2">
+              <div 
+                className="flex items-center gap-3 p-3 rounded-lg border bg-background/50 hover:bg-background/80 transition-colors cursor-pointer"
+                onClick={() => onOutputToggle?.('overview-output')}
+              >
+                <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${checkedOutputs.has('overview-output') ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
+                  {checkedOutputs.has('overview-output') && <CheckCircle className="w-3 h-3 text-white" />}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">DIY Profile Complete</div>
+                  <div className="text-xs text-muted-foreground">Your personalized DIY profile is set up and ready</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {isCompleted && (
             <div className="text-center">
               <Badge variant="secondary" className="bg-green-100 text-green-800">
