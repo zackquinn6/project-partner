@@ -73,7 +73,7 @@ export default function Navigation({
     };
 
     const handleNavigateToProjectsEvent = (event: Event) => {
-      console.log('handleNavigateToProjectsEvent triggered');
+      console.log('🔄 Navigation: My Projects event - showing projects listing');
       event.stopPropagation();
       onViewChange('user');
       onProjectsView?.();

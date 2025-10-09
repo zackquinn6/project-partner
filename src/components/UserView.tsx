@@ -1966,10 +1966,16 @@ export default function UserView({
         <KeyCharacteristicsWindow
           open={keyCharacteristicsOpen}
           onOpenChange={setKeyCharacteristicsOpen}
-          operations={activeProject.phases?.flatMap(phase => phase.operations) || []}
+          operations={activeProject.phases?.filter(phase => phase.name !== 'Kickoff').flatMap(phase => phase.operations) || []}
           currentStepId={currentStep?.id}
         />
       )}
+
+      {/* Profile Manager */}
+      <ProfileManager 
+        open={showProfileManager}
+        onOpenChange={setShowProfileManager}
+      />
     </>
   );
 }

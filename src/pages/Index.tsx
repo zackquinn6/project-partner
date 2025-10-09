@@ -296,20 +296,8 @@ const Index = () => {
     // Mobile-specific projects navigation (Navigation.tsx only handles desktop)
     const handleProjectsNavigationMobile = () => {
       if (!isMobile) return; // Only handle on mobile
-      console.log('📱 Index: Mobile "My Projects" clicked');
-      
-      // Check if user has a current project - if so, go directly to it
-      if (currentProjectRun) {
-        console.log('📱 Index: User has current project, going directly to workflow:', currentProjectRun.name);
-        setMobileView('workflow');
-        setCurrentView('user');
-        // Clear reset flags since we're going to workflow
-        setResetUserView(false);
-        setForceListingMode(false);
-      } else {
-        console.log('📱 Index: No current project, showing projects listing');
-        handleProjectsView();
-      }
+      console.log('📱 Index: Mobile "My Projects" clicked - always showing projects listing');
+      handleProjectsView();
     };
 
     const handleProfileNavigation = () => {
