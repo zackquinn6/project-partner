@@ -6,8 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
 import { PricingWindow } from '@/components/PricingWindow';
-import DIYSurveyPopup from '@/components/DIYSurveyPopup';
-import PreSignInDIYQuiz from '@/components/PreSignInDIYQuiz';
+import DIYStyleQuiz from '@/components/DIYStyleQuiz';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
@@ -33,7 +32,7 @@ export default function Home({
   } = useProject();
   const navigate = useNavigate();
   const [isPricingOpen, setIsPricingOpen] = useState(false);
-  const [isDIYQuizOpen, setIsDIYQuizOpen] = useState(false);
+  const [isDIYStyleQuizOpen, setIsDIYStyleQuizOpen] = useState(false);
   const [isAIRepairOpen, setIsAIRepairOpen] = useState(false);
   const [isCodePermitsOpen, setIsCodePermitsOpen] = useState(false);
   const [isContractorFinderOpen, setIsContractorFinderOpen] = useState(false);
@@ -81,7 +80,7 @@ export default function Home({
   }));
   useEffect(() => {
     const handleOpenQuiz = () => {
-      setIsDIYQuizOpen(true);
+      setIsDIYStyleQuizOpen(true);
     };
     const handleOpenAIRepair = () => {
       setIsAIRepairOpen(true);
@@ -336,9 +335,9 @@ Personalized, success-oriented, and built for real-world usage during a project.
               </Button>
               
               <div>
-                <Button variant="outline" size="default" onClick={() => setIsDIYQuizOpen(true)} className="text-primary border-primary hover:bg-primary/10">
+                <Button variant="outline" size="default" onClick={() => setIsDIYStyleQuizOpen(true)} className="text-primary border-primary hover:bg-primary/10">
                   <HelpCircle className="mr-2 h-4 w-4" />
-                  Take DIY Quiz
+                  Discover Your DIY Style
                 </Button>
               </div>
             </div>
@@ -437,7 +436,7 @@ Personalized, success-oriented, and built for real-world usage during a project.
       {/* Modals */}
       <PricingWindow open={isPricingOpen} onOpenChange={open => setIsPricingOpen(open)} />
       
-      {user ? <DIYSurveyPopup open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} /> : <PreSignInDIYQuiz open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} />}
+      <DIYStyleQuiz open={isDIYStyleQuizOpen} onOpenChange={open => setIsDIYStyleQuizOpen(open)} />
 
       <AIRepairWindow open={isAIRepairOpen} onOpenChange={open => setIsAIRepairOpen(open)} />
 
