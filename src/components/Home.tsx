@@ -338,7 +338,7 @@ Personalized, success-oriented, and built for real-world usage during a project.
               <div>
                 <Button variant="outline" size="default" onClick={() => setIsDIYQuizOpen(true)} className="bg-orange-500 text-white hover:bg-orange-600 border-orange-500">
                   <HelpCircle className="mr-2 h-4 w-4" />
-                  Take the DIY quiz to learn about your style
+                  Take the DIY Quiz to Learn How Your Style Fits
                 </Button>
               </div>
             </div>
