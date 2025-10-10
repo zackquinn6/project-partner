@@ -396,7 +396,7 @@ Personalized, success-oriented, and built for real-world usage during a project.
             </div>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full px-4">
+          <div className="w-full px-4 max-w-4xl mx-auto">
             {coreFeatures.map((feature, index) => <Card key={index} className="gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300 p-8 h-full">
                 <CardHeader className="text-center pb-6">
                   <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
