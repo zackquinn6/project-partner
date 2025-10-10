@@ -17,6 +17,7 @@ import Index from "./pages/Index";
 import ProjectCatalogPage from "./pages/ProjectCatalog";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import ImportTileContent from "./pages/ImportTileContent";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App: React.FC = () => {
                           <Route path="/" element={<Index />} />
                           <Route path="/auth" element={<Auth />} />
                           <Route path="/projects" element={<ProjectCatalogPage />} />
+                          <Route path="/import-tile-content" element={<ImportTileContent />} />
                           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                           <Route path="*" element={<NotFound />} />
                         </Routes>
