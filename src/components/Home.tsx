@@ -407,12 +407,11 @@ Personalized, success-oriented, and built for real-world usage during a project.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <ul className="space-y-3">
-                    {feature.features.map((item, itemIndex) => <li key={itemIndex} className="flex items-start">
-                        <CheckCircle className="h-5 w-5 text-primary mr-3 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm lg:text-base text-muted-foreground">{item}</span>
-                      </li>)}
-                  </ul>
+                  <p className="text-base lg:text-lg text-muted-foreground leading-relaxed">
+                    <strong>Your project is not unique - but you are.</strong>
+                    <br /><br />
+                    Hard lessons of home improvement have been solved by someone- but that doesn't mean you have. Our personalized approach adapts to your speed, learning style, and specific project.
+                  </p>
                 </CardContent>
               </Card>)}
           </div>
