@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
 import { PricingWindow } from '@/components/PricingWindow';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
-import DIYStyleQuiz from '@/components/DIYStyleQuiz';
+import PreSignInDIYQuiz from '@/components/PreSignInDIYQuiz';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
@@ -20,7 +20,7 @@ const coreFeatures = [{
   icon: Target,
   title: "Build Smarter. Build Your Way.",
   description: "At Toolio, we believe two truths about DIY:",
-  content: "Your project is not unique - but you are.\n\nHard lessons of home improvement have been solved by someone- but that doesn't mean you have. Our personalized approach adapts to your speed, learning style, and specific project."
+  features: ["🔨 Your project is not a snowflake. The hard lessons have already been solved—why waste weekends reinventing plans or repeating mistakes? We bring those lessons straight to you.", "✨ You are a maker's mark. Every builder leaves a distinct imprint. Your pace, your tools, your support system—they're yours alone. Toolio learns how you work and adapts over time, so every project feels like it was designed for you.", "👉 Proven playbooks. Personalized delivery. That's DIY Done Smarter."]
 }];
 export default function Home({
   onViewChange
@@ -294,7 +294,7 @@ export default function Home({
             <div className="text-center lg:text-left">
               
               
-              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4">A DIY Project Management App</h1>
+              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4">Personalized DIY Project Playbooks</h1>
               
               <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/90 mb-8 leading-relaxed">Run projects with personalized guidance and on-demand human experts.</p>
               
@@ -331,14 +331,14 @@ Personalized, success-oriented, and built for real-world usage during a project.
               <h3 className="text-xl font-semibold text-foreground mb-3">🔑 Personalized Projects Every Step of The Way</h3>
               
               <Button variant="outline" size="default" onClick={() => setIsKCExplainerOpen(true)} className="text-primary border-primary hover:bg-primary/10 mb-4">
-                <span className="hidden sm:inline">Learn More About Our Approach</span>
+                <span className="hidden sm:inline">Learn More About Our Approach to Personalization</span>
                 <span className="sm:hidden">Learn More</span>
               </Button>
               
               <div>
-                <Button variant="outline" size="default" onClick={() => setIsDIYQuizOpen(true)} className="bg-orange-500 text-white hover:bg-orange-600 border-orange-500">
+                <Button variant="outline" size="default" onClick={() => setIsDIYQuizOpen(true)} className="text-primary border-primary hover:bg-primary/10">
                   <HelpCircle className="mr-2 h-4 w-4" />
-                  Take the DIY Quiz to Learn How Your Style Fits
+                  Take DIY Quiz
                 </Button>
               </div>
             </div>
@@ -408,9 +408,12 @@ Personalized, success-oriented, and built for real-world usage during a project.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-sm lg:text-base text-muted-foreground leading-relaxed whitespace-pre-line text-center">
-                    {feature.content}
-                  </p>
+                  <ul className="space-y-3">
+                    {feature.features.map((item, itemIndex) => <li key={itemIndex} className="flex items-start">
+                        <CheckCircle className="h-5 w-5 text-primary mr-3 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm lg:text-base text-muted-foreground">{item}</span>
+                      </li>)}
+                  </ul>
                 </CardContent>
               </Card>)}
           </div>
@@ -434,7 +437,7 @@ Personalized, success-oriented, and built for real-world usage during a project.
       {/* Modals */}
       <PricingWindow open={isPricingOpen} onOpenChange={open => setIsPricingOpen(open)} />
       
-      {user ? <DIYSurveyPopup open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} /> : <DIYStyleQuiz open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} />}
+      {user ? <DIYSurveyPopup open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} /> : <PreSignInDIYQuiz open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} />}
 
       <AIRepairWindow open={isAIRepairOpen} onOpenChange={open => setIsAIRepairOpen(open)} />
 
