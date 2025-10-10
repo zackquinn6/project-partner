@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
 import { PricingWindow } from '@/components/PricingWindow';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
-import PreSignInDIYQuiz from '@/components/PreSignInDIYQuiz';
+import DIYStyleQuiz from '@/components/DIYStyleQuiz';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
@@ -434,7 +434,7 @@ Personalized, success-oriented, and built for real-world usage during a project.
       {/* Modals */}
       <PricingWindow open={isPricingOpen} onOpenChange={open => setIsPricingOpen(open)} />
       
-      {user ? <DIYSurveyPopup open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} /> : <PreSignInDIYQuiz open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} />}
+      {user ? <DIYSurveyPopup open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} /> : <DIYStyleQuiz open={isDIYQuizOpen} onOpenChange={open => setIsDIYQuizOpen(open)} />}
 
       <AIRepairWindow open={isAIRepairOpen} onOpenChange={open => setIsAIRepairOpen(open)} />
 
