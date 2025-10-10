@@ -331,7 +331,7 @@ Personalized, success-oriented, and built for real-world usage during a project.
               <h3 className="text-xl font-semibold text-foreground mb-3">🔑 Personalized Projects Every Step of The Way</h3>
               
               <Button variant="outline" size="default" onClick={() => setIsKCExplainerOpen(true)} className="text-primary border-primary hover:bg-primary/10 mb-4">
-                <span className="hidden sm:inline">Learn More About Our Approach to Personalization</span>
+                <span className="hidden sm:inline">Learn More About Our Approach</span>
                 <span className="sm:hidden">Learn More</span>
               </Button>
               
