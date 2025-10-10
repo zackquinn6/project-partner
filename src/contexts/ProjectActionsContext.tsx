@@ -56,7 +56,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
   const addProject = useCallback(async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     console.log('🚀 addProject CALLED:', {
       projectName: projectData.name,
-      phaseCount: projectData.phases.length,
       hasUser: !!user,
       isAdmin,
       timestamp: new Date().toISOString()
@@ -72,93 +71,26 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
 
     try {
-      // Merge apps from Standard Project Foundation's standard phases
-      let phasesToInsert = projectData.phases;
-      
-      console.log('🔍 Looking for Standard Project Foundation...', {
-        projectsCount: projects.length,
-        projectIds: projects.slice(0, 5).map(p => ({ id: p.id, name: p.name, isStandard: p.isStandardTemplate }))
-      });
-      
-      // Find Standard Project Foundation template
-      const standardProject = projects.find(p => p.id === '00000000-0000-0000-0000-000000000001');
-      
-      if (standardProject) {
-        console.log('🔍 addProject: Found Standard Project Foundation, merging apps...', {
-          standardProjectPhases: standardProject.phases.map(p => p.name)
-        });
-        
-        // For each standard phase in the new project, merge apps from Standard Project Foundation
-        phasesToInsert = projectData.phases.map(phase => {
-          const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-          if (standardPhaseNames.includes(phase.name)) {
-            // Find matching phase in Standard Project Foundation
-            const standardPhase = standardProject.phases.find(sp => sp.name === phase.name);
-            if (standardPhase) {
-              console.log(`📋 Merging ${phase.name} phase with apps from Standard Project Foundation`);
-              
-              // Merge operations and steps with apps
-              const mergedOperations = phase.operations.map(operation => {
-                const standardOp = standardPhase.operations.find(sop => sop.name === operation.name);
-                if (standardOp) {
-                  // Merge steps with apps
-                  const mergedSteps = operation.steps.map(step => {
-                    const standardStep = standardOp.steps.find(ss => ss.step === step.step);
-                    if (standardStep?.apps && standardStep.apps.length > 0) {
-                      console.log(`✅ Copying ${standardStep.apps.length} apps to step "${step.step}"`, standardStep.apps);
-                      // Copy apps from standard step
-                      return { ...step, apps: standardStep.apps };
-                    }
-                    return step;
-                  });
-                  return { ...operation, steps: mergedSteps };
-                }
-                return operation;
-              });
-              
-              console.log(`✅ Marked "${phase.name}" as isStandard: true`);
-              return { ...phase, operations: mergedOperations, isStandard: true };
-            }
-          }
-          return phase;
-        });
-        
-        console.log('📊 Final phasesToInsert:', phasesToInsert.map(p => ({
-          name: p.name,
-          isStandard: p.isStandard,
-          operationCount: p.operations.length,
-          firstOperation: p.operations[0]?.name,
-          firstStepApps: p.operations[0]?.steps[0]?.apps?.length || 0
-        })));
-      }
-
-      const { error } = await supabase
-        .from('projects')
-        .insert({
-          name: projectData.name,
-          description: projectData.description,
-          image: projectData.image,
-          start_date: projectData.startDate.toISOString(),
-          plan_end_date: projectData.planEndDate.toISOString(),
-          end_date: projectData.endDate?.toISOString(),
-          status: projectData.status,
-          publish_status: projectData.publishStatus,
-          category: projectData.category || null,
-          effort_level: projectData.effortLevel || null,
-          skill_level: projectData.skillLevel || null,
-          estimated_time: projectData.estimatedTime || null,
-          estimated_time_per_unit: projectData.estimatedTimePerUnit || null,
-          scaling_unit: projectData.scalingUnit || null,
-          phases: JSON.stringify(phasesToInsert),
-          created_by: user.id
+      // Use database function to create project with proper template architecture
+      const { data: projectId, error } = await supabase
+        .rpc('create_project_with_standard_foundation', {
+          p_project_name: projectData.name,
+          p_description: projectData.description || null,
+          p_category: projectData.category || null,
+          p_difficulty: null,
+          p_effort_level: projectData.effortLevel || null,
+          p_estimated_time: projectData.estimatedTime || null,
+          p_image: projectData.image || null
         });
 
       if (error) throw error;
 
+      console.log('✅ Project created with standard foundation:', projectId);
+
       await refetchProjects();
       toast({
         title: "Success",
-        description: "Project created successfully with apps from Standard Project Foundation",
+        description: "Project created successfully with standard foundation",
       });
     } catch (error) {
       console.error('Error adding project:', error);
@@ -168,7 +100,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         variant: "destructive",
       });
     }
-  }, [user, isAdmin, refetchProjects, projects]);
+  }, [user, isAdmin, refetchProjects]);
 
   const createProjectRun = useCallback(async (project: Project, customName?: string, homeId?: string): Promise<string | null> => {
     if (!user) return null;
