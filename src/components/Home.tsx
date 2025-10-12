@@ -12,6 +12,7 @@ import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
 import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2 } from 'lucide-react';
+import heroDIYPerson from '@/assets/hero-diy-person.png';
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
@@ -308,7 +309,7 @@ export default function Home({
             </div>
             
             <div className="relative flex justify-center items-center">
-              <img src="/lovable-uploads/ced88968-ca61-4fed-bee4-d2ea417c247c.png" alt="DIY Project Partner Platform" className="w-full max-w-md h-auto rounded-lg shadow-lg" style={{
+              <img src={heroDIYPerson} alt="DIY Project Partner Platform" className="w-full max-w-md h-auto rounded-lg shadow-lg" style={{
                 transform: 'scale(1.15)'
               }} />
             </div>
