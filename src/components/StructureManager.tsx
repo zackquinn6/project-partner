@@ -1010,34 +1010,38 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                                          </Badge>}
                                                                      </div>
                                                      
-                                                       {<>
-                                                           <Button size="sm" variant="ghost" onClick={() => setShowDecisionEditor({
-                                                              step
-                                                            })} title="Configure decision point">
-                                                             🔀
-                                                           </Button>
-                                                           <Button size="sm" variant="ghost" onClick={() => setShowStepContentEdit({
-                                                              stepId: step.id,
-                                                              step
-                                                            })}>
-                                                             <Edit className="w-3 h-3" />
-                                                           </Button>
-                                                           
-                                                           <Button size="sm" variant="ghost" onClick={() => copyItem('step', step)}>
-                                                             <Copy className="w-3 h-3" />
-                                                           </Button>
-                                                           
-                                                           {clipboard?.type === 'step' && <Button size="sm" variant="ghost" onClick={() => pasteItem('step', {
-                                                              phaseId: phase.id,
-                                                              operationId: operation.id
-                                                            })}>
-                                                               <Clipboard className="w-3 h-3" />
-                                                             </Button>}
-                                                           
-                                                           {!isStandardPhase && phase.name !== 'Close Project' && <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)}>
-                                                               <Trash2 className="w-3 h-3" />
-                                                             </Button>}
-                                                         </>}
+                                                       {isStepEditing ? <>
+                                                            <Button size="sm" onClick={saveEdit}>
+                                                              <Check className="w-3 h-3" />
+                                                            </Button>
+                                                            <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
+                                                              <X className="w-3 h-3" />
+                                                            </Button>
+                                                          </> : <>
+                                                            <Button size="sm" variant="ghost" onClick={() => setShowDecisionEditor({
+                                                               step
+                                                             })} title="Configure decision point">
+                                                              🔀
+                                                            </Button>
+                                                            <Button size="sm" variant="ghost" onClick={() => startEdit('step', step.id, step)}>
+                                                              <Edit className="w-3 h-3" />
+                                                            </Button>
+                                                            
+                                                            <Button size="sm" variant="ghost" onClick={() => copyItem('step', step)}>
+                                                              <Copy className="w-3 h-3" />
+                                                            </Button>
+                                                            
+                                                            {clipboard?.type === 'step' && <Button size="sm" variant="ghost" onClick={() => pasteItem('step', {
+                                                               phaseId: phase.id,
+                                                               operationId: operation.id
+                                                             })}>
+                                                                <Clipboard className="w-3 h-3" />
+                                                              </Button>}
+                                                            
+                                                            {!isStandardPhase && phase.name !== 'Close Project' && <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)}>
+                                                                <Trash2 className="w-3 h-3" />
+                                                              </Button>}
+                                                          </>}
                                                                   </div>
                                                                 </div>
                                                               </CardContent>
