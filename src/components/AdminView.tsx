@@ -3,7 +3,6 @@ import { UnifiedProjectManagement } from '@/components/UnifiedProjectManagement'
 import { ProjectAnalyticsWindow } from '@/components/ProjectAnalyticsWindow';
 import { UsersSecurityWindow } from '@/components/UsersSecurityWindow';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
-import { KnowledgeIngestionSystem } from '@/components/KnowledgeIngestionSystem';
 import { HomeRiskManager } from '@/components/HomeRiskManager';
 import { AdminActionCenter } from '@/components/AdminActionCenter';
 
@@ -11,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollableDialog } from '@/components/ScrollableDialog';
-import { Settings, BarChart3, Shield, Wrench, Brain, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog } from 'lucide-react';
+import { Settings, BarChart3, Shield, Wrench, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog } from 'lucide-react';
 import { StructureManager } from './StructureManager';
 import { AdminRoadmapManager } from './AdminRoadmapManager';
 import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
@@ -25,7 +24,6 @@ export const AdminView: React.FC = () => {
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [usersSecurityOpen, setUsersSecurityOpen] = useState(false);
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
-  const [knowledgeSystemOpen, setKnowledgeSystemOpen] = useState(false);
   const [homeRiskManagerOpen, setHomeRiskManagerOpen] = useState(false);
   
   const [processDesignOpen, setProcessDesignOpen] = useState(false);
@@ -146,23 +144,6 @@ export const AdminView: React.FC = () => {
           </Card>
 
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setKnowledgeSystemOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Brain className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Knowledge System</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                AI knowledge ingestion and project guidance improvements
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setKnowledgeSystemOpen(true)}>
-                Knowledge System
-              </Button>
-            </CardContent>
-          </Card>
-
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setHomeRiskManagerOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -256,15 +237,6 @@ export const AdminView: React.FC = () => {
           open={toolsMaterialsOpen} 
           onOpenChange={setToolsMaterialsOpen} 
         />
-
-        <Dialog open={knowledgeSystemOpen} onOpenChange={setKnowledgeSystemOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Knowledge Ingestion System</DialogTitle>
-            </DialogHeader>
-            <KnowledgeIngestionSystem />
-          </DialogContent>
-        </Dialog>
 
         <Dialog open={homeRiskManagerOpen} onOpenChange={setHomeRiskManagerOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">

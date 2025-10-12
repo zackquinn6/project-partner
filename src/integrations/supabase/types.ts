@@ -586,7 +586,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "home_risk_mitigations_risk_id_fkey"
+            columns: ["risk_id"]
+            isOneToOne: false
+            referencedRelation: "home_risks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       home_risks: {
         Row: {
