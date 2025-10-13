@@ -293,10 +293,9 @@ export function RapidProjectAssessment() {
   const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
     let sanitizedValue = value;
     
-    // Sanitize based on field type
-    if (field === 'item' && typeof value === 'string') {
-      sanitizedValue = enhancedSanitizeFormData({ item: value }).item;
-    } else if ((field === 'lowCost' || field === 'highCost') && typeof value === 'number') {
+    // Only sanitize numeric inputs in real-time to prevent invalid values
+    // Text inputs will be sanitized when saving to avoid interfering with typing
+    if ((field === 'lowCost' || field === 'highCost') && typeof value === 'number') {
       sanitizedValue = sanitizeNumericInput(value, 0, 1000000);
     } else if (field === 'units' && typeof value === 'number') {
       sanitizedValue = sanitizeNumericInput(value, 0.1, 10000);
