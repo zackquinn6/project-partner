@@ -953,7 +953,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[90vw] max-w-4xl h-[85vh] overflow-y-auto flex flex-col">
           <DialogHeader className="text-center space-y-4">
             <div className="flex items-center justify-center space-x-2">
               <Sparkles className="w-6 h-6 text-primary" />

@@ -292,9 +292,13 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
                 }
               }
               
-              // Dispatch event to refresh library and close add window
+              // Dispatch event to refresh library
               window.dispatchEvent(new CustomEvent('tools-library-updated'));
-              window.dispatchEvent(new CustomEvent('close-add-tools-window'));
+              
+              // Only dispatch close event if not in tab context (onBackToLibrary means we're in tabs)
+              if (!onBackToLibrary) {
+                window.dispatchEvent(new CustomEvent('close-add-tools-window'));
+              }
               
               if (onBackToLibrary) {
                 onBackToLibrary();
