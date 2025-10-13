@@ -165,7 +165,7 @@ export const SimplifiedCustomWorkManager: React.FC<SimplifiedCustomWorkManagerPr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={isMobile 
         ? "w-full h-full max-w-full max-h-full rounded-none border-0 p-0 [&>button]:hidden" 
-        : "max-w-2xl max-h-[85vh] p-0 [&>button]:hidden"
+        : "max-w-5xl max-h-[90vh] p-0 [&>button]:hidden overflow-hidden flex flex-col"
       }>
         <DialogHeader className={`${isMobile ? 'p-4 pb-3' : 'p-6 pb-4'} border-b`}>
           <div className="flex items-center justify-between">
@@ -184,7 +184,7 @@ export const SimplifiedCustomWorkManager: React.FC<SimplifiedCustomWorkManagerPr
           </div>
         </DialogHeader>
 
-        <ScrollArea className={`flex-1 ${isMobile ? 'p-4' : 'p-6'}`}>
+        <ScrollArea className={`flex-1 overflow-auto ${isMobile ? 'p-4' : 'p-6'}`}>
           <div className="space-y-6">
             {/* Warning */}
             <Alert className="border-orange-200 bg-orange-50">
