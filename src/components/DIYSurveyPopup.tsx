@@ -11,7 +11,7 @@ import { ArrowRight, ArrowLeft, Sparkles, Wrench, CheckCircle2, Trophy, Target, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import OwnedToolsEditor from "./EnhancedOwnedToolsEditor";
+import { UserToolsMaterialsWindow } from "./UserToolsMaterialsWindow";
 import { useTempQuiz } from "@/contexts/TempQuizContext";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -1012,11 +1012,10 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         </DialogContent>
       </Dialog>
 
-      <OwnedToolsEditor
+      <UserToolsMaterialsWindow
         open={showOwnedToolsEditor}
         onOpenChange={setShowOwnedToolsEditor}
-        ownedTools={answers.ownedTools}
-        onSave={(tools) => setAnswers(prev => ({ ...prev, ownedTools: tools }))}
+        initialToolsMode="library"
       />
     </>
   );
