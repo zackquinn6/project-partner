@@ -15,26 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { 
-  Calendar as CalendarIcon, 
-  Clock, 
-  CheckCircle, 
-  Plus, 
-  Users,
-  Settings,
-  Zap,
-  Trash2,
-  Save,
-  X,
-  Target,
-  AlertTriangle,
-  TrendingUp,
-  Brain,
-  FileText,
-  Mail,
-  Printer,
-  Info
-} from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, FileText, Mail, Printer, Info } from 'lucide-react';
 import { format, addDays, parseISO, addHours, isSameDay } from 'date-fns';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
@@ -42,23 +23,13 @@ import { useProject } from '@/contexts/ProjectContext';
 import { useToast } from '@/hooks/use-toast';
 import { useResponsive } from '@/hooks/useResponsive';
 import { schedulingEngine } from '@/utils/schedulingEngine';
-import { 
-  SchedulingInputs, 
-  SchedulingResult, 
-  Task, 
-  Worker, 
-  PlanningMode, 
-  ScheduleTempo,
-  RemediationSuggestion 
-} from '@/interfaces/Scheduling';
-
+import { SchedulingInputs, SchedulingResult, Task, Worker, PlanningMode, ScheduleTempo, RemediationSuggestion } from '@/interfaces/Scheduling';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project: Project;
   projectRun: ProjectRun;
 }
-
 interface TeamMember {
   id: string;
   name: string;
@@ -86,67 +57,76 @@ interface TeamMember {
     sms: boolean;
   };
 }
-
 interface GlobalSettings {
   quietHours: {
     start: string;
     end: string;
   };
 }
-
-const planningModes: { mode: PlanningMode; name: string; description: string }[] = [
-  { mode: 'quick', name: 'Quick', description: 'Plan phases / major milestones' },
-  { mode: 'standard', name: 'Standard', description: 'Plan daily tasks (recommended)' },
-  { mode: 'detailed', name: 'Detailed', description: 'Plan hour-by-hour tasks for each team member' }
-];
-
+const planningModes: {
+  mode: PlanningMode;
+  name: string;
+  description: string;
+}[] = [{
+  mode: 'quick',
+  name: 'Quick',
+  description: 'Plan phases / major milestones'
+}, {
+  mode: 'standard',
+  name: 'Standard',
+  description: 'Plan daily tasks (recommended)'
+}, {
+  mode: 'detailed',
+  name: 'Detailed',
+  description: 'Plan hour-by-hour tasks for each team member'
+}];
 export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   open,
   onOpenChange,
   project,
   projectRun
 }) => {
-  const { updateProjectRun } = useProject();
-  const { toast } = useToast();
-  const { isMobile } = useResponsive();
-  
+  const {
+    updateProjectRun
+  } = useProject();
+  const {
+    toast
+  } = useToast();
+  const {
+    isMobile
+  } = useResponsive();
+
   // Enhanced scheduling state
   const [planningMode, setPlanningMode] = useState<PlanningMode>('standard');
   const [scheduleTempo, setScheduleTempo] = useState<ScheduleTempo>('steady');
   const [schedulingResult, setSchedulingResult] = useState<SchedulingResult | null>(null);
   const [isComputing, setIsComputing] = useState(false);
-  const [targetDate, setTargetDate] = useState<string>(
-    format(addDays(new Date(), 30), 'yyyy-MM-dd')
-  );
-  const [dropDeadDate, setDropDeadDate] = useState<string>(
-    format(addDays(new Date(), 45), 'yyyy-MM-dd')
-  );
-  
+  const [targetDate, setTargetDate] = useState<string>(format(addDays(new Date(), 30), 'yyyy-MM-dd'));
+  const [dropDeadDate, setDropDeadDate] = useState<string>(format(addDays(new Date(), 45), 'yyyy-MM-dd'));
+
   // Team management
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    { 
-      id: '1', 
-      name: 'You', 
-      type: 'owner',
-      skillLevel: 'intermediate', 
-      maxTotalHours: 120,
-      weekendsOnly: false,
-      weekdaysAfterFivePm: false,
-      workingHours: {
-        start: '09:00',
-        end: '17:00'
-      },
-      availability: {},
-      costPerHour: 0,
-      email: '',
-      phone: '',
-      notificationPreferences: {
-        email: false,
-        sms: false
-      }
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([{
+    id: '1',
+    name: 'You',
+    type: 'owner',
+    skillLevel: 'intermediate',
+    maxTotalHours: 120,
+    weekendsOnly: false,
+    weekdaysAfterFivePm: false,
+    workingHours: {
+      start: '09:00',
+      end: '17:00'
+    },
+    availability: {},
+    costPerHour: 0,
+    email: '',
+    phone: '',
+    notificationPreferences: {
+      email: false,
+      sms: false
     }
-  ]);
-  
+  }]);
+
   // Global settings
   const [globalSettings, setGlobalSettings] = useState<GlobalSettings>({
     quietHours: {
@@ -158,9 +138,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   // Load saved schedule data from database on mount
   useEffect(() => {
     if (!open || !projectRun?.schedule_events) return;
-    
     const savedData = projectRun.schedule_events;
-    
     if (savedData.teamMembers && Array.isArray(savedData.teamMembers) && savedData.teamMembers.length > 0) {
       const mergedTeamMembers = savedData.teamMembers.map((member: any) => ({
         id: member.id || '1',
@@ -170,16 +148,21 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         maxTotalHours: member.maxTotalHours || 40,
         weekendsOnly: member.weekendsOnly || false,
         weekdaysAfterFivePm: member.weekdaysAfterFivePm || false,
-        workingHours: member.workingHours || { start: '09:00', end: '17:00' },
+        workingHours: member.workingHours || {
+          start: '09:00',
+          end: '17:00'
+        },
         availability: member.availability || {},
         costPerHour: member.costPerHour || 0,
         email: member.email || '',
         phone: member.phone || '',
-        notificationPreferences: member.notificationPreferences || { email: false, sms: false }
+        notificationPreferences: member.notificationPreferences || {
+          email: false,
+          sms: false
+        }
       })) as TeamMember[];
       setTeamMembers(mergedTeamMembers);
     }
-    
     if (savedData.globalSettings?.quietHours) {
       setGlobalSettings({
         quietHours: savedData.globalSettings.quietHours
@@ -191,21 +174,26 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [calendarOpen, setCalendarOpen] = useState<string | null>(null);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [tempAvailability, setTempAvailability] = useState<{
-    [date: string]: { start: string; end: string; available: boolean }[];
+    [date: string]: {
+      start: string;
+      end: string;
+      available: boolean;
+    }[];
   }>({});
 
   // Convert project to scheduling tasks and calculate totals
-  const { schedulingTasks, projectTotals } = useMemo(() => {
+  const {
+    schedulingTasks,
+    projectTotals
+  } = useMemo(() => {
     const tasks: Task[] = [];
     let lowTotal = 0;
     let mediumTotal = 0;
     let highTotal = 0;
-    
     const projectSize = parseFloat(projectRun?.projectSize || '1') || 1;
     const scalingFactor = projectRun?.scalingFactor || 1;
     const skillMultiplier = projectRun?.skillLevelMultiplier || 1;
     const completedSteps = projectRun?.completedSteps || [];
-
     project.phases.forEach(phase => {
       phase.operations.forEach(operation => {
         operation.steps.forEach((step, index) => {
@@ -213,24 +201,19 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           if (completedSteps.includes(step.id)) {
             return;
           }
-
           const baseTimeLow = step.timeEstimation?.variableTime?.low || 1;
           const baseTimeMed = step.timeEstimation?.variableTime?.medium || 1;
           const baseTimeHigh = step.timeEstimation?.variableTime?.high || 1;
-          
           const adjustedLow = baseTimeLow * projectSize * scalingFactor * skillMultiplier;
           const adjustedMed = baseTimeMed * projectSize * scalingFactor * skillMultiplier;
           const adjustedHigh = baseTimeHigh * projectSize * scalingFactor * skillMultiplier;
-          
           lowTotal += adjustedLow;
           mediumTotal += adjustedMed;
           highTotal += adjustedHigh;
-          
           const dependencies: string[] = [];
           if (index > 0) {
             dependencies.push(`${operation.id}-step-${index - 1}`);
           }
-
           tasks.push({
             id: `${operation.id}-step-${index}`,
             title: step.step,
@@ -245,18 +228,22 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         });
       });
     });
-
-    return { 
-      schedulingTasks: tasks, 
-      projectTotals: { low: lowTotal, medium: mediumTotal, high: highTotal }
+    return {
+      schedulingTasks: tasks,
+      projectTotals: {
+        low: lowTotal,
+        medium: mediumTotal,
+        high: highTotal
+      }
     };
   }, [project, projectRun]);
 
   // Update team member
   const updateTeamMember = (id: string, updates: Partial<TeamMember>) => {
-    setTeamMembers(prev => prev.map(member => 
-      member.id === id ? { ...member, ...updates } : member
-    ));
+    setTeamMembers(prev => prev.map(member => member.id === id ? {
+      ...member,
+      ...updates
+    } : member));
   };
 
   // Remove team member
@@ -267,7 +254,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   // Generate schedule with advanced algorithm
   const computeAdvancedSchedule = async () => {
     setIsComputing(true);
-    
     try {
       // Prepare scheduling inputs
       const schedulingInputs: SchedulingInputs = {
@@ -286,8 +272,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         })),
         siteConstraints: {
           allowedWorkHours: {
-            weekdays: { start: '07:00', end: '21:00' },
-            weekends: { start: '07:00', end: '21:00' }
+            weekdays: {
+              start: '07:00',
+              end: '21:00'
+            },
+            weekends: {
+              start: '07:00',
+              end: '21:00'
+            }
           },
           weekendsOnly: false,
           allowNightWork: false,
@@ -302,7 +294,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       // Compute schedule
       const result = schedulingEngine.computeSchedule(schedulingInputs);
       setSchedulingResult(result);
-      
       toast({
         title: "Schedule computed",
         description: `Generated ${planningMode} schedule with ${result.scheduledTasks.length} tasks.`
@@ -345,7 +336,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       weekdaysAfterFivePm: preset.settings.weekdaysAfterFivePm,
       workingHours: preset.settings.workingHours
     });
-    
     toast({
       title: "Preset applied",
       description: `Applied "${preset.name}" schedule settings`
@@ -382,12 +372,13 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       setTempAvailability({});
       return;
     }
-    
     setSelectedDates(dates);
-    
+
     // Update temp availability for new dates
-    const newTempAvailability = { ...tempAvailability };
-    
+    const newTempAvailability = {
+      ...tempAvailability
+    };
+
     // Remove dates that are no longer selected
     Object.keys(tempAvailability).forEach(dateStr => {
       const dateExists = dates.some(d => format(d, 'yyyy-MM-dd') === dateStr);
@@ -395,7 +386,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         delete newTempAvailability[dateStr];
       }
     });
-    
+
     // Add new dates with default availability
     dates.forEach(date => {
       const dateStr = format(date, 'yyyy-MM-dd');
@@ -407,23 +398,19 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         }];
       }
     });
-    
     setTempAvailability(newTempAvailability);
   };
 
   // Save calendar changes
   const saveCalendarChanges = () => {
     if (!calendarOpen) return;
-    
     updateTeamMember(calendarOpen, {
       availability: tempAvailability
     });
-    
     toast({
       title: "Availability updated",
       description: `Updated availability for ${selectedDates.length} dates`
     });
-    
     setCalendarOpen(null);
     setSelectedDates([]);
     setTempAvailability({});
@@ -439,7 +426,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   // Save schedule to project run
   const saveSchedule = async () => {
     if (!schedulingResult) return;
-    
     try {
       const updatedProjectRun = {
         ...projectRun,
@@ -480,15 +466,12 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           }
         }
       };
-
       await updateProjectRun(updatedProjectRun);
       schedulingEngine.commitSchedule(schedulingResult);
-      
       toast({
         title: "Schedule saved",
         description: "Your optimized schedule has been saved successfully."
       });
-      
       onOpenChange(false);
     } catch (error) {
       toast({
@@ -511,11 +494,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   // Print to PDF
   const printToPDF = async () => {
     if (!schedulingResult) return;
-    
     try {
-      const { default: html2canvas } = await import('html2canvas');
-      const { default: jsPDF } = await import('jspdf');
-      
+      const {
+        default: html2canvas
+      } = await import('html2canvas');
+      const {
+        default: jsPDF
+      } = await import('jspdf');
+
       // Create a temporary container with the schedule content
       const printContent = document.createElement('div');
       printContent.style.padding = '20px';
@@ -537,13 +523,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </tr>
             </thead>
             <tbody>
-              ${schedulingResult.scheduledTasks
-                .filter(st => st.status === 'confirmed')
-                .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-                .map(scheduledTask => {
-                  const task = schedulingTasks.find(t => t.id === scheduledTask.taskId);
-                  const worker = teamMembers.find(w => w.id === scheduledTask.workerId);
-                  return `
+              ${schedulingResult.scheduledTasks.filter(st => st.status === 'confirmed').sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()).map(scheduledTask => {
+        const task = schedulingTasks.find(t => t.id === scheduledTask.taskId);
+        const worker = teamMembers.find(w => w.id === scheduledTask.workerId);
+        return `
                     <tr style="border-bottom: 1px solid #e5e7eb;">
                       <td style="padding: 8px; border: 1px solid #e5e7eb;">${task?.title || 'Unknown'}</td>
                       <td style="padding: 8px; border: 1px solid #e5e7eb;">${worker?.name || 'Unknown'}</td>
@@ -553,29 +536,23 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                       <td style="padding: 8px; border: 1px solid #e5e7eb;">${scheduledTask.status}</td>
                     </tr>
                   `;
-                }).join('')}
+      }).join('')}
             </tbody>
           </table>
         </div>
       `;
-      
       document.body.appendChild(printContent);
-      
       const canvas = await html2canvas(printContent, {
         scale: 2,
         backgroundColor: '#ffffff'
       });
-      
       document.body.removeChild(printContent);
-      
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
+      const pdfHeight = canvas.height * pdfWidth / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${project?.name || 'project'}-schedule.pdf`);
-      
       toast({
         title: "PDF downloaded",
         description: "Your schedule has been downloaded successfully."
@@ -600,31 +577,29 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       });
       return;
     }
-
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
+      const {
+        supabase
+      } = await import('@/integrations/supabase/client');
+
       // Send notifications to team members who opted in
       for (const member of teamMembers) {
         if (!member.notificationPreferences?.email || !member.email) continue;
-        
+
         // Get tasks assigned to this member
-        const assignedTasks = schedulingResult.scheduledTasks
-          .filter(st => st.workerId === member.id && st.status === 'confirmed')
-          .map(st => {
-            const task = schedulingTasks.find(t => t.id === st.taskId);
-            return {
-              title: task?.title || 'Unknown Task',
-              startTime: format(st.startTime, 'PPp'),
-              endTime: format(st.endTime, 'PPp'),
-              targetCompletion: format(st.targetCompletionDate, 'PPp'),
-              latestCompletion: format(st.latestCompletionDate, 'PPp'),
-              estimatedHours: task?.estimatedHours || 0
-            };
-          });
-        
+        const assignedTasks = schedulingResult.scheduledTasks.filter(st => st.workerId === member.id && st.status === 'confirmed').map(st => {
+          const task = schedulingTasks.find(t => t.id === st.taskId);
+          return {
+            title: task?.title || 'Unknown Task',
+            startTime: format(st.startTime, 'PPp'),
+            endTime: format(st.endTime, 'PPp'),
+            targetCompletion: format(st.targetCompletionDate, 'PPp'),
+            latestCompletion: format(st.latestCompletionDate, 'PPp'),
+            estimatedHours: task?.estimatedHours || 0
+          };
+        });
         if (assignedTasks.length === 0) continue;
-        
+
         // Call edge function to send email
         await supabase.functions.invoke('send-schedule-notification', {
           body: {
@@ -637,7 +612,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           }
         });
       }
-      
       toast({
         title: "Notifications sent",
         description: "Schedule notifications have been sent to team members."
@@ -651,7 +625,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       });
     }
   };
-
   const formatTime = (hours: number): string => {
     if (hours < 1) return `${Math.round(hours * 60)}m`;
     if (hours < 24) return `${Math.round(hours * 10) / 10}h`;
@@ -659,9 +632,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     const remainingHours = hours % 8;
     return remainingHours > 0 ? `${days}d ${Math.round(remainingHours * 10) / 10}h` : `${days}d`;
   };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+  return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-none h-[85vh] p-0 gap-0 [&>button]:hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-gradient-subtle">
@@ -676,48 +647,21 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </p>
             </div>
           </div>
-          {isMobile ? (
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          {isMobile ? <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
               Close
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+            </Button> : <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
               <X className="w-4 h-4" />
-            </Button>
-          )}
+            </Button>}
         </div>
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
             {/* New Wizard Interface */}
-            <SchedulerWizard
-              targetDate={targetDate}
-              setTargetDate={setTargetDate}
-              dropDeadDate={dropDeadDate}
-              setDropDeadDate={setDropDeadDate}
-              planningMode={planningMode}
-              setPlanningMode={setPlanningMode}
-              scheduleTempo={scheduleTempo}
-              setScheduleTempo={setScheduleTempo}
-              onPresetApply={applyPreset}
-              teamMembers={teamMembers}
-              addTeamMember={addTeamMember}
-              removeTeamMember={removeTeamMember}
-              updateTeamMember={updateTeamMember}
-              openCalendar={openCalendar}
-              onGenerateSchedule={computeAdvancedSchedule}
-              isComputing={isComputing}
-            />
+            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} />
 
             {/* Results */}
-            {schedulingResult && (
-              <>
-                <ScheduleOutputView
-                  schedulingResult={schedulingResult}
-                  planningMode={planningMode}
-                  schedulingTasks={schedulingTasks}
-                  teamMembers={teamMembers}
-                />
+            {schedulingResult && <>
+                <ScheduleOutputView schedulingResult={schedulingResult} planningMode={planningMode} schedulingTasks={schedulingTasks} teamMembers={teamMembers} />
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -738,8 +682,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                     Email Me
                   </Button>
                 </div>
-              </>
-            )}
+              </>}
 
             {/* Old Configuration Section - REMOVED */}
             <div className="hidden grid-cols-1 lg:grid-cols-3 gap-4">
@@ -758,24 +701,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                             <Target className="w-3 h-3" />
                             Target Completion Date
                           </Label>
-                          <Input
-                            type="date"
-                            value={targetDate}
-                            onChange={(e) => setTargetDate(e.target.value)}
-                            className="mt-1 h-8"
-                          />
+                          <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="mt-1 h-8" />
                         </div>
                         <div>
                           <Label className="text-xs font-medium flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3 text-destructive" />
                             Latest Date
                           </Label>
-                          <Input
-                            type="date"
-                            value={dropDeadDate}
-                            onChange={(e) => setDropDeadDate(e.target.value)}
-                            className="mt-1 h-8"
-                          />
+                          <Input type="date" value={dropDeadDate} onChange={e => setDropDeadDate(e.target.value)} className="mt-1 h-8" />
                         </div>
                         <p className="text-xs text-muted-foreground">
                           Target is your goal; latest is the absolute latest acceptable date
@@ -794,19 +727,17 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium mb-2">Planning Mode</p>
-                        <Select value={planningMode} onValueChange={(value) => setPlanningMode(value as PlanningMode)}>
+                        <Select value={planningMode} onValueChange={value => setPlanningMode(value as PlanningMode)}>
                           <SelectTrigger className="h-8">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {planningModes.map((mode) => (
-                              <SelectItem key={mode.mode} value={mode.mode}>
+                            {planningModes.map(mode => <SelectItem key={mode.mode} value={mode.mode}>
                                 <div>
                                   <div className="font-medium">{mode.name}</div>
                                   <div className="text-xs text-muted-foreground">{mode.description}</div>
                                 </div>
-                              </SelectItem>
-                            ))}
+                              </SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
@@ -823,7 +754,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium mb-2">Schedule Tempo</p>
-                        <Select value={scheduleTempo} onValueChange={(value) => setScheduleTempo(value as ScheduleTempo)}>
+                        <Select value={scheduleTempo} onValueChange={value => setScheduleTempo(value as ScheduleTempo)}>
                           <SelectTrigger className="h-8">
                             <SelectValue />
                           </SelectTrigger>
@@ -850,27 +781,23 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs font-medium">From</Label>
-                            <Input 
-                              type="time" 
-                              value={globalSettings.quietHours.start}
-                              onChange={(e) => setGlobalSettings(prev => ({
-                                ...prev,
-                                quietHours: { ...prev.quietHours, start: e.target.value }
-                              }))}
-                              className="h-8 text-sm"
-                            />
+                            <Input type="time" value={globalSettings.quietHours.start} onChange={e => setGlobalSettings(prev => ({
+                            ...prev,
+                            quietHours: {
+                              ...prev.quietHours,
+                              start: e.target.value
+                            }
+                          }))} className="h-8 text-sm" />
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs font-medium">To</Label>
-                            <Input 
-                              type="time" 
-                              value={globalSettings.quietHours.end}
-                              onChange={(e) => setGlobalSettings(prev => ({
-                                ...prev,
-                                quietHours: { ...prev.quietHours, end: e.target.value }
-                              }))}
-                              className="h-8 text-sm"
-                            />
+                            <Input type="time" value={globalSettings.quietHours.end} onChange={e => setGlobalSettings(prev => ({
+                            ...prev,
+                            quietHours: {
+                              ...prev.quietHours,
+                              end: e.target.value
+                            }
+                          }))} className="h-8 text-sm" />
                           </div>
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">
@@ -916,25 +843,12 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
             {/* Step 5: Generate Schedule */}
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
-                  5
-                </div>
-                <h3 className="text-base font-semibold">Generate Schedule</h3>
-              </div>
               
-              <Button 
-                onClick={computeAdvancedSchedule} 
-                className="w-full h-10 text-sm"
-                disabled={isComputing || teamMembers.length === 0 || !targetDate}
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                {isComputing ? 'Computing...' : 'Generate Schedule'}
-              </Button>
+              
+              
 
               {/* Action Buttons - shown after schedule is generated */}
-              {schedulingResult && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {schedulingResult && <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <Button variant="outline" onClick={saveDraft} className="h-10">
                     <FileText className="w-4 h-4 mr-2" />
                     Save Draft
@@ -951,11 +865,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                     <Mail className="w-4 h-4 mr-2" />
                     Email Me
                   </Button>
-                </div>
-              )}
+                </div>}
 
-              {schedulingResult && (
-                <>
+              {schedulingResult && <>
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
@@ -964,14 +876,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   </Alert>
 
                   {/* Enhanced Schedule Output View */}
-                  <ScheduleOutputView
-                    schedulingResult={schedulingResult}
-                    planningMode={planningMode}
-                    schedulingTasks={schedulingTasks}
-                    teamMembers={teamMembers}
-                  />
-                </>
-              )}
+                  <ScheduleOutputView schedulingResult={schedulingResult} planningMode={planningMode} schedulingTasks={schedulingTasks} teamMembers={teamMembers} />
+                </>}
             </div>
 
           </div>
@@ -979,8 +885,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       </DialogContent>
       
       {/* Enhanced Calendar Dialog for Team Member Availability */}
-      {calendarOpen && (
-        <Dialog open={!!calendarOpen} onOpenChange={cancelCalendarChanges}>
+      {calendarOpen && <Dialog open={!!calendarOpen} onOpenChange={cancelCalendarChanges}>
           <DialogContent className="max-w-[95vw] md:max-w-[1000px] max-h-[90vh] p-0">
             <DialogHeader className="p-6 pb-0">
               <DialogTitle className="flex items-center gap-2">
@@ -995,17 +900,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 <div className="h-full flex flex-col">
                   <h3 className="font-semibold text-lg mb-4">Select Available Dates</h3>
                   <div className="flex-1 flex justify-center">
-                    <CalendarComponent
-                      mode="multiple"
-                      selected={selectedDates}
-                      onSelect={handleDateSelect}
-                      className="w-full max-w-md"
-                      classNames={{
-                        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground ring-2 ring-primary/20",
-                        day_today: "bg-accent text-accent-foreground font-bold",
-                        day: "h-9 w-9 text-sm hover:bg-accent hover:text-accent-foreground",
-                      }}
-                    />
+                    <CalendarComponent mode="multiple" selected={selectedDates} onSelect={handleDateSelect} className="w-full max-w-md" classNames={{
+                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground ring-2 ring-primary/20",
+                  day_today: "bg-accent text-accent-foreground font-bold",
+                  day: "h-9 w-9 text-sm hover:bg-accent hover:text-accent-foreground"
+                }} />
                   </div>
                   <p className="text-sm text-muted-foreground mt-4 text-center">
                     Click dates to toggle availability. Highlighted dates show custom availability.
@@ -1022,28 +921,20 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                     
                     <div className="space-y-3">
                       <div className="flex items-center space-x-3">
-                        <Checkbox 
-                          id="weekends-only"
-                          checked={teamMembers.find(m => m.id === calendarOpen)?.weekendsOnly || false}
-                          onCheckedChange={(checked) => updateTeamMember(calendarOpen!, { 
-                            weekendsOnly: checked as boolean,
-                            weekdaysAfterFivePm: false
-                          })}
-                        />
+                        <Checkbox id="weekends-only" checked={teamMembers.find(m => m.id === calendarOpen)?.weekendsOnly || false} onCheckedChange={checked => updateTeamMember(calendarOpen!, {
+                      weekendsOnly: checked as boolean,
+                      weekdaysAfterFivePm: false
+                    })} />
                         <Label htmlFor="weekends-only" className="text-sm font-medium">
                           Weekends Only
                         </Label>
                       </div>
                       
                       <div className="flex items-center space-x-3">
-                        <Checkbox 
-                          id="weekdays-after-5"
-                          checked={teamMembers.find(m => m.id === calendarOpen)?.weekdaysAfterFivePm || false}
-                          onCheckedChange={(checked) => updateTeamMember(calendarOpen!, { 
-                            weekdaysAfterFivePm: checked as boolean,
-                            weekendsOnly: false
-                          })}
-                        />
+                        <Checkbox id="weekdays-after-5" checked={teamMembers.find(m => m.id === calendarOpen)?.weekdaysAfterFivePm || false} onCheckedChange={checked => updateTeamMember(calendarOpen!, {
+                      weekdaysAfterFivePm: checked as boolean,
+                      weekendsOnly: false
+                    })} />
                         <Label htmlFor="weekdays-after-5" className="text-sm font-medium">
                           Weekdays After 5pm
                         </Label>
@@ -1051,15 +942,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                       
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">Max Total Hours</Label>
-                        <Input 
-                          type="number"
-                          min="1"
-                          value={teamMembers.find(m => m.id === calendarOpen)?.maxTotalHours || 40}
-                          onChange={(e) => updateTeamMember(calendarOpen!, { 
-                            maxTotalHours: parseInt(e.target.value) || 40
-                          })}
-                          className="h-9"
-                        />
+                        <Input type="number" min="1" value={teamMembers.find(m => m.id === calendarOpen)?.maxTotalHours || 40} onChange={e => updateTeamMember(calendarOpen!, {
+                      maxTotalHours: parseInt(e.target.value) || 40
+                    })} className="h-9" />
                       </div>
                     </div>
                   </div>
@@ -1068,8 +953,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   <div className="space-y-4">
                     <h4 className="font-semibold text-base border-b pb-2">Daily Settings</h4>
                     
-                    {selectedDates.length > 0 ? (
-                      <div className="space-y-3">
+                    {selectedDates.length > 0 ? <div className="space-y-3">
                         <p className="text-sm text-muted-foreground">
                           Settings for {selectedDates.length} selected date(s)
                         </p>
@@ -1077,48 +961,38 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <Label className="text-xs font-medium">Start Time</Label>
-                            <Input 
-                              type="time"
-                              value={selectedDates.length > 0 && tempAvailability[format(selectedDates[0], 'yyyy-MM-dd')]?.[0]?.start || '09:00'}
-                              onChange={(e) => {
-                                const newValue = e.target.value;
-                                selectedDates.forEach(date => {
-                                  const dateStr = format(date, 'yyyy-MM-dd');
-                                  setTempAvailability(prev => ({
-                                    ...prev,
-                                    [dateStr]: [{
-                                      start: newValue,
-                                      end: prev[dateStr]?.[0]?.end || '17:00',
-                                      available: true
-                                    }]
-                                  }));
-                                });
-                              }}
-                              className="h-8 text-xs"
-                            />
+                            <Input type="time" value={selectedDates.length > 0 && tempAvailability[format(selectedDates[0], 'yyyy-MM-dd')]?.[0]?.start || '09:00'} onChange={e => {
+                        const newValue = e.target.value;
+                        selectedDates.forEach(date => {
+                          const dateStr = format(date, 'yyyy-MM-dd');
+                          setTempAvailability(prev => ({
+                            ...prev,
+                            [dateStr]: [{
+                              start: newValue,
+                              end: prev[dateStr]?.[0]?.end || '17:00',
+                              available: true
+                            }]
+                          }));
+                        });
+                      }} className="h-8 text-xs" />
                           </div>
                           
                           <div className="space-y-1">
                             <Label className="text-xs font-medium">End Time</Label>
-                            <Input 
-                              type="time"
-                              value={selectedDates.length > 0 && tempAvailability[format(selectedDates[0], 'yyyy-MM-dd')]?.[0]?.end || '17:00'}
-                              onChange={(e) => {
-                                const newValue = e.target.value;
-                                selectedDates.forEach(date => {
-                                  const dateStr = format(date, 'yyyy-MM-dd');
-                                  setTempAvailability(prev => ({
-                                    ...prev,
-                                    [dateStr]: [{
-                                      start: prev[dateStr]?.[0]?.start || '09:00',
-                                      end: newValue,
-                                      available: true
-                                    }]
-                                  }));
-                                });
-                              }}
-                              className="h-8 text-xs"
-                            />
+                            <Input type="time" value={selectedDates.length > 0 && tempAvailability[format(selectedDates[0], 'yyyy-MM-dd')]?.[0]?.end || '17:00'} onChange={e => {
+                        const newValue = e.target.value;
+                        selectedDates.forEach(date => {
+                          const dateStr = format(date, 'yyyy-MM-dd');
+                          setTempAvailability(prev => ({
+                            ...prev,
+                            [dateStr]: [{
+                              start: prev[dateStr]?.[0]?.start || '09:00',
+                              end: newValue,
+                              available: true
+                            }]
+                          }));
+                        });
+                      }} className="h-8 text-xs" />
                           </div>
                         </div>
                         
@@ -1126,30 +1000,23 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                           <h5 className="text-xs font-medium mb-2">Selected Dates Preview</h5>
                           <div className="space-y-1 max-h-32 overflow-y-auto">
                             {selectedDates.slice(0, 5).map(date => {
-                              const dateStr = format(date, 'yyyy-MM-dd');
-                              const timeSlot = tempAvailability[dateStr]?.[0];
-                              return (
-                                <div key={date.toISOString()} className="text-xs flex justify-between">
+                        const dateStr = format(date, 'yyyy-MM-dd');
+                        const timeSlot = tempAvailability[dateStr]?.[0];
+                        return <div key={date.toISOString()} className="text-xs flex justify-between">
                                   <span>{format(date, 'MMM dd')}</span>
                                   <span className="text-muted-foreground">
                                     {timeSlot ? `${timeSlot.start} - ${timeSlot.end}` : '09:00 - 17:00'}
                                   </span>
-                                </div>
-                              );
-                            })}
-                            {selectedDates.length > 5 && (
-                              <div className="text-xs text-muted-foreground text-center">
+                                </div>;
+                      })}
+                            {selectedDates.length > 5 && <div className="text-xs text-muted-foreground text-center">
                                 +{selectedDates.length - 5} more
-                              </div>
-                            )}
+                              </div>}
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
+                      </div> : <p className="text-sm text-muted-foreground">
                         Click on calendar dates to configure daily settings
-                      </p>
-                    )}
+                      </p>}
                   </div>
                   
                   {/* Summary */}
@@ -1179,8 +1046,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </div>
             </div>
           </DialogContent>
-        </Dialog>
-      )}
-    </Dialog>
-  );
+        </Dialog>}
+    </Dialog>;
 };
