@@ -264,9 +264,6 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Daily Task Schedule</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Check off tasks as you complete them each day
-            </p>
           </CardHeader>
           <CardContent className="space-y-6">
             {sortedDays.map((dateKey) => {
@@ -323,9 +320,6 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
                             key={scheduledTask.taskId}
                             className="group flex items-start gap-3 p-3 rounded-md bg-background/50 hover:bg-background border hover:shadow-sm transition-all"
                           >
-                            <div className="mt-0.5">
-                              <div className="w-5 h-5 rounded border-2 border-muted-foreground/30 group-hover:border-primary transition-colors" />
-                            </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium leading-tight">{task?.title || 'Unknown Task'}</p>
                               <p className="text-xs text-muted-foreground mt-1">

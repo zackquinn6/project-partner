@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { QuickSchedulePresets, SchedulePreset } from './QuickSchedulePresets';
 import { 
   Target, 
@@ -15,10 +16,41 @@ import {
   ChevronDown,
   ChevronRight,
   Settings,
-  Zap
+  Zap,
+  Plus,
+  Trash2,
+  Users
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { PlanningMode, ScheduleTempo } from '@/interfaces/Scheduling';
+
+interface TeamMember {
+  id: string;
+  name: string;
+  type: 'owner' | 'helper';
+  skillLevel: 'novice' | 'intermediate' | 'expert';
+  maxTotalHours: number;
+  weekendsOnly: boolean;
+  weekdaysAfterFivePm: boolean;
+  workingHours: {
+    start: string;
+    end: string;
+  };
+  availability: {
+    [date: string]: {
+      start: string;
+      end: string;
+      available: boolean;
+    }[];
+  };
+  costPerHour?: number;
+  email?: string;
+  phone?: string;
+  notificationPreferences?: {
+    email: boolean;
+    sms: boolean;
+  };
+}
 
 interface SchedulerWizardProps {
   targetDate: string;
@@ -30,6 +62,13 @@ interface SchedulerWizardProps {
   scheduleTempo: ScheduleTempo;
   setScheduleTempo: (tempo: ScheduleTempo) => void;
   onPresetApply: (preset: SchedulePreset) => void;
+  teamMembers: TeamMember[];
+  addTeamMember: () => void;
+  removeTeamMember: (id: string) => void;
+  updateTeamMember: (id: string, updates: Partial<TeamMember>) => void;
+  openCalendar: (memberId: string) => void;
+  onGenerateSchedule: () => void;
+  isComputing: boolean;
 }
 
 export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
@@ -41,7 +80,14 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   setPlanningMode,
   scheduleTempo,
   setScheduleTempo,
-  onPresetApply
+  onPresetApply,
+  teamMembers,
+  addTeamMember,
+  removeTeamMember,
+  updateTeamMember,
+  openCalendar,
+  onGenerateSchedule,
+  isComputing
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -104,31 +150,28 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 variant={scheduleTempo === 'fast_track' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('fast_track')}
-                className="h-20 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-105"
+                className="h-14 flex flex-col items-center justify-center gap-1 transition-all hover:scale-105"
               >
-                <Zap className="w-5 h-5" />
+                <Zap className="w-4 h-4" />
                 <span className="text-xs font-semibold">Fast-Track</span>
-                <span className="text-[10px] opacity-70">Tight schedule</span>
               </Button>
               <Button
                 variant={scheduleTempo === 'steady' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('steady')}
-                className="h-20 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-105"
+                className="h-14 flex flex-col items-center justify-center gap-1 transition-all hover:scale-105"
               >
-                <Clock className="w-5 h-5" />
+                <Clock className="w-4 h-4" />
                 <span className="text-xs font-semibold">Steady Pace</span>
-                <span className="text-[10px] opacity-70">Balanced</span>
               </Button>
               <Button
                 variant={scheduleTempo === 'extended' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('extended')}
-                className="h-20 flex flex-col items-center justify-center gap-1.5 transition-all hover:scale-105"
+                className="h-14 flex flex-col items-center justify-center gap-1 transition-all hover:scale-105"
               >
-                <Settings className="w-5 h-5" />
+                <Settings className="w-4 h-4" />
                 <span className="text-xs font-semibold">Extended</span>
-                <span className="text-[10px] opacity-70">Extra buffer</span>
               </Button>
             </div>
           </div>
@@ -162,7 +205,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
           
           <CollapsibleContent>
             <CardContent className="pt-0 pb-4 px-4">
-              <div className="space-y-3 pt-3 border-t">
+              <div className="space-y-4 pt-3 border-t">
                 <div>
                   <Label className="text-xs font-medium mb-2">Planning Detail Level</Label>
                   <Select value={planningMode} onValueChange={(value) => setPlanningMode(value as PlanningMode)}>
@@ -191,11 +234,127 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Team Members Section */}
+                <div className="space-y-3 pt-3 border-t">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5" />
+                      Team Members & Availability
+                    </Label>
+                    <Button onClick={addTeamMember} size="sm" variant="outline" className="h-7 text-xs">
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add Member
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {teamMembers.map((member) => (
+                      <div key={member.id} className="p-3 rounded-lg border bg-card space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            placeholder="Name"
+                            value={member.name}
+                            onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
+                            className="h-8 text-xs flex-1"
+                          />
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openCalendar(member.id)}
+                            className="h-8 text-xs px-2"
+                          >
+                            <Calendar className="w-3 h-3 mr-1" />
+                            ({Object.keys(member.availability).length})
+                          </Button>
+                          {teamMembers.length > 1 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => removeTeamMember(member.id)}
+                              className="h-8 px-2"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input 
+                            type="email"
+                            placeholder="email@example.com"
+                            value={member.email || ''}
+                            onChange={(e) => updateTeamMember(member.id, { email: e.target.value })}
+                            className="h-7 text-xs"
+                          />
+                          <Input 
+                            type="tel"
+                            placeholder="(555) 555-5555"
+                            value={member.phone || ''}
+                            onChange={(e) => updateTeamMember(member.id, { phone: e.target.value })}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5">
+                            <Checkbox 
+                              id={`email-${member.id}`}
+                              checked={member.notificationPreferences?.email || false}
+                              onCheckedChange={(checked) => 
+                                updateTeamMember(member.id, { 
+                                  notificationPreferences: { 
+                                    ...member.notificationPreferences,
+                                    email: checked as boolean 
+                                  } 
+                                })
+                              }
+                            />
+                            <Label htmlFor={`email-${member.id}`} className="text-xs cursor-pointer">
+                              Email
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Checkbox 
+                              id={`sms-${member.id}`}
+                              checked={member.notificationPreferences?.sms || false}
+                              onCheckedChange={(checked) => 
+                                updateTeamMember(member.id, { 
+                                  notificationPreferences: { 
+                                    ...member.notificationPreferences,
+                                    sms: checked as boolean 
+                                  } 
+                                })
+                              }
+                            />
+                            <Label htmlFor={`sms-${member.id}`} className="text-xs cursor-pointer">
+                              SMS
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </CollapsibleContent>
         </Card>
       </Collapsible>
+
+      {/* Generate Schedule Button */}
+      <Card>
+        <CardContent className="p-4">
+          <Button 
+            onClick={onGenerateSchedule} 
+            className="w-full h-10 text-sm"
+            disabled={isComputing || teamMembers.length === 0 || !targetDate}
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            {isComputing ? 'Computing...' : 'Generate Schedule'}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -700,17 +700,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               scheduleTempo={scheduleTempo}
               setScheduleTempo={setScheduleTempo}
               onPresetApply={applyPreset}
+              teamMembers={teamMembers}
+              addTeamMember={addTeamMember}
+              removeTeamMember={removeTeamMember}
+              updateTeamMember={updateTeamMember}
+              openCalendar={openCalendar}
+              onGenerateSchedule={computeAdvancedSchedule}
+              isComputing={isComputing}
             />
-
-            {/* Generate Schedule Button */}
-            <Button 
-              onClick={computeAdvancedSchedule} 
-              className="w-full h-12 text-base"
-              disabled={isComputing || teamMembers.length === 0}
-            >
-              <Zap className="w-4 h-4 mr-2" />
-              {isComputing ? 'Computing...' : 'Generate Schedule'}
-            </Button>
 
             {/* Results */}
             {schedulingResult && (
@@ -917,131 +914,19 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </div>
             </div>
 
-            {/* Step 5: Team Members & Availability */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
-                    5
-                  </div>
-                  <h3 className="text-base font-semibold">Team Members & Availability</h3>
-                </div>
-                <Button onClick={addTeamMember} size="sm" className="h-8">
-                  <Plus className="w-3 h-3 mr-1" />
-                  Add Member
-                </Button>
-              </div>
-              
-              <div className="space-y-3">
-                {teamMembers.map((member, index) => (
-                  <Card key={member.id} className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <Label className="text-xs mb-1">Name</Label>
-                          <Input 
-                            placeholder="Team member name"
-                            value={member.name}
-                            onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <Label className="text-xs mb-1">Email</Label>
-                          <Input 
-                            type="email"
-                            placeholder="email@example.com"
-                            value={member.email || ''}
-                            onChange={(e) => updateTeamMember(member.id, { email: e.target.value })}
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <Label className="text-xs mb-1">Phone</Label>
-                          <Input 
-                            type="tel"
-                            placeholder="(555) 555-5555"
-                            value={member.phone || ''}
-                            onChange={(e) => updateTeamMember(member.id, { phone: e.target.value })}
-                            className="h-9"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <Checkbox 
-                            id={`email-${member.id}`}
-                            checked={member.notificationPreferences?.email || false}
-                            onCheckedChange={(checked) => 
-                              updateTeamMember(member.id, { 
-                                notificationPreferences: { 
-                                  ...member.notificationPreferences,
-                                  email: checked as boolean 
-                                } 
-                              })
-                            }
-                          />
-                          <Label htmlFor={`email-${member.id}`} className="text-xs cursor-pointer">
-                            Email notifications
-                          </Label>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Checkbox 
-                            id={`sms-${member.id}`}
-                            checked={member.notificationPreferences?.sms || false}
-                            onCheckedChange={(checked) => 
-                              updateTeamMember(member.id, { 
-                                notificationPreferences: { 
-                                  ...member.notificationPreferences,
-                                  sms: checked as boolean 
-                                } 
-                              })
-                            }
-                          />
-                          <Label htmlFor={`sms-${member.id}`} className="text-xs cursor-pointer">
-                            SMS notifications
-                          </Label>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => openCalendar(member.id)}
-                          className="h-8 ml-auto"
-                        >
-                          <CalendarIcon className="w-3 h-3 mr-1" />
-                          Calendar ({Object.keys(member.availability).length})
-                        </Button>
-                        {teamMembers.length > 1 && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removeTeamMember(member.id)}
-                            className="h-8 px-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Step 6: Generate Schedule */}
+            {/* Step 5: Generate Schedule */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
-                  6
+                  5
                 </div>
                 <h3 className="text-base font-semibold">Generate Schedule</h3>
               </div>
               
               <Button 
                 onClick={computeAdvancedSchedule} 
-                className="w-full h-12 text-base"
-                disabled={isComputing || teamMembers.length === 0}
+                className="w-full h-10 text-sm"
+                disabled={isComputing || teamMembers.length === 0 || !targetDate}
               >
                 <Zap className="w-4 h-4 mr-2" />
                 {isComputing ? 'Computing...' : 'Generate Schedule'}
