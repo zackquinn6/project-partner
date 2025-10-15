@@ -572,7 +572,21 @@ export const createFallbackTileProject = (): Project => {
     id: 'preparation-phase',
     name: 'Preparation',
     description: 'Prepare surface and plan tile layout',
-    operations: [surfacePrepOperation, layoutPlanningOperation]
+    operations: [
+      surfacePrepOperation,
+      // Alternate substrate prep options
+      woodFloorPrepOperation,
+      concreteFloorPrepOperation,
+      // Alternate tile substrate options
+      concreteBoardOperation,
+      uncouplingMembraneOperation,
+      // If-necessary optional work
+      toiletRemovalOperation,
+      dishwasherRemovalOperation,
+      selfLevelerOperation,
+      // Layout planning
+      layoutPlanningOperation
+    ]
   };
 
   // Tile Installation Phase
