@@ -157,6 +157,8 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     if (!currentProjectRun) return;
 
     try {
+      console.log('💾 Saving customization decisions:', customizationState);
+      
       // Apply customizations to project run phases
       let newPhases = [...(currentProjectRun.phases || [])];
 
@@ -165,18 +167,52 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         const standardChoices = customizationState.standardDecisions[phase.id] || [];
         const ifNecessaryChoices = customizationState.ifNecessaryWork[phase.id] || [];
 
+        console.log(`Processing phase ${phase.name}:`, { standardChoices, ifNecessaryChoices });
+
         // Apply operation filtering based on choices
         let modifiedOperations = [...phase.operations];
         
-        // Filter operations based on standard decisions
+        // Filter alternate operations - only keep selected ones
         if (standardChoices.length > 0) {
-          modifiedOperations = modifiedOperations.filter(op => 
-            standardChoices.some(choice => op.name.toLowerCase().includes(choice.toLowerCase()))
-          );
+          // Extract selected operation IDs from "groupKey:operationId" format
+          const selectedOpIds = standardChoices.map(choice => {
+            const parts = choice.split(':');
+            return parts.length > 1 ? parts[1] : choice;
+          });
+          
+          console.log(`Selected operation IDs for ${phase.name}:`, selectedOpIds);
+          
+          // Keep prime operations and only selected alternate operations
+          modifiedOperations = modifiedOperations.filter(op => {
+            const flowType = op.steps?.[0]?.flowType || 'prime';
+            
+            if (flowType === 'alternate') {
+              const isSelected = selectedOpIds.includes(op.id);
+              console.log(`Operation ${op.name} (${op.id}) is alternate, selected:`, isSelected);
+              return isSelected;
+            }
+            
+            // Keep all non-alternate operations
+            return flowType !== 'if-necessary' || ifNecessaryChoices.includes(op.id);
+          });
+        } else {
+          // No standard choices - filter out all alternate operations
+          modifiedOperations = modifiedOperations.filter(op => {
+            const flowType = op.steps?.[0]?.flowType || 'prime';
+            return flowType !== 'alternate' && (flowType !== 'if-necessary' || ifNecessaryChoices.includes(op.id));
+          });
         }
         
-        // Add if-necessary operations
-        // This would need more complex logic based on your operation structure
+        // Filter if-necessary operations - only keep selected ones
+        modifiedOperations = modifiedOperations.filter(op => {
+          const flowType = op.steps?.[0]?.flowType || 'prime';
+          if (flowType === 'if-necessary') {
+            const isSelected = ifNecessaryChoices.includes(op.id);
+            console.log(`Operation ${op.name} (${op.id}) is if-necessary, selected:`, isSelected);
+            return isSelected;
+          }
+          return true;
+        });
         
         return {
           ...phase,
