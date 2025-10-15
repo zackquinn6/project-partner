@@ -320,7 +320,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             category: projectRun.category,
             effort_level: projectRun.effortLevel,
             skill_level: projectRun.skillLevel,
-            estimated_time: projectRun.estimatedTime
+            estimated_time: projectRun.estimatedTime,
+            customization_decisions: projectRun.customization_decisions ? JSON.stringify(projectRun.customization_decisions) : null
           })
           .eq('id', projectRun.id)
           .eq('user_id', user.id);

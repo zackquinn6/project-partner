@@ -113,6 +113,17 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         }
       }
 
+      let customizationDecisions = undefined;
+      if (run.customization_decisions) {
+        try {
+          customizationDecisions = typeof run.customization_decisions === 'string'
+            ? JSON.parse(run.customization_decisions)
+            : run.customization_decisions;
+        } catch (e) {
+          console.error('Failed to parse customization_decisions JSON:', e);
+        }
+      }
+
       return {
         id: run.id,
         templateId: run.template_id,
@@ -138,7 +149,8 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         category: run.category,
         effortLevel: run.effort_level as Project['effortLevel'],
         skillLevel: run.skill_level as Project['skillLevel'],
-        estimatedTime: run.estimated_time
+        estimatedTime: run.estimated_time,
+        customization_decisions: customizationDecisions
       };
     });
   }, []);
