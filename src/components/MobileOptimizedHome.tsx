@@ -21,7 +21,8 @@ import {
   Play,
   TrendingUp,
   CheckCircle,
-  Clock
+  Clock,
+  ListChecks
 } from 'lucide-react';
 
 export function MobileOptimizedHome() {
@@ -56,6 +57,14 @@ export function MobileOptimizedHome() {
         console.log('🔄 MobileOptimizedHome: My Projects clicked');
         window.dispatchEvent(new CustomEvent('navigate-to-projects'));
       }
+    },
+    {
+      id: 'home-task-list',
+      icon: ListChecks,
+      title: 'Home Task List',
+      subtitle: 'Manage tasks',
+      color: 'bg-pink-600',
+      action: () => window.dispatchEvent(new CustomEvent('show-home-task-list'))
     },
     {
       id: 'home-maintenance',

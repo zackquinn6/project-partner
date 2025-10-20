@@ -31,6 +31,7 @@ import { UserToolsMaterialsWindow } from '@/components/UserToolsMaterialsWindow'
 import { ToolsMaterialsLibraryView } from '@/components/ToolsMaterialsLibraryView';
 import ProfileManager from '@/components/ProfileManager';
 import { ExpertHelpWindow } from '@/components/ExpertHelpWindow';
+import { HomeTaskList } from '@/components/HomeTaskList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,7 @@ const Index = () => {
   const [isExpertHelpOpen, setIsExpertHelpOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isToolsLibraryGridOpen, setIsToolsLibraryGridOpen] = useState(false);
+  const [isHomeTaskListOpen, setIsHomeTaskListOpen] = useState(false);
 
   // CRITICAL: All hooks must be at the top - before any conditional logic
   const handleMobileProjectSelect = useCallback((project: any) => {
@@ -224,6 +226,12 @@ const Index = () => {
       setIsToolsLibraryGridOpen(true);
     };
 
+    const handleHomeTaskListEvent = (event: Event) => {
+      console.log('📋 Opening Home Task List');
+      event.stopPropagation();
+      setIsHomeTaskListOpen(true);
+    };
+
     // Add event listeners
     window.addEventListener('show-home-manager', handleHomeManagerEvent);
     window.addEventListener('show-home-maintenance', handleHomeMaintenanceEvent);
@@ -237,6 +245,7 @@ const Index = () => {
     window.addEventListener('show-contractor-finder', handleContractorFinderEvent);
     window.addEventListener('show-expert-help', handleExpertHelpEvent);
     window.addEventListener('show-tools-library-grid', handleToolsLibraryGridEvent);
+    window.addEventListener('show-home-task-list', handleHomeTaskListEvent);
 
     return () => {
       window.removeEventListener('show-home-manager', handleHomeManagerEvent);
@@ -251,6 +260,7 @@ const Index = () => {
       window.removeEventListener('show-contractor-finder', handleContractorFinderEvent);
       window.removeEventListener('show-expert-help', handleExpertHelpEvent);
       window.removeEventListener('show-tools-library-grid', handleToolsLibraryGridEvent);
+      window.removeEventListener('show-home-task-list', handleHomeTaskListEvent);
     };
   }, []);
 
@@ -586,6 +596,11 @@ const Index = () => {
       <ToolsMaterialsLibraryView 
         open={isToolsLibraryGridOpen}
         onOpenChange={setIsToolsLibraryGridOpen}
+      />
+
+      <HomeTaskList 
+        open={isHomeTaskListOpen}
+        onOpenChange={setIsHomeTaskListOpen}
       />
     </div>
   );

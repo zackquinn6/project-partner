@@ -11,7 +11,7 @@ import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
-import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2 } from 'lucide-react';
+import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2, ListChecks } from 'lucide-react';
 import heroDIYPerson from '@/assets/hero-diy-person.png';
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
@@ -68,6 +68,7 @@ export default function Home({
     myProjects: getRandomColor(),
     rapidPlan: getRandomColor(),
     homeMaintenance: getRandomColor(),
+    homeTaskList: getRandomColor(),
     toolLibrary: getRandomColor(),
     toolAccess: getRandomColor(),
     projectCatalog: getRandomColor(),
@@ -157,6 +158,13 @@ export default function Home({
                   <HomeIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">Home Maintenance</span>
+              </div>
+              
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}>
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeTaskList} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                  <ListChecks className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                </div>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">Home Task List</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-rapid-assessment'))}>

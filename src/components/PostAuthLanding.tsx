@@ -13,7 +13,6 @@ import { ExpertHelpWindow } from '@/components/ExpertHelpWindow';
 import { RapidProjectAssessmentWindow } from '@/components/RapidProjectAssessmentWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
-import { HomeTaskList } from '@/components/HomeTaskList';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
   const {
@@ -290,8 +289,6 @@ Pick up where you left off or start your next winning project.</p>
         <ContractorFinderWindow open={showContractorFinder} onOpenChange={setShowContractorFinder} />
         
         <RapidProjectAssessmentWindow open={showProjectPlanning} onOpenChange={setShowProjectPlanning} />
-
-        <HomeTaskList open={showHomeTaskList} onOpenChange={setShowHomeTaskList} />
       </div>
     </div>;
 };
