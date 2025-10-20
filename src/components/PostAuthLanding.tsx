@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FolderOpen, BookOpen, User, ArrowRight, Trophy, Target, Zap, Wrench, Home, Shield, Hammer, HelpCircle, Calculator, Building2, Users } from 'lucide-react';
+import { FolderOpen, BookOpen, User, ArrowRight, Trophy, Target, Zap, Wrench, Home, Shield, Hammer, HelpCircle, Calculator, Building2, Users, ListChecks } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -13,6 +13,7 @@ import { ExpertHelpWindow } from '@/components/ExpertHelpWindow';
 import { RapidProjectAssessmentWindow } from '@/components/RapidProjectAssessmentWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
+import { HomeTaskList } from '@/components/HomeTaskList';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
   const {
@@ -27,6 +28,7 @@ export const PostAuthLanding = () => {
   const [showProjectPlanning, setShowProjectPlanning] = useState(false);
   const [showCodePermits, setShowCodePermits] = useState(false);
   const [showContractorFinder, setShowContractorFinder] = useState(false);
+  const [showHomeTaskList, setShowHomeTaskList] = useState(false);
   const [stats, setStats] = useState([{
     label: "Active Projects", 
     value: "0",
@@ -122,6 +124,12 @@ export const PostAuthLanding = () => {
       window.dispatchEvent(event);
     },
     color: "bg-green-600",
+    textColor: "text-white"
+  }, {
+    icon: ListChecks,
+    title: "Home Task List",
+    action: () => setShowHomeTaskList(true),
+    color: "bg-pink-600",
     textColor: "text-white"
   }, {
     icon: Wrench,
@@ -282,6 +290,8 @@ Pick up where you left off or start your next winning project.</p>
         <ContractorFinderWindow open={showContractorFinder} onOpenChange={setShowContractorFinder} />
         
         <RapidProjectAssessmentWindow open={showProjectPlanning} onOpenChange={setShowProjectPlanning} />
+
+        <HomeTaskList open={showHomeTaskList} onOpenChange={setShowHomeTaskList} />
       </div>
     </div>;
 };

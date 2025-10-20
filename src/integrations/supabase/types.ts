@@ -632,6 +632,69 @@ export type Database = {
         }
         Relationships: []
       }
+      home_tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_date: string | null
+          home_id: string | null
+          id: string
+          notes: string | null
+          priority: string
+          project_run_id: string | null
+          status: string
+          task_type: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          home_id?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          project_run_id?: string | null
+          status?: string
+          task_type?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          home_id?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          project_run_id?: string | null
+          status?: string
+          task_type?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_tasks_home_id_fkey"
+            columns: ["home_id"]
+            isOneToOne: false
+            referencedRelation: "homes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_tasks_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       homes: {
         Row: {
           address: string | null
