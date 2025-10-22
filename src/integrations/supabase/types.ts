@@ -23,7 +23,7 @@ export type Database = {
           created_at: string
           data_fields_accessed: string[] | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           justification: string | null
           session_id: string | null
           user_agent: string | null
@@ -36,7 +36,7 @@ export type Database = {
           created_at?: string
           data_fields_accessed?: string[] | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           justification?: string | null
           session_id?: string | null
           user_agent?: string | null
@@ -49,7 +49,7 @@ export type Database = {
           created_at?: string
           data_fields_accessed?: string[] | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           justification?: string | null
           session_id?: string | null
           user_agent?: string | null
@@ -61,7 +61,7 @@ export type Database = {
           admin_user_id: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           is_active: boolean
           sensitive_data_accessed: boolean
           session_end: string | null
@@ -72,7 +72,7 @@ export type Database = {
           admin_user_id: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean
           sensitive_data_accessed?: boolean
           session_end?: string | null
@@ -83,7 +83,7 @@ export type Database = {
           admin_user_id?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean
           sensitive_data_accessed?: boolean
           session_end?: string | null
@@ -357,21 +357,21 @@ export type Database = {
           attempt_time: string
           email: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
         }
         Insert: {
           attempt_time?: string
           email: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
         }
         Update: {
           attempt_time?: string
           email?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
         }
         Relationships: []
@@ -632,6 +632,158 @@ export type Database = {
         }
         Relationships: []
       }
+      home_task_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          person_id: string
+          scheduled_date: string
+          scheduled_hours: number
+          subtask_id: string | null
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          person_id: string
+          scheduled_date: string
+          scheduled_hours?: number
+          subtask_id?: string | null
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          person_id?: string
+          scheduled_date?: string
+          scheduled_hours?: number
+          subtask_id?: string | null
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_task_assignments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "home_task_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_task_assignments_subtask_id_fkey"
+            columns: ["subtask_id"]
+            isOneToOne: false
+            referencedRelation: "home_task_subtasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_task_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "home_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      home_task_people: {
+        Row: {
+          available_days: string[]
+          available_hours: number
+          consecutive_days: number
+          created_at: string
+          home_id: string | null
+          id: string
+          name: string
+          skill_level: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_days?: string[]
+          available_hours?: number
+          consecutive_days?: number
+          created_at?: string
+          home_id?: string | null
+          id?: string
+          name: string
+          skill_level?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_days?: string[]
+          available_hours?: number
+          consecutive_days?: number
+          created_at?: string
+          home_id?: string | null
+          id?: string
+          name?: string
+          skill_level?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_task_people_home_id_fkey"
+            columns: ["home_id"]
+            isOneToOne: false
+            referencedRelation: "homes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      home_task_subtasks: {
+        Row: {
+          completed: boolean
+          created_at: string
+          estimated_hours: number
+          id: string
+          order_index: number
+          skill_level: string
+          task_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          estimated_hours?: number
+          id?: string
+          order_index?: number
+          skill_level?: string
+          task_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          estimated_hours?: number
+          id?: string
+          order_index?: number
+          skill_level?: string
+          task_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_task_subtasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "home_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       home_tasks: {
         Row: {
           created_at: string
@@ -642,6 +794,7 @@ export type Database = {
           notes: string | null
           priority: string
           project_run_id: string | null
+          skill_level: string | null
           status: string
           task_type: string | null
           title: string
@@ -657,6 +810,7 @@ export type Database = {
           notes?: string | null
           priority?: string
           project_run_id?: string | null
+          skill_level?: string | null
           status?: string
           task_type?: string | null
           title: string
@@ -672,6 +826,7 @@ export type Database = {
           notes?: string | null
           priority?: string
           project_run_id?: string | null
+          skill_level?: string | null
           status?: string
           task_type?: string | null
           title?: string
@@ -1833,7 +1988,7 @@ export type Database = {
           action: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           role: string
           target_user_email: string | null
           target_user_id: string
@@ -1844,7 +1999,7 @@ export type Database = {
           action: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           role: string
           target_user_email?: string | null
           target_user_id: string
@@ -1855,7 +2010,7 @@ export type Database = {
           action?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           role?: string
           target_user_email?: string | null
           target_user_id?: string
@@ -1871,7 +2026,7 @@ export type Database = {
           description: string
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           severity: string
           user_agent: string | null
           user_email: string | null
@@ -1883,7 +2038,7 @@ export type Database = {
           description: string
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           severity: string
           user_agent?: string | null
           user_email?: string | null
@@ -1895,7 +2050,7 @@ export type Database = {
           description?: string
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           severity?: string
           user_agent?: string | null
           user_email?: string | null
@@ -1910,7 +2065,7 @@ export type Database = {
           accessed_user_id: string
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           user_id: string
         }
@@ -1920,7 +2075,7 @@ export type Database = {
           accessed_user_id: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id: string
         }
@@ -1930,7 +2085,7 @@ export type Database = {
           accessed_user_id?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           user_id?: string
         }
@@ -2286,7 +2441,7 @@ export type Database = {
       user_sessions: {
         Row: {
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           is_active: boolean
           session_end: string | null
           session_start: string
@@ -2295,7 +2450,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean
           session_end?: string | null
           session_start?: string
@@ -2304,7 +2459,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean
           session_end?: string | null
           session_start?: string
@@ -2575,10 +2730,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_admin_by_email: {
-        Args: { user_email: string }
-        Returns: string
-      }
+      add_admin_by_email: { Args: { user_email: string }; Returns: string }
       apply_standard_phase_positioning: {
         Args: { p_custom_phases?: Json; p_project_id: string }
         Returns: Json
@@ -2588,7 +2740,7 @@ export type Database = {
         Returns: number
       }
       check_phase_revision_updates: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           alerts: Json
           project_id: string
@@ -2603,14 +2755,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      cleanup_old_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_security_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      cleanup_old_sessions: { Args: never; Returns: number }
+      cleanup_security_logs: { Args: never; Returns: number }
       create_project_revision: {
         Args: { revision_notes_text?: string; source_project_id: string }
         Returns: string
@@ -2626,9 +2772,18 @@ export type Database = {
         }
         Returns: string
       }
-      create_project_with_standard_foundation: {
-        Args:
-          | {
+      create_project_with_standard_foundation:
+        | {
+            Args: {
+              p_description?: string
+              p_project_name: string
+              p_project_type?: string
+              p_user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
               p_category?: string
               p_description?: string
               p_difficulty?: string
@@ -2637,20 +2792,11 @@ export type Database = {
               p_image?: string
               p_project_name: string
             }
-          | {
-              p_description?: string
-              p_project_name: string
-              p_project_type?: string
-              p_user_id: string
-            }
-        Returns: string
-      }
-      delete_user_data: {
-        Args: { user_uuid: string }
-        Returns: string
-      }
+            Returns: string
+          }
+      delete_user_data: { Args: { user_uuid: string }; Returns: string }
       detect_suspicious_activity: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           risk_score: number
           suspicious_events: Json
@@ -2667,10 +2813,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      export_user_data: {
-        Args: { user_uuid: string }
-        Returns: Json
-      }
+      export_user_data: { Args: { user_uuid: string }; Returns: Json }
       get_average_market_price: {
         Args: { variation_id: string }
         Returns: number
@@ -2685,42 +2828,65 @@ export type Database = {
           unique_ips: number
         }[]
       }
-      get_masked_home_for_admin: {
-        Args:
-          | { access_reason?: string; home_user_id: string }
-          | { home_user_id: string }
-        Returns: {
-          address_masked: string
-          build_year: string
-          city: string
-          created_at: string
-          home_type: string
-          id: string
-          name: string
-          state: string
-          user_id: string
-        }[]
-      }
-      get_masked_profile_for_admin: {
-        Args:
-          | { access_reason?: string; profile_user_id: string }
-          | { profile_user_id: string }
-        Returns: {
-          created_at: string
-          display_name: string
-          email_masked: string
-          full_name_masked: string
-          home_ownership: string
-          home_state: string
-          id: string
-          skill_level: string
-          user_id: string
-        }[]
-      }
-      get_security_headers: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_masked_home_for_admin:
+        | {
+            Args: { home_user_id: string }
+            Returns: {
+              address_masked: string
+              build_year: string
+              city: string
+              created_at: string
+              home_type: string
+              id: string
+              name: string
+              state: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: { access_reason?: string; home_user_id: string }
+            Returns: {
+              address_masked: string
+              build_year: string
+              city: string
+              created_at: string
+              home_type: string
+              id: string
+              name: string
+              state: string
+              user_id: string
+            }[]
+          }
+      get_masked_profile_for_admin:
+        | {
+            Args: { profile_user_id: string }
+            Returns: {
+              created_at: string
+              display_name: string
+              email_masked: string
+              full_name_masked: string
+              home_ownership: string
+              home_state: string
+              id: string
+              skill_level: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: { access_reason?: string; profile_user_id: string }
+            Returns: {
+              created_at: string
+              display_name: string
+              email_masked: string
+              full_name_masked: string
+              home_ownership: string
+              home_state: string
+              id: string
+              skill_level: string
+              user_id: string
+            }[]
+          }
+      get_security_headers: { Args: never; Returns: Json }
       get_security_metrics: {
         Args: { timeframe_hours?: number }
         Returns: {
@@ -2731,7 +2897,7 @@ export type Database = {
         }[]
       }
       get_standard_project_template: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           phases: Json
           project_id: string
@@ -2764,14 +2930,8 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_user_role: {
-        Args: { user_id: string }
-        Returns: string
-      }
-      is_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
+      get_user_role: { Args: { user_id: string }; Returns: string }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
       log_comprehensive_security_event: {
         Args: {
           p_additional_data?: Json
@@ -2835,14 +2995,8 @@ export type Database = {
         }
         Returns: string
       }
-      sanitize_input: {
-        Args: { input_text: string }
-        Returns: string
-      }
-      start_admin_session: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      sanitize_input: { Args: { input_text: string }; Returns: string }
+      start_admin_session: { Args: never; Returns: string }
       update_phase_revision_alert: {
         Args: { p_action: string; p_phase_id: string; p_project_id: string }
         Returns: undefined
@@ -2860,10 +3014,7 @@ export type Database = {
         }
         Returns: string
       }
-      validate_admin_action: {
-        Args: { action_type: string }
-        Returns: boolean
-      }
+      validate_admin_action: { Args: { action_type: string }; Returns: boolean }
       validate_admin_data_access: {
         Args: { access_reason: string; target_table: string }
         Returns: boolean
