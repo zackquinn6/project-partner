@@ -9,6 +9,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MultiContentRenderer } from '@/components/MultiContentRenderer';
+import { useStepInstructions } from '@/hooks/useStepInstructions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface MobileWorkflowViewProps {
   projectName: string;
@@ -27,6 +29,8 @@ interface MobileWorkflowViewProps {
   checkedTools: Record<string, Set<string>>;
   onToggleMaterial: (stepId: string, materialId: string) => void;
   onToggleTool: (stepId: string, toolId: string) => void;
+  instructionLevel?: 'quick' | 'detailed' | 'contractor';
+  onInstructionLevelChange?: (level: 'quick' | 'detailed' | 'contractor') => void;
 }
 
 export function MobileWorkflowView({
@@ -45,13 +49,21 @@ export function MobileWorkflowView({
   checkedMaterials,
   checkedTools,
   onToggleMaterial,
-  onToggleTool
+  onToggleTool,
+  instructionLevel = 'detailed',
+  onInstructionLevelChange
 }: MobileWorkflowViewProps) {
   const [showMaterials, setShowMaterials] = useState(true);
   const [showTools, setShowTools] = useState(true);
   const [isStepListOpen, setIsStepListOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['materials', 'tools']));
   const stepRef = useRef<HTMLDivElement>(null);
+
+  // Fetch instructions based on level
+  const { instruction, loading: instructionLoading } = useStepInstructions(
+    currentStep?.id || '',
+    instructionLevel
+  );
 
   // Auto-scroll to top when step changes
   useEffect(() => {
@@ -109,9 +121,23 @@ export function MobileWorkflowView({
           </Button>
           
           <div className="flex-1 flex flex-col items-center justify-center mx-4 min-w-0">
-            <h1 className="font-semibold text-base text-card-foreground truncate text-center">
-              {projectName}
-            </h1>
+            <div className="flex items-center gap-2 w-full justify-center">
+              <h1 className="font-semibold text-base text-card-foreground truncate text-center">
+                {projectName}
+              </h1>
+              {onInstructionLevelChange && (
+                <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
+                  <SelectTrigger className="h-7 text-xs w-[90px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quick">Quick</SelectItem>
+                    <SelectItem value="detailed">Detailed</SelectItem>
+                    <SelectItem value="contractor">Pro</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground text-center">
               Step {currentStepIndex + 1} of {totalSteps}
             </p>
@@ -179,24 +205,77 @@ export function MobileWorkflowView({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
-                  {/* Render content_sections using MultiContentRenderer */}
-                  {currentStep.content && Array.isArray(currentStep.content) && currentStep.content.length > 0 ? (
-                    <MultiContentRenderer sections={currentStep.content} />
-                  ) : currentStep.description && (
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {currentStep.description}
-                    </p>
-                  )}
-                  
-                  {currentStep.instructions && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm">Instructions</h4>
-                      <div className="text-sm leading-relaxed space-y-2">
-                        {currentStep.instructions.split('\n').map((line: string, index: number) => (
-                          <p key={index}>{line}</p>
-                        ))}
-                      </div>
+                  {/* Render instruction content based on level if available */}
+                  {instruction && !instructionLoading ? (
+                    <div className="space-y-4 text-sm">
+                      {instruction.content.text && (
+                        <div className="whitespace-pre-wrap leading-relaxed">
+                          {instruction.content.text}
+                        </div>
+                      )}
+                      
+                      {instruction.content.sections && instruction.content.sections.map((section, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-3 rounded-lg border text-xs ${
+                            section.type === 'warning'
+                              ? 'bg-orange-50 border-orange-200'
+                              : section.type === 'tip'
+                              ? 'bg-blue-50 border-blue-200'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          <h4 className="font-semibold mb-1">{section.title}</h4>
+                          <div className="whitespace-pre-wrap">{section.content}</div>
+                        </div>
+                      ))}
+
+                      {instruction.content.photos && instruction.content.photos.map((photo, idx) => (
+                        <div key={idx}>
+                          <img src={photo.url} alt={photo.alt} className="w-full rounded-lg" />
+                          {photo.caption && <p className="text-xs text-muted-foreground italic mt-1">{photo.caption}</p>}
+                        </div>
+                      ))}
+
+                      {instruction.content.links && instruction.content.links.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-xs">Resources</h4>
+                          {instruction.content.links.map((link, idx) => (
+                            <a
+                              key={idx}
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block p-2 bg-muted rounded text-xs"
+                            >
+                              {link.title}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                  ) : (
+                    <>
+                      {/* Fallback to original content */}
+                      {currentStep.content && Array.isArray(currentStep.content) && currentStep.content.length > 0 ? (
+                        <MultiContentRenderer sections={currentStep.content} />
+                      ) : currentStep.description && (
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                          {currentStep.description}
+                        </p>
+                      )}
+                      
+                      {currentStep.instructions && (
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm">Instructions</h4>
+                          <div className="text-sm leading-relaxed space-y-2">
+                            {currentStep.instructions.split('\n').map((line: string, index: number) => (
+                              <p key={index}>{line}</p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Special action buttons for specific steps */}

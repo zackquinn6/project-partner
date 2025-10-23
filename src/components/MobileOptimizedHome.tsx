@@ -86,13 +86,6 @@ export function MobileOptimizedHome() {
 
   const utilityApps = [
     {
-      id: 'project-catalog',
-      icon: BookOpen,
-      title: 'Project Catalog',
-      color: 'bg-cyan-600',
-      action: () => navigate('/projects')
-    },
-    {
       id: 'rapid-plan',
       icon: Calculator,
       title: 'Rapid Plan',
@@ -250,6 +243,17 @@ export function MobileOptimizedHome() {
           </div>
         </div>
 
+
+        {/* Project Catalog - Featured Button */}
+        <div className="mb-4">
+          <Button 
+            onClick={() => navigate('/projects')}
+            className="w-full bg-cyan-600 hover:bg-cyan-700 text-white h-12 text-base font-semibold shadow-lg"
+          >
+            <BookOpen className="w-5 h-5 mr-2" />
+            Project Catalog - Get Started Today
+          </Button>
+        </div>
 
         {/* Quick Actions */}
         <div>

@@ -895,9 +895,117 @@ export default function UserView({
     }
   };
   
+  // Fetch step instructions based on instruction level
+  const { instruction, loading: instructionLoading } = useStepInstructions(
+    currentStep?.id || '',
+    instructionLevel
+  );
+
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
+
+    // If we have instruction data for this level, render it
+    if (instruction && !instructionLoading) {
+      return (
+        <div className="space-y-6">
+          {/* Main text content */}
+          {instruction.content.text && (
+            <div className="prose max-w-none">
+              <div className="whitespace-pre-wrap text-foreground leading-relaxed">
+                {instruction.content.text}
+              </div>
+            </div>
+          )}
+
+          {/* Sections (tips, warnings, etc) */}
+          {instruction.content.sections && instruction.content.sections.length > 0 && (
+            <div className="space-y-4">
+              {instruction.content.sections.map((section, idx) => (
+                <div
+                  key={idx}
+                  className={`p-4 rounded-lg border ${
+                    section.type === 'warning'
+                      ? 'bg-orange-50 border-orange-200'
+                      : section.type === 'tip'
+                      ? 'bg-blue-50 border-blue-200'
+                      : 'bg-muted border-muted-foreground/20'
+                  }`}
+                >
+                  <h4 className="font-semibold mb-2">{section.title}</h4>
+                  <div className="text-sm whitespace-pre-wrap">{section.content}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Photos */}
+          {instruction.content.photos && instruction.content.photos.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {instruction.content.photos.map((photo, idx) => (
+                <div key={idx} className="space-y-2">
+                  <img
+                    src={photo.url}
+                    alt={photo.alt}
+                    className="w-full rounded-lg shadow-card"
+                  />
+                  {photo.caption && (
+                    <p className="text-sm text-muted-foreground italic">{photo.caption}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Videos */}
+          {instruction.content.videos && instruction.content.videos.length > 0 && (
+            <div className="space-y-4">
+              {instruction.content.videos.map((video, idx) => (
+                <div key={idx} className="space-y-2">
+                  {video.title && <h4 className="font-semibold">{video.title}</h4>}
+                  <div className="aspect-video rounded-lg overflow-hidden shadow-card">
+                    {video.embed ? (
+                      <div dangerouslySetInnerHTML={{ __html: video.embed }} />
+                    ) : (
+                      <iframe
+                        src={video.url}
+                        className="w-full h-full"
+                        allowFullScreen
+                        title={video.title}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Links */}
+          {instruction.content.links && instruction.content.links.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-semibold">Additional Resources</h4>
+              <div className="space-y-2">
+                {instruction.content.links.map((link, idx) => (
+                  <a
+                    key={idx}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block p-3 bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+                  >
+                    <div className="font-medium text-primary">{link.title}</div>
+                    {link.description && (
+                      <div className="text-sm text-muted-foreground">{link.description}</div>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
     
+    // Fallback to original content if no instruction data
     // Handle multi-content sections (new format with buttons)
     if (step.contentSections && step.contentSections.length > 0) {
       const handleButtonAction = (action: string) => {
@@ -1334,6 +1442,8 @@ export default function UserView({
           checkedTools={checkedTools}
           onToggleMaterial={toggleMaterialCheck}
           onToggleTool={toggleToolCheck}
+          instructionLevel={instructionLevel}
+          onInstructionLevelChange={handleInstructionLevelChange}
         />
       ) : (
         /* Desktop Workflow View */

@@ -236,14 +236,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                   <HomeIcon className="h-3 w-3 mr-1" />
                   Homes
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </DialogHeader>
