@@ -41,6 +41,7 @@ import { ProjectScheduler } from './ProjectScheduler';
 import { MultiContentRenderer } from './MultiContentRenderer';
 import { CompactAppsSection } from './CompactAppsSection';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useStepInstructions } from '@/hooks/useStepInstructions';
 import { UserToolsMaterialsWindow } from './UserToolsMaterialsWindow';
 import { ToolRentalsWindow } from './ToolRentalsWindow';
 import { HomeManager } from './HomeManager';

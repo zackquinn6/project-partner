@@ -130,13 +130,19 @@ export default function Home({
             <div className="border-b border-border pb-1 mb-6"></div>
             
             {/* Core Apps Grid */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => navigate('/projects')}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.projectCatalog} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Project Catalog</span>
-              </div>
+            {/* Project Catalog - Featured Top Button */}
+            <div className="col-span-3 mb-4 px-2">
+              <Button 
+                onClick={() => navigate('/projects')}
+                className={`w-full ${appColors.projectCatalog} text-white hover:opacity-90 transition-all shadow-lg h-12 text-sm font-semibold`}
+              >
+                <BookOpen className="w-5 h-5 mr-2" />
+                Project Catalog - Get Started Today
+              </Button>
+            </div>
+
+            {/* App Grid */}
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2 col-span-3">
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => {
             navigate('/', {
