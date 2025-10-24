@@ -1,162 +1,138 @@
-import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
-import { Resend } from 'https://esm.sh/resend@4.0.0';
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
-interface Task {
-  title: string;
-  startTime: string;
-  endTime: string;
-  targetCompletion: string;
-  latestCompletion: string;
-  estimatedHours: number;
+interface Assignment {
+  taskTitle: string;
+  subtaskTitle: string;
+  personName: string;
+  scheduledDate: string;
+  scheduledHours: number;
 }
 
-interface NotificationRequest {
-  recipientEmail: string;
-  recipientName: string;
-  projectName: string;
-  tasks: Task[];
-  targetDate: string;
-  dropDeadDate: string;
+interface ScheduleNotificationRequest {
+  schedule: Assignment[];
+  startDate: string;
+  userEmail: string;
+  people: Array<{ name: string; id: string }>;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { recipientEmail, recipientName, projectName, tasks, targetDate, dropDeadDate }: NotificationRequest = 
-      await req.json();
+    const { schedule, startDate, userEmail, people }: ScheduleNotificationRequest = await req.json();
 
-    console.log(`Sending schedule notification to ${recipientEmail} for project ${projectName}`);
+    // Group assignments by date
+    const assignmentsByDate = schedule.reduce((acc: Record<string, Assignment[]>, assignment) => {
+      const date = new Date(assignment.scheduledDate).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(assignment);
+      return acc;
+    }, {});
 
-    // Format email content
-    const tasksHtml = tasks.map(task => `
-      <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
-          <strong>${task.title}</strong>
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
-          ${task.startTime}
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
-          ${task.endTime}
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #059669;">
-          ${task.targetCompletion}
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #dc2626;">
-          ${task.latestCompletion}
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
-          ${task.estimatedHours.toFixed(1)}h
-        </td>
-      </tr>
-    `).join('');
+    const sortedDates = Object.keys(assignmentsByDate).sort();
 
-    const emailHtml = `
+    // Generate HTML email
+    const htmlContent = `
       <!DOCTYPE html>
       <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Project Schedule Assignment</title>
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #374151; max-width: 800px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">Project Schedule Assignment</h1>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #f9fafb; padding: 20px; }
+          .date-section { margin: 20px 0; }
+          .date-header { background: #e5e7eb; padding: 10px; font-weight: bold; border-radius: 4px; }
+          .assignment { background: white; padding: 12px; margin: 8px 0; border-left: 4px solid #2563eb; }
+          .assignment-title { font-weight: bold; color: #1f2937; }
+          .assignment-details { font-size: 14px; color: #6b7280; margin-top: 4px; }
+          .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-right: 8px; }
+          .badge-person { background: #dbeafe; color: #1e40af; }
+          .badge-hours { background: #e0e7ff; color: #3730a3; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0;">Your Work Schedule</h1>
+            <p style="margin: 10px 0 0 0;">Starting from ${new Date(startDate).toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric'
+            })}</p>
           </div>
-          
-          <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
-            <p style="font-size: 16px; margin-bottom: 20px;">Hi ${recipientName},</p>
+          <div class="content">
+            <p><strong>Total Assignments:</strong> ${schedule.length}</p>
+            <p><strong>Team Members:</strong> ${people.map(p => p.name).join(', ')}</p>
             
-            <p style="font-size: 16px; margin-bottom: 20px;">
-              You have been assigned tasks for the <strong>${projectName}</strong> project. Below is your schedule with both target and latest completion dates.
-            </p>
-            
-            <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-              <h3 style="margin: 0 0 10px 0; color: #1f2937;">Project Timeline</h3>
-              <p style="margin: 5px 0;">
-                <strong>Target Completion:</strong> 
-                <span style="color: #059669;">${new Date(targetDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-              </p>
-              <p style="margin: 5px 0;">
-                <strong>Drop-Dead Date (NLT):</strong> 
-                <span style="color: #dc2626;">${new Date(dropDeadDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-              </p>
-            </div>
-
-            <h3 style="color: #1f2937; margin-bottom: 15px;">Your Assigned Tasks (${tasks.length})</h3>
-            
-            <div style="overflow-x: auto;">
-              <table style="width: 100%; border-collapse: collapse; background: white;">
-                <thead>
-                  <tr style="background: #f3f4f6;">
-                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #d1d5db;">Task</th>
-                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #d1d5db;">Start</th>
-                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #d1d5db;">End</th>
-                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #059669; border-bottom: 2px solid #d1d5db;">Target Complete</th>
-                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #dc2626; border-bottom: 2px solid #d1d5db;">Latest Complete</th>
-                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #d1d5db;">Hours</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${tasksHtml}
-                </tbody>
-              </table>
-            </div>
-
-            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin-top: 25px; border-radius: 4px;">
-              <p style="margin: 0; color: #92400e;">
-                <strong>About the Dates:</strong> Target dates are your goals, while latest completion dates represent the absolute deadline based on critical path analysis. Completing tasks by their target dates helps ensure the entire project stays on track.
-              </p>
-            </div>
-
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
-              <p style="margin: 5px 0;">This is an automated notification from your project scheduling system.</p>
-              <p style="margin: 5px 0;">Please do not reply to this email.</p>
-            </div>
+            ${sortedDates.map(date => `
+              <div class="date-section">
+                <div class="date-header">${date}</div>
+                ${assignmentsByDate[date].map(assignment => `
+                  <div class="assignment">
+                    <div class="assignment-title">${assignment.subtaskTitle}</div>
+                    <div class="assignment-details">
+                      Task: ${assignment.taskTitle}
+                    </div>
+                    <div style="margin-top: 8px;">
+                      <span class="badge badge-person">${assignment.personName}</span>
+                      <span class="badge badge-hours">${assignment.scheduledHours.toFixed(1)} hours</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `).join('')}
           </div>
-        </body>
+        </div>
+      </body>
       </html>
     `;
 
-    const { data, error } = await resend.emails.send({
-      from: 'Project Partner <onboarding@resend.dev>',
-      to: [recipientEmail],
-      subject: `Project Schedule: ${projectName}`,
-      html: emailHtml
+    const emailResponse = await resend.emails.send({
+      from: "Home Task Manager <onboarding@resend.dev>",
+      to: [userEmail],
+      subject: `Your Work Schedule - Starting ${new Date(startDate).toLocaleDateString()}`,
+      html: htmlContent,
     });
 
-    if (error) {
-      console.error('Error sending email:', error);
-      throw error;
-    }
+    console.log("Schedule email sent successfully:", emailResponse);
 
-    console.log('Schedule notification sent successfully:', data);
-
-    return new Response(
-      JSON.stringify({ success: true, message: 'Notification sent successfully' }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
+    return new Response(JSON.stringify(emailResponse), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
+    });
   } catch (error: any) {
-    console.error('Error in send-schedule-notification function:', error);
+    console.error("Error in send-schedule-notification function:", error);
     return new Response(
-      JSON.stringify({ error: error?.message || 'Failed to send notification' }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   }
-});
+};
+
+serve(handler);

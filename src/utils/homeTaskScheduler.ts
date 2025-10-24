@@ -131,9 +131,9 @@ export function scheduleHomeTasksOptimized(
     consecutiveDaysWorked: 0
   }));
 
-  // Initialize availability for next 90 days
+  // Initialize availability for next 90 days (starting day after startDate)
   const currentDate = new Date(startDate);
-  for (let dayOffset = 0; dayOffset < 90; dayOffset++) {
+  for (let dayOffset = 1; dayOffset < 91; dayOffset++) {
     const date = new Date(currentDate);
     date.setDate(date.getDate() + dayOffset);
     const dayName = DAY_ORDER[date.getDay()].toLowerCase();
