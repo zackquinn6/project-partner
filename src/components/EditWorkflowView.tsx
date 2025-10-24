@@ -87,6 +87,7 @@ export default function EditWorkflowView({
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
   const [showStructureManager, setShowStructureManager] = useState(false);
   const [processImprovementOpen, setProcessImprovementOpen] = useState(false);
+  const [instructionLevel, setInstructionLevel] = useState<'quick' | 'detailed' | 'contractor'>('detailed');
 
   // Structure editing state
   const [editingPhase, setEditingPhase] = useState<Phase | null>(null);
@@ -532,10 +533,34 @@ export default function EditWorkflowView({
                 {/* Content Editor */}
                 <Card className="gradient-card border-0 shadow-card">
                   <CardHeader>
-                    <CardTitle>Step Content</CardTitle>
-                    <CardDescription>Add instructions, images, videos, and other content for this step</CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <CardTitle>Step Content</CardTitle>
+                        <CardDescription>Add instructions, images, videos, and other content for this step</CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm font-medium whitespace-nowrap">Instruction Level:</Label>
+                        <Select value={instructionLevel} onValueChange={(value: 'quick' | 'detailed' | 'contractor') => setInstructionLevel(value)}>
+                          <SelectTrigger className="w-[160px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="quick">Quick</SelectItem>
+                            <SelectItem value="detailed">Detailed</SelectItem>
+                            <SelectItem value="contractor">Contractor</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent className="p-8">
+                    <div className="mb-4 p-3 bg-muted/50 rounded-md border border-muted">
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Current Level: {instructionLevel.charAt(0).toUpperCase() + instructionLevel.slice(1)}</strong>
+                        {' - '}Content for this instruction level is stored in the <strong>step_instructions</strong> table with instruction_level='{instructionLevel}'. 
+                        When users select their preferred instruction level in project runs, they will see the corresponding content.
+                      </p>
+                    </div>
                     {renderContent(currentStep)}
                   </CardContent>
                 </Card>
