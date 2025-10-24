@@ -1,10 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil, Trash2, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Pencil, Trash2, ChevronDown, ChevronUp, Plus, Link2, ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 interface HomeTask {
   id: string;
   title: string;
@@ -16,12 +19,21 @@ interface HomeTask {
   due_date: string | null;
   task_type: 'general' | 'pre_sale' | 'diy' | 'contractor';
   created_at: string;
+  project_run_id: string | null;
+}
+
+interface Subtask {
+  id: string;
+  title: string;
+  estimated_hours: number | null;
+  skill_level: 'high' | 'medium' | 'low';
 }
 interface HomeTasksTableProps {
   tasks: HomeTask[];
   onEdit: (task: HomeTask) => void;
   onDelete: (taskId: string) => void;
   onAddSubtasks: (task: HomeTask) => void;
+  onLinkProject: (task: HomeTask) => void;
 }
 type SortField = 'title' | 'priority' | 'status' | 'skill_level' | 'due_date' | 'task_type';
 type SortDirection = 'asc' | 'desc';
@@ -29,14 +41,84 @@ export function HomeTasksTable({
   tasks,
   onEdit,
   onDelete,
-  onAddSubtasks
+  onAddSubtasks,
+  onLinkProject
 }: HomeTasksTableProps) {
+  const navigate = useNavigate();
   const [sortField, setSortField] = useState<SortField>('due_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSkill, setFilterSkill] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [projectStatuses, setProjectStatuses] = useState<Record<string, string>>({});
+  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetchProjectStatuses();
+    fetchSubtasks();
+  }, [tasks]);
+
+  const fetchProjectStatuses = async () => {
+    const projectRunIds = tasks
+      .filter(t => t.project_run_id)
+      .map(t => t.project_run_id as string);
+    
+    if (projectRunIds.length === 0) return;
+
+    const { data } = await supabase
+      .from("project_runs")
+      .select("id, status")
+      .in("id", projectRunIds);
+
+    if (data) {
+      const statusMap: Record<string, string> = {};
+      data.forEach(pr => {
+        statusMap[pr.id] = pr.status;
+      });
+      setProjectStatuses(statusMap);
+    }
+  };
+
+  const fetchSubtasks = async () => {
+    const taskIds = tasks.map(t => t.id);
+    
+    if (taskIds.length === 0) return;
+
+    const { data } = await supabase
+      .from("home_task_subtasks")
+      .select("*")
+      .in("task_id", taskIds);
+
+    if (data) {
+      const subtaskMap: Record<string, Subtask[]> = {};
+      data.forEach((st: any) => {
+        if (!subtaskMap[st.task_id]) {
+          subtaskMap[st.task_id] = [];
+        }
+        subtaskMap[st.task_id].push(st);
+      });
+      setSubtasks(subtaskMap);
+    }
+  };
+
+  const toggleRow = (taskId: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(taskId)) {
+      newExpanded.delete(taskId);
+    } else {
+      newExpanded.add(taskId);
+    }
+    setExpandedRows(newExpanded);
+  };
+
+  const getDisplayStatus = (task: HomeTask) => {
+    if (task.project_run_id && projectStatuses[task.project_run_id]) {
+      return projectStatuses[task.project_run_id];
+    }
+    return task.status;
+  };
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -220,16 +302,36 @@ export function HomeTasksTable({
                   <TableCell colSpan={8} className="text-center py-8 text-xs text-muted-foreground">
                     No tasks found. Add your first task to get started!
                   </TableCell>
-                </TableRow> : filteredAndSortedTasks.map(task => <TableRow key={task.id}>
-                    <TableCell className="text-xs font-medium">{task.title}</TableCell>
+                </TableRow> : filteredAndSortedTasks.map(task => (
+                  <>
+                    <TableRow key={task.id}>
+                     <TableCell>
+                      <div className="flex items-center gap-2">
+                        {subtasks[task.id]?.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleRow(task.id)}
+                            className="h-5 w-5 p-0"
+                          >
+                            {expandedRows.has(task.id) ? (
+                              <ChevronUp className="h-3 w-3" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3" />
+                            )}
+                          </Button>
+                        )}
+                        <span className="text-xs font-medium">{task.title}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={getPriorityColor(task.priority)} className="text-[10px] px-1.5 py-0">
                         {task.priority}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusColor(task.status)} className="text-[10px] px-1.5 py-0">
-                        {task.status.replace('_', ' ')}
+                      <Badge variant={getStatusColor(getDisplayStatus(task))} className="text-[10px] px-1.5 py-0">
+                        {getDisplayStatus(task).replace('_', ' ').replace('-', ' ')}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -246,18 +348,68 @@ export function HomeTasksTable({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button variant="ghost" size="sm" onClick={() => onAddSubtasks(task)} className="h-7 px-2">
-                          <Plus className="h-3 w-3" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => onLinkProject(task)} 
+                          className="h-7 px-2"
+                          title={task.project_run_id ? "Linked to project" : "Link to project"}
+                        >
+                          <Link2 className="h-3 w-3" />
                         </Button>
+                        {task.project_run_id && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => navigate(`/?project=${task.project_run_id}`)} 
+                            className="h-7 px-2"
+                            title="Open linked project"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" onClick={() => onEdit(task)} className="h-7 px-2">
-                          
+                          <Pencil className="h-3 w-3" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => onDelete(task.id)} className="h-7 px-2 text-destructive">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>
-                  </TableRow>)}
+                  </TableRow>
+                  {expandedRows.has(task.id) && subtasks[task.id]?.length > 0 && (
+                    <TableRow key={`${task.id}-subtasks`}>
+                      <TableCell colSpan={8} className="bg-muted/50 p-0">
+                        <div className="px-12 py-3">
+                          <div className="text-xs font-medium mb-2">Subtasks:</div>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="text-xs h-8">Subtask</TableHead>
+                                <TableHead className="text-xs h-8">Est. Hours</TableHead>
+                                <TableHead className="text-xs h-8">Skill Level</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {subtasks[task.id].map(subtask => (
+                                <TableRow key={subtask.id}>
+                                  <TableCell className="text-xs py-2">{subtask.title}</TableCell>
+                                  <TableCell className="text-xs py-2">{subtask.estimated_hours || '-'}</TableCell>
+                                  <TableCell className="text-xs py-2">
+                                    <Badge variant={getSkillColor(subtask.skill_level)} className="text-[10px] px-1.5 py-0">
+                                      {subtask.skill_level}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
+              ))}
             </TableBody>
           </Table>
         </div>

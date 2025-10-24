@@ -73,7 +73,7 @@ export function HomeTaskProjectLink({
       .from("projects")
       .select("id, name, description, category, difficulty, estimated_time")
       .in("publish_status", ["published", "beta-testing"])
-      .neq("id", "00000000-0000-0000-0000-000000000000")
+      .neq("name", "Manual Project Template")
       .order("name");
     
     if (!error && data) {
