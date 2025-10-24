@@ -635,7 +635,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] flex flex-col p-0">
+      <DialogContent className="w-[90vw] !max-w-[90vw] md:!max-w-[90vw] h-[90vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-4">
           <div className="flex items-center justify-between">
             <DialogTitle>Decision Tree Manager - {currentProject.name}</DialogTitle>
