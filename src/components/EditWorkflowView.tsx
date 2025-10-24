@@ -92,7 +92,7 @@ export default function EditWorkflowView({
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [pendingContentChanges, setPendingContentChanges] = useState<ContentSection[] | null>(null);
   const [pendingContentLevel, setPendingContentLevel] = useState<'quick' | 'detailed' | 'contractor'>('detailed');
-  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Structure editing state
   const [editingPhase, setEditingPhase] = useState<Phase | null>(null);
@@ -148,20 +148,23 @@ export default function EditWorkflowView({
     }
   }, [currentStep?.id]);
 
-  // Save instruction content to database - accepts explicit level parameter
+  // Save instruction content to database - accepts explicit level parameter and silent flag
   const saveInstructionContent = useCallback(async (
     sections: ContentSection[] | null, 
-    targetLevel?: 'quick' | 'detailed' | 'contractor'
+    targetLevel?: 'quick' | 'detailed' | 'contractor',
+    silent: boolean = false
   ) => {
     if (!editingStep?.id || !sections) return;
     
     const levelToSave = targetLevel || instructionLevel;
     
     try {
-      console.log(`💾 Saving content to level: ${levelToSave}`, { 
-        stepId: editingStep.id,
-        sectionCount: sections.length 
-      });
+      if (!silent) {
+        console.log(`💾 Saving content to level: ${levelToSave}`, { 
+          stepId: editingStep.id,
+          sectionCount: sections.length 
+        });
+      }
       
       const { error } = await supabase
         .from('step_instructions')
@@ -176,18 +179,23 @@ export default function EditWorkflowView({
 
       if (error) {
         console.error('Error saving instruction content:', error);
-        toast.error('Failed to save content');
+        if (!silent) {
+          toast.error('Failed to save content');
+        }
       } else {
         // Only clear pending changes if we saved the current pending level
         if (levelToSave === pendingContentLevel) {
           setPendingContentChanges(null);
         }
-        console.log(`✅ ${levelToSave} content saved successfully`);
-        toast.success(`${levelToSave.charAt(0).toUpperCase() + levelToSave.slice(1)} content saved`);
+        if (!silent) {
+          console.log(`✅ ${levelToSave} content saved successfully`);
+        }
       }
     } catch (err) {
       console.error('Exception saving instruction content:', err);
-      toast.error('Failed to save content');
+      if (!silent) {
+        toast.error('Failed to save content');
+      }
     }
   }, [editingStep?.id, instructionLevel, pendingContentLevel]);
 
@@ -195,10 +203,10 @@ export default function EditWorkflowView({
   const loadInstructionContent = useCallback(async () => {
     if (!editingStep?.id || !editMode) return;
     
-    // Save pending changes to their ORIGINAL level before loading new level
+    // Save pending changes to their ORIGINAL level before loading new level (silent)
     if (pendingContentChanges && pendingContentLevel) {
       console.log(`💾 Saving pending changes for level: ${pendingContentLevel} before switching to: ${instructionLevel}`);
-      await saveInstructionContent(pendingContentChanges, pendingContentLevel);
+      await saveInstructionContent(pendingContentChanges, pendingContentLevel, true);
     }
     
     setIsLoadingContent(true);
@@ -242,26 +250,26 @@ export default function EditWorkflowView({
     }
   }, [instructionLevel, editingStep?.id, editMode, loadInstructionContent]);
 
-  // Auto-save every 60 seconds
+  // Auto-save after 60 seconds of inactivity (debounced)
   useEffect(() => {
     if (editMode && pendingContentChanges && pendingContentLevel) {
-      // Clear existing interval
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
+      // Clear existing timeout
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
       }
       
-      // Set up new interval
-      autoSaveIntervalRef.current = setInterval(() => {
-        console.log(`⏰ Auto-saving content for level: ${pendingContentLevel}`);
-        saveInstructionContent(pendingContentChanges, pendingContentLevel);
+      // Set up new timeout - only saves after 60 seconds of NO changes
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        console.log(`⏰ Auto-saving content for level: ${pendingContentLevel} after 60s inactivity`);
+        saveInstructionContent(pendingContentChanges, pendingContentLevel, true); // silent = true
       }, 60000); // 60 seconds
     }
     
     // Cleanup
     return () => {
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-        autoSaveIntervalRef.current = null;
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
       }
     };
   }, [editMode, pendingContentChanges, pendingContentLevel, saveInstructionContent]);
@@ -317,10 +325,10 @@ export default function EditWorkflowView({
       apps: editingStep.apps
     });
 
-    // Save pending content changes to correct level first
+    // Save pending content changes to correct level first (silent)
     if (pendingContentChanges && pendingContentLevel) {
       console.log(`💾 Saving pending changes for level: ${pendingContentLevel} before closing edit mode`);
-      await saveInstructionContent(pendingContentChanges, pendingContentLevel);
+      await saveInstructionContent(pendingContentChanges, pendingContentLevel, true);
     }
 
     // Update only custom phases (standard phases are generated dynamically)
