@@ -307,6 +307,7 @@ export function HomeTasksTable({
                     <TableRow key={task.id}>
                      <TableCell>
                       <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium">{task.title}</span>
                         {subtasks[task.id]?.length > 0 && (
                           <Button
                             variant="ghost"
@@ -321,7 +322,6 @@ export function HomeTasksTable({
                             )}
                           </Button>
                         )}
-                        <span className="text-xs font-medium">{task.title}</span>
                       </div>
                     </TableCell>
                     <TableCell>
