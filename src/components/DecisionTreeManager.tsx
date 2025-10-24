@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -6,10 +6,24 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
-import { ChevronRight, ChevronDown, Plus, X, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Label } from './ui/label';
+import { ChevronRight, ChevronDown, Plus, X, ChevronsDownUp, ChevronsUpDown, GitBranch, List } from 'lucide-react';
 import { Project, Phase, Operation, WorkflowStep } from '@/interfaces/Project';
 import { useProject } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
+import { 
+  ReactFlow,
+  Node, 
+  Edge, 
+  Background, 
+  Controls, 
+  MiniMap,
+  Position,
+  MarkerType
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
 interface DecisionTreeManagerProps {
   open: boolean;
@@ -32,6 +46,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   const { updateProject } = useProject();
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'table' | 'flowchart'>('table');
+  const [flowchartLevel, setFlowchartLevel] = useState<'phase' | 'operation' | 'step'>('operation');
   
   // Store flow type configurations by ID (phase/operation/step)
   const [flowConfigs, setFlowConfigs] = useState<Record<string, FlowTypeConfig>>({});
@@ -316,17 +332,335 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     onOpenChange(false);
   };
 
+  // Generate flowchart nodes and edges based on level
+  const generateFlowchart = useCallback(() => {
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+    let yPos = 0;
+    const levelSpacing = 150;
+    const horizontalSpacing = 300;
+
+    if (flowchartLevel === 'phase') {
+      // Phase-level flowchart
+      currentProject.phases.forEach((phase, index) => {
+        const config = flowConfigs[phase.id];
+        const nodeType = config?.type === 'if-necessary' ? 'if-necessary' : 
+                        config?.type === 'alternate' ? 'alternate' : 'default';
+        
+        nodes.push({
+          id: phase.id,
+          data: { 
+            label: phase.name,
+            type: nodeType,
+            prompt: config?.decisionPrompt
+          },
+          position: { x: 250, y: yPos },
+          type: 'default',
+          style: {
+            background: config?.type === 'if-necessary' ? '#fef3c7' : 
+                       config?.type === 'alternate' ? '#dbeafe' : '#f3f4f6',
+            border: '2px solid',
+            borderColor: config?.type === 'if-necessary' ? '#f59e0b' : 
+                        config?.type === 'alternate' ? '#3b82f6' : '#9ca3af',
+            borderRadius: '8px',
+            padding: '10px',
+            width: 180,
+          },
+        });
+
+        // Add edges to next phase
+        if (index < currentProject.phases.length - 1) {
+          edges.push({
+            id: `${phase.id}-${currentProject.phases[index + 1].id}`,
+            source: phase.id,
+            target: currentProject.phases[index + 1].id,
+            animated: true,
+            markerEnd: { type: MarkerType.ArrowClosed },
+          });
+        }
+
+        // Add alternate branches
+        if (config?.alternateIds) {
+          config.alternateIds.forEach((altId, altIndex) => {
+            const xOffset = (altIndex + 1) * horizontalSpacing;
+            const altPhase = currentProject.phases.find(p => p.id === altId);
+            if (altPhase && !nodes.find(n => n.id === altId)) {
+              nodes.push({
+                id: altId,
+                data: { label: altPhase.name, type: 'alternate' },
+                position: { x: 250 + xOffset, y: yPos },
+                type: 'default',
+                style: {
+                  background: '#dbeafe',
+                  border: '2px dashed #3b82f6',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  width: 180,
+                },
+              });
+
+              edges.push({
+                id: `${phase.id}-${altId}-alt`,
+                source: phase.id,
+                target: altId,
+                label: 'OR',
+                animated: true,
+                style: { stroke: '#3b82f6' },
+                markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
+              });
+            }
+          });
+        }
+
+        yPos += levelSpacing;
+      });
+    } else if (flowchartLevel === 'operation') {
+      // Operation-level flowchart
+      currentProject.phases.forEach((phase) => {
+        // Add phase header
+        nodes.push({
+          id: `phase-header-${phase.id}`,
+          data: { label: `Phase: ${phase.name}` },
+          position: { x: 0, y: yPos },
+          type: 'default',
+          style: {
+            background: '#e0e7ff',
+            border: '2px solid #6366f1',
+            borderRadius: '8px',
+            padding: '10px',
+            fontWeight: 'bold',
+            width: 200,
+          },
+        });
+        yPos += levelSpacing / 2;
+
+        phase.operations.forEach((operation, opIndex) => {
+          const config = flowConfigs[operation.id];
+          const nodeType = config?.type === 'if-necessary' ? 'if-necessary' : 
+                          config?.type === 'alternate' ? 'alternate' : 'default';
+
+          nodes.push({
+            id: operation.id,
+            data: { 
+              label: operation.name,
+              type: nodeType,
+              prompt: config?.decisionPrompt
+            },
+            position: { x: 250, y: yPos },
+            type: 'default',
+            style: {
+              background: config?.type === 'if-necessary' ? '#fef3c7' : 
+                         config?.type === 'alternate' ? '#dbeafe' : '#ffffff',
+              border: '2px solid',
+              borderColor: config?.type === 'if-necessary' ? '#f59e0b' : 
+                          config?.type === 'alternate' ? '#3b82f6' : '#d1d5db',
+              borderRadius: '8px',
+              padding: '10px',
+              width: 180,
+            },
+          });
+
+          // Connect to previous operation or phase header
+          if (opIndex === 0) {
+            edges.push({
+              id: `phase-${phase.id}-${operation.id}`,
+              source: `phase-header-${phase.id}`,
+              target: operation.id,
+              animated: true,
+              markerEnd: { type: MarkerType.ArrowClosed },
+            });
+          } else {
+            edges.push({
+              id: `${phase.operations[opIndex - 1].id}-${operation.id}`,
+              source: phase.operations[opIndex - 1].id,
+              target: operation.id,
+              animated: true,
+              markerEnd: { type: MarkerType.ArrowClosed },
+            });
+          }
+
+          // Add alternate branches
+          if (config?.alternateIds) {
+            config.alternateIds.forEach((altId, altIndex) => {
+              const xOffset = (altIndex + 1) * horizontalSpacing;
+              const altOp = phase.operations.find(o => o.id === altId);
+              if (altOp && !nodes.find(n => n.id === altId)) {
+                nodes.push({
+                  id: altId,
+                  data: { label: altOp.name, type: 'alternate' },
+                  position: { x: 250 + xOffset, y: yPos },
+                  type: 'default',
+                  style: {
+                    background: '#dbeafe',
+                    border: '2px dashed #3b82f6',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    width: 180,
+                  },
+                });
+
+                edges.push({
+                  id: `${operation.id}-${altId}-alt`,
+                  source: operation.id,
+                  target: altId,
+                  label: 'OR',
+                  animated: true,
+                  style: { stroke: '#3b82f6' },
+                  markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
+                });
+              }
+            });
+          }
+
+          yPos += levelSpacing;
+        });
+      });
+    } else {
+      // Step-level flowchart
+      currentProject.phases.forEach((phase) => {
+        phase.operations.forEach((operation) => {
+          // Add operation header
+          nodes.push({
+            id: `op-header-${operation.id}`,
+            data: { label: `${phase.name} > ${operation.name}` },
+            position: { x: 0, y: yPos },
+            type: 'default',
+            style: {
+              background: '#e0e7ff',
+              border: '2px solid #6366f1',
+              borderRadius: '8px',
+              padding: '8px',
+              fontSize: '12px',
+              width: 200,
+            },
+          });
+          yPos += levelSpacing / 2;
+
+          operation.steps.forEach((step, stepIndex) => {
+            const config = flowConfigs[step.id];
+            const nodeType = config?.type === 'if-necessary' ? 'if-necessary' : 
+                            config?.type === 'alternate' ? 'alternate' : 'default';
+
+            nodes.push({
+              id: step.id,
+              data: { 
+                label: step.step,
+                type: nodeType,
+                prompt: config?.decisionPrompt
+              },
+              position: { x: 250, y: yPos },
+              type: 'default',
+              style: {
+                background: config?.type === 'if-necessary' ? '#fef3c7' : 
+                           config?.type === 'alternate' ? '#dbeafe' : '#ffffff',
+                border: '1px solid',
+                borderColor: config?.type === 'if-necessary' ? '#f59e0b' : 
+                            config?.type === 'alternate' ? '#3b82f6' : '#d1d5db',
+                borderRadius: '6px',
+                padding: '8px',
+                fontSize: '12px',
+                width: 180,
+              },
+            });
+
+            // Connect to previous step or operation header
+            if (stepIndex === 0) {
+              edges.push({
+                id: `op-${operation.id}-${step.id}`,
+                source: `op-header-${operation.id}`,
+                target: step.id,
+                animated: true,
+                markerEnd: { type: MarkerType.ArrowClosed },
+              });
+            } else {
+              edges.push({
+                id: `${operation.steps[stepIndex - 1].id}-${step.id}`,
+                source: operation.steps[stepIndex - 1].id,
+                target: step.id,
+                animated: true,
+                markerEnd: { type: MarkerType.ArrowClosed },
+              });
+            }
+
+            // Add alternate branches
+            if (config?.alternateIds) {
+              config.alternateIds.forEach((altId, altIndex) => {
+                const xOffset = (altIndex + 1) * horizontalSpacing;
+                const altStep = operation.steps.find(s => s.id === altId);
+                if (altStep && !nodes.find(n => n.id === altId)) {
+                  nodes.push({
+                    id: altId,
+                    data: { label: altStep.step, type: 'alternate' },
+                    position: { x: 250 + xOffset, y: yPos },
+                    type: 'default',
+                    style: {
+                      background: '#dbeafe',
+                      border: '1px dashed #3b82f6',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      fontSize: '12px',
+                      width: 180,
+                    },
+                  });
+
+                  edges.push({
+                    id: `${step.id}-${altId}-alt`,
+                    source: step.id,
+                    target: altId,
+                    label: 'OR',
+                    animated: true,
+                    style: { stroke: '#3b82f6' },
+                    markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
+                  });
+                }
+              });
+            }
+
+            yPos += levelSpacing * 0.7;
+          });
+
+          yPos += levelSpacing / 2;
+        });
+      });
+    }
+
+    return { nodes, edges };
+  }, [currentProject, flowConfigs, flowchartLevel]);
+
+  const { nodes, edges } = useMemo(() => generateFlowchart(), [generateFlowchart]);
+
   if (!currentProject) return null;
 
   const allOperations = getAllOperations();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] h-[90vh] flex flex-col p-0">
+      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-4">
           <div className="flex items-center justify-between">
             <DialogTitle>Decision Tree Manager - {currentProject.name}</DialogTitle>
             <div className="flex gap-2">
+              <Button size="sm" onClick={handleSave}>
+                Save
+              </Button>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'table' | 'flowchart')} className="flex-1 flex flex-col">
+          <TabsList className="mx-6">
+            <TabsTrigger value="table" className="flex items-center gap-2">
+              <List className="w-4 h-4" />
+              Table View
+            </TabsTrigger>
+            <TabsTrigger value="flowchart" className="flex items-center gap-2">
+              <GitBranch className="w-4 h-4" />
+              Flowchart
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="table" className="flex-1 overflow-auto px-6 pb-6 mt-4">
+            <div className="flex gap-2 mb-4">
               <Button size="sm" variant="outline" onClick={expandAll}>
                 <ChevronsUpDown className="w-4 h-4 mr-2" />
                 Expand All
@@ -335,15 +669,9 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 <ChevronsDownUp className="w-4 h-4 mr-2" />
                 Collapse All
               </Button>
-              <Button size="sm" onClick={handleSave}>
-                Save
-              </Button>
             </div>
-          </div>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-auto px-6 pb-6">
-          <Table>
+            
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[300px]">Item</TableHead>
@@ -464,7 +792,60 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               ))}
             </TableBody>
           </Table>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="flowchart" className="flex-1 flex flex-col px-6 pb-6 mt-4">
+            <div className="mb-4 flex items-center gap-4">
+              <Label className="font-semibold">View Level:</Label>
+              <RadioGroup 
+                value={flowchartLevel} 
+                onValueChange={(v) => setFlowchartLevel(v as 'phase' | 'operation' | 'step')}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="phase" id="phase" />
+                  <Label htmlFor="phase" className="cursor-pointer">Phase Level</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="operation" id="operation" />
+                  <Label htmlFor="operation" className="cursor-pointer">Operation Level</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="step" id="step" />
+                  <Label htmlFor="step" className="cursor-pointer">Step Level</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <div className="flex-1 border rounded-lg overflow-hidden bg-muted/20">
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                fitView
+                attributionPosition="bottom-right"
+              >
+                <Background />
+                <Controls />
+                <MiniMap />
+              </ReactFlow>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border-2 border-gray-400 bg-gray-100"></div>
+                <span className="text-sm">Standard Flow</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border-2 border-amber-500 bg-amber-100"></div>
+                <span className="text-sm">If-Necessary (Branch)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-100"></div>
+                <span className="text-sm">Alternate (Fork)</span>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
