@@ -75,12 +75,27 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       if (error) throw error;
 
       const configs: Record<string, FlowTypeConfig> = {};
+      
+      // Build a map of alternate_group to operation IDs
+      const alternateGroups = new Map<string, string[]>();
+      operations?.forEach(op => {
+        if (op.alternate_group) {
+          const existing = alternateGroups.get(op.alternate_group) || [];
+          alternateGroups.set(op.alternate_group, [...existing, op.id]);
+        }
+      });
+      
       operations?.forEach(op => {
         if (op.flow_type) {
+          // Get all operations in the same alternate group (excluding self)
+          const alternateIds = op.alternate_group 
+            ? (alternateGroups.get(op.alternate_group) || []).filter(id => id !== op.id)
+            : undefined;
+            
           configs[op.id] = {
             type: op.flow_type as 'if-necessary' | 'alternate' | 'dependent',
             decisionPrompt: op.user_prompt || undefined,
-            alternateIds: op.alternate_group ? op.alternate_group.split(',') : undefined,
+            alternateIds,
             dependentOn: op.dependent_on || undefined,
             predecessorIds: []
           };
