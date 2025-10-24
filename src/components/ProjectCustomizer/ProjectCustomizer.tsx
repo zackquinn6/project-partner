@@ -13,6 +13,7 @@ import { Project, Phase } from '../../interfaces/Project';
 import { useProject } from '../../contexts/ProjectContext';
 import { Settings, GitBranch, Plus, Clock, AlertTriangle } from 'lucide-react';
 import { useIsMobile } from '../../hooks/use-mobile';
+import { toast } from '@/components/ui/use-toast';
 
 interface ProjectCustomizerProps {
   open: boolean;
@@ -159,64 +160,49 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     try {
       console.log('💾 Saving customization decisions:', customizationState);
       
-      // Apply customizations to project run phases
-      let newPhases = [...(currentProjectRun.phases || [])];
+      // Create a deep copy of phases
+      let newPhases = JSON.parse(JSON.stringify(currentProjectRun.phases || []));
 
-      // Apply standard decisions and if-necessary work
+      // Apply standard decisions and if-necessary work filtering
       newPhases = newPhases.map(phase => {
         const standardChoices = customizationState.standardDecisions[phase.id] || [];
         const ifNecessaryChoices = customizationState.ifNecessaryWork[phase.id] || [];
 
         console.log(`Processing phase ${phase.name}:`, { standardChoices, ifNecessaryChoices });
 
-        // Apply operation filtering based on choices
-        let modifiedOperations = [...phase.operations];
-        
-        // Filter alternate operations - only keep selected ones
-        if (standardChoices.length > 0) {
-          // Extract selected operation IDs from "groupKey:operationId" format
-          const selectedOpIds = standardChoices.map(choice => {
-            const parts = choice.split(':');
-            return parts.length > 1 ? parts[1] : choice;
-          });
+        // Extract selected operation IDs from "groupKey:operationId" format
+        const selectedOpIds = new Set(standardChoices.map(choice => {
+          const parts = choice.split(':');
+          return parts.length > 1 ? parts[1] : choice;
+        }));
+
+        // Filter operations based on flowType
+        const filteredOperations = phase.operations.filter(op => {
+          const flowType = (op as any).flowType || 'prime';
           
-          console.log(`Selected operation IDs for ${phase.name}:`, selectedOpIds);
+          // Always keep prime operations
+          if (flowType === 'prime') return true;
           
-          // Keep prime operations and only selected alternate operations
-          modifiedOperations = modifiedOperations.filter(op => {
-            const flowType = op.steps?.[0]?.flowType || 'prime';
-            
-            if (flowType === 'alternate') {
-              const isSelected = selectedOpIds.includes(op.id);
-              console.log(`Operation ${op.name} (${op.id}) is alternate, selected:`, isSelected);
-              return isSelected;
-            }
-            
-            // Keep all non-alternate operations
-            return flowType !== 'if-necessary' || ifNecessaryChoices.includes(op.id);
-          });
-        } else {
-          // No standard choices - filter out all alternate operations
-          modifiedOperations = modifiedOperations.filter(op => {
-            const flowType = op.steps?.[0]?.flowType || 'prime';
-            return flowType !== 'alternate' && (flowType !== 'if-necessary' || ifNecessaryChoices.includes(op.id));
-          });
-        }
-        
-        // Filter if-necessary operations - only keep selected ones
-        modifiedOperations = modifiedOperations.filter(op => {
-          const flowType = op.steps?.[0]?.flowType || 'prime';
+          // For alternate operations, only keep selected ones
+          if (flowType === 'alternate') {
+            const isSelected = selectedOpIds.has(op.id);
+            console.log(`Operation ${op.name} (${op.id}) is alternate, selected:`, isSelected);
+            return isSelected;
+          }
+          
+          // For if-necessary operations, only keep selected ones
           if (flowType === 'if-necessary') {
             const isSelected = ifNecessaryChoices.includes(op.id);
             console.log(`Operation ${op.name} (${op.id}) is if-necessary, selected:`, isSelected);
             return isSelected;
           }
+          
           return true;
         });
         
         return {
           ...phase,
-          operations: modifiedOperations
+          operations: filteredOperations
         };
       });
 
@@ -246,7 +232,9 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         }
       });
 
-      // Update the project run
+      console.log(`✅ Filtered workflow from ${currentProjectRun.phases.length} to ${orderedPhases.length} phases`);
+
+      // Update the project run with filtered phases and saved decisions
       const updatedProjectRun = {
         ...currentProjectRun,
         phases: orderedPhases,
@@ -255,9 +243,20 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       };
 
       await updateProjectRun(updatedProjectRun);
+      
+      toast({
+        title: "Success", 
+        description: `Project customization saved. Workflow now has ${orderedPhases.length} phases.`
+      });
+      
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving customization:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save customization",
+        variant: "destructive"
+      });
     }
   };
 

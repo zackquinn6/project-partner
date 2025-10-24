@@ -224,8 +224,8 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
         window.dispatchEvent(new CustomEvent('openProjectScheduler'));
         break;
       case 'New materials needed':
-        console.log('🎯 DecisionRollup: Dispatching openOrderingWindow event');
-        window.dispatchEvent(new CustomEvent('openOrderingWindow'));
+        console.log('🎯 DecisionRollup: Dispatching openMaterialsSelection event');
+        window.dispatchEvent(new CustomEvent('openMaterialsSelection'));
         break;
       case 'New work needed':
         console.log('🎯 DecisionRollup: Dispatching openProjectCustomizer event with unplanned-work mode');

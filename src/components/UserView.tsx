@@ -28,6 +28,7 @@ import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { OrderingWindow } from './OrderingWindow';
 import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
+import { MaterialsSelectionDialog } from './MaterialsSelectionDialog';
 import { KickoffWorkflow } from './KickoffWorkflow';
 import { UnplannedWorkWindow } from './UnplannedWorkWindow';
 import { CompletionCertificate } from './CompletionCertificate';
@@ -1891,9 +1892,9 @@ export default function UserView({
         onReportIssue={handleReportIssueFromRating}
       />
       
-      {/* Materials Selection Window */}
+      {/* Materials Selection Window (for regular shopping flow) */}
       <MaterialsSelectionWindow
-        open={materialsSelectionOpen}
+        open={materialsSelectionOpen && !currentProjectRun}
         onOpenChange={setMaterialsSelectionOpen}
         project={currentProject}
         projectRun={currentProjectRun}
@@ -1933,6 +1934,44 @@ export default function UserView({
           }
           
           // Open ordering window with selected items
+          setOrderingWindowOpen(true);
+        }}
+      />
+
+      {/* Materials Selection Dialog (for re-plan -> new materials needed flow) */}
+      <MaterialsSelectionDialog
+        open={materialsSelectionOpen && !!currentProjectRun}
+        onOpenChange={setMaterialsSelectionOpen}
+        projectRun={currentProjectRun}
+        onConfirm={(selectedMaterials, customMaterials) => {
+          console.log('📦 Materials selected:', { selectedMaterials, customMaterials });
+          
+          // Transform selected materials to match OrderingWindow format
+          const materials = selectedMaterials.map(m => ({
+            id: m.id,
+            name: m.name,
+            quantity: m.quantity,
+            unit: m.unit,
+            checked: true
+          }));
+          
+          // Add custom materials
+          customMaterials.forEach(m => {
+            materials.push({
+              id: m.id,
+              name: m.name,
+              quantity: m.quantity,
+              unit: m.unit,
+              checked: true
+            });
+          });
+          
+          setSelectedMaterialsForShopping({
+            materials,
+            tools: []
+          });
+          
+          setMaterialsSelectionOpen(false);
           setOrderingWindowOpen(true);
         }}
       />
