@@ -15,7 +15,7 @@ import { MultiContentEditor } from '@/components/MultiContentEditor';
 import { MultiContentRenderer } from '@/components/MultiContentRenderer';
 import { StepTypeSelector } from '@/components/StepTypeSelector';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
-import { DecisionTreeManager } from '@/components/DecisionTree/DecisionTreeManager';
+import { DecisionTreeManager } from '@/components/DecisionTreeManager';
 import { MultiSelectLibraryDialog } from '@/components/MultiSelectLibraryDialog';
 import { StructureManager } from '@/components/StructureManager';
 import { OutputEditForm } from '@/components/OutputEditForm';
@@ -1105,15 +1105,7 @@ export default function EditWorkflowView({
       <DecisionTreeManager 
         open={decisionTreeOpen}
         onOpenChange={setDecisionTreeOpen}
-        phases={currentProject?.phases || []}
-        onPhasesUpdate={(updatedPhases) => {
-          if (currentProject) {
-            updateProject({
-              ...currentProject,
-              phases: updatedPhases
-            });
-          }
-        }}
+        currentProject={currentProject}
       />
     </div>;
 }
