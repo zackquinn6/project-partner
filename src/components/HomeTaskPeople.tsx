@@ -15,6 +15,7 @@ interface Person {
   available_days: string[];
   consecutive_days: number;
   skill_level: 'high' | 'medium' | 'low';
+  hourly_rate: number;
 }
 
 interface HomeTaskPeopleProps {
@@ -32,7 +33,8 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
     available_hours: 8,
     available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
     consecutive_days: 5,
-    skill_level: 'medium' as 'high' | 'medium' | 'low'
+    skill_level: 'medium' as 'high' | 'medium' | 'low',
+    hourly_rate: 0
   });
 
   useEffect(() => {
@@ -86,7 +88,8 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
       available_hours: 8,
       available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
       consecutive_days: 5,
-      skill_level: 'medium'
+      skill_level: 'medium',
+      hourly_rate: 0
     });
     fetchPeople();
     onPeopleChange?.();
@@ -125,7 +128,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
 
       {/* Add new person form */}
       <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Input
             placeholder="Name"
             value={newPerson.name}
@@ -143,6 +146,19 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
               placeholder="Hrs"
             />
             <span className="text-xs self-center">hrs/day</span>
+          </div>
+          <div className="flex gap-1">
+            <span className="text-xs self-center">$</span>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={newPerson.hourly_rate}
+              onChange={(e) => setNewPerson({ ...newPerson, hourly_rate: parseFloat(e.target.value) || 0 })}
+              className="text-xs h-8"
+              placeholder="Rate"
+            />
+            <span className="text-xs self-center">/hr</span>
           </div>
         </div>
 
@@ -217,6 +233,11 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                       {person.consecutive_days} consec days
                     </Badge>
+                    {person.hourly_rate > 0 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        ${person.hourly_rate}/hr
+                      </Badge>
+                    )}
                   </div>
                   <div className="mt-1 text-[10px] text-muted-foreground">
                     Available: {person.available_days.map(d => d.slice(0, 3)).join(', ')}

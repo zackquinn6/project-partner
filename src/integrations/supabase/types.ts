@@ -697,6 +697,7 @@ export type Database = {
           consecutive_days: number
           created_at: string
           home_id: string | null
+          hourly_rate: number | null
           id: string
           name: string
           skill_level: string
@@ -709,6 +710,7 @@ export type Database = {
           consecutive_days?: number
           created_at?: string
           home_id?: string | null
+          hourly_rate?: number | null
           id?: string
           name: string
           skill_level?: string
@@ -721,6 +723,7 @@ export type Database = {
           consecutive_days?: number
           created_at?: string
           home_id?: string | null
+          hourly_rate?: number | null
           id?: string
           name?: string
           skill_level?: string

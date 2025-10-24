@@ -19,6 +19,7 @@ interface Person {
   available_days: string[];
   consecutive_days: number;
   skill_level: 'high' | 'medium' | 'low';
+  hourly_rate?: number;
 }
 
 interface Assignment {
@@ -155,11 +156,22 @@ export function scheduleHomeTasksOptimized(
     const eligiblePeople = availability
       .filter(a => canPersonDoTask(a.person, unit.skillLevel))
       .sort((a, b) => {
-        // Priority: skill match score, then total available hours
+        // Priority: 
+        // 1. Skill match score (prefer exact match)
+        // 2. Hourly rate (prefer lower cost when skill matches)
+        // 3. Total available hours
+        
         const scoreA = getSkillMatchScore(a.person, unit.skillLevel);
         const scoreB = getSkillMatchScore(b.person, unit.skillLevel);
+        
         if (scoreB !== scoreA) return scoreB - scoreA;
         
+        // If skill matches are equal, prefer lower hourly rate
+        const rateA = a.person.hourly_rate || 0;
+        const rateB = b.person.hourly_rate || 0;
+        if (rateA !== rateB) return rateA - rateB; // Lower rate first
+        
+        // Finally, compare total available hours
         const totalHoursA = Array.from(a.availableHoursByDay.values()).reduce((sum, h) => sum + h, 0);
         const totalHoursB = Array.from(b.availableHoursByDay.values()).reduce((sum, h) => sum + h, 0);
         return totalHoursB - totalHoursA;
