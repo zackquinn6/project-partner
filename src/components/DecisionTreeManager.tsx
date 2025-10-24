@@ -635,8 +635,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] !max-w-[90vw] md:!max-w-[90vw] h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-4">
+      <DialogContent className="w-[90vw] !max-w-[90vw] md:!max-w-[90vw] h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-4 shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle>Decision Tree Manager - {currentProject.name}</DialogTitle>
             <div className="flex gap-2">
@@ -647,26 +647,26 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'table' | 'flowchart')} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="mx-6 bg-muted p-1 rounded-lg">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'table' | 'flowchart')} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="mx-6 mb-4 shrink-0 h-10 bg-muted">
             <TabsTrigger 
               value="table" 
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="flex items-center gap-2 h-9"
             >
               <List className="w-4 h-4" />
               Table View
             </TabsTrigger>
             <TabsTrigger 
               value="flowchart" 
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="flex items-center gap-2 h-9"
             >
               <GitBranch className="w-4 h-4" />
               Flowchart
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="table" className="flex-1 flex flex-col overflow-hidden px-6 pb-6 mt-4">
-            <div className="flex gap-2 mb-4">
+          <TabsContent value="table" className="flex-1 flex flex-col min-h-0 px-6 pb-6 mt-0 data-[state=inactive]:hidden">
+            <div className="flex gap-2 mb-4 shrink-0">
               <Button size="sm" variant="outline" onClick={expandAll}>
                 <ChevronsUpDown className="w-4 h-4 mr-2" />
                 Expand All
@@ -677,7 +677,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               </Button>
             </div>
             
-            <div className="flex-1 overflow-auto border rounded-lg">
+            <div className="flex-1 overflow-auto border rounded-lg min-h-0">
               <Table>
             <TableHeader>
               <TableRow>
@@ -802,7 +802,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="flowchart" className="flex-1 flex flex-col px-6 pb-6 mt-4">
+          <TabsContent value="flowchart" className="flex-1 flex flex-col min-h-0 px-6 pb-6 mt-0 data-[state=inactive]:hidden">
             <div className="mb-4 flex items-center gap-4">
               <Label className="font-semibold">View Level:</Label>
               <RadioGroup 
