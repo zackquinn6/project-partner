@@ -1,28 +1,38 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { verifyAuth, getRequiredSecret } from "../_shared/auth.ts";
+import { sanitizeInput } from "../_shared/validation.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation schema
+const requestSchema = z.object({
+  photos: z.array(z.string()).min(1).max(5), // Base64 image strings
+  description: z.string().max(1000).optional()
+});
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { photos, description } = await req.json();
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-
-    if (!GOOGLE_GEMINI_API_KEY) {
-      throw new Error('Google Gemini API key not configured');
-    }
-
-    if (!photos || !Array.isArray(photos) || photos.length === 0) {
-      throw new Error('At least one photo is required');
-    }
+    // Verify authentication
+    const user = await verifyAuth(req);
+    
+    // Get API key with proper error handling
+    const GOOGLE_GEMINI_API_KEY = getRequiredSecret('GOOGLE_GEMINI_API_KEY');
+    
+    // Parse and validate request body
+    const body = await req.json();
+    const validatedData = requestSchema.parse(body);
+    
+    // Sanitize description if provided
+    const sanitizedDescription = validatedData.description ? sanitizeInput(validatedData.description) : '';
 
     // Prepare content for Gemini Vision API
     const prompt = `You are an expert home repair analyst specializing in bathroom remodeling, tile work, plumbing, and window repairs. 
@@ -49,12 +59,12 @@ IMPORTANT:
 - Suggest when professional help is recommended
 - Provide realistic time and cost estimates
 
-Please analyze these home repair photos. ${description ? `Additional context: ${description}` : ''}`;
+Please analyze these home repair photos. ${sanitizedDescription ? `Additional context: ${sanitizedDescription}` : ''}`;
 
     // Prepare parts for Gemini request
     const parts = [
       { text: prompt },
-      ...photos.map((photo: string) => ({
+      ...validatedData.photos.map((photo: string) => ({
         inline_data: {
           mime_type: "image/jpeg",
           data: photo.split(',')[1] // Remove data:image/jpeg;base64, prefix
@@ -62,7 +72,7 @@ Please analyze these home repair photos. ${description ? `Additional context: ${
       }))
     ];
 
-    console.log('Sending request to Google Gemini with', photos.length, 'photos');
+    console.log('Sending request to Google Gemini with', validatedData.photos.length, 'photos');
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
       method: 'POST',
@@ -103,7 +113,7 @@ Please analyze these home repair photos. ${description ? `Additional context: ${
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Google Gemini API error:', response.status, errorData);
-      throw new Error(`Google Gemini API error: ${response.status} ${errorData}`);
+      throw new Error('AI analysis service error');
     }
 
     const data = await response.json();
@@ -123,7 +133,6 @@ Please analyze these home repair photos. ${description ? `Additional context: ${
       }
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
-      console.error('Raw response:', analysisText);
       
       // Fallback: create structured response from text
       analysisResult = {
@@ -147,11 +156,12 @@ Please analyze these home repair photos. ${description ? `Additional context: ${
 
   } catch (error) {
     console.error('Error in ai-repair-analysis function:', error);
-    return new Response(JSON.stringify({ 
-      error: 'Analysis failed', 
-      details: error instanceof Error ? error.message : 'Unknown error occurred'
-    }), {
-      status: 500,
+    
+    const statusCode = error.message?.includes('authorization') || error.message?.includes('token') ? 401 : 500;
+    const message = statusCode === 401 ? 'Authentication required' : 'Analysis failed';
+    
+    return new Response(JSON.stringify({ error: message }), {
+      status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

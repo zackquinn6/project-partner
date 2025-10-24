@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { verifyAuth, getRequiredSecret } from "../_shared/auth.ts";
+import { escapeHtml } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,20 +10,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface Assignment {
-  taskTitle: string;
-  subtaskTitle: string;
-  personName: string;
-  scheduledDate: string;
-  scheduledHours: number;
-}
+// Input validation schema
+const assignmentSchema = z.object({
+  taskTitle: z.string().max(200),
+  subtaskTitle: z.string().max(200),
+  personName: z.string().max(100),
+  scheduledDate: z.string().datetime(),
+  scheduledHours: z.number().min(0).max(24)
+});
 
-interface ScheduleNotificationRequest {
-  schedule: Assignment[];
-  startDate: string;
-  userEmail: string;
-  people: Array<{ name: string; id: string }>;
-}
+const personSchema = z.object({
+  name: z.string().max(100),
+  id: z.string().uuid()
+});
+
+const requestSchema = z.object({
+  schedule: z.array(assignmentSchema).max(500),
+  startDate: z.string().datetime(),
+  userEmail: z.string().email().max(255),
+  people: z.array(personSchema).max(50)
+});
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -30,10 +37,24 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { schedule, startDate, userEmail, people }: ScheduleNotificationRequest = await req.json();
+    // Verify authentication
+    const user = await verifyAuth(req);
+    
+    // Get API key with proper error handling
+    const RESEND_API_KEY = getRequiredSecret('RESEND_API_KEY');
+    const resend = new Resend(RESEND_API_KEY);
+    
+    // Parse and validate request body
+    const body = await req.json();
+    const validatedData = requestSchema.parse(body);
+    
+    // Verify the email matches the authenticated user
+    if (validatedData.userEmail !== user.email) {
+      throw new Error('Email mismatch with authenticated user');
+    }
 
     // Group assignments by date
-    const assignmentsByDate = schedule.reduce((acc: Record<string, Assignment[]>, assignment) => {
+    const assignmentsByDate = validatedData.schedule.reduce((acc: Record<string, typeof validatedData.schedule>, assignment) => {
       const date = new Date(assignment.scheduledDate).toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
@@ -49,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const sortedDates = Object.keys(assignmentsByDate).sort();
 
-    // Generate HTML email
+    // Generate HTML email with escaped content to prevent XSS
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -73,7 +94,7 @@ const handler = async (req: Request): Promise<Response> => {
         <div class="container">
           <div class="header">
             <h1 style="margin: 0;">Your Work Schedule</h1>
-            <p style="margin: 10px 0 0 0;">Starting from ${new Date(startDate).toLocaleDateString('en-US', {
+            <p style="margin: 10px 0 0 0;">Starting from ${new Date(validatedData.startDate).toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
@@ -81,20 +102,20 @@ const handler = async (req: Request): Promise<Response> => {
             })}</p>
           </div>
           <div class="content">
-            <p><strong>Total Assignments:</strong> ${schedule.length}</p>
-            <p><strong>Team Members:</strong> ${people.map(p => p.name).join(', ')}</p>
+            <p><strong>Total Assignments:</strong> ${validatedData.schedule.length}</p>
+            <p><strong>Team Members:</strong> ${validatedData.people.map(p => escapeHtml(p.name)).join(', ')}</p>
             
             ${sortedDates.map(date => `
               <div class="date-section">
-                <div class="date-header">${date}</div>
+                <div class="date-header">${escapeHtml(date)}</div>
                 ${assignmentsByDate[date].map(assignment => `
                   <div class="assignment">
-                    <div class="assignment-title">${assignment.subtaskTitle}</div>
+                    <div class="assignment-title">${escapeHtml(assignment.subtaskTitle)}</div>
                     <div class="assignment-details">
-                      Task: ${assignment.taskTitle}
+                      Task: ${escapeHtml(assignment.taskTitle)}
                     </div>
                     <div style="margin-top: 8px;">
-                      <span class="badge badge-person">${assignment.personName}</span>
+                      <span class="badge badge-person">${escapeHtml(assignment.personName)}</span>
                       <span class="badge badge-hours">${assignment.scheduledHours.toFixed(1)} hours</span>
                     </div>
                   </div>
@@ -109,12 +130,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Home Task Manager <onboarding@resend.dev>",
-      to: [userEmail],
-      subject: `Your Work Schedule - Starting ${new Date(startDate).toLocaleDateString()}`,
+      to: [validatedData.userEmail],
+      subject: `Your Work Schedule - Starting ${new Date(validatedData.startDate).toLocaleDateString()}`,
       html: htmlContent,
     });
 
-    console.log("Schedule email sent successfully:", emailResponse);
+    console.log("Schedule email sent successfully");
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,
@@ -125,10 +146,15 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error in send-schedule-notification function:", error);
+    
+    // Don't expose internal errors to users
+    const statusCode = error.message.includes('authorization') || error.message.includes('token') ? 401 : 500;
+    const message = statusCode === 401 ? 'Authentication required' : 'Failed to send notification';
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       {
-        status: 500,
+        status: statusCode,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
