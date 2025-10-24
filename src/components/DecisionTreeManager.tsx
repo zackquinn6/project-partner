@@ -66,13 +66,20 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
   const loadFlowConfigs = async () => {
     try {
+      // CRITICAL: Decision tree data is scoped to specific project revisions
+      // Each revision has its own template_operations with unique flow configurations
+      // When a revision is deleted, its template_operations and decision tree data are CASCADE deleted
+      console.log('🔍 Loading decision tree config for project:', currentProject.id, 'Name:', currentProject.name);
+      
       // Load flow configurations from template_operations
       const { data: operations, error } = await supabase
         .from('template_operations')
         .select('id, flow_type, user_prompt, alternate_group, dependent_on')
-        .eq('project_id', currentProject.id);
+        .eq('project_id', currentProject.id); // Scoped to this specific revision
 
       if (error) throw error;
+
+      console.log('📊 Loaded operations:', operations?.length, 'for project', currentProject.id);
 
       const configs: Record<string, FlowTypeConfig> = {};
       
@@ -527,8 +534,39 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           });
         }
 
-        // Add alternate branches
-        if (config?.alternateIds) {
+        // Add alternate branches with fork visualization
+        if (config?.alternateIds && config.alternateIds.length > 0) {
+          // Create a decision diamond node
+          const decisionNodeId = `decision-${phase.id}`;
+          nodes.push({
+            id: decisionNodeId,
+            data: { label: '◇', type: 'decision' },
+            position: { x: xPos + nodeSpacing - 100, y: 100 + verticalSpacing / 2 },
+            type: 'default',
+            style: {
+              background: '#fef3c7',
+              border: '2px solid #f59e0b',
+              borderRadius: '50%',
+              padding: '15px',
+              width: 60,
+              height: 60,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+            },
+          });
+
+          // Connect main phase to decision node
+          edges.push({
+            id: `${phase.id}-${decisionNodeId}`,
+            source: phase.id,
+            target: decisionNodeId,
+            animated: true,
+            style: { stroke: '#f59e0b' },
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
+          });
+
           config.alternateIds.forEach((altId, altIndex) => {
             const yOffset = (altIndex + 1) * verticalSpacing;
             const altPhase = currentProject.phases.find(p => p.id === altId);
@@ -536,24 +574,24 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               nodes.push({
                 id: altId,
                 data: { label: altPhase.name, type: 'alternate' },
-                position: { x: xPos, y: 100 + yOffset },
+                position: { x: xPos + nodeSpacing, y: 100 + yOffset },
                 type: 'default',
                 style: {
                   background: '#dbeafe',
-                  border: '2px dashed #3b82f6',
+                  border: '2px solid #3b82f6',
                   borderRadius: '8px',
                   padding: '10px',
                   width: 180,
                 },
               });
 
+              // Connect decision node to alternate
               edges.push({
-                id: `${phase.id}-${altId}-alt`,
-                source: phase.id,
+                id: `${decisionNodeId}-${altId}`,
+                source: decisionNodeId,
                 target: altId,
-                label: 'OR',
                 animated: true,
-                style: { stroke: '#3b82f6' },
+                style: { stroke: '#3b82f6', strokeDasharray: '5,5' },
                 markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
               });
             }
@@ -572,8 +610,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           position: { x: xPos, y: 0 },
           type: 'default',
           style: {
-            background: '#e0e7ff',
-            border: '2px solid #6366f1',
+            background: '#f0fdf4',
+            border: '2px solid #16a34a',
             borderRadius: '8px',
             padding: '10px',
             fontWeight: 'bold',
@@ -630,8 +668,39 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             });
           }
 
-          // Add alternate branches
-          if (config?.alternateIds) {
+          // Add alternate branches with fork visualization
+          if (config?.alternateIds && config.alternateIds.length > 0) {
+            // Create a decision diamond node
+            const decisionNodeId = `decision-${operation.id}`;
+            nodes.push({
+              id: decisionNodeId,
+              data: { label: '◇', type: 'decision' },
+              position: { x: xPos + nodeSpacing - 100, y: 100 + verticalSpacing / 2 },
+              type: 'default',
+              style: {
+                background: '#fef3c7',
+                border: '2px solid #f59e0b',
+                borderRadius: '50%',
+                padding: '15px',
+                width: 60,
+                height: 60,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
+              },
+            });
+
+            // Connect main operation to decision node
+            edges.push({
+              id: `${operation.id}-${decisionNodeId}`,
+              source: operation.id,
+              target: decisionNodeId,
+              animated: true,
+              style: { stroke: '#f59e0b' },
+              markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
+            });
+
             config.alternateIds.forEach((altId, altIndex) => {
               const yOffset = (altIndex + 1) * verticalSpacing;
               const altOp = phase.operations.find(o => o.id === altId);
@@ -639,24 +708,24 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 nodes.push({
                   id: altId,
                   data: { label: altOp.name, type: 'alternate' },
-                  position: { x: xPos, y: 100 + yOffset },
+                  position: { x: xPos + nodeSpacing, y: 100 + yOffset },
                   type: 'default',
                   style: {
                     background: '#dbeafe',
-                    border: '2px dashed #3b82f6',
+                    border: '2px solid #3b82f6',
                     borderRadius: '8px',
                     padding: '10px',
                     width: 180,
                   },
                 });
 
+                // Connect decision node to alternate
                 edges.push({
-                  id: `${operation.id}-${altId}-alt`,
-                  source: operation.id,
+                  id: `${decisionNodeId}-${altId}`,
+                  source: decisionNodeId,
                   target: altId,
-                  label: 'OR',
                   animated: true,
-                  style: { stroke: '#3b82f6' },
+                  style: { stroke: '#3b82f6', strokeDasharray: '5,5' },
                   markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
                 });
               }
@@ -677,8 +746,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             position: { x: xPos, y: 0 },
             type: 'default',
             style: {
-              background: '#e0e7ff',
-              border: '2px solid #6366f1',
+              background: '#f0fdf4',
+              border: '2px solid #16a34a',
               borderRadius: '8px',
               padding: '8px',
               fontSize: '12px',
@@ -736,8 +805,39 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               });
             }
 
-            // Add alternate branches
-            if (config?.alternateIds) {
+            // Add alternate branches with fork visualization
+            if (config?.alternateIds && config.alternateIds.length > 0) {
+              // Create a decision diamond node
+              const decisionNodeId = `decision-${step.id}`;
+              nodes.push({
+                id: decisionNodeId,
+                data: { label: '◇', type: 'decision' },
+                position: { x: xPos + nodeSpacing * 0.5, y: 100 + verticalSpacing / 2 },
+                type: 'default',
+                style: {
+                  background: '#fef3c7',
+                  border: '2px solid #f59e0b',
+                  borderRadius: '50%',
+                  padding: '12px',
+                  width: 50,
+                  height: 50,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                },
+              });
+
+              // Connect main step to decision node
+              edges.push({
+                id: `${step.id}-${decisionNodeId}`,
+                source: step.id,
+                target: decisionNodeId,
+                animated: true,
+                style: { stroke: '#f59e0b' },
+                markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
+              });
+
               config.alternateIds.forEach((altId, altIndex) => {
                 const yOffset = (altIndex + 1) * verticalSpacing;
                 const altStep = operation.steps.find(s => s.id === altId);
@@ -745,11 +845,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                   nodes.push({
                     id: altId,
                     data: { label: altStep.step, type: 'alternate' },
-                    position: { x: xPos, y: 100 + yOffset },
+                    position: { x: xPos + nodeSpacing, y: 100 + yOffset },
                     type: 'default',
                     style: {
                       background: '#dbeafe',
-                      border: '1px dashed #3b82f6',
+                      border: '1px solid #3b82f6',
                       borderRadius: '6px',
                       padding: '8px',
                       fontSize: '12px',
@@ -757,13 +857,13 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                     },
                   });
 
+                  // Connect decision node to alternate
                   edges.push({
-                    id: `${step.id}-${altId}-alt`,
-                    source: step.id,
+                    id: `${decisionNodeId}-${altId}`,
+                    source: decisionNodeId,
                     target: altId,
-                    label: 'OR',
                     animated: true,
-                    style: { stroke: '#3b82f6' },
+                    style: { stroke: '#3b82f6', strokeDasharray: '5,5' },
                     markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
                   });
                 }
