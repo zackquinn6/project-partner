@@ -185,16 +185,6 @@ export default function Home({
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">Expert Help</span>
               </div>
               
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolAccess} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <Hammer className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-xs font-medium text-black text-center leading-tight px-1">Tool Access</span>
-                  <Badge variant="secondary" className="text-[8px] px-1 py-0 mt-0.5">BETA</Badge>
-                </div>
-              </div>
-              
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProfile} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                   <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
@@ -271,6 +261,18 @@ export default function Home({
                   </Badge>
                 </div>
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">Code & Permits</span>
+              </div>
+
+              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
+                <div className="relative">
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolAccess} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                    <Hammer className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  </div>
+                  <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full border-2 border-white">
+                    BETA
+                  </Badge>
+                </div>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">Tool Access</span>
               </div>
               </div>
             </div>
@@ -376,11 +378,6 @@ Personalized, success-oriented, and built for real-world usage during a project.
               <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
                 <Wrench className="h-8 w-8 text-primary mb-2" />
                 <span className="text-sm font-medium text-center">Tool Library</span>
-              </div>
-              <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
-                <Hammer className="h-8 w-8 text-primary mb-2" />
-                <span className="text-sm font-medium text-center">Tool Access</span>
-                <Badge variant="secondary" className="text-[8px] px-1 py-0 mt-1">BETA</Badge>
               </div>
               <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
                 <BookOpen className="h-8 w-8 text-primary mb-2" />
