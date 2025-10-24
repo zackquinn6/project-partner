@@ -17,12 +17,15 @@ interface AdminWorkflowEditorProps {
   onSave: (phases: Phase[]) => void;
 }
 
+const STEP_TYPES = [
+  { value: 'prime', label: 'One-time', color: 'bg-green-500' },
+  { value: 'repeat', label: 'Per Unit', color: 'bg-blue-500' },
+  { value: 'inspection', label: 'Quality Check', color: 'bg-orange-500' }
+] as const;
+
 const FLOW_TYPES = [
-  { value: 'prime', label: 'Prime (Main Path)', color: 'bg-blue-500' },
   { value: 'alternate', label: 'Alternate', color: 'bg-orange-500' },
-  { value: 'if-necessary', label: 'If Necessary', color: 'bg-gray-500' },
-  { value: 'inspection', label: 'Inspection', color: 'bg-purple-500' },
-  { value: 'repeat', label: 'Repeat', color: 'bg-green-500' }
+  { value: 'if-necessary', label: 'If Necessary', color: 'bg-gray-500' }
 ] as const;
 
 export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
@@ -79,13 +82,22 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
     toast.success('Workflow structure saved successfully');
   };
 
-  const getOperationFlowType = (operation: Operation): string => {
-    // Get flow type from first step (they should all be the same for an operation)
+  const getOperationStepType = (operation: Operation): string => {
+    // Get step type from first step (they should all be the same for an operation)
     return operation.steps[0]?.flowType || 'prime';
   };
 
-  const getFlowTypeColor = (flowType: string) => {
-    return FLOW_TYPES.find(ft => ft.value === flowType)?.color || 'bg-gray-300';
+  const getStepTypeColor = (stepType: string) => {
+    return STEP_TYPES.find(st => st.value === stepType)?.color || 'bg-gray-300';
+  };
+
+  const getOperationFlowType = (operation: Operation): string | null => {
+    const stepType = getOperationStepType(operation);
+    // Only return flow type if it's alternate or if-necessary
+    if (stepType === 'alternate' || stepType === 'if-necessary') {
+      return stepType;
+    }
+    return null;
   };
 
   return (
@@ -112,13 +124,25 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
 
       {/* Legend */}
       <div className="border-b bg-muted/30 p-4">
-        <div className="flex items-center gap-4 flex-wrap text-sm">
-          {FLOW_TYPES.map(type => (
-            <div key={type.value} className="flex items-center gap-2">
-              <div className={`w-4 h-4 rounded ${type.color}`}></div>
-              <span>{type.label}</span>
-            </div>
-          ))}
+        <div className="space-y-2">
+          <div className="flex items-center gap-4 flex-wrap text-sm">
+            <span className="font-semibold">Step Types:</span>
+            {STEP_TYPES.map(type => (
+              <div key={type.value} className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded ${type.color}`}></div>
+                <span>{type.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 flex-wrap text-sm">
+            <span className="font-semibold">Flow Types:</span>
+            {FLOW_TYPES.map(type => (
+              <div key={type.value} className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded ${type.color}`}></div>
+                <span>{type.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -137,11 +161,12 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
               {expandedPhase === phase.id && (
                 <CardContent className="space-y-4">
                   {phase.operations.map(operation => {
+                    const stepType = getOperationStepType(operation);
                     const flowType = getOperationFlowType(operation);
                     const isEditing = editingOperation?.phaseId === phase.id && editingOperation?.operationId === operation.id;
                     
                     return (
-                      <Card key={operation.id} className={`border-l-4 border-l-${getFlowTypeColor(flowType).replace('bg-', '')}`}>
+                      <Card key={operation.id} className={`border-l-4 border-l-${getStepTypeColor(stepType).replace('bg-', '')}`}>
                         <CardHeader>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -161,16 +186,16 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
                         {isEditing && (
                           <CardContent className="space-y-4 pt-0">
                             <div className="space-y-2">
-                              <Label>Operation Type</Label>
+                              <Label>Step Type</Label>
                               <Select
-                                value={flowType}
+                                value={stepType}
                                 onValueChange={(value) => updateOperationFlowType(phase.id, operation.id, value)}
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-background">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  {FLOW_TYPES.map(type => (
+                                <SelectContent className="bg-background z-50">
+                                  {STEP_TYPES.map(type => (
                                     <SelectItem key={type.value} value={type.value}>
                                       <div className="flex items-center gap-2">
                                         <div className={`w-3 h-3 rounded ${type.color}`}></div>
@@ -182,7 +207,27 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
                               </Select>
                             </div>
 
-                            {(flowType === 'alternate' || flowType === 'if-necessary') && (
+                            {flowType && (
+                              <div className="space-y-2">
+                                <Label>Flow Type</Label>
+                                <div className="p-2 bg-muted rounded-md">
+                                  {flowType === 'alternate' && (
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-3 h-3 rounded bg-orange-500"></div>
+                                      <span className="text-sm">Alternate - Decision point in workflow</span>
+                                    </div>
+                                  )}
+                                  {flowType === 'if-necessary' && (
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-3 h-3 rounded bg-gray-500"></div>
+                                      <span className="text-sm">If Necessary - Conditional operation</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {(stepType === 'alternate' || stepType === 'if-necessary') && (
                               <div className="space-y-2">
                                 <Label>User Decision Prompt</Label>
                                 <Textarea
@@ -246,9 +291,14 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
                             </div>
 
                             <div className="flex items-center gap-2 pt-2 border-t">
-                              <Badge className={getFlowTypeColor(flowType)}>
-                                {FLOW_TYPES.find(ft => ft.value === flowType)?.label}
+                              <Badge className={getStepTypeColor(stepType)}>
+                                {STEP_TYPES.find(st => st.value === stepType)?.label}
                               </Badge>
+                              {flowType && (
+                                <Badge className="bg-orange-500/10 text-orange-700 border border-orange-500/20">
+                                  {FLOW_TYPES.find(ft => ft.value === flowType)?.label}
+                                </Badge>
+                              )}
                               <span className="text-xs text-muted-foreground">
                                 {operation.steps.length} steps
                               </span>

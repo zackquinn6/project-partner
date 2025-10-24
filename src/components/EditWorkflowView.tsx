@@ -13,8 +13,9 @@ import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { MultiContentEditor } from '@/components/MultiContentEditor';
 import { MultiContentRenderer } from '@/components/MultiContentRenderer';
-import { FlowTypeSelector } from '@/components/FlowTypeSelector';
+import { StepTypeSelector } from '@/components/StepTypeSelector';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
+import { DecisionTreeManager } from '@/components/DecisionTree/DecisionTreeManager';
 import { MultiSelectLibraryDialog } from '@/components/MultiSelectLibraryDialog';
 import { StructureManager } from '@/components/StructureManager';
 import { OutputEditForm } from '@/components/OutputEditForm';
@@ -87,6 +88,7 @@ export default function EditWorkflowView({
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
   const [showStructureManager, setShowStructureManager] = useState(false);
   const [processImprovementOpen, setProcessImprovementOpen] = useState(false);
+  const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
   const [instructionLevel, setInstructionLevel] = useState<'quick' | 'detailed' | 'new_user'>('detailed');
   const [levelSpecificContent, setLevelSpecificContent] = useState<ContentSection[] | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
@@ -712,9 +714,36 @@ export default function EditWorkflowView({
                         <Textarea id="step-description" value={editingStep.description || ''} onChange={e => updateEditingStep('description', e.target.value)} placeholder="Step description..." className="mt-2" rows={3} />
                       </div>
                       <div>
-                        <Label className="text-base font-medium">Flow Type</Label>
-                        <div className="mt-2">
-                          <FlowTypeSelector value={editingStep.flowType} onValueChange={value => updateEditingStep('flowType', value)} />
+                        <StepTypeSelector value={editingStep.flowType} onValueChange={value => updateEditingStep('flowType', value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm text-muted-foreground">Flow Type</Label>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setDecisionTreeOpen(true)}
+                            className="h-7 text-xs"
+                          >
+                            Open Decision Tree Manager
+                          </Button>
+                        </div>
+                        <div className="p-2 bg-muted rounded-md text-sm">
+                          {editingStep.flowType === 'alternate' && (
+                            <Badge variant="secondary" className="bg-orange-500/10 text-orange-700 border-orange-500/20">
+                              Alternate - Decision point in workflow
+                            </Badge>
+                          )}
+                          {editingStep.flowType === 'if-necessary' && (
+                            <Badge variant="secondary" className="bg-gray-500/10 text-gray-700 border-gray-500/20">
+                              If Necessary - Conditional operation
+                            </Badge>
+                          )}
+                          {!['alternate', 'if-necessary'].includes(editingStep.flowType || '') && (
+                            <span className="text-muted-foreground text-xs">
+                              This step is part of the main workflow path
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1071,5 +1100,20 @@ export default function EditWorkflowView({
       }));
       updateEditingStep('materials', [...(editingStep?.materials || []), ...newMaterials]);
     }} />
+
+      {/* Decision Tree Manager */}
+      <DecisionTreeManager 
+        open={decisionTreeOpen}
+        onOpenChange={setDecisionTreeOpen}
+        phases={currentProject?.phases || []}
+        onPhasesUpdate={(updatedPhases) => {
+          if (currentProject) {
+            updateProject({
+              ...currentProject,
+              phases: updatedPhases
+            });
+          }
+        }}
+      />
     </div>;
 }
