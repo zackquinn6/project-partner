@@ -32,10 +32,11 @@ interface DecisionTreeManagerProps {
 }
 
 interface FlowTypeConfig {
-  type: 'if-necessary' | 'alternate' | null;
+  type: 'if-necessary' | 'alternate' | 'dependent' | null;
   decisionPrompt?: string;
   alternateIds?: string[]; // IDs of alternate operations/steps
   predecessorIds?: string[]; // IDs of prerequisite operations
+  dependentOn?: string; // ID of the if-necessary operation this depends on
 }
 
 export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
@@ -154,10 +155,25 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     );
   };
 
-  const getOperationLabel = (opId: string) => {
+  const getItemLabel = (itemId: string) => {
+    // Try to find as operation
     const allOps = getAllOperations();
-    const op = allOps.find(o => o.id === opId || o.fullId === opId);
-    return op ? `${op.phaseName} > ${op.name}` : opId;
+    const op = allOps.find(o => o.id === itemId || o.fullId === itemId);
+    if (op) return `${op.phaseName} > ${op.name}`;
+    
+    // Try to find as step
+    for (const phase of currentProject.phases) {
+      for (const operation of phase.operations) {
+        const step = operation.steps.find(s => s.id === itemId);
+        if (step) return `${phase.name} > ${operation.name} > ${step.step}`;
+      }
+    }
+    
+    // Try to find as phase
+    const phase = currentProject.phases.find(p => p.id === itemId);
+    if (phase) return phase.name;
+    
+    return itemId;
   };
 
   const renderFlowTypeControls = (
@@ -183,10 +199,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select flow type" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-popover z-[100]">
               <SelectItem value="none">None</SelectItem>
               <SelectItem value="if-necessary">If-Necessary</SelectItem>
               <SelectItem value="alternate">Alternate</SelectItem>
+              <SelectItem value="dependent">Dependent</SelectItem>
             </SelectContent>
           </Select>
 
@@ -202,13 +219,46 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           )}
         </div>
 
+        {/* Dependent operation selector */}
+        {config.type === 'dependent' && (
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Depends On (If-Necessary Operation)</Label>
+            <Select 
+              value={config.dependentOn || ''} 
+              onValueChange={(value) => updateFlowConfig(itemId, { dependentOn: value })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select if-necessary operation" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover max-h-[300px] z-[100]">
+                {availableAlternates
+                  .filter(alt => {
+                    const altConfig = flowConfigs[alt.id];
+                    return altConfig?.type === 'if-necessary' && alt.id !== itemId;
+                  })
+                  .map(alt => (
+                    <SelectItem key={alt.id} value={alt.id} className="text-sm">
+                      {alt.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              This operation will be automatically included when the selected if-necessary operation is chosen by the user
+            </p>
+          </div>
+        )}
+
         {config.type && (
-          <Input
-            placeholder="Decision prompt"
-            value={config.decisionPrompt || ''}
-            onChange={(e) => updateFlowConfig(itemId, { decisionPrompt: e.target.value })}
-            className="text-sm"
-          />
+          <div>
+            <Label className="text-sm font-semibold">Decision Prompt</Label>
+            <Textarea
+              placeholder="Enter question or description for this decision point"
+              value={config.decisionPrompt || ''}
+              onChange={(e) => updateFlowConfig(itemId, { decisionPrompt: e.target.value })}
+              className="min-h-[80px] mt-1 text-sm"
+            />
+          </div>
         )}
 
         {config.type === 'alternate' && config.alternateIds && config.alternateIds.length > 0 && (
@@ -217,7 +267,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             {config.alternateIds.map(altId => (
               <div key={altId} className="flex items-center gap-2 text-xs">
                 <Badge variant="secondary" className="text-xs">
-                  {getOperationLabel(altId)}
+                  {getItemLabel(altId)}
                 </Badge>
                 <Button
                   size="sm"
@@ -232,31 +282,43 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           </div>
         )}
 
+        {config.type === 'dependent' && config.dependentOn && (
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">Depends on:</div>
+            <Badge variant="outline" className="text-xs">
+              {getItemLabel(config.dependentOn)}
+            </Badge>
+          </div>
+        )}
+
         {/* Alternate selector dialog */}
         {showAlternateSelector === itemId && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-background p-4 rounded-lg max-w-md w-full max-h-[400px] overflow-auto">
-              <h3 className="font-semibold mb-2">Select Alternates</h3>
-              <div className="space-y-2">
+            <div className="bg-background p-6 rounded-lg max-w-lg w-full max-h-[500px] overflow-auto border shadow-lg">
+              <h3 className="text-lg font-semibold mb-4">Select Alternates</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Choose operations that are alternatives to "{itemName}"
+              </p>
+              <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto">
                 {availableAlternates
                   .filter(alt => alt.id !== itemId && !config.alternateIds?.includes(alt.id))
                   .map(alt => (
                     <Button
                       key={alt.id}
                       variant="outline"
-                      className="w-full justify-start text-sm"
+                      className="w-full justify-start text-left text-sm h-auto py-3 px-4"
                       onClick={() => {
                         addAlternate(itemId, alt.id);
                         setShowAlternateSelector(null);
                       }}
                     >
-                      {alt.label}
+                      <span className="truncate">{alt.label}</span>
                     </Button>
                   ))}
               </div>
               <Button
-                variant="ghost"
-                className="w-full mt-4"
+                variant="secondary"
+                className="w-full"
                 onClick={() => setShowAlternateSelector(null)}
               >
                 Close
@@ -286,11 +348,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Add predecessor" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-popover max-h-[300px] z-[100]">
             {availableOps
               .filter(op => op.id !== itemId && !config.predecessorIds?.includes(op.id))
               .map(op => (
-                <SelectItem key={op.id} value={op.id}>
+                <SelectItem key={op.id} value={op.id} className="text-sm">
                   {op.label}
                 </SelectItem>
               ))}
@@ -303,7 +365,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             {config.predecessorIds.map(predId => (
               <div key={predId} className="flex items-center gap-2 text-xs">
                 <Badge variant="outline" className="text-xs">
-                  {getOperationLabel(predId)}
+                  {getItemLabel(predId)}
                 </Badge>
                 <Button
                   size="sm"
@@ -345,7 +407,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       currentProject.phases.forEach((phase, index) => {
         const config = flowConfigs[phase.id];
         const nodeType = config?.type === 'if-necessary' ? 'if-necessary' : 
-                        config?.type === 'alternate' ? 'alternate' : 'default';
+                        config?.type === 'alternate' ? 'alternate' : 
+                        config?.type === 'dependent' ? 'dependent' : 'default';
         
         nodes.push({
           id: phase.id,
@@ -358,10 +421,12 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           type: 'default',
           style: {
             background: config?.type === 'if-necessary' ? '#fef3c7' : 
-                       config?.type === 'alternate' ? '#dbeafe' : '#f3f4f6',
+                       config?.type === 'alternate' ? '#dbeafe' : 
+                       config?.type === 'dependent' ? '#f3e8ff' : '#f3f4f6',
             border: '2px solid',
             borderColor: config?.type === 'if-necessary' ? '#f59e0b' : 
-                        config?.type === 'alternate' ? '#3b82f6' : '#9ca3af',
+                        config?.type === 'alternate' ? '#3b82f6' : 
+                        config?.type === 'dependent' ? '#a855f7' : '#9ca3af',
             borderRadius: '8px',
             padding: '10px',
             width: 180,
@@ -437,7 +502,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         phase.operations.forEach((operation, opIndex) => {
           const config = flowConfigs[operation.id];
           const nodeType = config?.type === 'if-necessary' ? 'if-necessary' : 
-                          config?.type === 'alternate' ? 'alternate' : 'default';
+                          config?.type === 'alternate' ? 'alternate' : 
+                          config?.type === 'dependent' ? 'dependent' : 'default';
 
           nodes.push({
             id: operation.id,
@@ -450,10 +516,12 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             type: 'default',
             style: {
               background: config?.type === 'if-necessary' ? '#fef3c7' : 
-                         config?.type === 'alternate' ? '#dbeafe' : '#ffffff',
+                         config?.type === 'alternate' ? '#dbeafe' : 
+                         config?.type === 'dependent' ? '#f3e8ff' : '#ffffff',
               border: '2px solid',
               borderColor: config?.type === 'if-necessary' ? '#f59e0b' : 
-                          config?.type === 'alternate' ? '#3b82f6' : '#d1d5db',
+                          config?.type === 'alternate' ? '#3b82f6' : 
+                          config?.type === 'dependent' ? '#a855f7' : '#d1d5db',
               borderRadius: '8px',
               padding: '10px',
               width: 180,
@@ -539,7 +607,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           operation.steps.forEach((step, stepIndex) => {
             const config = flowConfigs[step.id];
             const nodeType = config?.type === 'if-necessary' ? 'if-necessary' : 
-                            config?.type === 'alternate' ? 'alternate' : 'default';
+                            config?.type === 'alternate' ? 'alternate' : 
+                            config?.type === 'dependent' ? 'dependent' : 'default';
 
             nodes.push({
               id: step.id,
@@ -552,10 +621,12 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               type: 'default',
               style: {
                 background: config?.type === 'if-necessary' ? '#fef3c7' : 
-                           config?.type === 'alternate' ? '#dbeafe' : '#ffffff',
+                           config?.type === 'alternate' ? '#dbeafe' : 
+                           config?.type === 'dependent' ? '#f3e8ff' : '#ffffff',
                 border: '1px solid',
                 borderColor: config?.type === 'if-necessary' ? '#f59e0b' : 
-                            config?.type === 'alternate' ? '#3b82f6' : '#d1d5db',
+                            config?.type === 'alternate' ? '#3b82f6' : 
+                            config?.type === 'dependent' ? '#a855f7' : '#d1d5db',
                 borderRadius: '6px',
                 padding: '8px',
                 fontSize: '12px',
@@ -838,18 +909,22 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               </ReactFlow>
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+            <div className="mt-4 grid grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded border-2 border-gray-400 bg-gray-100"></div>
                 <span className="text-sm">Standard Flow</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded border-2 border-amber-500 bg-amber-100"></div>
-                <span className="text-sm">If-Necessary (Branch)</span>
+                <span className="text-sm">If-Necessary</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-100"></div>
-                <span className="text-sm">Alternate (Fork)</span>
+                <span className="text-sm">Alternate</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border-2 border-purple-500 bg-purple-100"></div>
+                <span className="text-sm">Dependent</span>
               </div>
             </div>
           </TabsContent>
