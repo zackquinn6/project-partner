@@ -88,10 +88,10 @@ export function MobileOptimizedHome() {
     {
       id: 'rapid-plan',
       icon: Calculator,
-      title: 'Rapid Plan',
+      title: 'Rapid Costing',
       color: 'bg-green-600',
       action: () => {
-        console.log('🎯 MobileOptimizedHome: Rapid Plan clicked');
+        console.log('🎯 MobileOptimizedHome: Rapid Costing clicked');
         window.dispatchEvent(new CustomEvent('show-rapid-assessment'));
       }
     },
@@ -100,6 +100,7 @@ export function MobileOptimizedHome() {
       icon: Hammer,
       title: 'Tool Access',
       color: 'bg-indigo-600',
+      isBeta: true,
       action: () => window.dispatchEvent(new CustomEvent('show-tool-rentals'))
     },
     {
@@ -297,6 +298,9 @@ export function MobileOptimizedHome() {
                       <Icon className="h-4 w-4 text-white" />
                     </div>
                     <p className="text-xs font-medium text-card-foreground leading-tight">{app.title}</p>
+                    {app.isBeta && (
+                      <Badge variant="secondary" className="text-[8px] px-1 py-0 mt-1">BETA</Badge>
+                    )}
                   </CardContent>
                 </Card>
               );

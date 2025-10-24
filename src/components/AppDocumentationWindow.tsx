@@ -64,7 +64,7 @@ const appFeatures = [
   {
     id: 'rapid-plan',
     icon: Calculator,
-    name: 'Rapid Plan',
+    name: 'Rapid Costing',
     description: 'Get instant project assessments, time estimates, and material costs for any home improvement idea in minutes.',
     keyFeatures: [
       'AI-powered project analysis and recommendations',
@@ -564,7 +564,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         <p className="mb-3">Choose and customize your first DIY project:</p>
                         <ul className="space-y-2 text-sm">
                           <li>• Browse the Project Catalog for beginner-friendly options</li>
-                          <li>• Use "Rapid Plan" to assess time and cost estimates</li>
+                          <li>• Use "Rapid Costing" to assess time and cost estimates</li>
                           <li>• Complete the project kickoff workflow with customizations</li>
                           <li>• Review your tool needs and plan rentals if necessary</li>
                         </ul>

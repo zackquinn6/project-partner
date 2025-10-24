@@ -76,6 +76,7 @@ export interface AppReference {
   linkUrl?: string;
   openInNewTab?: boolean;
   displayOrder?: number;
+  isBeta?: boolean;
 }
 
 export interface ContentSection {

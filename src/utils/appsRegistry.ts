@@ -55,7 +55,8 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     icon: 'Hammer',
     description: 'Find tool rental locations and access options',
     actionKey: 'tool-access',
-    displayOrder: 7
+    displayOrder: 7,
+    isBeta: true
   }
 };
 

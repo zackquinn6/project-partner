@@ -1,6 +1,7 @@
 import { AppReference } from '@/interfaces/Project';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Plus, ExternalLink, X } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -79,6 +80,11 @@ export const CompactAppsSection = ({
                   <p className="text-[10px] font-medium line-clamp-2 leading-tight">
                     {app.appName}
                   </p>
+                  {app.isBeta && (
+                    <Badge variant="secondary" className="text-[8px] px-1 py-0 mt-0.5">
+                      BETA
+                    </Badge>
+                  )}
                 </div>
                 
                 {app.appType === 'external-link' && (

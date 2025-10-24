@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -147,7 +148,14 @@ export const AppsLibraryDialog = ({
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <h4 className="font-medium text-sm">{app.appName}</h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-sm">{app.appName}</h4>
+                              {app.isBeta && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                  BETA
+                                </Badge>
+                              )}
+                            </div>
                             {selected && (
                               <Check className="w-5 h-5 text-primary flex-shrink-0" />
                             )}

@@ -175,7 +175,7 @@ export default function Home({
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.rapidPlan} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                   <Calculator className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Rapid Plan</span>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">Rapid Costing</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-expert-help'))}>
@@ -189,7 +189,10 @@ export default function Home({
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolAccess} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                   <Hammer className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Tool Access</span>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs font-medium text-black text-center leading-tight px-1">Tool Access</span>
+                  <Badge variant="secondary" className="text-[8px] px-1 py-0 mt-0.5">BETA</Badge>
+                </div>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
@@ -364,7 +367,7 @@ Personalized, success-oriented, and built for real-world usage during a project.
               </div>
               <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
                 <Calculator className="h-8 w-8 text-primary mb-2" />
-                <span className="text-sm font-medium text-center">Rapid Plan</span>
+                <span className="text-sm font-medium text-center">Rapid Costing</span>
               </div>
               <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
                 <HomeIcon className="h-8 w-8 text-primary mb-2" />
@@ -377,6 +380,7 @@ Personalized, success-oriented, and built for real-world usage during a project.
               <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
                 <Hammer className="h-8 w-8 text-primary mb-2" />
                 <span className="text-sm font-medium text-center">Tool Access</span>
+                <Badge variant="secondary" className="text-[8px] px-1 py-0 mt-1">BETA</Badge>
               </div>
               <div className="flex flex-col items-center p-4 rounded-lg bg-card/50 hover:bg-card transition-colors">
                 <BookOpen className="h-8 w-8 text-primary mb-2" />
