@@ -152,8 +152,8 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
       <ScrollArea className="h-[calc(100vh-16rem)] max-h-[600px]">
         <div className="space-y-4 pr-4">
           {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <div className="relative pt-2 pl-2">
+            <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search materials..."
               value={searchQuery}
