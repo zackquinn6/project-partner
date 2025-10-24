@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Package, Minus } from 'lucide-react';
+import { Plus, Search, Package, Minus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,7 +17,6 @@ interface MaterialItem {
   name: string;
   quantity: number;
   unit: string;
-  selected: boolean;
 }
 
 interface CustomMaterialItem {
@@ -44,10 +43,9 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
   const [searchQuery, setSearchQuery] = useState('');
   const [materials, setMaterials] = useState<MaterialItem[]>([]);
   const [customMaterials, setCustomMaterials] = useState<CustomMaterialItem[]>([]);
-  const [showAddCustom, setShowAddCustom] = useState(false);
-  const [customName, setCustomName] = useState('');
-  const [customQuantity, setCustomQuantity] = useState(1);
-  const [customUnit, setCustomUnit] = useState('');
+  const [newCustomName, setNewCustomName] = useState('');
+  const [newCustomQuantity, setNewCustomQuantity] = useState('');
+  const [newCustomUnit, setNewCustomUnit] = useState('');
 
   // Extract materials from project run
   useEffect(() => {
@@ -69,9 +67,8 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
                 extractedMaterials.set(material.id, {
                   id: material.id,
                   name: material.name || 'Unknown Material',
-                  quantity,
-                  unit: materialUnit,
-                  selected: false
+                  quantity: 0, // Default to 0 - user sets quantity for what they need
+                  unit: materialUnit
                 });
               }
             });
@@ -90,12 +87,6 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
     return materials.filter(m => m.name.toLowerCase().includes(query));
   }, [materials, searchQuery]);
 
-  const toggleMaterial = (id: string) => {
-    setMaterials(prev => prev.map(m => 
-      m.id === id ? { ...m, selected: !m.selected } : m
-    ));
-  };
-
   const updateQuantity = (id: string, quantity: number) => {
     setMaterials(prev => prev.map(m => 
       m.id === id ? { ...m, quantity: Math.max(0, quantity) } : m
@@ -103,23 +94,24 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
   };
 
   const addCustomMaterial = () => {
-    if (!customName.trim()) {
+    if (!newCustomName.trim()) {
       toast.error('Please enter a material name');
       return;
     }
 
+    const quantity = parseInt(newCustomQuantity) || 0;
+    
     const newCustomMaterial: CustomMaterialItem = {
       id: `custom-${Date.now()}`,
-      name: customName.trim(),
-      quantity: customQuantity,
-      unit: customUnit.trim() || 'unit'
+      name: newCustomName.trim(),
+      quantity,
+      unit: newCustomUnit.trim() || 'ea'
     };
 
     setCustomMaterials(prev => [...prev, newCustomMaterial]);
-    setCustomName('');
-    setCustomQuantity(1);
-    setCustomUnit('');
-    setShowAddCustom(false);
+    setNewCustomName('');
+    setNewCustomQuantity('');
+    setNewCustomUnit('');
     toast.success('Custom material added');
   };
 
@@ -134,18 +126,20 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
   };
 
   const handleConfirm = () => {
-    const selectedMaterials = materials.filter(m => m.selected);
+    // Filter materials with quantity > 0
+    const selectedMaterials = materials.filter(m => m.quantity > 0);
+    const selectedCustom = customMaterials.filter(m => m.quantity > 0);
     
-    if (selectedMaterials.length === 0 && customMaterials.length === 0) {
-      toast.error('Please select at least one material');
+    if (selectedMaterials.length === 0 && selectedCustom.length === 0) {
+      toast.error('Please add at least one material with quantity greater than 0');
       return;
     }
 
-    onConfirm(selectedMaterials, customMaterials);
+    onConfirm(selectedMaterials, selectedCustom);
     onOpenChange(false);
   };
 
-  const selectedCount = materials.filter(m => m.selected).length + customMaterials.length;
+  const selectedCount = materials.filter(m => m.quantity > 0).length + customMaterials.filter(m => m.quantity > 0).length;
 
   return (
     <ResponsiveDialog
@@ -175,27 +169,23 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
                 <span>Project Materials</span>
                 <Badge variant="secondary">{filteredMaterials.length} items</Badge>
               </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Set quantity to add materials to your shopping list (0 = not needed)
+              </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {filteredMaterials.map(material => (
-                  <div key={material.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                    <Checkbox
-                      id={material.id}
-                      checked={material.selected}
-                      onCheckedChange={() => toggleMaterial(material.id)}
-                    />
+                  <div key={material.id} className="flex items-center gap-3 p-2 border rounded-lg">
                     <div className="flex-1 min-w-0">
-                      <Label htmlFor={material.id} className="cursor-pointer font-medium block truncate">
-                        {material.name}
-                      </Label>
+                      <p className="font-medium text-sm truncate">{material.name}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => updateQuantity(material.id, material.quantity - 1)}
-                        disabled={material.quantity <= 0 || !material.selected}
+                        disabled={material.quantity <= 0}
                         className="h-7 w-7 p-0"
                       >
                         <Minus className="w-3 h-3" />
@@ -206,13 +196,11 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
                         onChange={(e) => updateQuantity(material.id, parseInt(e.target.value) || 0)}
                         className="w-16 h-7 text-center text-sm"
                         min="0"
-                        disabled={!material.selected}
                       />
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => updateQuantity(material.id, material.quantity + 1)}
-                        disabled={!material.selected}
                         className="h-7 w-7 p-0"
                       >
                         <Plus className="w-3 h-3" />
@@ -233,63 +221,79 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
           {/* Custom Materials */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base flex items-center justify-between">
-                <span>Custom Materials</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowAddCustom(!showAddCustom)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Custom
-                </Button>
-              </CardTitle>
+              <CardTitle className="text-base">Custom Materials</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Add materials not in the project list
+              </p>
             </CardHeader>
             <CardContent className="space-y-3">
-              {showAddCustom && (
-                <div className="p-4 border rounded-lg space-y-3 bg-muted/30">
-                  <div className="space-y-2">
-                    <Label>Material Name</Label>
-                    <Input
-                      placeholder="Enter material name"
-                      value={customName}
-                      onChange={(e) => setCustomName(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Quantity</Label>
-                      <Input
-                        type="number"
-                        value={customQuantity}
-                        onChange={(e) => setCustomQuantity(parseInt(e.target.value) || 1)}
-                        min="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Unit</Label>
-                      <Input
-                        placeholder="e.g., box, bag, ft"
-                        value={customUnit}
-                        onChange={(e) => setCustomUnit(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={addCustomMaterial} className="w-full">
-                    Add Material
-                  </Button>
-                </div>
-              )}
+              {/* Add Custom Material - Inline Form */}
+              <div className="flex items-center gap-2 p-2 border rounded-lg bg-muted/30">
+                <Input
+                  placeholder="Material name"
+                  value={newCustomName}
+                  onChange={(e) => setNewCustomName(e.target.value)}
+                  className="flex-1 h-8"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomMaterial();
+                    }
+                  }}
+                />
+                <Input
+                  type="number"
+                  placeholder="Qty"
+                  value={newCustomQuantity}
+                  onChange={(e) => setNewCustomQuantity(e.target.value)}
+                  className="w-20 h-8 text-center"
+                  min="0"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomMaterial();
+                    }
+                  }}
+                />
+                <Input
+                  placeholder="Unit"
+                  value={newCustomUnit}
+                  onChange={(e) => setNewCustomUnit(e.target.value)}
+                  className="w-20 h-8"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomMaterial();
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={addCustomMaterial} 
+                  size="sm"
+                  className="h-8 px-3"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
 
-              {customMaterials.length > 0 ? (
+              {/* Custom Materials List */}
+              {customMaterials.length > 0 && (
                 <div className="space-y-2">
                   {customMaterials.map(material => (
-                    <div key={material.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                      <Package className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <div key={material.id} className="flex items-center gap-2 p-2 border rounded-lg">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{material.name}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateCustomQuantity(material.id, material.quantity - 1)}
+                          disabled={material.quantity <= 0}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
                         <Input
                           type="number"
                           value={material.quantity}
@@ -297,23 +301,27 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
                           className="w-16 h-7 text-xs text-center"
                           min="0"
                         />
-                        <span className="text-xs text-muted-foreground w-12">{material.unit}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateCustomQuantity(material.id, material.quantity + 1)}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground w-12">{material.unit}</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => removeCustomMaterial(material.id)}
-                          className="h-7 px-2"
+                          className="h-7 w-7 p-0"
                         >
-                          Remove
+                          <X className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="text-center text-muted-foreground text-sm py-4">
-                  No custom materials added
-                </p>
               )}
             </CardContent>
           </Card>
