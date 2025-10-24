@@ -696,11 +696,11 @@ export type Database = {
           available_hours: number
           consecutive_days: number
           created_at: string
+          diy_level: string
           home_id: string | null
           hourly_rate: number | null
           id: string
           name: string
-          skill_level: string
           updated_at: string
           user_id: string
         }
@@ -709,11 +709,11 @@ export type Database = {
           available_hours?: number
           consecutive_days?: number
           created_at?: string
+          diy_level?: string
           home_id?: string | null
           hourly_rate?: number | null
           id?: string
           name: string
-          skill_level?: string
           updated_at?: string
           user_id: string
         }
@@ -722,11 +722,11 @@ export type Database = {
           available_hours?: number
           consecutive_days?: number
           created_at?: string
+          diy_level?: string
           home_id?: string | null
           hourly_rate?: number | null
           id?: string
           name?: string
-          skill_level?: string
           updated_at?: string
           user_id?: string
         }
@@ -787,10 +787,10 @@ export type Database = {
           assigned_person_id: string | null
           completed: boolean
           created_at: string
+          diy_level: string
           estimated_hours: number
           id: string
           order_index: number
-          skill_level: string
           task_id: string
           title: string
           updated_at: string
@@ -800,10 +800,10 @@ export type Database = {
           assigned_person_id?: string | null
           completed?: boolean
           created_at?: string
+          diy_level?: string
           estimated_hours?: number
           id?: string
           order_index?: number
-          skill_level?: string
           task_id: string
           title: string
           updated_at?: string
@@ -813,10 +813,10 @@ export type Database = {
           assigned_person_id?: string | null
           completed?: boolean
           created_at?: string
+          diy_level?: string
           estimated_hours?: number
           id?: string
           order_index?: number
-          skill_level?: string
           task_id?: string
           title?: string
           updated_at?: string
@@ -843,13 +843,13 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          diy_level: string | null
           due_date: string | null
           home_id: string | null
           id: string
           notes: string | null
           priority: string
           project_run_id: string | null
-          skill_level: string | null
           status: string
           task_type: string | null
           title: string
@@ -859,13 +859,13 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          diy_level?: string | null
           due_date?: string | null
           home_id?: string | null
           id?: string
           notes?: string | null
           priority?: string
           project_run_id?: string | null
-          skill_level?: string | null
           status?: string
           task_type?: string | null
           title: string
@@ -875,13 +875,13 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          diy_level?: string | null
           due_date?: string | null
           home_id?: string | null
           id?: string
           notes?: string | null
           priority?: string
           project_run_id?: string | null
-          skill_level?: string | null
           status?: string
           task_type?: string | null
           title?: string

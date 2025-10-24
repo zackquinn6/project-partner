@@ -15,7 +15,7 @@ interface HomeTask {
   description: string | null;
   priority: 'high' | 'medium' | 'low';
   status: 'open' | 'in_progress' | 'closed';
-  skill_level: 'high' | 'medium' | 'low';
+  diy_level: 'beginner' | 'intermediate' | 'pro';
   notes: string | null;
   due_date: string | null;
   task_type: 'general' | 'pre_sale' | 'diy' | 'contractor';
@@ -27,7 +27,7 @@ interface Subtask {
   id: string;
   title: string;
   estimated_hours: number | null;
-  skill_level: 'high' | 'medium' | 'low';
+  diy_level: 'beginner' | 'intermediate' | 'pro';
   completed: boolean;
 }
 interface HomeTasksTableProps {
@@ -37,7 +37,7 @@ interface HomeTasksTableProps {
   onAddSubtasks: (task: HomeTask) => void;
   onLinkProject: (task: HomeTask) => void;
 }
-type SortField = 'title' | 'priority' | 'status' | 'skill_level' | 'due_date' | 'task_type';
+type SortField = 'title' | 'priority' | 'status' | 'diy_level' | 'due_date' | 'task_type';
 type SortDirection = 'asc' | 'desc';
 export function HomeTasksTable({
   tasks,
@@ -51,7 +51,7 @@ export function HomeTasksTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterSkill, setFilterSkill] = useState<string>('all');
+  const [filterDiyLevel, setFilterDiyLevel] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [projectStatuses, setProjectStatuses] = useState<Record<string, string>>({});
   const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
@@ -161,8 +161,8 @@ export function HomeTasksTable({
     if (filterStatus !== 'all') {
       filtered = filtered.filter(task => task.status === filterStatus);
     }
-    if (filterSkill !== 'all') {
-      filtered = filtered.filter(task => task.skill_level === filterSkill);
+    if (filterDiyLevel !== 'all') {
+      filtered = filtered.filter(task => task.diy_level === filterDiyLevel);
     }
 
     // Apply sorting
@@ -177,14 +177,14 @@ export function HomeTasksTable({
         };
         aVal = priorityOrder[a.priority];
         bVal = priorityOrder[b.priority];
-      } else if (sortField === 'skill_level') {
-        const skillOrder = {
-          high: 3,
-          medium: 2,
-          low: 1
+      } else if (sortField === 'diy_level') {
+        const diyLevelOrder = {
+          pro: 3,
+          intermediate: 2,
+          beginner: 1
         };
-        aVal = skillOrder[a.skill_level];
-        bVal = skillOrder[b.skill_level];
+        aVal = diyLevelOrder[a.diy_level];
+        bVal = diyLevelOrder[b.diy_level];
       } else if (sortField === 'due_date') {
         aVal = a.due_date ? new Date(a.due_date).getTime() : 0;
         bVal = b.due_date ? new Date(b.due_date).getTime() : 0;
@@ -194,7 +194,7 @@ export function HomeTasksTable({
       return 0;
     });
     return filtered;
-  }, [tasks, sortField, sortDirection, filterPriority, filterStatus, filterSkill, searchTerm]);
+  }, [tasks, sortField, sortDirection, filterPriority, filterStatus, filterDiyLevel, searchTerm]);
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
@@ -219,13 +219,13 @@ export function HomeTasksTable({
         return 'default';
     }
   };
-  const getSkillColor = (skill: string) => {
-    switch (skill) {
-      case 'high':
+  const getDiyLevelColor = (level: string) => {
+    switch (level) {
+      case 'pro':
         return 'destructive';
-      case 'medium':
+      case 'intermediate':
         return 'default';
-      case 'low':
+      case 'beginner':
         return 'secondary';
       default:
         return 'default';
@@ -257,15 +257,15 @@ export function HomeTasksTable({
             <SelectItem value="closed">Closed</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={filterSkill} onValueChange={setFilterSkill}>
+        <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
           <SelectTrigger className="w-32 text-xs h-8">
-            <SelectValue placeholder="Skill" />
+            <SelectValue placeholder="DIY Level" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Skills</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="all">All Levels</SelectItem>
+            <SelectItem value="beginner">Beginner</SelectItem>
+            <SelectItem value="intermediate">Intermediate</SelectItem>
+            <SelectItem value="pro">Pro</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -292,8 +292,8 @@ export function HomeTasksTable({
                   </Button>
                 </TableHead>
                 <TableHead className="w-[100px] text-xs">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('skill_level')} className="h-6 px-2 text-xs font-medium">
-                    Skill <SortIcon field="skill_level" />
+                  <Button variant="ghost" size="sm" onClick={() => handleSort('diy_level')} className="h-6 px-2 text-xs font-medium">
+                    DIY Level <SortIcon field="diy_level" />
                   </Button>
                 </TableHead>
                 <TableHead className="w-[120px] text-xs">
@@ -348,8 +348,8 @@ export function HomeTasksTable({
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getSkillColor(task.skill_level)} className="text-[10px] px-1.5 py-0">
-                        {task.skill_level}
+                      <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[10px] px-1.5 py-0">
+                        {task.diy_level}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs">{task.task_type.replace('_', ' ')}</TableCell>
@@ -401,7 +401,7 @@ export function HomeTasksTable({
                                 <TableHead className="text-xs h-8 w-10"></TableHead>
                                 <TableHead className="text-xs h-8">Subtask</TableHead>
                                 <TableHead className="text-xs h-8">Est. Hours</TableHead>
-                                <TableHead className="text-xs h-8">Skill Level</TableHead>
+                                <TableHead className="text-xs h-8">DIY Level</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -419,8 +419,8 @@ export function HomeTasksTable({
                                   </TableCell>
                                   <TableCell className="text-xs py-2">{subtask.estimated_hours || '-'}</TableCell>
                                   <TableCell className="text-xs py-2">
-                                    <Badge variant={getSkillColor(subtask.skill_level)} className="text-[10px] px-1.5 py-0">
-                                      {subtask.skill_level}
+                                    <Badge variant={getDiyLevelColor(subtask.diy_level)} className="text-[10px] px-1.5 py-0">
+                                      {subtask.diy_level}
                                     </Badge>
                                   </TableCell>
                                 </TableRow>

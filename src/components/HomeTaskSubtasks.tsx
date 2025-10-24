@@ -12,7 +12,7 @@ interface Subtask {
   id: string;
   title: string;
   estimated_hours: number;
-  skill_level: 'high' | 'medium' | 'low';
+  diy_level: 'beginner' | 'intermediate' | 'pro';
   completed: boolean;
   order_index: number;
   assigned_person_id: string | null;
@@ -39,7 +39,7 @@ export function HomeTaskSubtasks({ open, onOpenChange, taskId, taskTitle, userId
   const [newSubtask, setNewSubtask] = useState({
     title: '',
     estimated_hours: 1,
-    skill_level: 'medium' as 'high' | 'medium' | 'low',
+    diy_level: 'intermediate' as 'beginner' | 'intermediate' | 'pro',
     assigned_person_id: null as string | null
   });
 
@@ -98,7 +98,7 @@ export function HomeTaskSubtasks({ open, onOpenChange, taskId, taskTitle, userId
         user_id: userId,
         title: newSubtask.title,
         estimated_hours: newSubtask.estimated_hours,
-        skill_level: newSubtask.skill_level,
+        diy_level: newSubtask.diy_level,
         assigned_person_id: newSubtask.assigned_person_id,
         order_index: subtasks.length
       }]);
@@ -109,7 +109,7 @@ export function HomeTaskSubtasks({ open, onOpenChange, taskId, taskTitle, userId
     }
 
     toast.success('Subtask added');
-    setNewSubtask({ title: '', estimated_hours: 1, skill_level: 'medium', assigned_person_id: null });
+    setNewSubtask({ title: '', estimated_hours: 1, diy_level: 'intermediate', assigned_person_id: null });
     fetchSubtasks();
   };
 
@@ -185,16 +185,16 @@ export function HomeTaskSubtasks({ open, onOpenChange, taskId, taskTitle, userId
               placeholder="Hrs"
             />
             <Select 
-              value={newSubtask.skill_level} 
-              onValueChange={(val) => setNewSubtask({ ...newSubtask, skill_level: val as any })}
+              value={newSubtask.diy_level} 
+              onValueChange={(val) => setNewSubtask({ ...newSubtask, diy_level: val as any })}
             >
-              <SelectTrigger className="w-24 text-xs h-8">
+              <SelectTrigger className="w-32 text-xs h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Med</SelectItem>
-                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="beginner">Beginner</SelectItem>
+                <SelectItem value="intermediate">Intermediate</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
               </SelectContent>
             </Select>
             <Select 
@@ -243,7 +243,7 @@ export function HomeTaskSubtasks({ open, onOpenChange, taskId, taskTitle, userId
                     {subtask.estimated_hours}h
                   </Badge>
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                    {subtask.skill_level}
+                    {subtask.diy_level}
                   </Badge>
                   <Select 
                     value={subtask.assigned_person_id || "unassigned"}

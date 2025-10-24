@@ -1,7 +1,7 @@
 interface Task {
   id: string;
   title: string;
-  skill_level: 'high' | 'medium' | 'low';
+  diy_level: 'beginner' | 'intermediate' | 'pro';
   subtasks: Subtask[];
 }
 
@@ -9,7 +9,7 @@ interface Subtask {
   id: string;
   title: string;
   estimated_hours: number;
-  skill_level: 'high' | 'medium' | 'low';
+  diy_level: 'beginner' | 'intermediate' | 'pro';
 }
 
 interface Person {
@@ -18,7 +18,7 @@ interface Person {
   available_hours: number;
   available_days: string[];
   consecutive_days: number;
-  skill_level: 'high' | 'medium' | 'low';
+  diy_level: 'beginner' | 'intermediate' | 'pro';
   hourly_rate?: number;
 }
 
@@ -41,15 +41,15 @@ interface ScheduleResult {
 
 const DAY_ORDER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-function canPersonDoTask(person: Person, taskSkillLevel: 'high' | 'medium' | 'low'): boolean {
-  const skillLevels = { low: 1, medium: 2, high: 3 };
-  return skillLevels[person.skill_level] >= skillLevels[taskSkillLevel];
+function canPersonDoTask(person: Person, taskDiyLevel: 'beginner' | 'intermediate' | 'pro'): boolean {
+  const diyLevels = { beginner: 1, intermediate: 2, pro: 3 };
+  return diyLevels[person.diy_level] >= diyLevels[taskDiyLevel];
 }
 
-function getSkillMatchScore(person: Person, taskSkillLevel: 'high' | 'medium' | 'low'): number {
+function getSkillMatchScore(person: Person, taskDiyLevel: 'beginner' | 'intermediate' | 'pro'): number {
   // Perfect match = 3, one level up = 2, two levels up = 1
-  const skillLevels = { low: 1, medium: 2, high: 3 };
-  const gap = skillLevels[person.skill_level] - skillLevels[taskSkillLevel];
+  const diyLevels = { beginner: 1, intermediate: 2, pro: 3 };
+  const gap = diyLevels[person.diy_level] - diyLevels[taskDiyLevel];
   return Math.max(0, 3 - gap);
 }
 
@@ -79,7 +79,7 @@ export function scheduleHomeTasksOptimized(
     subtaskId: string | null;
     subtaskTitle: string;
     hours: number;
-    skillLevel: 'high' | 'medium' | 'low';
+    diyLevel: 'beginner' | 'intermediate' | 'pro';
   }
 
   const workUnits: WorkUnit[] = [];
@@ -93,7 +93,7 @@ export function scheduleHomeTasksOptimized(
           subtaskId: subtask.id,
           subtaskTitle: subtask.title,
           hours: subtask.estimated_hours,
-          skillLevel: subtask.skill_level
+          diyLevel: subtask.diy_level
         });
       }
     } else {
@@ -104,15 +104,15 @@ export function scheduleHomeTasksOptimized(
         subtaskId: null,
         subtaskTitle: task.title,
         hours: 1,
-        skillLevel: task.skill_level
+        diyLevel: task.diy_level
       });
     }
   }
 
-  // Sort work units by skill level (high first) for optimal assignment
+  // Sort work units by DIY level (pro first) for optimal assignment
   workUnits.sort((a, b) => {
-    const skillOrder = { high: 3, medium: 2, low: 1 };
-    return skillOrder[b.skillLevel] - skillOrder[a.skillLevel];
+    const diyOrder = { pro: 3, intermediate: 2, beginner: 1 };
+    return diyOrder[b.diyLevel] - diyOrder[a.diyLevel];
   });
 
   // Track person availability
@@ -154,19 +154,19 @@ export function scheduleHomeTasksOptimized(
 
     // Find best person for this task
     const eligiblePeople = availability
-      .filter(a => canPersonDoTask(a.person, unit.skillLevel))
+      .filter(a => canPersonDoTask(a.person, unit.diyLevel))
       .sort((a, b) => {
         // Priority: 
-        // 1. Skill match score (prefer exact match)
+        // 1. DIY level match score (prefer exact match)
         // 2. Hourly rate (prefer lower cost when skill matches)
         // 3. Total available hours
         
-        const scoreA = getSkillMatchScore(a.person, unit.skillLevel);
-        const scoreB = getSkillMatchScore(b.person, unit.skillLevel);
+        const scoreA = getSkillMatchScore(a.person, unit.diyLevel);
+        const scoreB = getSkillMatchScore(b.person, unit.diyLevel);
         
         if (scoreB !== scoreA) return scoreB - scoreA;
         
-        // If skill matches are equal, prefer lower hourly rate
+        // If DIY level matches are equal, prefer lower hourly rate
         const rateA = a.person.hourly_rate || 0;
         const rateB = b.person.hourly_rate || 0;
         if (rateA !== rateB) return rateA - rateB; // Lower rate first
@@ -182,7 +182,7 @@ export function scheduleHomeTasksOptimized(
         taskId: unit.taskId,
         taskTitle: unit.taskTitle,
         subtaskId: unit.subtaskId,
-        reason: `No person with ${unit.skillLevel} skill or higher available`
+        reason: `No person with ${unit.diyLevel} DIY level or higher available`
       });
       continue;
     }

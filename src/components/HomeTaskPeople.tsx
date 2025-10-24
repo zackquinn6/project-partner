@@ -14,7 +14,7 @@ interface Person {
   available_hours: number;
   available_days: string[];
   consecutive_days: number;
-  skill_level: 'high' | 'medium' | 'low';
+  diy_level: 'beginner' | 'intermediate' | 'pro';
   hourly_rate: number;
 }
 
@@ -33,7 +33,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
     available_hours: 8,
     available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
     consecutive_days: 5,
-    skill_level: 'medium' as 'high' | 'medium' | 'low',
+    diy_level: 'intermediate' as 'beginner' | 'intermediate' | 'pro',
     hourly_rate: 0
   });
 
@@ -88,7 +88,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
       available_hours: 8,
       available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
       consecutive_days: 5,
-      skill_level: 'medium',
+      diy_level: 'intermediate',
       hourly_rate: 0
     });
     fetchPeople();
@@ -164,16 +164,16 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
 
         <div className="grid grid-cols-2 gap-2">
           <Select 
-            value={newPerson.skill_level} 
-            onValueChange={(val) => setNewPerson({ ...newPerson, skill_level: val as any })}
+            value={newPerson.diy_level} 
+            onValueChange={(val) => setNewPerson({ ...newPerson, diy_level: val as any })}
           >
             <SelectTrigger className="text-xs h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="low">Low Skill</SelectItem>
-              <SelectItem value="medium">Medium Skill</SelectItem>
-              <SelectItem value="high">High Skill</SelectItem>
+              <SelectItem value="beginner">Beginner</SelectItem>
+              <SelectItem value="intermediate">Intermediate</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex gap-2 items-center">
@@ -228,7 +228,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                       {person.available_hours}h/day
                     </Badge>
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                      {person.skill_level} skill
+                      {person.diy_level}
                     </Badge>
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                       {person.consecutive_days} consec days

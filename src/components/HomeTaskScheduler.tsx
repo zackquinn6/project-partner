@@ -72,7 +72,7 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
       // Fetch tasks with subtasks
       let tasksQuery = supabase
         .from('home_tasks')
-        .select('id, title, skill_level, status')
+        .select('id, title, diy_level, status')
         .eq('user_id', userId)
         .in('status', ['open', 'in_progress']);
 

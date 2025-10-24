@@ -23,7 +23,7 @@ interface HomeTask {
   description: string | null;
   priority: 'high' | 'medium' | 'low';
   status: 'open' | 'in_progress' | 'closed';
-  skill_level: 'high' | 'medium' | 'low';
+  diy_level: 'beginner' | 'intermediate' | 'pro';
   notes: string | null;
   due_date: string | null;
   home_id: string | null;
@@ -49,14 +49,14 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   const [selectedTask, setSelectedTask] = useState<HomeTask | null>(null);
   const [showProjectLink, setShowProjectLink] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
-  const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; estimated_hours: number; skill_level: 'high' | 'medium' | 'low' }>>([]);
+  const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; estimated_hours: number; diy_level: 'beginner' | 'intermediate' | 'pro' }>>([]);
   
   const [formData, setFormData] = useState<{
     title: string;
     description: string;
     priority: 'high' | 'medium' | 'low';
     status: 'open' | 'in_progress' | 'closed';
-    skill_level: 'high' | 'medium' | 'low';
+    diy_level: 'beginner' | 'intermediate' | 'pro';
     notes: string;
     due_date: string;
     task_type: 'diy' | 'contractor';
@@ -65,7 +65,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     description: "",
     priority: "medium",
     status: "open",
-    skill_level: "medium",
+    diy_level: "intermediate",
     notes: "",
     due_date: "",
     task_type: "diy",
@@ -151,7 +151,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             user_id: user.id,
             title: st.title,
             estimated_hours: st.estimated_hours,
-            skill_level: st.skill_level,
+            diy_level: st.diy_level,
             order_index: idx
           }));
           
@@ -180,7 +180,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             user_id: user.id,
             title: st.title,
             estimated_hours: st.estimated_hours,
-            skill_level: st.skill_level,
+            diy_level: st.diy_level,
             order_index: idx
           }));
           
@@ -223,7 +223,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       description: "",
       priority: "medium",
       status: "open",
-      skill_level: "medium",
+      diy_level: "intermediate",
       notes: "",
       due_date: "",
       task_type: "diy",
@@ -240,7 +240,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       description: task.description || "",
       priority: task.priority as 'high' | 'medium' | 'low',
       status: task.status as 'open' | 'in_progress' | 'closed',
-      skill_level: task.skill_level as 'high' | 'medium' | 'low',
+      diy_level: task.diy_level as 'beginner' | 'intermediate' | 'pro',
       notes: task.notes || "",
       due_date: task.due_date || "",
       task_type: task.task_type === 'general' || task.task_type === 'pre_sale' ? 'diy' : task.task_type as 'diy' | 'contractor',
@@ -249,7 +249,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     // Fetch existing subtasks
     const { data: existingSubtasks } = await supabase
       .from('home_task_subtasks')
-      .select('id, title, estimated_hours, skill_level')
+      .select('id, title, estimated_hours, diy_level')
       .eq('task_id', task.id)
       .order('order_index');
     
@@ -258,7 +258,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         id: st.id,
         title: st.title,
         estimated_hours: st.estimated_hours,
-        skill_level: st.skill_level as 'high' | 'medium' | 'low'
+        diy_level: st.diy_level as 'beginner' | 'intermediate' | 'pro'
       })));
     }
     
@@ -280,7 +280,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       id: crypto.randomUUID(), 
       title: "", 
       estimated_hours: 1, 
-      skill_level: "medium"
+      diy_level: "intermediate"
     }]);
   };
 
@@ -384,21 +384,21 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                                 <SelectItem value="closed">Closed</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium mb-1 block">Skill Level</label>
-                            <Select value={formData.skill_level} onValueChange={(val) => setFormData({ ...formData, skill_level: val as any })}>
-                              <SelectTrigger className="text-xs h-8">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="low">Low</SelectItem>
-                                <SelectItem value="medium">Medium</SelectItem>
-                                <SelectItem value="high">High</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">DIY Level</label>
+            <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as any })}>
+              <SelectTrigger className="text-xs h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="beginner">Beginner</SelectItem>
+                <SelectItem value="intermediate">Intermediate</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="text-xs font-medium mb-1 block">Task Type</label>
@@ -434,15 +434,15 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                           </div>
                           {subtasks.length > 0 && (
                             <div className="border rounded-md overflow-hidden">
-                              <table className="w-full text-xs">
-                                <thead className="bg-muted">
-                                  <tr>
-                                    <th className="text-left p-2 font-medium">Task Name</th>
-                                    <th className="text-left p-2 font-medium w-24">Hours</th>
-                                    <th className="text-left p-2 font-medium w-28">Skill Level</th>
-                                    <th className="w-8"></th>
-                                  </tr>
-                                </thead>
+              <table className="w-full text-xs">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="text-left p-2 font-medium">Task Name</th>
+                    <th className="text-left p-2 font-medium w-24">Hours</th>
+                    <th className="text-left p-2 font-medium w-28">DIY Level</th>
+                    <th className="w-8"></th>
+                  </tr>
+                </thead>
                                 <tbody>
                                   {subtasks.map((subtask) => (
                                     <tr key={subtask.id} className="border-t">
@@ -464,13 +464,13 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                                           className="h-7 text-xs"
                                         />
                                       </td>
-                                      <td className="p-2">
-                                        <Select value={subtask.skill_level} onValueChange={(val) => updateSubtask(subtask.id, 'skill_level', val)}>
-                                          <SelectTrigger className="h-7 text-xs">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="low">Low</SelectItem>
+                      <td className="p-2">
+                        <Select value={subtask.diy_level} onValueChange={(val) => updateSubtask(subtask.id, 'diy_level', val)}>
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="beginner">Beginner</SelectItem>
                                             <SelectItem value="medium">Medium</SelectItem>
                                             <SelectItem value="high">High</SelectItem>
                                           </SelectContent>
