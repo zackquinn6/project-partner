@@ -35,8 +35,8 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
       const ifNecessaryOps: Operation[] = [];
 
       phase.operations.forEach(operation => {
-        // Read flow_type from operation metadata (set by DecisionTreeManager in template_operations)
-        const flowType = (operation as any).flowType || operation.steps[0]?.flowType || 'standard';
+        // Read flow_type from operation metadata (set by DecisionTreeManager and rebuild_phases_json_from_templates)
+        const flowType = (operation as any).flowType || 'prime';
         
         if (flowType === 'alternate') {
           // Group alternates by their alternate_group field

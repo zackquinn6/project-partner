@@ -35,7 +35,15 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPhases, setSelectedPhases] = useState<PhaseWithProject[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const isMobile = useIsMobile();
+
+  // Get available projects (excluding current project)
+  const availableProjectsList = useMemo(() => {
+    return availableProjects.filter(p => 
+      p.id !== currentProjectId && p.publishStatus !== 'draft'
+    );
+  }, [availableProjects, currentProjectId]);
 
   // Get all phases from all projects (excluding current project)
   const allAvailablePhases = useMemo(() => {
@@ -45,9 +53,12 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
       if (project.id === currentProjectId || project.publishStatus === 'draft') return;
       
       project.phases?.forEach(phase => {
-        // Skip kickoff and close phases as they're typically project-specific
-        if (phase.name.toLowerCase().includes('kickoff') || 
-            phase.name.toLowerCase().includes('close')) {
+        // Hide standard phases (kickoff, planning, ordering, close)
+        const phaseLower = phase.name.toLowerCase();
+        if (phaseLower.includes('kickoff') || 
+            phaseLower.includes('planning') ||
+            phaseLower.includes('ordering') ||
+            phaseLower.includes('close')) {
           return;
         }
         
@@ -67,6 +78,11 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
   const filteredPhases = useMemo(() => {
     let filtered = allAvailablePhases;
     
+    // Filter by selected project first
+    if (selectedProject) {
+      filtered = filtered.filter(phase => phase.projectId === selectedProject);
+    }
+    
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(phase => 
@@ -81,7 +97,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
     }
     
     return filtered;
-  }, [allAvailablePhases, searchTerm, selectedCategory]);
+  }, [allAvailablePhases, searchTerm, selectedCategory, selectedProject]);
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -141,30 +157,49 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
 
         <div className="flex-1 flex flex-col min-h-0 px-6 pb-6">
           {/* Search and Filter Controls */}
-          <div className="flex flex-row gap-3 mb-4 flex-shrink-0">
-            <div className="flex-1 relative">
+          <div className="flex flex-col gap-3 mb-4 flex-shrink-0">
+            {/* Project Selector */}
+            <div className="flex gap-3">
+              <Select value={selectedProject || 'all'} onValueChange={(val) => setSelectedProject(val === 'all' ? null : val)}>
+                <SelectTrigger className="flex-1">
+                  <Package className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Select Project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {availableProjectsList.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-48">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Search Input */}
+            <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search phases by name, description, or project..."
+                placeholder="Search phases by name or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-48">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Phase List */}
