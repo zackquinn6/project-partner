@@ -36,7 +36,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   mode = 'initial-plan'
 }) => {
   const { projects, updateProjectRun } = useProject();
-  const [activeTab, setActiveTab] = useState(mode === 'unplanned-work' ? 'custom-unplanned' : 'decisions');
+  const [activeTab, setActiveTab] = useState(mode === 'unplanned-work' ? 'custom-work' : 'decisions');
   const [customizationState, setCustomizationState] = useState<CustomizationState>({
     standardDecisions: {},
     ifNecessaryWork: {},

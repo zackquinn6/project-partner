@@ -449,35 +449,83 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
   const handleSave = async () => {
     try {
-      // Save flow configurations to database through template_operations
+      console.log('💾 Saving decision tree configurations for project:', currentProject.id);
+      
+      // Build a map of operations to their alternate groups
+      // Each group of alternates should share the same group identifier
+      const alternateGroupMap = new Map<string, string>(); // operationId -> groupId
+      
+      // First pass: identify alternate groups
       for (const [itemId, config] of Object.entries(flowConfigs)) {
-        if (!config.type) continue;
-        
+        if (config.type === 'alternate' && config.alternateIds && config.alternateIds.length > 0) {
+          // Check if any of the alternates already have a group ID
+          let groupId: string | null = null;
+          
+          // Check if this operation or any of its alternates already have a group
+          for (const altId of [itemId, ...config.alternateIds]) {
+            if (alternateGroupMap.has(altId)) {
+              groupId = alternateGroupMap.get(altId)!;
+              break;
+            }
+          }
+          
+          // If no existing group, create a new group ID
+          if (!groupId) {
+            groupId = `alt-group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          }
+          
+          // Assign all operations in this alternate group to the same group ID
+          alternateGroupMap.set(itemId, groupId);
+          config.alternateIds.forEach(altId => {
+            alternateGroupMap.set(altId, groupId!);
+          });
+        }
+      }
+      
+      // Second pass: update all operations in database
+      let errorCount = 0;
+      
+      for (const [itemId, config] of Object.entries(flowConfigs)) {
         // Check if this is an operation (exists in template_operations)
         const isOperation = currentProject.phases.some(phase => 
           phase.operations.some(op => op.id === itemId)
         );
         
         if (isOperation) {
+          // Get the alternate group ID if this operation is part of an alternate group
+          const alternateGroupId = alternateGroupMap.get(itemId) || null;
+          
           // Update template_operations with flow_type, user_prompt, alternate_group, dependent_on
           const { error } = await supabase
             .from('template_operations')
             .update({
-              flow_type: config.type,
+              flow_type: config.type || null,
               user_prompt: config.decisionPrompt || null,
-              alternate_group: config.type === 'alternate' ? (config.alternateIds?.join(',') || null) : null,
+              alternate_group: alternateGroupId,
               dependent_on: config.type === 'dependent' ? config.dependentOn : null,
               updated_at: new Date().toISOString()
             })
             .eq('id', itemId);
           
           if (error) {
-            console.error('Error updating operation:', error);
+            console.error('Error updating operation:', itemId, error);
+            errorCount++;
           }
         }
       }
       
-      onOpenChange(false);
+      if (errorCount > 0) {
+        toast.error(`Failed to save ${errorCount} operation(s)`);
+      } else {
+        console.log('✅ Successfully saved decision tree configurations');
+        toast.success('Decision tree saved successfully');
+        
+        // The trigger_rebuild_phases_json trigger will automatically rebuild the phases JSON
+        // Wait a moment for the trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        onOpenChange(false);
+      }
     } catch (error) {
       console.error('Error saving decision tree:', error);
       toast.error('Failed to save decision tree configuration');
