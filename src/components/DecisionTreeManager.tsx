@@ -647,19 +647,25 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'table' | 'flowchart')} className="flex-1 flex flex-col">
-          <TabsList className="mx-6">
-            <TabsTrigger value="table" className="flex items-center gap-2">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'table' | 'flowchart')} className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="mx-6 bg-muted p-1 rounded-lg">
+            <TabsTrigger 
+              value="table" 
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
               <List className="w-4 h-4" />
               Table View
             </TabsTrigger>
-            <TabsTrigger value="flowchart" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="flowchart" 
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
               <GitBranch className="w-4 h-4" />
               Flowchart
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="table" className="flex-1 overflow-auto px-6 pb-6 mt-4">
+          <TabsContent value="table" className="flex-1 flex flex-col overflow-hidden px-6 pb-6 mt-4">
             <div className="flex gap-2 mb-4">
               <Button size="sm" variant="outline" onClick={expandAll}>
                 <ChevronsUpDown className="w-4 h-4 mr-2" />
@@ -671,7 +677,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               </Button>
             </div>
             
-            <Table>
+            <div className="flex-1 overflow-auto border rounded-lg">
+              <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[300px]">Item</TableHead>
@@ -792,6 +799,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               ))}
             </TableBody>
           </Table>
+            </div>
           </TabsContent>
 
           <TabsContent value="flowchart" className="flex-1 flex flex-col px-6 pb-6 mt-4">
