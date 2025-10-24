@@ -715,15 +715,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                   <ClipboardCheck className="w-3 h-3" />
                   {clipboard.type} copied
                 </Badge>}
-                <Button variant="outline" onClick={() => setShowDecisionTreeManager(true)} className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowDecisionTreeManager(true)} className="flex items-center gap-2">
                   <GitBranch className="w-4 h-4" />
                   Decision Tree Manager
                 </Button>
-                <Button variant="outline" onClick={() => setShowIncorporationDialog(true)} className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowIncorporationDialog(true)} className="flex items-center gap-2">
                   <Link className="w-4 h-4" />
                   Incorporate Phase
                 </Button>
-                <Button variant="outline" onClick={() => setExpandedPhases(expandedPhases.size === displayPhases.length ? new Set() : new Set(displayPhases.map(p => p.id)))} className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setExpandedPhases(expandedPhases.size === displayPhases.length ? new Set() : new Set(displayPhases.map(p => p.id)))} className="flex items-center gap-2">
                  {expandedPhases.size === displayPhases.length ? <>
                      <ChevronRight className="w-4 h-4" />
                      Collapse All
@@ -732,11 +732,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                      Expand All
                    </>}
                </Button>
-              <Button onClick={addPhase} className="flex items-center gap-2">
+              <Button size="sm" onClick={addPhase} className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Add Phase
               </Button>
-              <Button onClick={onBack} className="flex items-center gap-2">
+              <Button size="sm" onClick={onBack} className="flex items-center gap-2">
                 <Save className="w-4 h-4" />
                 Done Editing
               </Button>

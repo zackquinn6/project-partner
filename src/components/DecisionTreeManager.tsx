@@ -1,19 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Plus, Edit, Trash2, Settings, GitBranch, Table as TableIcon } from 'lucide-react';
-import { useDecisionTree } from '@/hooks/useDecisionTree';
-import { DecisionTree, DecisionTreeOperation } from '@/interfaces/DecisionTree';
-import { Project } from '@/interfaces/Project';
-import { useToast } from '@/hooks/use-toast';
+import { ChevronRight, ChevronDown, Plus, X, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
+import { Project, Phase, Operation, WorkflowStep } from '@/interfaces/Project';
+import { useProject } from '@/contexts/ProjectContext';
+import { toast } from 'sonner';
 
 interface DecisionTreeManagerProps {
   open: boolean;
@@ -21,450 +17,454 @@ interface DecisionTreeManagerProps {
   currentProject: Project;
 }
 
+interface FlowTypeConfig {
+  type: 'if-necessary' | 'alternate' | null;
+  decisionPrompt?: string;
+  alternateIds?: string[]; // IDs of alternate operations/steps
+  predecessorIds?: string[]; // IDs of prerequisite operations
+}
+
 export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   open,
   onOpenChange,
   currentProject
 }) => {
-  const [selectedTreeId, setSelectedTreeId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('operations');
-  const [showCreateTree, setShowCreateTree] = useState(false);
-  const [showCreateOperation, setShowCreateOperation] = useState(false);
-  const [editingOperation, setEditingOperation] = useState<DecisionTreeOperation | null>(null);
+  const { updateProject } = useProject();
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
+  const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
   
-  const { toast } = useToast();
-  const {
-    decisionTrees,
-    operations,
-    loading,
-    fetchDecisionTrees,
-    fetchOperations,
-    createDecisionTree,
-    createOperation,
-    updateOperation,
-    deleteOperation,
-  } = useDecisionTree(currentProject.id);
+  // Store flow type configurations by ID (phase/operation/step)
+  const [flowConfigs, setFlowConfigs] = useState<Record<string, FlowTypeConfig>>({});
+  
+  // Store which item is currently showing alternate selector
+  const [showAlternateSelector, setShowAlternateSelector] = useState<string | null>(null);
 
-  // Create default decision tree if none exists
-  useEffect(() => {
-    if (open && decisionTrees.length === 0 && !loading) {
-      createDecisionTree({
-        project_id: currentProject.id,
-        name: `${currentProject.name} - Decision Tree`,
-        description: 'Operation-level workflow configuration',
-        version: 1,
-        is_active: true,
-      }).then((tree) => {
-        if (tree) {
-          setSelectedTreeId(tree.id);
-        }
+  const togglePhase = (phaseId: string) => {
+    setExpandedPhases(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(phaseId)) {
+        newSet.delete(phaseId);
+        // Also collapse all operations in this phase
+        currentProject.phases.find(p => p.id === phaseId)?.operations.forEach(op => {
+          const newOps = new Set(expandedOperations);
+          newOps.delete(op.id);
+          setExpandedOperations(newOps);
+        });
+      } else {
+        newSet.add(phaseId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleOperation = (operationId: string) => {
+    setExpandedOperations(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(operationId)) {
+        newSet.delete(operationId);
+      } else {
+        newSet.add(operationId);
+      }
+      return newSet;
+    });
+  };
+
+  const expandAll = () => {
+    setExpandedPhases(new Set(currentProject.phases.map(p => p.id)));
+    const allOps = currentProject.phases.flatMap(p => p.operations.map(o => o.id));
+    setExpandedOperations(new Set(allOps));
+  };
+
+  const collapseAll = () => {
+    setExpandedPhases(new Set());
+    setExpandedOperations(new Set());
+  };
+
+  const updateFlowConfig = (id: string, config: Partial<FlowTypeConfig>) => {
+    setFlowConfigs(prev => ({
+      ...prev,
+      [id]: { ...prev[id], ...config } as FlowTypeConfig
+    }));
+  };
+
+  const addAlternate = (itemId: string, alternateId: string) => {
+    const currentConfig = flowConfigs[itemId] || { type: 'alternate', alternateIds: [] };
+    const updatedAlternates = [...(currentConfig.alternateIds || []), alternateId];
+    
+    // Update the main item
+    updateFlowConfig(itemId, { 
+      type: 'alternate',
+      alternateIds: updatedAlternates 
+    });
+    
+    // Update the alternate item to reference back (bidirectional)
+    const alternateConfig = flowConfigs[alternateId] || { type: 'alternate', alternateIds: [] };
+    if (!alternateConfig.alternateIds?.includes(itemId)) {
+      updateFlowConfig(alternateId, {
+        type: 'alternate',
+        alternateIds: [...(alternateConfig.alternateIds || []), itemId]
       });
-    } else if (decisionTrees.length > 0 && !selectedTreeId) {
-      const activeTree = decisionTrees.find(t => t.is_active) || decisionTrees[0];
-      setSelectedTreeId(activeTree.id);
     }
-  }, [open, decisionTrees, loading]);
-
-  // Fetch operations when tree is selected
-  useEffect(() => {
-    if (selectedTreeId) {
-      fetchOperations(selectedTreeId);
-    }
-  }, [selectedTreeId]);
-
-  const getOperationTypeBadge = (type: string) => {
-    const variants = {
-      necessary: 'default',
-      alternative: 'secondary',
-      standard_flow: 'outline',
-      if_necessary: 'destructive'
-    } as const;
     
-    return <Badge variant={variants[type as keyof typeof variants] || 'outline'}>{type}</Badge>;
+    toast.success('Alternate relationship added');
   };
 
-  const getPhaseOperations = () => {
-    const phases = currentProject.phases || [];
-    const phaseMap = new Map<string, DecisionTreeOperation[]>();
+  const removeAlternate = (itemId: string, alternateId: string) => {
+    const currentConfig = flowConfigs[itemId];
+    if (currentConfig?.alternateIds) {
+      updateFlowConfig(itemId, {
+        alternateIds: currentConfig.alternateIds.filter(id => id !== alternateId)
+      });
+    }
     
-    // Group operations by phase
-    operations.forEach(op => {
-      if (!phaseMap.has(op.phase_name)) {
-        phaseMap.set(op.phase_name, []);
-      }
-      phaseMap.get(op.phase_name)!.push(op);
-    });
+    // Remove bidirectional reference
+    const alternateConfig = flowConfigs[alternateId];
+    if (alternateConfig?.alternateIds) {
+      updateFlowConfig(alternateId, {
+        alternateIds: alternateConfig.alternateIds.filter(id => id !== itemId)
+      });
+    }
     
-    // Ensure all project phases are represented
-    phases.forEach(phase => {
-      if (!phaseMap.has(phase.name)) {
-        phaseMap.set(phase.name, []);
-      }
-    });
-    
-    return Array.from(phaseMap.entries()).sort(([a], [b]) => {
-      const aIndex = phases.findIndex(p => p.name === a);
-      const bIndex = phases.findIndex(p => p.name === b);
-      return aIndex - bIndex;
-    });
+    toast.success('Alternate relationship removed');
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-[90vw] h-[90vh] p-0">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="flex items-center gap-2">
-            <Settings className="w-5 h-5" />
-            Decision Tree Manager - {currentProject.name}
-          </DialogTitle>
-        </DialogHeader>
+  const getAllOperations = () => {
+    return currentProject.phases.flatMap(phase => 
+      phase.operations.map(op => ({
+        ...op,
+        phaseName: phase.name,
+        fullId: `${phase.id}-${op.id}`
+      }))
+    );
+  };
 
-        <div className="flex-1 overflow-hidden p-6">
-          <div className="h-full flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <TableIcon className="w-5 h-5" />
-                  <h3 className="text-lg font-semibold">Operations Configuration</h3>
-                </div>
-                <Select value={selectedTreeId || ''} onValueChange={setSelectedTreeId}>
-                  <SelectTrigger className="w-64">
-                    <SelectValue placeholder="Select decision tree" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {decisionTrees.map(tree => (
-                      <SelectItem key={tree.id} value={tree.id}>
-                        {tree.name} (v{tree.version})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <Button 
-                onClick={() => setShowCreateOperation(true)}
-                disabled={!selectedTreeId}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Operation
-              </Button>
-            </div>
+  const getOperationLabel = (opId: string) => {
+    const allOps = getAllOperations();
+    const op = allOps.find(o => o.id === opId || o.fullId === opId);
+    return op ? `${op.phaseName} > ${op.name}` : opId;
+  };
 
-            <div className="flex-1 overflow-auto">
-              {getPhaseOperations().map(([phaseName, phaseOps]) => (
-                <Card key={phaseName} className="mb-4">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      <span>{phaseName}</span>
-                      <Badge variant="outline">{phaseOps.length} operations</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {phaseOps.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-muted-foreground italic mb-4">No operations configured for this phase</p>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setShowCreateOperation(true)}
-                          disabled={!selectedTreeId}
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add First Operation
-                        </Button>
-                      </div>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[200px]">Operation Name</TableHead>
-                            <TableHead className="w-[120px]">Type</TableHead>
-                            <TableHead className="w-[100px]">Order</TableHead>
-                            <TableHead className="w-[120px]">Dependencies</TableHead>
-                            <TableHead className="w-[120px]">Parallel Group</TableHead>
-                            <TableHead className="w-[80px]">Optional</TableHead>
-                            <TableHead className="w-[120px]">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {phaseOps.map(operation => (
-                            <TableRow key={operation.id}>
-                              <TableCell className="font-medium">
-                                <div>
-                                  <div>{operation.operation_name}</div>
-                                  {operation.notes && (
-                                    <div className="text-xs text-muted-foreground mt-1">
-                                      {operation.notes}
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {getOperationTypeBadge(operation.operation_type)}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{operation.display_order}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                {operation.dependencies?.length ? (
-                                  <Badge variant="outline">{operation.dependencies.length} deps</Badge>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">None</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {operation.parallel_group ? (
-                                  <Badge variant="secondary">{operation.parallel_group}</Badge>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">None</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={operation.is_optional ? 'secondary' : 'outline'}>
-                                  {operation.is_optional ? 'Yes' : 'No'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setEditingOperation(operation)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => deleteOperation(operation.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+  const renderFlowTypeControls = (
+    itemId: string, 
+    itemName: string,
+    availableAlternates: Array<{ id: string; label: string }>
+  ) => {
+    const config = flowConfigs[itemId] || { type: null };
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Select 
+            value={config.type || 'none'} 
+            onValueChange={(value) => {
+              if (value === 'none') {
+                updateFlowConfig(itemId, { type: null, decisionPrompt: undefined, alternateIds: [] });
+              } else {
+                updateFlowConfig(itemId, { type: value as 'if-necessary' | 'alternate' });
+              }
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select flow type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">None</SelectItem>
+              <SelectItem value="if-necessary">If-Necessary</SelectItem>
+              <SelectItem value="alternate">Alternate</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {config.type === 'alternate' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowAlternateSelector(itemId)}
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Alternate
+            </Button>
+          )}
         </div>
 
-        {/* Create/Edit Operation Dialog */}
-        <OperationDialog
-          open={showCreateOperation || !!editingOperation}
-          onOpenChange={(open) => {
-            if (!open) {
-              setShowCreateOperation(false);
-              setEditingOperation(null);
-            }
-          }}
-          operation={editingOperation}
-          decisionTreeId={selectedTreeId!}
-          project={currentProject}
-          onSave={async (operationData) => {
-            if (editingOperation) {
-              await updateOperation(editingOperation.id, operationData);
-            } else {
-              const fullOperationData = {
-                ...operationData,
-                decision_tree_id: selectedTreeId!,
-                condition_rules: {},
-                dependencies: [],
-              };
-              await createOperation(fullOperationData);
-            }
-            setShowCreateOperation(false);
-            setEditingOperation(null);
-          }}
-        />
-      </DialogContent>
-    </Dialog>
-  );
-};
+        {config.type && (
+          <Input
+            placeholder="Decision prompt"
+            value={config.decisionPrompt || ''}
+            onChange={(e) => updateFlowConfig(itemId, { decisionPrompt: e.target.value })}
+            className="text-sm"
+          />
+        )}
 
-interface OperationDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  operation?: DecisionTreeOperation | null;
-  decisionTreeId: string;
-  project: Project;
-  onSave: (operation: Required<Pick<DecisionTreeOperation, 'phase_name' | 'operation_name' | 'operation_type' | 'display_order' | 'is_optional'>> & Partial<DecisionTreeOperation>) => Promise<void>;
-}
+        {config.type === 'alternate' && config.alternateIds && config.alternateIds.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">Alternates:</div>
+            {config.alternateIds.map(altId => (
+              <div key={altId} className="flex items-center gap-2 text-xs">
+                <Badge variant="secondary" className="text-xs">
+                  {getOperationLabel(altId)}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeAlternate(itemId, altId)}
+                  className="h-5 w-5 p-0"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
 
-const OperationDialog: React.FC<OperationDialogProps> = ({
-  open,
-  onOpenChange,
-  operation,
-  project,
-  onSave
-}) => {
-  const [formData, setFormData] = useState({
-    phase_name: '',
-    operation_name: '',
-    operation_type: 'standard_flow',
-    display_order: 0,
-    is_optional: false,
-    parallel_group: '',
-    notes: '',
-  });
-
-  useEffect(() => {
-    if (operation) {
-      setFormData({
-        phase_name: operation.phase_name,
-        operation_name: operation.operation_name,
-        operation_type: operation.operation_type,
-        display_order: operation.display_order,
-        is_optional: operation.is_optional,
-        parallel_group: operation.parallel_group || '',
-        notes: operation.notes || '',
-      });
-    } else {
-      setFormData({
-        phase_name: '',
-        operation_name: '',
-        operation_type: 'standard_flow',
-        display_order: 0,
-        is_optional: false,
-        parallel_group: '',
-        notes: '',
-      });
-    }
-  }, [operation, open]);
-
-  const { toast } = useToast();
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.phase_name || !formData.operation_name) {
-      toast({
-        title: "Error",
-        description: "Phase and operation name are required",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    await onSave({
-      phase_name: formData.phase_name,
-      operation_name: formData.operation_name,
-      operation_type: formData.operation_type,
-      display_order: formData.display_order,
-      is_optional: formData.is_optional,
-      parallel_group: formData.parallel_group || undefined,
-      notes: formData.notes || undefined,
-    });
+        {/* Alternate selector dialog */}
+        {showAlternateSelector === itemId && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-background p-4 rounded-lg max-w-md w-full max-h-[400px] overflow-auto">
+              <h3 className="font-semibold mb-2">Select Alternates</h3>
+              <div className="space-y-2">
+                {availableAlternates
+                  .filter(alt => alt.id !== itemId && !config.alternateIds?.includes(alt.id))
+                  .map(alt => (
+                    <Button
+                      key={alt.id}
+                      variant="outline"
+                      className="w-full justify-start text-sm"
+                      onClick={() => {
+                        addAlternate(itemId, alt.id);
+                        setShowAlternateSelector(null);
+                      }}
+                    >
+                      {alt.label}
+                    </Button>
+                  ))}
+              </div>
+              <Button
+                variant="ghost"
+                className="w-full mt-4"
+                onClick={() => setShowAlternateSelector(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
+
+  const renderPredecessorControls = (itemId: string, availableOps: Array<{ id: string; label: string }>) => {
+    const config = flowConfigs[itemId] || { predecessorIds: [] };
+
+    return (
+      <div className="space-y-2">
+        <Select
+          onValueChange={(value) => {
+            const currentPreds = config.predecessorIds || [];
+            if (!currentPreds.includes(value)) {
+              updateFlowConfig(itemId, {
+                predecessorIds: [...currentPreds, value]
+              });
+            }
+          }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Add predecessor" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableOps
+              .filter(op => op.id !== itemId && !config.predecessorIds?.includes(op.id))
+              .map(op => (
+                <SelectItem key={op.id} value={op.id}>
+                  {op.label}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+
+        {config.predecessorIds && config.predecessorIds.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">Prerequisites:</div>
+            {config.predecessorIds.map(predId => (
+              <div key={predId} className="flex items-center gap-2 text-xs">
+                <Badge variant="outline" className="text-xs">
+                  {getOperationLabel(predId)}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    updateFlowConfig(itemId, {
+                      predecessorIds: config.predecessorIds?.filter(id => id !== predId)
+                    });
+                  }}
+                  className="h-5 w-5 p-0"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const handleSave = () => {
+    // TODO: Save flow configs to project data structure
+    // This would require updating the Phase/Operation/Step interfaces to include flow type metadata
+    toast.success('Decision tree configuration saved');
+    onOpenChange(false);
+  };
+
+  if (!currentProject) return null;
+
+  const allOperations = getAllOperations();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {operation ? 'Edit Operation' : 'Create Operation'}
-          </DialogTitle>
+      <DialogContent className="max-w-[95vw] h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-4">
+          <div className="flex items-center justify-between">
+            <DialogTitle>Decision Tree Manager - {currentProject.name}</DialogTitle>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={expandAll}>
+                <ChevronsUpDown className="w-4 h-4 mr-2" />
+                Expand All
+              </Button>
+              <Button size="sm" variant="outline" onClick={collapseAll}>
+                <ChevronsDownUp className="w-4 h-4 mr-2" />
+                Collapse All
+              </Button>
+              <Button size="sm" onClick={handleSave}>
+                Save
+              </Button>
+            </div>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="phase_name">Phase</Label>
-              <Select value={formData.phase_name} onValueChange={(value) => setFormData(prev => ({ ...prev, phase_name: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select phase" />
-                </SelectTrigger>
-                <SelectContent>
-                  {project.phases?.map(phase => (
-                    <SelectItem key={phase.id} value={phase.name}>
-                      {phase.name}
-                    </SelectItem>
+        <div className="flex-1 overflow-auto px-6 pb-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[300px]">Item</TableHead>
+                <TableHead className="w-[200px]">Flow Type</TableHead>
+                <TableHead className="w-[200px]">Prerequisites</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentProject.phases.map(phase => (
+                <React.Fragment key={phase.id}>
+                  {/* Phase Row */}
+                  <TableRow className="bg-muted/50">
+                    <TableCell className="font-semibold">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => togglePhase(phase.id)}
+                          className="h-6 w-6 p-0"
+                        >
+                          {expandedPhases.has(phase.id) ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <span>{phase.name}</span>
+                        <Badge variant="outline" className="text-xs">Phase</Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {renderFlowTypeControls(
+                        phase.id, 
+                        phase.name,
+                        currentProject.phases.map(p => ({ id: p.id, label: p.name }))
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {renderPredecessorControls(
+                        phase.id,
+                        currentProject.phases.map(p => ({ id: p.id, label: p.name }))
+                      )}
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Operations under this phase */}
+                  {expandedPhases.has(phase.id) && phase.operations.map(operation => (
+                    <React.Fragment key={operation.id}>
+                      <TableRow className="bg-muted/20">
+                        <TableCell>
+                          <div className="flex items-center gap-2 pl-8">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleOperation(operation.id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              {expandedOperations.has(operation.id) ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                            </Button>
+                            <span className="font-medium">{operation.name}</span>
+                            <Badge variant="secondary" className="text-xs">Operation</Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {renderFlowTypeControls(
+                            operation.id,
+                            operation.name,
+                            allOperations.map(op => ({ 
+                              id: op.id, 
+                              label: `${op.phaseName} > ${op.name}` 
+                            }))
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {renderPredecessorControls(
+                            operation.id,
+                            allOperations
+                              .filter(op => op.phaseName === phase.name)
+                              .map(op => ({ id: op.id, label: op.name }))
+                          )}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Steps under this operation */}
+                      {expandedOperations.has(operation.id) && operation.steps.map(step => (
+                        <TableRow key={step.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2 pl-16">
+                              <span className="text-sm">{step.step}</span>
+                              <Badge variant="outline" className="text-xs">Step</Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {renderFlowTypeControls(
+                              step.id,
+                              step.step,
+                              operation.steps.map(s => ({ 
+                                id: s.id, 
+                                label: s.step 
+                              }))
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {renderPredecessorControls(
+                              step.id,
+                              operation.steps.map(s => ({ id: s.id, label: s.step }))
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </React.Fragment>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="operation_type">Operation Type</Label>
-              <Select value={formData.operation_type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, operation_type: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="necessary">Necessary</SelectItem>
-                  <SelectItem value="alternative">Alternative</SelectItem>
-                  <SelectItem value="standard_flow">Standard Flow</SelectItem>
-                  <SelectItem value="if_necessary">If Necessary</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="operation_name">Operation Name</Label>
-            <Input
-              id="operation_name"
-              value={formData.operation_name}
-              onChange={(e) => setFormData(prev => ({ ...prev, operation_name: e.target.value }))}
-              placeholder="Enter operation name"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="display_order">Display Order</Label>
-              <Input
-                id="display_order"
-                type="number"
-                value={formData.display_order}
-                onChange={(e) => setFormData(prev => ({ ...prev, display_order: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="parallel_group">Parallel Group (optional)</Label>
-              <Input
-                id="parallel_group"
-                value={formData.parallel_group}
-                onChange={(e) => setFormData(prev => ({ ...prev, parallel_group: e.target.value }))}
-                placeholder="e.g., group_a"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="is_optional"
-              checked={formData.is_optional}
-              onChange={(e) => setFormData(prev => ({ ...prev, is_optional: e.target.checked }))}
-            />
-            <Label htmlFor="is_optional">This operation is optional</Label>
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Additional notes or context for this operation"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {operation ? 'Update Operation' : 'Create Operation'}
-            </Button>
-          </div>
-        </form>
+                </React.Fragment>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </DialogContent>
     </Dialog>
   );
