@@ -121,8 +121,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   };
 
   const handleSubmit = async () => {
-    console.log("handleSubmit called", { user: !!user, title: formData.title, selectedHomeId });
-    
     if (!user || !formData.title.trim()) {
       toast.error("Title is required");
       return;
@@ -139,8 +137,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       home_id: selectedHomeId,
       due_date: formData.due_date || null,
     };
-
-    console.log("Attempting to save task:", taskData);
 
     try {
       if (editingTask) {
@@ -174,19 +170,15 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         
         toast.success("Task updated");
       } else {
-        console.log("Creating new task...", { subtasksCount: subtasks.length });
         const { data: newTask, error } = await supabase
           .from("home_tasks")
           .insert([taskData])
           .select()
           .single();
         
-        console.log("Insert result:", { newTask, error });
-        
         if (error) throw error;
 
         // Insert subtasks if any
-        console.log("Subtasks to process:", subtasks);
         if (subtasks.length > 0 && newTask) {
           const subtasksToInsert = subtasks.filter(st => st.title.trim()).map((st, idx) => ({
             task_id: newTask.id,
@@ -197,16 +189,11 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             order_index: idx
           }));
           
-          console.log("Subtasks to insert:", subtasksToInsert);
-          
           if (subtasksToInsert.length > 0) {
             const { error: subtaskError } = await supabase
               .from('home_task_subtasks')
               .insert(subtasksToInsert);
-            if (subtaskError) {
-              console.error("Subtask insert error:", subtaskError);
-              throw subtaskError;
-            }
+            if (subtaskError) throw subtaskError;
           }
         }
         
@@ -236,7 +223,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   };
 
   const resetForm = () => {
-    console.log("Resetting form, clearing subtasks");
     setFormData({
       title: "",
       description: "",
@@ -530,7 +516,10 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                     onDelete={handleDelete}
                     onAddSubtasks={handleAddSubtasks}
                     onLinkProject={handleLinkProject}
-                    onAddTask={() => setShowAddTask(true)}
+                    onAddTask={() => {
+                      resetForm();
+                      setShowAddTask(true);
+                    }}
                   />
                 </TabsContent>
 
