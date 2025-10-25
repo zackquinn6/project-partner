@@ -2,6 +2,7 @@ interface Task {
   id: string;
   title: string;
   diy_level: 'beginner' | 'intermediate' | 'pro';
+  priority?: 'high' | 'medium' | 'low';
   subtasks: Subtask[];
 }
 
@@ -80,11 +81,13 @@ export function scheduleHomeTasksOptimized(
     subtaskTitle: string;
     hours: number;
     diyLevel: 'beginner' | 'intermediate' | 'pro';
+    priority: 'high' | 'medium' | 'low';
   }
 
   const workUnits: WorkUnit[] = [];
   
   for (const task of tasks) {
+    const taskPriority = task.priority || 'medium';
     if (task.subtasks.length > 0) {
       for (const subtask of task.subtasks) {
         workUnits.push({
@@ -93,7 +96,8 @@ export function scheduleHomeTasksOptimized(
           subtaskId: subtask.id,
           subtaskTitle: subtask.title,
           hours: subtask.estimated_hours,
-          diyLevel: subtask.diy_level
+          diyLevel: subtask.diy_level,
+          priority: taskPriority
         });
       }
     } else {
@@ -104,13 +108,20 @@ export function scheduleHomeTasksOptimized(
         subtaskId: null,
         subtaskTitle: task.title,
         hours: 1,
-        diyLevel: task.diy_level
+        diyLevel: task.diy_level,
+        priority: taskPriority
       });
     }
   }
 
-  // Sort work units by DIY level (pro first) for optimal assignment
+  // Sort work units by priority first, then by DIY level for optimal assignment
   workUnits.sort((a, b) => {
+    // Priority: high > medium > low
+    const priorityOrder = { high: 3, medium: 2, low: 1 };
+    const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+    
+    // Then by DIY level (pro first)
     const diyOrder = { pro: 3, intermediate: 2, beginner: 1 };
     return diyOrder[b.diyLevel] - diyOrder[a.diyLevel];
   });

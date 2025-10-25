@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, AlertTriangle, CheckCircle2, Loader2, CalendarIcon, Save, Mail } from "lucide-react";
+import { Calendar, AlertTriangle, CheckCircle2, Loader2, CalendarIcon, Save, Mail, Info } from "lucide-react";
 import { scheduleHomeTasksOptimized } from "@/utils/homeTaskScheduler";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10,6 +10,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface HomeTaskSchedulerProps {
   userId: string;
@@ -73,7 +74,7 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
       // Fetch tasks with subtasks
       let tasksQuery = supabase
         .from('home_tasks')
-        .select('id, title, diy_level, status')
+        .select('id, title, diy_level, status, priority')
         .eq('user_id', userId)
         .in('status', ['open', 'in_progress']);
 
@@ -346,8 +347,29 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
             </Button>
           </div>
         </div>
-        <div className="text-[10px] md:text-xs text-muted-foreground">
-          Generate an optimized schedule matching people's skills and availability
+        <div className="flex items-center gap-1.5">
+          <div className="text-[10px] md:text-xs text-muted-foreground">
+            Generate an optimized schedule matching people's skills and availability
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3 w-3 text-muted-foreground cursor-help flex-shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs text-xs p-3">
+                <div className="space-y-2">
+                  <p className="font-semibold">How the scheduler works:</p>
+                  <ul className="space-y-1 text-[10px]">
+                    <li>• <strong>Priority:</strong> High priority tasks are scheduled first</li>
+                    <li>• <strong>Skills:</strong> Matches people to tasks based on DIY level</li>
+                    <li>• <strong>Availability:</strong> Respects available days and hours</li>
+                    <li>• <strong>Consecutive Days:</strong> Honors max consecutive work days</li>
+                    <li>• <strong>Cost:</strong> Prefers lower hourly rates when skills match</li>
+                  </ul>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
