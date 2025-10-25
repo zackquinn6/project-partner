@@ -11,6 +11,20 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
+// Helper to parse YYYY-MM-DD strings without timezone issues
+const parseLocalDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+// Helper to format Date to YYYY-MM-DD in local time
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 interface Person {
   id: string;
   name: string;
@@ -335,19 +349,20 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                               <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1">
                                 <CalendarIcon className="h-3 w-3 mr-1" />
                                 {editingPerson.availability_start_date 
-                                  ? format(new Date(editingPerson.availability_start_date), 'MMM d') 
+                                  ? format(parseLocalDate(editingPerson.availability_start_date), 'MMM d') 
                                   : 'Start'}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
-                                selected={editingPerson.availability_start_date ? new Date(editingPerson.availability_start_date) : undefined}
+                                selected={editingPerson.availability_start_date ? parseLocalDate(editingPerson.availability_start_date) : undefined}
                                 onSelect={(date) => setEditingPerson({ 
                                   ...editingPerson, 
-                                  availability_start_date: date?.toISOString().split('T')[0] 
+                                  availability_start_date: date ? formatLocalDate(date) : undefined
                                 })}
                                 initialFocus
+                                className={cn("p-3 pointer-events-auto")}
                               />
                             </PopoverContent>
                           </Popover>
@@ -356,19 +371,20 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                               <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1">
                                 <CalendarIcon className="h-3 w-3 mr-1" />
                                 {editingPerson.availability_end_date 
-                                  ? format(new Date(editingPerson.availability_end_date), 'MMM d') 
+                                  ? format(parseLocalDate(editingPerson.availability_end_date), 'MMM d') 
                                   : 'End'}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
-                                selected={editingPerson.availability_end_date ? new Date(editingPerson.availability_end_date) : undefined}
+                                selected={editingPerson.availability_end_date ? parseLocalDate(editingPerson.availability_end_date) : undefined}
                                 onSelect={(date) => setEditingPerson({ 
                                   ...editingPerson, 
-                                  availability_end_date: date?.toISOString().split('T')[0] 
+                                  availability_end_date: date ? formatLocalDate(date) : undefined
                                 })}
                                 initialFocus
+                                className={cn("p-3 pointer-events-auto")}
                               />
                             </PopoverContent>
                           </Popover>
@@ -390,12 +406,13 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="multiple"
-                              selected={editingPerson.not_available_dates?.map(d => new Date(d)) || []}
+                              selected={editingPerson.not_available_dates?.map(d => parseLocalDate(d)) || []}
                               onSelect={(dates) => setEditingPerson({ 
                                 ...editingPerson, 
-                                not_available_dates: dates?.map(d => d.toISOString().split('T')[0]) || [] 
+                                not_available_dates: dates?.map(d => formatLocalDate(d)) || [] 
                               })}
                               initialFocus
+                              className={cn("p-3 pointer-events-auto")}
                             />
                           </PopoverContent>
                         </Popover>
@@ -420,12 +437,13 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="multiple"
-                              selected={editingPerson.specific_dates?.map(d => new Date(d)) || []}
+                              selected={editingPerson.specific_dates?.map(d => parseLocalDate(d)) || []}
                               onSelect={(dates) => setEditingPerson({ 
                                 ...editingPerson, 
-                                specific_dates: dates?.map(d => d.toISOString().split('T')[0]) || [] 
+                                specific_dates: dates?.map(d => formatLocalDate(d)) || [] 
                               })}
                               initialFocus
+                              className={cn("p-3 pointer-events-auto")}
                             />
                           </PopoverContent>
                         </Popover>
@@ -620,19 +638,20 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                       <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1">
                         <CalendarIcon className="h-3 w-3 mr-1" />
                         {newPerson.availability_start_date 
-                          ? format(new Date(newPerson.availability_start_date), 'MMM d') 
+                          ? format(parseLocalDate(newPerson.availability_start_date), 'MMM d') 
                           : 'Start'}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={newPerson.availability_start_date ? new Date(newPerson.availability_start_date) : undefined}
+                        selected={newPerson.availability_start_date ? parseLocalDate(newPerson.availability_start_date) : undefined}
                         onSelect={(date) => setNewPerson({ 
                           ...newPerson, 
-                          availability_start_date: date?.toISOString().split('T')[0] 
+                          availability_start_date: date ? formatLocalDate(date) : undefined
                         })}
                         initialFocus
+                        className={cn("p-3 pointer-events-auto")}
                       />
                     </PopoverContent>
                   </Popover>
@@ -641,19 +660,20 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                       <Button variant="outline" size="sm" className="h-6 text-[10px] flex-1">
                         <CalendarIcon className="h-3 w-3 mr-1" />
                         {newPerson.availability_end_date 
-                          ? format(new Date(newPerson.availability_end_date), 'MMM d') 
+                          ? format(parseLocalDate(newPerson.availability_end_date), 'MMM d') 
                           : 'End'}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={newPerson.availability_end_date ? new Date(newPerson.availability_end_date) : undefined}
+                        selected={newPerson.availability_end_date ? parseLocalDate(newPerson.availability_end_date) : undefined}
                         onSelect={(date) => setNewPerson({ 
                           ...newPerson, 
-                          availability_end_date: date?.toISOString().split('T')[0] 
+                          availability_end_date: date ? formatLocalDate(date) : undefined
                         })}
                         initialFocus
+                        className={cn("p-3 pointer-events-auto")}
                       />
                     </PopoverContent>
                   </Popover>
@@ -674,12 +694,13 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="multiple"
-                      selected={newPerson.not_available_dates.map(d => new Date(d))}
+                      selected={newPerson.not_available_dates.map(d => parseLocalDate(d))}
                       onSelect={(dates) => setNewPerson({ 
                         ...newPerson, 
-                        not_available_dates: dates?.map(d => d.toISOString().split('T')[0]) || [] 
+                        not_available_dates: dates?.map(d => formatLocalDate(d)) || [] 
                       })}
                       initialFocus
+                      className={cn("p-3 pointer-events-auto")}
                     />
                   </PopoverContent>
                 </Popover>
@@ -700,12 +721,13 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="multiple"
-                    selected={newPerson.specific_dates.map(d => new Date(d))}
+                    selected={newPerson.specific_dates.map(d => parseLocalDate(d))}
                     onSelect={(dates) => setNewPerson({ 
                       ...newPerson, 
-                      specific_dates: dates?.map(d => d.toISOString().split('T')[0]) || [] 
+                      specific_dates: dates?.map(d => formatLocalDate(d)) || [] 
                     })}
                     initialFocus
+                    className={cn("p-3 pointer-events-auto")}
                   />
                 </PopoverContent>
               </Popover>
