@@ -259,7 +259,11 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                         max="24"
                         value={editingPerson.available_hours}
                         onChange={(e) => {
-                          const val = e.target.value === '' ? 8 : Math.max(1, Math.min(24, parseInt(e.target.value) || 8));
+                          const val = e.target.value === '' ? '' : e.target.value;
+                          setEditingPerson({ ...editingPerson, available_hours: val === '' ? 8 : parseInt(val) });
+                        }}
+                        onBlur={(e) => {
+                          const val = Math.max(1, Math.min(24, parseInt(e.target.value) || 8));
                           setEditingPerson({ ...editingPerson, available_hours: val });
                         }}
                         className="text-[10px] md:text-xs h-7 w-12"
@@ -274,7 +278,11 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                         step="0.01"
                         value={editingPerson.hourly_rate}
                         onChange={(e) => {
-                          const val = e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0);
+                          const val = e.target.value === '' ? '' : e.target.value;
+                          setEditingPerson({ ...editingPerson, hourly_rate: val === '' ? 0 : parseFloat(val) });
+                        }}
+                        onBlur={(e) => {
+                          const val = Math.max(0, parseFloat(e.target.value) || 0);
                           setEditingPerson({ ...editingPerson, hourly_rate: val });
                         }}
                         className="text-[10px] md:text-xs h-7 w-16"
@@ -288,7 +296,11 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                         max="7"
                         value={editingPerson.consecutive_days}
                         onChange={(e) => {
-                          const val = e.target.value === '' ? 5 : Math.max(1, Math.min(7, parseInt(e.target.value) || 5));
+                          const val = e.target.value === '' ? '' : e.target.value;
+                          setEditingPerson({ ...editingPerson, consecutive_days: val === '' ? 5 : parseInt(val) });
+                        }}
+                        onBlur={(e) => {
+                          const val = Math.max(1, Math.min(7, parseInt(e.target.value) || 5));
                           setEditingPerson({ ...editingPerson, consecutive_days: val });
                         }}
                         className="text-[10px] md:text-xs h-7 w-12"
@@ -552,7 +564,11 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                 max="24"
                 value={newPerson.available_hours}
                 onChange={(e) => {
-                  const val = e.target.value === '' ? 8 : Math.max(1, Math.min(24, parseInt(e.target.value) || 8));
+                  const val = e.target.value === '' ? '' : e.target.value;
+                  setNewPerson({ ...newPerson, available_hours: val === '' ? 8 : parseInt(val) });
+                }}
+                onBlur={(e) => {
+                  const val = Math.max(1, Math.min(24, parseInt(e.target.value) || 8));
                   setNewPerson({ ...newPerson, available_hours: val });
                 }}
                 className="text-[10px] md:text-xs h-7 w-12"
@@ -567,7 +583,11 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                 step="0.01"
                 value={newPerson.hourly_rate}
                 onChange={(e) => {
-                  const val = e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0);
+                  const val = e.target.value === '' ? '' : e.target.value;
+                  setNewPerson({ ...newPerson, hourly_rate: val === '' ? 0 : parseFloat(val) });
+                }}
+                onBlur={(e) => {
+                  const val = Math.max(0, parseFloat(e.target.value) || 0);
                   setNewPerson({ ...newPerson, hourly_rate: val });
                 }}
                 className="text-[10px] md:text-xs h-7 w-16"
@@ -581,7 +601,11 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                 max="7"
                 value={newPerson.consecutive_days}
                 onChange={(e) => {
-                  const val = e.target.value === '' ? 5 : Math.max(1, Math.min(7, parseInt(e.target.value) || 5));
+                  const val = e.target.value === '' ? '' : e.target.value;
+                  setNewPerson({ ...newPerson, consecutive_days: val === '' ? 5 : parseInt(val) });
+                }}
+                onBlur={(e) => {
+                  const val = Math.max(1, Math.min(7, parseInt(e.target.value) || 5));
                   setNewPerson({ ...newPerson, consecutive_days: val });
                 }}
                 className="text-[10px] md:text-xs h-7 w-12"
