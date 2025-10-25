@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 // Helper to parse YYYY-MM-DD strings without timezone issues
 const parseLocalDate = (dateString: string): Date => {
@@ -31,7 +32,7 @@ interface Person {
   available_hours: number;
   available_days: string[];
   consecutive_days: number;
-  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'professional';
+  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
   hourly_rate: number;
   availability_mode: 'general' | 'specific';
   availability_start_date?: string;
@@ -58,7 +59,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
     available_hours: 8,
     available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
     consecutive_days: 5,
-    diy_level: 'intermediate' as 'beginner' | 'intermediate' | 'advanced' | 'professional',
+    diy_level: 'intermediate' as 'beginner' | 'intermediate' | 'advanced' | 'pro',
     hourly_rate: 0,
     availability_mode: 'general' as 'general' | 'specific',
     not_available_dates: [] as string[],
@@ -166,6 +167,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
   const handleSaveEdit = async () => {
     if (!editingPerson || !editingPersonId) {
       console.error('Save failed: Missing editing person or ID');
+      toast.error('Failed to save: Missing data');
       return;
     }
 
@@ -190,10 +192,12 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
 
     if (error) {
       console.error('Save error:', error);
+      toast.error(`Failed to save: ${error.message}`);
       return;
     }
 
     console.log('Save successful');
+    toast.success('Team member updated successfully');
     setEditingPersonId(null);
     setEditingPerson(null);
     fetchPeople();
@@ -259,7 +263,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                         <SelectItem value="beginner">Beginner</SelectItem>
                         <SelectItem value="intermediate">Intermediate</SelectItem>
                         <SelectItem value="advanced">Advanced</SelectItem>
-                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="pro">Professional</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -589,7 +593,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                 <SelectItem value="beginner">Beginner</SelectItem>
                 <SelectItem value="intermediate">Intermediate</SelectItem>
                 <SelectItem value="advanced">Advanced</SelectItem>
-                <SelectItem value="professional">Professional</SelectItem>
+                <SelectItem value="pro">Professional</SelectItem>
               </SelectContent>
             </Select>
           </div>
