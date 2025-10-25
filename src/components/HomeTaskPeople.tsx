@@ -164,7 +164,12 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
   };
 
   const handleSaveEdit = async () => {
-    if (!editingPerson || !editingPersonId) return;
+    if (!editingPerson || !editingPersonId) {
+      console.error('Save failed: Missing editing person or ID');
+      return;
+    }
+
+    console.log('Saving person:', editingPerson);
 
     const { error } = await supabase
       .from('home_task_people')
@@ -183,8 +188,12 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
       })
       .eq('id', editingPersonId);
 
-    if (error) return;
+    if (error) {
+      console.error('Save error:', error);
+      return;
+    }
 
+    console.log('Save successful');
     setEditingPersonId(null);
     setEditingPerson(null);
     fetchPeople();
