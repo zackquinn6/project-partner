@@ -174,7 +174,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         
         toast.success("Task updated");
       } else {
-        console.log("Creating new task...");
+        console.log("Creating new task...", { subtasksCount: subtasks.length });
         const { data: newTask, error } = await supabase
           .from("home_tasks")
           .insert([taskData])
@@ -186,6 +186,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         if (error) throw error;
 
         // Insert subtasks if any
+        console.log("Subtasks to process:", subtasks);
         if (subtasks.length > 0 && newTask) {
           const subtasksToInsert = subtasks.filter(st => st.title.trim()).map((st, idx) => ({
             task_id: newTask.id,
@@ -196,11 +197,16 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             order_index: idx
           }));
           
+          console.log("Subtasks to insert:", subtasksToInsert);
+          
           if (subtasksToInsert.length > 0) {
             const { error: subtaskError } = await supabase
               .from('home_task_subtasks')
               .insert(subtasksToInsert);
-            if (subtaskError) throw subtaskError;
+            if (subtaskError) {
+              console.error("Subtask insert error:", subtaskError);
+              throw subtaskError;
+            }
           }
         }
         
@@ -230,6 +236,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   };
 
   const resetForm = () => {
+    console.log("Resetting form, clearing subtasks");
     setFormData({
       title: "",
       description: "",
