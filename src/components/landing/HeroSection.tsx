@@ -2,16 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, PlayCircle, Star } from 'lucide-react';
-
 interface HeroSectionProps {
   onOpenDemo?: () => void;
 }
-
-export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
+export const HeroSection = ({
+  onOpenDemo
+}: HeroSectionProps) => {
   const navigate = useNavigate();
-
-  return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-background via-background to-muted">
+  return <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-background via-background to-muted">
       {/* Floating animated background elements */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-20 left-10 animate-float">
@@ -42,37 +40,24 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
               Get step-by-step guidance tailored to <strong className="text-foreground">YOUR skill level</strong>, <strong className="text-foreground">YOUR timeline</strong>, and <strong className="text-foreground">YOUR available tools</strong>.
             </p>
 
-            <p className="text-base text-muted-foreground">
-              Join 1,000+ DIYers who've completed projects they thought were impossible.
-            </p>
+            <p className="text-base text-muted-foreground">Join DIYers who've successfully completed projects they thought were impossible</p>
 
             {/* Trust badge */}
             <div className="flex items-center justify-center lg:justify-start gap-2 mb-8">
               <div className="flex text-accent">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-current" />
-                ))}
+                {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-current" />)}
               </div>
               <span className="text-sm text-muted-foreground font-medium">4.8/5 from 500+ DIYers</span>
             </div>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button
-                size="xl"
-                className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
-                onClick={() => navigate('/auth?mode=signup')}
-              >
+              <Button size="xl" className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300" onClick={() => navigate('/auth?mode=signup')}>
                 Start Your First Project Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
 
-              <Button
-                variant="outline"
-                size="xl"
-                className="border-2 hover:bg-muted"
-                onClick={onOpenDemo}
-              >
+              <Button variant="outline" size="xl" className="border-2 hover:bg-muted" onClick={onOpenDemo}>
                 <PlayCircle className="mr-2 h-5 w-5" />
                 See How It Works
               </Button>
@@ -86,11 +71,7 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
           {/* Right Column - Visual */}
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border hover-lift">
-              <img
-                src="/lovable-uploads/dd8a6549-c627-436d-954c-e8c38a53fbee.png"
-                alt="Project Partner Workflow Interface"
-                className="w-full h-auto"
-              />
+              <img src="/lovable-uploads/dd8a6549-c627-436d-954c-e8c38a53fbee.png" alt="Project Partner Workflow Interface" className="w-full h-auto" />
             </div>
 
             {/* Floating success metrics */}
@@ -106,6 +87,5 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
