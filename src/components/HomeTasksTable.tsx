@@ -15,7 +15,7 @@ interface HomeTask {
   description: string | null;
   priority: 'high' | 'medium' | 'low';
   status: 'open' | 'in_progress' | 'closed';
-  diy_level: 'beginner' | 'intermediate' | 'pro';
+  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'professional';
   notes: string | null;
   due_date: string | null;
   task_type: 'general' | 'pre_sale' | 'diy' | 'contractor';
@@ -27,7 +27,7 @@ interface Subtask {
   id: string;
   title: string;
   estimated_hours: number | null;
-  diy_level: 'beginner' | 'intermediate' | 'pro';
+  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'professional';
   completed: boolean;
 }
 interface HomeTasksTableProps {
@@ -40,7 +40,7 @@ interface HomeTasksTableProps {
   onProjectNavigate?: () => void;
   onTaskUpdate?: () => void;
 }
-type SortField = 'title' | 'priority' | 'status' | 'diy_level' | 'due_date' | 'task_type';
+type SortField = 'title' | 'priority' | 'diy_level' | 'due_date';
 type SortDirection = 'asc' | 'desc';
 export function HomeTasksTable({
   tasks,
@@ -199,7 +199,8 @@ export function HomeTasksTable({
         bVal = priorityOrder[b.priority];
       } else if (sortField === 'diy_level') {
         const diyLevelOrder = {
-          pro: 3,
+          professional: 4,
+          advanced: 3,
           intermediate: 2,
           beginner: 1
         };
@@ -241,7 +242,9 @@ export function HomeTasksTable({
   };
   const getDiyLevelColor = (level: string) => {
     switch (level) {
-      case 'pro':
+      case 'professional':
+        return 'destructive';
+      case 'advanced':
         return 'destructive';
       case 'intermediate':
         return 'default';
@@ -275,7 +278,8 @@ export function HomeTasksTable({
               <SelectItem value="all">All Levels</SelectItem>
               <SelectItem value="beginner">Beginner</SelectItem>
               <SelectItem value="intermediate">Intermediate</SelectItem>
-              <SelectItem value="pro">Pro</SelectItem>
+              <SelectItem value="advanced">Advanced</SelectItem>
+              <SelectItem value="professional">Professional</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2">
@@ -320,11 +324,6 @@ export function HomeTasksTable({
                     DIY Level <SortIcon field="diy_level" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[80px] text-xs">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('task_type')} className="h-6 px-2 text-xs font-medium">
-                    Type <SortIcon field="task_type" />
-                  </Button>
-                </TableHead>
                 <TableHead className="w-[100px] text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('due_date')} className="h-6 px-2 text-xs font-medium">
                     Due Date <SortIcon field="due_date" />
@@ -335,7 +334,7 @@ export function HomeTasksTable({
             </TableHeader>
             <TableBody>
               {filteredAndSortedTasks.length === 0 ? <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-xs text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-xs text-muted-foreground">
                     No tasks found. Add your first task to get started!
                   </TableCell>
                 </TableRow> : filteredAndSortedTasks.map(task => (
@@ -380,7 +379,6 @@ export function HomeTasksTable({
                         {task.diy_level}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">{task.task_type.replace('_', ' ')}</TableCell>
                     <TableCell className="text-xs">
                       {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
                     </TableCell>
@@ -420,7 +418,7 @@ export function HomeTasksTable({
                   </TableRow>
                   {expandedRows.has(task.id) && subtasks[task.id]?.length > 0 && (
                     <TableRow key={`${task.id}-subtasks`}>
-                      <TableCell colSpan={8} className="bg-muted/50 p-0">
+                      <TableCell colSpan={7} className="bg-muted/50 p-0">
                           <div className="px-12 py-3">
                           <div className="text-xs font-medium mb-2">Subtasks:</div>
                           <Table>
