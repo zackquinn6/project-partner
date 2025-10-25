@@ -178,10 +178,23 @@ All colors MUST be HSL.
   }
 
   .animate-float-delayed {
-    animation: float 6s ease-in-out 2s infinite;
-  }
+  animation: float 6s ease-in-out 2s infinite;
+}
 
-  /* Gradient text */
+/* Touch targets for mobile */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (min-width: 640px) {
+  .touch-target {
+    min-height: auto;
+    min-width: auto;
+  }
+}
+
+/* Gradient text */
   .gradient-text {
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
     -webkit-background-clip: text;

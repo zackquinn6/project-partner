@@ -157,39 +157,39 @@ export function HomeTaskSubtasks({ open, onOpenChange, taskId, taskTitle, userId
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl w-[95vw] md:w-full">
+      <DialogContent className="max-w-3xl w-[95vw] md:w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xs md:text-sm">Subtasks: {taskTitle}</DialogTitle>
+          <DialogTitle className="text-sm md:text-base pr-8">Subtasks: {taskTitle}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-2 md:space-y-3">
-          <div className="text-[10px] md:text-xs text-muted-foreground">
+        <div className="space-y-3 md:space-y-4">
+          <div className="text-xs md:text-sm text-muted-foreground">
             Total: <span className="font-semibold">{totalHours.toFixed(1)}h</span>
           </div>
 
           {/* Add new subtask */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr,auto,auto,auto,auto] gap-2 items-end">
+          <div className="grid grid-cols-1 gap-2">
             <Input
               placeholder="Subtask title"
               value={newSubtask.title}
               onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
-              className="text-[10px] md:text-xs h-7"
+              className="text-xs md:text-sm h-9 md:h-10"
             />
-            <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <Input
                 type="number"
                 min="0.5"
                 step="0.5"
                 value={newSubtask.estimated_hours}
                 onChange={(e) => setNewSubtask({ ...newSubtask, estimated_hours: parseFloat(e.target.value) })}
-                className="text-[10px] md:text-xs h-7 w-full md:w-16"
-                placeholder="Hrs"
+                className="text-xs md:text-sm h-9 md:h-10"
+                placeholder="Hours"
               />
               <Select 
                 value={newSubtask.diy_level} 
                 onValueChange={(val) => setNewSubtask({ ...newSubtask, diy_level: val as any })}
               >
-                <SelectTrigger className="w-full md:w-28 text-[10px] md:text-xs h-7">
+                <SelectTrigger className="text-xs md:text-sm h-9 md:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -198,54 +198,56 @@ export function HomeTaskSubtasks({ open, onOpenChange, taskId, taskTitle, userId
                   <SelectItem value="pro">Pro</SelectItem>
                 </SelectContent>
               </Select>
+              <Select 
+                value={newSubtask.assigned_person_id || "unassigned"} 
+                onValueChange={(val) => setNewSubtask({ ...newSubtask, assigned_person_id: val === 'unassigned' ? null : val })}
+              >
+                <SelectTrigger className="text-xs md:text-sm h-9 md:h-10">
+                  <SelectValue placeholder="Assign to" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {people.map(person => (
+                    <SelectItem key={person.id} value={person.id}>{person.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleAddSubtask} size="sm" className="h-9 md:h-10 text-xs md:text-sm">
+                <Plus className="h-4 w-4" />
+                <span className="ml-1">Add</span>
+              </Button>
             </div>
-            <Select 
-              value={newSubtask.assigned_person_id || "unassigned"} 
-              onValueChange={(val) => setNewSubtask({ ...newSubtask, assigned_person_id: val === 'unassigned' ? null : val })}
-            >
-              <SelectTrigger className="w-full md:w-28 text-[10px] md:text-xs h-7">
-                <SelectValue placeholder="Assign to" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {people.map(person => (
-                  <SelectItem key={person.id} value={person.id}>{person.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={handleAddSubtask} size="sm" className="h-7 text-[10px] md:text-xs w-full md:w-auto">
-              <Plus className="h-2.5 w-2.5 md:h-3 md:w-3 md:mr-0" />
-              <span className="md:hidden ml-1">Add</span>
-            </Button>
           </div>
 
           {/* Subtasks list */}
-          <div className="space-y-1.5 md:space-y-2 max-h-[350px] md:max-h-[400px] overflow-y-auto">
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {subtasks.length === 0 ? (
-              <p className="text-[10px] md:text-xs text-muted-foreground text-center py-3 md:py-4">No subtasks yet</p>
+              <p className="text-xs text-muted-foreground text-center py-6">No subtasks yet</p>
             ) : (
               subtasks.map((subtask) => (
                 <div
                   key={subtask.id}
-                  className={`flex md:grid md:grid-cols-[auto,1fr,auto,auto,auto,auto] gap-1.5 md:gap-2 items-center p-1.5 md:p-2 border rounded text-[10px] md:text-xs ${
-                    subtask.completed ? 'bg-muted opacity-60' : ''
+                  className={`grid grid-cols-[auto,1fr,auto] sm:grid-cols-[auto,1fr,auto,auto,auto,auto] gap-2 items-center p-2.5 md:p-3 border rounded ${
+                    subtask.completed ? 'bg-muted/50' : ''
                   }`}
                 >
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <button
                     onClick={() => handleToggleComplete(subtask)}
-                    className="h-5 w-5 md:h-6 md:w-6 p-0 flex-shrink-0"
+                    className="h-6 w-6 flex items-center justify-center text-sm hover:opacity-70 transition-opacity flex-shrink-0"
+                    title={subtask.completed ? 'Mark as incomplete' : 'Mark as complete'}
                   >
-                    <Check className={`h-2.5 w-2.5 md:h-3 md:w-3 ${subtask.completed ? 'text-green-600' : 'text-muted-foreground'}`} />
-                  </Button>
-                  <div className={`flex-1 min-w-0 truncate ${subtask.completed ? 'line-through' : ''}`}>
+                    {subtask.completed ? '✓' : '○'}
+                  </button>
+                  <div 
+                    className={`text-xs md:text-sm min-w-0 cursor-pointer ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}
+                    onClick={() => handleToggleComplete(subtask)}
+                  >
                     {subtask.title}
                   </div>
-                  <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0 flex-shrink-0">
+                  <Badge variant="outline" className="text-[10px] px-2 py-0.5 flex-shrink-0">
                     {subtask.estimated_hours}h
                   </Badge>
-                  <Badge variant="outline" className="hidden md:inline-flex text-[10px] px-1.5 py-0">
+                  <Badge variant="outline" className="hidden sm:inline-flex text-[10px] px-2 py-0.5 flex-shrink-0">
                     {subtask.diy_level}
                   </Badge>
                   <Select 
@@ -253,12 +255,12 @@ export function HomeTaskSubtasks({ open, onOpenChange, taskId, taskTitle, userId
                     onValueChange={(val) => handleUpdateAssignment(subtask.id, val === 'unassigned' ? null : val)}
                     disabled={subtask.completed}
                   >
-                    <SelectTrigger className="w-20 md:w-28 h-5 md:h-6 text-[9px] md:text-[10px] px-1 md:px-2 flex-shrink-0">
+                    <SelectTrigger className="w-24 sm:w-32 h-7 text-[10px] sm:text-xs px-2 flex-shrink-0">
                       <SelectValue>
                         {subtask.assigned_person_name ? (
-                          <span className="flex items-center gap-0.5">
-                            <User className="h-2 w-2 md:h-2.5 md:w-2.5" />
-                            <span className="truncate max-w-[40px] md:max-w-none">{subtask.assigned_person_name}</span>
+                          <span className="flex items-center gap-1">
+                            <User className="h-2.5 w-2.5" />
+                            <span className="truncate">{subtask.assigned_person_name}</span>
                           </span>
                         ) : (
                           'Unassign'
@@ -272,14 +274,13 @@ export function HomeTaskSubtasks({ open, onOpenChange, taskId, taskTitle, userId
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <button
                     onClick={() => handleDeleteSubtask(subtask.id)}
-                    className="h-5 w-5 md:h-6 md:w-6 p-0 text-destructive flex-shrink-0"
+                    className="h-6 w-6 flex items-center justify-center text-destructive hover:bg-destructive/10 rounded transition-colors flex-shrink-0"
+                    title="Delete subtask"
                   >
-                    <Trash2 className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                  </Button>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               ))
             )}

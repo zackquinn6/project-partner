@@ -260,7 +260,7 @@ export function HomeTasksTable({
         <div className="flex flex-wrap gap-2 flex-1 items-center">
           <Input placeholder="Search tasks..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs text-xs h-8" />
           <Select value={filterPriority} onValueChange={setFilterPriority}>
-            <SelectTrigger className="w-32 text-xs h-8">
+            <SelectTrigger className="w-24 sm:w-32 text-xs h-8">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -271,7 +271,7 @@ export function HomeTasksTable({
             </SelectContent>
           </Select>
           <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
-            <SelectTrigger className="w-32 text-xs h-8">
+            <SelectTrigger className="w-24 sm:w-32 text-xs h-8">
               <SelectValue placeholder="DIY Level" />
             </SelectTrigger>
             <SelectContent>
@@ -282,21 +282,22 @@ export function HomeTasksTable({
               <SelectItem value="professional">Professional</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Checkbox 
               id="show-completed" 
               checked={showCompleted}
               onCheckedChange={(checked) => setShowCompleted(checked as boolean)}
+              className="h-3 w-3"
             />
-            <label htmlFor="show-completed" className="text-xs cursor-pointer">
+            <label htmlFor="show-completed" className="text-[10px] sm:text-xs cursor-pointer whitespace-nowrap">
               Show completed
             </label>
           </div>
         </div>
         {onAddTask && (
-          <Button onClick={onAddTask} size="sm" className="h-8 text-xs px-3 whitespace-nowrap">
-            <Plus className="h-3 w-3 mr-1" />
-            Add Task
+          <Button onClick={onAddTask} size="sm" className="h-8 w-8 p-0 sm:w-auto sm:px-3 flex-shrink-0" title="Add Task">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline ml-1">Add Task</span>
           </Button>
         )}
       </div>
@@ -340,16 +341,23 @@ export function HomeTasksTable({
                 </TableRow> : filteredAndSortedTasks.map(task => (
                   <>
                     <TableRow key={task.id} className={task.status === 'closed' ? 'opacity-60' : ''}>
-                      <TableCell>
-                        <Checkbox
-                          checked={task.status === 'closed'}
-                          onCheckedChange={() => handleToggleTaskComplete(task.id, task.status)}
-                          className="h-4 w-4"
-                        />
+                      <TableCell className="w-8">
+                        <button
+                          onClick={() => handleToggleTaskComplete(task.id, task.status)}
+                          className="text-xs font-medium hover:opacity-70 transition-opacity touch-target min-h-[44px] min-w-[44px] flex items-center justify-center -m-2"
+                          title={task.status === 'closed' ? 'Mark as open' : 'Mark as complete'}
+                        >
+                          {task.status === 'closed' ? '✓' : '○'}
+                        </button>
                       </TableCell>
                      <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className={`text-xs font-medium ${task.status === 'closed' ? 'line-through' : ''}`}>{task.title}</span>
+                        <span 
+                          className={`text-xs font-medium cursor-pointer ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''}`}
+                          onClick={() => handleToggleTaskComplete(task.id, task.status)}
+                        >
+                          {task.title}
+                        </span>
                         {subtasks[task.id]?.length > 0 && (
                           <Button
                             variant="ghost"
@@ -433,15 +441,22 @@ export function HomeTasksTable({
                             <TableBody>
                               {subtasks[task.id].map(subtask => (
                                 <TableRow key={subtask.id} className={subtask.completed ? 'opacity-60' : ''}>
-                                  <TableCell className="py-2">
-                                    <Checkbox
-                                      checked={subtask.completed}
-                                      onCheckedChange={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
-                                      className="h-3.5 w-3.5"
-                                    />
+                                  <TableCell className="py-2 w-10">
+                                    <button
+                                      onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
+                                      className="text-xs hover:opacity-70 transition-opacity"
+                                      title={subtask.completed ? 'Mark as incomplete' : 'Mark as complete'}
+                                    >
+                                      {subtask.completed ? '✓' : '○'}
+                                    </button>
                                   </TableCell>
-                                  <TableCell className={`text-xs py-2 ${subtask.completed ? 'line-through' : ''}`}>
-                                    {subtask.title}
+                                  <TableCell className="text-xs py-2">
+                                    <span 
+                                      className={`cursor-pointer ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}
+                                      onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
+                                    >
+                                      {subtask.title}
+                                    </span>
                                   </TableCell>
                                   <TableCell className="text-xs py-2">{subtask.estimated_hours || '-'}</TableCell>
                                   <TableCell className="text-xs py-2">

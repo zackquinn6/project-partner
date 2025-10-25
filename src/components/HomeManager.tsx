@@ -311,17 +311,18 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
 
         {!showForm ? <div className="space-y-6 p-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
-              <p className="text-muted-foreground max-w-2xl">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <p className="text-muted-foreground text-sm max-w-2xl">
                 Manage your home locations for projects and maintenance. Each project/maintenance task is associated with a specific home.
               </p>
               <Button 
                 onClick={() => setShowForm(true)}
                 size="sm"
-                className="md:w-auto md:px-4 w-10 h-10 p-0 md:p-2"
+                className="w-10 h-10 p-0 sm:w-auto sm:px-4 sm:h-9 flex-shrink-0 self-end sm:self-auto"
+                title="Add Home"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden md:inline ml-2">Add Home</span>
+                <span className="hidden sm:inline ml-2">Add Home</span>
               </Button>
             </div>
 
@@ -336,10 +337,11 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
               <Button 
                 size="sm"
                 onClick={() => setShowForm(true)}
-                className="md:w-auto md:px-4 w-10 h-10 p-0 md:p-2"
+                className="w-10 h-10 p-0 sm:w-auto sm:px-4 sm:h-9"
+                title="Add Home"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden md:inline ml-2">Add Home</span>
+                <span className="hidden sm:inline ml-2">Add Home</span>
               </Button>
                 </CardContent>
               </Card> : <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -361,12 +363,12 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
                             </CardTitle>
                           </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-1 sm:gap-0.5 flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1 flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
                           <Button 
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleEdit(home)} 
-                            className="h-8 w-8 sm:w-auto sm:px-2 touch-target"
+                            className="h-7 w-7 p-0 sm:h-8 sm:w-auto sm:px-2"
                             title="Edit Home"
                           >
                             <span className="hidden sm:inline text-xs">Edit</span>
@@ -376,7 +378,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleDelete(home.id)} 
-                            className="h-8 w-8 touch-target text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="h-7 w-7 p-0 sm:h-8 sm:w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                             title="Delete Home"
                           >
                             <Trash2 className="w-3 h-3" />
