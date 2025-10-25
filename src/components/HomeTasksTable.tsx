@@ -384,7 +384,7 @@ export function HomeTasksTable({
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            onClick={() => window.location.href = `/?project=${task.project_run_id}`} 
+                            onClick={() => navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } })} 
                             className="h-7 px-2"
                             title="Open linked project"
                           >
