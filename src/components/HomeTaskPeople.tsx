@@ -32,7 +32,7 @@ interface Person {
   available_hours: number;
   available_days: string[];
   consecutive_days: number;
-  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
+  diy_level: 'beginner' | 'intermediate' | 'pro';
   hourly_rate: number;
   availability_mode: 'general' | 'specific';
   availability_start_date?: string;
@@ -59,7 +59,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
     available_hours: 8,
     available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
     consecutive_days: 5,
-    diy_level: 'intermediate' as 'beginner' | 'intermediate' | 'advanced' | 'pro',
+    diy_level: 'intermediate' as 'beginner' | 'intermediate' | 'pro',
     hourly_rate: 0,
     availability_mode: 'general' as 'general' | 'specific',
     not_available_dates: [] as string[],
@@ -262,7 +262,6 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                       <SelectContent className="z-50 bg-popover">
                         <SelectItem value="beginner">Beginner</SelectItem>
                         <SelectItem value="intermediate">Intermediate</SelectItem>
-                        <SelectItem value="advanced">Advanced</SelectItem>
                         <SelectItem value="pro">Professional</SelectItem>
                       </SelectContent>
                     </Select>
@@ -592,7 +591,6 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
               <SelectContent className="z-50 bg-popover">
                 <SelectItem value="beginner">Beginner</SelectItem>
                 <SelectItem value="intermediate">Intermediate</SelectItem>
-                <SelectItem value="advanced">Advanced</SelectItem>
                 <SelectItem value="pro">Professional</SelectItem>
               </SelectContent>
             </Select>
