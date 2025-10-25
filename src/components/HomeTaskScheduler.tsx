@@ -268,23 +268,23 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
   const sortedDates = Object.keys(assignmentsByDate).sort();
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-3">
-        <div className="flex items-center gap-4">
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
           <div className="flex-1">
-            <Label className="text-xs">Start Date</Label>
+            <Label className="text-[10px] md:text-xs">Start Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal mt-1 h-9",
+                    "w-full justify-start text-left font-normal mt-1 h-7 text-[10px] md:text-xs",
                     !startDate && "text-muted-foreground"
                   )}
                   size="sm"
                 >
-                  <CalendarIcon className="mr-2 h-3 w-3" />
-                  {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                  <CalendarIcon className="mr-1.5 h-2.5 w-2.5 md:h-3 md:w-3" />
+                  {startDate ? format(startDate, "MMM d, yyyy") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -299,30 +299,32 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
             </Popover>
           </div>
           <div className="flex-1 flex items-end">
-            <Button onClick={handleGenerateSchedule} disabled={isGenerating} size="sm" className="w-full">
+            <Button onClick={handleGenerateSchedule} disabled={isGenerating} size="sm" className="w-full h-7 text-[10px] md:text-xs">
               {isGenerating ? (
                 <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Generating...
+                  <Loader2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1 animate-spin" />
+                  <span className="hidden md:inline">Generating...</span>
+                  <span className="md:hidden">Gen...</span>
                 </>
               ) : (
                 <>
-                  <Calendar className="h-3 w-3 mr-1" />
-                  Generate Schedule
+                  <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
+                  <span className="hidden md:inline">Generate Schedule</span>
+                  <span className="md:hidden">Generate</span>
                 </>
               )}
             </Button>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-[10px] md:text-xs text-muted-foreground">
           Generate an optimized schedule matching people's skills and availability
         </div>
       </div>
 
       {schedule?.warnings && schedule.warnings.length > 0 && (
         <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="text-xs">
+          <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
+          <AlertDescription className="text-[10px] md:text-xs">
             {schedule.warnings.map((warning: string, idx: number) => (
               <div key={idx}>{warning}</div>
             ))}
@@ -332,8 +334,8 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
 
       {schedule?.unassigned && schedule.unassigned.length > 0 && (
         <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="text-xs space-y-1">
+          <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
+          <AlertDescription className="text-[10px] md:text-xs space-y-1">
             <div className="font-semibold">Unassigned Work:</div>
             {schedule.unassigned.map((item: any, idx: number) => (
               <div key={idx}>• {item.taskTitle}: {item.reason}</div>
@@ -343,24 +345,24 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
       )}
 
       {schedule?.assignments && schedule.assignments.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-2 md:space-y-3">
           <div className="flex gap-2">
             <Button 
               onClick={handleSaveSchedule} 
               disabled={isSaving} 
               size="sm"
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-7 text-[10px] md:text-xs"
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Saving...
+                  <Loader2 className="h-2.5 w-2.5 md:h-3 md:w-3 animate-spin" />
+                  <span className="hidden md:inline md:ml-1">Saving...</span>
                 </>
               ) : (
                 <>
-                  <Save className="h-3 w-3 mr-1" />
-                  Save Schedule
+                  <Save className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                  <span className="hidden md:inline md:ml-1">Save Schedule</span>
                 </>
               )}
             </Button>
@@ -369,31 +371,32 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
               disabled={isEmailing} 
               size="sm"
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-7 text-[10px] md:text-xs"
             >
               {isEmailing ? (
                 <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Sending...
+                  <Loader2 className="h-2.5 w-2.5 md:h-3 md:w-3 animate-spin" />
+                  <span className="hidden md:inline md:ml-1">Sending...</span>
                 </>
               ) : (
                 <>
-                  <Mail className="h-3 w-3 mr-1" />
-                  Email Schedule
+                  <Mail className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                  <span className="hidden md:inline md:ml-1">Email Schedule</span>
                 </>
               )}
             </Button>
           </div>
 
           <div className="border rounded-lg overflow-hidden">
-            <div className="bg-muted px-3 py-2 text-xs font-semibold flex items-center gap-2">
-              <CheckCircle2 className="h-3 w-3 text-green-600" />
-              Optimized Schedule ({schedule.assignments.length} assignments)
+            <div className="bg-muted px-2 md:px-3 py-1.5 md:py-2 text-[10px] md:text-xs font-semibold flex items-center gap-1.5">
+              <CheckCircle2 className="h-2.5 w-2.5 md:h-3 md:w-3 text-green-600" />
+              <span className="hidden md:inline">Optimized Schedule ({schedule.assignments.length} assignments)</span>
+              <span className="md:hidden">Schedule ({schedule.assignments.length})</span>
             </div>
-            <div className="max-h-[400px] overflow-y-auto">
+            <div className="max-h-[350px] md:max-h-[400px] overflow-y-auto">
               {sortedDates.map(date => (
                 <div key={date} className="border-t">
-                  <div className="bg-muted/50 px-3 py-2 text-xs font-medium">
+                  <div className="bg-muted/50 px-2 md:px-3 py-1.5 md:py-2 text-[10px] md:text-xs font-medium">
                     {new Date(date).toLocaleDateString('en-US', { 
                       weekday: 'short', 
                       month: 'short', 
@@ -402,18 +405,18 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
                   </div>
                   <div className="divide-y">
                     {assignmentsByDate[date].map((assignment: any, idx: number) => (
-                      <div key={idx} className="px-3 py-2 text-xs flex items-center gap-3 hover:bg-muted/30">
-                        <div className="flex-1">
-                          <div className="font-medium">
+                      <div key={idx} className="px-2 md:px-3 py-1.5 md:py-2 text-[10px] md:text-xs flex items-center gap-2 hover:bg-muted/30">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">
                             {assignment.subtaskTitle}
                           </div>
-                          <div className="text-[10px] text-muted-foreground">{assignment.taskTitle}</div>
+                          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">{assignment.taskTitle}</div>
                         </div>
-                        <div className="flex gap-2 items-center">
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        <div className="flex gap-1 md:gap-1.5 items-center flex-shrink-0">
+                          <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0 max-w-[60px] md:max-w-none truncate">
                             {assignment.personName}
                           </Badge>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          <Badge variant="secondary" className="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0">
                             {assignment.scheduledHours.toFixed(1)}h
                           </Badge>
                         </div>
@@ -428,7 +431,7 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
       )}
 
       {!schedule && !isGenerating && (
-        <p className="text-xs text-muted-foreground text-center py-8">
+        <p className="text-[10px] md:text-xs text-muted-foreground text-center py-6 md:py-8">
           Click "Generate Schedule" to create an optimized work schedule
         </p>
       )}

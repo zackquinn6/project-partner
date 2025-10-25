@@ -295,14 +295,14 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-[90vw] h-[90vh] p-0 overflow-hidden flex flex-col">
-          <DialogHeader className="px-4 pt-4 pb-2 border-b flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-sm font-semibold">Home Task Manager</DialogTitle>
-              <div className="flex gap-2">
+        <DialogContent className="w-[95vw] max-w-[95vw] md:max-w-[90vw] h-[92vh] p-0 overflow-hidden flex flex-col">
+          <DialogHeader className="px-2 md:px-4 pt-3 pb-2 border-b flex-shrink-0">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-xs md:text-sm font-semibold">Task Manager</DialogTitle>
+              <div className="flex gap-1.5">
                 <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
-                  <SelectTrigger className="w-[200px] text-xs h-8">
-                    <SelectValue placeholder="Select a home" />
+                  <SelectTrigger className="w-[100px] md:w-[160px] text-[10px] md:text-xs h-7">
+                    <SelectValue placeholder="Select home" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Homes</SelectItem>
@@ -317,10 +317,10 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                   variant="outline"
                   size="sm"
                   onClick={() => setShowHomeManager(true)}
-                  className="h-8 text-xs"
+                  className="h-7 text-[10px] md:text-xs px-2"
                 >
-                  <HomeIcon className="h-3 w-3 mr-1" />
-                  Homes
+                  <HomeIcon className="h-3 w-3 md:mr-1" />
+                  <span className="hidden md:inline">Homes</span>
                 </Button>
               </div>
             </div>
@@ -328,16 +328,16 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
           <div className="flex-1 overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="mx-4 mt-2 mb-4 w-auto grid grid-cols-3 text-xs h-8 flex-shrink-0">
-                <TabsTrigger value="tasks" className="text-xs px-3 py-1">Tasks</TabsTrigger>
-                <TabsTrigger value="people" className="text-xs px-3 py-1">Team</TabsTrigger>
-                <TabsTrigger value="schedule" className="text-xs px-3 py-1">Schedule</TabsTrigger>
+              <TabsList className="mx-2 md:mx-4 mt-2 mb-3 w-auto grid grid-cols-3 text-[10px] md:text-xs h-7 md:h-8 flex-shrink-0">
+                <TabsTrigger value="tasks" className="text-[10px] md:text-xs px-2 md:px-3 py-1">Tasks</TabsTrigger>
+                <TabsTrigger value="people" className="text-[10px] md:text-xs px-2 md:px-3 py-1">Team</TabsTrigger>
+                <TabsTrigger value="schedule" className="text-[10px] md:text-xs px-2 md:px-3 py-1">Schedule</TabsTrigger>
               </TabsList>
 
-              <div className="flex-1 overflow-auto px-4 pb-4 min-h-0">
-                <TabsContent value="tasks" className="mt-0 space-y-3 h-full">
+              <div className="flex-1 overflow-auto px-2 md:px-4 pb-3 min-h-0">
+                <TabsContent value="tasks" className="mt-0 space-y-2 md:space-y-3 h-full">
                   <div className="flex justify-end">
-                    <Button onClick={() => setShowAddTask(true)} size="sm" className="h-8 text-xs">
+                    <Button onClick={() => setShowAddTask(true)} size="sm" className="h-7 text-[10px] md:text-xs px-2">
                       <Plus className="h-3 w-3 mr-1" />
                       Add Task
                     </Button>

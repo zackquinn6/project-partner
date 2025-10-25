@@ -121,19 +121,19 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
   };
 
   return (
-    <div className="space-y-4">
-      <div className="text-xs text-muted-foreground">
+    <div className="space-y-3">
+      <div className="text-[10px] md:text-xs text-muted-foreground">
         Manage team members available for this project
       </div>
 
       {/* Add new person form */}
-      <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
-        <div className="grid grid-cols-[1fr,auto,auto] gap-2">
+      <div className="border rounded-lg p-2 md:p-3 space-y-2 bg-muted/30">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr,auto,auto] gap-2">
           <Input
             placeholder="Name"
             value={newPerson.name}
             onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })}
-            className="text-xs h-8"
+            className="text-[10px] md:text-xs h-7"
           />
           <div className="flex gap-1 items-center">
             <Input
@@ -142,32 +142,32 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
               max="24"
               value={newPerson.available_hours}
               onChange={(e) => setNewPerson({ ...newPerson, available_hours: parseInt(e.target.value) })}
-              className="text-xs h-8 w-14"
+              className="text-[10px] md:text-xs h-7 w-12"
               placeholder="Hrs"
             />
-            <span className="text-xs whitespace-nowrap">hrs/day</span>
+            <span className="text-[10px] md:text-xs whitespace-nowrap">hrs/day</span>
           </div>
           <div className="flex gap-1 items-center">
-            <span className="text-xs">$</span>
+            <span className="text-[10px] md:text-xs">$</span>
             <Input
               type="number"
               min="0"
               step="0.01"
               value={newPerson.hourly_rate}
               onChange={(e) => setNewPerson({ ...newPerson, hourly_rate: parseFloat(e.target.value) || 0 })}
-              className="text-xs h-8 w-14"
+              className="text-[10px] md:text-xs h-7 w-12"
               placeholder="Rate"
             />
-            <span className="text-xs">/hr</span>
+            <span className="text-[10px] md:text-xs">/hr</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <Select 
             value={newPerson.diy_level} 
             onValueChange={(val) => setNewPerson({ ...newPerson, diy_level: val as any })}
           >
-            <SelectTrigger className="text-xs h-8">
+            <SelectTrigger className="text-[10px] md:text-xs h-7">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -183,29 +183,29 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
               max="7"
               value={newPerson.consecutive_days}
               onChange={(e) => setNewPerson({ ...newPerson, consecutive_days: parseInt(e.target.value) })}
-              className="text-xs h-8 w-16"
+              className="text-[10px] md:text-xs h-7 w-14"
             />
-            <span className="text-xs">consec. days</span>
+            <span className="text-[10px] md:text-xs">consec. days</span>
           </div>
         </div>
 
         <div>
-          <div className="text-xs font-medium mb-2">Available Days:</div>
-          <div className="flex flex-wrap gap-2">
+          <div className="text-[10px] md:text-xs font-medium mb-1.5">Available Days:</div>
+          <div className="flex flex-wrap gap-1.5">
             {DAYS.map(day => (
-              <label key={day} className="flex items-center gap-1 cursor-pointer">
+              <label key={day} className="flex items-center gap-0.5 cursor-pointer">
                 <Checkbox
                   checked={newPerson.available_days.includes(day)}
                   onCheckedChange={() => toggleDay(day)}
-                  className="h-3 w-3"
+                  className="h-2.5 w-2.5 md:h-3 md:w-3"
                 />
-                <span className="text-xs capitalize">{day.slice(0, 3)}</span>
+                <span className="text-[10px] md:text-xs capitalize">{day.slice(0, 3)}</span>
               </label>
             ))}
           </div>
         </div>
 
-        <Button onClick={handleAddPerson} size="sm" className="h-8 w-full">
+        <Button onClick={handleAddPerson} size="sm" className="h-7 w-full text-[10px] md:text-xs">
           <Plus className="h-3 w-3 mr-1" />
           Add Team Member
         </Button>
@@ -214,42 +214,42 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
       {/* People list */}
       <div className="space-y-2">
         {people.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-4">
+          <p className="text-[10px] md:text-xs text-muted-foreground text-center py-3">
             No team members yet. Add people to enable scheduling.
           </p>
         ) : (
           people.map((person) => (
-            <div key={person.id} className="border rounded-lg p-3 space-y-2 text-xs">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="font-semibold">{person.name}</div>
-                  <div className="flex gap-2 mt-1">
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            <div key={person.id} className="border rounded-lg p-2 md:p-3 space-y-1.5 text-[10px] md:text-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">{person.name}</div>
+                  <div className="flex flex-wrap gap-1 md:gap-1.5 mt-1">
+                    <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0">
                       {person.available_hours}h/day
                     </Badge>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0">
                       {person.diy_level}
                     </Badge>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                      {person.consecutive_days} consec days
+                    <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0">
+                      {person.consecutive_days} consec
                     </Badge>
                     {person.hourly_rate > 0 && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      <Badge variant="secondary" className="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0">
                         ${person.hourly_rate.toString().replace(/^0+/, '')}/hr
                       </Badge>
                     )}
                   </div>
-                  <div className="mt-1 text-[10px] text-muted-foreground">
-                    Available: {person.available_days.map(d => d.slice(0, 3)).join(', ')}
+                  <div className="mt-1 text-[9px] md:text-[10px] text-muted-foreground">
+                    {person.available_days.map(d => d.slice(0, 3)).join(', ')}
                   </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDeletePerson(person.id)}
-                  className="h-6 w-6 p-0 text-destructive"
+                  className="h-5 w-5 md:h-6 md:w-6 p-0 text-destructive flex-shrink-0"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-2.5 w-2.5 md:h-3 md:w-3" />
                 </Button>
               </div>
             </div>
