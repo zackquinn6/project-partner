@@ -52,7 +52,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   
   const [formData, setFormData] = useState<{
     title: string;
-    description: string;
     priority: 'high' | 'medium' | 'low';
     status: 'open' | 'in_progress' | 'closed';
     diy_level: 'beginner' | 'intermediate' | 'advanced' | 'professional';
@@ -61,7 +60,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     task_type: 'diy' | 'contractor';
   }>({
     title: "",
-    description: "",
     priority: "medium",
     status: "open",
     diy_level: "intermediate",
@@ -218,7 +216,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   const resetForm = () => {
     setFormData({
       title: "",
-      description: "",
       priority: "medium",
       status: "open",
       diy_level: "intermediate",
@@ -235,7 +232,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     setEditingTask(task);
     setFormData({
       title: task.title,
-      description: task.description || "",
       priority: task.priority as 'high' | 'medium' | 'low',
       status: task.status as 'open' | 'in_progress' | 'closed',
       diy_level: task.diy_level as 'beginner' | 'intermediate' | 'advanced' | 'professional',
