@@ -534,6 +534,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                       setShowAddTask(true);
                     }}
                     onProjectNavigate={() => onOpenChange(false)}
+                    onTaskUpdate={fetchTasks}
                   />
                 </TabsContent>
 

@@ -38,6 +38,7 @@ interface HomeTasksTableProps {
   onLinkProject: (task: HomeTask) => void;
   onAddTask?: () => void;
   onProjectNavigate?: () => void;
+  onTaskUpdate?: () => void;
 }
 type SortField = 'title' | 'priority' | 'status' | 'diy_level' | 'due_date' | 'task_type';
 type SortDirection = 'asc' | 'desc';
@@ -48,18 +49,19 @@ export function HomeTasksTable({
   onAddSubtasks,
   onLinkProject,
   onAddTask,
-  onProjectNavigate
+  onProjectNavigate,
+  onTaskUpdate
 }: HomeTasksTableProps) {
   const navigate = useNavigate();
   const [sortField, setSortField] = useState<SortField>('due_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPriority, setFilterPriority] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterDiyLevel, setFilterDiyLevel] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [projectStatuses, setProjectStatuses] = useState<Record<string, string>>({});
   const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [showCompleted, setShowCompleted] = useState(false);
 
   useEffect(() => {
     fetchProjectStatuses();
@@ -130,6 +132,18 @@ export function HomeTasksTable({
     }
   };
 
+  const handleToggleTaskComplete = async (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'closed' ? 'open' : 'closed';
+    const { error } = await supabase
+      .from('home_tasks')
+      .update({ status: newStatus })
+      .eq('id', taskId);
+
+    if (!error) {
+      onTaskUpdate?.();
+    }
+  };
+
   const getDisplayStatus = (task: HomeTask) => {
     if (task.project_run_id && projectStatuses[task.project_run_id]) {
       return projectStatuses[task.project_run_id];
@@ -155,15 +169,17 @@ export function HomeTasksTable({
   const filteredAndSortedTasks = useMemo(() => {
     let filtered = [...tasks];
 
+    // Hide completed tasks unless showCompleted is true
+    if (!showCompleted) {
+      filtered = filtered.filter(task => task.status !== 'closed');
+    }
+
     // Apply filters
     if (searchTerm) {
       filtered = filtered.filter(task => task.title.toLowerCase().includes(searchTerm.toLowerCase()) || task.description?.toLowerCase().includes(searchTerm.toLowerCase()));
     }
     if (filterPriority !== 'all') {
       filtered = filtered.filter(task => task.priority === filterPriority);
-    }
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(task => task.status === filterStatus);
     }
     if (filterDiyLevel !== 'all') {
       filtered = filtered.filter(task => task.diy_level === filterDiyLevel);
@@ -198,7 +214,7 @@ export function HomeTasksTable({
       return 0;
     });
     return filtered;
-  }, [tasks, sortField, sortDirection, filterPriority, filterStatus, filterDiyLevel, searchTerm]);
+  }, [tasks, sortField, sortDirection, filterPriority, filterDiyLevel, searchTerm, showCompleted]);
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
@@ -238,7 +254,7 @@ export function HomeTasksTable({
   return <div className="space-y-3">
       {/* Filters and Add Task Button */}
       <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
-        <div className="flex flex-wrap gap-2 flex-1">
+        <div className="flex flex-wrap gap-2 flex-1 items-center">
           <Input placeholder="Search tasks..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs text-xs h-8" />
           <Select value={filterPriority} onValueChange={setFilterPriority}>
             <SelectTrigger className="w-32 text-xs h-8">
@@ -251,17 +267,6 @@ export function HomeTasksTable({
               <SelectItem value="low">Low</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-32 text-xs h-8">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
           <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
             <SelectTrigger className="w-32 text-xs h-8">
               <SelectValue placeholder="DIY Level" />
@@ -273,6 +278,16 @@ export function HomeTasksTable({
               <SelectItem value="pro">Pro</SelectItem>
             </SelectContent>
           </Select>
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="show-completed" 
+              checked={showCompleted}
+              onCheckedChange={(checked) => setShowCompleted(checked as boolean)}
+            />
+            <label htmlFor="show-completed" className="text-xs cursor-pointer">
+              Show completed
+            </label>
+          </div>
         </div>
         {onAddTask && (
           <Button onClick={onAddTask} size="sm" className="h-8 text-xs px-3 whitespace-nowrap">
@@ -288,37 +303,33 @@ export function HomeTasksTable({
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
+                <TableHead className="w-8 text-xs"></TableHead>
                 <TableHead className="w-[250px] text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('title')} className="h-6 px-2 text-xs font-medium">
                     Task <SortIcon field="title" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[100px] text-xs">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('status')} className="h-6 px-2 text-xs font-medium">
-                    Status <SortIcon field="status" />
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[100px] text-xs">
+                <TableHead className="w-[180px] text-xs">Notes</TableHead>
+                <TableHead className="w-[80px] text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('priority')} className="h-6 px-2 text-xs font-medium">
                     Priority <SortIcon field="priority" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[100px] text-xs">
+                <TableHead className="w-[80px] text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('diy_level')} className="h-6 px-2 text-xs font-medium">
                     DIY Level <SortIcon field="diy_level" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[120px] text-xs">
+                <TableHead className="w-[80px] text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('task_type')} className="h-6 px-2 text-xs font-medium">
                     Type <SortIcon field="task_type" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[120px] text-xs">
+                <TableHead className="w-[100px] text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('due_date')} className="h-6 px-2 text-xs font-medium">
                     Due Date <SortIcon field="due_date" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[200px] text-xs">Notes</TableHead>
                 <TableHead className="w-[150px] text-xs text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -329,10 +340,17 @@ export function HomeTasksTable({
                   </TableCell>
                 </TableRow> : filteredAndSortedTasks.map(task => (
                   <>
-                    <TableRow key={task.id}>
+                    <TableRow key={task.id} className={task.status === 'closed' ? 'opacity-60' : ''}>
+                      <TableCell>
+                        <Checkbox
+                          checked={task.status === 'closed'}
+                          onCheckedChange={() => handleToggleTaskComplete(task.id, task.status)}
+                          className="h-4 w-4"
+                        />
+                      </TableCell>
                      <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium">{task.title}</span>
+                        <span className={`text-xs font-medium ${task.status === 'closed' ? 'line-through' : ''}`}>{task.title}</span>
                         {subtasks[task.id]?.length > 0 && (
                           <Button
                             variant="ghost"
@@ -349,10 +367,8 @@ export function HomeTasksTable({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(getDisplayStatus(task))} className="text-[10px] px-1.5 py-0">
-                        {getDisplayStatus(task).replace('_', ' ').replace('-', ' ')}
-                      </Badge>
+                    <TableCell className="text-xs truncate max-w-[180px]" title={task.notes || ''}>
+                      {task.notes || '-'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getPriorityColor(task.priority)} className="text-[10px] px-1.5 py-0">
@@ -367,9 +383,6 @@ export function HomeTasksTable({
                     <TableCell className="text-xs">{task.task_type.replace('_', ' ')}</TableCell>
                     <TableCell className="text-xs">
                       {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
-                    </TableCell>
-                    <TableCell className="text-xs truncate max-w-[200px]" title={task.notes || ''}>
-                      {task.notes || '-'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
