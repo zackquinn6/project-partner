@@ -336,13 +336,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
               <div className="flex-1 overflow-auto px-2 md:px-4 pb-3 min-h-0">
                 <TabsContent value="tasks" className="mt-0 space-y-2 md:space-y-3 h-full">
-                  <div className="flex justify-end">
-                    <Button onClick={() => setShowAddTask(true)} size="sm" className="h-7 text-[10px] md:text-xs px-2">
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add Task
-                    </Button>
-                  </div>
-
                   {showAddTask && (
                     <Card>
                       <CardContent className="pt-4 space-y-3">
@@ -518,6 +511,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                     onDelete={handleDelete}
                     onAddSubtasks={handleAddSubtasks}
                     onLinkProject={handleLinkProject}
+                    onAddTask={() => setShowAddTask(true)}
                   />
                 </TabsContent>
 

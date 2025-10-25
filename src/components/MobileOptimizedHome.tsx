@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
 import { 
@@ -322,37 +328,41 @@ export function MobileOptimizedHome() {
           </div>
         </div>
 
-        {/* Labs - Experimental Features */}
+        {/* Labs - Experimental Features - Collapsed by default */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            🧪 Labs
-            <Badge variant="secondary" className="text-[10px]">Experimental</Badge>
-          </h2>
-          <Card className="gradient-card shadow-sm rounded-xl">
-            <CardContent className="p-0">
-              <div className="divide-y divide-border">
-                {betaApps.map((app, index) => {
-                  const Icon = app.icon;
-                  return (
-                    <div 
-                      key={app.id}
-                      className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent/50 transition-colors"
-                      onClick={app.action}
-                    >
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Icon className="h-5 w-5 text-primary" />
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="labs" className="border rounded-xl shadow-sm">
+              <AccordionTrigger className="px-4 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold text-foreground">🧪 Labs</span>
+                  <Badge variant="secondary" className="text-[10px]">{betaApps.length}</Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="divide-y divide-border">
+                  {betaApps.map((app) => {
+                    const Icon = app.icon;
+                    return (
+                      <div 
+                        key={app.id}
+                        className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={app.action}
+                      >
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm text-card-foreground">{app.title}</h3>
+                          <p className="text-xs text-muted-foreground truncate">{app.description}</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm text-card-foreground">{app.title}</h3>
-                        <p className="text-xs text-muted-foreground truncate">{app.description}</p>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                    );
+                  })}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </div>
     </div>

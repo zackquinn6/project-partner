@@ -36,6 +36,7 @@ interface HomeTasksTableProps {
   onDelete: (taskId: string) => void;
   onAddSubtasks: (task: HomeTask) => void;
   onLinkProject: (task: HomeTask) => void;
+  onAddTask?: () => void;
 }
 type SortField = 'title' | 'priority' | 'status' | 'diy_level' | 'due_date' | 'task_type';
 type SortDirection = 'asc' | 'desc';
@@ -44,7 +45,8 @@ export function HomeTasksTable({
   onEdit,
   onDelete,
   onAddSubtasks,
-  onLinkProject
+  onLinkProject,
+  onAddTask
 }: HomeTasksTableProps) {
   const navigate = useNavigate();
   const [sortField, setSortField] = useState<SortField>('due_date');
@@ -232,21 +234,22 @@ export function HomeTasksTable({
     }
   };
   return <div className="space-y-3">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Input placeholder="Search tasks..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs text-xs h-8" />
-        <Select value={filterPriority} onValueChange={setFilterPriority}>
-          <SelectTrigger className="w-32 text-xs h-8">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priority</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
+      {/* Filters and Add Task Button */}
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+        <div className="flex flex-wrap gap-2 flex-1">
+          <Input placeholder="Search tasks..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs text-xs h-8" />
+          <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger className="w-32 text-xs h-8">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priority</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-32 text-xs h-8">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -257,17 +260,24 @@ export function HomeTasksTable({
             <SelectItem value="closed">Closed</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
-          <SelectTrigger className="w-32 text-xs h-8">
-            <SelectValue placeholder="DIY Level" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Levels</SelectItem>
-            <SelectItem value="beginner">Beginner</SelectItem>
-            <SelectItem value="intermediate">Intermediate</SelectItem>
-            <SelectItem value="pro">Pro</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
+            <SelectTrigger className="w-32 text-xs h-8">
+              <SelectValue placeholder="DIY Level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Levels</SelectItem>
+              <SelectItem value="beginner">Beginner</SelectItem>
+              <SelectItem value="intermediate">Intermediate</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {onAddTask && (
+          <Button onClick={onAddTask} size="sm" className="h-8 text-xs px-3 whitespace-nowrap">
+            <Plus className="h-3 w-3 mr-1" />
+            Add Task
+          </Button>
+        )}
       </div>
 
       {/* Table */}
