@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pencil, Trash2, ChevronDown, ChevronUp, Plus, Link2, ExternalLink } from "lucide-react";
+import { Pencil, Trash2, ChevronDown, ChevronUp, Plus, Link2, ExternalLink, GripVertical, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 interface HomeTask {
   id: string;
   title: string;
@@ -21,6 +22,7 @@ interface HomeTask {
   task_type: 'general' | 'pre_sale' | 'diy' | 'contractor';
   created_at: string;
   project_run_id: string | null;
+  ordered: boolean;
 }
 
 interface Subtask {
@@ -29,16 +31,25 @@ interface Subtask {
   estimated_hours: number | null;
   diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
   completed: boolean;
+  order_index: number;
+  assigned_person_id: string | null;
+  assigned_person_name?: string;
+}
+
+interface Person {
+  id: string;
+  name: string;
 }
 interface HomeTasksTableProps {
   tasks: HomeTask[];
   onEdit: (task: HomeTask) => void;
   onDelete: (taskId: string) => void;
-  onAddSubtasks: (task: HomeTask) => void;
   onLinkProject: (task: HomeTask) => void;
   onAddTask?: () => void;
   onProjectNavigate?: () => void;
   onTaskUpdate?: () => void;
+  userId: string;
+  homeId: string | null;
 }
 type SortField = 'title' | 'priority' | 'diy_level' | 'due_date';
 type SortDirection = 'asc' | 'desc';
@@ -46,11 +57,12 @@ export function HomeTasksTable({
   tasks,
   onEdit,
   onDelete,
-  onAddSubtasks,
   onLinkProject,
   onAddTask,
   onProjectNavigate,
-  onTaskUpdate
+  onTaskUpdate,
+  userId,
+  homeId
 }: HomeTasksTableProps) {
   const navigate = useNavigate();
   const [sortField, setSortField] = useState<SortField>('due_date');
@@ -62,10 +74,18 @@ export function HomeTasksTable({
   const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showCompleted, setShowCompleted] = useState(false);
+  const [people, setPeople] = useState<Person[]>([]);
+  const [newSubtask, setNewSubtask] = useState<Record<string, {
+    title: string;
+    estimated_hours: number;
+    diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
+    assigned_person_id: string | null;
+  }>>({});
 
   useEffect(() => {
     fetchProjectStatuses();
     fetchSubtasks();
+    fetchPeople();
   }, [tasks]);
 
   const fetchProjectStatuses = async () => {
@@ -89,6 +109,22 @@ export function HomeTasksTable({
     }
   };
 
+  const fetchPeople = async () => {
+    let query = supabase
+      .from('home_task_people')
+      .select('id, name')
+      .eq('user_id', userId);
+    
+    if (homeId) {
+      query = query.eq('home_id', homeId);
+    }
+
+    const { data, error } = await query;
+    if (!error && data) {
+      setPeople(data);
+    }
+  };
+
   const fetchSubtasks = async () => {
     const taskIds = tasks.map(t => t.id);
     
@@ -96,8 +132,12 @@ export function HomeTasksTable({
 
     const { data } = await supabase
       .from("home_task_subtasks")
-      .select("*")
-      .in("task_id", taskIds);
+      .select(`
+        *,
+        assigned_person:home_task_people!assigned_person_id(name)
+      `)
+      .in("task_id", taskIds)
+      .order('order_index', { ascending: true });
 
     if (data) {
       const subtaskMap: Record<string, Subtask[]> = {};
@@ -105,7 +145,10 @@ export function HomeTasksTable({
         if (!subtaskMap[st.task_id]) {
           subtaskMap[st.task_id] = [];
         }
-        subtaskMap[st.task_id].push(st);
+        subtaskMap[st.task_id].push({
+          ...st,
+          assigned_person_name: (st.assigned_person as any)?.name || null
+        });
       });
       setSubtasks(subtaskMap);
     }
@@ -142,6 +185,107 @@ export function HomeTasksTable({
     if (!error) {
       onTaskUpdate?.();
     }
+  };
+
+  const handleOrderedChange = async (taskId: string, ordered: boolean) => {
+    const { error } = await supabase
+      .from('home_tasks')
+      .update({ ordered })
+      .eq('id', taskId);
+    
+    if (!error) {
+      onTaskUpdate?.();
+    }
+  };
+
+  const getNewSubtask = (taskId: string) => {
+    return newSubtask[taskId] || {
+      title: '',
+      estimated_hours: 1,
+      diy_level: 'intermediate' as const,
+      assigned_person_id: null
+    };
+  };
+
+  const updateNewSubtask = (taskId: string, updates: Partial<typeof newSubtask[string]>) => {
+    setNewSubtask(prev => ({
+      ...prev,
+      [taskId]: { ...getNewSubtask(taskId), ...updates }
+    }));
+  };
+
+  const handleAddSubtask = async (taskId: string) => {
+    const subtask = getNewSubtask(taskId);
+    if (!subtask.title.trim()) return;
+
+    const taskSubtasks = subtasks[taskId] || [];
+    const { error } = await supabase
+      .from('home_task_subtasks')
+      .insert([{
+        task_id: taskId,
+        user_id: userId,
+        title: subtask.title,
+        estimated_hours: subtask.estimated_hours,
+        diy_level: subtask.diy_level,
+        assigned_person_id: subtask.assigned_person_id,
+        order_index: taskSubtasks.length
+      }]);
+
+    if (!error) {
+      setNewSubtask(prev => {
+        const updated = { ...prev };
+        delete updated[taskId];
+        return updated;
+      });
+      fetchSubtasks();
+    }
+  };
+
+  const handleUpdateAssignment = async (subtaskId: string, personId: string | null) => {
+    const { error } = await supabase
+      .from('home_task_subtasks')
+      .update({ assigned_person_id: personId })
+      .eq('id', subtaskId);
+
+    if (!error) {
+      fetchSubtasks();
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    const { error } = await supabase
+      .from('home_task_subtasks')
+      .delete()
+      .eq('id', subtaskId);
+
+    if (!error) {
+      fetchSubtasks();
+    }
+  };
+
+  const handleDragEnd = async (result: DropResult, taskId: string) => {
+    if (!result.destination) return;
+
+    const taskSubtasks = subtasks[taskId] || [];
+    const items = Array.from(taskSubtasks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Update local state immediately
+    setSubtasks(prev => ({
+      ...prev,
+      [taskId]: items
+    }));
+
+    // Update order_index for all affected subtasks
+    const updates = items.map((item, index) => 
+      supabase
+        .from('home_task_subtasks')
+        .update({ order_index: index })
+        .eq('id', item.id)
+    );
+
+    await Promise.all(updates);
   };
 
   const getDisplayStatus = (task: HomeTask) => {
@@ -397,7 +541,7 @@ export function HomeTasksTable({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => onAddSubtasks(task)} 
+                          onClick={() => toggleRow(task.id)} 
                           className="h-7 px-2"
                           title="Manage subtasks"
                         >
@@ -435,50 +579,180 @@ export function HomeTasksTable({
                       </div>
                     </TableCell>
                   </TableRow>
-                  {expandedRows.has(task.id) && subtasks[task.id]?.length > 0 && (
+                  {expandedRows.has(task.id) && (
                     <TableRow key={`${task.id}-subtasks`}>
-                      <TableCell colSpan={7} className="bg-muted/50 p-0">
-                          <div className="px-12 py-3">
-                          <div className="text-xs font-medium mb-2">Subtasks:</div>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="text-xs h-8 w-10"></TableHead>
-                                <TableHead className="text-xs h-8">Subtask</TableHead>
-                                <TableHead className="text-xs h-8">Est. Hours</TableHead>
-                                <TableHead className="text-xs h-8">DIY Level</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {subtasks[task.id].map(subtask => (
-                                <TableRow key={subtask.id} className={subtask.completed ? 'opacity-60' : ''}>
-                                  <TableCell className="py-2 w-10">
-                                    <button
-                                      onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
-                                      className="text-xs hover:opacity-70 transition-opacity"
-                                      title={subtask.completed ? 'Mark as incomplete' : 'Mark as complete'}
-                                    >
-                                      {subtask.completed ? '✓' : '○'}
-                                    </button>
-                                  </TableCell>
-                                  <TableCell className="text-xs py-2">
-                                    <span 
-                                      className={`cursor-pointer ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}
-                                      onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
-                                    >
-                                      {subtask.title}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-xs py-2">{subtask.estimated_hours || '-'}</TableCell>
-                                  <TableCell className="text-xs py-2">
-                                    <Badge variant={getDiyLevelColor(subtask.diy_level)} className="text-[10px] px-1.5 py-0">
-                                      {subtask.diy_level}
-                                    </Badge>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                      <TableCell colSpan={7} className="bg-muted/50 p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-medium">Subtasks</div>
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs text-muted-foreground">Order matters:</label>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant={!task.ordered ? "default" : "outline"}
+                                  onClick={() => handleOrderedChange(task.id, false)}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  No
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={task.ordered ? "default" : "outline"}
+                                  onClick={() => handleOrderedChange(task.id, true)}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  Yes
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Add new subtask form */}
+                          <div className="grid grid-cols-1 gap-2 p-3 border rounded bg-background">
+                            <Input
+                              placeholder="New subtask title"
+                              value={getNewSubtask(task.id).title}
+                              onChange={(e) => updateNewSubtask(task.id, { title: e.target.value })}
+                              className="text-xs h-9"
+                            />
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              <Input
+                                type="number"
+                                min="0.25"
+                                step="0.25"
+                                value={getNewSubtask(task.id).estimated_hours}
+                                onChange={(e) => updateNewSubtask(task.id, { estimated_hours: parseFloat(e.target.value) })}
+                                className="text-xs h-9"
+                                placeholder="Hours"
+                              />
+                              <Select 
+                                value={getNewSubtask(task.id).diy_level} 
+                                onValueChange={(val) => updateNewSubtask(task.id, { diy_level: val as any })}
+                              >
+                                <SelectTrigger className="text-xs h-9">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="beginner">Beginner</SelectItem>
+                                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                                  <SelectItem value="advanced">Advanced</SelectItem>
+                                  <SelectItem value="pro">Professional</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Select 
+                                value={getNewSubtask(task.id).assigned_person_id || "unassigned"} 
+                                onValueChange={(val) => updateNewSubtask(task.id, { assigned_person_id: val === 'unassigned' ? null : val })}
+                              >
+                                <SelectTrigger className="text-xs h-9">
+                                  <SelectValue placeholder="Assign to" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                                  {people.map(person => (
+                                    <SelectItem key={person.id} value={person.id}>{person.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button onClick={() => handleAddSubtask(task.id)} size="sm" className="h-9 text-xs">
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Subtasks list with drag-drop */}
+                          <DragDropContext onDragEnd={(result) => handleDragEnd(result, task.id)}>
+                            <Droppable droppableId={`subtasks-${task.id}`}>
+                              {(provided) => (
+                                <div 
+                                  {...provided.droppableProps}
+                                  ref={provided.innerRef}
+                                  className="space-y-2"
+                                >
+                                  {(!subtasks[task.id] || subtasks[task.id].length === 0) ? (
+                                    <p className="text-xs text-muted-foreground text-center py-4">No subtasks yet</p>
+                                  ) : (
+                                    subtasks[task.id].map((subtask, index) => (
+                                      <Draggable key={subtask.id} draggableId={subtask.id} index={index}>
+                                        {(provided, snapshot) => (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            className={`grid ${task.ordered ? 'grid-cols-[auto,auto,auto,1fr,auto,auto,auto,auto]' : 'grid-cols-[auto,auto,1fr,auto,auto,auto,auto]'} gap-2 items-center p-2 border rounded bg-background ${
+                                              subtask.completed ? 'opacity-60' : ''
+                                            } ${snapshot.isDragging ? 'shadow-lg' : ''}`}
+                                          >
+                                            <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                                              <GripVertical className="h-4 w-4" />
+                                            </div>
+                                            {task.ordered && (
+                                              <div className="text-xs font-semibold text-muted-foreground w-6 text-center">
+                                                {index + 1}.
+                                              </div>
+                                            )}
+                                            <button
+                                              onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
+                                              className="h-6 w-6 flex items-center justify-center text-sm hover:opacity-70 transition-opacity"
+                                              title={subtask.completed ? 'Mark as incomplete' : 'Mark as complete'}
+                                            >
+                                              {subtask.completed ? '✓' : '○'}
+                                            </button>
+                                            <div 
+                                              className={`text-xs cursor-pointer ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}
+                                              onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
+                                            >
+                                              {subtask.title}
+                                            </div>
+                                            <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                                              {subtask.estimated_hours}h
+                                            </Badge>
+                                            <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                                              {subtask.diy_level === 'beginner' ? 'new' : 
+                                               subtask.diy_level === 'intermediate' ? 'mid' : 
+                                               subtask.diy_level === 'advanced' ? 'adv' : 'pro'}
+                                            </Badge>
+                                            <Select 
+                                              value={subtask.assigned_person_id || "unassigned"}
+                                              onValueChange={(val) => handleUpdateAssignment(subtask.id, val === 'unassigned' ? null : val)}
+                                              disabled={subtask.completed}
+                                            >
+                                              <SelectTrigger className="w-32 h-7 text-xs px-2">
+                                                <SelectValue>
+                                                  {subtask.assigned_person_name ? (
+                                                    <span className="flex items-center gap-1">
+                                                      <User className="h-2.5 w-2.5" />
+                                                      <span className="truncate">{subtask.assigned_person_name}</span>
+                                                    </span>
+                                                  ) : (
+                                                    'Unassign'
+                                                  )}
+                                                </SelectValue>
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="unassigned">Unassigned</SelectItem>
+                                                {people.map(person => (
+                                                  <SelectItem key={person.id} value={person.id}>{person.name}</SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                            <button
+                                              onClick={() => handleDeleteSubtask(subtask.id)}
+                                              className="h-6 w-6 flex items-center justify-center text-destructive hover:bg-destructive/10 rounded transition-colors"
+                                              title="Delete subtask"
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+                                          </div>
+                                        )}
+                                      </Draggable>
+                                    ))
+                                  )}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </DragDropContext>
                         </div>
                       </TableCell>
                     </TableRow>
