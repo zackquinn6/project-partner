@@ -18,6 +18,13 @@ export default {
 			}
 		},
 		extend: {
+			fontSize: {
+				'hero': ['4rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+				'hero-mobile': ['2.5rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
+			},
+			lineHeight: {
+				'relaxed-plus': '1.75',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
