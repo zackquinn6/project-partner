@@ -121,8 +121,15 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   };
 
   const handleSubmit = async () => {
+    console.log("handleSubmit called", { user: !!user, title: formData.title, selectedHomeId });
+    
     if (!user || !formData.title.trim()) {
       toast.error("Title is required");
+      return;
+    }
+
+    if (!selectedHomeId) {
+      toast.error("Please select a home first");
       return;
     }
 
@@ -132,6 +139,8 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       home_id: selectedHomeId,
       due_date: formData.due_date || null,
     };
+
+    console.log("Attempting to save task:", taskData);
 
     try {
       if (editingTask) {
@@ -165,11 +174,14 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         
         toast.success("Task updated");
       } else {
+        console.log("Creating new task...");
         const { data: newTask, error } = await supabase
           .from("home_tasks")
           .insert([taskData])
           .select()
           .single();
+        
+        console.log("Insert result:", { newTask, error });
         
         if (error) throw error;
 
@@ -199,7 +211,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       fetchTasks();
     } catch (error) {
       console.error("Error saving task:", error);
-      toast.error("Failed to save task");
+      toast.error(`Failed to save task: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
