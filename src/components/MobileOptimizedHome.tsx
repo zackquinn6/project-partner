@@ -22,7 +22,8 @@ import {
   TrendingUp,
   CheckCircle,
   Clock,
-  ListChecks
+  ListChecks,
+  ArrowRight
 } from 'lucide-react';
 
 export function MobileOptimizedHome() {
@@ -138,21 +139,35 @@ export function MobileOptimizedHome() {
     }
   ];
 
-  // Only show 2 most stable beta features on main page
+  // All beta/experimental features
   const betaApps = [
     {
       id: 'community',
       icon: Users,
       title: 'Community',
-      color: 'bg-purple-500', // Help: Purple
+      description: 'Connect with other DIYers',
       action: () => window.dispatchEvent(new CustomEvent('show-community-posts'))
     },
     {
       id: 'tool-rentals',
       icon: Hammer,
       title: 'Tool Access',
-      color: 'bg-orange-500', // Tools: Orange
+      description: 'Find and rent tools nearby',
       action: () => window.dispatchEvent(new CustomEvent('show-tool-rentals'))
+    },
+    {
+      id: 'ai-repair',
+      icon: Camera,
+      title: 'AI Repair',
+      description: 'Diagnose issues with AI',
+      action: () => window.dispatchEvent(new CustomEvent('show-ai-repair'))
+    },
+    {
+      id: 'code-permits',
+      icon: Building2,
+      title: 'Code & Compliance',
+      description: 'Building codes and permits',
+      action: () => {} // Add action when ready
     }
   ];
 
@@ -313,25 +328,31 @@ export function MobileOptimizedHome() {
             🧪 Labs
             <Badge variant="secondary" className="text-[10px]">Experimental</Badge>
           </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {betaApps.map((app) => {
-              const Icon = app.icon;
-              return (
-                <Card 
-                  key={app.id}
-                  className="gradient-card cursor-pointer hover:shadow-md transition-smooth shadow-sm rounded-xl relative"
-                  onClick={app.action}
-                >
-                  <CardContent className="p-4 min-h-[100px]">
-                    <div className={`w-10 h-10 ${app.color} rounded-xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
-                      <Icon className="h-5 w-5 text-white" />
+          <Card className="gradient-card shadow-sm rounded-xl">
+            <CardContent className="p-0">
+              <div className="divide-y divide-border">
+                {betaApps.map((app, index) => {
+                  const Icon = app.icon;
+                  return (
+                    <div 
+                      key={app.id}
+                      className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+                      onClick={app.action}
+                    >
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm text-card-foreground">{app.title}</h3>
+                        <p className="text-xs text-muted-foreground truncate">{app.description}</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     </div>
-                    <h3 className="font-semibold text-sm text-card-foreground">{app.title}</h3>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

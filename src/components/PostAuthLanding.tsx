@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FolderOpen, BookOpen, User, ArrowRight, Trophy, Target, Zap, Wrench, Home, Shield, Hammer, HelpCircle, Calculator, Building2, Users, ListChecks } from 'lucide-react';
+import { FolderOpen, BookOpen, User, ArrowRight, Trophy, Target, Zap, Wrench, Home, Shield, Hammer, HelpCircle, Calculator, Building2, Users, ListChecks, Camera } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -13,6 +13,7 @@ import { ExpertHelpWindow } from '@/components/ExpertHelpWindow';
 import { RapidProjectAssessmentWindow } from '@/components/RapidProjectAssessmentWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
+import { AIRepairWindow } from '@/components/AIRepairWindow';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
   const {
@@ -28,6 +29,7 @@ export const PostAuthLanding = () => {
   const [showCodePermits, setShowCodePermits] = useState(false);
   const [showContractorFinder, setShowContractorFinder] = useState(false);
   const [showHomeTaskList, setShowHomeTaskList] = useState(false);
+  const [showAIRepair, setShowAIRepair] = useState(false);
   const [stats, setStats] = useState([{
     label: "Active Projects", 
     value: "0",
@@ -259,6 +261,64 @@ export const PostAuthLanding = () => {
                 </div>
               </div>
             </div>
+            
+            {/* Labs - Experimental Features */}
+            <div>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="text-lg font-semibold text-foreground">🧪 Labs</span>
+                <Badge variant="secondary" className="text-xs">Experimental</Badge>
+              </div>
+              
+              <Card className="max-w-2xl mx-auto shadow-sm">
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border">
+                    <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => window.dispatchEvent(new CustomEvent('show-community-posts'))}>
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm text-card-foreground">Community</h3>
+                        <p className="text-xs text-muted-foreground">Connect with other DIYers</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setShowToolRentals(true)}>
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Hammer className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm text-card-foreground">Tool Access</h3>
+                        <p className="text-xs text-muted-foreground">Find and rent tools nearby</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setShowAIRepair(true)}>
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Camera className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm text-card-foreground">AI Repair</h3>
+                        <p className="text-xs text-muted-foreground">Diagnose issues with AI</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setShowCodePermits(true)}>
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm text-card-foreground">Code & Compliance</h3>
+                        <p className="text-xs text-muted-foreground">Building codes and permits</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
 
@@ -272,6 +332,8 @@ export const PostAuthLanding = () => {
         <ToolRentalsWindow isOpen={showToolRentals} onClose={() => setShowToolRentals(false)} />
         
         <ExpertHelpWindow isOpen={showExpertHelp} onClose={() => setShowExpertHelp(false)} />
+        
+        <AIRepairWindow open={showAIRepair} onOpenChange={setShowAIRepair} />
         
         <CodePermitsWindow open={showCodePermits} onOpenChange={setShowCodePermits} />
         

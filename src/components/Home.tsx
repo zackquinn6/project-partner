@@ -218,21 +218,55 @@ export default function Home({
                 <Badge variant="secondary" className="text-xs">Experimental</Badge>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto px-2">
-                <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-community-posts'))}>
-                  <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.community} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-sm hover:shadow-md`}>
-                    <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <Card className="max-w-2xl mx-auto shadow-sm">
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border">
+                    <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => window.dispatchEvent(new CustomEvent('show-community-posts'))}>
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm text-card-foreground">Community</h3>
+                        <p className="text-xs text-muted-foreground">Connect with other DIYers</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Hammer className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm text-card-foreground">Tool Access</h3>
+                        <p className="text-xs text-muted-foreground">Find and rent tools nearby</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => window.dispatchEvent(new CustomEvent('show-ai-repair'))}>
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Camera className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm text-card-foreground">AI Repair</h3>
+                        <p className="text-xs text-muted-foreground">Diagnose issues with AI</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setIsCodePermitsOpen(true)}>
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm text-card-foreground">Code & Compliance</h3>
+                        <p className="text-xs text-muted-foreground">Building codes and permits</p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    </div>
                   </div>
-                  <span className="text-xs font-medium text-black text-center leading-tight px-1">Community</span>
-                </div>
-
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tool-rentals'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolAccess} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-sm hover:shadow-md`}>
-                  <Hammer className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Tool Access</span>
-              </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
            </div>
          </div> :
