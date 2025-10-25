@@ -1,7 +1,7 @@
 interface Task {
   id: string;
   title: string;
-  diy_level: 'beginner' | 'intermediate' | 'pro';
+  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
   priority?: 'high' | 'medium' | 'low';
   subtasks: Subtask[];
 }
@@ -10,7 +10,7 @@ interface Subtask {
   id: string;
   title: string;
   estimated_hours: number;
-  diy_level: 'beginner' | 'intermediate' | 'pro';
+  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
 }
 
 interface Person {
@@ -19,7 +19,7 @@ interface Person {
   available_hours: number;
   available_days: string[];
   consecutive_days: number;
-  diy_level: 'beginner' | 'intermediate' | 'pro';
+  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
   hourly_rate?: number;
   not_available_dates?: string[];
 }
@@ -43,16 +43,16 @@ interface ScheduleResult {
 
 const DAY_ORDER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-function canPersonDoTask(person: Person, taskDiyLevel: 'beginner' | 'intermediate' | 'pro'): boolean {
-  const diyLevels = { beginner: 1, intermediate: 2, pro: 3 };
+function canPersonDoTask(person: Person, taskDiyLevel: 'beginner' | 'intermediate' | 'advanced' | 'pro'): boolean {
+  const diyLevels = { beginner: 1, intermediate: 2, advanced: 3, pro: 4 };
   return diyLevels[person.diy_level] >= diyLevels[taskDiyLevel];
 }
 
-function getSkillMatchScore(person: Person, taskDiyLevel: 'beginner' | 'intermediate' | 'pro'): number {
-  // Perfect match = 3, one level up = 2, two levels up = 1
-  const diyLevels = { beginner: 1, intermediate: 2, pro: 3 };
+function getSkillMatchScore(person: Person, taskDiyLevel: 'beginner' | 'intermediate' | 'advanced' | 'pro'): number {
+  // Perfect match = 4, one level up = 3, two levels up = 2, etc.
+  const diyLevels = { beginner: 1, intermediate: 2, advanced: 3, pro: 4 };
   const gap = diyLevels[person.diy_level] - diyLevels[taskDiyLevel];
-  return Math.max(0, 3 - gap);
+  return Math.max(0, 4 - gap);
 }
 
 export function scheduleHomeTasksOptimized(
@@ -81,7 +81,7 @@ export function scheduleHomeTasksOptimized(
     subtaskId: string | null;
     subtaskTitle: string;
     hours: number;
-    diyLevel: 'beginner' | 'intermediate' | 'pro';
+    diyLevel: 'beginner' | 'intermediate' | 'advanced' | 'pro';
     priority: 'high' | 'medium' | 'low';
   }
 
@@ -123,7 +123,7 @@ export function scheduleHomeTasksOptimized(
     if (priorityDiff !== 0) return priorityDiff;
     
     // Then by DIY level (pro first)
-    const diyOrder = { pro: 3, intermediate: 2, beginner: 1 };
+    const diyOrder = { pro: 4, advanced: 3, intermediate: 2, beginner: 1 };
     return diyOrder[b.diyLevel] - diyOrder[a.diyLevel];
   });
 
