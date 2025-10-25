@@ -15,7 +15,7 @@ interface HomeTask {
   description: string | null;
   priority: 'high' | 'medium' | 'low';
   status: 'open' | 'in_progress' | 'closed';
-  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'professional';
+  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
   notes: string | null;
   due_date: string | null;
   task_type: 'general' | 'pre_sale' | 'diy' | 'contractor';
@@ -27,7 +27,7 @@ interface Subtask {
   id: string;
   title: string;
   estimated_hours: number | null;
-  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'professional';
+  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
   completed: boolean;
 }
 interface HomeTasksTableProps {
@@ -199,7 +199,7 @@ export function HomeTasksTable({
         bVal = priorityOrder[b.priority];
       } else if (sortField === 'diy_level') {
         const diyLevelOrder = {
-          professional: 4,
+          pro: 4,
           advanced: 3,
           intermediate: 2,
           beginner: 1
@@ -242,7 +242,7 @@ export function HomeTasksTable({
   };
   const getDiyLevelColor = (level: string) => {
     switch (level) {
-      case 'professional':
+      case 'pro':
         return 'destructive';
       case 'advanced':
         return 'destructive';
@@ -279,7 +279,7 @@ export function HomeTasksTable({
               <SelectItem value="beginner">Beginner</SelectItem>
               <SelectItem value="intermediate">Intermediate</SelectItem>
               <SelectItem value="advanced">Advanced</SelectItem>
-              <SelectItem value="professional">Professional</SelectItem>
+              <SelectItem value="pro">Professional</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex items-center gap-1">
@@ -386,8 +386,7 @@ export function HomeTasksTable({
                       <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[10px] px-1.5 py-0">
                         {task.diy_level === 'beginner' ? 'new' : 
                          task.diy_level === 'intermediate' ? 'mid' : 
-                         task.diy_level === 'advanced' ? 'adv' : 
-                         task.diy_level === 'professional' ? 'pro' : task.diy_level}
+                         task.diy_level === 'advanced' ? 'adv' : 'pro'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs">

@@ -22,7 +22,7 @@ interface HomeTask {
   description: string | null;
   priority: 'high' | 'medium' | 'low';
   status: 'open' | 'in_progress' | 'closed';
-  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'professional';
+  diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
   notes: string | null;
   due_date: string | null;
   home_id: string | null;
@@ -49,7 +49,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   const [selectedTask, setSelectedTask] = useState<HomeTask | null>(null);
   const [showProjectLink, setShowProjectLink] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
-  const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; estimated_hours: number; diy_level: 'beginner' | 'intermediate' | 'advanced' | 'professional' }>>([]);
+  const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; estimated_hours: number; diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro' }>>([]);
   
   const handleOrderedChange = async (ordered: boolean) => {
     if (!selectedTask) return;
@@ -69,7 +69,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     title: string;
     priority: 'high' | 'medium' | 'low';
     status: 'open' | 'in_progress' | 'closed';
-    diy_level: 'beginner' | 'intermediate' | 'advanced' | 'professional';
+    diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
     notes: string;
     due_date: string;
     task_type: 'diy' | 'contractor';
@@ -249,7 +249,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       title: task.title,
       priority: task.priority as 'high' | 'medium' | 'low',
       status: task.status as 'open' | 'in_progress' | 'closed',
-      diy_level: task.diy_level as 'beginner' | 'intermediate' | 'advanced' | 'professional',
+      diy_level: task.diy_level as 'beginner' | 'intermediate' | 'advanced' | 'pro',
       notes: task.notes || "",
       due_date: task.due_date || "",
       task_type: task.task_type === 'general' || task.task_type === 'pre_sale' ? 'diy' : task.task_type as 'diy' | 'contractor',
@@ -267,7 +267,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         id: st.id,
         title: st.title,
         estimated_hours: st.estimated_hours,
-        diy_level: st.diy_level as 'beginner' | 'intermediate' | 'advanced' | 'professional'
+        diy_level: st.diy_level as 'beginner' | 'intermediate' | 'advanced' | 'pro'
       })));
     }
     
@@ -378,7 +378,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                 <SelectItem value="beginner">Beginner</SelectItem>
                 <SelectItem value="intermediate">Intermediate</SelectItem>
                 <SelectItem value="advanced">Advanced</SelectItem>
-                <SelectItem value="professional">Professional</SelectItem>
+                <SelectItem value="pro">Professional</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -443,7 +443,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                             <SelectItem value="beginner">Beginner</SelectItem>
                             <SelectItem value="intermediate">Intermediate</SelectItem>
                             <SelectItem value="advanced">Advanced</SelectItem>
-                            <SelectItem value="professional">Professional</SelectItem>
+                            <SelectItem value="pro">Professional</SelectItem>
                           </SelectContent>
                                         </Select>
                                       </td>
