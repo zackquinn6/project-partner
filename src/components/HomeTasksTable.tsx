@@ -400,15 +400,6 @@ export function HomeTasksTable({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => toggleRow(task.id)} 
-                          className="h-7 px-2"
-                          title="Manage subtasks"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
                           onClick={() => onRapidCosting(task)} 
                           className="h-7 px-2"
                           title="Cost Assessment"
