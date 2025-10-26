@@ -589,6 +589,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             taskId={selectedTask.id}
             taskTitle={selectedTask.title}
             taskNotes={selectedTask.notes || ''}
+            onClose={() => setShowRapidCosting(false)}
           />
         </ResponsiveDialog>
       )}

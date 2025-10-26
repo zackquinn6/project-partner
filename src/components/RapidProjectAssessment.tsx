@@ -64,9 +64,10 @@ interface RapidProjectAssessmentProps {
   taskId?: string;
   taskTitle?: string;
   taskNotes?: string;
+  onClose?: () => void;
 }
 
-export function RapidProjectAssessment({ taskId, taskTitle, taskNotes }: RapidProjectAssessmentProps = {}) {
+export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }: RapidProjectAssessmentProps = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -76,6 +77,9 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes }: RapidPr
   const [isLoading, setIsLoading] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>('');
   const [hasLoadedTask, setHasLoadedTask] = useState(false);
+
+  // When taskId is provided, skip list view entirely
+  const shouldShowListView = !taskId && currentView === 'list';
 
   // Current project state
   const [project, setProject] = useState<ProjectPlan>({
@@ -230,6 +234,11 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes }: RapidPr
       // Generate new CSRF token for next operation
       const newToken = initializeCSRFProtection();
       setCsrfToken(newToken);
+      
+      // If this is a task-based assessment, close the dialog
+      if (taskId && onClose) {
+        onClose();
+      }
     } catch (error) {
       console.error('Error saving project:', error);
       
@@ -402,8 +411,8 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes }: RapidPr
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Render project list view
-  if (currentView === 'list') {
+  // Render project list view (only for non-task assessments)
+  if (shouldShowListView) {
     return (
       <div className="w-full">
         <Card>
@@ -506,14 +515,16 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes }: RapidPr
                 Rapid Costing
               </CardTitle>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setCurrentView('list')} 
-                  size="sm"
-                  className="p-1 h-8 w-8"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </Button>
+                {!taskId && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setCurrentView('list')} 
+                    size="sm"
+                    className="p-1 h-8 w-8"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button 
                   onClick={saveProject} 
                   disabled={isLoading} 
@@ -527,39 +538,38 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes }: RapidPr
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Project Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="project-name" className="text-sm font-medium">Assessment Name *</Label>
-              <Input
-                id="project-name"
-                value={project.name}
-                onChange={(e) => updateProject('name', e.target.value)}
-                placeholder="Enter assessment name"
-                className="text-sm"
-              />
-            </div>
-            <div>
-              <Label htmlFor="project-description" className="text-sm font-medium">Description</Label>
-              <Input
-                id="project-description"
-                value={project.description}
-                onChange={(e) => updateProject('description', e.target.value)}
-                placeholder="Brief project description"
-                className="text-sm"
-              />
-            </div>
-          </div>
+          <div className="space-y-4">
+            {taskId ? (
+              // Read-only name for task-based assessments
+              <div>
+                <Label className="text-sm font-medium">Task</Label>
+                <div className="text-sm font-semibold p-2 bg-muted rounded-md">{project.name}</div>
+              </div>
+            ) : (
+              // Editable name for standalone assessments
+              <div>
+                <Label htmlFor="project-name" className="text-sm font-medium">Assessment Name *</Label>
+                <Input
+                  id="project-name"
+                  value={project.name}
+                  onChange={(e) => updateProject('name', e.target.value)}
+                  placeholder="Enter assessment name"
+                  className="text-sm"
+                />
+              </div>
+            )}
 
-          <div>
-            <Label htmlFor="project-notes" className="text-sm font-medium">Project Notes</Label>
-            <Textarea
-              id="project-notes"
-              value={project.notes}
-              onChange={(e) => updateProject('notes', e.target.value)}
-              placeholder="Add any additional project details, requirements, or considerations..."
-              rows={3}
-              className="text-sm"
-            />
+            <div>
+              <Label htmlFor="project-notes" className="text-sm font-medium">Cost Notes</Label>
+              <Textarea
+                id="project-notes"
+                value={project.notes}
+                onChange={(e) => updateProject('notes', e.target.value)}
+                placeholder="Add notes specific to this cost assessment..."
+                rows={3}
+                className="text-sm"
+              />
+            </div>
           </div>
 
           {/* Materials Section */}
