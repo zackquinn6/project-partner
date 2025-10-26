@@ -56,17 +56,47 @@ Deno.serve(async (req) => {
 
     console.log('Zillow search URL:', zillowSearchUrl);
 
-    // Fetch Zillow search results page
+    // Fetch Zillow search results page with enhanced headers
     const response = await fetch(zillowSearchUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Zillow request failed: ${response.status}`);
+      console.error(`Zillow blocked request with status: ${response.status}`);
+      // Return a partial result to allow manual entry
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          blocked: true,
+          matches: [{
+            address: address,
+            city: '',
+            state: '',
+            zipCode: '',
+            homeAge: null,
+            squareFootage: null,
+            bedrooms: null,
+            bathrooms: null,
+            zillowUrl: zillowSearchUrl,
+          }],
+          message: 'Could not automatically fetch data from Zillow. Please enter details manually or try again later.'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const html = await response.text();

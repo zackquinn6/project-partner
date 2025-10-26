@@ -51,8 +51,10 @@ export const ZillowSyncDialog: React.FC<ZillowSyncDialogProps> = ({
         setMatches(data.matches);
         setShowMatches(true);
         
-        if (data.matches.length === 1) {
-          // Auto-select if only one match
+        if (data.blocked) {
+          toast.warning(data.message || 'Zillow data unavailable. Please enter details manually.');
+        } else if (data.matches.length === 1 && !data.blocked) {
+          // Auto-select if only one match and not blocked
           await handleSelectMatch(data.matches[0]);
         }
       } else {
@@ -60,7 +62,20 @@ export const ZillowSyncDialog: React.FC<ZillowSyncDialogProps> = ({
       }
     } catch (error) {
       console.error('Error searching Zillow:', error);
-      toast.error('Failed to search Zillow. Please try again.');
+      toast.error('Unable to connect to Zillow. You can enter home details manually instead.');
+      // Show empty match for manual entry
+      setMatches([{
+        address: homeAddress,
+        city: '',
+        state: '',
+        zipCode: '',
+        homeAge: null,
+        squareFootage: null,
+        bedrooms: null,
+        bathrooms: null,
+        zillowUrl: '',
+      }]);
+      setShowMatches(true);
     } finally {
       setLoading(false);
     }
@@ -102,7 +117,62 @@ export const ZillowSyncDialog: React.FC<ZillowSyncDialogProps> = ({
         if (error) throw error;
       }
 
-      toast.success('Home data synced successfully from Zillow!');
+      // Auto-create spaces from bedroom/bathroom counts
+      if (match.bedrooms || match.bathrooms) {
+        const spacesToCreate = [];
+        
+        if (match.bedrooms) {
+          for (let i = 1; i <= match.bedrooms; i++) {
+            spacesToCreate.push({
+              home_id: homeId,
+              name: `Bedroom ${i}`,
+              type: 'bedroom',
+              scale_unit: match.squareFootage ? Math.floor(match.squareFootage / (match.bedrooms + (match.bathrooms || 0))) : null
+            });
+          }
+        }
+        
+        if (match.bathrooms) {
+          const fullBaths = Math.floor(match.bathrooms);
+          const hasHalfBath = match.bathrooms % 1 !== 0;
+          
+          for (let i = 1; i <= fullBaths; i++) {
+            spacesToCreate.push({
+              home_id: homeId,
+              name: `Bathroom ${i}`,
+              type: 'bathroom',
+              scale_unit: match.squareFootage ? Math.floor(match.squareFootage / ((match.bedrooms || 0) + match.bathrooms)) : null
+            });
+          }
+          
+          if (hasHalfBath) {
+            spacesToCreate.push({
+              home_id: homeId,
+              name: 'Half Bath',
+              type: 'bathroom',
+              scale_unit: match.squareFootage ? Math.floor(match.squareFootage / ((match.bedrooms || 0) + match.bathrooms)) : null
+            });
+          }
+        }
+
+        if (spacesToCreate.length > 0) {
+          const { error: spacesError } = await supabase
+            .from('home_spaces')
+            .insert(spacesToCreate);
+
+          if (spacesError) {
+            console.error('Error creating spaces:', spacesError);
+            toast.warning('Home details saved, but could not auto-create spaces');
+          } else {
+            toast.success(`Home data synced and ${spacesToCreate.length} spaces created!`);
+          }
+        } else {
+          toast.success('Home data synced successfully!');
+        }
+      } else {
+        toast.success('Home data synced successfully!');
+      }
+
       onSyncComplete();
       onOpenChange(false);
       
