@@ -32,7 +32,7 @@ export const AppDescriptionDialog: React.FC<AppDescriptionDialogProps> = ({
                   <ul className="text-sm space-y-1 text-muted-foreground">
                     <li><strong>Landing Page:</strong> Pre-authentication welcome page</li>
                     <li><strong>User Home Page:</strong> Post-login dashboard with stats and quick actions</li>
-                    <li><strong>My Projects:</strong> User's active and completed project runs</li>
+                    <li><strong>Progress Board:</strong> User's active and completed project runs</li>
                     <li><strong>Project Catalog:</strong> Browse available DIY project templates</li>
                     <li><strong>My Profile:</strong> User settings, preferences, and DIY survey data</li>
                   </ul>

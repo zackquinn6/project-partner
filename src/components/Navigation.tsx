@@ -147,7 +147,7 @@ export default function Navigation({
                 className="text-sm"
               >
                 <FolderOpen className="h-4 w-4 mr-2" />
-                My Projects
+                Progress Board
               </Button>
             </div>
             

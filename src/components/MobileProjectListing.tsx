@@ -81,7 +81,7 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
       <div className="flex-shrink-0 p-4 space-y-4 bg-background/95 backdrop-blur-sm border-b border-border">
         {/* Close Button and Actions */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">My Projects</h2>
+          <h2 className="text-lg font-semibold">Progress Board</h2>
           {onClose && (
             <button
               onClick={onClose}

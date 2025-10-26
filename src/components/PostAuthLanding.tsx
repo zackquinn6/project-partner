@@ -107,7 +107,7 @@ export const PostAuthLanding = () => {
   // Section 1: My Work - Semantic color system
   const myWorkActions = [{
     icon: FolderOpen,
-    title: "My Projects",
+    title: "Progress Board",
     action: () => {
       console.log('🔄 PostAuthLanding: My Projects button clicked - dispatching event');
       const event = new CustomEvent('navigate-to-projects');

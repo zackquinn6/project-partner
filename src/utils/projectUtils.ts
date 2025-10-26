@@ -149,8 +149,8 @@ export const createPlanningPhase = (): Phase => {
 
   const projectCustomizerOperation: Operation = {
     id: 'project-customizer-operation',
-    name: 'Project Customizer',
-    description: 'Customize project workflow and phases',
+    name: 'Scope Builder',
+    description: 'Define project size and customize for unique rooms and spaces',
     steps: [{
       id: 'planning-step-2',
       step: 'Project Customizer',
@@ -167,7 +167,7 @@ export const createPlanningPhase = (): Phase => {
           type: 'button',
           content: '',
           buttonAction: 'project-customizer',
-          buttonLabel: 'Project Customizer',
+          buttonLabel: 'Scope Builder',
           buttonIcon: 'HelpCircle',
           buttonVariant: 'outline'
         }
@@ -203,7 +203,7 @@ export const createPlanningPhase = (): Phase => {
           type: 'button',
           content: '',
           buttonAction: 'project-scheduler',
-          buttonLabel: 'Project Scheduler',
+          buttonLabel: 'Timekeeper',
           buttonIcon: 'Calendar',
           buttonVariant: 'outline'
         }

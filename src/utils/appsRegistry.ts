@@ -2,18 +2,18 @@ import { AppReference } from '@/interfaces/Project';
 
 export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
   'project-customizer': {
-    appName: 'Project Customizer',
+    appName: 'Scope Builder',
     appType: 'native',
     icon: 'Settings',
-    description: 'Customize your project phases and decisions',
+    description: 'Decide what work will actually be done in each space',
     actionKey: 'project-customizer',
     displayOrder: 1
   },
   'project-scheduler': {
-    appName: 'Project Scheduler',
+    appName: 'Timekeeper',
     appType: 'native',
     icon: 'Calendar',
-    description: 'Plan your project timeline',
+    description: 'Put a realistic timeline to the work',
     actionKey: 'project-scheduler',
     displayOrder: 2
   },
@@ -42,7 +42,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 5
   },
   'my-tools': {
-    appName: 'My Tools',
+    appName: 'Tool Shed',
     appType: 'native',
     icon: 'Wrench',
     description: 'Manage your tool inventory',

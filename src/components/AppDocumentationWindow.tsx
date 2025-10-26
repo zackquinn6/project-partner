@@ -33,7 +33,7 @@ const appFeatures = [
   {
     id: 'my-projects',
     icon: Folder,
-    name: 'My Projects',
+    name: 'Progress Board',
     description: 'Manage all your DIY project runs from start to finish with step-by-step guidance, progress tracking, and completion certificates.',
     keyFeatures: [
       'Active project dashboard with progress tracking',
@@ -581,7 +581,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                       <CardContent>
                         <p className="mb-3">Follow the proven workflow for success:</p>
                         <ul className="space-y-2 text-sm">
-                          <li>• Follow step-by-step guidance in "My Projects"</li>
+                          <li>• Follow step-by-step guidance in "Progress Board"</li>
                           <li>• Document progress with photos at each phase</li>
                           <li>• Use "Get Expert Help" for expert help when needed</li>
                           <li>• Celebrate completion and share with the community!</li>

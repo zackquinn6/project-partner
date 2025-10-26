@@ -8,6 +8,8 @@ import { ScrollArea } from '../ui/scroll-area';
 import { WorkflowDecisionEngine } from './WorkflowDecisionEngine';
 import { SimplifiedCustomWorkManager } from './SimplifiedCustomWorkManager';
 import { PhaseBrowser } from './PhaseBrowser';
+import { SpaceSelector } from './SpaceSelector';
+import { SpaceDecisionFlow } from './SpaceDecisionFlow';
 import { ProjectRun } from '../../interfaces/ProjectRun';
 import { Project, Phase } from '../../interfaces/Project';
 import { useProject } from '../../contexts/ProjectContext';
@@ -22,7 +24,23 @@ interface ProjectCustomizerProps {
   mode?: 'initial-plan' | 'final-plan' | 'unplanned-work' | 'replan';
 }
 
+interface ProjectSpace {
+  id: string;
+  name: string;
+  spaceType: string;
+  homeSpaceId?: string;
+  scaleValue?: number;
+  scaleUnit?: string;
+  isFromHome: boolean;
+}
+
 interface CustomizationState {
+  spaces: ProjectSpace[];
+  spaceDecisions: Record<string, {
+    standardDecisions: Record<string, string[]>;
+    ifNecessaryWork: Record<string, string[]>;
+  }>;
+  // Legacy fields for backward compatibility
   standardDecisions: Record<string, string[]>; // phaseId -> selected alternatives
   ifNecessaryWork: Record<string, string[]>; // phaseId -> selected optional work
   customPlannedWork: Phase[]; // phases added from other projects
@@ -37,8 +55,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   mode = 'initial-plan'
 }) => {
   const { projects, updateProjectRun } = useProject();
-  const [activeTab, setActiveTab] = useState(mode === 'unplanned-work' ? 'custom-work' : 'decisions');
+  const [activeTab, setActiveTab] = useState(mode === 'unplanned-work' ? 'custom-work' : 'spaces');
   const [customizationState, setCustomizationState] = useState<CustomizationState>({
+    spaces: [],
+    spaceDecisions: {},
     standardDecisions: {},
     ifNecessaryWork: {},
     customPlannedWork: [],
@@ -54,8 +74,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   useEffect(() => {
     if (!open || !currentProjectRun?.customization_decisions) return;
     
-    const savedData = currentProjectRun.customization_decisions;
+    const savedData = currentProjectRun.customization_decisions as any;
     setCustomizationState({
+      spaces: savedData.spaces || [],
+      spaceDecisions: savedData.spaceDecisions || {},
       standardDecisions: savedData.standardDecisions || {},
       ifNecessaryWork: savedData.ifNecessaryWork || {},
       customPlannedWork: savedData.customPlannedWork || [],
@@ -93,6 +115,47 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         [phaseId]: optionalWork
       }
     }));
+  };
+
+  const handleSpacesChange = (spaces: ProjectSpace[]) => {
+    setCustomizationState(prev => ({
+      ...prev,
+      spaces
+    }));
+  };
+
+  const handleSpaceDecision = (
+    spaceId: string,
+    phaseId: string,
+    type: 'standard' | 'ifNecessary',
+    decisions: string[]
+  ) => {
+    setCustomizationState(prev => {
+      const newSpaceDecisions = { ...prev.spaceDecisions };
+      if (!newSpaceDecisions[spaceId]) {
+        newSpaceDecisions[spaceId] = {
+          standardDecisions: {},
+          ifNecessaryWork: {}
+        };
+      }
+      
+      if (type === 'standard') {
+        newSpaceDecisions[spaceId].standardDecisions = {
+          ...newSpaceDecisions[spaceId].standardDecisions,
+          [phaseId]: decisions
+        };
+      } else {
+        newSpaceDecisions[spaceId].ifNecessaryWork = {
+          ...newSpaceDecisions[spaceId].ifNecessaryWork,
+          [phaseId]: decisions
+        };
+      }
+      
+      return {
+        ...prev,
+        spaceDecisions: newSpaceDecisions
+      };
+    });
   };
 
   const handleAddCustomPlannedWork = (phases: Phase[], insertAfterPhaseId?: string) => {
@@ -266,11 +329,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
   const getModeDescription = () => {
     switch (mode) {
-      case 'initial-plan': return 'Define your project scope and customize the workflow to match your specific needs.';
+      case 'initial-plan': return 'Define project size and customize for unique rooms and spaces.';
       case 'final-plan': return 'Review and finalize all project decisions before starting execution.';
       case 'unplanned-work': return 'Add new work that wasn\'t in the original plan.';
       case 'replan': return 'Modify your project plan and add or remove work as needed.';
-      default: return 'Customize your project workflow with decision points and additional work.';
+      default: return 'Define project size and customize for unique rooms and spaces.';
     }
   };
 
@@ -291,10 +354,19 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             {/* Tab Headers - Positioned directly after header */}
             <div className="shrink-0 border-b bg-background pb-4">
-              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'h-auto' : 'h-12'}`}>
+              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} ${isMobile ? 'h-auto' : 'h-12'}`}>
                 {isMobile ? (
                   // Mobile: Dropdown-style tab selection
                   <div className="space-y-2 p-2">
+                    <Button
+                      variant={activeTab === 'spaces' ? 'default' : 'outline'}
+                      onClick={() => setActiveTab('spaces')}
+                      className="w-full justify-start text-sm py-3"
+                      size="sm"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Define Spaces
+                    </Button>
                     <Button
                       variant={activeTab === 'decisions' ? 'default' : 'outline'}
                       onClick={() => setActiveTab('decisions')}
@@ -302,7 +374,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                       size="sm"
                     >
                       <Settings className="w-4 h-4 mr-2" />
-                      Workflow Decisions
+                      Space Decisions
                     </Button>
                     <Button
                       variant={activeTab === 'custom-work' ? 'default' : 'outline'}
@@ -317,9 +389,13 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 ) : (
                   // Desktop: Traditional tabs
                   <>
+                    <TabsTrigger value="spaces" className="text-xs md:text-sm px-2 py-2">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Define Spaces
+                    </TabsTrigger>
                     <TabsTrigger value="decisions" className="text-xs md:text-sm px-2 py-2">
                       <Settings className="w-4 h-4 mr-2" />
-                      Workflow Decisions
+                      Space Decisions
                     </TabsTrigger>
                     <TabsTrigger value="custom-work" className="text-xs md:text-sm px-2 py-2">
                       <Plus className="w-4 h-4 mr-2" />
@@ -332,17 +408,27 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
             {/* Tab Content - Consistent height containers */}
             <div className="flex-1 min-h-0 relative">
+              <TabsContent value="spaces" className="absolute inset-0 data-[state=active]:block data-[state=inactive]:hidden">
+                <ScrollArea className="h-full">
+                  <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4`}>
+                    <SpaceSelector
+                      projectRunHomeId={currentProjectRun.home_id}
+                      selectedSpaces={customizationState.spaces}
+                      onSpacesChange={handleSpacesChange}
+                      projectScaleUnit="square foot"
+                    />
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
               <TabsContent value="decisions" className="absolute inset-0 data-[state=active]:block data-[state=inactive]:hidden">
                 <ScrollArea className="h-full">
                   <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4`}>
-                    <WorkflowDecisionEngine
+                    <SpaceDecisionFlow
+                      spaces={customizationState.spaces}
                       projectRun={currentProjectRun}
-                      onStandardDecision={handleStandardDecision}
-                      onIfNecessaryWork={handleIfNecessaryWork}
-                      customizationState={{
-                        standardDecisions: customizationState.standardDecisions,
-                        ifNecessaryWork: customizationState.ifNecessaryWork
-                      }}
+                      spaceDecisions={customizationState.spaceDecisions}
+                      onSpaceDecision={handleSpaceDecision}
                     />
                   </div>
                 </ScrollArea>
