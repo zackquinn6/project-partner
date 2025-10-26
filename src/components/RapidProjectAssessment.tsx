@@ -157,7 +157,7 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
     // Validate form submission with CSRF and rate limiting
     const validation = validateFormSubmission(csrfToken, user.id);
     if (!validation.isValid) {
-      toast({ title: "Security Error", description: validation.error, variant: "destructive" });
+      console.error('Security validation failed:', validation.error);
       return;
     }
 
@@ -180,7 +180,7 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
 
     // Basic validation
     if (!sanitizedProject.name.trim()) {
-      toast({ title: "Validation Error", description: "Project name is required", variant: "destructive" });
+      console.error('Project name is required');
       return;
     }
 
@@ -218,8 +218,6 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
 
       if (result.error) throw result.error;
 
-      toast({ title: "Success", description: `Project ${project.id ? 'updated' : 'saved'} successfully` });
-      
       // Log admin action if user has admin privileges
       if (user) {
         await logAdminAction(user.id, project.id ? 'update_project' : 'create_project', sanitizedProject.name);
@@ -235,12 +233,9 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
       const newToken = initializeCSRFProtection();
       setCsrfToken(newToken);
       
-      // If this is a task-based assessment, close the dialog after a brief delay
-      // to allow the toast to be visible
+      // If this is a task-based assessment, close only this dialog
       if (taskId && onClose) {
-        setTimeout(() => {
-          onClose();
-        }, 500);
+        onClose();
       }
     } catch (error) {
       console.error('Error saving project:', error);
@@ -249,8 +244,6 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
       if (user && error instanceof Error && (error.message.includes('validation') || error.message.includes('constraint'))) {
         await logInputValidationFailure('project_form', error.message, user.id);
       }
-      
-      toast({ title: "Error", description: "Failed to save project", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -529,7 +522,11 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
                   </Button>
                 )}
                 <Button 
-                  onClick={saveProject} 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    saveProject();
+                  }}
                   disabled={isLoading} 
                   size="sm"
                   className="p-1 h-8 w-8"
