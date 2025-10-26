@@ -62,9 +62,11 @@ const CONTINGENCY_OPTIONS = [0, 5, 10, 25, 50, 100];
 
 interface RapidProjectAssessmentProps {
   taskId?: string;
+  taskTitle?: string;
+  taskNotes?: string;
 }
 
-export function RapidProjectAssessment({ taskId }: RapidProjectAssessmentProps = {}) {
+export function RapidProjectAssessment({ taskId, taskTitle, taskNotes }: RapidProjectAssessmentProps = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -258,8 +260,8 @@ export function RapidProjectAssessment({ taskId }: RapidProjectAssessmentProps =
 
   const createNewProject = () => {
     setProject({
-      name: '',
-      description: '',
+      name: taskTitle || '',
+      description: taskNotes || '',
       notes: '',
       lineItems: [],
       contingencyPercent: 10,

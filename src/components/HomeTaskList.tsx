@@ -585,7 +585,11 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
           size="content-large"
           title={`Cost Assessment - ${selectedTask.title}`}
         >
-          <RapidProjectAssessment taskId={selectedTask.id} />
+          <RapidProjectAssessment 
+            taskId={selectedTask.id}
+            taskTitle={selectedTask.title}
+            taskNotes={selectedTask.notes || ''}
+          />
         </ResponsiveDialog>
       )}
     </>
