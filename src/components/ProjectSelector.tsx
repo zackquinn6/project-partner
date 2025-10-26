@@ -31,7 +31,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
   const [newProjectForm, setNewProjectForm] = useState({
     name: '',
-    description: ''
+    description: '',
+    category: ''
   });
   const [projectSetupForm, setProjectSetupForm] = useState({
     projectLeader: '',
@@ -49,6 +50,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       id: crypto.randomUUID(),
       name: newProjectForm.name,
       description: newProjectForm.description,
+      category: newProjectForm.category,
       diyLengthChallenges: '', // Initialize empty DIY challenges field for new projects
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -61,7 +63,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
 
     addProject(newProject);
     setCurrentProject(newProject);
-    setNewProjectForm({ name: '', description: '' });
+    setNewProjectForm({ name: '', description: '', category: '' });
     setIsNewProjectOpen(false);
     // Only open setup dialog in user mode, not admin mode
     if (!isAdminMode) {
@@ -243,7 +245,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                    <Plus className="w-4 h-4" />
                  </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-[625px]">
                 <DialogHeader>
                   <DialogTitle>Create New Project</DialogTitle>
                   <DialogDescription>
@@ -259,6 +261,31 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                       value={newProjectForm.name}
                       onChange={(e) => setNewProjectForm(prev => ({ ...prev, name: e.target.value }))}
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="project-category">Category</Label>
+                    <Select
+                      value={newProjectForm.category}
+                      onValueChange={(value) => setNewProjectForm(prev => ({ ...prev, category: value }))}
+                    >
+                      <SelectTrigger id="project-category">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Electrical">Electrical</SelectItem>
+                        <SelectItem value="Plumbing">Plumbing</SelectItem>
+                        <SelectItem value="Drywall / Plaster">Drywall / Plaster</SelectItem>
+                        <SelectItem value="Interior Carpentry">Interior Carpentry</SelectItem>
+                        <SelectItem value="Exterior Carpentry">Exterior Carpentry</SelectItem>
+                        <SelectItem value="Painting">Painting</SelectItem>
+                        <SelectItem value="Decor">Decor</SelectItem>
+                        <SelectItem value="Landscaping">Landscaping</SelectItem>
+                        <SelectItem value="Concrete">Concrete</SelectItem>
+                        <SelectItem value="Tile">Tile</SelectItem>
+                        <SelectItem value="Flooring">Flooring</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label htmlFor="project-description">Description</Label>
