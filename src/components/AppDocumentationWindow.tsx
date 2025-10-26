@@ -62,33 +62,6 @@ const appFeatures = [
     ]
   },
   {
-    id: 'rapid-plan',
-    icon: Calculator,
-    name: 'Rapid Costing',
-    description: 'Get instant project assessments, time estimates, and material costs for any home improvement idea in minutes.',
-    keyFeatures: [
-      'AI-powered project analysis and recommendations',
-      'Instant time and cost estimates',
-      'Material and tool requirement calculations',
-      'Difficulty assessment and skill matching',
-      'Export project plans to full templates'
-    ],
-    faq: [
-      {
-        q: 'How accurate are the time estimates?',
-        a: 'Estimates are based on your skill level, available time, and project complexity. They serve as a starting point and may vary based on specific conditions.'
-      },
-      {
-        q: 'Can I save my rapid assessments?',
-        a: 'Yes, all assessments are automatically saved and can be converted into full project templates when you\'re ready to start.'
-      },
-      {
-        q: 'What information do I need to provide?',
-        a: 'Basic project details, your skill level, available tools, and any specific requirements or constraints you have.'
-      }
-    ]
-  },
-  {
     id: 'home-maintenance',
     icon: HomeIcon,
     name: 'My Home Maintenance',
@@ -564,7 +537,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         <p className="mb-3">Choose and customize your first DIY project:</p>
                         <ul className="space-y-2 text-sm">
                           <li>• Browse the Project Catalog for beginner-friendly options</li>
-                          <li>• Use "Rapid Costing" to assess time and cost estimates</li>
+                          <li>• Use Task Manager to create tasks and cost assessments</li>
                           <li>• Complete the project kickoff workflow with customizations</li>
                           <li>• Review your tool needs and plan rentals if necessary</li>
                         </ul>

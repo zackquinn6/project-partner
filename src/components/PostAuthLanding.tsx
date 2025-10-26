@@ -16,7 +16,6 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
 import { ExpertHelpWindow } from '@/components/ExpertHelpWindow';
-import { RapidProjectAssessmentWindow } from '@/components/RapidProjectAssessmentWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
@@ -31,7 +30,6 @@ export const PostAuthLanding = () => {
   const [userNickname, setUserNickname] = useState<string>('');
   const [showToolRentals, setShowToolRentals] = useState(false);
   const [showExpertHelp, setShowExpertHelp] = useState(false);
-  const [showProjectPlanning, setShowProjectPlanning] = useState(false);
   const [showCodePermits, setShowCodePermits] = useState(false);
   const [showContractorFinder, setShowContractorFinder] = useState(false);
   const [showHomeTaskList, setShowHomeTaskList] = useState(false);
@@ -117,12 +115,6 @@ export const PostAuthLanding = () => {
     color: "bg-blue-600", // Projects: Blue
     textColor: "text-white"
   }, {
-    icon: Calculator,
-    title: "Rapid Assessment",
-    action: () => setShowProjectPlanning(true),
-    color: "bg-blue-500", // Projects: Blue
-    textColor: "text-white"
-  }, {
     icon: Home,
     title: "My Home Maintenance",
     action: () => {
@@ -134,7 +126,7 @@ export const PostAuthLanding = () => {
     textColor: "text-white"
   }, {
     icon: ListChecks,
-    title: "Home Task List",
+    title: "Task Manager",
     action: () => setShowHomeTaskList(true),
     color: "bg-green-500", // Home: Green
     textColor: "text-white"
@@ -346,8 +338,6 @@ export const PostAuthLanding = () => {
         <CodePermitsWindow open={showCodePermits} onOpenChange={setShowCodePermits} />
         
         <ContractorFinderWindow open={showContractorFinder} onOpenChange={setShowContractorFinder} />
-        
-        <RapidProjectAssessmentWindow open={showProjectPlanning} onOpenChange={setShowProjectPlanning} />
       </div>
     </div>;
 };

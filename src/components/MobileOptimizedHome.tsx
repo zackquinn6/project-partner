@@ -88,7 +88,7 @@ export function MobileOptimizedHome() {
     {
       id: 'home-task-list',
       icon: ListChecks,
-      title: 'Home Task List',
+      title: 'Task Manager',
       subtitle: 'Manage tasks',
       color: 'bg-green-500', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-task-list'))
@@ -112,16 +112,6 @@ export function MobileOptimizedHome() {
   ];
 
   const utilityApps = [
-    {
-      id: 'rapid-plan',
-      icon: Calculator,
-      title: 'Rapid Costing',
-      color: 'bg-blue-500', // Projects: Blue
-      action: () => {
-        console.log('🎯 MobileOptimizedHome: Rapid Costing clicked');
-        window.dispatchEvent(new CustomEvent('show-rapid-assessment'));
-      }
-    },
     {
       id: 'tool-library',
       icon: Wrench,

@@ -15,6 +15,8 @@ import { HomeTasksTable } from "./HomeTasksTable";
 import { HomeTaskPeople } from "./HomeTaskPeople";
 import { HomeTaskScheduler } from "./HomeTaskScheduler";
 import { HomeTaskProjectLink } from "./HomeTaskProjectLink";
+import { RapidProjectAssessment } from "./RapidProjectAssessment";
+import { ResponsiveDialog } from "./ResponsiveDialog";
 
 interface HomeTask {
   id: string;
@@ -47,6 +49,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   const [editingTask, setEditingTask] = useState<HomeTask | null>(null);
   const [selectedTask, setSelectedTask] = useState<HomeTask | null>(null);
   const [showProjectLink, setShowProjectLink] = useState(false);
+  const [showRapidCosting, setShowRapidCosting] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
   const [subtasksOrdered, setSubtasksOrdered] = useState(false);
   const [subtasks, setSubtasks] = useState<Array<{ 
@@ -273,6 +276,11 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   const handleLinkProject = (task: HomeTask) => {
     setSelectedTask(task);
     setShowProjectLink(true);
+  };
+
+  const handleRapidCosting = (task: HomeTask) => {
+    setSelectedTask(task);
+    setShowRapidCosting(true);
   };
 
   const addSubtask = () => {
@@ -518,6 +526,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onLinkProject={handleLinkProject}
+                    onRapidCosting={handleRapidCosting}
                     onAddTask={() => {
                       resetForm();
                       setShowAddTask(true);
@@ -567,6 +576,17 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
           currentProjectRunId={selectedTask.project_run_id}
           onSuccess={fetchTasks}
         />
+      )}
+
+      {selectedTask && (
+        <ResponsiveDialog
+          open={showRapidCosting}
+          onOpenChange={setShowRapidCosting}
+          size="content-large"
+          title={`Cost Assessment - ${selectedTask.title}`}
+        >
+          <RapidProjectAssessment taskId={selectedTask.id} />
+        </ResponsiveDialog>
       )}
     </>
   );

@@ -1811,6 +1811,7 @@ export type Database = {
           notes: string | null
           sales_tax_percent: number
           state: string | null
+          task_id: string | null
           updated_at: string
           user_id: string
         }
@@ -1824,6 +1825,7 @@ export type Database = {
           notes?: string | null
           sales_tax_percent?: number
           state?: string | null
+          task_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1837,10 +1839,19 @@ export type Database = {
           notes?: string | null
           sales_tax_percent?: number
           state?: string | null
+          task_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "project_plans_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "home_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_run_steps: {
         Row: {

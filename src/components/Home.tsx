@@ -188,14 +188,7 @@ export default function Home({
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeTaskList} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                   <ListChecks className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Home Task List</span>
-              </div>
-              
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-rapid-assessment'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.rapidPlan} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <Calculator className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Rapid Costing</span>
+                <span className="text-xs font-medium text-black text-center leading-tight px-1">Task Manager</span>
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-expert-help'))}>

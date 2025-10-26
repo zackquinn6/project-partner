@@ -60,7 +60,11 @@ const US_STATES_TAX_RATES = {
 
 const CONTINGENCY_OPTIONS = [0, 5, 10, 25, 50, 100];
 
-export function RapidProjectAssessment() {
+interface RapidProjectAssessmentProps {
+  taskId?: string;
+}
+
+export function RapidProjectAssessment({ taskId }: RapidProjectAssessmentProps = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -96,11 +100,16 @@ export function RapidProjectAssessment() {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('project_plans')
         .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+        .eq('user_id', user.id);
+      
+      if (taskId) {
+        query = query.eq('task_id', taskId);
+      }
+      
+      const { data, error } = await query.order('updated_at', { ascending: false });
 
       if (error) throw error;
 
@@ -157,6 +166,7 @@ export function RapidProjectAssessment() {
     try {
       const projectData = {
         user_id: user.id,
+        task_id: taskId || null,
         name: sanitizedProject.name,
         description: sanitizedProject.description,
         notes: sanitizedProject.notes,

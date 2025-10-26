@@ -19,7 +19,6 @@ import { MobileOptimizedHome } from '@/components/MobileOptimizedHome';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileProjectListing } from '@/components/MobileProjectListing';
 import { MobileWorkflowView } from '@/components/MobileWorkflowView';
-import { RapidProjectAssessmentWindow } from '@/components/RapidProjectAssessmentWindow';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
@@ -60,7 +59,6 @@ const Index = () => {
   const [isHomeMaintenanceOpen, setIsHomeMaintenanceOpen] = useState(false);
   const [isCommunityPostsOpen, setIsCommunityPostsOpen] = useState(false);
   const [isToolRentalsOpen, setIsToolRentalsOpen] = useState(false);
-  const [isRapidAssessmentOpen, setIsRapidAssessmentOpen] = useState(false);
   const [isAIRepairOpen, setIsAIRepairOpen] = useState(false);
   const [isContractorFinderOpen, setIsContractorFinderOpen] = useState(false);
   const [isExpertHelpOpen, setIsExpertHelpOpen] = useState(false);
@@ -182,12 +180,6 @@ const Index = () => {
       setIsToolRentalsOpen(true);
     };
 
-    const handleRapidAssessmentEvent = (event: Event) => {
-      console.log('⚡ Opening Rapid Assessment');
-      event.stopPropagation();
-      setIsRapidAssessmentOpen(true);
-    };
-
     const handleUserToolsMaterialsEvent = (event: Event) => {
       console.log('🔧 Opening User Tools/Materials - library mode');
       event.stopPropagation();
@@ -238,7 +230,6 @@ const Index = () => {
     window.addEventListener('open-profile-manager', handleProfileManagerEvent);
     window.addEventListener('show-community-posts', handleCommunityPostsEvent);
     window.addEventListener('show-tool-rentals', handleToolRentalsEvent);
-    window.addEventListener('show-rapid-assessment', handleRapidAssessmentEvent);
     window.addEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
     window.addEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
     window.addEventListener('show-ai-repair', handleAIRepairEvent);
@@ -253,7 +244,6 @@ const Index = () => {
       window.removeEventListener('open-profile-manager', handleProfileManagerEvent);
       window.removeEventListener('show-community-posts', handleCommunityPostsEvent);
       window.removeEventListener('show-tool-rentals', handleToolRentalsEvent);
-      window.removeEventListener('show-rapid-assessment', handleRapidAssessmentEvent);
       window.removeEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
       window.removeEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
       window.removeEventListener('show-ai-repair', handleAIRepairEvent);
@@ -560,11 +550,6 @@ const Index = () => {
       <ToolRentalsWindow 
         isOpen={isToolRentalsOpen}
         onClose={() => setIsToolRentalsOpen(false)}
-      />
-
-      <RapidProjectAssessmentWindow 
-        open={isRapidAssessmentOpen} 
-        onOpenChange={setIsRapidAssessmentOpen}
       />
       
       <AIRepairWindow 

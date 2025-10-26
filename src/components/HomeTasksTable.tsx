@@ -37,6 +37,7 @@ interface HomeTasksTableProps {
   onEdit: (task: HomeTask) => void;
   onDelete: (taskId: string) => void;
   onLinkProject: (task: HomeTask) => void;
+  onRapidCosting: (task: HomeTask) => void;
   onAddTask?: () => void;
   onProjectNavigate?: () => void;
   onTaskUpdate?: () => void;
@@ -48,6 +49,7 @@ export function HomeTasksTable({
   onEdit,
   onDelete,
   onLinkProject,
+  onRapidCosting,
   onAddTask,
   onProjectNavigate,
   onTaskUpdate
@@ -403,6 +405,15 @@ export function HomeTasksTable({
                           title="Manage subtasks"
                         >
                           <Plus className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => onRapidCosting(task)} 
+                          className="h-7 px-2"
+                          title="Cost Assessment"
+                        >
+                          <span className="text-xs">$</span>
                         </Button>
                         <Button 
                           variant="ghost" 
