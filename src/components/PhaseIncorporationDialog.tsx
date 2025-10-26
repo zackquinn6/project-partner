@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +25,7 @@ interface PublishedProject {
   description: string;
   phases: any; // Will be parsed as Phase[] after fetching
   revision_number: number;
+  category?: string;
 }
 export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> = ({
   open,
@@ -32,30 +34,42 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [projects, setProjects] = useState<PublishedProject[]>([]);
+  const [allProjects, setAllProjects] = useState<PublishedProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<PublishedProject | null>(null);
   const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
   const [loading, setLoading] = useState(false);
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-  const searchProjects = async () => {
-    if (!searchQuery.trim()) {
-      toast({
-        title: "Search Required",
-        description: "Please enter a search term to find projects.",
-        variant: "destructive"
-      });
-      return;
+
+  // Load all published projects when dialog opens
+  useEffect(() => {
+    if (open) {
+      loadAllProjects();
     }
+  }, [open]);
+
+  // Filter projects based on search query
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const filtered = allProjects.filter(project => 
+        project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setProjects(filtered);
+    } else {
+      setProjects(allProjects);
+    }
+  }, [searchQuery, allProjects]);
+
+  const loadAllProjects = async () => {
     setLoading(true);
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('projects').select('id, name, description, phases, revision_number').eq('publish_status', 'published').ilike('name', `%${searchQuery}%`).order('updated_at', {
-        ascending: false
-      }).limit(20);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, description, phases, revision_number, category')
+        .eq('publish_status', 'published')
+        .order('updated_at', { ascending: false });
+
       if (error) throw error;
 
       // Parse phases as JSON and create proper PublishedProject objects
@@ -63,14 +77,14 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
         ...project,
         phases: typeof project.phases === 'string' ? JSON.parse(project.phases) : project.phases || []
       }));
+      
+      setAllProjects(processedProjects);
       setProjects(processedProjects);
-      setSelectedProject(null);
-      setSelectedPhase(null);
     } catch (error) {
-      console.error('Error searching projects:', error);
+      console.error('Error loading projects:', error);
       toast({
-        title: "Search Failed",
-        description: "Failed to search projects. Please try again.",
+        title: "Load Failed",
+        description: "Failed to load projects. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -128,32 +142,61 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
           {/* Project Search */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Search Projects</label>
-            <div className="flex gap-2">
-              <Input placeholder="Enter project name to search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && searchProjects()} />
-              <Button onClick={searchProjects} disabled={loading} size="sm">
-                <Search className="w-4 h-4 mr-1" />
-                Search
-              </Button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder="Filter projects by name or description..." 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
             </div>
           </div>
 
-          {/* Project Results */}
-          {projects.length > 0 && <div className="space-y-2">
-              <label className="text-sm font-medium">Select Project</label>
-              <div className="grid gap-2 max-h-40 overflow-y-auto">
-                {projects.map(project => <Card key={project.id} className={`cursor-pointer transition-colors ${selectedProject?.id === project.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted/50'}`} onClick={() => handleProjectSelect(project.id)}>
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm">{project.name}</h4>
-                          <p className="text-xs text-muted-foreground">{project.description}</p>
-                        </div>
-                        
-                      </div>
-                    </CardContent>
-                  </Card>)}
+          {/* Projects Table */}
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading projects...</div>
+          ) : projects.length > 0 ? (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Project ({projects.length} available)</label>
+              <div className="border rounded-md max-h-64 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Project Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right"># Phases</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projects.map(project => (
+                      <TableRow 
+                        key={project.id} 
+                        className={`cursor-pointer ${selectedProject?.id === project.id ? 'bg-primary/10' : ''}`}
+                        onClick={() => handleProjectSelect(project.id)}
+                      >
+                        <TableCell className="font-medium">{project.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                          {project.description || '-'}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {project.category ? (
+                            <Badge variant="outline">{project.category}</Badge>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">{project.phases?.length || 0}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            </div>}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No published projects found.
+            </div>
+          )}
 
           {/* Phase Selection */}
           {selectedProject && <div className="space-y-2">
