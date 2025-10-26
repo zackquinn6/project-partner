@@ -73,10 +73,12 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
       if (error) throw error;
 
       // Parse phases as JSON and create proper PublishedProject objects
-      const processedProjects = (data || []).map(project => ({
-        ...project,
-        phases: typeof project.phases === 'string' ? JSON.parse(project.phases) : project.phases || []
-      }));
+      const processedProjects = (data || [])
+        .map(project => ({
+          ...project,
+          phases: typeof project.phases === 'string' ? JSON.parse(project.phases) : project.phases || []
+        }))
+        .filter(project => project.name.toLowerCase() !== 'manual project template');
       
       setAllProjects(processedProjects);
       setProjects(processedProjects);
