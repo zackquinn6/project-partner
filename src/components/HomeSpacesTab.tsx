@@ -274,7 +274,18 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
             Manage individual rooms and spaces in your home
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              // Trigger Zillow sync by dispatching a custom event
+              window.dispatchEvent(new CustomEvent('open-zillow-sync', { detail: { homeId } }));
+            }}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Sync with Zillow
+          </Button>
           {homeDetails && (homeDetails.bedrooms || homeDetails.bathrooms) && spaces.length === 0 && (
             <Button
               variant="outline"

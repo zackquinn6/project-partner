@@ -108,6 +108,19 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
     }
   }, [open, home, user, refreshTrigger]);
 
+  useEffect(() => {
+    const handleZillowSync = (e: CustomEvent) => {
+      if (e.detail?.homeId === home?.id) {
+        setShowZillowSync(true);
+      }
+    };
+
+    window.addEventListener('open-zillow-sync', handleZillowSync as EventListener);
+    return () => {
+      window.removeEventListener('open-zillow-sync', handleZillowSync as EventListener);
+    };
+  }, [home?.id]);
+
   const fetchHomeDetails = async () => {
     if (!home) return;
     

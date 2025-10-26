@@ -105,6 +105,11 @@ export const ZillowSyncDialog: React.FC<ZillowSyncDialogProps> = ({
       toast.success('Home data synced successfully from Zillow!');
       onSyncComplete();
       onOpenChange(false);
+      
+      // Trigger a data refresh
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
       console.error('Error saving home details:', error);
       toast.error('Failed to save home details');
