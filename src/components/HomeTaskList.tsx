@@ -420,28 +420,27 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                           className="text-xs min-h-[60px]"
                         />
 
-                        {/* Subtasks Section - Only in edit mode */}
-                        {editingTask && (
-                          <div className="space-y-2 border-t pt-3">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs font-medium">Subtasks</label>
-                              <div className="flex gap-2">
-                                <Button 
-                                  type="button"
-                                  variant="outline" 
-                                  size="sm" 
-                                  onClick={() => setSubtasksOrdered(!subtasksOrdered)} 
-                                  className="h-7 text-xs"
-                                >
-                                  {subtasksOrdered ? <ListOrdered className="h-3 w-3 mr-1" /> : <List className="h-3 w-3 mr-1" />}
-                                  {subtasksOrdered ? 'Ordered' : 'Unordered'}
-                                </Button>
-                                <Button type="button" variant="outline" size="sm" onClick={addSubtask} className="h-7 text-xs">
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  New Subtask
-                                </Button>
-                              </div>
+                        {/* Subtasks Section */}
+                        <div className="space-y-2 border-t pt-3">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-medium">Subtasks</label>
+                            <div className="flex gap-2">
+                              <Button 
+                                type="button"
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => setSubtasksOrdered(!subtasksOrdered)} 
+                                className="h-7 text-xs"
+                              >
+                                {subtasksOrdered ? <ListOrdered className="h-3 w-3 mr-1" /> : <List className="h-3 w-3 mr-1" />}
+                                {subtasksOrdered ? 'Ordered' : 'Unordered'}
+                              </Button>
+                              <Button type="button" variant="outline" size="sm" onClick={addSubtask} className="h-7 text-xs">
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add Sub-task
+                              </Button>
                             </div>
+                          </div>
                             {subtasks.length > 0 && (
                               <DragDropContext onDragEnd={handleDragEnd}>
                                 <div className="border rounded-md overflow-hidden">
@@ -518,7 +517,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                               </DragDropContext>
                             )}
                           </div>
-                        )}
                         <div className="flex gap-2 justify-end">
                           <Button variant="outline" onClick={resetForm} size="sm" className="h-8 text-xs">
                             Cancel
