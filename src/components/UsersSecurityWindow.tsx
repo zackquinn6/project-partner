@@ -3,6 +3,7 @@ import { UserRoleManager } from '@/components/UserRoleManager';
 import { ProjectAgreementsList } from '@/components/ProjectAgreementsList';
 import { SecurityMonitoringDashboard } from '@/components/SecurityMonitoringDashboard';
 import { AdminSecurityDashboard } from '@/components/AdminSecurityDashboard';
+import { ProjectOwnerInvitationsList } from '@/components/ProjectOwnerInvitationsList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,8 +23,9 @@ export const UsersSecurityWindow: React.FC<UsersSecurityWindowProps> = ({ open, 
     >
         
         <Tabs defaultValue="roles" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="roles">User Roles</TabsTrigger>
+            <TabsTrigger value="invitations">Project Owner Invitations</TabsTrigger>
             <TabsTrigger value="agreements">Project Agreements</TabsTrigger>
             <TabsTrigger value="security">Security Events</TabsTrigger>
             <TabsTrigger value="admin-security">Admin Security</TabsTrigger>
@@ -31,6 +33,10 @@ export const UsersSecurityWindow: React.FC<UsersSecurityWindowProps> = ({ open, 
           
           <TabsContent value="roles" className="mt-6">
             <UserRoleManager />
+          </TabsContent>
+
+          <TabsContent value="invitations" className="mt-6">
+            <ProjectOwnerInvitationsList />
           </TabsContent>
           
           <TabsContent value="agreements" className="mt-6">

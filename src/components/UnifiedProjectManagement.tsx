@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
+import { ProjectOwnershipSelector } from '@/components/ProjectOwnershipSelector';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = [
@@ -71,6 +72,7 @@ interface Project {
   scaling_unit: string | null;
   diy_length_challenges: string | null;
   created_by: string;
+  owner_id: string | null;
   phases?: any; // JSON field for phases
   images?: string[]; // Array of image URLs
   cover_image?: string | null; // URL of cover image
@@ -831,7 +833,16 @@ export function UnifiedProjectManagement() {
                            )}
                          </div>
 
-                         {/* Image Management Section */}
+                         {/* Project Ownership Section */}
+                         <Separator className="my-4" />
+                         <ProjectOwnershipSelector
+                           projectId={selectedProject.id}
+                           currentOwnerId={selectedProject.owner_id}
+                           onOwnerChange={(ownerId) => setSelectedProject(prev => prev ? {...prev, owner_id: ownerId} : null)}
+                           disabled={editingProject}
+                         />
+
+                          {/* Image Management Section */}
                          <div className="space-y-3">
                            <Label className="text-sm">Project Images</Label>
                            {editingProject ? (

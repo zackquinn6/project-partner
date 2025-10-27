@@ -1806,6 +1806,86 @@ export type Database = {
           },
         ]
       }
+      project_owner_invitations: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          invitation_token: string
+          invited_by: string
+          invited_email: string
+          invited_user_id: string | null
+          status: string
+          terms_version: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          invitation_token: string
+          invited_by: string
+          invited_email: string
+          invited_user_id?: string | null
+          status?: string
+          terms_version?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitation_token?: string
+          invited_by?: string
+          invited_email?: string
+          invited_user_id?: string | null
+          status?: string
+          terms_version?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_owner_terms_acceptances: {
+        Row: {
+          accepted_at: string
+          created_at: string
+          id: string
+          invitation_id: string
+          ip_address: unknown
+          terms_version: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          invitation_id: string
+          ip_address?: unknown
+          terms_version: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          invitation_id?: string
+          ip_address?: unknown
+          terms_version?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_owner_terms_acceptances_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "project_owner_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_plans: {
         Row: {
           contingency_percent: number
@@ -2070,6 +2150,7 @@ export type Database = {
           is_current_version: boolean | null
           is_standard_template: boolean | null
           name: string
+          owner_id: string | null
           parent_project_id: string | null
           phase_revision_alerts: Json | null
           phases: Json
@@ -2106,6 +2187,7 @@ export type Database = {
           is_current_version?: boolean | null
           is_standard_template?: boolean | null
           name: string
+          owner_id?: string | null
           parent_project_id?: string | null
           phase_revision_alerts?: Json | null
           phases?: Json
@@ -2142,6 +2224,7 @@ export type Database = {
           is_current_version?: boolean | null
           is_standard_template?: boolean | null
           name?: string
+          owner_id?: string | null
           parent_project_id?: string | null
           phase_revision_alerts?: Json | null
           phases?: Json
@@ -3037,6 +3120,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      expire_old_invitations: { Args: never; Returns: undefined }
       export_user_data: { Args: { user_uuid: string }; Returns: Json }
       get_average_market_price: {
         Args: { variation_id: string }
@@ -3155,7 +3239,12 @@ export type Database = {
         }[]
       }
       get_user_role: { Args: { user_id: string }; Returns: string }
+      has_project_owner_role: { Args: { _user_id: string }; Returns: boolean }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_project_owner: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       log_comprehensive_security_event: {
         Args: {
           p_additional_data?: Json
