@@ -325,7 +325,7 @@ export function HomeTasksTable({
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 {!isMobile && <TableHead className="w-8 text-xs"></TableHead>}
-                <TableHead className="w-[375px] text-xs">
+                <TableHead className="min-w-[375px] md:w-[375px] text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('title')} className="h-6 px-2 text-xs font-medium">
                     Task <SortIcon field="title" />
                   </Button>

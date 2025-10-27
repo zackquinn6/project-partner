@@ -347,10 +347,10 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
           <div className="flex-1 overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="mx-2 md:mx-4 mt-2 mb-3 w-auto grid grid-cols-3 gap-0.5 text-[10px] md:text-xs h-7 md:h-9 flex-shrink-0 p-0.5 md:p-1">
-                <TabsTrigger value="tasks" className="text-[10px] md:text-xs px-1 md:px-3 py-0.5 md:py-1">Tasks</TabsTrigger>
-                <TabsTrigger value="people" className="text-[10px] md:text-xs px-1 md:px-3 py-0.5 md:py-1">Team</TabsTrigger>
-                <TabsTrigger value="schedule" className="text-[10px] md:text-xs px-1 md:px-3 py-0.5 md:py-1">Schedule</TabsTrigger>
+              <TabsList className="mx-2 md:mx-4 mt-2 mb-3 w-auto grid grid-cols-3 gap-0.5 text-[10px] md:text-xs h-7 md:h-9 flex-shrink-0 p-0.5">
+                <TabsTrigger value="tasks" className="text-[10px] md:text-xs !px-0.5 md:!px-3 !py-0.5 md:!py-1.5">Tasks</TabsTrigger>
+                <TabsTrigger value="people" className="text-[10px] md:text-xs !px-0.5 md:!px-3 !py-0.5 md:!py-1.5">Team</TabsTrigger>
+                <TabsTrigger value="schedule" className="text-[10px] md:text-xs !px-0.5 md:!px-3 !py-0.5 md:!py-1.5">Schedule</TabsTrigger>
               </TabsList>
 
               <div className="flex-1 overflow-auto px-2 md:px-4 pb-1 min-h-0">
