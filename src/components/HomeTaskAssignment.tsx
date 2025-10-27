@@ -498,14 +498,14 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                   No open tasks available
                 </p>
               ) : (
-                <Droppable droppableId="available-tasks" isDropDisabled={true}>
-                  {(provided) => (
-                    <div 
-                      ref={provided.innerRef} 
-                      {...provided.droppableProps} 
-                      className="space-y-2 p-3 pt-1 overflow-auto"
-                      style={{ flex: 1, minHeight: 0 }}
-                    >
+                <div className="flex-1 min-h-0 overflow-auto relative">
+                  <Droppable droppableId="available-tasks" isDropDisabled={true}>
+                    {(provided) => (
+                      <div 
+                        ref={provided.innerRef} 
+                        {...provided.droppableProps} 
+                        className="space-y-2 p-3 pt-1"
+                      >
                         {availableTasks.map((task, index) => {
                         const taskSubtasks = availableSubtasks.filter(st => st.task_id === task.id);
                         
@@ -599,9 +599,10 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                         );
                        })}
                        {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
               )}
             </div>
 
@@ -616,7 +617,8 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                 )}
               </div>
 
-              <div className="p-3 pt-1 space-y-2 overflow-auto" style={{ flex: 1, minHeight: 0 }}>
+              <div className="overflow-auto flex-1 min-h-0 relative">
+                <div className="p-3 pt-1 space-y-2">
                 {people.map(person => (
                   <Droppable key={person.id} droppableId={person.id}>
                     {(provided, snapshot) => (
@@ -669,7 +671,8 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                       </div>
                     )}
                   </Droppable>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
