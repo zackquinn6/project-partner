@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight, Link, ExternalLink, ArrowLeft, GitBranch } from 'lucide-react';
+import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight, Link, ExternalLink, ArrowLeft, GitBranch, MoreVertical } from 'lucide-react';
 import { FlowTypeSelector, getFlowTypeBadge } from './FlowTypeSelector';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -983,27 +984,49 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                             <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
                                                               <X className="w-3 h-3" />
                                                             </Button>
-                                                          </> : <>
-                                                            
-                                                            <Button size="sm" variant="ghost" onClick={() => startEdit('step', step.id, step)} disabled={step.isStandard && !isEditingStandardProject}>
-                                                              <Edit className="w-3 h-3" />
-                                                            </Button>
-                                                            
-                                                            <Button size="sm" variant="ghost" onClick={() => copyItem('step', step)}>
-                                                              <Copy className="w-3 h-3" />
-                                                            </Button>
-                                                            
-                                                            {clipboard?.type === 'step' && <Button size="sm" variant="ghost" onClick={() => pasteItem('step', {
-                                                              phaseId: phase.id,
-                                                              operationId: operation.id
-                                                            })}>
-                                                                <Clipboard className="w-3 h-3" />
-                                                              </Button>}
-                                                            
-                                                            <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)} disabled={step.isStandard && !isEditingStandardProject}>
-                                                                <Trash2 className="w-3 h-3" />
-                                                              </Button>
-                                                          </>}
+                                                           </> : <>
+                                                             
+                                                             <DropdownMenu>
+                                                               <DropdownMenuTrigger asChild>
+                                                                 <Button size="sm" variant="ghost" disabled={step.isStandard && !isEditingStandardProject}>
+                                                                   <Edit className="w-3 h-3" />
+                                                                 </Button>
+                                                               </DropdownMenuTrigger>
+                                                               <DropdownMenuContent align="end" className="bg-background">
+                                                                 <DropdownMenuItem onClick={() => startEdit('step', step.id, step)}>
+                                                                   <Edit className="w-3 h-3 mr-2" />
+                                                                   Edit Step Details
+                                                                 </DropdownMenuItem>
+                                                                 <DropdownMenuItem onClick={() => setShowStepContentEdit({ stepId: step.id, step })}>
+                                                                   <FileOutput className="w-3 h-3 mr-2" />
+                                                                   Edit Step Content
+                                                                 </DropdownMenuItem>
+                                                                 <DropdownMenuItem onClick={() => setShowToolsMaterialsEdit({ stepId: step.id, type: 'tools' })}>
+                                                                   <Wrench className="w-3 h-3 mr-2" />
+                                                                   Edit Tools
+                                                                 </DropdownMenuItem>
+                                                                 <DropdownMenuItem onClick={() => setShowToolsMaterialsEdit({ stepId: step.id, type: 'materials' })}>
+                                                                   <Package className="w-3 h-3 mr-2" />
+                                                                   Edit Materials
+                                                                 </DropdownMenuItem>
+                                                               </DropdownMenuContent>
+                                                             </DropdownMenu>
+                                                             
+                                                             <Button size="sm" variant="ghost" onClick={() => copyItem('step', step)}>
+                                                               <Copy className="w-3 h-3" />
+                                                             </Button>
+                                                             
+                                                             {clipboard?.type === 'step' && <Button size="sm" variant="ghost" onClick={() => pasteItem('step', {
+                                                               phaseId: phase.id,
+                                                               operationId: operation.id
+                                                             })}>
+                                                                 <Clipboard className="w-3 h-3" />
+                                                               </Button>}
+                                                             
+                                                             <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)} disabled={step.isStandard && !isEditingStandardProject}>
+                                                                 <Trash2 className="w-3 h-3" />
+                                                               </Button>
+                                                           </>}
                                                                   </div>
                                                                 </div>
                                                               </CardContent>
