@@ -986,31 +986,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                             </Button>
                                                            </> : <>
                                                              
-                                                             <DropdownMenu>
-                                                               <DropdownMenuTrigger asChild>
-                                                                 <Button size="sm" variant="ghost" disabled={step.isStandard && !isEditingStandardProject}>
-                                                                   <Edit className="w-3 h-3" />
-                                                                 </Button>
-                                                               </DropdownMenuTrigger>
-                                                               <DropdownMenuContent align="end" className="bg-background">
-                                                                 <DropdownMenuItem onClick={() => startEdit('step', step.id, step)}>
-                                                                   <Edit className="w-3 h-3 mr-2" />
-                                                                   Edit Step Details
-                                                                 </DropdownMenuItem>
-                                                                 <DropdownMenuItem onClick={() => setShowStepContentEdit({ stepId: step.id, step })}>
-                                                                   <FileOutput className="w-3 h-3 mr-2" />
-                                                                   Edit Step Content
-                                                                 </DropdownMenuItem>
-                                                                 <DropdownMenuItem onClick={() => setShowToolsMaterialsEdit({ stepId: step.id, type: 'tools' })}>
-                                                                   <Wrench className="w-3 h-3 mr-2" />
-                                                                   Edit Tools
-                                                                 </DropdownMenuItem>
-                                                                 <DropdownMenuItem onClick={() => setShowToolsMaterialsEdit({ stepId: step.id, type: 'materials' })}>
-                                                                   <Package className="w-3 h-3 mr-2" />
-                                                                   Edit Materials
-                                                                 </DropdownMenuItem>
-                                                               </DropdownMenuContent>
-                                                             </DropdownMenu>
+                                                             <Button size="sm" variant="ghost" onClick={() => startEdit('step', step.id, step)} disabled={step.isStandard && !isEditingStandardProject}>
+                                                               <Edit className="w-3 h-3" />
+                                                             </Button>
                                                              
                                                              <Button size="sm" variant="ghost" onClick={() => copyItem('step', step)}>
                                                                <Copy className="w-3 h-3" />
