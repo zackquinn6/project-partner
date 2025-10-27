@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { useButtonTracker } from '@/hooks/useButtonTracker';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = [
@@ -76,6 +77,7 @@ interface Project {
 export function UnifiedProjectManagement() {
   const navigate = useNavigate();
   const { setCurrentProject } = useProject();
+  const { trackClick } = useButtonTracker();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projectRevisions, setProjectRevisions] = useState<Project[]>([]);
@@ -1012,7 +1014,10 @@ export function UnifiedProjectManagement() {
                                           <Button
                                             size="sm"
                                             variant="outline"
-                                            onClick={() => handleStatusChange(revision, 'beta-testing')}
+                                            onClick={trackClick(
+                                              `Release to Beta - Rev ${revision.revision_number}`,
+                                              () => handleStatusChange(revision, 'beta-testing')
+                                            )}
                                             className="flex items-center gap-1"
                                           >
                                             <ArrowRight className="w-3 h-3" />
@@ -1020,7 +1025,10 @@ export function UnifiedProjectManagement() {
                                           </Button>
                                            <Button
                                              size="sm"
-                                             onClick={() => handleStatusChange(revision, 'published')}
+                                             onClick={trackClick(
+                                               `Release to Production - Rev ${revision.revision_number}`,
+                                               () => handleStatusChange(revision, 'published')
+                                             )}
                                              className="flex items-center gap-1"
                                            >
                                              <ArrowRight className="w-3 h-3" />
@@ -1042,7 +1050,10 @@ export function UnifiedProjectManagement() {
                                       {revision.publish_status === 'beta-testing' && (
                                          <Button
                                            size="sm"
-                                           onClick={() => handleStatusChange(revision, 'published')}
+                                           onClick={trackClick(
+                                             `Promote Beta to Production - Rev ${revision.revision_number}`,
+                                             () => handleStatusChange(revision, 'published')
+                                           )}
                                            className="flex items-center gap-1"
                                          >
                                            <ArrowRight className="w-3 h-3" />
@@ -1107,7 +1118,10 @@ export function UnifiedProjectManagement() {
                 Cancel
               </Button>
               <Button 
-                onClick={confirmStatusChange}
+                onClick={trackClick(
+                  `Confirm ${newStatus === 'beta-testing' ? 'Beta Release' : 'Publication'}`,
+                  confirmStatusChange
+                )}
                 disabled={!releaseNotes.trim()}
                 className={newStatus === 'published' ? 'bg-green-600 hover:bg-green-700' : ''}
               >
