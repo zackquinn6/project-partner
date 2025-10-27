@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Users, Mail, Phone, CheckCircle2, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -52,6 +51,7 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [assignments, setAssignments] = useState<Record<string, Assignment[]>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
   const fetchPeople = useCallback(async () => {
     let query = supabase
@@ -461,6 +461,18 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
   const availableTasks = tasks.filter(task => !assignedTaskIds.has(task.id));
   const availableSubtasks = subtasks.filter(st => !assignedSubtaskIds.has(st.id));
 
+  const toggleTaskExpanded = (taskId: string) => {
+    setExpandedTasks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="space-y-3 h-full flex flex-col">
       <div className="text-[10px] md:text-xs text-muted-foreground">
@@ -525,12 +537,24 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                                 </div>
                                 
                                 {taskSubtasks.length > 0 && (
-                                  <Accordion type="single" collapsible className="border-t">
-                                    <AccordionItem value="subtasks" className="border-0">
-                                      <AccordionTrigger className="px-2 py-1 text-[9px] text-muted-foreground hover:no-underline">
-                                        {taskSubtasks.length} subtask{taskSubtasks.length !== 1 ? 's' : ''}
-                                      </AccordionTrigger>
-                                      <AccordionContent className="px-2 pb-2 space-y-1">
+                                  <div className="border-t mt-2">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleTaskExpanded(task.id);
+                                      }}
+                                      className="w-full px-2 py-1 text-[9px] text-muted-foreground hover:text-foreground flex items-center justify-between"
+                                    >
+                                      <span>{taskSubtasks.length} subtask{taskSubtasks.length !== 1 ? 's' : ''}</span>
+                                      {expandedTasks.has(task.id) ? (
+                                        <ChevronDown className="h-3 w-3" />
+                                      ) : (
+                                        <ChevronRight className="h-3 w-3" />
+                                      )}
+                                    </button>
+                                    {expandedTasks.has(task.id) && (
+                                      <div className="px-2 pb-2 space-y-1">
                                         {taskSubtasks.map((subtask, subIndex) => (
                                            <Draggable 
                                             key={subtask.id} 
@@ -565,9 +589,9 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                                             )}
                                           </Draggable>
                                         ))}
-                                      </AccordionContent>
-                                    </AccordionItem>
-                                  </Accordion>
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             )}
