@@ -168,8 +168,12 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
       return;
     }
 
-    // Parse the draggableId to determine if it's a task or subtask
-    const [type, id] = draggableId.split('-');
+    // Parse the draggableId - format is "task-{uuid}" or "subtask-{uuid}"
+    // Use indexOf to split only on the FIRST hyphen since UUIDs contain hyphens
+    const firstHyphen = draggableId.indexOf('-');
+    const type = draggableId.substring(0, firstHyphen);
+    const id = draggableId.substring(firstHyphen + 1);
+    
     console.log('Parsed drag item:', { type, id });
 
     if (type === 'task') {
@@ -408,20 +412,21 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
         </Card>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1">
             {/* Left: Available Tasks/Subtasks */}
-            <div className="space-y-3 overflow-auto border rounded-lg p-3 bg-muted/30">
-              <div className="text-xs font-semibold">Available Tasks</div>
+            <div className="border rounded-lg p-3 bg-muted/30 flex flex-col">
+              <div className="text-xs font-semibold mb-3">Available Tasks</div>
               
-              {availableTasks.length === 0 ? (
-                <p className="text-[10px] md:text-xs text-muted-foreground text-center py-8">
-                  No open tasks available
-                </p>
-              ) : (
-                <Droppable droppableId="available-tasks" isDropDisabled={true}>
-                  {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
-                      {availableTasks.map((task, index) => {
+              <div className="overflow-auto flex-1">
+                {availableTasks.length === 0 ? (
+                  <p className="text-[10px] md:text-xs text-muted-foreground text-center py-8">
+                    No open tasks available
+                  </p>
+                ) : (
+                  <Droppable droppableId="available-tasks" isDropDisabled={true}>
+                    {(provided) => (
+                      <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                        {availableTasks.map((task, index) => {
                         const taskSubtasks = availableSubtasks.filter(st => st.task_id === task.id);
                         
                         return (
@@ -502,17 +507,18 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                             )}
                           </Draggable>
                         );
-                      })}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              )}
+                       })}
+                       {provided.placeholder}
+                     </div>
+                   )}
+                 </Droppable>
+                )}
+              </div>
             </div>
 
             {/* Right: Team Members with Assignments */}
-            <div className="space-y-3 overflow-auto border rounded-lg p-3">
-              <div className="flex items-center justify-between">
+            <div className="border rounded-lg p-3 flex flex-col">
+              <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-semibold">Team Assignments</div>
                 {totalAssignments > 0 && (
                   <Badge variant="secondary" className="text-[10px]">
@@ -521,7 +527,7 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div className="overflow-auto flex-1 space-y-2">
                 {people.map(person => (
                   <Droppable key={person.id} droppableId={person.id}>
                     {(provided, snapshot) => (
