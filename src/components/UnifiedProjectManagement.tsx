@@ -220,6 +220,7 @@ export function UnifiedProjectManagement() {
   };
 
   const handleStatusChange = (revision: Project, status: 'beta-testing' | 'published') => {
+    console.log('🎯 handleStatusChange called:', { revision: revision.id, status });
     setSelectedRevision(revision);
     setNewStatus(status);
     setReleaseNotes('');
@@ -227,9 +228,30 @@ export function UnifiedProjectManagement() {
   };
 
   const confirmStatusChange = async () => {
-    if (!selectedRevision) return;
+    console.log('🎯 confirmStatusChange called:', { 
+      hasRevision: !!selectedRevision, 
+      revisionId: selectedRevision?.id,
+      newStatus, 
+      releaseNotes 
+    });
+    
+    if (!selectedRevision) {
+      console.error('❌ No selected revision');
+      return;
+    }
+
+    if (!releaseNotes.trim()) {
+      console.error('❌ No release notes provided');
+      toast({
+        title: "Error",
+        description: "Release notes are required",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
+      console.log('🚀 Updating project status...');
       const { error } = await supabase
         .from('projects')
         .update({
@@ -238,20 +260,25 @@ export function UnifiedProjectManagement() {
         })
         .eq('id', selectedRevision.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
 
+      console.log('✅ Project status updated successfully');
       toast({
         title: "Success",
         description: `Project ${newStatus === 'beta-testing' ? 'released to Beta' : 'published'}!`,
       });
 
       setPublishDialogOpen(false);
+      setReleaseNotes('');
       fetchProjects();
       if (selectedProject) {
         fetchProjectRevisions();
       }
     } catch (error) {
-      console.error('Error updating project status:', error);
+      console.error('❌ Error updating project status:', error);
       toast({
         title: "Error",
         description: "Failed to update project status",
@@ -1014,10 +1041,12 @@ export function UnifiedProjectManagement() {
                                           <Button
                                             size="sm"
                                             variant="outline"
-                                            onClick={trackClick(
-                                              `Release to Beta - Rev ${revision.revision_number}`,
-                                              () => handleStatusChange(revision, 'beta-testing')
-                                            )}
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              console.log('🎯 Beta button clicked');
+                                              handleStatusChange(revision, 'beta-testing');
+                                            }}
                                             className="flex items-center gap-1"
                                           >
                                             <ArrowRight className="w-3 h-3" />
@@ -1025,10 +1054,12 @@ export function UnifiedProjectManagement() {
                                           </Button>
                                            <Button
                                              size="sm"
-                                             onClick={trackClick(
-                                               `Release to Production - Rev ${revision.revision_number}`,
-                                               () => handleStatusChange(revision, 'published')
-                                             )}
+                                             onClick={(e) => {
+                                               e.preventDefault();
+                                               e.stopPropagation();
+                                               console.log('🎯 Production button clicked');
+                                               handleStatusChange(revision, 'published');
+                                             }}
                                              className="flex items-center gap-1"
                                            >
                                              <ArrowRight className="w-3 h-3" />
@@ -1050,10 +1081,12 @@ export function UnifiedProjectManagement() {
                                       {revision.publish_status === 'beta-testing' && (
                                          <Button
                                            size="sm"
-                                           onClick={trackClick(
-                                             `Promote Beta to Production - Rev ${revision.revision_number}`,
-                                             () => handleStatusChange(revision, 'published')
-                                           )}
+                                           onClick={(e) => {
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             console.log('🎯 Promote to Production button clicked');
+                                             handleStatusChange(revision, 'published');
+                                           }}
                                            className="flex items-center gap-1"
                                          >
                                            <ArrowRight className="w-3 h-3" />
@@ -1118,10 +1151,12 @@ export function UnifiedProjectManagement() {
                 Cancel
               </Button>
               <Button 
-                onClick={trackClick(
-                  `Confirm ${newStatus === 'beta-testing' ? 'Beta Release' : 'Publication'}`,
-                  confirmStatusChange
-                )}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🎯 Confirm button clicked in dialog');
+                  confirmStatusChange();
+                }}
                 disabled={!releaseNotes.trim()}
                 className={newStatus === 'published' ? 'bg-green-600 hover:bg-green-700' : ''}
               >
