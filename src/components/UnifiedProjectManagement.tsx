@@ -23,10 +23,12 @@ import { useButtonTracker } from '@/hooks/useButtonTracker';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = [
+  'Appliances',
   'Bathroom',
   'Ceilings',
   'Decks & Patios',
   'Doors & Windows',
+  'Electrical',
   'Exterior Carpentry',
   'Flooring',
   'General Repairs & Maintenance',
@@ -193,25 +195,39 @@ export function UnifiedProjectManagement() {
     if (!selectedProject || !editedProject) return;
 
     try {
-      // Ensure category is always an array (never null)
-      const updateData = {
-        ...editedProject,
-        category: editedProject.category || []
+      // Only send editable database columns (not computed or joined fields)
+      const updateData: any = {
+        name: editedProject.name || selectedProject.name,
+        description: editedProject.description !== undefined ? editedProject.description : selectedProject.description,
+        category: editedProject.category || [],
+        effort_level: editedProject.effort_level !== undefined ? editedProject.effort_level : selectedProject.effort_level,
+        skill_level: editedProject.skill_level !== undefined ? editedProject.skill_level : selectedProject.skill_level,
+        estimated_time: editedProject.estimated_time !== undefined ? editedProject.estimated_time : selectedProject.estimated_time,
+        scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
+        diy_length_challenges: editedProject.diy_length_challenges !== undefined ? editedProject.diy_length_challenges : selectedProject.diy_length_challenges,
+        images: editedProject.images !== undefined ? editedProject.images : selectedProject.images,
+        cover_image: editedProject.cover_image !== undefined ? editedProject.cover_image : selectedProject.cover_image,
+        updated_at: new Date().toISOString(),
       };
 
-      console.log('💾 Saving project edit:', updateData);
+      console.log('💾 Saving project edit:', {
+        projectId: selectedProject.id,
+        fields: Object.keys(updateData),
+        changes: updateData
+      });
 
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('projects')
         .update(updateData)
-        .eq('id', selectedProject.id);
+        .eq('id', selectedProject.id)
+        .select();
 
       if (error) {
         console.error('❌ Save error:', error);
         throw error;
       }
 
-      console.log('✅ Project saved successfully');
+      console.log('✅ Project saved successfully:', data);
       toast({
         title: "Success",
         description: "Project updated successfully!",
@@ -219,7 +235,14 @@ export function UnifiedProjectManagement() {
 
       setEditingProject(false);
       setEditedProject({});
-      fetchProjects();
+      
+      // Refresh projects to show updated data
+      await fetchProjects();
+      
+      // Update selectedProject with new data
+      if (data && data[0]) {
+        setSelectedProject(data[0] as Project);
+      }
     } catch (error) {
       console.error('Error updating project:', error);
       toast({
