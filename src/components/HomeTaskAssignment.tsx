@@ -406,7 +406,7 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
   const availableSubtasks = subtasks.filter(st => !assignedSubtaskIds.has(st.id));
 
   return (
-    <div className="space-y-3 h-full flex flex-col" style={{ transform: 'translateZ(0)' }}>
+    <div className="space-y-3 h-full flex flex-col">
       <div className="text-[10px] md:text-xs text-muted-foreground">
         Drag tasks and subtasks to team members to assign work
       </div>
@@ -420,10 +420,10 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
         </Card>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0">
             {/* Left: Available Tasks/Subtasks */}
-            <div className="border rounded-lg bg-muted/30 flex flex-col overflow-hidden">
-              <div className="text-xs font-semibold p-3 pb-2">Available Tasks</div>
+            <div className="border rounded-lg bg-muted/30 flex flex-col min-h-0">
+              <div className="text-xs font-semibold p-3 pb-2 flex-shrink-0">Available Tasks</div>
               
               {availableTasks.length === 0 ? (
                 <p className="text-[10px] md:text-xs text-muted-foreground text-center py-8">
@@ -432,7 +432,12 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
               ) : (
                 <Droppable droppableId="available-tasks" isDropDisabled={true}>
                   {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2 p-3 pt-1 overflow-auto flex-1">
+                    <div 
+                      ref={provided.innerRef} 
+                      {...provided.droppableProps} 
+                      className="space-y-2 p-3 pt-1 overflow-auto"
+                      style={{ flex: 1, minHeight: 0 }}
+                    >
                         {availableTasks.map((task, index) => {
                         const taskSubtasks = availableSubtasks.filter(st => st.task_id === task.id);
                         
@@ -443,7 +448,6 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                style={getDragStyle(snapshot.isDragging, provided.draggableProps.style)}
                                 className={`border rounded-lg bg-background p-2 cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary' : ''}`}
                               >
                                 <div className="flex items-center gap-2">
@@ -481,7 +485,6 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                                                 ref={subProvided.innerRef}
                                                 {...subProvided.draggableProps}
                                                 {...subProvided.dragHandleProps}
-                                                style={getDragStyle(subSnapshot.isDragging, subProvided.draggableProps.style)}
                                                 className={`border rounded p-1.5 bg-muted/30 cursor-grab active:cursor-grabbing ${subSnapshot.isDragging ? 'shadow-lg ring-2 ring-primary' : ''}`}
                                               >
                                                 <div className="flex items-center gap-2">
@@ -521,8 +524,8 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
             </div>
 
             {/* Right: Team Members with Assignments */}
-            <div className="border rounded-lg flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between p-3 pb-2">
+            <div className="border rounded-lg flex flex-col min-h-0">
+              <div className="flex items-center justify-between p-3 pb-2 flex-shrink-0">
                 <div className="text-xs font-semibold">Team Assignments</div>
                 {totalAssignments > 0 && (
                   <Badge variant="secondary" className="text-[10px]">
@@ -531,7 +534,7 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                 )}
               </div>
 
-              <div className="overflow-auto flex-1 space-y-2 p-3 pt-1">
+              <div className="p-3 pt-1 space-y-2 overflow-auto" style={{ flex: 1, minHeight: 0 }}>
                 {people.map(person => (
                   <Droppable key={person.id} droppableId={person.id}>
                     {(provided, snapshot) => (
