@@ -2981,6 +2981,21 @@ export type Database = {
               p_category?: string
               p_description?: string
               p_difficulty?: string
+              p_diy_length_challenges?: string
+              p_effort_level?: string
+              p_estimated_time?: string
+              p_image?: string
+              p_project_name: string
+              p_scaling_unit?: string
+              p_skill_level?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_category?: string
+              p_description?: string
+              p_difficulty?: string
               p_effort_level?: string
               p_estimated_time?: string
               p_image?: string

@@ -374,7 +374,10 @@ export function UnifiedProjectManagement() {
           p_category: newProject.category || null,
           p_difficulty: null,
           p_effort_level: newProject.effort_level || 'Medium',
+          p_skill_level: newProject.skill_level || 'Intermediate',
           p_estimated_time: newProject.estimated_time || null,
+          p_scaling_unit: newProject.scaling_unit || null,
+          p_diy_length_challenges: null,
           p_image: null
         });
 
