@@ -397,8 +397,11 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
   
   Object.values(assignments).forEach(personAssignments => {
     personAssignments.forEach(assignment => {
-      assignedTaskIds.add(assignment.taskId);
-      if (assignment.subtaskId) {
+      // Only mark the parent task as assigned if it's a direct task assignment (no subtaskId)
+      if (!assignment.subtaskId) {
+        assignedTaskIds.add(assignment.taskId);
+      } else {
+        // Otherwise, just mark the subtask as assigned
         assignedSubtaskIds.add(assignment.subtaskId);
       }
     });
