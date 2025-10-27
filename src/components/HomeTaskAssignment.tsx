@@ -188,25 +188,28 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
       // Get all subtasks for this task
       const taskSubtasks = subtasks.filter(st => st.task_id === task.id);
 
-      const newAssignments: Assignment[] = [
-        {
+      const newAssignments: Assignment[] = [];
+
+      // Only add parent task if it has no subtasks
+      if (taskSubtasks.length === 0) {
+        newAssignments.push({
           taskId: task.id,
           personId: destination.droppableId,
           title: task.title,
           taskTitle: task.title
-        }
-      ];
-
-      // Add all subtasks to the assignment
-      taskSubtasks.forEach(subtask => {
-        newAssignments.push({
-          taskId: task.id,
-          subtaskId: subtask.id,
-          personId: destination.droppableId,
-          title: subtask.title,
-          taskTitle: task.title
         });
-      });
+      } else {
+        // If task has subtasks, only add the subtasks (parent becomes container)
+        taskSubtasks.forEach(subtask => {
+          newAssignments.push({
+            taskId: task.id,
+            subtaskId: subtask.id,
+            personId: destination.droppableId,
+            title: subtask.title,
+            taskTitle: task.title
+          });
+        });
+      }
 
       setAssignments(prev => {
         const updated = {
