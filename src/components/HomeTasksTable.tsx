@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Pencil, Trash2, ChevronDown, ChevronUp, Plus, Link2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/useResponsive";
 interface HomeTask {
   id: string;
   title: string;
@@ -55,6 +56,7 @@ export function HomeTasksTable({
   onTaskUpdate
 }: HomeTasksTableProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [sortField, setSortField] = useState<SortField>('due_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPriority, setFilterPriority] = useState<string>('all');
@@ -285,17 +287,28 @@ export function HomeTasksTable({
               <SelectItem value="pro">Professional</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex items-center gap-1">
-            <Checkbox 
-              id="show-completed" 
-              checked={showCompleted}
-              onCheckedChange={(checked) => setShowCompleted(checked as boolean)}
-              className="h-3 w-3"
-            />
-            <label htmlFor="show-completed" className="text-[10px] sm:text-xs cursor-pointer whitespace-nowrap">
-              Show completed
-            </label>
-          </div>
+          {isMobile ? (
+            <Button
+              variant={showCompleted ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setShowCompleted(!showCompleted)}
+              className="h-8 px-2 text-xs"
+            >
+              {showCompleted ? "Hide done" : "Show done"}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-1">
+              <Checkbox 
+                id="show-completed" 
+                checked={showCompleted}
+                onCheckedChange={(checked) => setShowCompleted(checked as boolean)}
+                className="h-3 w-3"
+              />
+              <label htmlFor="show-completed" className="text-[10px] sm:text-xs cursor-pointer whitespace-nowrap">
+                Show completed
+              </label>
+            </div>
+          )}
         </div>
         {onAddTask && (
           <Button onClick={onAddTask} size="sm" className="h-8 w-8 p-0 sm:w-auto sm:px-3 flex-shrink-0" title="Add Task">
