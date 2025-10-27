@@ -898,7 +898,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                 <div key={project.id}>
                   {/* Mobile: Row layout */}
                   <Card 
-                    className="md:hidden group hover:shadow-lg transition-all duration-300 cursor-pointer border bg-card p-4" 
+                    className="md:hidden group hover:shadow-lg transition-all duration-300 cursor-pointer border bg-card overflow-hidden" 
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -910,65 +910,34 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       }
                     }}
                   >
-                    <div className="flex items-center gap-4">
-                      {/* Icon and category */}
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-orange-500 rounded-lg flex items-center justify-center">
-                          <IconComponent className="w-6 h-6 text-white" />
-                        </div>
+                    <div className="flex items-center gap-0">
+                      {/* Cover Image or Icon */}
+                      <div className="flex-shrink-0 w-24 h-24">
+                        {(project as any).cover_image ? (
+                          <img 
+                            src={(project as any).cover_image} 
+                            alt={project.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center">
+                            <IconComponent className="w-8 h-8 text-white" />
+                          </div>
+                        )}
                       </div>
                       
                       {/* Project info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1 min-w-0 p-4">
+                        <div className="flex items-center justify-between gap-2">
                           <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
                             {project.name}
                           </h3>
                           {project.publishStatus === 'beta-testing' && (
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs flex-shrink-0">
                               BETA
                             </Badge>
                           )}
                         </div>
-                        
-                        <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-                          {project.description}
-                        </p>
-                        
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {project.estimatedTime}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Layers className="w-3 h-3" />
-                            {project.phases?.length || 0} phases
-                          </div>
-                          <Badge className={getDifficultyColor(project.difficulty || '')} variant="secondary">
-                            {project.difficulty}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      {/* Action button */}
-                      <div className="flex-shrink-0">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="text-xs px-3"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('🔘 MOBILE BUTTON CLICK - Project:', project.name);
-                            try {
-                              handleSelectProject(project);
-                            } catch (error) {
-                              console.error('❌ Error in button handleSelectProject:', error);
-                            }
-                          }}
-                        >
-                          {isAdminMode ? 'Edit' : 'Start'}
-                        </Button>
                       </div>
                     </div>
                   </Card>
@@ -987,72 +956,84 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       }
                     }}
                   >
-                    <div className={`h-32 bg-gradient-to-br from-primary to-orange-500 relative overflow-hidden`}>
-                      <div className="absolute inset-0 bg-black/20" />
-                      <div className="absolute bottom-4 left-4 text-white">
-                        <IconComponent className="w-8 h-8" />
+                    {/* Cover Image or Gradient Header */}
+                    {(project as any).cover_image ? (
+                      <div className="h-48 relative overflow-hidden">
+                        <img 
+                          src={(project as any).cover_image} 
+                          alt={project.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          {project.category && (
+                            <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                              {project.category}
+                            </Badge>
+                          )}
+                          {project.publishStatus === 'beta-testing' && (
+                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm">
+                              <AlertTriangle className="w-3 h-3 mr-1" />
+                              BETA
+                            </Badge>
+                          )}
+                          {isAdminMode && (
+                            <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'} backdrop-blur-sm`}>
+                              {project.publishStatus}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <div className="absolute top-4 right-4 flex gap-2">
-                        <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                          {project.category}
-                        </Badge>
-                        {/* Beta badge for beta-testing projects */}
-                        {project.publishStatus === 'beta-testing' && (
-                          <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30">
-                            <AlertTriangle className="w-3 h-3 mr-1" />
-                            BETA
-                          </Badge>
-                        )}
-                        {isAdminMode && (
-                          <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
-                            {project.publishStatus}
-                          </Badge>
-                        )}
+                    ) : (
+                      <div className="h-48 bg-gradient-to-br from-primary to-orange-500 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-black/20" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <IconComponent className="w-16 h-16 text-white/80" />
+                        </div>
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          {project.category && (
+                            <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                              {project.category}
+                            </Badge>
+                          )}
+                          {project.publishStatus === 'beta-testing' && (
+                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30">
+                              <AlertTriangle className="w-3 h-3 mr-1" />
+                              BETA
+                            </Badge>
+                          )}
+                          {isAdminMode && (
+                            <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+                              {project.publishStatus}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                     
                     <CardHeader className="pb-3">
                       <CardTitle className="text-lg group-hover:text-primary transition-colors">
                         {project.name}
                       </CardTitle>
-                      <CardDescription className="text-sm line-clamp-2">
-                        {project.description}
-                      </CardDescription>
                     </CardHeader>
 
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="w-4 h-4" />
-                          {project.estimatedTime}
-                        </div>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Layers className="w-4 h-4" />
-                          {project.phases?.length || 0} phases
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <Badge className={getDifficultyColor(project.difficulty || '')} variant="secondary">
-                          {project.difficulty}
-                        </Badge>
-                        <Button 
-                          size="sm" 
-                          className="opacity-0 group-hover:opacity-100 transition-opacity" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('🔘 DESKTOP BUTTON CLICK - Project:', project.name);
-                            try {
-                              handleSelectProject(project);
-                            } catch (error) {
-                              console.error('❌ Error in button handleSelectProject:', error);
-                            }
-                          }}
-                        >
-                          {isAdminMode ? 'Edit Template' : 'Start Project'}
-                        </Button>
-                      </div>
+                    <CardContent>
+                      <Button 
+                        size="sm" 
+                        className="w-full" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('🔘 DESKTOP BUTTON CLICK - Project:', project.name);
+                          try {
+                            handleSelectProject(project);
+                          } catch (error) {
+                            console.error('❌ Error in button handleSelectProject:', error);
+                          }
+                        }}
+                      >
+                        {isAdminMode ? 'Edit Template' : 'Start Project'}
+                      </Button>
                     </CardContent>
                   </Card>
                 </div>
