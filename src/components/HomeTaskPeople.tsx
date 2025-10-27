@@ -28,6 +28,8 @@ const formatLocalDate = (date: Date): string => {
 interface Person {
   id: string;
   name: string;
+  email?: string;
+  phone?: string;
   available_hours: number;
   available_days: string[];
   consecutive_days: number;
@@ -55,6 +57,8 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [newPerson, setNewPerson] = useState({
     name: '',
+    email: '',
+    phone: '',
     available_hours: 8,
     available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
     consecutive_days: 5,
@@ -110,6 +114,8 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
     }
     setNewPerson({
       name: '',
+      email: '',
+      phone: '',
       available_hours: 8,
       available_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
       consecutive_days: 5,
@@ -175,6 +181,8 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
       .from('home_task_people')
       .update({
         name: editingPerson.name,
+        email: editingPerson.email,
+        phone: editingPerson.phone,
         available_hours: editingPerson.available_hours,
         available_days: editingPerson.available_days,
         consecutive_days: editingPerson.consecutive_days,
@@ -262,6 +270,24 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                         <SelectItem value="pro">Professional</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      type="email"
+                      value={editingPerson.email || ''}
+                      onChange={(e) => setEditingPerson({ ...editingPerson, email: e.target.value })}
+                      className="text-[10px] md:text-xs h-7 flex-1 min-w-[120px]"
+                      placeholder="Email"
+                    />
+                    <Input
+                      type="tel"
+                      value={editingPerson.phone || ''}
+                      onChange={(e) => setEditingPerson({ ...editingPerson, phone: e.target.value })}
+                      className="text-[10px] md:text-xs h-7 flex-1 min-w-[120px]"
+                      placeholder="Phone"
+                    />
                   </div>
 
                   <div>
@@ -592,6 +618,24 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                 <SelectItem value="pro">Professional</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Contact Info */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              type="email"
+              placeholder="Email"
+              value={newPerson.email}
+              onChange={(e) => setNewPerson({ ...newPerson, email: e.target.value })}
+              className="text-[10px] md:text-xs h-7 flex-1 min-w-[120px]"
+            />
+            <Input
+              type="tel"
+              placeholder="Phone"
+              value={newPerson.phone}
+              onChange={(e) => setNewPerson({ ...newPerson, phone: e.target.value })}
+              className="text-[10px] md:text-xs h-7 flex-1 min-w-[120px]"
+            />
           </div>
 
           <div>

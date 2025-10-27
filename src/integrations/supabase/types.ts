@@ -788,11 +788,13 @@ export type Database = {
           consecutive_days: number
           created_at: string
           diy_level: string
+          email: string | null
           home_id: string | null
           hourly_rate: number | null
           id: string
           name: string
           not_available_dates: string[] | null
+          phone: string | null
           specific_dates: string[] | null
           updated_at: string
           user_id: string
@@ -806,11 +808,13 @@ export type Database = {
           consecutive_days?: number
           created_at?: string
           diy_level?: string
+          email?: string | null
           home_id?: string | null
           hourly_rate?: number | null
           id?: string
           name: string
           not_available_dates?: string[] | null
+          phone?: string | null
           specific_dates?: string[] | null
           updated_at?: string
           user_id: string
@@ -824,11 +828,13 @@ export type Database = {
           consecutive_days?: number
           created_at?: string
           diy_level?: string
+          email?: string | null
           home_id?: string | null
           hourly_rate?: number | null
           id?: string
           name?: string
           not_available_dates?: string[] | null
+          phone?: string | null
           specific_dates?: string[] | null
           updated_at?: string
           user_id?: string
