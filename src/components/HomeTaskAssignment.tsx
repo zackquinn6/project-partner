@@ -412,20 +412,19 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
         </Card>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 overflow-hidden">
             {/* Left: Available Tasks/Subtasks */}
-            <div className="border rounded-lg p-3 bg-muted/30 flex flex-col">
-              <div className="text-xs font-semibold mb-3">Available Tasks</div>
+            <div className="border rounded-lg bg-muted/30 flex flex-col overflow-hidden">
+              <div className="text-xs font-semibold p-3 pb-2">Available Tasks</div>
               
-              <div className="overflow-auto flex-1">
-                {availableTasks.length === 0 ? (
-                  <p className="text-[10px] md:text-xs text-muted-foreground text-center py-8">
-                    No open tasks available
-                  </p>
-                ) : (
-                  <Droppable droppableId="available-tasks" isDropDisabled={true}>
-                    {(provided) => (
-                      <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+              {availableTasks.length === 0 ? (
+                <p className="text-[10px] md:text-xs text-muted-foreground text-center py-8">
+                  No open tasks available
+                </p>
+              ) : (
+                <Droppable droppableId="available-tasks" isDropDisabled={true}>
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2 p-3 pt-1 overflow-auto flex-1">
                         {availableTasks.map((task, index) => {
                         const taskSubtasks = availableSubtasks.filter(st => st.task_id === task.id);
                         
@@ -505,16 +504,15 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                         );
                        })}
                        {provided.placeholder}
-                     </div>
-                   )}
-                 </Droppable>
-                )}
-              </div>
+                    </div>
+                  )}
+                </Droppable>
+              )}
             </div>
 
             {/* Right: Team Members with Assignments */}
-            <div className="border rounded-lg p-3 flex flex-col">
-              <div className="flex items-center justify-between mb-3">
+            <div className="border rounded-lg flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between p-3 pb-2">
                 <div className="text-xs font-semibold">Team Assignments</div>
                 {totalAssignments > 0 && (
                   <Badge variant="secondary" className="text-[10px]">
@@ -523,7 +521,7 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
                 )}
               </div>
 
-              <div className="overflow-auto flex-1 space-y-2">
+              <div className="overflow-auto flex-1 space-y-2 p-3 pt-1">
                 {people.map(person => (
                   <Droppable key={person.id} droppableId={person.id}>
                     {(provided, snapshot) => (
