@@ -180,7 +180,11 @@ export function UnifiedProjectManagement() {
 
   const startProjectEdit = () => {
     if (selectedProject) {
-      setEditedProject({ ...selectedProject });
+      // Ensure category is an array when starting edit
+      setEditedProject({ 
+        ...selectedProject,
+        category: selectedProject.category || []
+      });
       setEditingProject(true);
     }
   };
@@ -189,13 +193,25 @@ export function UnifiedProjectManagement() {
     if (!selectedProject || !editedProject) return;
 
     try {
+      // Ensure category is always an array (never null)
+      const updateData = {
+        ...editedProject,
+        category: editedProject.category || []
+      };
+
+      console.log('💾 Saving project edit:', updateData);
+
       const { error } = await supabase
         .from('projects')
-        .update(editedProject)
+        .update(updateData)
         .eq('id', selectedProject.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Save error:', error);
+        throw error;
+      }
 
+      console.log('✅ Project saved successfully');
       toast({
         title: "Success",
         description: "Project updated successfully!",
