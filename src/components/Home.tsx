@@ -19,15 +19,16 @@ import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
 import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2, ListChecks } from 'lucide-react';
 import heroDIYPerson from '@/assets/hero-diy-person.png';
-import { HeroSection } from '@/components/landing/HeroSection';
-import { StatisticsBar } from '@/components/landing/StatisticsBar';
-import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
-import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
-import { FeaturesSection } from '@/components/landing/FeaturesSection';
-import { PersonasSection } from '@/components/landing/PersonasSection';
-import { FAQSection } from '@/components/landing/FAQSection';
-import { FinalCTASection } from '@/components/landing/FinalCTASection';
-import { Footer } from '@/components/landing/Footer';
+import { HeroSection } from './landing/HeroSection';
+import { StatisticsBar } from './landing/StatisticsBar';
+import { CoreFeaturesSection } from './landing/CoreFeaturesSection';
+import { TestimonialsSection } from './landing/TestimonialsSection';
+import { HowItWorksSection } from './landing/HowItWorksSection';
+import { FeaturesSection } from './landing/FeaturesSection';
+import { PersonasSection } from './landing/PersonasSection';
+import { FAQSection } from './landing/FAQSection';
+import { FinalCTASection } from './landing/FinalCTASection';
+import { Footer } from './landing/Footer';
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
@@ -284,6 +285,9 @@ export default function Home({
 
       {/* Statistics Bar */}
       <StatisticsBar />
+
+      {/* Core Features Section */}
+      <CoreFeaturesSection />
 
       {/* How It Works Section */}
       <HowItWorksSection onOpenDemo={() => setIsKCExplainerOpen(true)} />

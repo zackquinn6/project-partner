@@ -32,11 +32,11 @@ export const HeroSection = ({
             </Badge>
 
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
-              DIY Project Workflow
+              Project Management, Built for DIY
             </h1>
 
             <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Get step-by-step guidance tailored to <strong className="text-foreground">YOUR skill level</strong>, <strong className="text-foreground">YOUR timeline</strong>, and <strong className="text-foreground">YOUR available tools</strong>.
+              Unlike generic project or workflow tools, Project Partner comes pre‑populated and tailored for home improvement, giving you structure from day one.
             </p>
 
             <p className="text-base text-muted-foreground">Join DIYers who use Project Partner to get better project results</p>
