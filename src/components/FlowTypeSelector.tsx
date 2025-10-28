@@ -15,22 +15,22 @@ const flowTypes = [
     value: 'prime',
     label: 'Prime',
     icon: CheckCircle,
-    color: 'bg-green-500',
-    description: 'A required step that does not scale with project size'
+    color: 'bg-green-600',
+    description: 'Main workflow path - always executed'
   },
   {
-    value: 'repeat',
-    label: 'Scaled', 
-    icon: RotateCcw,
-    color: 'bg-blue-500',
-    description: 'A step that scales with project size and progress may be reported incrementally'
+    value: 'alternate',
+    label: 'Alternate', 
+    icon: GitBranch,
+    color: 'bg-orange-500',
+    description: 'Alternative path based on decision point'
   },
   {
-    value: 'inspection',
-    label: 'Quality Check',
-    icon: Search,
-    color: 'bg-orange-500', 
-    description: 'Quality check or verification step that ensures standards are met'
+    value: 'if-necessary',
+    label: 'If Necessary',
+    icon: HelpCircle,
+    color: 'bg-gray-500', 
+    description: 'Conditional path - only executed when specific conditions are met'
   }
 ];
 
@@ -43,10 +43,10 @@ export const FlowTypeSelector: React.FC<FlowTypeSelectorProps> = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="flow-type">Step Type</Label>
+      <Label htmlFor="flow-type">Flow Type</Label>
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger>
-          <SelectValue placeholder="Select step type">
+          <SelectValue placeholder="Select flow type">
             {selectedType && (
               <div className="flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${selectedType.color}`} />
