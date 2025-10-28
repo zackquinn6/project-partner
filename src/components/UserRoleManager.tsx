@@ -9,15 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, Shield, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  enhancedSanitizeFormData, 
-  validateEmail, 
-  checkOperationRateLimit, 
-  recordOperationAttempt,
-  initializeCSRFProtection,
-  validateFormSubmission
-} from '@/utils/enhancedInputSanitization';
-import { logAdminAction, checkEnhancedRateLimit, logSecurityViolation } from '@/utils/enhancedSecurityLogger';
 interface UserRole {
   id: string;
   user_id: string;
@@ -41,13 +32,6 @@ export const UserRoleManager: React.FC = () => {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState('user');
   const [loading, setLoading] = useState(true);
-  const [csrfToken, setCsrfToken] = useState<string>('');
-
-  // Initialize CSRF protection
-  useEffect(() => {
-    const token = initializeCSRFProtection();
-    setCsrfToken(token);
-  }, []);
   const loadUserRoles = async () => {
     try {
       // First get user roles
@@ -106,20 +90,8 @@ export const UserRoleManager: React.FC = () => {
   const addUserRole = async () => {
     if (!user) return;
 
-    // Validate form submission with CSRF and rate limiting
-    const validation = validateFormSubmission(csrfToken, user.id);
-    if (!validation.isValid) {
-      toast({ title: "Security Error", description: validation.error, variant: "destructive" });
-      return;
-    }
-
-    // Sanitize and validate input first
-    const sanitizedData = enhancedSanitizeFormData({
-      email: newUserEmail,
-      role: newUserRole
-    });
-
-    if (!sanitizedData.email || !sanitizedData.role) {
+    // Basic validation
+    if (!newUserEmail || !newUserRole) {
       toast({
         title: "Please fill all fields",
         variant: "destructive"
@@ -128,7 +100,8 @@ export const UserRoleManager: React.FC = () => {
     }
 
     // Validate email format
-    if (!validateEmail(sanitizedData.email)) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUserEmail)) {
       toast({
         title: "Invalid email format",
         variant: "destructive"
@@ -136,35 +109,9 @@ export const UserRoleManager: React.FC = () => {
       return;
     }
 
-    // Enhanced rate limiting check
-    const rateLimitPassed = await checkEnhancedRateLimit(
-      user?.id || 'anonymous',
-      'role_management',
-      10,
-      5
-    );
-    
-    if (!rateLimitPassed) {
-      await logSecurityViolation(
-        'rate_limit_exceeded',
-        'Role management rate limit exceeded',
-        'medium',
-        { userId: user?.id, targetEmail: sanitizedData.email, role: sanitizedData.role }
-      );
-      toast({
-        title: "Too many attempts",
-        description: "Please wait before making more role changes.",
-        variant: "destructive",
-      });
-      return;
-     }
-
-    // Record the operation attempt
-    recordOperationAttempt('roleModification', user.id);
-
     try {
       // Find user by email
-      const targetUser = allUsers.find(u => u.email.toLowerCase() === sanitizedData.email.toLowerCase());
+      const targetUser = allUsers.find(u => u.email.toLowerCase() === newUserEmail.toLowerCase());
       if (!targetUser) {
         toast({
           title: "User not found",
@@ -175,7 +122,7 @@ export const UserRoleManager: React.FC = () => {
       }
 
       // Check if role already exists
-      const existingRole = userRoles.find(ur => ur.user_id === targetUser.user_id && ur.role === sanitizedData.role);
+      const existingRole = userRoles.find(ur => ur.user_id === targetUser.user_id && ur.role === newUserRole);
       if (existingRole) {
         toast({
           title: "Role already exists",
@@ -187,36 +134,27 @@ export const UserRoleManager: React.FC = () => {
 
       const { error } = await supabase.from('user_roles').insert({
         user_id: targetUser.user_id,
-        role: sanitizedData.role
+        role: newUserRole
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
-      // Log the admin actions with enhanced logging
-      await logAdminAction(
-        `add_role_${sanitizedData.role}`,
-        `user_roles for ${sanitizedData.email}`,
-        !error,
-        { 
-          targetEmail: sanitizedData.email, 
-          role: sanitizedData.role, 
-          targetUserId: targetUser?.user_id,
-          operation: 'role_assignment'
-        }
-      );
+      toast({
+        title: "Success",
+        description: `Role ${newUserRole} added successfully`
+      });
 
       setNewUserEmail('');
       setNewUserRole('user');
       await loadUserRoles();
-      
-      // Generate new CSRF token
-      const newToken = initializeCSRFProtection();
-      setCsrfToken(newToken);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding user role:', error);
       toast({
         title: "Error adding role",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive"
       });
     }
@@ -224,52 +162,9 @@ export const UserRoleManager: React.FC = () => {
   const removeUserRole = async (roleId: string, userEmail: string, role: string) => {
     if (!user) return;
 
-    // Enhanced rate limiting check
-    const rateLimitPassed = await checkEnhancedRateLimit(
-      user?.id || 'anonymous',
-      'role_management',
-      10,
-      5
-    );
-    
-    if (!rateLimitPassed) {
-      await logSecurityViolation(
-        'rate_limit_exceeded',
-        'Role management rate limit exceeded during removal',
-        'medium',
-        { userId: user?.id, targetEmail: userEmail, role: role }
-      );
-      toast({
-        title: "Rate limit exceeded",
-        description: "Too many role modification attempts. Please wait before trying again.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Record the operation attempt
-    recordOperationAttempt('roleModification', user.id);
-
     try {
       const { error } = await supabase.from('user_roles').delete().eq('id', roleId);
       if (error) throw error;
-
-      // Log the admin action with enhanced logging
-      const targetUser = allUsers.find(u => u.email === userEmail);
-      if (targetUser) {
-        await logAdminAction(
-          `remove_role_${role}`,
-          `user_roles for ${userEmail}`,
-          !error,
-          {
-            targetEmail: userEmail,
-            role: role,
-            targetUserId: targetUser.user_id,
-            operation: 'role_removal',
-            roleId: roleId
-          }
-        );
-      }
 
       await loadUserRoles();
       
@@ -277,11 +172,11 @@ export const UserRoleManager: React.FC = () => {
         title: "Success",
         description: "Role removed successfully"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing user role:', error);
       toast({
         title: "Error removing role",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive"
       });
     }
