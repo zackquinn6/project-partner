@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import DIYSurveyPopup from "./DIYSurveyPopup";
+import { AchievementsSection } from "./AchievementsSection";
 interface ProfileManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -174,6 +175,11 @@ export default function ProfileManager({
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Achievements Section */}
+        <div className="mt-6">
+          <AchievementsSection />
         </div>
 
         <div className="flex justify-center gap-3">

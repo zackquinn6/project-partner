@@ -39,6 +39,10 @@ export const HeroSection = ({
               Unlike generic project or workflow tools, Project Partner comes pre‑populated and tailored for home improvement, giving you structure from day one.
             </p>
 
+            <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0">
+              We're helping you run one great project at a time, not building pro contractors.
+            </p>
+
             <p className="text-base text-muted-foreground">Join DIYers who use Project Partner to get better project results</p>
 
             {/* CTAs */}

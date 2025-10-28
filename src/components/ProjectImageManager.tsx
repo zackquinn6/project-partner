@@ -251,6 +251,15 @@ export const ProjectImageManager = ({ projectId, onImageUpdated }: ProjectImageM
         </div>
       )}
 
+      {/* File Requirements Warning */}
+      <div className="bg-muted p-3 rounded-lg border border-border text-sm">
+        <p className="font-medium mb-1">Image Requirements:</p>
+        <ul className="text-muted-foreground space-y-1">
+          <li>• File type: JPG, PNG, GIF, or other image formats</li>
+          <li>• Maximum size: 5MB</li>
+        </ul>
+      </div>
+
       {/* File Upload */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">

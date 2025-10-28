@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          category: string
+          created_at: string
+          criteria: Json
+          description: string
+          icon: string | null
+          id: string
+          name: string
+          points: number | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          criteria?: Json
+          description: string
+          icon?: string | null
+          id?: string
+          name: string
+          points?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          criteria?: Json
+          description?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          points?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_sensitive_data_access: {
         Row: {
           access_type: string
@@ -2666,6 +2702,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          progress: Json | null
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          progress?: Json | null
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          progress?: Json | null
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_maintenance_tasks: {
         Row: {

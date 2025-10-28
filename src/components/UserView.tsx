@@ -48,6 +48,7 @@ import { HomeManager } from './HomeManager';
 import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
 import { MobileDIYDropdown } from './MobileDIYDropdown';
+import { ProjectCompletionHandler } from './ProjectCompletionHandler';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -920,10 +921,16 @@ export default function UserView({
             </div>
           )}
 
-          {/* Sections (tips, warnings, etc) */}
+          {/* Sections (tips, warnings, etc) - Safety warnings always first */}
           {instruction.content.sections && instruction.content.sections.length > 0 && (
             <div className="space-y-4">
-              {instruction.content.sections.map((section, idx) => (
+              {[...instruction.content.sections]
+                .sort((a, b) => {
+                  // Sort warnings to top, then tips, then standard
+                  const order = { warning: 0, tip: 1, standard: 2 };
+                  return (order[a.type || 'standard'] || 2) - (order[b.type || 'standard'] || 2);
+                })
+                .map((section, idx) => (
                 <div
                   key={idx}
                   className={`p-4 rounded-lg border ${
@@ -1153,9 +1160,15 @@ export default function UserView({
       return null;
     }
     
-    return (
-      <div className="min-h-screen">
-        {(
+  return (
+    <div className="min-h-screen">
+      {/* Achievement tracking component */}
+      <ProjectCompletionHandler 
+        projectRunId={currentProjectRun?.id} 
+        status={currentProjectRun?.status} 
+      />
+      
+      {(
           <ProjectListing 
             onProjectSelect={project => {
               console.log("🎯 Desktop Project selected from My Projects:", project, {currentProjectRun: !!currentProjectRun});

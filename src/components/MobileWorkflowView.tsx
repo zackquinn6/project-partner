@@ -214,7 +214,13 @@ export function MobileWorkflowView({
                         </div>
                       )}
                       
-                      {instruction.content.sections && instruction.content.sections.map((section, idx) => (
+                      {instruction.content.sections && [...instruction.content.sections]
+                        .sort((a, b) => {
+                          // Sort warnings to top, then tips, then standard
+                          const order = { warning: 0, tip: 1, standard: 2 };
+                          return (order[a.type || 'standard'] || 2) - (order[b.type || 'standard'] || 2);
+                        })
+                        .map((section, idx) => (
                         <div
                           key={idx}
                           className={`p-3 rounded-lg border text-xs ${
