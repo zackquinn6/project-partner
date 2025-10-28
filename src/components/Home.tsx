@@ -191,13 +191,6 @@ export default function Home({
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">Task Manager</span>
               </div>
               
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-expert-help'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.expertHelp} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <HelpCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Expert Help</span>
-              </div>
-              
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProfile} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                   <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
