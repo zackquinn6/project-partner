@@ -91,8 +91,6 @@ export function UnifiedProjectManagement() {
   const [editedProject, setEditedProject] = useState<Partial<Project>>({});
   const [activeView, setActiveView] = useState<'details' | 'revisions'>('details');
   const [projectSearch, setProjectSearch] = useState('');
-  const [editWorkflowDialogOpen, setEditWorkflowDialogOpen] = useState(false);
-  const [revisionToEdit, setRevisionToEdit] = useState<Project | null>(null);
   
   // Dialog states
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
@@ -994,8 +992,44 @@ export function UnifiedProjectManagement() {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            setRevisionToEdit(revision);
-                            setEditWorkflowDialogOpen(true);
+                            // Parse phases
+                            let parsedPhases = [];
+                            try {
+                              let phases = revision.phases;
+                              if (typeof phases === 'string') {
+                                phases = JSON.parse(phases);
+                              }
+                              if (typeof phases === 'string') {
+                                console.warn('Phases double-encoded in UnifiedProjectManagement');
+                                phases = JSON.parse(phases);
+                              }
+                              parsedPhases = phases || [];
+                              
+                              console.log('Setting current project for edit:', {
+                                revisionId: revision.id,
+                                revisionNumber: revision.revision_number,
+                                phaseCount: Array.isArray(parsedPhases) ? parsedPhases.length : 0,
+                              });
+                            } catch (e) {
+                              console.error('Failed to parse phases for revision:', revision.id, e);
+                              parsedPhases = [];
+                            }
+                            
+                            setCurrentProject({ 
+                              id: revision.id, 
+                              name: revision.name,
+                              description: revision.description || '',
+                              createdAt: new Date(revision.created_at),
+                              updatedAt: new Date(revision.updated_at),
+                              startDate: new Date(),
+                              planEndDate: new Date(),
+                              status: 'not-started' as const,
+                              publishStatus: revision.publish_status as 'draft' | 'published' | 'beta-testing',
+                              phases: parsedPhases
+                            });
+                            
+                            // Navigate to editor
+                            navigate('/', { state: { view: 'editWorkflow' } });
                           }}
                           className="flex items-center gap-1"
                         >
@@ -1165,85 +1199,6 @@ export function UnifiedProjectManagement() {
               </Button>
               <Button onClick={createNewRevision}>
                 Create Draft Revision
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Workflow Dialog */}
-      <Dialog open={editWorkflowDialogOpen} onOpenChange={setEditWorkflowDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Edit className="w-5 h-5" />
-              Edit Project Workflow
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Opening the workflow editor will take you to the full editing interface while keeping this management window accessible.
-            </p>
-            
-            {revisionToEdit && (
-              <div className="p-3 bg-muted rounded-lg space-y-1">
-                <div className="text-sm font-medium">{revisionToEdit.name}</div>
-                <div className="text-xs text-muted-foreground">Revision {revisionToEdit.revision_number}</div>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => {
-                setEditWorkflowDialogOpen(false);
-                setRevisionToEdit(null);
-              }}>
-                Cancel
-              </Button>
-              <Button onClick={() => {
-                if (!revisionToEdit) return;
-                
-                // Parse phases
-                let parsedPhases = [];
-                try {
-                  let phases = revisionToEdit.phases;
-                  if (typeof phases === 'string') {
-                    phases = JSON.parse(phases);
-                  }
-                  if (typeof phases === 'string') {
-                    console.warn('Phases double-encoded in UnifiedProjectManagement');
-                    phases = JSON.parse(phases);
-                  }
-                  parsedPhases = phases || [];
-                  
-                  console.log('Setting current project for edit:', {
-                    revisionId: revisionToEdit.id,
-                    revisionNumber: revisionToEdit.revision_number,
-                    phaseCount: Array.isArray(parsedPhases) ? parsedPhases.length : 0,
-                  });
-                } catch (e) {
-                  console.error('Failed to parse phases for revision:', revisionToEdit.id, e);
-                  parsedPhases = [];
-                }
-                
-                setCurrentProject({ 
-                  id: revisionToEdit.id, 
-                  name: revisionToEdit.name,
-                  description: revisionToEdit.description || '',
-                  createdAt: new Date(revisionToEdit.created_at),
-                  updatedAt: new Date(revisionToEdit.updated_at),
-                  startDate: new Date(),
-                  planEndDate: new Date(),
-                  status: 'not-started' as const,
-                  publishStatus: revisionToEdit.publish_status as 'draft' | 'published' | 'beta-testing',
-                  phases: parsedPhases
-                });
-                
-                // Close dialog and navigate
-                setEditWorkflowDialogOpen(false);
-                setRevisionToEdit(null);
-                navigate('/', { state: { view: 'editWorkflow' } });
-              }}>
-                Open Editor
               </Button>
             </div>
           </div>
