@@ -117,6 +117,7 @@ export const UserRoleManager: React.FC = () => {
 
     try {
       console.log('🔍 Searching for user in allUsers:', allUsers.length, 'users');
+      console.log('📋 Available users:', allUsers.map(u => u.email));
       
       // Find user by email
       const targetUser = allUsers.find(u => u.email.toLowerCase() === newUserEmail.toLowerCase());
@@ -126,7 +127,7 @@ export const UserRoleManager: React.FC = () => {
         console.log('❌ User not found');
         toast({
           title: "User not found",
-          description: "Please make sure the user has signed up first.",
+          description: `The user "${newUserEmail}" hasn't signed up yet. Ask them to create an account first.`,
           variant: "destructive"
         });
         return;
@@ -217,7 +218,12 @@ export const UserRoleManager: React.FC = () => {
             User Role Management
           </CardTitle>
           <CardDescription>
-            Manage user roles and permissions for the application
+            Manage user roles and permissions. Users must sign up before roles can be assigned.
+            {allUsers.length > 0 && (
+              <div className="mt-2 text-sm">
+                Available users: {allUsers.map(u => u.email).join(', ')}
+              </div>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
