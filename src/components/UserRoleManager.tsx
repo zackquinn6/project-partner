@@ -88,10 +88,16 @@ export const UserRoleManager: React.FC = () => {
     loadData();
   }, []);
   const addUserRole = async () => {
-    if (!user) return;
+    console.log('🔧 addUserRole called', { newUserEmail, newUserRole, user });
+    
+    if (!user) {
+      console.log('❌ No user authenticated');
+      return;
+    }
 
     // Basic validation
     if (!newUserEmail || !newUserRole) {
+      console.log('❌ Missing fields', { newUserEmail, newUserRole });
       toast({
         title: "Please fill all fields",
         variant: "destructive"
@@ -110,9 +116,14 @@ export const UserRoleManager: React.FC = () => {
     }
 
     try {
+      console.log('🔍 Searching for user in allUsers:', allUsers.length, 'users');
+      
       // Find user by email
       const targetUser = allUsers.find(u => u.email.toLowerCase() === newUserEmail.toLowerCase());
+      console.log('🔍 Target user found:', targetUser);
+      
       if (!targetUser) {
+        console.log('❌ User not found');
         toast({
           title: "User not found",
           description: "Please make sure the user has signed up first.",
@@ -132,13 +143,17 @@ export const UserRoleManager: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase.from('user_roles').insert({
+      console.log('📝 Inserting role:', { user_id: targetUser.user_id, role: newUserRole });
+      
+      const { error, data } = await supabase.from('user_roles').insert({
         user_id: targetUser.user_id,
         role: newUserRole
-      });
+      }).select();
+      
+      console.log('✅ Insert result:', { error, data });
       
       if (error) {
-        console.error('Supabase error:', error);
+        console.error('❌ Supabase error:', error);
         throw error;
       }
 
@@ -224,7 +239,14 @@ export const UserRoleManager: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={addUserRole} className="flex items-center gap-2">
+            <Button 
+              type="button"
+              onClick={() => {
+                console.log('🔘 Button clicked!');
+                addUserRole();
+              }} 
+              className="flex items-center gap-2"
+            >
               <Plus className="w-4 h-4" />
               Add Role
             </Button>
