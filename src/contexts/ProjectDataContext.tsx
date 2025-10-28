@@ -67,6 +67,8 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         description: project.description || '',
         diyLengthChallenges: project.diy_length_challenges,
         image: project.image,
+        images: project.images,
+        cover_image: project.cover_image,
         createdAt: new Date(project.created_at),
         updatedAt: new Date(project.updated_at),
         startDate: new Date(project.start_date),
