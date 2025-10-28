@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
 import { ProjectOwnershipSelector } from '@/components/ProjectOwnershipSelector';
+import { ProjectImageManager } from '@/components/ProjectImageManager';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = [
@@ -844,108 +845,35 @@ export function UnifiedProjectManagement() {
                          />
 
                           {/* Image Management Section */}
-                         <div className="space-y-3">
-                           <Label className="text-sm">Project Images</Label>
-                           {editingProject ? (
-                             <div className="space-y-3">
-                               {/* Image Upload */}
-                               <div className="flex gap-2">
-                                 <Input
-                                   type="url"
-                                   placeholder="Enter image URL"
-                                   onKeyDown={(e) => {
-                                     if (e.key === 'Enter' && e.currentTarget.value) {
-                                       const newImages = [...(editedProject.images || []), e.currentTarget.value];
-                                       setEditedProject(prev => ({ ...prev, images: newImages }));
-                                       e.currentTarget.value = '';
-                                     }
-                                   }}
-                                   className="text-sm"
-                                 />
-                                 <Button
-                                   type="button"
-                                   variant="outline"
-                                   size="sm"
-                                   onClick={(e) => {
-                                     const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                                     if (input && input.value) {
-                                       const newImages = [...(editedProject.images || []), input.value];
-                                       setEditedProject(prev => ({ ...prev, images: newImages }));
-                                       input.value = '';
-                                     }
-                                   }}
-                                 >
-                                   Add
-                                 </Button>
-                               </div>
-                               
-                               {/* Display Images */}
-                               {(editedProject.images || []).length > 0 && (
-                                 <div className="grid grid-cols-3 gap-2">
-                                   {(editedProject.images || []).map((img, idx) => (
-                                     <div key={idx} className="relative group">
-                                       <img 
-                                         src={img} 
-                                         alt={`Project ${idx + 1}`}
-                                         className="w-full h-24 object-cover rounded border"
-                                       />
-                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center gap-2">
-                                         <Button
-                                           type="button"
-                                           size="sm"
-                                           variant="secondary"
-                                           onClick={() => {
-                                             setEditedProject(prev => ({ ...prev, cover_image: img }));
-                                           }}
-                                         >
-                                           {editedProject.cover_image === img ? '✓ Cover' : 'Set Cover'}
-                                         </Button>
-                                         <Button
-                                           type="button"
-                                           size="sm"
-                                           variant="destructive"
-                                           onClick={() => {
-                                             const newImages = (editedProject.images || []).filter((_, i) => i !== idx);
-                                             setEditedProject(prev => ({ ...prev, images: newImages }));
-                                             if (editedProject.cover_image === img) {
-                                               setEditedProject(prev => ({ ...prev, cover_image: null }));
-                                             }
-                                           }}
-                                         >
-                                           Delete
-                                         </Button>
-                                       </div>
-                                       {editedProject.cover_image === img && (
-                                         <Badge className="absolute top-1 left-1 bg-primary text-xs">Cover</Badge>
-                                       )}
-                                     </div>
-                                   ))}
-                                 </div>
-                               )}
-                             </div>
-                           ) : (
-                             <div>
-                               {(selectedProject.images || []).length > 0 ? (
-                                 <div className="grid grid-cols-4 gap-2">
-                                   {(selectedProject.images || []).map((img, idx) => (
-                                     <div key={idx} className="relative">
-                                       <img 
-                                         src={img} 
-                                         alt={`Project ${idx + 1}`}
-                                         className="w-full h-24 object-cover rounded border"
-                                       />
-                                       {selectedProject.cover_image === img && (
-                                         <Badge className="absolute top-1 left-1 bg-primary text-xs">Cover</Badge>
-                                       )}
-                                     </div>
-                                   ))}
-                                 </div>
-                               ) : (
-                                 <div className="p-2 bg-muted rounded text-sm text-muted-foreground">No images uploaded</div>
-                               )}
-                             </div>
-                           )}
-                         </div>
+                          <div className="space-y-3">
+                            <Label className="text-sm font-semibold">Project Cover Image</Label>
+                            {editingProject ? (
+                              <ProjectImageManager 
+                                projectId={selectedProject.id}
+                                onImageUpdated={() => {
+                                  // Refresh project data
+                                  fetchProjects();
+                                }}
+                              />
+                            ) : (
+                              <div>
+                                {selectedProject.cover_image ? (
+                                  <div className="relative border rounded-lg p-2">
+                                    <img 
+                                      src={selectedProject.cover_image} 
+                                      alt="Project cover"
+                                      className="w-full h-48 object-cover rounded"
+                                    />
+                                    <Badge className="absolute top-4 left-4 bg-primary">Cover Image</Badge>
+                                  </div>
+                                ) : (
+                                  <div className="p-4 bg-muted rounded text-sm text-muted-foreground">
+                                    No cover image uploaded
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
 
                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-muted-foreground">
                           <div>

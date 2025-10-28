@@ -10,14 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollableDialog } from '@/components/ScrollableDialog';
-import { Settings, BarChart3, Shield, Wrench, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog, Image } from 'lucide-react';
+import { Settings, BarChart3, Shield, Wrench, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog } from 'lucide-react';
 import { StructureManager } from './StructureManager';
 import { AdminRoadmapManager } from './AdminRoadmapManager';
 import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
 import { AdminDataRefresh } from './AdminDataRefresh';
 import { AdminGuideWindow } from './AdminGuideWindow';
 import { PFMEAManagement } from './PFMEAManagement';
-import { ProjectImageManager } from './ProjectImageManager';
 
 
 export const AdminView: React.FC = () => {
@@ -33,7 +32,6 @@ export const AdminView: React.FC = () => {
   const [adminGuideOpen, setAdminGuideOpen] = useState(false);
   const [dataRefreshOpen, setDataRefreshOpen] = useState(false);
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
-  const [imageManagerOpen, setImageManagerOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'admin' | 'structure-manager'>('admin');
 
   if (currentView === 'structure-manager') {
@@ -215,23 +213,6 @@ export const AdminView: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setImageManagerOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Image className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Project Images</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Upload and assign cover images to catalog projects
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setImageManagerOpen(true)}>
-                Manage Images
-              </Button>
-            </CardContent>
-          </Card>
-
         </div>
 
         <ScrollableDialog 
@@ -304,12 +285,6 @@ export const AdminView: React.FC = () => {
           open={actionCenterOpen} 
           onOpenChange={setActionCenterOpen}
         />
-
-        <Dialog open={imageManagerOpen} onOpenChange={setImageManagerOpen}>
-          <DialogContent className="max-w-2xl">
-            <ProjectImageManager />
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

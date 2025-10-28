@@ -4,47 +4,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, Image as ImageIcon, X, Save } from 'lucide-react';
+import { Upload, Image as ImageIcon, X } from 'lucide-react';
 
-export const ProjectImageManager = () => {
-  const [projects, setProjects] = useState<any[]>([]);
-  const [selectedProject, setSelectedProject] = useState<string>('');
+interface ProjectImageManagerProps {
+  projectId?: string;
+  onImageUpdated?: () => void;
+}
+
+export const ProjectImageManager = ({ projectId, onImageUpdated }: ProjectImageManagerProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [uploading, setUploading] = useState(false);
   const [currentImage, setCurrentImage] = useState<string>('');
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  useEffect(() => {
-    if (selectedProject) {
-      const project = projects.find(p => p.id === selectedProject);
-      if (project?.cover_image) {
-        setCurrentImage(project.cover_image);
-      } else {
-        setCurrentImage('');
-      }
+    if (projectId) {
+      fetchProjectImage();
     }
-  }, [selectedProject, projects]);
+  }, [projectId]);
 
-  const fetchProjects = async () => {
+  const fetchProjectImage = async () => {
+    if (!projectId) return;
+
     const { data, error } = await supabase
       .from('projects')
-      .select('id, name, cover_image, category')
-      .neq('id', '00000000-0000-0000-0000-000000000000') // Exclude manual template
-      .order('name');
+      .select('cover_image')
+      .eq('id', projectId)
+      .single();
 
     if (error) {
-      toast.error('Failed to load projects');
       console.error(error);
       return;
     }
 
-    setProjects(data || []);
+    if (data?.cover_image) {
+      setCurrentImage(data.cover_image);
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,8 +64,8 @@ export const ProjectImageManager = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !selectedProject) {
-      toast.error('Please select both a project and an image');
+    if (!selectedFile || !projectId) {
+      toast.error('Please select an image');
       return;
     }
 
@@ -78,7 +74,7 @@ export const ProjectImageManager = () => {
     try {
       // Create a unique filename
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${selectedProject}-${Date.now()}.${fileExt}`;
+      const fileName = `${projectId}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
       // Upload to Supabase Storage
@@ -100,19 +96,21 @@ export const ProjectImageManager = () => {
       const { error: updateError } = await supabase
         .from('projects')
         .update({ cover_image: publicUrl })
-        .eq('id', selectedProject);
+        .eq('id', projectId);
 
       if (updateError) throw updateError;
 
-      toast.success('Image uploaded and assigned successfully!');
+      toast.success('Image uploaded successfully!');
       
       // Reset form
       setSelectedFile(null);
       setPreviewUrl('');
       setCurrentImage(publicUrl);
       
-      // Refresh projects
-      await fetchProjects();
+      // Notify parent
+      if (onImageUpdated) {
+        onImageUpdated();
+      }
 
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -123,19 +121,22 @@ export const ProjectImageManager = () => {
   };
 
   const handleRemoveImage = async () => {
-    if (!selectedProject) return;
+    if (!projectId) return;
 
     try {
       const { error } = await supabase
         .from('projects')
         .update({ cover_image: null })
-        .eq('id', selectedProject);
+        .eq('id', projectId);
 
       if (error) throw error;
 
-      toast.success('Image removed from project');
+      toast.success('Image removed');
       setCurrentImage('');
-      await fetchProjects();
+      
+      if (onImageUpdated) {
+        onImageUpdated();
+      }
 
     } catch (error: any) {
       console.error('Remove error:', error);
@@ -152,111 +153,83 @@ export const ProjectImageManager = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ImageIcon className="h-5 w-5" />
-          Project Image Manager
-        </CardTitle>
-        <CardDescription>
-          Upload and assign cover images to projects in the catalog
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Project Selection */}
+    <div className="space-y-4">
+      {/* Current Image Display */}
+      {currentImage && (
         <div className="space-y-2">
-          <Label>Select Project</Label>
-          <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a project..." />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name} {project.category && `(${project.category})`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Current Image Display */}
-        {currentImage && (
-          <div className="space-y-2">
-            <Label>Current Image</Label>
-            <div className="relative border rounded-lg p-2">
-              <img 
-                src={currentImage} 
-                alt="Current project image" 
-                className="w-full h-48 object-cover rounded"
-              />
-              <Button
-                variant="destructive"
-                size="sm"
-                className="absolute top-4 right-4"
-                onClick={handleRemoveImage}
-              >
-                <X className="h-4 w-4 mr-1" />
-                Remove
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* File Upload */}
-        <div className="space-y-2">
-          <Label>Upload New Image</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              disabled={!selectedProject || uploading}
-              className="flex-1"
-            />
-            {selectedFile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearSelection}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Max size: 5MB. Formats: JPG, PNG, WebP
-          </p>
-        </div>
-
-        {/* Preview */}
-        {previewUrl && (
-          <div className="space-y-2">
-            <Label>Preview</Label>
+          <Label className="text-sm">Current Cover Image</Label>
+          <div className="relative border rounded-lg p-2">
             <img 
-              src={previewUrl} 
-              alt="Preview" 
-              className="w-full h-48 object-cover rounded-lg border"
+              src={currentImage} 
+              alt="Current project image" 
+              className="w-full h-48 object-cover rounded"
             />
+            <Button
+              variant="destructive"
+              size="sm"
+              className="absolute top-4 right-4"
+              onClick={handleRemoveImage}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Remove
+            </Button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Upload Button */}
-        <Button
-          onClick={handleUpload}
-          disabled={!selectedFile || !selectedProject || uploading}
-          className="w-full"
-        >
-          {uploading ? (
-            <>Processing...</>
-          ) : (
-            <>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload and Assign Image
-            </>
+      {/* File Upload */}
+      <div className="space-y-2">
+        <Label className="text-sm">Upload New Cover Image</Label>
+        <div className="flex items-center gap-2">
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            disabled={!projectId || uploading}
+            className="flex-1"
+          />
+          {selectedFile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearSelection}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           )}
-        </Button>
-      </CardContent>
-    </Card>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Max size: 5MB. Formats: JPG, PNG, WebP
+        </p>
+      </div>
+
+      {/* Preview */}
+      {previewUrl && (
+        <div className="space-y-2">
+          <Label className="text-sm">Preview</Label>
+          <img 
+            src={previewUrl} 
+            alt="Preview" 
+            className="w-full h-48 object-cover rounded-lg border"
+          />
+        </div>
+      )}
+
+      {/* Upload Button */}
+      <Button
+        onClick={handleUpload}
+        disabled={!selectedFile || !projectId || uploading}
+        className="w-full"
+      >
+        {uploading ? (
+          <>Processing...</>
+        ) : (
+          <>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload Cover Image
+          </>
+        )}
+      </Button>
+    </div>
   );
 };
