@@ -346,8 +346,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             skill_level: projectRun.skillLevel,
             estimated_time: projectRun.estimatedTime,
             customization_decisions: projectRun.customization_decisions ? JSON.stringify(projectRun.customization_decisions) : null,
-            instruction_level_preference: projectRun.instruction_level_preference || 'detailed',
-            budget_data: projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : null
+            instruction_level_preference: projectRun.instruction_level_preference || 'detailed'
           })
           .eq('id', projectRun.id)
           .eq('user_id', user.id);
