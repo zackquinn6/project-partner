@@ -124,15 +124,19 @@ export default function Navigation({
   console.log('🔧 Navigation rendering with mobile:', isMobile, 'buttons should be visible');
   return <>
       <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-16 items-center px-4">
+        <div className="flex h-16 items-center px-4 relative">
+          {/* Beta label - centered */}
+          {isBetaMode && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <span className="px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 rounded whitespace-nowrap">
+                Project Partner - Beta
+              </span>
+            </div>
+          )}
+          
           <div className="flex items-center space-x-4 flex-1">
             <div className="flex items-center space-x-2">
               <img src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" alt="Project Partner Logo" className="h-8 w-auto" />
-              {isBetaMode && (
-                <span className="px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 rounded">
-                  Project Partner - Beta
-                </span>
-              )}
             </div>
             
             <div className="flex items-center space-x-1">
