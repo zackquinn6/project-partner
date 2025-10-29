@@ -177,7 +177,10 @@ export function MobileWorkflowView({
       <ScrollArea className="flex-1" ref={stepRef}>
         <div className="p-4 space-y-6 pb-20">
           {/* Step Content */}
-          <Card className="gradient-card">
+          <Card 
+            key={`${currentStep?.id}-${instructionLevel}`}
+            className="gradient-card"
+          >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -206,7 +209,11 @@ export function MobileWorkflowView({
             <CardContent className="space-y-4">
               <div className="space-y-4">
                   {/* Render instruction content based on level if available */}
-                  {instruction && !instructionLoading ? (
+                  {instructionLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-muted-foreground text-sm">Loading {instructionLevel === 'new_user' ? 'New DIY' : instructionLevel === 'detailed' ? 'Mid-level DIY' : 'Advanced DIY'} content...</div>
+                    </div>
+                  ) : instruction ? (
                     <div className="space-y-4 text-sm">
                       {instruction.content.text && (
                         <div className="whitespace-pre-wrap leading-relaxed">
