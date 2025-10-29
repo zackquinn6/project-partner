@@ -245,23 +245,25 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         <CardContent className="space-y-6">
           {renderProfileView()}
           
-          {existingProfile && !isCompleted && (
-            <div>
-              <Button onClick={onComplete} className="w-full bg-green-600 hover:bg-green-700">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Profile Complete - Continue
-              </Button>
-            </div>
-          )}
+          <div className="sticky bottom-0 bg-background pt-4 border-t mt-4">
+            {existingProfile && !isCompleted && (
+              <div>
+                <Button onClick={onComplete} className="w-full bg-green-600 hover:bg-green-700">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Profile Complete - Continue
+                </Button>
+              </div>
+            )}
 
-          {isCompleted && (
-            <div className="text-center">
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Profile Setup Complete
-              </Badge>
-            </div>
-          )}
+            {isCompleted && (
+              <div className="text-center">
+                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Profile Setup Complete
+                </Badge>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

@@ -1491,6 +1491,7 @@ export default function UserView({
             groupedSteps={groupedSteps}
             isKickoffComplete={isKickoffComplete}
             instructionLevel={instructionLevel}
+            projectName={currentProjectRun?.customProjectName || currentProjectRun?.name || 'Project'}
             onInstructionLevelChange={handleInstructionLevelChange}
             onStepClick={(stepIndex, step) => {
               console.log('🎯 Step clicked:', {

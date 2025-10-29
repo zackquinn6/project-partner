@@ -317,9 +317,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
         </CardContent>
       </Card>
 
-      {/* Current Step Content */}
-      <div className="min-h-96">
-        {renderCurrentStep()}
+      {/* Current Step Content - Scrollable with Fixed Button */}
+      <div className="flex flex-col h-[calc(100vh-20rem)]">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {renderCurrentStep()}
+        </div>
       </div>
     </div>
   );
