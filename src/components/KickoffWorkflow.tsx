@@ -80,7 +80,12 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
   }, [currentProjectRun]);
 
   const handleStepComplete = async (stepIndex: number) => {
-    if (!currentProjectRun) return;
+    console.log("🎯 handleStepComplete called with stepIndex:", stepIndex);
+    
+    if (!currentProjectRun) {
+      console.error("❌ handleStepComplete: currentProjectRun is null/undefined!");
+      return;
+    }
 
     const stepId = kickoffSteps[stepIndex].id;
     const newCompletedSteps = [...(currentProjectRun.completedSteps || [])];
@@ -203,8 +208,12 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
   };
 
   const renderCurrentStep = () => {
+    const stepIndex = currentKickoffStep;
     const stepProps = {
-      onComplete: () => handleStepComplete(currentKickoffStep),
+      onComplete: () => {
+        console.log("🎯 Step onComplete callback triggered for step:", stepIndex);
+        handleStepComplete(stepIndex);
+      },
       isCompleted: isStepCompleted(currentKickoffStep),
       checkedOutputs: checkedOutputs[kickoffSteps[currentKickoffStep].id] || new Set(),
       onOutputToggle: (outputId: string) => handleOutputToggle(kickoffSteps[currentKickoffStep].id, outputId)
