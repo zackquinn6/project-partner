@@ -24,6 +24,7 @@ interface ProjectContextType {
   deleteProjectRun: (projectRunId: string) => Promise<void>;
   fetchProjects: () => Promise<void>;
   fetchProjectRuns: () => Promise<void>;
+  refreshProjectRunFromTemplate: (runId: string) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -90,7 +91,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     updateProject,
     updateProjectRun,
     deleteProject,
-    deleteProjectRun
+    deleteProjectRun,
+    refreshProjectRunFromTemplate
   } = projectActions;
 
   console.log('ProjectProvider: Successfully initialized with data');
@@ -112,7 +114,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     deleteProject,
     deleteProjectRun,
     fetchProjects: refetchProjects,
-    fetchProjectRuns: refetchProjectRuns
+    fetchProjectRuns: refetchProjectRuns,
+    refreshProjectRunFromTemplate
   };
 
   return (

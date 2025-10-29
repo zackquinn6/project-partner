@@ -23,6 +23,7 @@ interface ProjectActionsContextType {
   updateProjectRun: (projectRun: ProjectRun) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   deleteProjectRun: (projectRunId: string) => Promise<void>;
+  refreshProjectRunFromTemplate: (runId: string) => Promise<void>;
 }
 
 const ProjectActionsContext = createContext<ProjectActionsContextType | undefined>(undefined);
@@ -571,6 +572,97 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
   }, [isGuest, deleteGuestProjectRun, user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
 
+  const refreshProjectRunFromTemplate = useCallback(async (runId: string) => {
+    console.log('🔄 refreshProjectRunFromTemplate CALLED:', { runId });
+    
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to refresh project runs",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Call the database function to refresh the project run
+      const { data, error } = await supabase.rpc('refresh_project_run_from_template', {
+        p_run_id: runId
+      });
+
+      if (error) throw error;
+
+      // Fetch the refreshed project run
+      const { data: freshRun, error: fetchError } = await supabase
+        .from('project_runs')
+        .select('*')
+        .eq('id', runId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (freshRun) {
+        // Transform the data (handle JSON fields and snake_case to camelCase)
+        const transformedRun: ProjectRun = {
+          id: freshRun.id,
+          templateId: freshRun.template_id,
+          name: freshRun.name,
+          description: freshRun.description || '',
+          home_id: freshRun.home_id || undefined,
+          status: freshRun.status as 'not-started' | 'in-progress' | 'complete' | 'cancelled',
+          createdAt: new Date(freshRun.created_at),
+          updatedAt: new Date(freshRun.updated_at),
+          startDate: new Date(freshRun.start_date),
+          planEndDate: new Date(freshRun.plan_end_date),
+          endDate: freshRun.end_date ? new Date(freshRun.end_date) : undefined,
+          phases: typeof freshRun.phases === 'string' ? JSON.parse(freshRun.phases) : freshRun.phases,
+          currentPhaseId: freshRun.current_phase_id,
+          currentOperationId: freshRun.current_operation_id,
+          currentStepId: freshRun.current_step_id,
+          completedSteps: typeof freshRun.completed_steps === 'string' ? JSON.parse(freshRun.completed_steps) : freshRun.completed_steps || [],
+          progress: freshRun.progress || 0,
+          category: Array.isArray(freshRun.category) ? freshRun.category : freshRun.category ? [freshRun.category] : undefined,
+          estimatedTime: freshRun.estimated_time,
+          effortLevel: freshRun.effort_level as 'Low' | 'Medium' | 'High',
+          skillLevel: freshRun.skill_level as 'Beginner' | 'Intermediate' | 'Advanced',
+          diyLengthChallenges: freshRun.diy_length_challenges,
+          projectLeader: freshRun.project_leader,
+          customProjectName: freshRun.custom_project_name,
+          accountabilityPartner: freshRun.accountability_partner,
+          budget_data: typeof freshRun.budget_data === 'string' ? JSON.parse(freshRun.budget_data) : freshRun.budget_data,
+          phase_ratings: typeof freshRun.phase_ratings === 'string' ? JSON.parse(freshRun.phase_ratings) : freshRun.phase_ratings,
+          issue_reports: typeof freshRun.issue_reports === 'string' ? JSON.parse(freshRun.issue_reports) : freshRun.issue_reports,
+          shopping_checklist_data: typeof freshRun.shopping_checklist_data === 'string' ? JSON.parse(freshRun.shopping_checklist_data) : freshRun.shopping_checklist_data,
+          schedule_events: typeof freshRun.schedule_events === 'string' ? JSON.parse(freshRun.schedule_events) : freshRun.schedule_events,
+          customization_decisions: typeof freshRun.customization_decisions === 'string' ? JSON.parse(freshRun.customization_decisions) : freshRun.customization_decisions,
+          instruction_level_preference: freshRun.instruction_level_preference as 'quick' | 'detailed' | 'new_user'
+        };
+
+        // Update cache and current project run
+        const updatedProjectRuns = projectRuns.map(run => 
+          run.id === runId ? transformedRun : run
+        );
+        updateProjectRunsCache(updatedProjectRuns);
+        
+        if (currentProjectRun?.id === runId) {
+          setCurrentProjectRun(transformedRun);
+        }
+
+        toast({
+          title: "Success",
+          description: "Project refreshed with latest template updates!",
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing project run:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh project run",
+        variant: "destructive",
+      });
+    }
+  }, [user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
+
 
   const value = {
     currentProject,
@@ -583,7 +675,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     updateProject,
     updateProjectRun,
     deleteProject,
-    deleteProjectRun
+    deleteProjectRun,
+    refreshProjectRunFromTemplate
   };
 
   return (
