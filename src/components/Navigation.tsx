@@ -16,7 +16,6 @@ import { AppDocumentationWindow } from './AppDocumentationWindow';
 import { ToolsMaterialsWindow } from './ToolsMaterialsWindow';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { AchievementNotificationCenter } from './AchievementNotificationCenter';
-
 interface NavigationProps {
   currentView: 'home' | 'admin' | 'user' | 'editWorkflow';
   onViewChange: (view: 'home' | 'admin' | 'user' | 'editWorkflow') => void;
@@ -24,7 +23,6 @@ interface NavigationProps {
   onProjectsView?: () => void;
   onProjectSelected?: () => void;
 }
-
 export default function Navigation({
   currentView,
   onViewChange,
@@ -40,7 +38,7 @@ export default function Navigation({
   const [showFeedback, setShowFeedback] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
-  
+
   // Add error boundary for useProject hook
   let projectData;
   try {
@@ -54,11 +52,23 @@ export default function Navigation({
       setCurrentProjectRun: () => {}
     };
   }
-  
-  const { projectRuns, currentProjectRun, setCurrentProjectRun, projects, setCurrentProject } = projectData;
-  const { signOut, signingOut } = useAuth();
-  const { isAdmin } = useUserRole();
-  const { canAccessPaidFeatures } = useMembership();
+  const {
+    projectRuns,
+    currentProjectRun,
+    setCurrentProjectRun,
+    projects,
+    setCurrentProject
+  } = projectData;
+  const {
+    signOut,
+    signingOut
+  } = useAuth();
+  const {
+    isAdmin
+  } = useUserRole();
+  const {
+    canAccessPaidFeatures
+  } = useMembership();
   const isMobile = useIsMobile();
 
   // Listen for user documentation request from admin guide
@@ -66,11 +76,9 @@ export default function Navigation({
     const handleOpenUserDocs = () => {
       setIsDocumentationOpen(true);
     };
-
     window.addEventListener('open-user-documentation', handleOpenUserDocs);
     return () => window.removeEventListener('open-user-documentation', handleOpenUserDocs);
   }, []);
-
   useEffect(() => {
     // Only handle Navigation-specific events
     const handleToolsLibraryEvent = (event: Event) => {
@@ -78,44 +86,37 @@ export default function Navigation({
       event.stopPropagation();
       setIsToolsLibraryOpen(true);
     };
-
     const handleNavigateToProjectsEvent = (event: Event) => {
       console.log('🔄 Navigation: My Projects event - checking access');
       event.stopPropagation();
-      
+
       // Check if user has access to paid features
       if (!canAccessPaidFeatures) {
         console.log('🔒 Navigation: Access denied - showing upgrade prompt');
         setShowUpgradePrompt(true);
         return;
       }
-      
       console.log('✅ Navigation: Access granted - showing projects listing');
       onViewChange('user');
       onProjectsView?.();
     };
-
     window.addEventListener('show-tools-materials', handleToolsLibraryEvent);
     window.addEventListener('navigate-to-projects', handleNavigateToProjectsEvent);
-    
     return () => {
       window.removeEventListener('show-tools-materials', handleToolsLibraryEvent);
       window.removeEventListener('navigate-to-projects', handleNavigateToProjectsEvent);
     };
   }, [onViewChange, onProjectsView]);
-
   const activeProjectRuns = projectRuns.filter(run => run.progress && run.progress < 100);
-
   const handleSignOut = async () => {
     if (signingOut) return; // Prevent multiple clicks
-    
+
     try {
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
-
   const handleProjectSelect = (projectRunId: string) => {
     const selectedRun = projectRuns.find(run => run.id === projectRunId);
     if (selectedRun) {
@@ -125,29 +126,17 @@ export default function Navigation({
       onProjectSelected?.();
     }
   };
-
   console.log('🔧 Navigation rendering with mobile:', isMobile, 'buttons should be visible');
-
-  return (
-    <>
+  return <>
       <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-16 items-center px-4">
           <div className="flex items-center space-x-4 flex-1">
             <div className="flex items-center space-x-2">
-              <img 
-                src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" 
-                alt="Project Partner Logo" 
-                className="h-8 w-auto"
-              />
+              <img src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" alt="Project Partner Logo" className="h-8 w-auto" />
             </div>
             
             <div className="flex items-center space-x-1">
-              <Button
-                variant={currentView === 'home' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => onViewChange('home')}
-                className="text-xs"
-              >
+              <Button variant={currentView === 'home' ? 'default' : 'ghost'} size="sm" onClick={() => onViewChange('home')} className="text-xs">
                 <Home className="h-4 w-4 mr-2" />
                 Home
               </Button>
@@ -155,40 +144,27 @@ export default function Navigation({
               {/* Combined Progress Board / Project Selector Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant={currentView === 'user' ? 'default' : 'ghost'}
-                    size="sm"
-                    className="text-xs"
-                  >
+                  <Button variant={currentView === 'user' ? 'default' : 'ghost'} size="sm" className="text-xs">
                     <FolderOpen className="h-4 w-4 mr-2" />
                     {currentProjectRun ? currentProjectRun.name : "Progress Board"}
                     <ChevronDown className="h-4 w-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="start" 
-                  className="w-80 z-50 bg-background border shadow-lg"
-                  sideOffset={8}
-                >
+                <DropdownMenuContent align="start" className="w-80 z-50 bg-background border shadow-lg" sideOffset={8}>
                   {/* My Projects Link at top */}
-                  <DropdownMenuItem
-                    onClick={() => {
-                      console.log('🔄 Navigation: My Projects clicked - checking access');
-                      
-                      if (!canAccessPaidFeatures) {
-                        console.log('🔒 Navigation: Access denied - showing upgrade prompt');
-                        setShowUpgradePrompt(true);
-                        return;
-                      }
-                      
-                      console.log('✅ Navigation: Access granted - clearing current project');
-                      setCurrentProjectRun(null);
-                      setCurrentProject(null);
-                      onViewChange('user');
-                      onProjectsView?.();
-                    }}
-                    className="font-semibold text-primary hover:text-primary hover:bg-primary/10 py-3"
-                  >
+                  <DropdownMenuItem onClick={() => {
+                  console.log('🔄 Navigation: My Projects clicked - checking access');
+                  if (!canAccessPaidFeatures) {
+                    console.log('🔒 Navigation: Access denied - showing upgrade prompt');
+                    setShowUpgradePrompt(true);
+                    return;
+                  }
+                  console.log('✅ Navigation: Access granted - clearing current project');
+                  setCurrentProjectRun(null);
+                  setCurrentProject(null);
+                  onViewChange('user');
+                  onProjectsView?.();
+                }} className="font-semibold text-primary hover:text-primary hover:bg-primary/10 py-3">
                     <FolderOpen className="h-4 w-4 mr-2" />
                     My Projects
                   </DropdownMenuItem>
@@ -197,24 +173,14 @@ export default function Navigation({
                   <div className="h-px bg-border my-1" />
                   
                   {/* Active Projects List */}
-                  {activeProjectRuns.length > 0 ? (
-                    activeProjectRuns.map((run) => (
-                      <DropdownMenuItem
-                        key={run.id}
-                        onClick={() => handleProjectSelect(run.id)}
-                        className="flex flex-col items-start py-3"
-                      >
+                  {activeProjectRuns.length > 0 ? activeProjectRuns.map(run => <DropdownMenuItem key={run.id} onClick={() => handleProjectSelect(run.id)} className="flex flex-col items-start py-3">
                         <div className="font-medium text-sm">{run.name}</div>
                         <div className="text-xs text-muted-foreground">
                           {Math.round(run.progress || 0)}% complete
                         </div>
-                      </DropdownMenuItem>
-                    ))
-                  ) : (
-                    <DropdownMenuItem disabled className="text-muted-foreground italic">
+                      </DropdownMenuItem>) : <DropdownMenuItem disabled className="text-muted-foreground italic">
                       No active projects
-                    </DropdownMenuItem>
-                  )}
+                    </DropdownMenuItem>}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -228,17 +194,7 @@ export default function Navigation({
             </div>
             
             {/* Get Expert Help Button - Always visible */}
-            <Button 
-              onClick={() => {
-                console.log('Expert Help button clicked');
-                setIsExpertHelpOpen(true);
-              }}
-              className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 shrink-0 text-xs"
-              size="sm"
-            >
-              <Headphones className="h-4 w-4 mr-0 sm:mr-2" />
-              <span className="hidden sm:inline">Call the Trades</span>
-            </Button>
+            
             
             {/* Achievement Notification Center */}
             <AchievementNotificationCenter />
@@ -246,19 +202,11 @@ export default function Navigation({
             {/* Settings Dropdown - Always visible */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-9 w-9 p-0 shrink-0"
-                >
+                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 shrink-0">
                   <Settings className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                align="end" 
-                className="z-[9999] !bg-white dark:!bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl min-w-[200px] !opacity-100"
-                sideOffset={5}
-              >
+              <DropdownMenuContent align="end" className="z-[9999] !bg-white dark:!bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl min-w-[200px] !opacity-100" sideOffset={5}>
                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
                   <User className="h-4 w-4 mr-2" />
                   Profile
@@ -271,12 +219,10 @@ export default function Navigation({
                   <Lock className="h-4 w-4 mr-2" />
                   Privacy Settings
                 </DropdownMenuItem>
-                {isAdmin && (
-                  <DropdownMenuItem onClick={onAdminAccess}>
+                {isAdmin && <DropdownMenuItem onClick={onAdminAccess}>
                     <Shield className="h-4 w-4 mr-2" />
                     Admin Panel
-                  </DropdownMenuItem>
-                )}
+                  </DropdownMenuItem>}
                 <DropdownMenuItem onClick={handleSignOut} disabled={signingOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   {signingOut ? 'Signing Out...' : 'Sign Out'}
@@ -287,19 +233,11 @@ export default function Navigation({
             {/* Help Dropdown - Always visible */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-9 w-9 p-0 shrink-0"
-                >
+                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 shrink-0">
                   <HelpCircle className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                align="end" 
-                className="z-[9999] !bg-white dark:!bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl min-w-[200px] !opacity-100"
-                sideOffset={5}
-              >
+              <DropdownMenuContent align="end" className="z-[9999] !bg-white dark:!bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl min-w-[200px] !opacity-100" sideOffset={5}>
                 <DropdownMenuItem onClick={() => setShowFeedback(true)}>
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Send Feedback
@@ -319,46 +257,20 @@ export default function Navigation({
       </nav>
 
       {/* Desktop-only modals */}
-      <FeedbackDialog 
-        open={showFeedback}
-        onOpenChange={setShowFeedback}
-      />
+      <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} />
       
-      <DataPrivacyManager 
-        open={isPrivacyOpen}
-        onOpenChange={setIsPrivacyOpen}
-      />
+      <DataPrivacyManager open={isPrivacyOpen} onOpenChange={setIsPrivacyOpen} />
       
-       <FeatureRoadmapWindow 
-         open={isRoadmapOpen}
-         onOpenChange={setIsRoadmapOpen}
-       />
+       <FeatureRoadmapWindow open={isRoadmapOpen} onOpenChange={setIsRoadmapOpen} />
        
-       <AppDocumentationWindow
-         open={isDocumentationOpen}
-         onOpenChange={setIsDocumentationOpen}
-       />
+       <AppDocumentationWindow open={isDocumentationOpen} onOpenChange={setIsDocumentationOpen} />
       
-        <ToolsMaterialsWindow 
-          open={isToolsLibraryOpen}
-          onOpenChange={setIsToolsLibraryOpen}
-        />
+        <ToolsMaterialsWindow open={isToolsLibraryOpen} onOpenChange={setIsToolsLibraryOpen} />
         
-        <ExpertHelpWindow 
-          isOpen={isExpertHelpOpen}
-          onClose={() => setIsExpertHelpOpen(false)}
-        />
+        <ExpertHelpWindow isOpen={isExpertHelpOpen} onClose={() => setIsExpertHelpOpen(false)} />
         
-         <UpgradePrompt
-           open={showUpgradePrompt}
-           onOpenChange={setShowUpgradePrompt}
-           feature="Project Catalog & Workflows"
-         />
+         <UpgradePrompt open={showUpgradePrompt} onOpenChange={setShowUpgradePrompt} feature="Project Catalog & Workflows" />
          
-         <MembershipWindow
-           open={isMembershipOpen}
-           onOpenChange={setIsMembershipOpen}
-         />
-    </>
-  );
+         <MembershipWindow open={isMembershipOpen} onOpenChange={setIsMembershipOpen} />
+    </>;
 }
