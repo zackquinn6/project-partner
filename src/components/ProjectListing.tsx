@@ -36,7 +36,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const [editingProjectRun, setEditingProjectRun] = useState<ProjectRun | null>(null);
 
   const calculateProgress = (projectRun: ProjectRun) => {
-    return projectRun.progress || 0;
+    return Math.round(projectRun.progress || 0);
   };
 
   const getStatusColor = (status: ProjectRun['status']) => {

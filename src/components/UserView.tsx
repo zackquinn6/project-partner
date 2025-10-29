@@ -227,7 +227,10 @@ export default function UserView({
   });
   
   // Flatten all steps with phases directly from project
-  const allSteps = activeProject ? activeProject.phases.flatMap(phase =>
+  // CRITICAL: Exclude standard phases (Kickoff, Planning, Ordering, Close Project) from progress calculation
+  const allSteps = activeProject ? activeProject.phases
+    .filter(phase => phase.isStandard !== true)
+    .flatMap(phase =>
     phase.operations.flatMap(operation => 
       operation.steps.map(step => {
         // Add sample materials and tools for demonstration (since project templates are empty)
