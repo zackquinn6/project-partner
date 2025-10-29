@@ -25,10 +25,12 @@ import { TestimonialsSection } from './landing/TestimonialsSection';
 import { HowItWorksSection } from './landing/HowItWorksSection';
 import { FeaturesSection } from './landing/FeaturesSection';
 import { PersonasSection } from './landing/PersonasSection';
+import { PricingSection } from './landing/PricingSection';
 import { FAQSection } from './landing/FAQSection';
 import { FinalCTASection } from './landing/FinalCTASection';
 import { Footer } from './landing/Footer';
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
+import { TrialBanner } from '@/components/TrialBanner';
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
@@ -125,6 +127,9 @@ export default function Home({
       {user ?
     // Logged-in user sees the DIY Dashboard
     <div className="container mx-auto px-6 py-8 space-y-6">
+          {/* Trial Banner */}
+          <TrialBanner />
+          
           {/* DIY Dashboard */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-foreground mb-4">My Workshop</h1>
@@ -296,6 +301,9 @@ export default function Home({
 
       {/* Personas Section */}
       <PersonasSection />
+
+      {/* Pricing Section */}
+      <PricingSection />
 
       {/* FAQ Section */}
       <FAQSection />
