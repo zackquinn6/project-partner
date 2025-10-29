@@ -2159,6 +2159,7 @@ export type Database = {
       project_runs: {
         Row: {
           accountability_partner: string | null
+          budget_data: Json | null
           category: string | null
           completed_steps: Json
           created_at: string
@@ -2196,6 +2197,7 @@ export type Database = {
         }
         Insert: {
           accountability_partner?: string | null
+          budget_data?: Json | null
           category?: string | null
           completed_steps?: Json
           created_at?: string
@@ -2233,6 +2235,7 @@ export type Database = {
         }
         Update: {
           accountability_partner?: string | null
+          budget_data?: Json | null
           category?: string | null
           completed_steps?: Json
           created_at?: string

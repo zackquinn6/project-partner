@@ -421,7 +421,7 @@ export default function UserView({
         console.log("📊 UserView: Updating progress for workflow steps (NOT during kickoff)");
         
         // NEVER overwrite kickoff step completion data - FIX: Properly deduplicate
-        const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
+        const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
         const preservedKickoffSteps = currentProjectRun.completedSteps.filter(stepId => 
           kickoffStepIds.includes(stepId)
         );
@@ -613,7 +613,7 @@ export default function UserView({
       
       // Immediately update the project run to persist the step completion
       if (currentProjectRun) {
-        const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
+        const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
         const preservedKickoffSteps = currentProjectRun.completedSteps.filter(stepId => 
           kickoffStepIds.includes(stepId)
         );

@@ -85,7 +85,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
         );
         
         if (existingRun) {
-          const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
+          const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
           const kickoffComplete = kickoffStepIds.every(stepId => 
             existingRun.completedSteps.includes(stepId)
           );
@@ -115,7 +115,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
         );
         
         if (existingRun) {
-          const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
+          const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
           const kickoffComplete = kickoffStepIds.every(stepId => 
             existingRun.completedSteps.includes(stepId)
           );

@@ -492,8 +492,7 @@ export const isKickoffPhaseComplete = (completedSteps: string[]): boolean => {
   const kickoffStepIds = [
     'kickoff-step-1',
     'kickoff-step-2',
-    'kickoff-step-3',
-    'kickoff-step-4'
+    'kickoff-step-3'
   ];
   
   return kickoffStepIds.every(stepId => completedSteps.includes(stepId));

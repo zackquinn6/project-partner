@@ -582,7 +582,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     
     // If there's an existing project run, check if kickoff is complete
     if (existingRun) {
-      const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
+      const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
       const kickoffComplete = kickoffStepIds.every(stepId => 
         existingRun.completedSteps.includes(stepId)
       );
