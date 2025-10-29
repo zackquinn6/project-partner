@@ -412,7 +412,13 @@ export default function UserView({
   }, [resetToListing, forceListingMode, showProfile, currentProjectRun, projectRunId, viewMode, onProjectSelected]);
   
   const currentStep = allSteps[currentStepIndex];
-  const progress = allSteps.length > 0 ? completedSteps.size / allSteps.length * 100 : 0;
+  
+  // CRITICAL FIX: Exclude kickoff UI steps from progress calculation
+  // Only count actual workflow steps (those in allSteps array)
+  const workflowCompletedSteps = Array.from(completedSteps).filter(stepId => 
+    allSteps.some(step => step.id === stepId)
+  );
+  const progress = allSteps.length > 0 ? (workflowCompletedSteps.length / allSteps.length) * 100 : 0;
   
   // Debug current step to identify materials/tools/apps issue
   console.log('🔧 Current step debug:', {
