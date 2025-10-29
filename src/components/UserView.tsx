@@ -1303,7 +1303,8 @@ export default function UserView({
   }
   
   // FOURTH: If project run exists and kickoff is not complete, show kickoff workflow
-  if (currentProjectRun && !isKickoffComplete && viewMode === 'workflow') {
+  // CRITICAL FIX: Don't show kickoff for cancelled projects
+  if (currentProjectRun && currentProjectRun.status !== 'cancelled' && !isKickoffComplete && viewMode === 'workflow') {
     // Fix missing kickoff steps if user has progressed past them
     const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
     const currentCompletedSteps = currentProjectRun.completedSteps || [];

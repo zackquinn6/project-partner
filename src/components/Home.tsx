@@ -56,10 +56,11 @@ export default function Home({
   });
 
   // Calculate stats from context data instead of fetching separately
+  // CRITICAL FIX: Filter out cancelled projects from stats
   useEffect(() => {
     if (projectRuns) {
-      const active = projectRuns.filter(run => (run.progress || 0) < 100).length;
-      const completed = projectRuns.filter(run => (run.progress || 0) >= 100).length;
+      const active = projectRuns.filter(run => run.status !== 'cancelled' && (run.progress || 0) < 100).length;
+      const completed = projectRuns.filter(run => run.status !== 'cancelled' && (run.progress || 0) >= 100).length;
       setStats({
         activeProjects: active,
         completedProjects: completed

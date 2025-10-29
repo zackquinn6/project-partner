@@ -24,7 +24,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   checkedOutputs = new Set(),
   onOutputToggle
 }) => {
-  const { currentProjectRun, updateProjectRun, currentProject } = useProject();
+  const { currentProjectRun, updateProjectRun, currentProject, deleteProjectRun } = useProject();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -32,23 +32,21 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     description: currentProjectRun?.description || ''
   });
 
+  // CRITICAL FIX: Delete project instead of just marking cancelled
+  // This ensures cancelled projects don't appear in stats or get reopened
   const handleCancelProject = async () => {
     if (!currentProjectRun) return;
     
     try {
-      const { error } = await supabase
-        .from('project_runs')
-        .update({ status: 'cancelled' })
-        .eq('id', currentProjectRun.id);
+      // Delete the project run entirely from database
+      deleteProjectRun(currentProjectRun.id);
       
-      if (error) throw error;
-      
-      toast.success('Project cancelled');
+      toast.success('Project removed');
       // Navigate to projects catalog page
       navigate('/projects');
     } catch (error) {
-      console.error('Error cancelling project:', error);
-      toast.error('Failed to cancel project');
+      console.error('Error removing project:', error);
+      toast.error('Failed to remove project');
     }
   };
 
