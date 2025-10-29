@@ -251,6 +251,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       
       if (isStandardProject) {
         console.log('🔧 Updating Standard Project - phases and template tables');
+        console.log('🔧 Project ID:', project.id);
+        console.log('🔧 Phases to update:', project.phases.map(p => ({ 
+          id: p.id, 
+          name: p.name, 
+          opsCount: p.operations.length 
+        })));
         
         // First update the phases JSON
         const { error: phasesError } = await supabase
@@ -282,42 +288,54 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             console.log('🔧 Updating operation:', {
               operationId: operation.id,
               name: operation.name,
-              newDisplayOrder: opIndex
+              phaseId: phase.id,
+              newDisplayOrder: opIndex,
+              projectId: project.id
             });
             
-            const { error: opError, count } = await supabase
+            const { error: opError, data: opData } = await supabase
               .from('template_operations')
               .update({ 
                 display_order: opIndex,
                 updated_at: new Date().toISOString()
               })
               .eq('id', operation.id)
-              .eq('project_id', project.id);
+              .eq('project_id', project.id)
+              .select();
             
             if (opError) {
               console.error('❌ Error updating operation display_order:', opError);
             } else {
               updatedOpsCount++;
-              console.log('✅ Operation updated');
+              console.log('✅ Operation updated:', opData);
             }
 
             // Update steps within this operation
             for (let stepIndex = 0; stepIndex < operation.steps.length; stepIndex++) {
               const step = operation.steps[stepIndex];
               
-              const { error: stepError } = await supabase
+              console.log('🔧 Updating step:', {
+                stepId: step.id,
+                title: step.step,
+                operationId: operation.id,
+                newDisplayOrder: stepIndex
+              });
+              
+              const { error: stepError, data: stepData } = await supabase
                 .from('template_steps')
                 .update({ 
                   display_order: stepIndex,
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', step.id)
-                .eq('operation_id', operation.id);
+                .eq('operation_id', operation.id)
+                .select();
               
               if (stepError) {
                 console.error('❌ Error updating step display_order:', stepError);
               } else {
                 updatedStepsCount++;
+                console.log('✅ Step updated:', stepData);
               }
             }
           }

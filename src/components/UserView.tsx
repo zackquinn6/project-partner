@@ -346,6 +346,11 @@ export default function UserView({
       console.log('🎯 UserView: Loading project run with ID:', projectRunId);
       const projectRun = projectRuns.find(run => run.id === projectRunId);
       if (projectRun) {
+        // Don't open cancelled projects
+        if (projectRun.status === 'cancelled') {
+          console.log('❌ UserView: Project run is cancelled, not opening:', projectRun.name);
+          return;
+        }
         console.log('✅ UserView: Found and setting project run:', projectRun.name);
         setCurrentProjectRun(projectRun);
         setViewMode('workflow');
@@ -362,9 +367,18 @@ export default function UserView({
       forceListingMode,
       showProfile,
       currentProjectRun: !!currentProjectRun,
+      currentProjectRunStatus: currentProjectRun?.status,
       projectRunId,
       viewMode
     });
+
+    // CRITICAL FIX: Don't open cancelled projects
+    if (currentProjectRun && currentProjectRun.status === 'cancelled') {
+      console.log('🔄 UserView: Current project run is cancelled - clearing it');
+      setCurrentProjectRun(null);
+      setViewMode('listing');
+      return;
+    }
 
     // CRITICAL FIX: Don't force listing mode if we have a current project run
     // This prevents the Continue button from being overridden by reset flags
