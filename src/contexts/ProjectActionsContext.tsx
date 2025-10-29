@@ -243,19 +243,35 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // Check if this is the Standard Project Foundation
       const isStandardProject = project.id === '00000000-0000-0000-0000-000000000001' || project.isStandardTemplate;
       
+      console.log('🔧 updateProject called:', { 
+        projectId: project.id, 
+        isStandardProject,
+        phasesCount: project.phases?.length 
+      });
+      
       if (isStandardProject) {
-        // For Standard Project, we need to update both the phases JSON AND the template tables
+        console.log('🔧 Updating Standard Project - phases and template tables');
+        
         // First update the phases JSON
         const { error: phasesError } = await supabase
           .from('projects')
           .update({
-            phases: JSON.stringify(project.phases)
+            phases: JSON.stringify(project.phases),
+            updated_at: new Date().toISOString()
           })
           .eq('id', project.id);
 
-        if (phasesError) throw phasesError;
+        if (phasesError) {
+          console.error('❌ Error updating phases JSON:', phasesError);
+          throw phasesError;
+        }
 
-        // Then update display_order of template_operations to match phase order
+        console.log('✅ Phases JSON updated successfully');
+
+        // Then update display_order of template_operations and template_steps
+        let updatedOpsCount = 0;
+        let updatedStepsCount = 0;
+        
         for (let phaseIndex = 0; phaseIndex < project.phases.length; phaseIndex++) {
           const phase = project.phases[phaseIndex];
           
@@ -263,14 +279,26 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           for (let opIndex = 0; opIndex < phase.operations.length; opIndex++) {
             const operation = phase.operations[opIndex];
             
-            const { error: opError } = await supabase
+            console.log('🔧 Updating operation:', {
+              operationId: operation.id,
+              name: operation.name,
+              newDisplayOrder: opIndex
+            });
+            
+            const { error: opError, count } = await supabase
               .from('template_operations')
-              .update({ display_order: opIndex })
+              .update({ 
+                display_order: opIndex,
+                updated_at: new Date().toISOString()
+              })
               .eq('id', operation.id)
               .eq('project_id', project.id);
             
             if (opError) {
-              console.error('Error updating operation display_order:', opError);
+              console.error('❌ Error updating operation display_order:', opError);
+            } else {
+              updatedOpsCount++;
+              console.log('✅ Operation updated');
             }
 
             // Update steps within this operation
@@ -279,16 +307,31 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
               
               const { error: stepError } = await supabase
                 .from('template_steps')
-                .update({ display_order: stepIndex })
+                .update({ 
+                  display_order: stepIndex,
+                  updated_at: new Date().toISOString()
+                })
                 .eq('id', step.id)
                 .eq('operation_id', operation.id);
               
               if (stepError) {
-                console.error('Error updating step display_order:', stepError);
+                console.error('❌ Error updating step display_order:', stepError);
+              } else {
+                updatedStepsCount++;
               }
             }
           }
         }
+        
+        console.log('✅ Template tables updated:', { 
+          operations: updatedOpsCount, 
+          steps: updatedStepsCount 
+        });
+        
+        toast({
+          title: "Success",
+          description: `Standard Project updated (${updatedOpsCount} operations, ${updatedStepsCount} steps)`,
+        });
       } else {
         // For regular projects, just update the phases JSON
         const { error } = await supabase
@@ -323,15 +366,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       if (currentProject?.id === project.id) {
         setCurrentProject(project);
       }
-      
-      if (isStandardProject) {
-        toast({
-          title: "Success",
-          description: "Standard Project updated successfully",
-        });
-      }
     } catch (error) {
-      console.error('Error updating project:', error);
+      console.error('❌ Error updating project:', error);
       toast({
         title: "Error",
         description: "Failed to update project",

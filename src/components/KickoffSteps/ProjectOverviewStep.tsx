@@ -44,8 +44,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       if (error) throw error;
       
       toast.success('Project cancelled');
-      // Directly navigate to catalog
-      navigate('/catalog');
+      // Navigate to projects catalog page
+      navigate('/projects');
     } catch (error) {
       console.error('Error cancelling project:', error);
       toast.error('Failed to cancel project');
