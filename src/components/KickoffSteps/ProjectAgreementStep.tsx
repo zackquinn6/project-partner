@@ -57,34 +57,96 @@ export const ProjectAgreementStep: React.FC<ProjectAgreementStepProps> = ({
   }, [user]);
 
   const agreementText = `
-SERVICE TERMS
+SERVICE TERMS FOR PROJECT PARTNER
 
-These service terms are entered into between the Service Provider and the project participant for the completion of the selected DIY project.
+These Service Terms (the "Terms") are between Project Partner ("Project Partner") and the individual or entity receiving services ("Participant"). These Terms govern Project Partner's provision of project guidance, instructional content, tools, and support related to do-it-yourself projects (the "Services"). By using the Services, forwarding receipts, or otherwise engaging with Project Partner, the Participant agrees to these Terms.
 
-TERMS AND CONDITIONS:
+---
 
-1. PROJECT SCOPE
-The Service Provider provides step-by-step guidance, workflows, and support materials for DIY projects. The participant agrees to follow the provided instructions and safety guidelines.
+1. SCOPE OF SERVICES
 
-2. RESPONSIBILITIES
-- Service Provider: Provide accurate instructions, safety guidelines, and support materials
-- Participant: Follow instructions carefully, use appropriate safety equipment, and complete steps as directed
+Services Provided
+Project Partner provides instructional content, step-by-step workflows, templates, tool-lists, safety guidance, digital features (including receipt ingestion and budget tools), and non-technical project support.
 
-3. SAFETY AND LIABILITY
-- Participant assumes full responsibility for their safety and the safety of others
-- Participant must use appropriate safety equipment and follow all safety guidelines
-- Service Provider is not liable for injuries or damages resulting from project execution
+Informational Nature
+All content and guidance are educational and informational in nature and are intended to assist the Participant in performing their own work. Project Partner does not perform physical labor, supervise work on site, or assume control of the Participant's worksite.
 
-4. PROJECT COMPLETION
-- Participant commits to complete the project according to the provided timeline
-- Progress tracking and accountability measures will be implemented as agreed
+---
 
-5. SUCCESS GUARANTEE
-- Service Provider guarantees success when instructions are followed correctly
-- Custom or manually added phases are not covered by this guarantee
-- Participant must report issues promptly for support
+2. NO GUARANTEE OF RESULTS AND NO PROFESSIONAL RELATIONSHIP
 
-By signing below, both parties agree to these terms and conditions.
+No Outcome Guarantee
+Project Partner does not guarantee any particular result, fit-for-purpose outcome, or project timeline. Results depend on Participant decisions, skill, local conditions, materials, tools, and compliance with applicable laws.
+
+No Professional Services
+Unless explicitly agreed in a separate written contract signed by an authorized representative of Project Partner, the Services do not create a professional-client relationship (such as contractor, engineering, legal, medical, or other licensed professional services). Participants must seek licensed professionals where required by law or where specialized expertise is needed.
+
+---
+
+3. ASSUMPTION OF RISK AND PARTICIPANT RESPONSIBILITIES
+
+Assumption of Risk
+The Participant accepts full responsibility for planning, execution, supervision, and safety for any work performed. The Participant assumes all risks associated with using the Services, including personal injury, property damage, and financial loss.
+
+Participant Obligations
+- Follow applicable laws, building codes, permits, and manufacturer instructions.
+- Use appropriate safety equipment and safe work practices.
+- Verify materials, measurements, and suitability before performing work.
+- Stop and consult a qualified professional if unsure about a procedure or safety issue.
+
+Receiving Third-Party Materials
+Project Partner may provide links, vendor templates, or third-party content. Project Partner is not responsible for the accuracy or safety of third-party content.
+
+---
+
+4. LIMITATION OF LIABILITY AND INDEMNIFICATION
+
+Limitation of Liability
+To the maximum extent permitted by law, Project Partner's total liability for any claim arising from or related to the Services, whether in contract, tort, strict liability, or otherwise, shall not exceed the amount paid by the Participant to Project Partner for the Services in the 12 months preceding the claim. In no event shall Project Partner be liable for any indirect, special, incidental, punitive, or consequential damages, including lost profits, lost data, or business interruption.
+
+Indemnification
+The Participant agrees to indemnify, defend, and hold harmless Project Partner and its officers, employees, contractors, and agents from and against any claims, losses, liabilities, damages, costs, and expenses (including reasonable attorneys' fees) arising out of or related to the Participant's use of the Services, breach of these Terms, or negligent or willful acts or omissions.
+
+---
+
+5. SAFETY WARNINGS AND DANGEROUS ACTIVITIES
+
+No Obligation to Advise on Hazardous Work
+Project Partner may provide general safety guidance but does not assume responsibility for identifying all hazards or for supervising dangerous activities.
+
+High-Risk Work
+Work that involves structural changes, electrical, gas, hazardous chemicals, confined spaces, heavy equipment, working at height, or other high-risk activities should only be performed by appropriately licensed and insured professionals. Participants must obtain required permits and follow manufacturer and regulatory safety procedures.
+
+Emergency Situations
+Project Partner is not an emergency service and will not respond to emergencies or provide crisis intervention instructions.
+
+---
+
+6. MISCELLANEOUS TERMS
+
+Changes to Services and Terms
+Project Partner may modify or discontinue the Services or these Terms at any time. Continued use after changes constitutes acceptance of the revised Terms.
+
+Intellectual Property
+All content provided by Project Partner is its property or used under license. Participants are granted a non-exclusive, non-transferable license to use content for their personal or project-related use only. Redistribution, resale, or public posting is prohibited without prior written consent.
+
+Data and Privacy
+Project Partner may collect and process data necessary to provide Services. Data handling is governed by the Project Partner Privacy Policy.
+
+Termination
+Either party may terminate access to Services in accordance with Project Partner's policies. Termination does not relieve the Participant of obligations incurred prior to termination, including indemnity or payment obligations.
+
+Governing Law
+These Terms are governed by the laws of the jurisdiction specified in the Project Partner account or service agreement. If no jurisdiction is specified, the laws of the commonwealth or state where Project Partner is incorporated will apply.
+
+Severability
+If any provision is held unenforceable, the remaining provisions remain in full force.
+
+---
+
+ACCEPTANCE
+
+By using Project Partner, the Participant acknowledges they have read, understand, and agree to these Terms.
 
 Project: ${currentProjectRun?.name || 'N/A'}
 Project Leader: ${currentProjectRun?.projectLeader || 'Not specified'}
@@ -96,20 +158,20 @@ Date: ${new Date().toLocaleDateString()}
     setSignature(signatureData);
   };
 
-  const handleSignAgreement = () => {
+  const handleSignAgreement = async () => {
     if (!signature || !signerName.trim()) return;
 
     const agreement: Agreement = {
       signedBy: signerName,
       signature: signature,
       dateSigned: new Date(),
-      agreementVersion: '1.0'
+      agreementVersion: '2.0'
     };
 
     setSignedAgreement(agreement);
     setIsSignatureDialogOpen(false);
     
-    console.log("ProjectAgreementStep - Agreement signed, calling onComplete");
+    console.log("ProjectAgreementStep - Agreement signed, updating project and completing step");
     
     // Store the agreement in the project run's phases structure
     if (currentProjectRun) {
@@ -117,30 +179,29 @@ Date: ${new Date().toLocaleDateString()}
       const kickoffPhase = updatedPhases.find(p => p.id === 'kickoff-phase');
       
       if (kickoffPhase) {
-        const agreementStep = kickoffPhase.operations?.[0]?.steps?.find(s => s.id === 'kickoff-step-2');
+        const agreementStep = kickoffPhase.operations?.[0]?.steps?.find(s => s.id === 'kickoff-step-4');
         if (agreementStep && agreementStep.outputs?.[0]) {
           // Store the full agreement data in the output (extending the type)
           (agreementStep.outputs[0] as any).agreement = {
             signedAt: new Date().toISOString(),
             signerName: signerName,
             signature: signature,
-            agreementText: agreementText
+            agreementText: agreementText,
+            agreementVersion: '2.0'
           };
         }
       }
 
-      updateProjectRun({
+      await updateProjectRun({
         ...currentProjectRun,
         phases: updatedPhases,
         updatedAt: new Date()
       });
     }
     
-    // Automatically complete this step when agreement is signed
-    setTimeout(() => {
-      console.log("ProjectAgreementStep - Auto-completing step after agreement");
-      onComplete();
-    }, 500);
+    // Automatically complete this step immediately after signing and saving
+    console.log("ProjectAgreementStep - Calling onComplete immediately");
+    onComplete();
   };
 
   const generatePDF = () => {
@@ -216,19 +277,6 @@ Date: ${new Date().toLocaleDateString()}
                   <Download className="w-4 h-4 mr-2" />
                   Download Agreement
                 </Button>
-                {!isCompleted && (
-                  <Button onClick={onComplete} className="bg-green-600 hover:bg-green-700">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Mark Agreement Complete
-                  </Button>
-                )}
-                
-                {isCompleted && (
-                  <div className="p-3 bg-green-100 border border-green-200 rounded-lg text-center">
-                    <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-2" />
-                    <p className="text-green-800 font-medium">Agreement Step Completed ✓</p>
-                  </div>
-                )}
               </div>
             </div>
           ) : (
