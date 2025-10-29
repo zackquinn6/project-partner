@@ -222,7 +222,7 @@ export function WorkflowSidebar({
               </div>
               <h3 className="text-2xl font-bold mb-2">Feature Coming Soon</h3>
               <p className="text-muted-foreground">
-                We're working hard to bring you AI-powered chat assistance for your DIY projects!
+                We're building a network of on-demand pro's to help support your project. Got a question? Call or text (617) 545-3367
               </p>
             </div>
           </div>
