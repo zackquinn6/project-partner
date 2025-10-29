@@ -356,7 +356,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       category: selectedTemplate.category,
       effortLevel: selectedTemplate.effortLevel,
       skillLevel: selectedTemplate.skillLevel,
-      estimatedTime: selectedTemplate.estimatedTime
+      estimatedTime: selectedTemplate.estimatedTime,
+      diyLengthChallenges: selectedTemplate.diyLengthChallenges
     };
     
     // Pass navigation callback to addProjectRun
@@ -483,7 +484,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       category: projectTemplate.category,
       effortLevel: projectTemplate.effortLevel,
       skillLevel: projectTemplate.skillLevel,
-      estimatedTime: projectTemplate.estimatedTime
+      estimatedTime: projectTemplate.estimatedTime,
+      diyLengthChallenges: projectTemplate.diyLengthChallenges
     };
     
     // Pass navigation callback to addProjectRun
@@ -538,7 +540,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       category: selectedTemplate.category,
       effortLevel: selectedTemplate.effortLevel,
       skillLevel: selectedTemplate.skillLevel,
-      estimatedTime: selectedTemplate.estimatedTime
+      estimatedTime: selectedTemplate.estimatedTime,
+      diyLengthChallenges: selectedTemplate.diyLengthChallenges
     };
     
     // Pass navigation callback to addProjectRun
