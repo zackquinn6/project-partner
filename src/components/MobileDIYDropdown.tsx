@@ -67,7 +67,7 @@ export function MobileDIYDropdown({
               className="w-full justify-start h-10 px-3 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border border-green-200 hover:border-green-300 text-green-800 hover:text-green-900"
             >
               <Key className="mr-2 h-4 w-4" />
-              <span className="font-medium">Keys</span>
+              <span className="font-medium">KeyInfo</span>
             </Button>
             
             {isKickoffComplete && (

@@ -82,19 +82,19 @@ export function WorkflowSidebar({
                     <h3 className="text-sm font-semibold text-primary">Detail Level</h3>
                   </div>
                   <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="quick">Quick Overview</SelectItem>
-                      <SelectItem value="detailed">Detailed (Default)</SelectItem>
-                      <SelectItem value="new_user">New User</SelectItem>
+                      <SelectItem value="quick" className="text-xs">Quick Overview</SelectItem>
+                      <SelectItem value="detailed" className="text-xs">Detailed (Default)</SelectItem>
+                      <SelectItem value="new_user" className="text-xs">New User</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    {instructionLevel === 'quick' && 'High-level overview for experienced DIYers'}
-                    {instructionLevel === 'detailed' && 'Step-by-step detailed instructions (recommended)'}
-                    {instructionLevel === 'new_user' && 'Extra guidance and tips for first-time DIYers'}
+                    {instructionLevel === 'quick' && 'Short content for experienced DIY'}
+                    {instructionLevel === 'detailed' && 'Step-by-step instructions'}
+                    {instructionLevel === 'new_user' && 'Extra guidance for first-time DIY'}
                   </p>
                 </div>
 
@@ -119,7 +119,7 @@ export function WorkflowSidebar({
                       className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border-green-200 hover:border-green-300 transition-all shadow-sm hover:shadow-md text-green-800 hover:text-green-900 rounded-lg"
                     >
                       <Key className="w-4 h-4" />
-                      <div className="text-[10px] font-semibold">Keys</div>
+                      <div className="text-[10px] font-semibold">KeyInfo</div>
                     </Button>
                     
                     {isKickoffComplete && (
