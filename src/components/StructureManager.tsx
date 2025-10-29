@@ -191,7 +191,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Initialize all phases and operations as collapsed by default
   // No useEffect needed - they start collapsed with empty Sets
 
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = async (result: DropResult) => {
     if (!result.destination || !currentProject) return;
     const {
       source,
@@ -201,6 +201,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     if (source.index === destination.index && source.droppableId === destination.droppableId) {
       return;
     }
+
+    console.log('🎯 handleDragEnd called:', { type, source: source.index, destination: destination.index });
+
     if (type === 'phases') {
       // Allow reordering phases in Edit Standard mode
       const updatedProject = {
@@ -211,7 +214,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       newPhases.splice(destination.index, 0, removed);
 
       updatedProject.phases = newPhases;
-      updateProject(updatedProject);
+      updatedProject.updatedAt = new Date();
+      
+      console.log('🎯 Updating project with reordered phases');
+      await updateProject(updatedProject);
       toast.success('Phase reordered successfully');
     } else if (type === 'operations') {
       const phaseId = source.droppableId.split('-')[1];
@@ -229,7 +235,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const [removed] = operations.splice(source.index, 1);
         operations.splice(destination.index, 0, removed);
         updatedProject.phases[phaseIndex].operations = operations;
-        updateProject(updatedProject);
+        updatedProject.updatedAt = new Date();
+        
+        console.log('🎯 Updating project with reordered operations');
+        await updateProject(updatedProject);
         toast.success('Operation reordered successfully');
       }
     } else if (type === 'steps') {
@@ -248,7 +257,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           const [removed] = steps.splice(source.index, 1);
           steps.splice(destination.index, 0, removed);
           updatedProject.phases[phaseIndex].operations[operationIndex].steps = steps;
-          updateProject(updatedProject);
+          updatedProject.updatedAt = new Date();
+          
+          console.log('🎯 Updating project with reordered steps');
+          await updateProject(updatedProject);
           toast.success('Step reordered successfully');
         }
       }

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers } from "lucide-react";
+import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -52,6 +52,7 @@ export function WorkflowSidebar({
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const [showStepTypesInfo, setShowStepTypesInfo] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   return (
     <Sidebar collapsible="icon">
@@ -105,7 +106,7 @@ export function WorkflowSidebar({
                   <h3 className="text-sm font-semibold text-primary">DIY Tools</h3>
                   <div className="flex gap-2">
                     <Button 
-                      onClick={onHelpClick}
+                      onClick={() => setShowComingSoon(true)}
                       variant="outline"
                       size="sm"
                       className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900 rounded-lg"
@@ -203,6 +204,27 @@ export function WorkflowSidebar({
           </DialogHeader>
           <div className="py-4">
             <FlowTypeLegend compact={false} showDescriptions={true} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Coming Soon Dialog */}
+      <Dialog open={showComingSoon} onOpenChange={setShowComingSoon}>
+        <DialogContent className="max-w-md">
+          <div className="relative">
+            {/* Blurred background effect */}
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg" />
+            
+            {/* Content */}
+            <div className="relative z-10 flex flex-col items-center justify-center py-12 px-6 text-center">
+              <div className="mb-4 p-4 rounded-full bg-primary/10">
+                <Sparkles className="w-12 h-12 text-primary" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2">Feature Coming Soon</h3>
+              <p className="text-muted-foreground">
+                We're working hard to bring you AI-powered chat assistance for your DIY projects!
+              </p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

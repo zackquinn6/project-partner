@@ -179,9 +179,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Name your project</label>
+              <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs text-muted-foreground">1 of 5</span>
+                <label className="text-sm font-medium">Name your project</label>
               </div>
               <Input
                 value={projectForm.customProjectName}
@@ -194,27 +194,35 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Describe your project</label>
+              <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs text-muted-foreground">2 of 5</span>
+                <label className="text-sm font-medium">Describe your project</label>
               </div>
-              <p className="text-xs text-muted-foreground mb-2">A short summary of your unique project</p>
+              {/* Admin-created description (readonly) */}
+              {currentProjectRun?.name && (
+                <div className="mb-3 p-3 bg-muted/50 rounded-md border border-muted">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Template Description:</p>
+                  <p className="text-xs text-foreground">{currentProjectRun.description || 'No template description available'}</p>
+                </div>
+              )}
+              {/* User description field */}
+              <p className="text-xs text-muted-foreground mb-2">Add your own notes about this project (optional)</p>
               <Textarea
                 value={projectForm.description}
                 onChange={(e) => setProjectForm(prev => ({
                   ...prev,
                   description: e.target.value
                 }))}
-                placeholder="Describe your project goals and any special considerations"
+                placeholder="Add any personal notes, goals, or special considerations for your project"
                 rows={3}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium">Project Leader</label>
+                <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs text-muted-foreground">3 of 5</span>
+                  <label className="text-sm font-medium">Project Leader</label>
                 </div>
                 <Input
                   value={projectForm.projectLeader}
@@ -227,9 +235,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium">Accountability Partner</label>
+                <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs text-muted-foreground">4 of 5</span>
+                  <label className="text-sm font-medium">Accountability Partner</label>
                 </div>
                 <Input
                   value={projectForm.accountabilityPartner}
@@ -243,9 +251,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Select Home</label>
+              <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs text-muted-foreground">5 of 5</span>
+                <label className="text-sm font-medium">Select Home</label>
               </div>
               {loading ? (
                 <div className="text-sm text-muted-foreground">Loading homes...</div>

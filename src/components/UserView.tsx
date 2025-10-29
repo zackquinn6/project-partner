@@ -372,9 +372,9 @@ export default function UserView({
       viewMode
     });
 
-    // CRITICAL FIX: Don't open cancelled projects
+    // CRITICAL FIX: Don't open cancelled projects - clear them completely
     if (currentProjectRun && currentProjectRun.status === 'cancelled') {
-      console.log('🔄 UserView: Current project run is cancelled - clearing it');
+      console.log('🔄 UserView: Current project run is cancelled - clearing it and forcing listing mode');
       setCurrentProjectRun(null);
       setViewMode('listing');
       return;
@@ -1338,7 +1338,7 @@ export default function UserView({
     return (
       <KickoffWorkflow 
         onKickoffComplete={async () => {
-          console.log("onKickoffComplete called - forcing completion");
+          console.log("🎯 onKickoffComplete called - closing kickoff and switching to workflow");
           
             if (currentProjectRun && updateProjectRun) {
              // Ensure ALL kickoff steps are marked complete (prevent duplicates)

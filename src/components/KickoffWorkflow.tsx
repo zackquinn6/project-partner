@@ -237,7 +237,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
                 {allKickoffStepsComplete && <CheckCircle className="w-6 h-6 text-green-500" />}
               </CardTitle>
               <CardDescription>
-                Complete these essential steps before starting your project
+                3 steps check this is a good fit and then personalizes the project to you
               </CardDescription>
             </div>
             <div className="flex items-center gap-4">
