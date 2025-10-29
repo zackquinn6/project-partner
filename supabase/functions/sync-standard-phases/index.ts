@@ -116,7 +116,89 @@ Deno.serve(async (req) => {
       try {
         console.log(`SYNC: Updating template "${template.name}" (${template.id})`);
         
-        // Rebuild this template's phases
+        // Get all standard operations from Standard Project
+        const { data: standardOps, error: standardOpsError } = await supabase
+          .from('template_operations')
+          .select('id, standard_phase_id, name')
+          .eq('project_id', standardProjectId)
+          .not('standard_phase_id', 'is', null);
+
+        if (standardOpsError) {
+          throw new Error(`Failed to fetch standard operations: ${standardOpsError.message}`);
+        }
+
+        // For each standard operation, copy steps to template
+        for (const standardOp of standardOps || []) {
+          // Find matching operation in template (by standard_phase_id)
+          const { data: templateOp, error: templateOpError } = await supabase
+            .from('template_operations')
+            .select('id')
+            .eq('project_id', template.id)
+            .eq('standard_phase_id', standardOp.standard_phase_id)
+            .single();
+
+          if (templateOpError || !templateOp) {
+            console.warn(`SYNC: No matching operation in template for ${standardOp.name}`);
+            continue;
+          }
+
+          // Get all steps from standard operation
+          const { data: standardSteps, error: standardStepsError } = await supabase
+            .from('template_steps')
+            .select('*')
+            .eq('operation_id', standardOp.id)
+            .order('display_order');
+
+          if (standardStepsError) {
+            console.error(`SYNC: Failed to fetch standard steps: ${standardStepsError.message}`);
+            continue;
+          }
+
+          // Get template steps to match by step_title
+          const { data: templateSteps, error: templateStepsError } = await supabase
+            .from('template_steps')
+            .select('id, step_title')
+            .eq('operation_id', templateOp.id);
+
+          if (templateStepsError) {
+            console.error(`SYNC: Failed to fetch template steps: ${templateStepsError.message}`);
+            continue;
+          }
+
+          // Update each matching step
+          for (const standardStep of standardSteps || []) {
+            const matchingTemplateStep = templateSteps?.find(
+              ts => ts.step_title === standardStep.step_title
+            );
+
+            if (matchingTemplateStep) {
+              // Update the template step with standard step data
+              const { error: updateStepError } = await supabase
+                .from('template_steps')
+                .update({
+                  step_number: standardStep.step_number,
+                  description: standardStep.description,
+                  content_sections: standardStep.content_sections,
+                  materials: standardStep.materials,
+                  tools: standardStep.tools,
+                  outputs: standardStep.outputs,
+                  apps: standardStep.apps,
+                  estimated_time_minutes: standardStep.estimated_time_minutes,
+                  flow_type: standardStep.flow_type,
+                  step_type: standardStep.step_type,
+                  display_order: standardStep.display_order,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', matchingTemplateStep.id);
+
+              if (updateStepError) {
+                console.error(`SYNC: Failed to update step "${standardStep.step_title}":`, updateStepError);
+              }
+            }
+          }
+        }
+
+        // Rebuild this template's phases JSON to reflect changes
         const { error: templateRebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
           p_project_id: template.id
         });
