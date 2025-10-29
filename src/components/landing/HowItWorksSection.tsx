@@ -47,6 +47,9 @@ export const HowItWorksSection = ({ onOpenDemo }: HowItWorksSectionProps) => {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Designed to run one great project - not a career of building
           </p>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mt-2">
+            In 30min or less - build a project framework that leads to success
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto mb-12">

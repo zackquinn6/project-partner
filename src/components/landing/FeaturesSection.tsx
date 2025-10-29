@@ -51,7 +51,7 @@ export const FeaturesSection = () => {
             Everything You Need to Succeed
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Powerful tools that work together to guide you from start to finish
+            A suite of tools that work together to guide you from start to finish
           </p>
         </div>
 

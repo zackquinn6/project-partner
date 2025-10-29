@@ -23,7 +23,7 @@ export const PricingSection: React.FC = () => {
             <CardHeader>
               <CardTitle className="text-2xl">Free Tier</CardTitle>
               <CardDescription className="text-lg">
-                Perfect for home maintenance and simple tasks
+                Great for general tasks and home maintenance
               </CardDescription>
               <div className="pt-4">
                 <span className="text-4xl font-bold">$0</span>
@@ -53,11 +53,6 @@ export const PricingSection: React.FC = () => {
 
           {/* Annual Membership */}
           <Card className="border-2 border-primary relative">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-              <span className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
-                BEST VALUE
-              </span>
-            </div>
             <CardHeader>
               <CardTitle className="text-2xl flex items-center gap-2">
                 <Crown className="h-6 w-6 text-primary" />
@@ -80,23 +75,27 @@ export const PricingSection: React.FC = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Full Project Catalog Access</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <span>Step-by-Step Project Workflows</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Materials & Tools Lists</span>
+                  <span>Aggregated Content From DIY / Building Leaders</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Project Scheduling</span>
+                  <span>Project Personalization</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span><strong>7-Day Free Trial</strong></span>
+                  <span>Project Scheduling & Budgeting</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <span>Project Shopping List</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <span>DIY Achievement Tracking</span>
                 </li>
               </ul>
               <Button className="w-full" onClick={() => navigate('/auth')}>

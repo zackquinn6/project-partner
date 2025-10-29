@@ -3,6 +3,9 @@ export const StatisticsBar = () => {
     <section className="py-12 bg-card/50 backdrop-blur-sm border-y border-border">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-foreground">
+            Our goal is to help get better project success
+          </h2>
           <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
             {/* YouTube Failure Rate */}
             <div className="text-center">
@@ -27,11 +30,6 @@ export const StatisticsBar = () => {
               </div>
             </div>
           </div>
-          
-          {/* Source citation */}
-          <p className="text-xs text-muted-foreground text-center mt-6">
-            Initial project study, Aug 2025
-          </p>
         </div>
       </div>
     </section>

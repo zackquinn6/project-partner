@@ -16,7 +16,6 @@ import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart,
 import heroDIYPerson from '@/assets/hero-diy-person.png';
 import { HeroSection } from './landing/HeroSection';
 import { StatisticsBar } from './landing/StatisticsBar';
-import { TestimonialsSection } from './landing/TestimonialsSection';
 import { HowItWorksSection } from './landing/HowItWorksSection';
 import { FeaturesSection } from './landing/FeaturesSection';
 import { PersonasSection } from './landing/PersonasSection';
@@ -281,9 +280,6 @@ export default function Home({
 
       {/* Features Section */}
       <FeaturesSection />
-
-      {/* Testimonials Section */}
-      <TestimonialsSection />
 
       {/* Personas Section */}
       <PersonasSection />
