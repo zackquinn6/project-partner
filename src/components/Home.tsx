@@ -22,7 +22,7 @@ import { PersonasSection } from './landing/PersonasSection';
 import { PricingSection } from './landing/PricingSection';
 import { FAQSection } from './landing/FAQSection';
 import { FinalCTASection } from './landing/FinalCTASection';
-import { Footer } from './landing/Footer';
+
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import { TrialBanner } from '@/components/TrialBanner';
 interface HomeProps {
@@ -292,9 +292,6 @@ export default function Home({
 
       {/* Final CTA Section */}
       <FinalCTASection />
-
-      {/* Footer */}
-      <Footer onPricingClick={() => setIsPricingOpen(true)} />
     </div>}
 
       {/* Modals */}
