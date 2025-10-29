@@ -178,7 +178,7 @@ export function MobileWorkflowView({
         <div className="p-4 space-y-6 pb-20">
           {/* Step Content */}
           <Card 
-            key={`${currentStep?.id}-${instructionLevel}`}
+            key={instructionLevel}
             className="gradient-card"
           >
             <CardHeader className="pb-3">

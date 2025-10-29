@@ -1602,7 +1602,7 @@ export default function UserView({
 
           {/* Content */}
           <Card 
-            key={`${currentStep?.id}-${instructionLevel}`}
+            key={instructionLevel}
             className="gradient-card border-0 shadow-card"
           >
             <CardContent className="p-8">
