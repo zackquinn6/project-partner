@@ -42,14 +42,19 @@ export const AdminView: React.FC = () => {
 
   const handleSyncStandardPhases = async () => {
     setIsSyncing(true);
-    const toastId = toast.loading('Syncing standard phases to all project templates...');
+    
+    // Show initial loading toast
+    toast.loading('Syncing standard phases to all project templates...', { id: 'sync-phases' });
 
     try {
       const { data, error } = await supabase.functions.invoke('sync-standard-phases', {
         method: 'POST',
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
       const result = data as {
         success: boolean;
@@ -58,29 +63,36 @@ export const AdminView: React.FC = () => {
         details: string[];
       };
 
+      console.log('Sync result:', result);
+
       if (result.success) {
+        // Dismiss loading toast
+        toast.dismiss('sync-phases');
+        
+        // Show success toast
         toast.success(
-          `Standard phases synced! Updated ${result.templatesUpdated} template(s)`,
+          `Standard phases synced successfully!`,
           {
-            id: toastId,
-            description: result.templatesFailed > 0 
-              ? `${result.templatesFailed} template(s) failed to update`
-              : 'All templates updated successfully',
-            duration: 5000,
+            description: `Updated ${result.templatesUpdated} template(s). ${result.templatesFailed > 0 ? `${result.templatesFailed} failed.` : 'All templates updated.'}`,
+            duration: 6000,
           }
         );
 
         // Show detailed results in console
         console.log('Standard Phase Sync Results:', result.details.join('\n'));
       } else {
-        throw new Error('Sync failed');
+        throw new Error('Sync reported failure');
       }
     } catch (error) {
       console.error('Failed to sync standard phases:', error);
+      
+      // Dismiss loading toast
+      toast.dismiss('sync-phases');
+      
+      // Show error toast
       toast.error('Failed to sync standard phases', {
-        id: toastId,
         description: error instanceof Error ? error.message : 'Unknown error occurred',
-        duration: 5000,
+        duration: 6000,
       });
     } finally {
       setIsSyncing(false);

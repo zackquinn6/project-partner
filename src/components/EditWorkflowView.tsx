@@ -413,11 +413,14 @@ export default function EditWorkflowView({
             method: 'POST',
           });
           
+          // Dismiss loading toast
+          toast.dismiss('cascade-sync');
+          
           if (syncError) {
             console.error('SaveEdit: Error cascading to templates:', syncError);
             toast.error('Standard Project saved but cascade to templates failed', { 
-              id: 'cascade-sync',
-              description: 'Click "Sync Standard Phases" button to manually sync'
+              description: 'Click "Sync Standard Phases" button in Admin Panel to manually sync',
+              duration: 6000,
             });
           } else {
             const result = syncResult as {
@@ -430,8 +433,8 @@ export default function EditWorkflowView({
             toast.success(
               `Changes cascaded to ${result.templatesUpdated} template(s)`,
               { 
-                id: 'cascade-sync',
-                description: 'All project templates now have your latest standard phase changes'
+                description: 'All project templates now have your latest standard phase changes',
+                duration: 5000,
               }
             );
           }
