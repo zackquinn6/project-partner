@@ -788,7 +788,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                <div className="flex items-center gap-2">
                                 <Badge variant="outline">{phase.operations.length} operations</Badge>
                                 
-                                {!isStandardPhase && !isLinkedPhase && <>
+                                 {!isStandardPhase && !isLinkedPhase && <>
                                     <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
                                       <Copy className="w-4 h-4" />
                                     </Button>
@@ -815,6 +815,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                       </>}
                                   </>}
                                 
+                                {/* Admin-only delete button for standard phases */}
+                                {isEditingStandardProject && isStandardPhase && !isLinkedPhase && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => deletePhase(phase.id)}
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    title="Admin only: Delete standard phase"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
                            </CardHeader>

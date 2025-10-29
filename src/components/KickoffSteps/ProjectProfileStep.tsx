@@ -174,7 +174,10 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Name your project</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Name your project</label>
+                <span className="text-xs text-muted-foreground">1 of 5</span>
+              </div>
               <Input
                 value={projectForm.customProjectName}
                 onChange={(e) => setProjectForm(prev => ({
@@ -186,7 +189,10 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Describe your project</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Describe your project</label>
+                <span className="text-xs text-muted-foreground">2 of 5</span>
+              </div>
               <p className="text-xs text-muted-foreground mb-2">A short summary of your unique project</p>
               <Textarea
                 value={projectForm.description}
@@ -200,7 +206,10 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Project Leader</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Project Leader</label>
+                <span className="text-xs text-muted-foreground">3 of 5</span>
+              </div>
               <Input
                 value={projectForm.projectLeader}
                 onChange={(e) => setProjectForm(prev => ({
@@ -212,7 +221,10 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Accountability Partner</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Accountability Partner</label>
+                <span className="text-xs text-muted-foreground">4 of 5</span>
+              </div>
               <Input
                 value={projectForm.accountabilityPartner}
                 onChange={(e) => setProjectForm(prev => ({
@@ -224,7 +236,10 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Select Home</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Select Home</label>
+                <span className="text-xs text-muted-foreground">5 of 5</span>
+              </div>
               {loading ? (
                 <div className="text-sm text-muted-foreground">Loading homes...</div>
               ) : homes.length === 0 ? (
