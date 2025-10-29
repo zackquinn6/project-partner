@@ -31,7 +31,6 @@ import { FinalCTASection } from './landing/FinalCTASection';
 import { Footer } from './landing/Footer';
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import { TrialBanner } from '@/components/TrialBanner';
-import { MembershipStatusCard } from '@/components/MembershipStatusCard';
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
@@ -141,7 +140,7 @@ export default function Home({
             {/* At a Glance Stats */}
             <div className="border-t border-border pt-1 mb-1">
               <h3 className="text-sm font-medium text-muted-foreground mb-3 text-center">At a Glance</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
                 <div className="text-center">
                   <div className="text-base font-bold text-foreground">{stats.activeProjects || 0}</div>
                   <div className="text-xs text-muted-foreground">active projects</div>
@@ -149,9 +148,6 @@ export default function Home({
                 <div className="text-center">
                   <div className="text-base font-bold text-foreground">{stats.completedProjects || 0}</div>
                   <div className="text-xs text-muted-foreground">completed projects</div>
-                </div>
-                <div className="md:row-span-2">
-                  <MembershipStatusCard />
                 </div>
               </div>
             </div>
@@ -238,8 +234,8 @@ export default function Home({
                           <Users className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm text-card-foreground">Community</h3>
-                          <p className="text-xs text-muted-foreground">Connect with other DIYers</p>
+                          <h3 className="font-medium text-xs text-card-foreground">Community</h3>
+                          <p className="text-[10px] text-muted-foreground">Connect with other DIYers</p>
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       </div>
@@ -249,8 +245,8 @@ export default function Home({
                           <Hammer className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm text-card-foreground">Tool Access</h3>
-                          <p className="text-xs text-muted-foreground">Find and rent tools nearby</p>
+                          <h3 className="font-medium text-xs text-card-foreground">Tool Access</h3>
+                          <p className="text-[10px] text-muted-foreground">Find and rent tools nearby</p>
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       </div>
@@ -260,8 +256,8 @@ export default function Home({
                           <Camera className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm text-card-foreground">AI Repair</h3>
-                          <p className="text-xs text-muted-foreground">Diagnose issues with AI</p>
+                          <h3 className="font-medium text-xs text-card-foreground">AI Repair</h3>
+                          <p className="text-[10px] text-muted-foreground">Diagnose issues with AI</p>
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       </div>
@@ -271,8 +267,8 @@ export default function Home({
                           <Building2 className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm text-card-foreground">Code & Compliance</h3>
-                          <p className="text-xs text-muted-foreground">Building codes and permits</p>
+                          <h3 className="font-medium text-xs text-card-foreground">Code & Compliance</h3>
+                          <p className="text-[10px] text-muted-foreground">Building codes and permits</p>
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       </div>

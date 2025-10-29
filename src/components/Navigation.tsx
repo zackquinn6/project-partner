@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones } from "lucide-react";
+import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown } from "lucide-react";
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -8,6 +8,7 @@ import { useMembership } from '@/contexts/MembershipContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FeedbackDialog } from './FeedbackDialog';
 import { UpgradePrompt } from './UpgradePrompt';
+import { MembershipWindow } from './MembershipWindow';
 import { useState, useEffect } from "react";
 import { DataPrivacyManager } from './DataPrivacyManager';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
@@ -38,6 +39,7 @@ export default function Navigation({
   const [isExpertHelpOpen, setIsExpertHelpOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   
   // Add error boundary for useProject hook
   let projectData;
@@ -144,7 +146,7 @@ export default function Navigation({
                 variant={currentView === 'home' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => onViewChange('home')}
-                className="text-sm"
+                className="text-xs"
               >
                 <Home className="h-4 w-4 mr-2" />
                 Home
@@ -169,7 +171,7 @@ export default function Navigation({
                   onViewChange('user');
                   onProjectsView?.();
                 }}
-                className="text-sm"
+                className="text-xs"
               >
                 <FolderOpen className="h-4 w-4 mr-2" />
                 Progress Board
@@ -214,13 +216,19 @@ export default function Navigation({
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* Phone Number */}
+            <div className="hidden md:flex flex-col items-end mr-2">
+              <span className="text-[10px] text-muted-foreground">Qs? Call or Text</span>
+              <span className="text-sm font-medium">(617) 545-3367</span>
+            </div>
+            
             {/* Get Expert Help Button - Always visible */}
             <Button 
               onClick={() => {
                 console.log('Expert Help button clicked');
                 setIsExpertHelpOpen(true);
               }}
-              className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 shrink-0"
+              className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 shrink-0 text-xs"
               size="sm"
             >
               <Headphones className="h-4 w-4 mr-0 sm:mr-2" />
@@ -249,6 +257,10 @@ export default function Navigation({
                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
                   <User className="h-4 w-4 mr-2" />
                   Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsMembershipOpen(true)}>
+                  <Crown className="h-4 w-4 mr-2" />
+                  Membership
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsPrivacyOpen(true)}>
                   <Lock className="h-4 w-4 mr-2" />
@@ -332,13 +344,18 @@ export default function Navigation({
           onClose={() => setIsExpertHelpOpen(false)}
         />
         
-        <UpgradePrompt
-          open={showUpgradePrompt}
-          onOpenChange={setShowUpgradePrompt}
-          feature="Project Catalog & Workflows"
-        />
-        
-        <AchievementNotificationCenter />
+         <UpgradePrompt
+           open={showUpgradePrompt}
+           onOpenChange={setShowUpgradePrompt}
+           feature="Project Catalog & Workflows"
+         />
+         
+         <MembershipWindow
+           open={isMembershipOpen}
+           onOpenChange={setIsMembershipOpen}
+         />
+         
+         <AchievementNotificationCenter />
     </>
   );
 }

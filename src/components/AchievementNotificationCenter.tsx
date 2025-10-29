@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Bell } from 'lucide-react';
+import { Medal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -115,7 +115,7 @@ export function AchievementNotificationCenter() {
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+          <Medal className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
@@ -148,7 +148,7 @@ export function AchievementNotificationCenter() {
             </div>
           ) : notifications.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <Medal className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>No achievements yet</p>
               <p className="text-xs mt-1">Complete projects to unlock badges!</p>
             </div>

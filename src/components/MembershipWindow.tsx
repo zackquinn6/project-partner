@@ -1,6 +1,8 @@
 import React from 'react';
 import { ResponsiveDialog } from '@/components/ResponsiveDialog';
-import { MembershipManagement } from '@/components/MembershipManagement';
+import { MembershipStatusCard } from '@/components/MembershipStatusCard';
+import { Button } from '@/components/ui/button';
+import { useMembership } from '@/contexts/MembershipContext';
 
 interface MembershipWindowProps {
   open: boolean;
@@ -8,15 +10,26 @@ interface MembershipWindowProps {
 }
 
 export const MembershipWindow: React.FC<MembershipWindowProps> = ({ open, onOpenChange }) => {
+  const { openCustomerPortal, isSubscribed } = useMembership();
+  
   return (
     <ResponsiveDialog
       open={open}
       onOpenChange={onOpenChange}
-      size="modal-md"
-      title="Membership & Subscription"
+      size="modal-sm"
+      title="Membership"
     >
-      <div className="overflow-y-auto">
-        <MembershipManagement />
+      <div className="space-y-4">
+        <MembershipStatusCard />
+        {isSubscribed && (
+          <Button 
+            onClick={openCustomerPortal} 
+            variant="outline" 
+            className="w-full"
+          >
+            Manage Subscription
+          </Button>
+        )}
       </div>
     </ResponsiveDialog>
   );
