@@ -226,96 +226,100 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({ onKickoffCompl
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="max-w-6xl mx-auto p-2 sm:p-6 space-y-4 sm:space-y-6">
       {/* Progress Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6 rounded-t-lg shadow-lg flex-shrink-0">
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Project Kickoff</h2>
-            <p className="text-sm opacity-90">Complete these steps to begin your project</p>
-          </div>
-          
-          {/* Overall Progress */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-semibold">Overall Progress</span>
-              <span className="font-bold">{completedKickoffSteps.size} of {kickoffSteps.length} steps completed</span>
-            </div>
-            <Progress value={progress} className="h-3 bg-white/20" />
-          </div>
-
-          {/* Step Indicators */}
-          <div className="flex items-center justify-between gap-2">
-            {kickoffSteps.map((step, index) => {
-              const isActive = currentKickoffStep === index;
-              const isCompleted = isStepCompleted(index);
-              
-              return (
-                <div key={step.id} className="flex-1">
-                  <div 
-                    className={`
-                      flex flex-col items-center gap-2 p-3 rounded-lg transition-all cursor-pointer
-                      ${isActive ? 'bg-white/20 shadow-md' : 'hover:bg-white/10'}
-                    `}
-                    onClick={() => setCurrentKickoffStep(index)}
-                  >
-                    <div className={`
-                      w-10 h-10 rounded-full flex items-center justify-center text-base font-bold border-2
-                      ${isCompleted ? 'bg-green-500 border-green-400' : isActive ? 'bg-white text-primary border-white' : 'bg-white/30 border-white/50'}
-                    `}>
-                      {isCompleted ? <CheckCircle className="w-6 h-6" /> : index + 1}
-                    </div>
-                    <span className={`text-xs text-center ${isActive ? 'font-semibold' : 'opacity-75'}`}>
-                      Step {index + 1}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Step Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 bg-background">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary flex-shrink-0">
-              <span className="text-xl font-bold text-primary">{currentKickoffStep + 1}</span>
-            </div>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-2xl font-bold">{kickoffSteps[currentKickoffStep].title}</h3>
-              <p className="text-sm text-muted-foreground">{kickoffSteps[currentKickoffStep].description}</p>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                Project Kickoff
+                {allKickoffStepsComplete && <CheckCircle className="w-6 h-6 text-green-500" />}
+              </CardTitle>
+              <CardDescription>
+                Complete these essential steps before starting your project
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground mb-1">
+                  Step {currentKickoffStep + 1} of {kickoffSteps.length}
+                </div>
+                <Progress value={progress} className="w-32" />
+              </div>
             </div>
           </div>
-          {renderCurrentStep()}
-        </div>
-      </div>
+        </CardHeader>
+      </Card>
 
-      {/* Navigation Footer - Fixed at Bottom */}
-      <div className="border-t bg-muted/30 p-4 flex items-center justify-between gap-4 flex-shrink-0">
-        <Button 
-          onClick={handlePrevious} 
-          disabled={currentKickoffStep === 0}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Previous
-        </Button>
-        
-        <div className="text-sm text-muted-foreground">
-          Step {currentKickoffStep + 1} of {kickoffSteps.length}
-        </div>
-        
-        <Button 
-          onClick={handleNext} 
-          disabled={currentKickoffStep === kickoffSteps.length - 1}
-          className="flex items-center gap-2"
-        >
-          Next
-          <ChevronRight className="w-4 h-4" />
-        </Button>
+      {/* Step Navigation */}
+      <Card>
+        <CardContent className="p-2 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto w-full sm:w-auto">
+              {kickoffSteps.map((step, index) => (
+                <div key={step.id} className="flex items-center flex-shrink-0">
+                  <div className={`
+                    flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 transition-colors
+                    ${index === currentKickoffStep 
+                      ? 'border-primary bg-primary text-primary-foreground' 
+                      : isStepCompleted(index)
+                      ? 'border-green-500 bg-green-500 text-white'
+                      : 'border-muted-foreground bg-background'
+                    }
+                  `}>
+                    {isStepCompleted(index) ? (
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                    ) : (
+                      <span className="text-xs sm:text-sm font-medium">{index + 1}</span>
+                    )}
+                  </div>
+                  <div className="ml-1 sm:ml-2 hidden md:block">
+                    <p className={`text-xs sm:text-sm font-medium ${
+                      index === currentKickoffStep ? 'text-primary' : 
+                      isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'
+                    }`}>
+                      {step.title}
+                    </p>
+                  </div>
+                  {index < kickoffSteps.length - 1 && (
+                    <div className="mx-2 sm:mx-4 w-4 sm:w-8 h-0.5 bg-muted-foreground/20" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevious}
+                disabled={currentKickoffStep === 0}
+                className="flex-1 sm:flex-initial"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNext}
+                disabled={currentKickoffStep === kickoffSteps.length - 1}
+                className="flex-1 sm:flex-initial"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <span className="sm:hidden">Next</span>
+                <ChevronRight className="w-4 h-4 ml-1 sm:ml-2" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Current Step Content */}
+      <div className="min-h-96">
+        {renderCurrentStep()}
       </div>
     </div>
   );

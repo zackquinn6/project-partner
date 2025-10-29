@@ -2663,6 +2663,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           display_order: number
+          estimated_time_minutes: number | null
           flow_type: string | null
           id: string
           materials: Json | null
@@ -2680,6 +2681,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number
+          estimated_time_minutes?: number | null
           flow_type?: string | null
           id?: string
           materials?: Json | null
@@ -2697,6 +2699,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number
+          estimated_time_minutes?: number | null
           flow_type?: string | null
           id?: string
           materials?: Json | null

@@ -785,49 +785,49 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                    </div>}
                               </div>
                               
-                               <div className="flex items-center gap-2">
-                                <Badge variant="outline">{phase.operations.length} operations</Badge>
-                                
+                                <div className="flex items-center gap-2">
+                                 <Badge variant="outline">{phase.operations.length} operations</Badge>
+                                 
                                  {!isStandardPhase && !isLinkedPhase && <>
-                                    <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
-                                      <Copy className="w-4 h-4" />
-                                    </Button>
-                                    
-                                    {clipboard?.type === 'phase' && <Button size="sm" variant="ghost" onClick={() => pasteItem('phase')}>
-                                        <Clipboard className="w-4 h-4" />
-                                      </Button>}
-                                    
-                                    {isEditing ? <>
-                                        <Button size="sm" onClick={saveEdit}>
-                                          <Check className="w-4 h-4" />
-                                        </Button>
-                                        <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
-                                          <X className="w-4 h-4" />
-                                        </Button>
-                                      </> : <>
-                                        <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
-                                          <Edit className="w-4 h-4" />
-                                        </Button>
-                                        
-                                        <Button size="sm" variant="ghost" onClick={() => deletePhase(phase.id)}>
-                                          <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                      </>}
-                                  </>}
-                                
-                                {/* Admin-only delete button for standard phases */}
-                                {isEditingStandardProject && isStandardPhase && !isLinkedPhase && (
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
-                                    onClick={() => deletePhase(phase.id)}
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    title="Admin only: Delete standard phase"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                )}
-                              </div>
+                                     <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
+                                       <Copy className="w-4 h-4" />
+                                     </Button>
+                                     
+                                     {clipboard?.type === 'phase' && <Button size="sm" variant="ghost" onClick={() => pasteItem('phase')}>
+                                         <Clipboard className="w-4 h-4" />
+                                       </Button>}
+                                     
+                                     {isEditing ? <>
+                                         <Button size="sm" onClick={saveEdit}>
+                                           <Check className="w-4 h-4" />
+                                         </Button>
+                                         <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
+                                           <X className="w-4 h-4" />
+                                         </Button>
+                                       </> : <>
+                                         <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
+                                           <Edit className="w-4 h-4" />
+                                         </Button>
+                                         
+                                         <Button size="sm" variant="ghost" onClick={() => deletePhase(phase.id)}>
+                                           <Trash2 className="w-4 h-4" />
+                                         </Button>
+                                       </>}
+                                   </>}
+                                 
+                                 {/* Admin-only delete button for standard phases when editing Standard Project */}
+                                 {isEditingStandardProject && isStandardPhase && !isLinkedPhase && !isEditing && (
+                                   <Button 
+                                     size="sm" 
+                                     variant="ghost" 
+                                     onClick={() => deletePhase(phase.id)}
+                                     className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                     title="Admin only: Delete standard phase"
+                                   >
+                                     <Trash2 className="w-4 h-4" />
+                                   </Button>
+                                 )}
+                               </div>
                             </div>
                            </CardHeader>
                            
