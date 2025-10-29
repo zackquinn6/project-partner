@@ -3558,6 +3558,10 @@ export type Database = {
         Args: { project_id_to_rebuild: string }
         Returns: undefined
       }
+      refresh_project_run_from_template: {
+        Args: { p_run_id: string }
+        Returns: Json
+      }
       request_emergency_data_access: {
         Args: {
           emergency_reason: string
