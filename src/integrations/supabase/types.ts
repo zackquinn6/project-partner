@@ -230,6 +230,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       decision_tree_conditions: {
         Row: {
           condition_data: Json
@@ -3480,6 +3507,7 @@ export type Database = {
       get_user_role: { Args: { user_id: string }; Returns: string }
       has_project_owner_role: { Args: { _user_id: string }; Returns: boolean }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_beta_mode_active: { Args: never; Returns: boolean }
       is_project_owner: {
         Args: { project_id_param: string; user_id_param: string }
         Returns: boolean

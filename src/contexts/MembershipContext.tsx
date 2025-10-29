@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useBetaMode } from '@/hooks/useBetaMode';
 
 interface MembershipContextType {
   isSubscribed: boolean;
@@ -23,6 +24,7 @@ const MembershipContext = createContext<MembershipContextType | undefined>(undef
 export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isBetaMode } = useBetaMode();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [inTrial, setInTrial] = useState(false);
@@ -122,7 +124,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     return () => clearInterval(interval);
   }, [user]);
 
-  const canAccessPaidFeatures = isSubscribed || isAdmin || inTrial;
+  const canAccessPaidFeatures = isBetaMode || isSubscribed || isAdmin || inTrial;
 
   const trialDaysRemaining = trialEndDate
     ? Math.max(0, Math.ceil((new Date(trialEndDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useMembership } from '@/contexts/MembershipContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useBetaMode } from '@/hooks/useBetaMode';
 import { FeedbackDialog } from './FeedbackDialog';
 import { UpgradePrompt } from './UpgradePrompt';
 import { MembershipWindow } from './MembershipWindow';
@@ -59,16 +60,10 @@ export default function Navigation({
     projects,
     setCurrentProject
   } = projectData;
-  const {
-    signOut,
-    signingOut
-  } = useAuth();
-  const {
-    isAdmin
-  } = useUserRole();
-  const {
-    canAccessPaidFeatures
-  } = useMembership();
+  const { signOut, signingOut } = useAuth();
+  const { isAdmin } = useUserRole();
+  const { canAccessPaidFeatures } = useMembership();
+  const { isBetaMode } = useBetaMode();
   const isMobile = useIsMobile();
 
   // Listen for user documentation request from admin guide
@@ -133,6 +128,11 @@ export default function Navigation({
           <div className="flex items-center space-x-4 flex-1">
             <div className="flex items-center space-x-2">
               <img src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" alt="Project Partner Logo" className="h-8 w-auto" />
+              {isBetaMode && (
+                <span className="px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 rounded">
+                  Project Partner - Beta
+                </span>
+              )}
             </div>
             
             <div className="flex items-center space-x-1">

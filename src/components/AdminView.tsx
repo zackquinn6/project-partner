@@ -18,6 +18,7 @@ import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
 import { AdminDataRefresh } from './AdminDataRefresh';
 import { AdminGuideWindow } from './AdminGuideWindow';
 import { PFMEAManagement } from './PFMEAManagement';
+import { BetaModeToggle } from './BetaModeToggle';
 
 
 export const AdminView: React.FC = () => {
@@ -230,7 +231,10 @@ export const AdminView: React.FC = () => {
 
         </div>
 
-        <ScrollableDialog 
+        {/* Beta Mode Toggle */}
+        <BetaModeToggle />
+
+        <ScrollableDialog
           open={enhancedProjectManagementOpen} 
           onOpenChange={setEnhancedProjectManagementOpen}
           title="Project Management & Revision Control"
