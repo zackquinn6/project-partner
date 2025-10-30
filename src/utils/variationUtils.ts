@@ -155,3 +155,101 @@ export const clearAllMaterials = async (): Promise<boolean> => {
     return false;
   }
 };
+
+export const clearAllProjectRuns = async (): Promise<boolean> => {
+  try {
+    console.log('Deleting all project runs...');
+    const { error } = await supabase
+      .from('project_runs')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (error) {
+      console.error('Error clearing project runs:', error);
+      toast.error('Failed to clear project runs');
+      return false;
+    }
+
+    console.log('All project runs cleared successfully');
+    toast.success('All project runs deleted');
+    return true;
+  } catch (error) {
+    console.error('Error clearing project runs:', error);
+    toast.error('Failed to clear project runs');
+    return false;
+  }
+};
+
+export const clearAllProjectTemplates = async (): Promise<boolean> => {
+  try {
+    // Get the Standard Project Foundation ID
+    const { data: standardProject } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('name', 'Standard Project Foundation')
+      .single();
+
+    if (!standardProject) {
+      console.error('Standard Project Foundation not found');
+      toast.error('Cannot find Standard Project - aborting cleanup');
+      return false;
+    }
+
+    console.log('Fetching all project templates except Standard Project...');
+    const { data: projects } = await supabase
+      .from('projects')
+      .select('id')
+      .neq('id', standardProject.id);
+
+    if (!projects || projects.length === 0) {
+      console.log('No templates to delete');
+      toast.success('No templates to delete');
+      return true;
+    }
+
+    const projectIds = projects.map(p => p.id);
+
+    // Delete template_steps first
+    console.log('Deleting template steps...');
+    const { data: operations } = await supabase
+      .from('template_operations')
+      .select('id')
+      .in('project_id', projectIds);
+
+    if (operations && operations.length > 0) {
+      const operationIds = operations.map(op => op.id);
+      await supabase
+        .from('template_steps')
+        .delete()
+        .in('operation_id', operationIds);
+    }
+
+    // Delete template_operations
+    console.log('Deleting template operations...');
+    await supabase
+      .from('template_operations')
+      .delete()
+      .in('project_id', projectIds);
+
+    // Delete projects
+    console.log('Deleting project templates...');
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .in('id', projectIds);
+
+    if (error) {
+      console.error('Error clearing project templates:', error);
+      toast.error('Failed to clear project templates');
+      return false;
+    }
+
+    console.log(`Deleted ${projectIds.length} project templates successfully`);
+    toast.success(`Deleted ${projectIds.length} project templates`);
+    return true;
+  } catch (error) {
+    console.error('Error clearing project templates:', error);
+    toast.error('Failed to clear project templates');
+    return false;
+  }
+};

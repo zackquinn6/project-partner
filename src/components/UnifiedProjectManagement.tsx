@@ -328,13 +328,33 @@ export function UnifiedProjectManagement() {
     }
 
     try {
-      // Delete all revisions first
-      const { error: revisionsError } = await supabase
+      // First delete all template_steps for this project
+      const { data: operations } = await supabase
+        .from('template_operations')
+        .select('id')
+        .eq('project_id', projectId);
+      
+      if (operations && operations.length > 0) {
+        const operationIds = operations.map(op => op.id);
+        await supabase
+          .from('template_steps')
+          .delete()
+          .in('operation_id', operationIds);
+      }
+      
+      // Then delete all template_operations
+      await supabase
+        .from('template_operations')
+        .delete()
+        .eq('project_id', projectId);
+
+      // Delete all revisions and the project itself
+      const { error: deleteError } = await supabase
         .from('projects')
         .delete()
         .or(`id.eq.${projectId},parent_project_id.eq.${projectId}`);
 
-      if (revisionsError) throw revisionsError;
+      if (deleteError) throw deleteError;
 
       toast.success("Project deleted successfully");
 

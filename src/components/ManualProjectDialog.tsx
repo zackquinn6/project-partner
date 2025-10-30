@@ -76,7 +76,7 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
     try {
       const projectData = {
         user_id: user.id,
-        template_id: '00000000-0000-0000-0000-000000000000', // Placeholder UUID for manual projects
+        template_id: null, // Manual projects don't need a template
         name: formData.name,
         description: formData.description || null,
         category: formData.category || null,
