@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
-import { CheckCircle, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, TrendingUp, Star } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { AnalyticsFilters } from './AnalyticsFilters';
 import { generateDemoData, calculateRealAnalytics, exportAnalyticsData, AnalyticsData } from '@/utils/analyticsData';
@@ -72,7 +72,7 @@ const ProjectAnalytics: React.FC = () => {
         projects={projects}
       />
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="gradient-card border-0 shadow-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -117,6 +117,18 @@ const ProjectAnalytics: React.FC = () => {
                 <p className="text-2xl font-bold">{analyticsData.issueReportRate.toFixed(1)}%</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="gradient-card border-0 shadow-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Avg Phase Rating</p>
+                <p className="text-2xl font-bold">{analyticsData.overallPhaseRating.toFixed(1)}/5</p>
+              </div>
+              <Star className="h-8 w-8 text-yellow-500" fill="currentColor" />
             </div>
           </CardContent>
         </Card>
@@ -266,6 +278,74 @@ const ProjectAnalytics: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Phase Ratings Analysis */}
+      {analyticsData.phaseRatingsData.length > 0 && (
+        <Card className="gradient-card border-0 shadow-card">
+          <CardHeader>
+            <CardTitle>Phase Ratings by Users</CardTitle>
+            <CardDescription>
+              Average user satisfaction ratings per phase (1-5 scale)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={analyticsData.phaseRatingsData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="phase" 
+                  stroke="hsl(var(--muted-foreground))"
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                  interval={0}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  label={{ value: 'Rating (1-5)', angle: -90, position: 'insideLeft' }}
+                  domain={[0, 5]}
+                />
+                <Tooltip 
+                  formatter={(value: any, name: string) => {
+                    if (name === 'avgRating') return [`${value}/5`, 'Avg Rating'];
+                    if (name === 'count') return [`${value}`, 'Total Ratings'];
+                    return [value, name];
+                  }}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--background))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Bar 
+                  dataKey="avgRating" 
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+            
+            <div className="mt-6">
+              <h4 className="font-semibold text-sm text-muted-foreground mb-3">Phase Rating Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {analyticsData.phaseRatingsData.map((phase, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{phase.phase}</p>
+                      <p className="text-xs text-muted-foreground">{phase.count} ratings</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+                      <span className="font-bold text-lg">{phase.avgRating}</span>
+                      <span className="text-sm text-muted-foreground">/5</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

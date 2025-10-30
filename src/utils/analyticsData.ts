@@ -9,6 +9,8 @@ export interface AnalyticsData {
   durationData: Array<{ days: number; projects: number }>;
   stepTimeData: Array<{ step: string; avgHours: number; completions: number }>;
   issueData: Array<{ name: string; value: number; count: number }>;
+  phaseRatingsData: Array<{ phase: string; avgRating: number; count: number }>;
+  overallPhaseRating: number;
 }
 
 export function generateDemoData(): AnalyticsData {
@@ -51,7 +53,14 @@ export function generateDemoData(): AnalyticsData {
       { name: 'Unclear Instructions', value: 3.8, count: 47 },
       { name: 'Safety Concerns', value: 1.6, count: 20 },
       { name: 'Time Overrun', value: 0.7, count: 9 }
-    ]
+    ],
+    phaseRatingsData: [
+      { phase: 'Planning', avgRating: 4.3, count: 1205 },
+      { phase: 'Execution', avgRating: 4.1, count: 1156 },
+      { phase: 'Quality Check', avgRating: 4.5, count: 1124 },
+      { phase: 'Closeout', avgRating: 4.7, count: 1098 }
+    ],
+    overallPhaseRating: 4.4
   };
 }
 
@@ -126,6 +135,9 @@ export function calculateRealAnalytics(
   // Generate issue data
   const issueData = generateIssueDistribution(filteredRuns);
 
+  // Generate phase ratings data
+  const { phaseRatingsData, overallPhaseRating } = generatePhaseRatingsData(filteredRuns);
+
   return {
     totalCompletions,
     averageDuration,
@@ -133,7 +145,9 @@ export function calculateRealAnalytics(
     issueReportRate,
     durationData,
     stepTimeData,
-    issueData
+    issueData,
+    phaseRatingsData,
+    overallPhaseRating
   };
 }
 
@@ -213,6 +227,59 @@ function generateIssueDistribution(projectRuns: ProjectRun[]): Array<{ name: str
     .sort((a, b) => b.value - a.value);
 }
 
+function generatePhaseRatingsData(projectRuns: ProjectRun[]): { 
+  phaseRatingsData: Array<{ phase: string; avgRating: number; count: number }>, 
+  overallPhaseRating: number 
+} {
+  if (projectRuns.length === 0) {
+    return { 
+      phaseRatingsData: [], 
+      overallPhaseRating: 0 
+    };
+  }
+
+  // Aggregate phase ratings by phase name
+  const phaseRatingsByName: { [key: string]: { totalRating: number; count: number } } = {};
+  let totalRatings = 0;
+  let totalCount = 0;
+
+  projectRuns.forEach(run => {
+    if (run.phase_ratings && Array.isArray(run.phase_ratings)) {
+      run.phase_ratings.forEach((rating: any) => {
+        const phaseName = rating.phaseName || 'Unknown';
+        const ratingValue = rating.rating || 0;
+
+        if (!phaseRatingsByName[phaseName]) {
+          phaseRatingsByName[phaseName] = { totalRating: 0, count: 0 };
+        }
+
+        phaseRatingsByName[phaseName].totalRating += ratingValue;
+        phaseRatingsByName[phaseName].count += 1;
+        totalRatings += ratingValue;
+        totalCount += 1;
+      });
+    }
+  });
+
+  // Convert to array format with averages
+  const phaseRatingsData = Object.entries(phaseRatingsByName)
+    .map(([phase, data]) => ({
+      phase,
+      avgRating: parseFloat((data.totalRating / data.count).toFixed(2)),
+      count: data.count
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const overallPhaseRating = totalCount > 0 
+    ? parseFloat((totalRatings / totalCount).toFixed(2)) 
+    : 0;
+
+  return {
+    phaseRatingsData,
+    overallPhaseRating
+  };
+}
+
 export function exportAnalyticsData(data: AnalyticsData, filters: any) {
   const csvContent = [
     // Summary metrics
@@ -221,6 +288,7 @@ export function exportAnalyticsData(data: AnalyticsData, filters: any) {
     `Average Duration (days),${data.averageDuration.toFixed(1)}`,
     `Completion Rate (%),${data.completionRate.toFixed(1)}`,
     `Issue Report Rate (%),${data.issueReportRate.toFixed(1)}`,
+    `Overall Phase Rating (1-5),${data.overallPhaseRating.toFixed(2)}`,
     '',
     
     // Duration distribution
@@ -238,7 +306,13 @@ export function exportAnalyticsData(data: AnalyticsData, filters: any) {
     // Issue distribution
     'Issue Distribution',
     'Issue Type,Percentage,Count',
-    ...data.issueData.map(i => `${i.name},${i.value}%,${i.count}`)
+    ...data.issueData.map(i => `${i.name},${i.value}%,${i.count}`),
+    '',
+    
+    // Phase ratings
+    'Phase Ratings',
+    'Phase Name,Average Rating (1-5),Rating Count',
+    ...data.phaseRatingsData.map(p => `${p.phase},${p.avgRating},${p.count}`)
   ].join('\n');
 
   const blob = new Blob([csvContent], { type: 'text/csv' });
