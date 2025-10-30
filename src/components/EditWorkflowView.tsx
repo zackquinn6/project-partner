@@ -409,44 +409,53 @@ export default function EditWorkflowView({
           console.log('💾 SaveEdit: Cascading Standard Project changes to all templates...');
           toast.loading('Syncing standard phases to all project templates...', { id: 'cascade-sync' });
           
-          const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-standard-phases', {
-            method: 'POST',
-          });
-          
-          // Dismiss loading toast
-          toast.dismiss('cascade-sync');
-          
-          if (syncError) {
-            console.error('SaveEdit: Error cascading to templates:', syncError);
-            toast.error('Standard Project saved but cascade to templates failed', { 
-              description: 'Click "Sync Standard Phases" button in Admin Panel to manually sync',
-              duration: 6000,
+          try {
+            const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-standard-phases', {
+              method: 'POST',
             });
-          } else {
-            const result = syncResult as {
-              success: boolean;
-              templatesUpdated: number;
-              templatesFailed: number;
-            };
             
-            console.log('SaveEdit: Cascade completed:', result);
+            // Dismiss loading toast
+            toast.dismiss('cascade-sync');
             
-            // Invalidate projects cache to ensure users see latest template data
-            console.log('🔄 SaveEdit: Refreshing projects cache to show latest changes');
-            try {
-              // Trigger a cache refresh by dispatching a custom event
-              window.dispatchEvent(new CustomEvent('refetch-projects'));
-            } catch (e) {
-              console.error('Failed to trigger cache refresh:', e);
-            }
-            
-            toast.success(
-              `Changes cascaded to ${result.templatesUpdated} template(s)`,
-              { 
-                description: 'All project templates now have your latest standard phase changes',
-                duration: 5000,
+            if (syncError) {
+              console.error('SaveEdit: Error cascading to templates:', syncError);
+              toast.error('Standard Project saved but cascade to templates failed', { 
+                description: `Error: ${syncError.message || 'Unknown error'}. Click "Sync Standard Phases" button in Admin Panel to manually sync`,
+                duration: 10000,
+              });
+            } else {
+              const result = syncResult as {
+                success: boolean;
+                templatesUpdated: number;
+                templatesFailed: number;
+              };
+              
+              console.log('SaveEdit: Cascade completed:', result);
+              
+              // Invalidate projects cache to ensure users see latest template data
+              console.log('🔄 SaveEdit: Refreshing projects cache to show latest changes');
+              try {
+                // Trigger a cache refresh by dispatching a custom event
+                window.dispatchEvent(new CustomEvent('refetch-projects'));
+              } catch (e) {
+                console.error('Failed to trigger cache refresh:', e);
               }
-            );
+              
+              toast.success(
+                `Changes cascaded to ${result.templatesUpdated} template(s)`,
+                { 
+                  description: 'All project templates now have your latest standard phase changes',
+                  duration: 5000,
+                }
+              );
+            }
+          } catch (invokeError) {
+            console.error('SaveEdit: Exception calling sync function:', invokeError);
+            toast.dismiss('cascade-sync');
+            toast.error('Failed to call cascade function', {
+              description: `Error: ${invokeError.message || 'Unknown error'}. Try using "Sync Standard Phases" button in Admin Panel`,
+              duration: 10000,
+            });
           }
         }
       } catch (err) {

@@ -73,9 +73,20 @@ Deno.serve(async (req) => {
       details: [],
     };
 
-    // Note: Skip rebuilding Standard Project phases here since EditWorkflowView 
-    // already updated both phases JSON and template_steps before calling this function
-    result.details.push('Using current Standard Project phases (already updated by EditWorkflowView)');
+    // Rebuild Standard Project phases from template_steps to ensure phases JSON is current
+    console.log('SYNC: Rebuilding Standard Project phases JSON from template_steps...');
+    result.details.push('Rebuilding Standard Project phases JSON from template_steps...');
+    const { error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
+      p_project_id: standardProjectId
+    });
+
+    if (rebuildError) {
+      console.error('SYNC: Failed to rebuild Standard Project:', rebuildError);
+      throw new Error(`Failed to rebuild Standard Project: ${rebuildError.message}`);
+    }
+    
+    console.log('SYNC: ✓ Standard Project phases JSON rebuilt');
+    result.details.push('✓ Standard Project phases JSON rebuilt successfully');
 
     // Step 2: Get all project templates (not revisions, not Standard Project)
     const { data: templates, error: templatesError } = await supabase
@@ -158,6 +169,13 @@ Deno.serve(async (req) => {
             );
 
             if (matchingTemplateStep) {
+              // Log apps data for debugging
+              console.log(`SYNC: Updating step "${standardStep.step_title}" - Apps data:`, {
+                standardStepApps: standardStep.apps,
+                hasApps: !!standardStep.apps && Array.isArray(standardStep.apps) && standardStep.apps.length > 0,
+                templateStepId: matchingTemplateStep.id
+              });
+              
               // Update the template step with standard step data
               const { error: updateStepError } = await supabase
                 .from('template_steps')
@@ -179,19 +197,27 @@ Deno.serve(async (req) => {
 
               if (updateStepError) {
                 console.error(`SYNC: Failed to update step "${standardStep.step_title}":`, updateStepError);
+              } else {
+                console.log(`SYNC: ✓ Step "${standardStep.step_title}" updated successfully`);
               }
+            } else {
+              console.warn(`SYNC: No matching template step found for "${standardStep.step_title}" in template "${template.name}"`);
             }
           }
         }
 
         // Rebuild this template's phases JSON to reflect changes
+        console.log(`SYNC: Rebuilding phases JSON for template "${template.name}" (${template.id})`);
         const { error: templateRebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
           p_project_id: template.id
         });
 
         if (templateRebuildError) {
+          console.error(`SYNC: Rebuild failed for "${template.name}":`, templateRebuildError);
           throw new Error(templateRebuildError.message);
         }
+        
+        console.log(`SYNC: ✓ Phases JSON rebuilt for "${template.name}"`);
 
         // Update the template's updated_at timestamp
         const { error: updateError } = await supabase
