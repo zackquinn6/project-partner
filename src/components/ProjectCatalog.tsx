@@ -54,7 +54,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     addProject,
     addProjectRun,
     projects,
-    projectRuns
+    projectRuns,
+    fetchProjects
   } = useProject();
 
   // State for published projects when not authenticated
@@ -121,8 +122,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       };
       
       fetchPublicProjects();
+    } else if (user && !isAdminMode) {
+      // Refresh projects when catalog is opened to ensure latest revisions
+      fetchProjects();
     }
-  }, [user, isAdminMode]);
+  }, [user, isAdminMode, fetchProjects]);
 
   // Use appropriate projects based on authentication status
   const availableProjects = user ? projects : publicProjects;
