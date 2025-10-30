@@ -21,7 +21,7 @@ import ProjectListing from './ProjectListing';
 import { MobileProjectListing } from './MobileProjectListing';
 import { MobileWorkflowView } from './MobileWorkflowView';
 import { OutputDetailPopup } from './OutputDetailPopup';
-import { calculateProjectProgress, getWorkflowStepsCount, calculateWorkflowProgress } from '@/utils/progressCalculation';
+import { calculateProjectProgress, getWorkflowStepsCount } from '@/utils/progressCalculation';
 import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { PhaseRatingPopup } from './PhaseRatingPopup';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
@@ -671,9 +671,9 @@ export default function UserView({
           const allCompletedSteps = [...preservedKickoffSteps, ...workflowCompletedSteps];
           const uniqueCompletedSteps = [...new Set(allCompletedSteps)];
           
-          // Use the centralized progress calculation utility
+          // Use the centralized progress calculation utility (includes ALL steps)
           const tempProjectRun = { ...currentProjectRun, completedSteps: uniqueCompletedSteps };
-          const calculatedProgress = calculateWorkflowProgress(tempProjectRun);
+          const calculatedProgress = calculateProjectProgress(tempProjectRun);
           
           const updatedProjectRun = {
             ...currentProjectRun,
