@@ -31,7 +31,6 @@ import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
 import { MaterialsSelectionDialog } from './MaterialsSelectionDialog';
 import { KickoffWorkflow } from './KickoffWorkflow';
 import { UnplannedWorkWindow } from './UnplannedWorkWindow';
-import { CompletionCertificate } from './CompletionCertificate';
 import { ProjectSurvey } from './ProjectSurvey';
 import { ToolsMaterialsSection } from './ToolsMaterialsSection';
 import ProfileManager from './ProfileManager';
@@ -50,7 +49,6 @@ import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
 import { MobileDIYDropdown } from './MobileDIYDropdown';
 import { ProjectCompletionHandler } from './ProjectCompletionHandler';
-import { ProjectCertificateDialog } from './ProjectCertificateDialog';
 import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 interface UserViewProps {
@@ -126,7 +124,6 @@ export default function UserView({
 
   // New windows state
   const [unplannedWorkOpen, setUnplannedWorkOpen] = useState(false);
-  const [completionCertificateOpen, setCompletionCertificateOpen] = useState(false);
   const [projectSurveyOpen, setProjectSurveyOpen] = useState(false);
   const [decisionRollupOpen, setDecisionRollupOpen] = useState(false);
   const [decisionRollupMode, setDecisionRollupMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work'>('initial-plan');
@@ -775,8 +772,6 @@ export default function UserView({
           handleNext();
         } else {
           console.log("🎯 All steps completed! Project finished.");
-          // Trigger completion certificate and survey
-          setCompletionCertificateOpen(true);
         }
       } else {
         console.log("❌ Cannot complete step - not all outputs are completed");
@@ -2232,18 +2227,6 @@ export default function UserView({
           onOpenChange={setProjectSchedulerOpen}
           project={activeProject as Project}
           projectRun={currentProjectRun}
-        />
-      )}
-
-      {/* Completion Certificate */}
-      {currentProjectRun && (
-        <CompletionCertificate
-          isOpen={completionCertificateOpen}
-          onClose={() => setCompletionCertificateOpen(false)}
-          projectName={currentProjectRun.name}
-          startDate={currentProjectRun.startDate}
-          endDate={currentProjectRun.endDate || new Date()}
-          projectLeader={currentProjectRun.projectLeader}
         />
       )}
       
