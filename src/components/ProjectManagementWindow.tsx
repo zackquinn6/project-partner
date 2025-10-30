@@ -346,179 +346,47 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     if (!currentProject) return;
     
     const revisionNotes = window.prompt('Enter revision notes and summary of changes:');
-    if (revisionNotes === null) return; // User cancelled
+    if (revisionNotes === null) return;
     
     try {
-      // CRITICAL: Validate phases before creating revision
-      const phaseCount = currentProject.phases?.length || 0;
-      if (phaseCount === 0) {
-        toast.error('Cannot create revision: Project has no phases');
-        return;
-      }
-
-      console.log('🔄 Creating new revision from project:', {
-        currentId: currentProject.id,
-        currentName: currentProject.name,
-        currentRevision: currentProject.revisionNumber,
-        phasesCount: phaseCount,
-        phases: currentProject.phases?.map(p => ({ id: p.id, name: p.name, opsCount: p.operations?.length }))
-      });
-
-      // Log pre-sync phase analysis
-      console.log('🔍 Pre-sync phase analysis:', {
-        totalPhases: currentProject.phases.length,
-        standardPhases: currentProject.phases.filter(p => p.isStandard).map(p => p.name),
-        customPhases: currentProject.phases.filter(p => !p.isStandard).map(p => p.name)
-      });
-
-      // Step 1: Sync phases JSONB to normalized template tables
-      // This ensures custom phases are saved to template_operations/template_steps
-      console.log('📥 Syncing phases to template tables...');
-      const { error: syncError } = await supabase.rpc('sync_phases_to_templates', {
-        p_project_id: currentProject.id
-      });
-
-      if (syncError) {
-        console.error('Error syncing phases:', syncError);
-        toast.error('Failed to sync phases. Please try again.');
-        throw syncError;
-      }
-
-      console.log('✅ Phases synced to template tables');
-
-      // Verify template_operations after sync
-      const { data: opsData } = await supabase
-        .from('template_operations')
-        .select('id, name, standard_phase_id, custom_phase_name')
-        .eq('project_id', currentProject.id);
-
-      console.log('📊 Template operations after sync:', {
-        totalOps: opsData?.length,
-        standardOps: opsData?.filter(op => op.standard_phase_id !== null).length,
-        customOps: opsData?.filter(op => op.custom_phase_name !== null).length,
-        customPhaseNames: [...new Set(opsData?.filter(op => op.custom_phase_name).map(op => op.custom_phase_name))]
-      });
-
-      // Step 2: Create revision using database function
-      // This properly copies from template_operations/template_steps and rebuilds phases JSONB
-      console.log('📝 Creating revision via database function...');
-      const { data: newRevisionId, error: revisionError } = await supabase.rpc('create_project_revision', {
+      console.log('🔄 Creating revision from project:', currentProject.id);
+      
+      // Simple revision creation - just copy everything as-is
+      const { data: newRevisionId, error } = await supabase.rpc('create_project_revision', {
         source_project_id: currentProject.id,
         revision_notes_text: revisionNotes || null
       });
-
-      if (revisionError) {
-        console.error('Error creating revision:', revisionError);
-        toast.error('Failed to create revision. Please try again.');
-        throw revisionError;
+      
+      if (error) {
+        console.error('Error creating revision:', error);
+        toast.error('Failed to create revision');
+        return;
       }
-
-      console.log('✅ Revision created with ID:', newRevisionId);
-
-      // Verify template_operations in new revision
-      const { data: newOpsData } = await supabase
-        .from('template_operations')
-        .select('id, name, standard_phase_id, custom_phase_name')
-        .eq('project_id', newRevisionId);
-
-      console.log('📊 Template operations in new revision:', {
-        totalOps: newOpsData?.length,
-        standardOps: newOpsData?.filter(op => op.standard_phase_id !== null).length,
-        customOps: newOpsData?.filter(op => op.custom_phase_name !== null).length,
-        customPhaseNames: [...new Set(newOpsData?.filter(op => op.custom_phase_name).map(op => op.custom_phase_name))]
-      });
-
-      // Step 3: Fetch the newly created revision
-      const { data: newRevisionData, error: fetchError } = await supabase
+      
+      // Fetch the new revision
+      const { data: newRevision, error: fetchError } = await supabase
         .from('projects')
         .select('*')
         .eq('id', newRevisionId)
         .single();
-
-      if (fetchError) {
-        console.error('Error fetching new revision:', fetchError);
-        throw fetchError;
-      }
-
-      // Parse phases from the returned data
-      let parsedPhases = [];
-      try {
-        parsedPhases = typeof newRevisionData.phases === 'string' 
-          ? JSON.parse(newRevisionData.phases) 
-          : newRevisionData.phases || [];
-      } catch (e) {
-        console.error('Failed to parse phases:', e);
-        parsedPhases = [];
-      }
-
-      // CRITICAL: Verify phase count matches
-      const newPhaseCount = parsedPhases.length;
-      if (newPhaseCount !== phaseCount) {
-        console.error('❌ PHASE LOSS DETECTED:', {
-          originalCount: phaseCount,
-          newCount: newPhaseCount,
-          lost: phaseCount - newPhaseCount,
-          originalPhases: currentProject.phases?.map(p => p.name),
-          newPhases: parsedPhases.map((p: any) => p.name)
-        });
-        toast.error(`Phase loss detected! Expected ${phaseCount} phases but got ${newPhaseCount}`);
-      } else {
-        console.log('✅ All phases preserved:', {
-          phaseCount: newPhaseCount,
-          phaseNames: parsedPhases.map((p: any) => p.name)
-        });
-      }
-
-      // Step 4: Construct the new project object
-      const newRevisionProject: Project = {
-        id: newRevisionData.id,
-        name: newRevisionData.name,
-        description: newRevisionData.description || '',
-        diyLengthChallenges: newRevisionData.diy_length_challenges,
-        image: newRevisionData.image,
-        images: newRevisionData.images,
-        cover_image: newRevisionData.cover_image,
-        createdAt: new Date(newRevisionData.created_at),
-        updatedAt: new Date(newRevisionData.updated_at),
-        startDate: new Date(newRevisionData.start_date),
-        planEndDate: new Date(newRevisionData.plan_end_date),
-        endDate: newRevisionData.end_date ? new Date(newRevisionData.end_date) : undefined,
-        status: newRevisionData.status as 'not-started' | 'in-progress' | 'complete',
-        publishStatus: newRevisionData.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived',
-        category: newRevisionData.category,
-        effortLevel: newRevisionData.effort_level as Project['effortLevel'],
-        skillLevel: newRevisionData.skill_level as Project['skillLevel'],
-        estimatedTime: newRevisionData.estimated_time,
-        estimatedTimePerUnit: newRevisionData.estimated_time_per_unit,
-        scalingUnit: newRevisionData.scaling_unit as Project['scalingUnit'],
-        phases: parsedPhases,
-        parentProjectId: newRevisionData.parent_project_id,
-        revisionNumber: newRevisionData.revision_number,
-        revisionNotes: newRevisionData.revision_notes,
-        createdFromRevision: newRevisionData.created_from_revision,
-        isStandardTemplate: newRevisionData.is_standard_template
-      };
-
-      // Set the new revision as current project
-      setCurrentProject(newRevisionProject);
       
-      // Update projects cache
-      const updatedProjects = projects.map(p => 
-        p.id === currentProject.id 
-          ? { ...p, is_current_version: false }
-          : p
-      ).concat([newRevisionProject]);
-      updateProjectsCache(updatedProjects);
-
-      console.log('✅ Projects cache updated with new revision');
-
-      // Deferred refetch to sync with server
-      setTimeout(() => {
-        console.log('🔄 Syncing projects from server...');
-        fetchProjects();
-      }, 500);
-
-      toast.success(`Revision ${newRevisionData.revision_number} created successfully with all phases preserved`);
+      if (fetchError || !newRevision) {
+        console.error('Error fetching revision:', fetchError);
+        toast.error('Revision created but failed to load');
+        return;
+      }
+      
+      // Parse phases
+      const parsedPhases = typeof newRevision.phases === 'string' 
+        ? JSON.parse(newRevision.phases) 
+        : newRevision.phases || [];
+      
+      console.log('✅ Revision created with', parsedPhases.length, 'phases');
+      
+      toast.success(`Revision ${newRevision.revision_number} created successfully`);
+      
+      // Refresh projects
+      fetchProjects();
       
     } catch (error) {
       console.error('❌ Error creating revision:', error);
@@ -903,7 +771,30 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
             </div>
             {currentProject && (
               <div className="flex gap-2 mt-4 pt-4 border-t">
-                <Button onClick={() => setEditingProject(false)} className="bg-green-600 hover:bg-green-700 text-white">
+                <Button 
+                  onClick={async () => {
+                    if (!currentProject) return;
+                    
+                    // Save phases JSONB directly to database
+                    const { error } = await supabase
+                      .from('projects')
+                      .update({ 
+                        phases: currentProject.phases as any,
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq('id', currentProject.id);
+                    
+                    if (error) {
+                      console.error('Error saving phases:', error);
+                      toast.error('Failed to save changes');
+                      return;
+                    }
+                    
+                    toast.success('Changes saved successfully');
+                    setEditingProject(false);
+                  }} 
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
                   <Check className="w-4 h-4 mr-2" />
                   Done Editing
                 </Button>
