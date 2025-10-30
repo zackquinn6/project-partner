@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown } from "lucide-react";
 import { useProject } from '@/contexts/ProjectContext';
+import { calculateWorkflowProgress } from '@/utils/progressCalculation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useMembership } from '@/contexts/MembershipContext';
@@ -246,7 +247,7 @@ export default function Navigation({
                   {activeProjectRuns.length > 0 ? activeProjectRuns.map(run => <DropdownMenuItem key={run.id} onClick={() => handleProjectSelect(run.id)} className="flex flex-col items-start py-3">
                         <div className="font-medium text-sm">{run.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {Math.round(run.progress || 0)}% complete
+                          {calculateWorkflowProgress(run)}% complete
                         </div>
                       </DropdownMenuItem>) : <DropdownMenuItem disabled className="text-muted-foreground italic">
                       No active projects

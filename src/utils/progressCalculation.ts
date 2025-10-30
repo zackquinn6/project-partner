@@ -30,6 +30,36 @@ export function calculateProjectProgress(projectRun: ProjectRun): number {
 }
 
 /**
+ * Calculate workflow progress (EXCLUDING standard phases like Kickoff, Planning, Ordering, Close Project)
+ * This is the correct progress shown to users for actual project work
+ */
+export function calculateWorkflowProgress(projectRun: ProjectRun): number {
+  if (!projectRun.phases || projectRun.phases.length === 0) {
+    return 0;
+  }
+  
+  // Only count non-standard phases
+  const workflowPhases = projectRun.phases.filter(phase => phase.isStandard !== true);
+  
+  // Count total steps in workflow phases only
+  const totalSteps = workflowPhases.reduce((sum, phase) => 
+    sum + (phase.operations?.reduce((opSum, op) => 
+      opSum + (op.steps?.length || 0), 0) || 0), 0);
+  
+  if (totalSteps === 0) {
+    return 0;
+  }
+  
+  // Count completed steps in workflow phases only
+  const completedStepIds = new Set(projectRun.completedSteps || []);
+  const completedSteps = workflowPhases.reduce((sum, phase) => 
+    sum + (phase.operations?.reduce((opSum, op) => 
+      opSum + (op.steps?.filter(step => completedStepIds.has(step.id)).length || 0), 0) || 0), 0);
+  
+  return Math.round((completedSteps / totalSteps) * 100);
+}
+
+/**
  * Get all steps count (including standard phases)
  */
 export function getWorkflowStepsCount(projectRun: ProjectRun): { total: number; completed: number } {
@@ -37,12 +67,15 @@ export function getWorkflowStepsCount(projectRun: ProjectRun): { total: number; 
     return { total: 0, completed: 0 };
   }
   
-  const total = projectRun.phases.reduce((sum, phase) => 
+  // Only count non-standard phases for workflow progress
+  const workflowPhases = projectRun.phases.filter(phase => phase.isStandard !== true);
+  
+  const total = workflowPhases.reduce((sum, phase) => 
     sum + (phase.operations?.reduce((opSum, op) => 
       opSum + (op.steps?.length || 0), 0) || 0), 0);
   
   const completedStepIds = new Set(projectRun.completedSteps || []);
-  const completed = projectRun.phases.reduce((sum, phase) => 
+  const completed = workflowPhases.reduce((sum, phase) => 
     sum + (phase.operations?.reduce((opSum, op) => 
       opSum + (op.steps?.filter(step => completedStepIds.has(step.id)).length || 0), 0) || 0), 0);
   

@@ -21,7 +21,7 @@ import ProjectListing from './ProjectListing';
 import { MobileProjectListing } from './MobileProjectListing';
 import { MobileWorkflowView } from './MobileWorkflowView';
 import { OutputDetailPopup } from './OutputDetailPopup';
-import { calculateProjectProgress, getWorkflowStepsCount } from '@/utils/progressCalculation';
+import { calculateProjectProgress, getWorkflowStepsCount, calculateWorkflowProgress } from '@/utils/progressCalculation';
 import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { PhaseRatingPopup } from './PhaseRatingPopup';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
@@ -274,8 +274,8 @@ export default function UserView({
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
   
-  // Initialize completed steps from project run data
-  // CRITICAL: Re-initialize whenever currentProjectRun changes, but NOT during step completion
+  // Initialize completed steps from project run data ONLY on project change
+  // CRITICAL: Do NOT sync on completedSteps changes to prevent infinite loop
   useEffect(() => {
     // Don't overwrite local state while completing a step
     if (isCompletingStepRef.current) {
@@ -313,7 +313,7 @@ export default function UserView({
       console.log("🔄 UserView: Clearing completed steps for new project run");
       setCompletedSteps(new Set());
     }
-  }, [currentProjectRun?.id, currentProjectRun?.completedSteps, allSteps.length]);
+  }, [currentProjectRun?.id]); // CRITICAL FIX: Only depend on project ID, not completedSteps
   
   // Navigate to first incomplete step when workflow opens - ENHANCED DEBUG VERSION
   useEffect(() => {
@@ -452,6 +452,7 @@ export default function UserView({
   const currentStep = allSteps[currentStepIndex];
   
   // CRITICAL FIX: Calculate progress from actual workflow steps using unified utility
+  // This ensures consistent progress calculation everywhere
   const { total: totalSteps, completed: completedStepsCount } = currentProjectRun 
     ? getWorkflowStepsCount(currentProjectRun) 
     : { total: 0, completed: 0 };
@@ -482,35 +483,9 @@ export default function UserView({
     hasApps: !!currentStep?.apps
   });
   
-  // Update project run progress whenever completed steps change - BUT NOT during kickoff
-  useEffect(() => {
-    // CRITICAL: Don't update progress during kickoff phase - it overwrites kickoff steps!
-    if (currentProjectRun && allSteps.length > 0 && isKickoffComplete) {
-      const calculatedProgress = completedSteps.size / allSteps.length * 100;
-      if (Math.abs(calculatedProgress - (currentProjectRun.progress || 0)) > 0.1) {
-        console.log("📊 UserView: Updating progress for workflow steps (NOT during kickoff)");
-        
-        // NEVER overwrite kickoff step completion data - FIX: Properly deduplicate
-        const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
-        const preservedKickoffSteps = currentProjectRun.completedSteps.filter(stepId => 
-          kickoffStepIds.includes(stepId)
-        );
-        
-        // Create unique array without duplicates
-        const uniqueCompletedSteps = [...new Set([...preservedKickoffSteps, ...Array.from(completedSteps)])];
-        
-        const updatedProjectRun = {
-          ...currentProjectRun,
-          progress: Math.round(calculatedProgress),
-          completedSteps: uniqueCompletedSteps,
-          updatedAt: new Date()
-        };
-        updateProjectRun(updatedProjectRun);
-      }
-    } else if (currentProjectRun && !isKickoffComplete) {
-      console.log("⚠️ UserView: Skipping progress update during kickoff phase");
-    }
-  }, [completedSteps, currentProjectRun, allSteps.length, updateProjectRun, isKickoffComplete]);
+  // CRITICAL: Update database progress to match calculated progress
+  // Remove the automatic progress update - it causes infinite loops
+  // Progress will be updated only when steps are completed in handleStepComplete
   const handleNext = () => {
     if (currentStepIndex < allSteps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
@@ -696,8 +671,9 @@ export default function UserView({
           const allCompletedSteps = [...preservedKickoffSteps, ...workflowCompletedSteps];
           const uniqueCompletedSteps = [...new Set(allCompletedSteps)];
           
-          const totalSteps = allSteps.length;
-          const calculatedProgress = (workflowCompletedSteps.length / totalSteps) * 100;
+          // Use the centralized progress calculation utility
+          const tempProjectRun = { ...currentProjectRun, completedSteps: uniqueCompletedSteps };
+          const calculatedProgress = calculateWorkflowProgress(tempProjectRun);
           
           const updatedProjectRun = {
             ...currentProjectRun,
@@ -709,7 +685,7 @@ export default function UserView({
           console.log("🎯 Immediately persisting step completion:", {
             stepId: currentStep.id,
             newCompletedSteps: uniqueCompletedSteps,
-            progress: Math.round(calculatedProgress)
+            progress: calculatedProgress
           });
           
           // CRITICAL: Wait for database update to complete before clearing flag
