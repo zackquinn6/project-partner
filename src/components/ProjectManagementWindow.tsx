@@ -345,12 +345,20 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     if (revisionNotes === null) return; // User cancelled
     
     try {
+      // CRITICAL: Validate phases before creating revision
+      const phaseCount = currentProject.phases?.length || 0;
+      if (phaseCount === 0) {
+        toast.error('Cannot create revision: Project has no phases');
+        return;
+      }
+
       console.log('🔄 Creating new revision from project:', {
         currentId: currentProject.id,
         currentName: currentProject.name,
         currentRevision: currentProject.revisionNumber,
-        phasesCount: currentProject.phases?.length,
-        phases: currentProject.phases?.map(p => ({ id: p.id, name: p.name, opsCount: p.operations?.length }))
+        phasesCount: phaseCount,
+        phases: currentProject.phases?.map(p => ({ id: p.id, name: p.name, opsCount: p.operations?.length })),
+        phasesToSave: JSON.stringify(currentProject.phases).substring(0, 200) + '...'
       });
 
       // Step 1: Mark current version as not current
@@ -417,6 +425,17 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       } catch (e) {
         console.error('Failed to parse phases:', e);
         parsedPhases = [];
+      }
+
+      // CRITICAL: Verify phase count matches
+      if (parsedPhases.length !== phaseCount) {
+        console.error('❌ PHASE LOSS DETECTED:', {
+          originalCount: phaseCount,
+          savedCount: parsedPhases.length,
+          lost: phaseCount - parsedPhases.length
+        });
+        toast.error(`Phase loss detected! Expected ${phaseCount} phases but saved ${parsedPhases.length}`);
+        // Still continue but alert user
       }
 
       console.log('✅ New revision created:', {

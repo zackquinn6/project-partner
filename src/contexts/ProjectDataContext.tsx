@@ -194,19 +194,20 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
       
       try {
         const enriched = await Promise.all(projects.map(async (project) => {
-          // If project already has complete phases JSON with steps, use it as-is
-          // Don't overwrite with data from template_steps which might be outdated
+          // CRITICAL: If project has ANY phases in JSON, use them as-is
+          // NEVER overwrite existing phases with normalized table data
+          // Enrichment should ONLY run for legacy projects with NO phases JSON
           if (project.phases && project.phases.length > 0) {
-            const hasCompleteData = project.phases.some(phase => 
-              phase.operations && phase.operations.length > 0 &&
-              phase.operations.some(op => op.steps && op.steps.length > 0)
-            );
-            
-            if (hasCompleteData) {
-              console.log('✅ Using existing phases JSON for project:', project.name);
-              return project;
-            }
+            console.log('✅ Using existing phases JSON for project (skipping enrichment):', {
+              projectName: project.name,
+              phaseCount: project.phases.length,
+              phaseNames: project.phases.map(p => p.name)
+            });
+            return project;
           }
+          
+          // Only enrich projects with NO phases JSON at all
+          console.log('⚠️ Project has no phases JSON, attempting enrichment:', project.name);
           
           // Try to load from normalized tables (for projects without phases JSON)
           try {
