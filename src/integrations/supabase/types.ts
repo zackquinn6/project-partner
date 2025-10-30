@@ -2711,42 +2711,54 @@ export type Database = {
         Row: {
           alternate_group: string | null
           created_at: string | null
+          custom_phase_description: string | null
+          custom_phase_display_order: number | null
+          custom_phase_name: string | null
           dependent_on: string | null
           description: string | null
           display_order: number
           flow_type: string | null
           id: string
+          is_custom_phase: boolean | null
           name: string
           project_id: string
-          standard_phase_id: string
+          standard_phase_id: string | null
           updated_at: string | null
           user_prompt: string | null
         }
         Insert: {
           alternate_group?: string | null
           created_at?: string | null
+          custom_phase_description?: string | null
+          custom_phase_display_order?: number | null
+          custom_phase_name?: string | null
           dependent_on?: string | null
           description?: string | null
           display_order?: number
           flow_type?: string | null
           id?: string
+          is_custom_phase?: boolean | null
           name: string
           project_id: string
-          standard_phase_id: string
+          standard_phase_id?: string | null
           updated_at?: string | null
           user_prompt?: string | null
         }
         Update: {
           alternate_group?: string | null
           created_at?: string | null
+          custom_phase_description?: string | null
+          custom_phase_display_order?: number | null
+          custom_phase_name?: string | null
           dependent_on?: string | null
           description?: string | null
           display_order?: number
           flow_type?: string | null
           id?: string
+          is_custom_phase?: boolean | null
           name?: string
           project_id?: string
-          standard_phase_id?: string
+          standard_phase_id?: string | null
           updated_at?: string | null
           user_prompt?: string | null
         }
@@ -3678,6 +3690,14 @@ export type Database = {
       sync_phases_to_templates: {
         Args: { p_project_id: string }
         Returns: undefined
+      }
+      test_custom_phase_revision_preservation: {
+        Args: never
+        Returns: {
+          details: string
+          passed: boolean
+          test_name: string
+        }[]
       }
       update_phase_revision_alert: {
         Args: { p_action: string; p_phase_id: string; p_project_id: string }
