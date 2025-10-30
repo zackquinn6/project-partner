@@ -1452,6 +1452,7 @@ export type Database = {
       }
       materials: {
         Row: {
+          alternates: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -1462,6 +1463,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alternates?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1472,6 +1474,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alternates?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2882,6 +2885,7 @@ export type Database = {
       }
       tools: {
         Row: {
+          alternates: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -2892,6 +2896,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alternates?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2902,6 +2907,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alternates?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null

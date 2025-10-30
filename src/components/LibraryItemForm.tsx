@@ -8,6 +8,7 @@ import { Upload, X, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VariationManager } from './VariationManager';
+import { AlternatesEditor } from './AlternatesEditor';
 
 interface LibraryItemFormProps {
   type: 'tools' | 'materials';
@@ -22,6 +23,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
     description: item?.description || '',
     example_models: item?.example_models || '', // for tools
     unit_size: item?.unit_size || '', // for materials
+    alternates: item?.alternates || '', // JSON string of alternates
   });
   const [uploading, setUploading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(item?.photo_url || '');
@@ -96,6 +98,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         item: formData.item.trim(),
         description: formData.description.trim() || null,
         photo_url: finalPhotoUrl || null,
+        alternates: formData.alternates || null,
         ...(type === 'tools' && { 
           example_models: formData.example_models.trim() || null 
         }),
@@ -194,6 +197,14 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
               />
             </div>
           )}
+
+          <div>
+            <AlternatesEditor
+              value={formData.alternates}
+              onChange={(value) => setFormData({ ...formData, alternates: value })}
+              itemType={type === 'tools' ? 'tool' : 'material'}
+            />
+          </div>
 
           <div>
             <Label>Photo</Label>
