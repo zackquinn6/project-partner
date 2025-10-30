@@ -40,6 +40,7 @@ import { DecisionRollupWindow } from './DecisionRollupWindow';
 import { KeyCharacteristicsWindow } from './KeyCharacteristicsWindow';
 import { ProjectCustomizer } from './ProjectCustomizer/ProjectCustomizer';
 import { ProjectScheduler } from './ProjectScheduler';
+import { ScaledStepProgressDialog } from './ScaledStepProgressDialog';
 import { MultiContentRenderer } from './MultiContentRenderer';
 import { CompactAppsSection } from './CompactAppsSection';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -140,6 +141,8 @@ export default function UserView({
   const [homeManagerOpen, setHomeManagerOpen] = useState(false);
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
+  const [scaledProgressDialogOpen, setScaledProgressDialogOpen] = useState(false);
+  const [currentScaledStep, setCurrentScaledStep] = useState<{ id: string; title: string } | null>(null);
   const [selectedMaterialsForShopping, setSelectedMaterialsForShopping] = useState<{
     materials: any[];
     tools: any[];
@@ -1791,10 +1794,26 @@ export default function UserView({
                 <div className="flex items-center gap-3">
                   {currentStep && !completedSteps.has(currentStep.id) && (
                     areAllOutputsCompleted(currentStep) ? (
-                      <Button onClick={handleStepComplete} className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth">
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Mark Complete
-                      </Button>
+                      currentStep.stepType === 'scaled' ? (
+                        <Button 
+                          onClick={() => {
+                            setCurrentScaledStep({
+                              id: currentStep.id,
+                              title: currentStep.step
+                            });
+                            setScaledProgressDialogOpen(true);
+                          }}
+                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Report Progress
+                        </Button>
+                      ) : (
+                        <Button onClick={handleStepComplete} className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Mark Complete
+                        </Button>
+                      )
                     ) : (
                       <Button 
                         disabled 
@@ -2303,6 +2322,18 @@ export default function UserView({
         open={projectPerformanceOpen}
         onOpenChange={setProjectPerformanceOpen}
       />
+
+      {/* Scaled Step Progress Dialog */}
+      {currentScaledStep && currentProjectRun && (
+        <ScaledStepProgressDialog
+          open={scaledProgressDialogOpen}
+          onOpenChange={setScaledProgressDialogOpen}
+          projectRunId={currentProjectRun.id}
+          stepId={currentScaledStep.id}
+          stepTitle={currentScaledStep.title}
+          onProgressComplete={handleStepComplete}
+        />
+      )}
     </>
   );
 }

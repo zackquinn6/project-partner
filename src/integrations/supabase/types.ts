@@ -799,6 +799,7 @@ export type Database = {
           notes: string | null
           space_name: string
           space_type: string
+          square_footage: number | null
           updated_at: string
         }
         Insert: {
@@ -809,6 +810,7 @@ export type Database = {
           notes?: string | null
           space_name: string
           space_type?: string
+          square_footage?: number | null
           updated_at?: string
         }
         Update: {
@@ -819,6 +821,7 @@ export type Database = {
           notes?: string | null
           space_name?: string
           space_type?: string
+          square_footage?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -2123,6 +2126,53 @@ export type Database = {
           },
         ]
       }
+      project_run_spaces: {
+        Row: {
+          created_at: string
+          home_space_id: string | null
+          id: string
+          is_from_home: boolean
+          project_run_id: string
+          scale_unit: string | null
+          scale_value: number | null
+          space_name: string
+          space_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          home_space_id?: string | null
+          id?: string
+          is_from_home?: boolean
+          project_run_id: string
+          scale_unit?: string | null
+          scale_value?: number | null
+          space_name: string
+          space_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          home_space_id?: string | null
+          id?: string
+          is_from_home?: boolean
+          project_run_id?: string
+          scale_unit?: string | null
+          scale_value?: number | null
+          space_name?: string
+          space_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_spaces_home_space_id_fkey"
+            columns: ["home_space_id"]
+            isOneToOne: false
+            referencedRelation: "home_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_run_steps: {
         Row: {
           completed_at: string | null
@@ -2472,6 +2522,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      scaled_step_progress: {
+        Row: {
+          created_at: string
+          id: string
+          progress_percentage: number
+          project_run_id: string
+          space_id: string
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          progress_percentage?: number
+          project_run_id: string
+          space_id: string
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          progress_percentage?: number
+          project_run_id?: string
+          space_id?: string
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scaled_step_progress_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "project_run_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_events_log: {
         Row: {

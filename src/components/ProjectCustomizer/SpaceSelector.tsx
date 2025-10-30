@@ -9,7 +9,7 @@ import { Plus, Home, X, Edit2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
-interface ProjectSpace {
+export interface ProjectSpace {
   id: string;
   name: string;
   spaceType: string;
@@ -19,7 +19,8 @@ interface ProjectSpace {
   isFromHome: boolean;
 }
 
-interface SpaceSelectorProps {
+export interface SpaceSelectorProps {
+  projectRunId: string;
   projectRunHomeId?: string;
   selectedSpaces: ProjectSpace[];
   onSpacesChange: (spaces: ProjectSpace[]) => void;
@@ -27,6 +28,7 @@ interface SpaceSelectorProps {
 }
 
 export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
+  projectRunId,
   projectRunHomeId,
   selectedSpaces,
   onSpacesChange,
@@ -60,7 +62,16 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
     setHomeSpaces(data || []);
   };
 
-  const handleAddHomeSpace = (homeSpace: any) => {
+  const handleAddHomeSpace = async (homeSpace: any) => {
+    if (!projectRunId) {
+      toast({
+        title: "Error",
+        description: "No project run ID available",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const spaceId = `home-space-${homeSpace.id}`;
     
     if (selectedSpaces.find(s => s.id === spaceId)) {
@@ -72,24 +83,50 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       return;
     }
 
-    const newSpace: ProjectSpace = {
-      id: spaceId,
-      name: homeSpace.space_name,
-      spaceType: homeSpace.space_type || 'room',
-      homeSpaceId: homeSpace.id,
-      scaleValue: homeSpace.square_footage,
-      scaleUnit: projectScaleUnit,
-      isFromHome: true
-    };
+    try {
+      // Save to database
+      const { data, error } = await supabase
+        .from('project_run_spaces')
+        .insert({
+          project_run_id: projectRunId,
+          home_space_id: homeSpace.id,
+          space_name: homeSpace.space_name,
+          space_type: homeSpace.space_type || 'room',
+          scale_value: homeSpace.square_footage,
+          scale_unit: projectScaleUnit,
+          is_from_home: true
+        })
+        .select()
+        .single();
 
-    onSpacesChange([...selectedSpaces, newSpace]);
-    toast({
-      title: "Space added",
-      description: `${homeSpace.space_name} added to project`
-    });
+      if (error) throw error;
+
+      const newSpace: ProjectSpace = {
+        id: data.id,
+        name: data.space_name,
+        spaceType: data.space_type,
+        homeSpaceId: homeSpace.id,
+        scaleValue: data.scale_value,
+        scaleUnit: projectScaleUnit,
+        isFromHome: true
+      };
+
+      onSpacesChange([...selectedSpaces, newSpace]);
+      toast({
+        title: "Space added",
+        description: `${homeSpace.space_name} added to project`
+      });
+    } catch (error) {
+      console.error('Error adding home space:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add space to project",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleAddCustomSpace = () => {
+  const handleAddCustomSpace = async () => {
     if (!customSpaceName.trim()) {
       toast({
         title: "Name required",
@@ -99,38 +136,109 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       return;
     }
 
-    const spaceId = `custom-space-${Date.now()}`;
-    const newSpace: ProjectSpace = {
-      id: spaceId,
-      name: customSpaceName,
-      spaceType: customSpaceType || 'custom',
-      scaleValue: customScaleValue,
-      scaleUnit: projectScaleUnit,
-      isFromHome: false
-    };
+    if (!projectRunId) {
+      toast({
+        title: "Error",
+        description: "No project run ID available",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    onSpacesChange([...selectedSpaces, newSpace]);
-    setCustomSpaceName('');
-    setCustomSpaceType('');
-    setCustomScaleValue(undefined);
-    setShowCustomSpaceForm(false);
-    
-    toast({
-      title: "Custom space added",
-      description: `${customSpaceName} added to project`
-    });
+    try {
+      // Save to database
+      const { data, error } = await supabase
+        .from('project_run_spaces')
+        .insert({
+          project_run_id: projectRunId,
+          space_name: customSpaceName,
+          space_type: customSpaceType || 'custom',
+          scale_value: customScaleValue,
+          scale_unit: projectScaleUnit,
+          is_from_home: false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newSpace: ProjectSpace = {
+        id: data.id,
+        name: data.space_name,
+        spaceType: data.space_type,
+        scaleValue: data.scale_value,
+        scaleUnit: projectScaleUnit,
+        isFromHome: false
+      };
+
+      onSpacesChange([...selectedSpaces, newSpace]);
+      setCustomSpaceName('');
+      setCustomSpaceType('');
+      setCustomScaleValue(undefined);
+      setShowCustomSpaceForm(false);
+      
+      toast({
+        title: "Custom space added",
+        description: `${customSpaceName} added to project`
+      });
+    } catch (error) {
+      console.error('Error adding custom space:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add custom space",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleRemoveSpace = (spaceId: string) => {
-    onSpacesChange(selectedSpaces.filter(s => s.id !== spaceId));
+  const handleRemoveSpace = async (spaceId: string) => {
+    try {
+      // Delete from database
+      const { error } = await supabase
+        .from('project_run_spaces')
+        .delete()
+        .eq('id', spaceId);
+
+      if (error) throw error;
+
+      onSpacesChange(selectedSpaces.filter(s => s.id !== spaceId));
+      toast({
+        title: "Space removed",
+        description: "Space removed from project"
+      });
+    } catch (error) {
+      console.error('Error removing space:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove space",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleUpdateScaleValue = (spaceId: string, value: number) => {
-    onSpacesChange(
-      selectedSpaces.map(s => 
-        s.id === spaceId ? { ...s, scaleValue: value } : s
-      )
-    );
+  const handleUpdateScaleValue = async (spaceId: string, value: number) => {
+    try {
+      // Update in database
+      const { error } = await supabase
+        .from('project_run_spaces')
+        .update({ scale_value: value })
+        .eq('id', spaceId);
+
+      if (error) throw error;
+
+      onSpacesChange(
+        selectedSpaces.map(s => 
+          s.id === spaceId ? { ...s, scaleValue: value } : s
+        )
+      );
+    } catch (error) {
+      console.error('Error updating scale value:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update scale value",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

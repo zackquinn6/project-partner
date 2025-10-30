@@ -412,6 +412,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 <ScrollArea className="h-full">
                   <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4`}>
                     <SpaceSelector
+                      projectRunId={currentProjectRun.id}
                       projectRunHomeId={currentProjectRun.home_id}
                       selectedSpaces={customizationState.spaces}
                       onSpacesChange={handleSpacesChange}
