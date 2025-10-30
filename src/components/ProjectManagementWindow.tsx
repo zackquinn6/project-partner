@@ -17,6 +17,8 @@ import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrenc
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollableDialog } from "@/components/ScrollableDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface EditingState {
   type: 'phase' | 'operation' | 'step' | null;
@@ -42,7 +44,9 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     currentProject,
     updateProject,
     deleteProject,
-    projects
+    projects,
+    setCurrentProject,
+    fetchProjects
   } = useProject();
   
   const [currentView, setCurrentView] = useState<'table' | 'editWorkflow' | 'dragdrop'>('table');
@@ -341,34 +345,91 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     if (revisionNotes === null) return; // User cancelled
     
     try {
-      // Save current version with archived status
-      const archivedVersion = {
-        ...currentProject,
-        id: `${currentProject.id}-archived-${Date.now()}`,
-        name: `${currentProject.name} (Archived Rev ${currentProject.revisionNumber || 1})`,
-        publishStatus: 'draft' as const,
-        revisionNotes: `Archived version ${currentProject.revisionNumber || 1}`
-      };
+      console.log('🔄 Creating new revision from project:', {
+        currentId: currentProject.id,
+        currentName: currentProject.name,
+        currentRevision: currentProject.revisionNumber,
+        phasesCount: currentProject.phases?.length,
+        phases: currentProject.phases?.map(p => ({ id: p.id, name: p.name, opsCount: p.operations?.length }))
+      });
+
+      // Step 1: Mark current version as not current
+      const { error: markOldError } = await supabase
+        .from('projects')
+        .update({ 
+          is_current_version: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentProject.id);
+
+      if (markOldError) {
+        console.error('Error marking old version:', markOldError);
+        throw markOldError;
+      }
+
+      console.log('✅ Marked old version as not current');
+
+      // Step 2: Create new revision with INSERT (not UPDATE)
+      const parentId = currentProject.parentProjectId || currentProject.id;
+      const newRevisionNumber = (currentProject.revisionNumber || 1) + 1;
       
-      // Create new revision that replaces current
-      const newRevision = {
-        ...currentProject,
-        name: `${currentProject.name}`,
-        parentProjectId: currentProject.parentProjectId || currentProject.id,
-        revisionNumber: (currentProject.revisionNumber || 1) + 1,
-        revisionNotes: revisionNotes || '',
-        createdFromRevision: currentProject.revisionNumber || 1,
-        updatedAt: new Date(),
-        publishStatus: 'draft' as const
-      };
+      const { data: newRevisionData, error: insertError } = await supabase
+        .from('projects')
+        .insert({
+          name: currentProject.name,
+          description: currentProject.description,
+          diy_length_challenges: currentProject.diyLengthChallenges || null,
+          image: currentProject.image,
+          images: currentProject.images,
+          cover_image: currentProject.cover_image,
+          start_date: new Date().toISOString(),
+          plan_end_date: currentProject.planEndDate.toISOString(),
+          status: currentProject.status,
+          publish_status: 'draft',
+          category: currentProject.category,
+          effort_level: currentProject.effortLevel,
+          skill_level: currentProject.skillLevel,
+          estimated_time: currentProject.estimatedTime,
+          estimated_time_per_unit: currentProject.estimatedTimePerUnit,
+          scaling_unit: currentProject.scalingUnit,
+          phases: JSON.stringify(currentProject.phases), // CRITICAL: Copy ALL phases
+          parent_project_id: parentId,
+          revision_number: newRevisionNumber,
+          revision_notes: revisionNotes || '',
+          created_from_revision: currentProject.revisionNumber || 1,
+          is_current_version: true,
+          is_standard_template: currentProject.isStandardTemplate || false
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating new revision:', insertError);
+        throw insertError;
+      }
+
+      console.log('✅ New revision created:', {
+        newId: newRevisionData.id,
+        revisionNumber: newRevisionNumber,
+        phasesPreserved: typeof newRevisionData.phases === 'string' 
+          ? JSON.parse(newRevisionData.phases).length 
+          : Array.isArray(newRevisionData.phases) ? newRevisionData.phases.length : 0
+      });
+
+      // Step 3: Refresh projects and set new revision as current
+      await fetchProjects();
       
-      // Save archived version first, then update current
-      await updateProject(archivedVersion);
-      await updateProject(newRevision);
+      // Find the new revision in the refreshed projects list
+      const newRevision = projects.find(p => p.id === newRevisionData.id);
+      if (newRevision) {
+        setCurrentProject(newRevision);
+      }
+
+      toast.success(`Revision ${newRevisionNumber} created successfully`);
       
-      // Revision created successfully - no toast needed
     } catch (error) {
-      console.error('Error creating revision:', error);
+      console.error('❌ Error creating revision:', error);
+      toast.error("Failed to create revision. Please try again.");
     }
   };
 
