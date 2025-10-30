@@ -168,7 +168,8 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       id: Date.now().toString(),
       name: 'New Phase',
       description: '',
-      operations: []
+      operations: [],
+      isStandard: false
     };
     
     console.log('New phase created:', newPhase);
@@ -363,6 +364,13 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
         phases: currentProject.phases?.map(p => ({ id: p.id, name: p.name, opsCount: p.operations?.length }))
       });
 
+      // Log pre-sync phase analysis
+      console.log('🔍 Pre-sync phase analysis:', {
+        totalPhases: currentProject.phases.length,
+        standardPhases: currentProject.phases.filter(p => p.isStandard).map(p => p.name),
+        customPhases: currentProject.phases.filter(p => !p.isStandard).map(p => p.name)
+      });
+
       // Step 1: Sync phases JSONB to normalized template tables
       // This ensures custom phases are saved to template_operations/template_steps
       console.log('📥 Syncing phases to template tables...');
@@ -377,6 +385,19 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       }
 
       console.log('✅ Phases synced to template tables');
+
+      // Verify template_operations after sync
+      const { data: opsData } = await supabase
+        .from('template_operations')
+        .select('id, name, standard_phase_id, custom_phase_name')
+        .eq('project_id', currentProject.id);
+
+      console.log('📊 Template operations after sync:', {
+        totalOps: opsData?.length,
+        standardOps: opsData?.filter(op => op.standard_phase_id !== null).length,
+        customOps: opsData?.filter(op => op.custom_phase_name !== null).length,
+        customPhaseNames: [...new Set(opsData?.filter(op => op.custom_phase_name).map(op => op.custom_phase_name))]
+      });
 
       // Step 2: Create revision using database function
       // This properly copies from template_operations/template_steps and rebuilds phases JSONB
@@ -393,6 +414,19 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       }
 
       console.log('✅ Revision created with ID:', newRevisionId);
+
+      // Verify template_operations in new revision
+      const { data: newOpsData } = await supabase
+        .from('template_operations')
+        .select('id, name, standard_phase_id, custom_phase_name')
+        .eq('project_id', newRevisionId);
+
+      console.log('📊 Template operations in new revision:', {
+        totalOps: newOpsData?.length,
+        standardOps: newOpsData?.filter(op => op.standard_phase_id !== null).length,
+        customOps: newOpsData?.filter(op => op.custom_phase_name !== null).length,
+        customPhaseNames: [...new Set(newOpsData?.filter(op => op.custom_phase_name).map(op => op.custom_phase_name))]
+      });
 
       // Step 3: Fetch the newly created revision
       const { data: newRevisionData, error: fetchError } = await supabase
