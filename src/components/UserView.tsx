@@ -1639,7 +1639,6 @@ export default function UserView({
                 <div>
                   <div className="flex items-center gap-3">
                     <CardTitle className="text-xl">{currentStep?.step}</CardTitle>
-                    {getStepIndicator(currentStep?.flowType)}
                   </div>
                   {currentStep?.description && <CardDescription className="text-sm">
                     {currentStep.description}
