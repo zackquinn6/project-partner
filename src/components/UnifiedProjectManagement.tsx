@@ -17,7 +17,7 @@ import {
   ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown 
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
 import { ProjectOwnershipSelector } from '@/components/ProjectOwnershipSelector';
@@ -118,8 +118,6 @@ export function UnifiedProjectManagement() {
     scaling_unit: '',
   });
   
-  const { toast } = useToast();
-
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -143,11 +141,7 @@ export function UnifiedProjectManagement() {
       setProjects((data || []) as Project[]);
     } catch (error) {
       console.error('Error fetching projects:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load projects",
-        variant: "destructive",
-      });
+      toast.error("Failed to load projects");
     } finally {
       setLoading(false);
     }
@@ -169,11 +163,7 @@ export function UnifiedProjectManagement() {
       setProjectRevisions((allRevisions || []) as Project[]);
     } catch (error) {
       console.error('Error fetching project revisions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load project revisions",
-        variant: "destructive",
-      });
+      toast.error("Failed to load project revisions");
     }
   };
 
@@ -231,10 +221,7 @@ export function UnifiedProjectManagement() {
       }
 
       console.log('✅ Project saved successfully:', data);
-      toast({
-        title: "Success",
-        description: "Project updated successfully!",
-      });
+      toast.success("Project updated successfully!");
 
       setEditingProject(false);
       setEditedProject({});
@@ -248,11 +235,7 @@ export function UnifiedProjectManagement() {
       }
     } catch (error) {
       console.error('Error updating project:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update project",
-        variant: "destructive",
-      });
+      toast.error("Failed to update project");
     }
   };
 
@@ -284,11 +267,7 @@ export function UnifiedProjectManagement() {
 
     if (!releaseNotes.trim()) {
       console.error('❌ No release notes provided');
-      toast({
-        title: "Error",
-        description: "Release notes are required",
-        variant: "destructive",
-      });
+      toast.error("Release notes are required");
       return;
     }
 
@@ -308,10 +287,7 @@ export function UnifiedProjectManagement() {
       }
 
       console.log('✅ Project status updated successfully');
-      toast({
-        title: "Success",
-        description: `Project ${newStatus === 'beta-testing' ? 'released to Beta' : 'published'}!`,
-      });
+      toast.success(`Project ${newStatus === 'beta-testing' ? 'released to Beta' : 'published'}!`);
 
       setPublishDialogOpen(false);
       setReleaseNotes('');
@@ -321,11 +297,7 @@ export function UnifiedProjectManagement() {
       }
     } catch (error) {
       console.error('❌ Error updating project status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update project status",
-        variant: "destructive",
-      });
+      toast.error("Failed to update project status");
     }
   };
 
@@ -346,11 +318,7 @@ export function UnifiedProjectManagement() {
       fetchProjectRevisions();
     } catch (error) {
       console.error('Error creating revision:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create new revision",
-        variant: "destructive",
-      });
+      toast.error("Failed to create new revision");
     }
   };
 
@@ -368,30 +336,19 @@ export function UnifiedProjectManagement() {
 
       if (revisionsError) throw revisionsError;
 
-      toast({
-        title: "Success",
-        description: "Project deleted successfully",
-      });
+      toast.success("Project deleted successfully");
 
       setSelectedProject(null);
       fetchProjects();
     } catch (error) {
       console.error('Error deleting project:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete project",
-        variant: "destructive",
-      });
+      toast.error("Failed to delete project");
     }
   };
 
   const deleteDraftRevision = async (revisionId: string, revisionNumber: number) => {
     if (revisionNumber === 0) {
-      toast({
-        title: "Error",
-        description: "Cannot delete the base revision (revision 0)",
-        variant: "destructive",
-      });
+      toast.error("Cannot delete the base revision (revision 0)");
       return;
     }
 
@@ -407,20 +364,13 @@ export function UnifiedProjectManagement() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Draft revision deleted successfully",
-      });
+      toast.success("Draft revision deleted successfully");
 
       fetchProjects();
       fetchProjectRevisions();
     } catch (error) {
       console.error('Error deleting revision:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete revision",
-        variant: "destructive",
-      });
+      toast.error("Failed to delete draft revision");
     }
   };
 
@@ -455,11 +405,7 @@ export function UnifiedProjectManagement() {
       navigate('/', { state: { view: 'editWorkflow' } });
     } catch (error) {
       console.error('Error loading standard project:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load Standard Project Foundation",
-        variant: "destructive",
-      });
+      toast.error("Failed to load Standard Project Foundation");
     }
   };
 
@@ -482,10 +428,7 @@ export function UnifiedProjectManagement() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "New project created with standard phases!",
-      });
+      toast.success("New project created with standard phases!");
 
       setCreateProjectDialogOpen(false);
       setNewProject({
@@ -500,11 +443,7 @@ export function UnifiedProjectManagement() {
       fetchProjects();
     } catch (error) {
       console.error('Error creating project:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create project",
-        variant: "destructive",
-      });
+      toast.error("Failed to create project");
     }
   };
 

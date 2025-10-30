@@ -28,7 +28,7 @@ import { CompactOutputsTable } from '@/components/CompactOutputsTable';
 import { CompactTimeEstimation } from '@/components/CompactTimeEstimation';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
-import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles } from 'lucide-react';
+import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -111,6 +111,8 @@ export default function EditWorkflowView({
     parentId?: string;
   } | null>(null);
 
+  const [isCascading, setIsCascading] = useState(false);
+  
   // Get phases directly from project - no dynamic addition needed
   const displayPhases = currentProject ? currentProject.phases : [];
 
@@ -654,9 +656,20 @@ export default function EditWorkflowView({
                 {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Project Template: ${currentProject?.name || 'Untitled Project'}`}
               </h1>
               {isEditingStandardProject && (
-                <p className="text-sm text-orange-600 dark:text-orange-400 font-medium mt-1">
-                  ⚠️ Editing Standard Foundation - Changes will cascade to new projects
-                </p>
+                <>
+                  <p className="text-sm text-orange-600 dark:text-orange-400 font-medium mt-1">
+                    ⚠️ Editing Standard Foundation - Changes will cascade to new projects
+                  </p>
+                  {isCascading && (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Syncing standard phases to all project templates...</span>
+                      </div>
+                      <Progress value={undefined} className="h-1" />
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <div className="flex items-center gap-4">
@@ -688,26 +701,29 @@ export default function EditWorkflowView({
                        <Brain className="w-4 h-4" />
                        Process Improvement
                      </Button>
-                     <Button 
-                       onClick={async () => {
-                         if (isEditingStandardProject) {
-                           console.log('💾 Save and Close: Cascading Standard Project changes to all templates...');
-                           toast.loading('Syncing standard phases to all project templates...', { id: 'cascade-sync' });
-                           
-                           try {
-                             const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-standard-phases', {
-                               method: 'POST',
-                             });
+                      <Button 
+                        onClick={async () => {
+                          if (isEditingStandardProject) {
+                            console.log('💾 Save and Close: Cascading Standard Project changes to all templates...');
+                            setIsCascading(true);
+                            toast.loading('Syncing standard phases to all project templates...', { id: 'cascade-sync' });
+                            
+                            try {
+                              const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-standard-phases', {
+                                method: 'POST',
+                              });
+                              
+                              // Dismiss loading toast
+                              toast.dismiss('cascade-sync');
+                              setIsCascading(false);
                              
-                             // Dismiss loading toast
-                             toast.dismiss('cascade-sync');
-                             
-                             if (syncError) {
-                               console.error('Save and Close: Error cascading to templates:', syncError);
-                               toast.error('Cascade to templates failed', { 
-                                 description: `Error: ${syncError.message || 'Unknown error'}. Click "Sync Standard Phases" button in Admin Panel to manually sync`,
-                                 duration: 10000,
-                               });
+                              if (syncError) {
+                                console.error('Save and Close: Error cascading to templates:', syncError);
+                                setIsCascading(false);
+                                toast.error('Cascade to templates failed', { 
+                                  description: `Error: ${syncError.message || 'Unknown error'}. Click "Sync Standard Phases" button in Admin Panel to manually sync`,
+                                  duration: 10000,
+                                });
                              } else {
                                const result = syncResult as {
                                  success: boolean;
@@ -733,25 +749,27 @@ export default function EditWorkflowView({
                                  }
                                );
                              }
-                           } catch (cascadeError) {
-                             console.error('Save and Close: Exception during cascade:', cascadeError);
-                             toast.dismiss('cascade-sync');
-                             toast.error('Cascade failed', { 
-                               description: 'Click "Sync Standard Phases" button in Admin Panel to manually sync',
-                               duration: 10000,
-                             });
-                           }
-                         }
-                         
-                         onBackToAdmin();
-                       }} 
-                       variant="default" 
-                       size="sm" 
-                       className="flex items-center gap-2"
-                     >
-                       <Save className="w-4 h-4" />
-                       Save and Close
-                     </Button>
+                            } catch (cascadeError) {
+                              console.error('Save and Close: Exception during cascade:', cascadeError);
+                              toast.dismiss('cascade-sync');
+                              setIsCascading(false);
+                              toast.error('Cascade failed', { 
+                                description: 'Click "Sync Standard Phases" button in Admin Panel to manually sync',
+                                duration: 10000,
+                              });
+                            }
+                          }
+                          
+                          onBackToAdmin();
+                        }} 
+                        variant="default" 
+                        size="sm" 
+                        className="flex items-center gap-2"
+                        disabled={isCascading}
+                      >
+                        <Save className="w-4 h-4" />
+                        {isCascading ? 'Syncing...' : 'Save and Close'}
+                      </Button>
                    </>}
                </div>
             </div>
