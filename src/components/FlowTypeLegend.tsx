@@ -102,8 +102,7 @@ export const FlowTypeLegend: React.FC<FlowTypeLegendProps> = ({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Info className="w-4 h-4" />
+        <CardTitle className="text-base">
           {showOnlyStepTypes ? 'Step Types' : 'Workflow Step Types'}
         </CardTitle>
       </CardHeader>
