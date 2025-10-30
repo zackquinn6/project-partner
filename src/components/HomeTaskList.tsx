@@ -354,16 +354,18 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="mx-2 md:mx-4 mt-1 mb-2 md:mb-4 w-auto grid grid-cols-4 text-[10px] md:text-xs h-7 md:h-9 flex-shrink-0 p-0.5 gap-0.5 bg-muted/50 rounded-lg">
-                <TabsTrigger value="tasks" className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Tasks</TabsTrigger>
-                <TabsTrigger value="people" className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Team</TabsTrigger>
-                <TabsTrigger value="assignment" className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Assign</TabsTrigger>
-                <TabsTrigger value="schedule" className="text-[10px] md:text-xs px-2 md:px-3 py-1 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Schedule</TabsTrigger>
-              </TabsList>
+              <div className="flex-shrink-0 px-2 md:px-4 pt-2 pb-3 md:pb-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <TabsList className="w-full grid grid-cols-4 text-xs md:text-sm h-9 md:h-10 p-1 gap-1 bg-muted/50 rounded-lg">
+                  <TabsTrigger value="tasks" className="text-xs md:text-sm px-2 md:px-3 py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Tasks</TabsTrigger>
+                  <TabsTrigger value="people" className="text-xs md:text-sm px-2 md:px-3 py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Team</TabsTrigger>
+                  <TabsTrigger value="assignment" className="text-xs md:text-sm px-2 md:px-3 py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Assign</TabsTrigger>
+                  <TabsTrigger value="schedule" className="text-xs md:text-sm px-2 md:px-3 py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Schedule</TabsTrigger>
+                </TabsList>
+              </div>
 
-              <div className="flex-1 overflow-auto px-2 md:px-4 pb-1 min-h-0">
+              <div className="flex-1 overflow-auto px-2 md:px-4 pb-2 min-h-0">
                 <TabsContent value="tasks" className="mt-0 space-y-2 md:space-y-3 h-full">
                   {showAddTask && (
                     <Card>
