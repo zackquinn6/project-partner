@@ -4,23 +4,15 @@ import { ProjectRun } from '@/interfaces/ProjectRun';
  * UNIFIED PROGRESS CALCULATION UTILITY
  * Single source of truth for calculating project progress
  * 
- * IMPORTANT: This excludes standard phases (Kickoff, Planning, Ordering, Close Project)
- * from the calculation to ensure accurate workflow-only progress
+ * IMPORTANT: Counts ALL steps including standard phases
  */
 export function calculateProjectProgress(projectRun: ProjectRun): number {
   if (!projectRun.phases || projectRun.phases.length === 0) {
     return 0;
   }
   
-  // Filter out standard phases - only count workflow phases
-  const workflowPhases = projectRun.phases.filter(phase => phase.isStandard !== true);
-  
-  if (workflowPhases.length === 0) {
-    return 0;
-  }
-  
-  // Count total steps in workflow phases only
-  const totalSteps = workflowPhases.reduce((sum, phase) => 
+  // Count total steps in ALL phases
+  const totalSteps = projectRun.phases.reduce((sum, phase) => 
     sum + (phase.operations?.reduce((opSum, op) => 
       opSum + (op.steps?.length || 0), 0) || 0), 0);
   
@@ -28,9 +20,9 @@ export function calculateProjectProgress(projectRun: ProjectRun): number {
     return 0;
   }
   
-  // Count completed steps in workflow phases only
+  // Count completed steps in ALL phases
   const completedStepIds = new Set(projectRun.completedSteps || []);
-  const completedSteps = workflowPhases.reduce((sum, phase) => 
+  const completedSteps = projectRun.phases.reduce((sum, phase) => 
     sum + (phase.operations?.reduce((opSum, op) => 
       opSum + (op.steps?.filter(step => completedStepIds.has(step.id)).length || 0), 0) || 0), 0);
   
@@ -38,21 +30,19 @@ export function calculateProjectProgress(projectRun: ProjectRun): number {
 }
 
 /**
- * Get workflow steps count (excluding standard phases)
+ * Get all steps count (including standard phases)
  */
 export function getWorkflowStepsCount(projectRun: ProjectRun): { total: number; completed: number } {
   if (!projectRun.phases || projectRun.phases.length === 0) {
     return { total: 0, completed: 0 };
   }
   
-  const workflowPhases = projectRun.phases.filter(phase => phase.isStandard !== true);
-  
-  const total = workflowPhases.reduce((sum, phase) => 
+  const total = projectRun.phases.reduce((sum, phase) => 
     sum + (phase.operations?.reduce((opSum, op) => 
       opSum + (op.steps?.length || 0), 0) || 0), 0);
   
   const completedStepIds = new Set(projectRun.completedSteps || []);
-  const completed = workflowPhases.reduce((sum, phase) => 
+  const completed = projectRun.phases.reduce((sum, phase) => 
     sum + (phase.operations?.reduce((opSum, op) => 
       opSum + (op.steps?.filter(step => completedStepIds.has(step.id)).length || 0), 0) || 0), 0);
   
