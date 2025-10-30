@@ -30,8 +30,14 @@ export function getStepWeight(stepType?: string): number {
  * - Prime and Quality Control steps are worth 0.1 points each
  * 
  * IMPORTANT: Counts ALL steps including standard phases (Kickoff, Planning, Ordering, Close Project)
+ * For manual projects (is_manual_entry), uses the stored progress value instead of calculating
  */
 export function calculateProjectProgress(projectRun: ProjectRun): number {
+  // For manual projects, use the stored progress value
+  if (projectRun.isManualEntry) {
+    return projectRun.progress ?? 0;
+  }
+  
   if (!projectRun.phases || projectRun.phases.length === 0) {
     return 0;
   }
