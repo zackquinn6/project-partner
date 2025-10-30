@@ -332,11 +332,11 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                       <TableCell>
                         {projectRun.endDate ? (
                           <div className="text-xs leading-tight">
-                            <div className="font-medium">{formatDate(projectRun.endDate).monthDay}</div>
+                            <div className="font-medium text-green-700">{formatDate(projectRun.endDate).monthDay}</div>
                             <div className="text-muted-foreground">{formatDate(projectRun.endDate).year}</div>
                           </div>
                         ) : (
-                          <div className="text-xs text-muted-foreground">-</div>
+                          <div className="text-xs text-muted-foreground">In Progress</div>
                         )}
                       </TableCell>
                       <TableCell>

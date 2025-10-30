@@ -421,9 +421,9 @@ export default function UserView({
       return;
     }
 
-    // CRITICAL FIX: Don't force listing mode if we have a current project run
-    // This prevents the Continue button from being overridden by reset flags
-    if (currentProjectRun && !showProfile) {
+    // CRITICAL FIX: Respect forceListingMode even if there's a current project run
+    // This allows Progress Board button to work correctly
+    if (currentProjectRun && !showProfile && !forceListingMode) {
       console.log('🔄 UserView: Have current project run - forcing workflow mode');
       if (viewMode !== 'workflow') {
         setViewMode('workflow');
@@ -754,6 +754,20 @@ export default function UserView({
         
         if (allStepsComplete) {
           console.log("🎉 All steps completed! Project finished.");
+          
+          // Update project run with completion data
+          const completionUpdate = {
+            ...currentProjectRun,
+            status: 'complete' as const,
+            end_date: new Date(),
+            completedSteps: newCompletedSteps,
+            progress: 100,
+            updatedAt: new Date()
+          };
+          
+          await updateProjectRun(completionUpdate);
+          console.log("✅ Project completion saved with end_date:", completionUpdate.end_date);
+          
           setProjectCompletionOpen(true);
         } else if (currentStepIndex < allSteps.length - 1) {
           console.log("🎯 Moving to next step");
