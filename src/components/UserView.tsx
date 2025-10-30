@@ -32,6 +32,7 @@ import { MaterialsSelectionDialog } from './MaterialsSelectionDialog';
 import { KickoffWorkflow } from './KickoffWorkflow';
 import { UnplannedWorkWindow } from './UnplannedWorkWindow';
 import { ProjectSurvey } from './ProjectSurvey';
+import { ProjectCompletionPopup } from './ProjectCompletionPopup';
 import { ToolsMaterialsSection } from './ToolsMaterialsSection';
 import ProfileManager from './ProfileManager';
 import { DecisionRollupWindow } from './DecisionRollupWindow';
@@ -125,6 +126,7 @@ export default function UserView({
   // New windows state
   const [unplannedWorkOpen, setUnplannedWorkOpen] = useState(false);
   const [projectSurveyOpen, setProjectSurveyOpen] = useState(false);
+  const [projectCompletionOpen, setProjectCompletionOpen] = useState(false);
   const [decisionRollupOpen, setDecisionRollupOpen] = useState(false);
   const [decisionRollupMode, setDecisionRollupMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work'>('initial-plan');
   const [keyCharacteristicsOpen, setKeyCharacteristicsOpen] = useState(false);
@@ -742,12 +744,15 @@ export default function UserView({
           });
         }
         
-        // Move to next step
-        if (currentStepIndex < allSteps.length - 1) {
+        // Check if all steps are now complete
+        const allStepsComplete = allSteps.every(step => newCompletedSteps.includes(step.id));
+        
+        if (allStepsComplete) {
+          console.log("🎉 All steps completed! Project finished.");
+          setProjectCompletionOpen(true);
+        } else if (currentStepIndex < allSteps.length - 1) {
           console.log("🎯 Moving to next step");
           handleNext();
-        } else {
-          console.log("🎯 All steps completed! Project finished.");
         }
       } else {
         console.log("❌ Cannot complete step - not all outputs are completed");
@@ -2203,6 +2208,20 @@ export default function UserView({
           onOpenChange={setProjectSchedulerOpen}
           project={activeProject as Project}
           projectRun={currentProjectRun}
+        />
+      )}
+      
+      {/* Project Completion Popup */}
+      {currentProjectRun && (
+        <ProjectCompletionPopup
+          isOpen={projectCompletionOpen}
+          onClose={() => setProjectCompletionOpen(false)}
+          projectName={currentProjectRun.name}
+          onReturnToWorkshop={() => {
+            setProjectCompletionOpen(false);
+            setCurrentProjectRun(null);
+            setViewMode('listing');
+          }}
         />
       )}
       
