@@ -328,36 +328,57 @@ export function UnifiedProjectManagement() {
     }
 
     try {
-      // First delete all template_steps for this project
-      const { data: operations } = await supabase
-        .from('template_operations')
+      // Get all project IDs (parent and all revisions) to delete
+      const { data: allProjects } = await supabase
+        .from('projects')
         .select('id')
-        .eq('project_id', projectId);
-      
-      if (operations && operations.length > 0) {
-        const operationIds = operations.map(op => op.id);
-        await supabase
-          .from('template_steps')
-          .delete()
-          .in('operation_id', operationIds);
-      }
-      
-      // Then delete all template_operations
-      await supabase
-        .from('template_operations')
-        .delete()
-        .eq('project_id', projectId);
+        .or(`id.eq.${projectId},parent_project_id.eq.${projectId}`);
 
-      // Delete all revisions and the project itself
+      if (!allProjects || allProjects.length === 0) {
+        toast.error("Project not found");
+        return;
+      }
+
+      const projectIds = allProjects.map(p => p.id);
+
+      // Delete all related data for each project
+      for (const pid of projectIds) {
+        // Delete template_steps via template_operations
+        const { data: operations } = await supabase
+          .from('template_operations')
+          .select('id')
+          .eq('project_id', pid);
+        
+        if (operations && operations.length > 0) {
+          const operationIds = operations.map(op => op.id);
+          await supabase
+            .from('template_steps')
+            .delete()
+            .in('operation_id', operationIds);
+        }
+        
+        // Delete template_operations
+        await supabase
+          .from('template_operations')
+          .delete()
+          .eq('project_id', pid);
+
+        // Delete project_runs that reference this template
+        await supabase
+          .from('project_runs')
+          .delete()
+          .eq('template_id', pid);
+      }
+
+      // Finally delete all projects (parent and revisions)
       const { error: deleteError } = await supabase
         .from('projects')
         .delete()
-        .or(`id.eq.${projectId},parent_project_id.eq.${projectId}`);
+        .in('id', projectIds);
 
       if (deleteError) throw deleteError;
 
       toast.success("Project deleted successfully");
-
       setSelectedProject(null);
       fetchProjects();
     } catch (error) {
