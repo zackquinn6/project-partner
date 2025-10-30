@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Info, ShoppingCart, Plus, Award, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { getStepIndicator } from './FlowTypeLegend';
 import { WorkflowSidebar } from './WorkflowSidebar';
 import {
@@ -897,12 +898,12 @@ export default function UserView({
       updatedAt: new Date()
     });
 
-    // Show accountability partner message
-    setMessageType('issue-report');
-    setAccountabilityPopupOpen(true);
-
     // Log the issue report for debugging
-    console.log("Issue Report:", issueReportData);
+    console.log("Issue Report submitted and saved:", issueReportData);
+    
+    toast.success("Issue reported successfully", {
+      description: "Your feedback has been recorded"
+    });
     
     // Reset form and close dialog
     setReportIssues({

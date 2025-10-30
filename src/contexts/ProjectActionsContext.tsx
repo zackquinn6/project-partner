@@ -469,7 +469,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             estimated_time: projectRun.estimatedTime,
             customization_decisions: projectRun.customization_decisions ? JSON.stringify(projectRun.customization_decisions) : null,
             instruction_level_preference: projectRun.instruction_level_preference || 'detailed',
-            budget_data: projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : null
+            budget_data: projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : null,
+            issue_reports: projectRun.issue_reports ? JSON.stringify(projectRun.issue_reports) : null,
+            time_tracking: projectRun.time_tracking ? JSON.stringify(projectRun.time_tracking) : null
           })
           .eq('id', projectRun.id)
           .eq('user_id', user.id);

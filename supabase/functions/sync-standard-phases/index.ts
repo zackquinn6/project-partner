@@ -73,29 +73,9 @@ Deno.serve(async (req) => {
       details: [],
     };
 
-    // Step 1: Rebuild Standard Project phases
-    result.details.push('Rebuilding Standard Project phases...');
-    const { error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
-      p_project_id: standardProjectId
-    });
-
-    if (rebuildError) {
-      console.error('SYNC: Failed to rebuild Standard Project:', rebuildError);
-      throw new Error(`Failed to rebuild Standard Project: ${rebuildError.message}`);
-    }
-
-    // Get the rebuilt Standard Project phases
-    const { data: standardProject, error: standardError } = await supabase
-      .from('projects')
-      .select('phases')
-      .eq('id', standardProjectId)
-      .single();
-
-    if (standardError || !standardProject) {
-      throw new Error('Failed to fetch Standard Project');
-    }
-
-    result.details.push('Standard Project phases rebuilt successfully');
+    // Note: Skip rebuilding Standard Project phases here since EditWorkflowView 
+    // already updated both phases JSON and template_steps before calling this function
+    result.details.push('Using current Standard Project phases (already updated by EditWorkflowView)');
 
     // Step 2: Get all project templates (not revisions, not Standard Project)
     const { data: templates, error: templatesError } = await supabase
