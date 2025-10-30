@@ -404,59 +404,7 @@ export default function EditWorkflowView({
           toast.error("Warning: Step saved to project but failed to sync to template. Changes may not appear in new projects.");
         } else {
           console.log('SaveEdit: Successfully synced to template_steps');
-          
-          // Automatically cascade changes to all project templates
-          console.log('💾 SaveEdit: Cascading Standard Project changes to all templates...');
-          toast.loading('Syncing standard phases to all project templates...', { id: 'cascade-sync' });
-          
-          try {
-            const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-standard-phases', {
-              method: 'POST',
-            });
-            
-            // Dismiss loading toast
-            toast.dismiss('cascade-sync');
-            
-            if (syncError) {
-              console.error('SaveEdit: Error cascading to templates:', syncError);
-              toast.error('Standard Project saved but cascade to templates failed', { 
-                description: `Error: ${syncError.message || 'Unknown error'}. Click "Sync Standard Phases" button in Admin Panel to manually sync`,
-                duration: 10000,
-              });
-            } else {
-              const result = syncResult as {
-                success: boolean;
-                templatesUpdated: number;
-                templatesFailed: number;
-              };
-              
-              console.log('SaveEdit: Cascade completed:', result);
-              
-              // Invalidate projects cache to ensure users see latest template data
-              console.log('🔄 SaveEdit: Refreshing projects cache to show latest changes');
-              try {
-                // Trigger a cache refresh by dispatching a custom event
-                window.dispatchEvent(new CustomEvent('refetch-projects'));
-              } catch (e) {
-                console.error('Failed to trigger cache refresh:', e);
-              }
-              
-              toast.success(
-                `Changes cascaded to ${result.templatesUpdated} template(s)`,
-                { 
-                  description: 'All project templates now have your latest standard phase changes',
-                  duration: 5000,
-                }
-              );
-            }
-          } catch (invokeError) {
-            console.error('SaveEdit: Exception calling sync function:', invokeError);
-            toast.dismiss('cascade-sync');
-            toast.error('Failed to call cascade function', {
-              description: `Error: ${invokeError.message || 'Unknown error'}. Try using "Sync Standard Phases" button in Admin Panel`,
-              duration: 10000,
-            });
-          }
+          toast.success('Step saved to Standard Project');
         }
       } catch (err) {
         console.error('SaveEdit: Exception updating template_steps:', err);
@@ -740,7 +688,67 @@ export default function EditWorkflowView({
                        <Brain className="w-4 h-4" />
                        Process Improvement
                      </Button>
-                     <Button onClick={onBackToAdmin} variant="default" size="sm" className="flex items-center gap-2">
+                     <Button 
+                       onClick={async () => {
+                         if (isEditingStandardProject) {
+                           console.log('💾 Save and Close: Cascading Standard Project changes to all templates...');
+                           toast.loading('Syncing standard phases to all project templates...', { id: 'cascade-sync' });
+                           
+                           try {
+                             const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-standard-phases', {
+                               method: 'POST',
+                             });
+                             
+                             // Dismiss loading toast
+                             toast.dismiss('cascade-sync');
+                             
+                             if (syncError) {
+                               console.error('Save and Close: Error cascading to templates:', syncError);
+                               toast.error('Cascade to templates failed', { 
+                                 description: `Error: ${syncError.message || 'Unknown error'}. Click "Sync Standard Phases" button in Admin Panel to manually sync`,
+                                 duration: 10000,
+                               });
+                             } else {
+                               const result = syncResult as {
+                                 success: boolean;
+                                 templatesUpdated: number;
+                                 templatesFailed: number;
+                               };
+                               
+                               console.log('Save and Close: Cascade completed:', result);
+                               
+                               // Invalidate projects cache to ensure users see latest template data
+                               console.log('🔄 Save and Close: Refreshing projects cache to show latest changes');
+                               try {
+                                 window.dispatchEvent(new CustomEvent('refetch-projects'));
+                               } catch (e) {
+                                 console.error('Failed to trigger cache refresh:', e);
+                               }
+                               
+                               toast.success(
+                                 `Changes cascaded to ${result.templatesUpdated} template(s)`,
+                                 { 
+                                   description: 'All project templates now have your latest standard phase changes',
+                                   duration: 5000,
+                                 }
+                               );
+                             }
+                           } catch (cascadeError) {
+                             console.error('Save and Close: Exception during cascade:', cascadeError);
+                             toast.dismiss('cascade-sync');
+                             toast.error('Cascade failed', { 
+                               description: 'Click "Sync Standard Phases" button in Admin Panel to manually sync',
+                               duration: 10000,
+                             });
+                           }
+                         }
+                         
+                         onBackToAdmin();
+                       }} 
+                       variant="default" 
+                       size="sm" 
+                       className="flex items-center gap-2"
+                     >
                        <Save className="w-4 h-4" />
                        Save and Close
                      </Button>

@@ -246,12 +246,20 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
           {renderProfileView()}
           
           <div className="sticky bottom-0 bg-background pt-4 border-t mt-4">
-            {existingProfile && !isCompleted && (
+            {!isCompleted && existingProfile && (
               <div>
                 <Button onClick={onComplete} className="w-full bg-green-600 hover:bg-green-700">
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Profile Complete - Continue
                 </Button>
+              </div>
+            )}
+            
+            {!isCompleted && !existingProfile && (
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Complete your profile above to continue
+                </p>
               </div>
             )}
 
