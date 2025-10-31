@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollableDialog } from "@/components/ScrollableDialog"
 import { cn } from "@/lib/utils"
 import { responsiveDialogClasses } from "@/utils/responsive"
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
 
 interface ResponsiveDialogProps {
   open: boolean;
@@ -72,20 +73,26 @@ export function ResponsiveDialog({
           className
         )}
       >
-        {(title || description) && (
-          <DialogHeader className={`${size === 'content-full' ? 'px-4 pt-4 pb-0' : 'pb-2'} flex flex-col space-y-1 text-center sm:text-left`}>
-            {title && (
-              <DialogTitle className="text-lg md:text-xl font-bold">
-                {title}
-              </DialogTitle>
-            )}
-            {description && (
-              <DialogDescription className="text-sm md:text-base">
-                {description}
-              </DialogDescription>
-            )}
-          </DialogHeader>
-        )}
+        <DialogHeader className={`${size === 'content-full' ? 'px-4 pt-4 pb-0' : title || description ? 'pb-2' : 'sr-only'} flex flex-col space-y-1 text-center sm:text-left`}>
+          {title ? (
+            <DialogTitle className="text-lg md:text-xl font-bold">
+              {title}
+            </DialogTitle>
+          ) : (
+            <VisuallyHidden.Root>
+              <DialogTitle>Dialog</DialogTitle>
+            </VisuallyHidden.Root>
+          )}
+          {description ? (
+            <DialogDescription className="text-sm md:text-base">
+              {description}
+            </DialogDescription>
+          ) : (
+            <VisuallyHidden.Root>
+              <DialogDescription>Dialog content</DialogDescription>
+            </VisuallyHidden.Root>
+          )}
+        </DialogHeader>
         
         <div className={`flex flex-col min-h-0 flex-1`}>
           {children}
