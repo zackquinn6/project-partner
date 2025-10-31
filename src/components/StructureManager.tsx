@@ -322,14 +322,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // CRUD operations
   const addPhase = async () => {
     if (!currentProject) return;
+    
+    console.group('🔄 Adding New Custom Phase');
     const newPhase: Phase = {
       id: `phase-${Date.now()}`,
       name: 'New Phase',
       description: 'Phase description',
       operations: [],
       isLinked: false,
-      isStandard: false // Mark as custom phase
+      isStandard: false
     };
+    console.log('Phase:', newPhase.name);
+    console.log('Project:', currentProject.name);
 
     // Add new phase and enforce standard phase ordering
     const phasesWithNew = [...currentProject.phases, newPhase];
@@ -340,19 +344,23 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       updatedAt: new Date()
     };
 
-    // Update project in memory and database
-    await updateProject(updatedProject);
-
-    // 🔥 NEW: Sync the new custom phase to database immediately
     try {
+      // Update project in memory and database first
+      await updateProject(updatedProject);
+      console.log('✅ Project updated in database');
+
+      // Then explicitly sync to template tables
       const { syncPhaseToDatabase } = await import('@/utils/phaseSynchronization');
       const displayOrder = 100 + (orderedPhases.filter(p => !p.isStandard && !p.isLinked).length * 10);
       await syncPhaseToDatabase(currentProject.id, newPhase, displayOrder);
-      console.log('✅ New custom phase synced to database');
-      toast.success('Custom phase added and synced to database');
+      
+      console.log('✅ Custom phase synced to template tables');
+      console.groupEnd();
+      toast.success('Custom phase added successfully');
     } catch (error) {
-      console.error('❌ Error syncing new phase:', error);
-      toast.error('Phase added but sync failed - please save the project again');
+      console.error('❌ Error adding/syncing phase:', error);
+      console.groupEnd();
+      toast.error('Phase added but may not persist in revisions');
     }
   };
   const handleIncorporatePhase = (incorporatedPhase: Phase & {

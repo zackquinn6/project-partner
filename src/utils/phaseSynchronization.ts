@@ -171,25 +171,26 @@ export async function syncAllPhasesToDatabase(project: Project): Promise<void> {
     return;
   }
 
-  console.log('🔄 Syncing all custom phases to database:', {
-    projectId: project.id,
-    projectName: project.name,
-    totalPhases: project.phases.length
-  });
+  const customPhases = project.phases.filter(p => !p.isStandard && !p.isLinked);
+  
+  console.group('🔄 Syncing Custom Phases to Database');
+  console.log('Project:', project.id, project.name);
+  console.log('Total phases:', project.phases.length);
+  console.log('Custom phases:', customPhases.length);
 
   try {
     let customPhaseDisplayOrder = 100; // Start after standard phases
 
-    for (const phase of project.phases) {
-      if (!phase.isStandard && !phase.isLinked) {
-        await syncPhaseToDatabase(project.id, phase, customPhaseDisplayOrder);
-        customPhaseDisplayOrder += 10;
-      }
+    for (const phase of customPhases) {
+      await syncPhaseToDatabase(project.id, phase, customPhaseDisplayOrder);
+      customPhaseDisplayOrder += 10;
     }
 
     console.log('✅ All custom phases synced successfully');
+    console.groupEnd();
   } catch (error) {
     console.error('❌ Error syncing custom phases:', error);
+    console.groupEnd();
     toast.error('Failed to sync custom phases to database');
     throw error;
   }

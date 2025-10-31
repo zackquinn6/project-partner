@@ -91,6 +91,7 @@ export function UnifiedProjectManagement() {
   const [editedProject, setEditedProject] = useState<Partial<Project>>({});
   const [activeView, setActiveView] = useState<'details' | 'revisions'>('details');
   const [projectSearch, setProjectSearch] = useState('');
+  const [customPhasesSyncStatus, setCustomPhasesSyncStatus] = useState<{[projectId: string]: boolean}>({});
   
   // Dialog states
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
@@ -125,8 +126,32 @@ export function UnifiedProjectManagement() {
   useEffect(() => {
     if (selectedProject) {
       fetchProjectRevisions();
+      validateCustomPhaseSync(selectedProject.id);
     }
   }, [selectedProject]);
+
+  const validateCustomPhaseSync = async (projectId: string) => {
+    try {
+      const { data: ops, error } = await supabase
+        .from('template_operations')
+        .select('custom_phase_name')
+        .eq('project_id', projectId)
+        .eq('is_custom_phase', true);
+      
+      if (error) throw error;
+      
+      const uniqueCustomPhases = new Set(
+        ops?.map(o => o.custom_phase_name).filter(Boolean)
+      ).size;
+      
+      setCustomPhasesSyncStatus(prev => ({
+        ...prev,
+        [projectId]: uniqueCustomPhases > 0
+      }));
+    } catch (error) {
+      console.error('Error validating custom phase sync:', error);
+    }
+  };
 
   const fetchProjects = async () => {
     try {
@@ -671,7 +696,22 @@ export function UnifiedProjectManagement() {
                                 className="text-sm"
                               />
                             ) : (
-                              <div className="p-2 bg-muted rounded text-sm">{selectedProject.name}</div>
+                              <div className="space-y-2">
+                                <div className="p-2 bg-muted rounded text-sm">{selectedProject.name}</div>
+                                {selectedProject.phases && JSON.parse(JSON.stringify(selectedProject.phases)).filter((p: any) => !p.isStandard && !p.isLinked).length > 0 && (
+                                  <div className="flex items-center gap-2">
+                                    {customPhasesSyncStatus[selectedProject.id] ? (
+                                      <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
+                                        ✓ Custom phases synced
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/20">
+                                        ⚠ Custom phases not synced
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
                           
