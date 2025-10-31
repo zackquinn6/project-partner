@@ -79,7 +79,11 @@ interface Project {
   cover_image?: string | null; // URL of cover image
 }
 
-export function UnifiedProjectManagement() {
+interface UnifiedProjectManagementProps {
+  onEditWorkflow?: () => void;
+}
+
+export function UnifiedProjectManagement({ onEditWorkflow }: UnifiedProjectManagementProps = {}) {
   const navigate = useNavigate();
   const { setCurrentProject } = useProject();
   const { trackClick } = useButtonTracker();
@@ -1127,8 +1131,12 @@ export function UnifiedProjectManagement() {
                               phases: parsedPhases
                             });
                             
-                            // Close this dialog and notify user to use the "Edit Standard" button
-                            toast.info('Project selected. Use the "Edit Standard" button in the Admin Panel to edit the workflow.');
+                            // Open workflow editor
+                            if (onEditWorkflow) {
+                              onEditWorkflow();
+                            } else {
+                              toast.info('Project selected. Use the "Edit Standard" button in the Admin Panel to edit the workflow.');
+                            }
                           }}
                           className="flex items-center gap-1"
                         >
