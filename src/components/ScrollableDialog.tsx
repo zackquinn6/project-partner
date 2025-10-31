@@ -47,17 +47,16 @@ export function ScrollableDialog({
     }
   }, [open]);
 
-  // Use modal behavior for proper background blur
+  // Use modal={false} to prevent nested dialog interference
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      // Prevent event bubbling to parent dialogs
-      if (!newOpen) {
-        // Only close this dialog, don't let it propagate to parents
-        onOpenChange(false);
-      } else {
+    <Dialog 
+      open={open} 
+      onOpenChange={(newOpen) => {
+        // Only close this specific dialog
         onOpenChange(newOpen);
-      }
-    }} modal={true}>
+      }} 
+      modal={false}
+    >
       <DialogPortal>
         <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-50" />
         <div
