@@ -320,7 +320,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   };
 
   // CRUD operations
-  const addPhase = () => {
+  const addPhase = async () => {
     if (!currentProject) return;
     const newPhase: Phase = {
       id: `phase-${Date.now()}`,
@@ -339,8 +339,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       phases: orderedPhases,
       updatedAt: new Date()
     };
-    updateProject(updatedProject);
-    toast.success('Custom phase added successfully');
+
+    // Update project in memory and database
+    await updateProject(updatedProject);
+
+    // 🔥 NEW: Sync the new custom phase to database immediately
+    try {
+      const { syncPhaseToDatabase } = await import('@/utils/phaseSynchronization');
+      const displayOrder = 100 + (orderedPhases.filter(p => !p.isStandard && !p.isLinked).length * 10);
+      await syncPhaseToDatabase(currentProject.id, newPhase, displayOrder);
+      console.log('✅ New custom phase synced to database');
+      toast.success('Custom phase added and synced to database');
+    } catch (error) {
+      console.error('❌ Error syncing new phase:', error);
+      toast.error('Phase added but sync failed - please save the project again');
+    }
   };
   const handleIncorporatePhase = (incorporatedPhase: Phase & {
     sourceProjectId: string;
@@ -645,7 +658,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
     }} />;
   }
-  return <div className="fixed inset-0 bg-background overflow-hidden">
+  return (
+    <div className="fixed inset-0 bg-background overflow-hidden">
       <div className="h-full overflow-y-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b">
@@ -1056,5 +1070,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       {/* Decision Tree Manager */}
       <DecisionTreeManager open={showDecisionTreeManager} onOpenChange={setShowDecisionTreeManager} currentProject={currentProject} />
     </div>
-    </div>;
+  </div>
+  );
 };

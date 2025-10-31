@@ -352,7 +352,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           description: `Standard Project updated (${updatedOpsCount} operations, ${updatedStepsCount} steps)`,
         });
       } else {
-        // For regular projects, just update the phases JSON
+        // For regular projects, update phases JSON AND sync custom phases to database
         const { error } = await supabase
           .from('projects')
           .update({
@@ -376,6 +376,11 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .eq('id', project.id);
 
         if (error) throw error;
+
+        // 🔥 NEW: Sync custom phases to template tables
+        const { syncAllPhasesToDatabase } = await import('@/utils/phaseSynchronization');
+        await syncAllPhasesToDatabase(project);
+        console.log('✅ Custom phases synced to database');
       }
 
       // Optimistically update cache
