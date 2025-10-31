@@ -53,6 +53,7 @@ import { MobileDIYDropdown } from './MobileDIYDropdown';
 import { ProjectCompletionHandler } from './ProjectCompletionHandler';
 import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
+import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -1099,23 +1100,33 @@ export default function UserView({
           {/* Videos */}
           {instruction.content.videos && instruction.content.videos.length > 0 && (
             <div className="space-y-4">
-              {instruction.content.videos.map((video, idx) => (
-                <div key={idx} className="space-y-2">
-                  {video.title && <h4 className="font-semibold">{video.title}</h4>}
-                  <div className="aspect-video rounded-lg overflow-hidden shadow-card">
-                    {video.embed ? (
-                      <div dangerouslySetInnerHTML={{ __html: video.embed }} />
-                    ) : (
+              {instruction.content.videos.map((video, idx) => {
+                // Safely parse embed HTML if present, otherwise use direct URL
+                const safeUrl = video.embed 
+                  ? getSafeEmbedUrl(video.embed) || video.url
+                  : video.url;
+                
+                // Only render if we have a valid URL
+                if (!safeUrl) {
+                  console.warn('Invalid or untrusted video URL blocked');
+                  return null;
+                }
+
+                return (
+                  <div key={idx} className="space-y-2">
+                    {video.title && <h4 className="font-semibold">{video.title}</h4>}
+                    <div className="aspect-video rounded-lg overflow-hidden shadow-card">
                       <iframe
-                        src={video.url}
-                        className="w-full h-full"
+                        src={safeUrl}
+                        className="w-full h-full border-0"
                         allowFullScreen
-                        title={video.title}
+                        title={video.title || 'Video'}
+                        sandbox="allow-scripts allow-same-origin allow-presentation"
                       />
-                    )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
