@@ -371,7 +371,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             estimated_time: project.estimatedTime || null,
             estimated_time_per_unit: project.estimatedTimePerUnit || null,
             scaling_unit: project.scalingUnit || null,
-            phases: JSON.stringify(project.phases)
+            phases: project.phases as any
           })
           .eq('id', project.id);
 
