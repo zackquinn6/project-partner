@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ResponsiveDialog } from "@/components/ResponsiveDialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Edit3 } from "lucide-react";
@@ -194,12 +194,9 @@ export default function ProfileManager({
       </div>;
   };
   if (isLoading) {
-    return <ResponsiveDialog 
-      open={open} 
-      onOpenChange={onOpenChange}
-      size="standard-window"
-    >
-      <div className="flex flex-col h-full overflow-hidden">
+    return <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <div className="flex flex-col h-full overflow-hidden">
         <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg md:text-xl font-bold">My Profile</h2>
           <Button 
@@ -211,19 +208,17 @@ export default function ProfileManager({
             Close
           </Button>
         </div>
-        <div className="flex items-center justify-center py-8 flex-1">
-          <div className="text-center">Loading profile...</div>
+          <div className="flex items-center justify-center py-8 flex-1">
+            <div className="text-center">Loading profile...</div>
+          </div>
         </div>
-      </div>
-    </ResponsiveDialog>;
+      </DialogContent>
+    </Dialog>;
   }
   return <>
-      <ResponsiveDialog 
-        open={open} 
-        onOpenChange={onOpenChange}
-        size="standard-window"
-      >
-        <div className="flex flex-col h-full overflow-hidden">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+          <div className="flex flex-col h-full overflow-hidden">
           {/* Header with close button */}
           <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
             <h2 className="text-lg md:text-xl font-bold">My Profile</h2>
@@ -237,12 +232,13 @@ export default function ProfileManager({
             </Button>
           </div>
           
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            {renderProfileView()}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto px-4 py-6">
+              {renderProfileView()}
+            </div>
           </div>
-        </div>
-      </ResponsiveDialog>
+        </DialogContent>
+      </Dialog>
 
       <DIYSurveyPopup open={showSurveyEditor} onOpenChange={open => {
       setShowSurveyEditor(open);

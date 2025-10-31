@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ResponsiveDialog } from '@/components/ResponsiveDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -374,13 +374,25 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
 
   return (
     <>
-    <ResponsiveDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      size="content-large"
-      title={`${home.name}${home.is_primary ? ' (Primary)' : ''}`}
-    >
-      <Tabs defaultValue="details" className="w-full flex-1 flex flex-col min-h-0">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogHeader className="px-4 md:px-6 py-4 border-b flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-lg md:text-xl font-bold">
+              {home.name}{home.is_primary ? ' (Primary)' : ''}
+            </DialogTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onOpenChange(false)} 
+              className="ml-4 flex-shrink-0"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogHeader>
+        
+        <Tabs defaultValue="details" className="w-full flex-1 flex flex-col min-h-0 overflow-hidden">
         <TabsList className="grid w-full grid-cols-5 mb-6">
           <TabsTrigger value="details">Details & Photos</TabsTrigger>
           <TabsTrigger value="spaces">Spaces</TabsTrigger>
@@ -758,7 +770,8 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
           )}
         </TabsContent>
       </Tabs>
-    </ResponsiveDialog>
+      </DialogContent>
+    </Dialog>
     
     {home && home.address && (
       <ZillowSyncDialog

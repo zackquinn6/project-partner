@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -302,11 +301,8 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       </Dialog>;
   }
   return <>
-    <ResponsiveDialog 
-      open={open} 
-      onOpenChange={onOpenChange}
-      size="standard-window"
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
         <div className="flex flex-col h-full overflow-hidden">
           {/* Header with close button */}
           <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
@@ -582,7 +578,8 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
           </form>)}
           </div>
         </div>
-    </ResponsiveDialog>
+      </DialogContent>
+    </Dialog>
     
     <HomeDetailsWindow
       open={showHomeDetails}

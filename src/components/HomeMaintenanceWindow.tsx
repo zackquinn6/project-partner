@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ResponsiveDialog } from '@/components/ResponsiveDialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -254,8 +253,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   };
   return <>
-    <ResponsiveDialog open={open} onOpenChange={onOpenChange} size="standard-window">
-      <div className="flex flex-col h-full max-h-full overflow-hidden">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <div className="flex flex-col h-full max-h-full overflow-hidden">
         {/* Header with title and close button */}
         <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg md:text-xl font-bold">Home Maintenance Tracker</h2>
@@ -442,10 +442,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                        </div>
                      </div>
                    </TabsContent>
-                </Tabs>
-              </div>}
+                 </Tabs>
+               </div>}
           </div>
-    </ResponsiveDialog>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialogs */}
       <AddMaintenanceTaskDialog open={showAddTask} onOpenChange={setShowAddTask} homeId={selectedHomeId} onTaskAdded={fetchTasks} />
