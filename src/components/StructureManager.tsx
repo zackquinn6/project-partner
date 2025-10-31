@@ -324,84 +324,60 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const addPhase = async () => {
     if (!currentProject) return;
     
-    console.group('🔄 Adding New Custom Phase');
-    
     const phaseName = 'New Phase';
     const phaseDescription = 'Phase description';
     const customPhaseCount = currentProject.phases.filter(p => !p.isStandard && !p.isLinked).length;
+    
+    // Calculate display order: custom phases go after standard phases but before Close Project
+    // Standard phases: Kickoff(0), Planning(10), Ordering(20), then custom phases start at 100
     const displayOrder = 100 + (customPhaseCount * 10);
     
-    console.log('Adding phase to project:', currentProject.id);
-    console.log('Phase name:', phaseName);
-    console.log('Display order:', displayOrder);
-
     try {
-      // Create a placeholder operation in template_operations to establish the custom phase
-      const { data: newOperation, error } = await supabase
+      // Create the custom phase WITHOUT any operations
+      // We mark it with a flag to identify it's a custom phase container
+      const { error: insertError } = await supabase
         .from('template_operations')
         .insert({
           project_id: currentProject.id,
-          name: 'First Operation',
-          description: 'Add your first operation',
+          name: '__PHASE_MARKER__',
+          description: '__PHASE_MARKER__',
           custom_phase_name: phaseName,
           custom_phase_description: phaseDescription,
           custom_phase_display_order: displayOrder,
           display_order: 0,
-          standard_phase_id: null  // null = custom phase
-        })
-        .select()
-        .single();
+          is_custom_phase: true,
+          standard_phase_id: null
+        });
 
-      if (error) {
-        console.error('❌ Error creating custom phase:', error);
-        throw error;
-      }
+      if (insertError) throw insertError;
 
-      console.log('✅ Custom phase created in template_operations');
-      
-      // Manually call rebuild function (triggers removed due to recursion issues)
+      // Rebuild and enforce ordering in one optimized call
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
         p_project_id: currentProject.id
       });
 
-      if (rebuildError) {
-        console.error('❌ Error rebuilding phases:', rebuildError);
-        throw rebuildError;
-      }
+      if (rebuildError) throw rebuildError;
 
-      // Update the project with rebuilt phases
-      const { error: updateError } = await supabase
+      // Enforce standard phase ordering
+      const orderedPhases = enforceStandardPhaseOrdering(rebuiltPhases as any);
+      
+      // Update project with ordered phases
+      await supabase
         .from('projects')
-        .update({ phases: rebuiltPhases })
+        .update({ phases: orderedPhases as any })
         .eq('id', currentProject.id);
 
-      if (updateError) throw updateError;
-
-      // Refetch to update UI
-      const { data: updatedProject, error: fetchError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', currentProject.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Force update the current project in context
-      if (updatedProject) {
-        updateProject({
-          ...currentProject,
-          phases: updatedProject.phases as any,
-          updatedAt: new Date(updatedProject.updated_at)
-        });
-      }
+      // Update local context
+      updateProject({
+        ...currentProject,
+        phases: orderedPhases as any,
+        updatedAt: new Date()
+      });
       
-      console.log('✅ Custom phase added successfully');
-      console.groupEnd();
-      toast.success('Custom phase added successfully');
+      toast.success('Phase added successfully');
     } catch (error) {
-      console.error('❌ Error adding custom phase:', error);
-      console.groupEnd();
-      toast.error('Failed to add custom phase');
+      console.error('Error adding phase:', error);
+      toast.error('Failed to add phase');
     }
   };
   const handleIncorporatePhase = (incorporatedPhase: Phase & {
@@ -535,26 +511,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
 
     try {
-      // Look up the actual database operation ID from template_operations
-      // The operationId in memory may not match the database ID
-      const { data: dbOperation, error: lookupError } = await supabase
-        .from('template_operations')
-        .select('id')
-        .eq('project_id', currentProject.id)
-        .eq('name', operation.name)
-        .or(
-          phase.isStandard 
-            ? `standard_phase_id.eq.${phaseId}` 
-            : `custom_phase_name.eq.${phase.name}`
-        )
-        .single();
-
-      if (lookupError || !dbOperation) {
-        console.error('Could not find operation in database:', lookupError);
-        throw new Error('Operation not found in database');
-      }
-
-      const actualOperationId = dbOperation.id;
+      // The operationId from the UI IS the database ID after rebuild
+      // Use it directly
+      const actualOperationId = operationId;
       
       // Get current step count for this operation
       const { count } = await supabase
@@ -564,7 +523,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       const stepCount = count || 0;
       
-      // Insert step into template_steps using the actual database operation ID
+      // Insert step into template_steps
       const { error } = await supabase
         .from('template_steps')
         .insert({
@@ -572,11 +531,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           step_number: stepCount + 1,
           step_title: 'New Step',
           description: 'Step description',
-          content_sections: JSON.stringify([]),
-          materials: JSON.stringify([]),
-          tools: JSON.stringify([]),
-          outputs: JSON.stringify([]),
-          apps: JSON.stringify([]),
+          content_sections: [],
+          materials: [],
+          tools: [],
+          outputs: [],
+          apps: [],
           estimated_time_minutes: 0,
           display_order: stepCount,
           flow_type: 'prime',
@@ -585,14 +544,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       if (error) throw error;
 
-      // Rebuild phases JSON
+      // Rebuild and enforce ordering
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
         p_project_id: currentProject.id
       });
 
       if (rebuildError) throw rebuildError;
 
-      // Enforce ordering and update
       const orderedPhases = enforceStandardPhaseOrdering(rebuiltPhases as any);
       
       await supabase
@@ -860,7 +818,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       {/* Main Content */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="container mx-auto px-6 py-8">
-          <Droppable droppableId="phases" type="phases">
+          <Droppable droppableId="phases" type="phases" isDropDisabled={false}>
             {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
                 {displayPhases.map((phase, phaseIndex) => {
                 const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
@@ -958,7 +916,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                   </Button>
                               </div>
                             
-                            <Droppable droppableId={`operations-${phase.id}`} type="operations">
+                            <Droppable droppableId={`operations-${phase.id}`} type="operations" isDropDisabled={phase.isLinked || false}>
                               {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                                   {phase.operations.map((operation, operationIndex) => {
                                 const isOperationEditing = editingItem?.type === 'operation' && editingItem.id === operation.id;
@@ -1043,7 +1001,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                  </Button>
                                                </div>
                                               
-                                              <Droppable droppableId={`steps-${phase.id}-${operation.id}`} type="steps">
+                                              <Droppable droppableId={`steps-${phase.id}-${operation.id}`} type="steps" isDropDisabled={phase.isLinked || false}>
                                                 {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                                                     {operation.steps.map((step, stepIndex) => {
                                                 const isStepEditing = editingItem?.type === 'step' && editingItem.id === step.id;
