@@ -254,7 +254,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                   onComplete();
                 }} className="flex-1 bg-green-600 hover:bg-green-700">
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Profile Complete - Continue
+                  DIY Profile Complete - Continue
                 </Button>
               </div>
             )}
