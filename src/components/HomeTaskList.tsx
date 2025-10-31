@@ -602,7 +602,10 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       {selectedTask && (
         <ResponsiveDialog
           open={showRapidCosting}
-          onOpenChange={setShowRapidCosting}
+          onOpenChange={(open) => {
+            // Only close the Rapid Costing dialog, not the parent Task Manager
+            setShowRapidCosting(open);
+          }}
           size="content-large"
           title={`Cost Assessment - ${selectedTask.title}`}
         >
@@ -610,7 +613,10 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             taskId={selectedTask.id}
             taskTitle={selectedTask.title}
             taskNotes={selectedTask.notes || ''}
-            onClose={() => setShowRapidCosting(false)}
+            onClose={() => {
+              // Explicitly only close the Rapid Costing dialog
+              setShowRapidCosting(false);
+            }}
           />
         </ResponsiveDialog>
       )}

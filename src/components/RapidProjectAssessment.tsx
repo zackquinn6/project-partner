@@ -531,6 +531,7 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
                   size="sm"
                   className="p-1 h-8 w-8"
                   type="button"
+                  title="Save Assessment"
                 >
                   <Save className="w-4 h-4" />
                 </Button>

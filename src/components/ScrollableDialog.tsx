@@ -49,7 +49,15 @@ export function ScrollableDialog({
 
   // Use modal behavior for proper background blur
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      // Prevent event bubbling to parent dialogs
+      if (!newOpen) {
+        // Only close this dialog, don't let it propagate to parents
+        onOpenChange(false);
+      } else {
+        onOpenChange(newOpen);
+      }
+    }} modal={true}>
       <DialogPortal>
         <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-50" />
         <div
@@ -96,7 +104,10 @@ export function ScrollableDialog({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => onOpenChange(false)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenChange(false);
+                    }}
                     className="ml-4 flex-shrink-0"
                   >
                     Close
@@ -105,7 +116,10 @@ export function ScrollableDialog({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onOpenChange(false)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenChange(false);
+                    }}
                     className="h-8 w-8 p-0 ml-4 flex-shrink-0"
                   >
                     <X className="h-4 w-4" />
