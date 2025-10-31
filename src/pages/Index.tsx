@@ -194,6 +194,13 @@ const Index = () => {
       setIsUserToolsLibraryOpen(true);
     };
 
+    const handleCloseUserToolsMaterialsWindow = (event: Event) => {
+      console.log('🔧 Closing User Tools/Materials Window');
+      event.stopPropagation();
+      setIsUserToolsLibraryOpen(false);
+      setUserToolsMode('library'); // Reset mode for next time
+    };
+
     const handleAIRepairEvent = (event: Event) => {
       console.log('🤖 Opening AI Repair');
       event.stopPropagation();
@@ -232,6 +239,7 @@ const Index = () => {
     window.addEventListener('show-tool-rentals', handleToolRentalsEvent);
     window.addEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
     window.addEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
+    window.addEventListener('close-user-tools-materials-window', handleCloseUserToolsMaterialsWindow);
     window.addEventListener('show-ai-repair', handleAIRepairEvent);
     window.addEventListener('show-contractor-finder', handleContractorFinderEvent);
     window.addEventListener('show-expert-help', handleExpertHelpEvent);
@@ -246,6 +254,7 @@ const Index = () => {
       window.removeEventListener('show-tool-rentals', handleToolRentalsEvent);
       window.removeEventListener('show-user-tools-materials', handleUserToolsMaterialsEvent);
       window.removeEventListener('show-tools-materials-editor', handleToolsMaterialsEditorEvent);
+      window.removeEventListener('close-user-tools-materials-window', handleCloseUserToolsMaterialsWindow);
       window.removeEventListener('show-ai-repair', handleAIRepairEvent);
       window.removeEventListener('show-contractor-finder', handleContractorFinderEvent);
       window.removeEventListener('show-expert-help', handleExpertHelpEvent);

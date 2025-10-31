@@ -325,18 +325,16 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                 }
               }
               
-              // Dispatch event to refresh library
+              // Dispatch event to refresh library grid
               window.dispatchEvent(new CustomEvent('tools-library-updated'));
               
-              // Only dispatch close event if not in tab context (onBackToLibrary means we're in tabs)
-              if (!onBackToLibrary) {
-                window.dispatchEvent(new CustomEvent('close-add-tools-window'));
-              }
-              
+              // If in tab context (onBackToLibrary provided), use callback
               if (onBackToLibrary) {
                 onBackToLibrary();
               } else {
-                setShowAddTools(false);
+                // Not in tab context - close the entire UserToolsMaterialsWindow
+                // to return to the grid view underneath
+                window.dispatchEvent(new CustomEvent('close-user-tools-materials-window'));
               }
             }}
           >
