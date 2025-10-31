@@ -327,7 +327,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         <DialogContent className="w-full max-w-full md:max-w-[98vw] h-screen md:h-[98vh] p-0 overflow-hidden flex flex-col [&>button]:hidden">
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-xs md:text-sm font-semibold">Task Manager</DialogTitle>
+              <DialogTitle className="text-lg md:text-xl font-bold">Task Manager</DialogTitle>
               <div className="flex gap-1.5 items-center">
                 <Button
                   variant="outline"

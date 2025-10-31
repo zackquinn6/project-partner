@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Edit, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { VariationEditor } from './VariationEditor';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 
 interface VariationInstance {
   id: string;
@@ -184,7 +185,11 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
   if (onVariationSelect) {
     return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[80vh] overflow-hidden" style={{ zIndex: 10000 }}>
+      <DialogPortal>
+        <DialogOverlay className="z-[150]" />
+        <DialogPrimitive.Content 
+          className="fixed left-[50%] top-[50%] z-[151] translate-x-[-50%] translate-y-[-50%] max-w-5xl max-h-[80vh] w-[90vw] overflow-hidden bg-background border rounded-lg shadow-lg p-6"
+        >
           <DialogHeader>
             <DialogTitle>Select Variation for {coreItemName}</DialogTitle>
             <DialogDescription>
@@ -248,7 +253,8 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
               </div>
             </div>
           )}
-        </DialogContent>
+        </DialogPrimitive.Content>
+      </DialogPortal>
       </Dialog>
     );
   }
@@ -256,7 +262,11 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
   // Render detailed view when no onVariationSelect is provided
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" style={{ zIndex: 10000 }}>
+      <DialogPortal>
+        <DialogOverlay className="z-[150]" />
+        <DialogPrimitive.Content 
+          className="fixed left-[50%] top-[50%] z-[151] translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6"
+        >
         <DialogHeader>
           <DialogTitle>Variations for {coreItemName}</DialogTitle>
           <DialogDescription>
@@ -361,7 +371,8 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
             </div>
           </div>
         )}
-      </DialogContent>
+      </DialogPrimitive.Content>
+    </DialogPortal>
 
       {editingVariation && (
         <VariationEditor
