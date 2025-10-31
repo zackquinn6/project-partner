@@ -107,10 +107,10 @@ export const PostAuthLanding = () => {
     icon: FolderOpen,
     title: "Progress Board",
     action: () => {
-      console.log('🔄 PostAuthLanding: My Projects button clicked - dispatching event');
-      const event = new CustomEvent('navigate-to-projects');
-      window.dispatchEvent(event);
-      console.log('🔄 PostAuthLanding: Event dispatched');
+      console.log('🔄 PostAuthLanding: Progress Board clicked - forcing listing mode');
+      setCurrentProjectRun(null);
+      window.dispatchEvent(new CustomEvent('force-progress-board-listing'));
+      onViewChange('user');
     },
     color: "bg-blue-600", // Projects: Blue
     textColor: "text-white"

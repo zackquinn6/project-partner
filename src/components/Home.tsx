@@ -162,8 +162,10 @@ export default function Home({
               </div>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => {
-            // Clear any current project run before opening progress board
+            // CRITICAL: Clear project run AND force listing mode
             setCurrentProjectRun(null);
+            // Dispatch event to force listing mode in UserView
+            window.dispatchEvent(new CustomEvent('force-progress-board-listing'));
             onViewChange('user');
           }}>
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProjects} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>

@@ -217,13 +217,18 @@ export default function Navigation({
               
               {/* Combined Progress Board / Project Selector Dropdown */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant={currentView === 'user' ? 'default' : 'ghost'} size="sm" className="text-xs">
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                    Progress Board
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant={currentView === 'user' ? 'default' : 'ghost'} size="sm" className="text-xs" onClick={() => {
+                      // CRITICAL: Force listing mode when Progress Board button clicked
+                      setCurrentProjectRun(null);
+                      window.dispatchEvent(new CustomEvent('force-progress-board-listing'));
+                      onViewChange('user');
+                    }}>
+                      <FolderOpen className="h-4 w-4 mr-2" />
+                      Progress Board
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-80 z-50 bg-background border shadow-lg" sideOffset={8}>
                   {/* My Projects Link at top */}
                   <DropdownMenuItem onClick={() => {

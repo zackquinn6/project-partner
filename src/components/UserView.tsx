@@ -171,6 +171,21 @@ export default function UserView({
     }
   };
 
+  // Add event listener for Progress Board force listing
+  useEffect(() => {
+    const handleForceProgressBoardListing = () => {
+      console.log('🎯 UserView: Force Progress Board listing event received');
+      setViewMode('listing');
+      setCurrentProjectRun(null);
+    };
+
+    window.addEventListener('force-progress-board-listing', handleForceProgressBoardListing);
+
+    return () => {
+      window.removeEventListener('force-progress-board-listing', handleForceProgressBoardListing);
+    };
+  }, [setCurrentProjectRun]);
+
   // Add event listeners for Re-plan window actions
   useEffect(() => {
     const handleOpenProjectScheduler = () => {
@@ -422,13 +437,30 @@ export default function UserView({
       return;
     }
 
-    // CRITICAL FIX: Respect forceListingMode even if there's a current project run
-    // This allows Progress Board button to work correctly
-    if (currentProjectRun && !showProfile && !forceListingMode) {
-      console.log('🔄 UserView: Have current project run - forcing workflow mode');
-      if (viewMode !== 'workflow') {
-        setViewMode('workflow');
-        onProjectSelected?.();
+    // CRITICAL FIX: ALWAYS respect forceListingMode - Progress Board must show listing
+    if (forceListingMode) {
+      console.log('🔄 UserView: forceListingMode active - staying in listing mode');
+      if (viewMode !== 'listing') {
+        setViewMode('listing');
+      }
+      return;
+    }
+
+    // Only auto-open project workflow if not in listing mode and not showing profile
+    if (currentProjectRun && !showProfile) {
+      console.log('🔄 UserView: Have current project run - checking kickoff completion');
+      // Only proceed to workflow if kickoff is complete
+      if (isKickoffComplete) {
+        console.log('🔄 UserView: Kickoff complete - allowing workflow mode');
+        if (viewMode !== 'workflow') {
+          setViewMode('workflow');
+          onProjectSelected?.();
+        }
+      } else {
+        console.log('🔄 UserView: Kickoff incomplete - staying in workflow for kickoff');
+        if (viewMode !== 'workflow') {
+          setViewMode('workflow');
+        }
       }
       return;
     }
