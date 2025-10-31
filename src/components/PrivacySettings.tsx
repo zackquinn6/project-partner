@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { UserDataManagement } from './UserDataManagement';
 
@@ -12,21 +12,22 @@ export const PrivacySettings: React.FC<PrivacySettingsProps> = ({ open, onOpenCh
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-        <div className="flex flex-col h-full">
-          <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
-            <h2 className="text-lg md:text-xl font-bold">Privacy Settings</h2>
+        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="text-lg md:text-xl font-bold">Privacy & Data Management</DialogTitle>
             <Button 
-              variant="outline" 
+              variant="ghost" 
               size="sm" 
               onClick={() => onOpenChange(false)} 
-              className="ml-4 flex-shrink-0"
+              className="h-7 px-2 text-[9px] md:text-xs flex-shrink-0"
             >
               Close
             </Button>
           </div>
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            <UserDataManagement />
-          </div>
+        </DialogHeader>
+        
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+          <UserDataManagement />
         </div>
       </DialogContent>
     </Dialog>
