@@ -620,7 +620,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             <div className="hidden md:flex items-center gap-4 mb-6">
               <Button
                 variant="ghost"
-                onClick={() => navigate('/')}
+                onClick={() => {
+                  console.log('ProjectCatalog: Back button clicked (desktop)');
+                  navigate(-1); // Go back instead of navigate to '/'
+                }}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -642,7 +645,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => navigate('/')}
+            onClick={() => {
+              console.log('📱 ProjectCatalog: Close button clicked, navigating back to home');
+              navigate(-1); // Go back instead of navigate to '/'
+            }}
             className="text-sm"
           >
             Close

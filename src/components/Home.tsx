@@ -148,7 +148,14 @@ export default function Home({
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
               {/* Project Catalog - Reduced Prominence */}
               <div className="col-span-3 mb-2">
-                <Button onClick={() => navigate('/projects')} variant="outline" className="w-full h-10 text-sm font-medium border-primary text-primary hover:bg-primary/10">
+                <Button 
+                  onClick={() => {
+                    console.log('📱 Navigating to project catalog');
+                    navigate('/projects');
+                  }} 
+                  variant="outline" 
+                  className="w-full h-10 text-sm font-medium border-primary text-primary hover:bg-primary/10"
+                >
                   <BookOpen className="w-4 h-4 mr-2" />
                   Explore New Projects
                 </Button>

@@ -117,7 +117,10 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
           <Button
             variant="default"
             size="sm"
-            onClick={() => navigate('/projects')}
+            onClick={() => {
+              console.log('📱 MobileProjectListing: + button clicked, navigating to /projects');
+              navigate('/projects');
+            }}
             className="px-3 h-10"
           >
             <Plus className="h-4 w-4" />

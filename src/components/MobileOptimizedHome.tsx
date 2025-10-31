@@ -260,7 +260,10 @@ export function MobileOptimizedHome() {
         {/* Project Catalog - Reduced Prominence */}
         <div className="mb-4">
           <Button 
-            onClick={() => navigate('/projects')}
+            onClick={() => {
+              console.log('📱 Mobile: Navigating to project catalog');
+              navigate('/projects');
+            }}
             variant="outline"
             className="w-full h-10 text-sm font-medium border-primary text-primary hover:bg-primary/10"
           >
