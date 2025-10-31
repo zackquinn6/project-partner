@@ -698,7 +698,7 @@ export function UnifiedProjectManagement() {
                             ) : (
                               <div className="space-y-2">
                                 <div className="p-2 bg-muted rounded text-sm">{selectedProject.name}</div>
-                                {selectedProject.phases && JSON.parse(JSON.stringify(selectedProject.phases)).filter((p: any) => !p.isStandard && !p.isLinked).length > 0 && (
+                                {selectedProject.phases && Array.isArray(selectedProject.phases) && selectedProject.phases.filter((p: any) => !p.isStandard && !p.isLinked).length > 0 && (
                                   <div className="flex items-center gap-2">
                                     {customPhasesSyncStatus[selectedProject.id] ? (
                                       <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
