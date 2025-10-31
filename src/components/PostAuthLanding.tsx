@@ -108,9 +108,8 @@ export const PostAuthLanding = () => {
     title: "Progress Board",
     action: () => {
       console.log('🔄 PostAuthLanding: Progress Board clicked - forcing listing mode');
-      setCurrentProjectRun(null);
       window.dispatchEvent(new CustomEvent('force-progress-board-listing'));
-      onViewChange('user');
+      navigate('/', { state: { view: 'user' } });
     },
     color: "bg-blue-600", // Projects: Blue
     textColor: "text-white"
