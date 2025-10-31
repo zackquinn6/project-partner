@@ -261,7 +261,7 @@ export function HomeTasksTable({
   };
   return <div className="space-y-3 flex flex-col h-full">
       {/* Desktop filters and controls */}
-      <div className="hidden md:flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+      <div className="hidden md:flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between pt-4">
         <div className="flex flex-wrap gap-2 flex-1 items-center">
           <Input placeholder="Search tasks..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs text-xs h-8" />
           <Select value={filterPriority} onValueChange={setFilterPriority}>
@@ -270,7 +270,7 @@ export function HomeTasksTable({
                 {filterPriority === 'all' ? 'All Priority' : filterPriority.charAt(0).toUpperCase() + filterPriority.slice(1)}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border shadow-lg z-[100]">
               <SelectItem value="all">All Priority</SelectItem>
               <SelectItem value="high">High</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>
@@ -283,7 +283,7 @@ export function HomeTasksTable({
                 {filterDiyLevel === 'all' ? 'All Levels' : filterDiyLevel.charAt(0).toUpperCase() + filterDiyLevel.slice(1)}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border shadow-lg z-[100]">
               <SelectItem value="all">All Levels</SelectItem>
               <SelectItem value="beginner">Beginner</SelectItem>
               <SelectItem value="intermediate">Intermediate</SelectItem>
@@ -312,7 +312,7 @@ export function HomeTasksTable({
       </div>
 
       {/* Mobile filters and controls */}
-      <div className="flex md:hidden flex-col gap-2 mb-3">
+      <div className="flex md:hidden flex-col gap-2 mb-3 pt-4">
         <Input
           placeholder="Search tasks..."
           value={searchTerm}
