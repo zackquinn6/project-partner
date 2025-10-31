@@ -337,7 +337,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
     try {
       // Create a placeholder operation in template_operations to establish the custom phase
-      // The trigger will automatically rebuild the phases JSON
       const { data: newOperation, error } = await supabase
         .from('template_operations')
         .insert({
@@ -360,7 +359,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       console.log('✅ Custom phase created in template_operations');
       
-      // Refetch the project to get the updated phases JSON (rebuilt by trigger)
+      // Manually call rebuild function (triggers removed due to recursion issues)
+      const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
+        p_project_id: currentProject.id
+      });
+
+      if (rebuildError) {
+        console.error('❌ Error rebuilding phases:', rebuildError);
+        throw rebuildError;
+      }
+
+      // Update the project with rebuilt phases
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({ phases: rebuiltPhases })
+        .eq('id', currentProject.id);
+
+      if (updateError) throw updateError;
+
+      // Refetch to update UI
       const { data: updatedProject, error: fetchError } = await supabase
         .from('projects')
         .select('*')
@@ -369,7 +386,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       if (fetchError) throw fetchError;
 
-      // Update local state with the refreshed project
+      // Force update the current project in context
       if (updatedProject) {
         updateProject({
           ...currentProject,
