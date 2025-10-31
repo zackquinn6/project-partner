@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 
 interface VariationInstance {
   id: string;
@@ -295,7 +296,9 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogPortal>
+        <DialogOverlay className="z-[250]" />
+        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[251] translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6">
         <DialogHeader>
           <DialogTitle>Edit Variation: {variation.name}</DialogTitle>
         </DialogHeader>
@@ -672,7 +675,8 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
             <Save className="w-4 h-4" />
           </Button>
         </div>
-      </DialogContent>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
   );
 }

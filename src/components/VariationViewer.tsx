@@ -186,9 +186,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
     return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <DialogOverlay className="z-[150]" />
+        <DialogOverlay className="z-[200]" />
         <DialogPrimitive.Content 
-          className="fixed left-[50%] top-[50%] z-[151] translate-x-[-50%] translate-y-[-50%] max-w-5xl max-h-[80vh] w-[90vw] overflow-hidden bg-background border rounded-lg shadow-lg p-6"
+          className="fixed left-[50%] top-[50%] z-[201] translate-x-[-50%] translate-y-[-50%] max-w-5xl max-h-[80vh] w-[90vw] overflow-hidden bg-background border rounded-lg shadow-lg p-6"
         >
           <DialogHeader>
             <DialogTitle>Select Variation for {coreItemName}</DialogTitle>
@@ -263,9 +263,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <DialogOverlay className="z-[150]" />
+        <DialogOverlay className="z-[200]" />
         <DialogPrimitive.Content 
-          className="fixed left-[50%] top-[50%] z-[151] translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6"
+          className="fixed left-[50%] top-[50%] z-[201] translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6"
         >
         <DialogHeader>
           <DialogTitle>Variations for {coreItemName}</DialogTitle>
