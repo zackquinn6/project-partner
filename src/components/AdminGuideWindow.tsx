@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollableDialog } from '@/components/ScrollableDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -281,13 +281,25 @@ export function AdminGuideWindow({ open, onOpenChange }: AdminGuideWindowProps) 
   const [activeTab, setActiveTab] = useState('overview');
 
   return (
-    <ScrollableDialog 
-      open={open} 
-      onOpenChange={onOpenChange}
-      title="Administrator Guide & Documentation"
-      description="Complete administrative control center documentation and best practices"
-    >
-      <div className="h-full">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg md:text-xl font-bold">Administrator Guide & Documentation</DialogTitle>
+              <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">Complete administrative control center documentation and best practices</p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onOpenChange(false)} 
+              className="h-7 px-2 text-[9px] md:text-xs flex-shrink-0"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="overview" className="flex items-center gap-2">
@@ -548,7 +560,8 @@ export function AdminGuideWindow({ open, onOpenChange }: AdminGuideWindowProps) 
             </TabsContent>
           </div>
         </Tabs>
-      </div>
-    </ScrollableDialog>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

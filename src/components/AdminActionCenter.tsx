@@ -177,27 +177,38 @@ export const AdminActionCenter: React.FC<AdminActionCenterProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            Action Center
-            <div className="flex gap-2 ml-2">
-              {totalAlerts > 0 && (
-                <Badge variant="destructive">
-                  {totalAlerts} revision alerts
-                </Badge>
-              )}
-              {totalFeedback > 0 && (
-                <Badge variant="default">
-                  {totalFeedback} feedback items
-                </Badge>
-              )}
-            </div>
-          </DialogTitle>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 md:w-5 md:h-5" />
+              Action Center
+              <div className="flex gap-1.5 ml-2">
+                {totalAlerts > 0 && (
+                  <Badge variant="destructive" className="text-[9px] md:text-xs h-5 md:h-6">
+                    {totalAlerts} alerts
+                  </Badge>
+                )}
+                {totalFeedback > 0 && (
+                  <Badge variant="default" className="text-[9px] md:text-xs h-5 md:h-6">
+                    {totalFeedback} feedback
+                  </Badge>
+                )}
+              </div>
+            </DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onOpenChange(false)} 
+              className="h-7 px-2 text-[9px] md:text-xs flex-shrink-0"
+            >
+              Close
+            </Button>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+          <div className="space-y-6">
           {/* User Feedback Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -368,6 +379,7 @@ export const AdminActionCenter: React.FC<AdminActionCenterProps> = ({
           </div>
 
           {/* Future sections for other admin actions can be added here */}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

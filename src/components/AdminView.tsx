@@ -9,7 +9,6 @@ import EditWorkflowView from '@/components/EditWorkflowView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollableDialog } from '@/components/ScrollableDialog';
 import { Settings, BarChart3, Shield, Wrench, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog, RefreshCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -282,9 +281,26 @@ export const AdminView: React.FC = () => {
         {/* Beta Mode Toggle */}
         <BetaModeToggle />
 
-        <ScrollableDialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen} title="Project Management & Revision Control">
-          <UnifiedProjectManagement />
-        </ScrollableDialog>
+        <Dialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen}>
+          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+            <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex items-center justify-between gap-2">
+                <DialogTitle className="text-lg md:text-xl font-bold">Project Management</DialogTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setEnhancedProjectManagementOpen(false)} 
+                  className="h-7 px-2 text-[9px] md:text-xs"
+                >
+                  Close
+                </Button>
+              </div>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+              <UnifiedProjectManagement />
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <ProjectAnalyticsWindow open={analyticsOpen} onOpenChange={setAnalyticsOpen} />
         
@@ -293,11 +309,23 @@ export const AdminView: React.FC = () => {
         <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
 
         <Dialog open={homeRiskManagerOpen} onOpenChange={setHomeRiskManagerOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Home Risk Management</DialogTitle>
+          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+            <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex items-center justify-between gap-2">
+                <DialogTitle className="text-lg md:text-xl font-bold">Home Risk Management</DialogTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setHomeRiskManagerOpen(false)} 
+                  className="h-7 px-2 text-[9px] md:text-xs"
+                >
+                  Close
+                </Button>
+              </div>
             </DialogHeader>
-            <HomeRiskManager />
+            <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+              <HomeRiskManager />
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -309,27 +337,51 @@ export const AdminView: React.FC = () => {
         <AdminGuideWindow open={adminGuideOpen} onOpenChange={setAdminGuideOpen} />
 
         <Dialog open={processDesignOpen} onOpenChange={setProcessDesignOpen}>
-          <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Process Failure Mode and Effects Analysis (PFMEA)</DialogTitle>
+          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+            <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex items-center justify-between gap-2">
+                <DialogTitle className="text-lg md:text-xl font-bold">Process FMEA</DialogTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setProcessDesignOpen(false)} 
+                  className="h-7 px-2 text-[9px] md:text-xs"
+                >
+                  Close
+                </Button>
+              </div>
             </DialogHeader>
-            <PFMEAManagement />
+            <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+              <PFMEAManagement />
+            </div>
           </DialogContent>
         </Dialog>
 
         <Dialog open={dataRefreshOpen} onOpenChange={setDataRefreshOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Internet Data Refresh Management</DialogTitle>
+          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+            <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex items-center justify-between gap-2">
+                <DialogTitle className="text-lg md:text-xl font-bold">Data Refresh Management</DialogTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setDataRefreshOpen(false)} 
+                  className="h-7 px-2 text-[9px] md:text-xs"
+                >
+                  Close
+                </Button>
+              </div>
             </DialogHeader>
-            <AdminDataRefresh />
+            <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+              <AdminDataRefresh />
+            </div>
           </DialogContent>
         </Dialog>
 
         <AdminActionCenter open={actionCenterOpen} onOpenChange={setActionCenterOpen} />
 
         <Dialog open={editWorkflowOpen} onOpenChange={setEditWorkflowOpen}>
-          <DialogContent className="max-w-[90vw] max-h-[90vh] p-0">
+          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
             <EditWorkflowView onBackToAdmin={() => setEditWorkflowOpen(false)} />
           </DialogContent>
         </Dialog>
