@@ -342,6 +342,20 @@ export function UnifiedProjectManagement() {
     toast.loading("Creating revision...");
 
     try {
+      // CRITICAL FIX: Force rebuild of phases JSON before creating revision
+      // This ensures custom phases are up-to-date in the database before copying
+      console.log('🔄 Force rebuilding phases JSON before revision...');
+      const { error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
+        p_project_id: selectedProject.id
+      });
+      
+      if (rebuildError) {
+        console.error('❌ Rebuild error:', rebuildError);
+        throw new Error(`Failed to rebuild phases: ${rebuildError.message}`);
+      }
+      
+      console.log('✅ Phases JSON rebuilt successfully');
+      
       console.log('🚀 Calling create_project_revision RPC...');
       const { data, error } = await supabase.rpc('create_project_revision', {
         source_project_id: selectedProject.id,

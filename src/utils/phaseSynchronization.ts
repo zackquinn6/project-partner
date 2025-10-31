@@ -67,13 +67,14 @@ export async function syncPhaseToDatabase(
         // Insert new operation
         console.log('➕ Creating new operation:', operation.name);
         
+        // NOTE: is_custom_phase is a GENERATED column (computed from standard_phase_id IS NULL)
+        // Do NOT set it explicitly - it will be automatically computed by the database
         const { data: newOp, error: insertError } = await supabase
           .from('template_operations')
           .insert({
             project_id: projectId,
             name: operation.name,
             description: operation.description || null,
-            is_custom_phase: true,
             custom_phase_name: phase.name,
             custom_phase_description: phase.description || null,
             custom_phase_display_order: displayOrder,
