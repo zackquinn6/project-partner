@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Plus, Edit, Trash2, Calendar, CheckCircle, Clock, AlertCircle, Star, MessageSquare } from 'lucide-react';
 import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
-import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 
 interface RoadmapItem {
   id: string;
@@ -171,25 +170,47 @@ export const AdminRoadmapManager: React.FC<AdminRoadmapManagerProps> = ({
 
   if (loading) {
     return (
-      <ResponsiveDialog 
-        open={open} 
-        onOpenChange={onOpenChange}
-        size="content-large"
-        title="Roadmap & Feature Request Management"
-      >
-        <div className="flex justify-center py-8">Loading roadmap...</div>
-      </ResponsiveDialog>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-lg md:text-xl font-bold">Roadmap Management</DialogTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onOpenChange(false)} 
+                className="h-7 px-2 text-[9px] md:text-xs"
+              >
+                Close
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+            <div className="flex justify-center py-8">Loading roadmap...</div>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
-    <ResponsiveDialog 
-      open={open} 
-      onOpenChange={onOpenChange}
-      size="content-large"
-      title="Roadmap & Feature Request Management"
-    >
-      <div className="space-y-6">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="text-lg md:text-xl font-bold">Roadmap & Feature Request Management</DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onOpenChange(false)} 
+              className="h-7 px-2 text-[9px] md:text-xs"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+          <div className="space-y-6">
           <Tabs defaultValue="roadmap" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="roadmap">Roadmap Items</TabsTrigger>
@@ -312,7 +333,8 @@ export const AdminRoadmapManager: React.FC<AdminRoadmapManagerProps> = ({
               </div>
             </TabsContent>
         </Tabs>
-      </div>
+          </div>
+        </div>
 
       {/* Add/Edit Form */}
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
@@ -421,6 +443,7 @@ export const AdminRoadmapManager: React.FC<AdminRoadmapManagerProps> = ({
           </div>
         </DialogContent>
       </Dialog>
-    </ResponsiveDialog>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { MessageSquare, Trash2, Star, Eye, Edit } from 'lucide-react';
-import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 
 interface FeatureRequest {
   id: string;
@@ -146,25 +145,47 @@ export const AdminFeatureRequestManager: React.FC<AdminFeatureRequestManagerProp
 
   if (loading) {
     return (
-      <ResponsiveDialog 
-        open={open} 
-        onOpenChange={onOpenChange}
-        size="content-large"
-        title="Feature Request Management"
-      >
-        <div className="flex justify-center py-8">Loading feature requests...</div>
-      </ResponsiveDialog>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-lg md:text-xl font-bold">Feature Request Management</DialogTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onOpenChange(false)} 
+                className="h-7 px-2 text-[9px] md:text-xs"
+              >
+                Close
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+            <div className="flex justify-center py-8">Loading feature requests...</div>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
-    <ResponsiveDialog 
-      open={open} 
-      onOpenChange={onOpenChange}
-      size="content-large"
-      title="Feature Request Management"
-    >
-      <div className="space-y-6">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="text-lg md:text-xl font-bold">Feature Request Management</DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onOpenChange(false)} 
+              className="h-7 px-2 text-[9px] md:text-xs"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+          <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Feature Requests ({featureRequests.length})</CardTitle>
@@ -247,7 +268,8 @@ export const AdminFeatureRequestManager: React.FC<AdminFeatureRequestManagerProp
               </Table>
             </CardContent>
         </Card>
-      </div>
+          </div>
+        </div>
 
       {/* Response Form Dialog */}
       {showResponseForm && selectedRequest && (
@@ -322,6 +344,7 @@ export const AdminFeatureRequestManager: React.FC<AdminFeatureRequestManagerProp
           </DialogContent>
         </Dialog>
       )}
-    </ResponsiveDialog>
+      </DialogContent>
+    </Dialog>
   );
 };
