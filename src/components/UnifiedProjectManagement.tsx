@@ -327,23 +327,44 @@ export function UnifiedProjectManagement() {
   };
 
   const createNewRevision = async () => {
-    if (!selectedProject) return;
+    console.log('🎯 createNewRevision called', { 
+      hasSelectedProject: !!selectedProject, 
+      projectId: selectedProject?.id,
+      revisionNotes 
+    });
+    
+    if (!selectedProject) {
+      console.error('❌ No selected project');
+      toast.error("No project selected");
+      return;
+    }
+
+    toast.loading("Creating revision...");
 
     try {
+      console.log('🚀 Calling create_project_revision RPC...');
       const { data, error } = await supabase.rpc('create_project_revision', {
         source_project_id: selectedProject.id,
         revision_notes_text: revisionNotes || null,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ RPC error:', error);
+        throw error;
+      }
+
+      console.log('✅ Revision created successfully:', data);
+      toast.dismiss();
+      toast.success("Revision created successfully!");
 
       setCreateRevisionDialogOpen(false);
       setRevisionNotes('');
       fetchProjects();
       fetchProjectRevisions();
-    } catch (error) {
-      console.error('Error creating revision:', error);
-      toast.error("Failed to create new revision");
+    } catch (error: any) {
+      console.error('❌ Error creating revision:', error);
+      toast.dismiss();
+      toast.error(`Failed to create revision: ${error.message || 'Unknown error'}`);
     }
   };
 
