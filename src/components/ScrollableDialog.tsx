@@ -63,9 +63,12 @@ export function ScrollableDialog({
           data-dialog-content
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "fixed left-[50%] top-[50%] z-[101] translate-x-[-50%] translate-y-[-50%]",
-            "w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh]",
-            "bg-background border rounded-lg shadow-lg",
+            // Mobile: Full screen
+            "fixed inset-0 z-[101]",
+            // Desktop: Centered with 90% viewport
+            "md:left-[50%] md:top-[50%] md:inset-auto md:translate-x-[-50%] md:translate-y-[-50%]",
+            "md:w-[90vw] md:max-w-[90vw] md:h-[90vh] md:max-h-[90vh]",
+            "bg-background md:border md:rounded-lg shadow-lg",
             "flex flex-col",
             className
           )}

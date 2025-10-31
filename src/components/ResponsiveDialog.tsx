@@ -76,7 +76,10 @@ export function ResponsiveDialog({
           <DialogOverlay className="z-50" />
           <DialogPrimitive.Content
             className={cn(
-              "fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]",
+              // Mobile: Full screen fixed positioning
+              "fixed inset-0 z-50",
+              // Desktop: Centered with 90% viewport
+              "md:left-[50%] md:top-[50%] md:inset-auto md:translate-x-[-50%] md:translate-y-[-50%]",
               "bg-background md:border shadow-lg md:rounded-lg",
               "duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out",
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
