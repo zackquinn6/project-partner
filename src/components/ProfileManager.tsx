@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollableDialog } from "@/components/ScrollableDialog";
+import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Edit3 } from "lucide-react";
@@ -195,28 +194,28 @@ export default function ProfileManager({
       </div>;
   };
   if (isLoading) {
-    return <ScrollableDialog 
+    return <ResponsiveDialog 
       open={open} 
       onOpenChange={onOpenChange}
       title="My Profile"
-      className="w-full h-screen max-w-full max-h-full md:max-w-[98vw] md:h-[98vh]"
+      size="standard-window"
     >
       <div className="flex items-center justify-center py-8">
         <div className="text-center">Loading profile...</div>
       </div>
-    </ScrollableDialog>;
+    </ResponsiveDialog>;
   }
   return <>
-      <ScrollableDialog 
+      <ResponsiveDialog 
         open={open} 
         onOpenChange={onOpenChange}
         title="My Profile"
-        className="w-full h-screen max-w-full max-h-full md:max-w-[98vw] md:h-[98vh]"
+        size="standard-window"
       >
-        <div className="py-6">
+        <div className="overflow-y-auto flex-1 px-4 py-6">
           {renderProfileView()}
         </div>
-      </ScrollableDialog>
+      </ResponsiveDialog>
 
       <DIYSurveyPopup open={showSurveyEditor} onOpenChange={open => {
       setShowSurveyEditor(open);

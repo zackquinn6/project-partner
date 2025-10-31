@@ -226,7 +226,7 @@ export function ToolsLibrary() {
               <Plus className="w-3 h-3" />
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="z-[100]">
             <DialogHeader>
               <DialogTitle>Add New Tool</DialogTitle>
             </DialogHeader>
@@ -370,7 +370,7 @@ export function ToolsLibrary() {
       </div>
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden z-[100]">
           <DialogHeader>
             <DialogTitle>Edit Tool</DialogTitle>
           </DialogHeader>

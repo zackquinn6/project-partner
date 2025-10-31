@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical, History } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollableDialog } from "@/components/ScrollableDialog";
+import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -859,13 +859,16 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
 
   if (!currentProject) {
     return (
-      <ScrollableDialog 
+      <ResponsiveDialog 
         open={open} 
         onOpenChange={onOpenChange}
         title="Project Management"
+        size="standard-window"
       >
-        {renderProjectSelector()}
-      </ScrollableDialog>
+        <div className="overflow-y-auto flex-1 px-4 py-6">
+          {renderProjectSelector()}
+        </div>
+      </ResponsiveDialog>
     );
   }
 
@@ -930,12 +933,15 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   };
 
   return (
-    <ScrollableDialog 
+    <ResponsiveDialog 
       open={open} 
       onOpenChange={onOpenChange}
       title="Project Management"
+      size="standard-window"
     >
-      {renderView()}
-    </ScrollableDialog>
+      <div className="overflow-y-auto flex-1 px-4 py-6">
+        {renderView()}
+      </div>
+    </ResponsiveDialog>
   );
 };

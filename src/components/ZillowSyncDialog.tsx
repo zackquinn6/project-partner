@@ -110,6 +110,7 @@ export const ZillowSyncDialog = ({
       }}
       title="Add Property Details"
       description={`Enter details for ${homeAddress}`}
+      className="z-[150]"
     >
       <div className="space-y-4">
         <div className="space-y-2">

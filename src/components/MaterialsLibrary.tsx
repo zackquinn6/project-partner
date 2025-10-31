@@ -188,7 +188,7 @@ export function MaterialsLibrary() {
               Add
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="z-[100]">
             <DialogHeader>
               <DialogTitle>Add New Material</DialogTitle>
             </DialogHeader>
@@ -313,7 +313,7 @@ export function MaterialsLibrary() {
       </div>
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent className="z-[100]">
           <DialogHeader>
             <DialogTitle>Edit Material</DialogTitle>
           </DialogHeader>
