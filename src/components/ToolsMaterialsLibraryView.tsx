@@ -631,8 +631,6 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
             )}
               </div>
             </div>
-              </div>
-            </div>
           ) : (
             <div className="p-4 sm:p-6">
               <Tabs defaultValue="tools" className="w-full">
