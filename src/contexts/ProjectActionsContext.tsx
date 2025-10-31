@@ -377,18 +377,20 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
         if (error) throw error;
 
-        // 🔥 NEW: Sync custom phases to template tables
-        const { syncAllPhasesToDatabase } = await import('@/utils/phaseSynchronization');
-        await syncAllPhasesToDatabase(project);
-        console.log('✅ Custom phases synced to database');
-      }
+        // Optimistically update cache IMMEDIATELY for responsive UI
+        const updatedProjects = projects.map(p => p.id === project.id ? project : p);
+        updateProjectsCache(updatedProjects);
+        
+        if (currentProject?.id === project.id) {
+          setCurrentProject(project);
+        }
 
-      // Optimistically update cache
-      const updatedProjects = projects.map(p => p.id === project.id ? project : p);
-      updateProjectsCache(updatedProjects);
-      
-      if (currentProject?.id === project.id) {
-        setCurrentProject(project);
+        // Sync custom phases to template tables in background (don't block UI)
+        const { syncAllPhasesToDatabase } = await import('@/utils/phaseSynchronization');
+        syncAllPhasesToDatabase(project).catch(err => {
+          console.error('❌ Error syncing custom phases:', err);
+        });
+        console.log('✅ Custom phase sync initiated');
       }
     } catch (error) {
       console.error('❌ Error updating project:', error);
