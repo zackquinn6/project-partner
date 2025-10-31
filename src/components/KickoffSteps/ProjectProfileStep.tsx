@@ -302,15 +302,21 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
           <div className="sticky bottom-0 bg-background pt-4 border-t mt-4">
             {!isCompleted ? (
-              <Button onClick={handleSave} className="w-full bg-green-600 hover:bg-green-700">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Profile Complete - Continue
-              </Button>
+              <div className="flex gap-2">
+                <div className="w-1/4" />
+                <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Profile Complete - Continue
+                </Button>
+              </div>
             ) : (
-              <Button className="w-full bg-green-100 text-green-800 hover:bg-green-200" disabled>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Profile Complete - Continue
-              </Button>
+              <div className="flex gap-2">
+                <div className="w-1/4" />
+                <Button className="flex-1 bg-green-100 text-green-800 hover:bg-green-200" disabled>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Profile Complete - Continue
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
