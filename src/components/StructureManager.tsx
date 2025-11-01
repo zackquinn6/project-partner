@@ -322,7 +322,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // CRUD operations
   const addPhase = async () => {
-    if (!currentProject) return;
+    console.log('🔧 addPhase called');
+    if (!currentProject) {
+      console.error('❌ No current project');
+      return;
+    }
+    
+    console.log('📋 Current project:', currentProject.id);
     
     const phaseName = 'New Phase';
     const phaseDescription = 'Phase description';
@@ -332,10 +338,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // Standard phases: Kickoff(0), Planning(10), Ordering(20), then custom phases start at 100
     const displayOrder = 100 + (customPhaseCount * 10);
     
+    console.log('📊 Custom phase count:', customPhaseCount, 'Display order:', displayOrder);
+    
     try {
+      console.log('🔄 Inserting phase marker...');
       // Create the custom phase WITHOUT any operations
       // We mark it with a flag to identify it's a custom phase container
-      const { error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('template_operations')
         .insert({
           project_id: currentProject.id,
@@ -347,26 +356,50 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           display_order: 0,
           is_custom_phase: true,
           standard_phase_id: null
-        });
+        })
+        .select();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('❌ Insert error:', insertError);
+        throw insertError;
+      }
+      
+      console.log('✅ Phase marker inserted:', insertData);
 
+      console.log('🔄 Rebuilding phases...');
       // Rebuild and enforce ordering in one optimized call
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
         p_project_id: currentProject.id
       });
 
-      if (rebuildError) throw rebuildError;
+      if (rebuildError) {
+        console.error('❌ Rebuild error:', rebuildError);
+        throw rebuildError;
+      }
+      
+      console.log('✅ Phases rebuilt:', rebuiltPhases);
 
+      console.log('🔄 Enforcing standard phase ordering...');
       // Enforce standard phase ordering
       const orderedPhases = enforceStandardPhaseOrdering(rebuiltPhases as any);
       
+      console.log('✅ Phases ordered:', orderedPhases);
+      
+      console.log('🔄 Updating project in database...');
       // Update project with ordered phases
-      await supabase
+      const { error: updateError } = await supabase
         .from('projects')
         .update({ phases: orderedPhases as any })
         .eq('id', currentProject.id);
+        
+      if (updateError) {
+        console.error('❌ Update error:', updateError);
+        throw updateError;
+      }
+      
+      console.log('✅ Project updated in database');
 
+      console.log('🔄 Updating local context...');
       // Update local context
       updateProject({
         ...currentProject,
@@ -374,9 +407,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         updatedAt: new Date()
       });
       
+      console.log('✅ Add phase complete!');
       toast.success('Phase added successfully');
     } catch (error) {
-      console.error('Error adding phase:', error);
+      console.error('❌ Error adding phase:', error);
       toast.error('Failed to add phase');
     }
   };
