@@ -192,10 +192,7 @@ export interface Project {
   cover_image?: string | null; // URL of cover image for display
   createdAt: Date;
   updatedAt: Date;
-  startDate: Date;
-  planEndDate: Date;
-  endDate?: Date;
-  status: 'not-started' | 'in-progress' | 'complete';
+  // Note: status, startDate, planEndDate, endDate only apply to ProjectRun, not templates
   publishStatus?: 'draft' | 'published' | 'beta-testing' | 'archived';
   category?: string[];
   effortLevel?: 'Low' | 'Medium' | 'High';

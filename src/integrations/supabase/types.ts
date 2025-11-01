@@ -2454,7 +2454,6 @@ export type Database = {
           scaling_unit: string | null
           skill_level: string | null
           start_date: string
-          status: string
           updated_at: string
         }
         Insert: {
@@ -2491,7 +2490,6 @@ export type Database = {
           scaling_unit?: string | null
           skill_level?: string | null
           start_date?: string
-          status?: string
           updated_at?: string
         }
         Update: {
@@ -2528,7 +2526,6 @@ export type Database = {
           scaling_unit?: string | null
           skill_level?: string | null
           start_date?: string
-          status?: string
           updated_at?: string
         }
         Relationships: [

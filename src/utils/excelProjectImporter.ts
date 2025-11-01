@@ -197,9 +197,7 @@ function convertExcelDataToProject(excelRows: ExcelProjectRow[], projectId: stri
     phases,
     createdAt: now,
     updatedAt: now,
-    startDate: now,
-    planEndDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-    status: 'not-started' as const
+    publishStatus: 'draft' as const
   };
 }
 

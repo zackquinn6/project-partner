@@ -480,9 +480,6 @@ export function UnifiedProjectManagement({ onEditWorkflow }: UnifiedProjectManag
         description: '',
         createdAt: new Date(),
         updatedAt: new Date(),
-        startDate: new Date(),
-        planEndDate: new Date(),
-        status: 'not-started' as const,
         publishStatus: 'draft' as const,
         phases: parsedPhases,
       isStandardTemplate: true
@@ -1069,9 +1066,6 @@ export function UnifiedProjectManagement({ onEditWorkflow }: UnifiedProjectManag
                               description: revision.description || '',
                               createdAt: new Date(revision.created_at),
                               updatedAt: new Date(revision.updated_at),
-                              startDate: new Date(),
-                              planEndDate: new Date(),
-                              status: 'not-started' as const,
                               publishStatus: revision.publish_status as 'draft' | 'published' | 'beta-testing',
                               phases: parsedPhases
                             });

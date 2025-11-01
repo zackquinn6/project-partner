@@ -54,9 +54,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       diyLengthChallenges: '', // Initialize empty DIY challenges field for new projects
       createdAt: new Date(),
       updatedAt: new Date(),
-      startDate: new Date(),
-      planEndDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
-      status: 'not-started' as const,
       publishStatus: 'draft' as const,
       phases: []
     };
