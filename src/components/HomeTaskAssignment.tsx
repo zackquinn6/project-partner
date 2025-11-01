@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Users, Mail, Phone, CheckCircle2, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { Users, Mail, Phone, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -51,6 +52,7 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [assignments, setAssignments] = useState<Record<string, Assignment[]>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
   const fetchPeople = useCallback(async () => {
@@ -81,7 +83,8 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
       .from('home_tasks')
       .select('id, title, diy_level')
       .eq('user_id', userId)
-      .neq('status', 'closed');
+      .neq('status', 'closed')
+      .neq('status', 'completed');
 
     if (homeId) {
       query = query.eq('home_id', homeId);
@@ -99,7 +102,8 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
       .from('home_tasks')
       .select('id')
       .eq('user_id', userId)
-      .neq('status', 'closed');
+      .neq('status', 'closed')
+      .neq('status', 'completed');
 
     if (homeId) {
       taskQuery = taskQuery.eq('home_id', homeId);
@@ -150,7 +154,8 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
       .from('home_tasks')
       .select('id')
       .eq('user_id', userId)
-      .neq('status', 'closed');
+      .neq('status', 'closed')
+      .neq('status', 'completed');
 
     if (homeId) {
       taskQuery = taskQuery.eq('home_id', homeId);
@@ -239,11 +244,13 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
   useEffect(() => {
     if (userId) {
       const loadData = async () => {
+        setIsLoading(true);
         await fetchPeople();
         await fetchTasks();
         await fetchSubtasks();
         // Load existing assignments after people are loaded
         await fetchExistingAssignments();
+        setIsLoading(false);
       };
       loadData();
     }
@@ -571,7 +578,21 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
         Drag tasks and subtasks to team members to assign work
       </div>
 
-      {people.length === 0 ? (
+      {isLoading ? (
+        <Card>
+          <CardContent className="py-8">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm">Loading assignments...</span>
+            </div>
+            <div className="space-y-3 mt-6">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      ) : people.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
             <AlertCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
