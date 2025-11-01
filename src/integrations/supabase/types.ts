@@ -3590,15 +3590,24 @@ export type Database = {
             }
             Returns: string
           }
-      create_project_with_standard_foundation_v2: {
-        Args: {
-          p_category?: string
-          p_created_by?: string
-          p_project_description: string
-          p_project_name: string
-        }
-        Returns: string
-      }
+      create_project_with_standard_foundation_v2:
+        | {
+            Args: {
+              p_category?: string
+              p_created_by?: string
+              p_project_description: string
+              p_project_name: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              project_category: string[]
+              project_description: string
+              project_name: string
+            }
+            Returns: string
+          }
       delete_user_data: { Args: { user_uuid: string }; Returns: string }
       detect_suspicious_activity: {
         Args: never
