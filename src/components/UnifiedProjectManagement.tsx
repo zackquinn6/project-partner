@@ -380,6 +380,12 @@ export function UnifiedProjectManagement({ onEditWorkflow }: UnifiedProjectManag
           .delete()
           .eq('project_id', pid);
 
+        // Delete project_phases (new architecture)
+        await supabase
+          .from('project_phases')
+          .delete()
+          .eq('project_id', pid);
+
         // Delete project_runs that reference this template
         await supabase
           .from('project_runs')

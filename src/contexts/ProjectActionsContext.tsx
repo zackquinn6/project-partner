@@ -75,10 +75,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // Use new v2 database function for proper project_phases architecture
       const { data: projectId, error } = await supabase
         .rpc('create_project_with_standard_foundation_v2', {
-          p_project_name: projectData.name,
-          p_project_description: projectData.description || null,
-          p_category: Array.isArray(projectData.category) ? projectData.category[0] : projectData.category || 'general',
-          p_created_by: user.id
+          project_name: projectData.name,
+          project_description: projectData.description || '',
+          project_category: Array.isArray(projectData.category) ? projectData.category : [projectData.category || 'general']
         });
 
       if (error) throw error;
