@@ -344,6 +344,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       console.log('🔄 Inserting phase marker...');
       // Create the custom phase WITHOUT any operations
       // We mark it with a flag to identify it's a custom phase container
+      // NOTE: is_custom_phase is a generated column, so we don't set it
       const { data: insertData, error: insertError } = await supabase
         .from('template_operations')
         .insert({
@@ -354,7 +355,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           custom_phase_description: phaseDescription,
           custom_phase_display_order: displayOrder,
           display_order: 0,
-          is_custom_phase: true,
           standard_phase_id: null
         })
         .select();
