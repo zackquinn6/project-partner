@@ -22,6 +22,7 @@ export function ShoppingListManager() {
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>('material_name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [showCompleted, setShowCompleted] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -96,7 +97,8 @@ export function ShoppingListManager() {
   };
 
   const sortedItems = useMemo(() => {
-    const sorted = [...items].sort((a, b) => {
+    const filtered = showCompleted ? items : items.filter(item => !item.completed);
+    const sorted = [...filtered].sort((a, b) => {
       const aVal = a[sortField].toLowerCase();
       const bVal = b[sortField].toLowerCase();
       
@@ -105,7 +107,7 @@ export function ShoppingListManager() {
       return 0;
     });
     return sorted;
-  }, [items, sortField, sortDirection]);
+  }, [items, sortField, sortDirection, showCompleted]);
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ChevronDown className="h-3 w-3 opacity-30" />;
@@ -127,8 +129,20 @@ export function ShoppingListManager() {
     );
   }
 
+  const completedCount = items.filter(item => item.completed).length;
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          variant={showCompleted ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowCompleted(!showCompleted)}
+          className="h-7 text-xs"
+        >
+          {showCompleted ? `Hide Done (${completedCount})` : `Show Done (${completedCount})`}
+        </Button>
+      </div>
       <div className="border rounded-lg overflow-hidden">
         <div className="overflow-auto max-h-[600px]">
           <Table>

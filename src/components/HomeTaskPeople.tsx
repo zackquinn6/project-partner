@@ -222,7 +222,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
       if (person.availability_start_date && person.availability_end_date) {
         parts.push(`${format(new Date(person.availability_start_date), 'MMM d')} - ${format(new Date(person.availability_end_date), 'MMM d')}`);
       }
-      return parts.length > 0 ? parts.join(' • ') : 'General availability';
+      return parts.length > 0 ? parts.join(' • ') : '';
     } else {
       return person.specific_dates && person.specific_dates.length > 0 
         ? `${person.specific_dates.length} specific date(s)` 
@@ -523,62 +523,61 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                     </div>
                   )}
 
-                  <div className="flex gap-1 pt-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSaveEdit}
-                      className="flex-1 h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white border-green-600"
-                    >
-                      <Check className="h-3 w-3 mr-1" />
-                      Save
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCancelEdit}
-                      className="flex-1 h-6 text-[10px]"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Cancel
-                    </Button>
-                  </div>
+                   <div className="flex gap-1 pt-1">
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={handleSaveEdit}
+                       className="flex-1 h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white border-green-600"
+                     >
+                       <Check className="h-3 w-3 mr-1" />
+                       Save
+                     </Button>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={handleCancelEdit}
+                       className="flex-1 h-6 text-[10px]"
+                     >
+                       <X className="h-3 w-3 mr-1" />
+                       Cancel
+                     </Button>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={() => handleDeletePerson(editingPersonId)}
+                       className="h-6 w-6 p-0 text-destructive"
+                     >
+                       <Trash2 className="h-3 w-3" />
+                     </Button>
+                   </div>
                 </div>
               ) : (
-                // View mode
+                // View mode - delete available in edit mode
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold truncate">{person.name}</div>
-                    <div className="flex flex-wrap gap-1 md:gap-1.5 mt-1">
-                      <Badge variant="outline" className="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0">
+                    <div className="font-semibold text-sm md:text-base truncate">{person.name}</div>
+                    <div className="flex flex-wrap gap-1 md:gap-1.5 mt-1.5">
+                      <Badge variant="outline" className="text-xs md:text-sm px-2 py-0.5">
+                        <span className="text-[10px] md:text-xs text-muted-foreground mr-1">DIY:</span>
                         {person.diy_level}
                       </Badge>
-                      <Badge variant="secondary" className="text-[9px] md:text-[10px] px-1 md:px-1.5 py-0">
-                        {person.availability_mode === 'general' ? 'General' : 'Specific Dates'}
-                      </Badge>
                     </div>
-                    <div className="mt-1 text-[9px] md:text-[10px] text-muted-foreground">
+                    <div className="mt-1.5 text-xs md:text-sm text-muted-foreground">
+                      {person.availability_mode === 'general' && person.available_days.length > 0 && (
+                        <span>{person.available_hours}h/day • </span>
+                      )}
                       {getAvailabilityDisplay(person)}
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditPerson(person)}
-                      className="h-5 w-5 md:h-6 md:w-6 p-0 flex-shrink-0"
-                    >
-                      <Edit2 className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeletePerson(person.id)}
-                      className="h-5 w-5 md:h-6 md:w-6 p-0 text-destructive flex-shrink-0"
-                    >
-                      <Trash2 className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditPerson(person)}
+                    className="h-7 w-7 md:h-8 md:w-8 p-0 flex-shrink-0"
+                  >
+                    <Edit2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  </Button>
                 </div>
               )}
             </div>
