@@ -24,6 +24,7 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
   const [showFeedback, setShowFeedback] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [isDocumentationOpen, setIsDocumentationOpen] = useState(false);
+  const [showTaskManager, setShowTaskManager] = useState(false);
 
   useEffect(() => {
     setActiveTab(currentView);
@@ -35,8 +36,6 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
     setActiveTab(tab);
     onViewChange(tab);
   };
-
-  const [showTaskManager, setShowTaskManager] = useState(false);
 
   const navItems = [
     {
