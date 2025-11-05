@@ -554,7 +554,14 @@ export function UnifiedProjectManagement({ onEditWorkflow }: UnifiedProjectManag
   };
 
   const createProject = async () => {
+    if (!newProject.name.trim()) {
+      toast.error("Project name is required");
+      return;
+    }
+
     try {
+      console.log('🔨 Creating project:', newProject);
+      
       // Use v2 backend function to create project with standard foundation
       const { data, error } = await supabase
         .rpc('create_project_with_standard_foundation_v2', {
@@ -563,8 +570,12 @@ export function UnifiedProjectManagement({ onEditWorkflow }: UnifiedProjectManag
           project_category: newProject.categories.length > 0 ? newProject.categories : []
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Create project error:', error);
+        throw error;
+      }
 
+      console.log('✅ Project created:', data);
       toast.success("New project created with standard phases!");
 
       setCreateProjectDialogOpen(false);
@@ -580,7 +591,7 @@ export function UnifiedProjectManagement({ onEditWorkflow }: UnifiedProjectManag
       fetchProjects();
     } catch (error) {
       console.error('Error creating project:', error);
-      toast.error("Failed to create project");
+      toast.error(`Failed to create project: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

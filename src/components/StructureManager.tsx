@@ -450,13 +450,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       const operationCount = currentProject.phases[phaseIndex].operations.length;
       
-      // Insert operation into template_operations using phase_id
+      // Get the project_phases record to link the operation
+      const { data: projectPhase } = await supabase
+        .from('project_phases')
+        .select('id')
+        .eq('project_id', currentProject.id)
+        .eq('name', phase.name)
+        .single();
+
+      if (!projectPhase) {
+        toast.error('Phase not found in database');
+        return;
+      }
+      
+      // Insert operation into template_operations using project_phase ID
       const { error } = await supabase
         .from('template_operations')
         .insert({
           project_id: currentProject.id,
-          phase_id: phaseId,
-          standard_phase_id: phase.isStandard ? (phase as any).standardPhaseId : null,
+          phase_id: projectPhase.id,
           name: 'New Operation',
           description: 'Operation description',
           display_order: operationCount
@@ -586,12 +598,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
 
     try {
+      // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
+      const { data: projectPhase } = await supabase
+        .from('project_phases')
+        .select('id')
+        .eq('project_id', currentProject.id)
+        .eq('name', phase?.name)
+        .single();
+
+      if (!projectPhase) {
+        toast.error('Phase not found in database');
+        return;
+      }
+
       // Delete from database - get operations first
       const { data: operations } = await supabase
         .from('template_operations')
         .select('id')
         .eq('project_id', currentProject.id)
-        .eq('phase_id', phaseId);
+        .eq('phase_id', projectPhase.id);
 
       if (operations && operations.length > 0) {
         const operationIds = operations.map(op => op.id);
@@ -606,14 +631,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         await supabase
           .from('template_operations')
           .delete()
-          .eq('phase_id', phaseId);
+          .eq('phase_id', projectPhase.id);
       }
 
       // Delete phase
       await supabase
         .from('project_phases')
         .delete()
-        .eq('id', phaseId);
+        .eq('id', projectPhase.id);
 
       // Rebuild phases JSON
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
