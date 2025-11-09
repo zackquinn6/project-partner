@@ -48,6 +48,7 @@ import { useStepInstructions } from '@/hooks/useStepInstructions';
 import { ToolRentalsWindow } from './ToolRentalsWindow';
 import { HomeManager } from './HomeManager';
 import { isKickoffPhaseComplete } from '@/utils/projectUtils';
+import { useUserRole } from '@/hooks/useUserRole';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
 import { MobileDIYDropdown } from './MobileDIYDropdown';
 import { ProjectCompletionHandler } from './ProjectCompletionHandler';
@@ -69,6 +70,7 @@ export default function UserView({
   showProfile
 }: UserViewProps) {
   const { isMobile } = useResponsive();
+  const { isAdmin } = useUserRole();
   const {
     currentProject,
     currentProjectRun,
@@ -1563,12 +1565,35 @@ export default function UserView({
   
   // If current project has no workflow steps
   if (allSteps.length === 0) {
+    // Check if we have standard phases but no operations/steps
+    const hasOnlyStandardPhases = activeProject?.phases?.every(p => p.isStandard) ?? false;
+    const hasPhases = (activeProject?.phases?.length ?? 0) > 0;
+    
     return <div className="container mx-auto px-6 py-8">
         <Card>
           <CardContent className="text-center py-8">
-            <p className="text-muted-foreground">
-              This project under construction - check back soon!
-            </p>
+            {hasPhases && hasOnlyStandardPhases ? (
+              <div className="space-y-4">
+                <p className="text-muted-foreground">
+                  Your project has the standard phases (Kickoff, Planning, Ordering, Close Project) set up.
+                </p>
+                <p className="text-muted-foreground">
+                  To build your workflow, you'll need to add custom project phases with operations and steps.
+                </p>
+                {isAdmin && (
+                  <Button 
+                    onClick={() => setViewMode('listing')}
+                    className="mt-4"
+                  >
+                    Go to Project Management
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">
+                This project is under construction - check back soon!
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>;
