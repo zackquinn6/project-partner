@@ -1563,37 +1563,16 @@ export default function UserView({
     );
   }
   
-  // If current project has no workflow steps
-  if (allSteps.length === 0) {
-    // Check if we have standard phases but no operations/steps
-    const hasOnlyStandardPhases = activeProject?.phases?.every(p => p.isStandard) ?? false;
-    const hasPhases = (activeProject?.phases?.length ?? 0) > 0;
-    
+  // Only show "under construction" if there are literally no phases at all
+  const hasPhases = (activeProject?.phases?.length ?? 0) > 0;
+  
+  if (allSteps.length === 0 && !hasPhases) {
     return <div className="container mx-auto px-6 py-8">
         <Card>
           <CardContent className="text-center py-8">
-            {hasPhases && hasOnlyStandardPhases ? (
-              <div className="space-y-4">
-                <p className="text-muted-foreground">
-                  Your project has the standard phases (Kickoff, Planning, Ordering, Close Project) set up.
-                </p>
-                <p className="text-muted-foreground">
-                  To build your workflow, you'll need to add custom project phases with operations and steps.
-                </p>
-                {isAdmin && (
-                  <Button 
-                    onClick={() => setViewMode('listing')}
-                    className="mt-4"
-                  >
-                    Go to Project Management
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">
-                This project is under construction - check back soon!
-              </p>
-            )}
+            <p className="text-muted-foreground">
+              This project is under construction - check back soon!
+            </p>
           </CardContent>
         </Card>
       </div>;
