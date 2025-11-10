@@ -3554,6 +3554,10 @@ export type Database = {
       }
       cleanup_old_sessions: { Args: never; Returns: number }
       cleanup_security_logs: { Args: never; Returns: number }
+      copy_standard_operations_to_project: {
+        Args: { target_project_id: string }
+        Returns: undefined
+      }
       create_project_revision: {
         Args: { revision_notes_text?: string; source_project_id: string }
         Returns: string
