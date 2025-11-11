@@ -28,9 +28,10 @@ import { CompactOutputsTable } from '@/components/CompactOutputsTable';
 import { CompactTimeEstimation } from '@/components/CompactTimeEstimation';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
-import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useDynamicPhases } from '@/hooks/useDynamicPhases';
 
 // Extended interfaces for step-level usage
 interface StepMaterial extends Material {
@@ -52,6 +53,16 @@ export default function EditWorkflowView({
     updateProject
   } = useProject();
 
+  // Fetch dynamic phases for template projects (not Standard Project Foundation)
+  const { phases: dynamicPhases, loading: dynamicPhasesLoading } = useDynamicPhases(
+    currentProject?.id !== '00000000-0000-0000-0000-000000000001' ? currentProject?.id : undefined
+  );
+
+  // Use dynamic phases for non-standard projects, otherwise use stored phases
+  const phases = currentProject?.id !== '00000000-0000-0000-0000-000000000001' && dynamicPhases.length > 0
+    ? dynamicPhases
+    : currentProject?.phases || [];
+
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
 
@@ -63,17 +74,18 @@ export default function EditWorkflowView({
   // Debug log to check phases and show helpful message if empty
   useEffect(() => {
     if (currentProject) {
-      const hasPhases = currentProject.phases && currentProject.phases.length > 0;
-      const hasOperations = hasPhases && currentProject.phases.some(p => p.operations && p.operations.length > 0);
+      const hasPhases = phases && phases.length > 0;
+      const hasOperations = hasPhases && phases.some(p => p.operations && p.operations.length > 0);
       
       console.log('🔍 EditWorkflowView - Project loaded:', {
         projectId: currentProject.id,
         projectName: currentProject.name,
         isEditingStandardProject,
+        usingDynamicPhases: currentProject.id !== '00000000-0000-0000-0000-000000000001' && dynamicPhases.length > 0,
         hasPhases,
         hasOperations,
-        phaseCount: currentProject.phases?.length || 0,
-        phases: currentProject.phases?.map(p => ({
+        phaseCount: phases?.length || 0,
+        phases: phases?.map(p => ({
           name: p.name,
           isStandard: p.isStandard,
           operationCount: p.operations?.length || 0
@@ -81,13 +93,13 @@ export default function EditWorkflowView({
       });
 
       // Show warning if no phases
-      if (!hasPhases) {
+      if (!hasPhases && !dynamicPhasesLoading) {
         toast.error('This project has no phases. The project data may be corrupted.');
-      } else if (!hasOperations) {
+      } else if (!hasOperations && !dynamicPhasesLoading) {
         toast.error('This project has phases but no operations. The project structure may be incomplete.');
       }
     }
-  }, [currentProject?.id, isEditingStandardProject]);
+  }, [currentProject?.id, isEditingStandardProject, phases, dynamicPhases.length, dynamicPhasesLoading]);
   const [viewMode, setViewMode] = useState<'steps' | 'structure'>('steps');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
@@ -126,8 +138,8 @@ export default function EditWorkflowView({
 
   const [isCascading, setIsCascading] = useState(false);
   
-  // Get phases directly from project - no dynamic addition needed
-  const displayPhases = currentProject ? currentProject.phases : [];
+  // Get phases directly from project - use dynamic phases for templates
+  const displayPhases = phases;
 
   // Debug logging
   useEffect(() => {
@@ -135,8 +147,8 @@ export default function EditWorkflowView({
       console.log('🔍 EditWorkflowView - currentProject loaded:', {
         projectId: currentProject.id,
         projectName: currentProject.name,
-        phaseCount: currentProject.phases?.length,
-        phases: currentProject.phases?.map(p => ({
+        phaseCount: phases?.length,
+        phases: phases?.map(p => ({
           name: p.name,
           operationCount: p.operations?.length,
           operations: p.operations?.map(op => ({
@@ -147,7 +159,7 @@ export default function EditWorkflowView({
         }))
       });
     }
-  }, [currentProject?.id]);
+  }, [currentProject?.id, phases]);
 
   // Flatten all steps from all phases and operations for navigation
   const allSteps = displayPhases.flatMap(phase => phase.operations.flatMap(operation => operation.steps.map(step => ({
@@ -380,7 +392,7 @@ export default function EditWorkflowView({
     // Update only custom phases (standard phases are generated dynamically)
     const updatedProject = {
       ...currentProject,
-      phases: currentProject.phases.map(phase => ({
+      phases: phases.map(phase => ({
         ...phase,
         operations: phase.operations.map(operation => ({
           ...operation,
@@ -482,15 +494,15 @@ export default function EditWorkflowView({
   };
 
   // Handle import functionality
-  const handleImport = (phases: Phase[]) => {
+  const handleImport = (importedPhases: Phase[]) => {
     if (!currentProject) return;
     const updatedProject = {
       ...currentProject,
-      phases: [...currentProject.phases, ...phases],
+      phases: [...phases, ...importedPhases],
       updatedAt: new Date()
     };
     updateProject(updatedProject);
-    toast.success(`Imported ${phases.length} phases successfully`);
+    toast.success(`Imported ${importedPhases.length} phases successfully`);
   };
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
@@ -712,6 +724,14 @@ export default function EditWorkflowView({
                     </div>
                   )}
                 </>
+              )}
+              {!isEditingStandardProject && dynamicPhasesLoading && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    <span>Loading workflow with latest standard phases...</span>
+                  </div>
+                </div>
               )}
             </div>
             <div className="flex items-center gap-4">
