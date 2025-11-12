@@ -227,15 +227,17 @@ export default function UserView({
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
   
-  // Fetch dynamic phases for project runs
+  // CRITICAL ARCHITECTURE:
+  // - Project templates use DYNAMIC phases (live updates from standard foundation)
+  // - Project runs use STATIC phases (immutable snapshot taken at creation)
   const { phases: dynamicPhases, loading: dynamicPhasesLoading } = useDynamicPhases(
-    currentProjectRun?.templateId || currentProject?.id
+    currentProject?.id // Only fetch dynamic phases for templates, NOT runs
   );
   
-  // Use dynamic phases if available, otherwise fall back to static phases
-  const workflowPhases = (currentProjectRun || currentProject) ? 
-    (dynamicPhases.length > 0 ? dynamicPhases : activeProject?.phases || []) : 
-    [];
+  // Determine which phases to use based on context
+  const workflowPhases = currentProjectRun 
+    ? (currentProjectRun.phases || [])  // Project runs: use immutable snapshot
+    : (dynamicPhases.length > 0 ? dynamicPhases : currentProject?.phases || []); // Templates: use dynamic phases
   
   // Debug active project structure
   console.log('🔍 Active project debug:', {
@@ -243,7 +245,8 @@ export default function UserView({
     hasCurrentProjectRun: !!currentProjectRun,
     activeProjectId: activeProject?.id,
     activeProjectName: activeProject?.name,
-    usingDynamicPhases: dynamicPhases.length > 0,
+    isUsingDynamicPhases: !!currentProject && !currentProjectRun && dynamicPhases.length > 0,
+    isUsingImmutableSnapshot: !!currentProjectRun,
     dynamicPhasesLoading,
     phasesLength: workflowPhases?.length || 0,
     firstPhase: workflowPhases?.[0] ? {
