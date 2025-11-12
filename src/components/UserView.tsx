@@ -55,6 +55,7 @@ import { ProjectCompletionHandler } from './ProjectCompletionHandler';
 import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
+import { useDynamicPhases } from '@/hooks/useDynamicPhases';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -226,31 +227,43 @@ export default function UserView({
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
   
+  // Fetch dynamic phases for project runs
+  const { phases: dynamicPhases, loading: dynamicPhasesLoading } = useDynamicPhases(
+    currentProjectRun?.templateId || currentProject?.id
+  );
+  
+  // Use dynamic phases if available, otherwise fall back to static phases
+  const workflowPhases = (currentProjectRun || currentProject) ? 
+    (dynamicPhases.length > 0 ? dynamicPhases : activeProject?.phases || []) : 
+    [];
+  
   // Debug active project structure
   console.log('🔍 Active project debug:', {
     hasCurrentProject: !!currentProject,
     hasCurrentProjectRun: !!currentProjectRun,
     activeProjectId: activeProject?.id,
     activeProjectName: activeProject?.name,
-    phasesLength: activeProject?.phases?.length || 0,
-    firstPhase: activeProject?.phases?.[0] ? {
-      name: activeProject.phases[0].name,
-      operationsCount: activeProject.phases[0].operations?.length || 0,
-      firstOperationStepsCount: activeProject.phases[0].operations?.[0]?.steps?.length || 0,
-      sampleStep: activeProject.phases[0].operations?.[0]?.steps?.[0] ? {
-        id: activeProject.phases[0].operations[0].steps[0].id,
-        step: activeProject.phases[0].operations[0].steps[0].step,
-        materialsLength: activeProject.phases[0].operations[0].steps[0].materials?.length || 0,
-        toolsLength: activeProject.phases[0].operations[0].steps[0].tools?.length || 0
+    usingDynamicPhases: dynamicPhases.length > 0,
+    dynamicPhasesLoading,
+    phasesLength: workflowPhases?.length || 0,
+    firstPhase: workflowPhases?.[0] ? {
+      name: workflowPhases[0].name,
+      operationsCount: workflowPhases[0].operations?.length || 0,
+      firstOperationStepsCount: workflowPhases[0].operations?.[0]?.steps?.length || 0,
+      sampleStep: workflowPhases[0].operations?.[0]?.steps?.[0] ? {
+        id: workflowPhases[0].operations[0].steps[0].id,
+        step: workflowPhases[0].operations[0].steps[0].step,
+        materialsLength: workflowPhases[0].operations[0].steps[0].materials?.length || 0,
+        toolsLength: workflowPhases[0].operations[0].steps[0].tools?.length || 0
       } : null
     } : null
   });
   
   // Flatten all steps with phases directly from project
   // Include both standard phases AND project-specific phases in workflow display
-  const allSteps = activeProject ? activeProject.phases
+  const allSteps = workflowPhases.length > 0 ? workflowPhases
     .flatMap(phase =>
-    phase.operations.flatMap(operation => 
+    phase.operations.flatMap(operation =>
       operation.steps.map(step => {
         // Add sample materials and tools for demonstration (since project templates are empty)
         let materials = step.materials || [];
