@@ -3528,6 +3528,10 @@ export type Database = {
         Args: { p_custom_phases?: Json; p_project_id: string }
         Returns: Json
       }
+      build_phases_json_with_dynamic_standard: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
       calculate_pfmea_rpn: {
         Args: { failure_mode_uuid: string }
         Returns: number
