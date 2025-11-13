@@ -496,8 +496,15 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       diyLengthChallenges: projectTemplate.diyLengthChallenges
     };
     
+    // Set timeout to reset flag if creation doesn't complete
+    const resetTimeout = setTimeout(() => {
+      console.log('⏱️ Project creation timeout - resetting flag');
+      setIsCreatingNewProject(false);
+    }, 5000);
+    
     // Pass navigation callback to addProjectRun
     addProjectRun(newProjectRun, (projectRunId: string) => {
+      clearTimeout(resetTimeout);
       console.log("🎯 ProjectCatalog: Project run created (new project), navigating to kickoff with ID:", projectRunId);
       
       // Reset state immediately
