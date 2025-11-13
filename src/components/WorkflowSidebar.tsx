@@ -6,16 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarTrigger,
-  useSidebar
-} from "@/components/ui/sidebar";
-
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 interface WorkflowSidebarProps {
   allSteps: any[];
   currentStep: any;
@@ -32,7 +23,6 @@ interface WorkflowSidebarProps {
   onUnplannedWorkClick: () => void;
   onKeysToSuccessClick: () => void;
 }
-
 export function WorkflowSidebar({
   allSteps,
   currentStep,
@@ -49,21 +39,20 @@ export function WorkflowSidebar({
   onUnplannedWorkClick,
   onKeysToSuccessClick
 }: WorkflowSidebarProps) {
-  const { state } = useSidebar();
+  const {
+    state
+  } = useSidebar();
   const collapsed = state === "collapsed";
   const [showStepTypesInfo, setShowStepTypesInfo] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
-
-  return (
-    <Sidebar collapsible="icon">
+  return <Sidebar collapsible="icon">
       <SidebarTrigger className="m-2 self-end" />
       
       <SidebarContent className="pt-4">
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 text-sm font-semibold">{projectName || 'Project Progress'}</SidebarGroupLabel>
           <SidebarGroupContent>
-            {!collapsed && (
-              <div className="space-y-4 p-2">
+            {!collapsed && <div className="space-y-4 p-2">
                 {/* Progress Header */}
                 <div className="space-y-2">
                   <div className="text-xs text-muted-foreground">
@@ -104,37 +93,20 @@ export function WorkflowSidebar({
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-primary">DIY Tools</h3>
                   <div className="flex gap-2">
-                    <Button 
-                      onClick={() => setShowComingSoon(true)}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900 rounded-lg"
-                    >
+                    <Button onClick={() => setShowComingSoon(true)} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900 rounded-lg">
                       <MessageCircle className="w-4 h-4" />
                       <div className="text-[10px] font-semibold">Chat</div>
                     </Button>
                     
-                    <Button 
-                      onClick={onKeysToSuccessClick}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border-green-200 hover:border-green-300 transition-all shadow-sm hover:shadow-md text-green-800 hover:text-green-900 rounded-lg"
-                    >
+                    <Button onClick={onKeysToSuccessClick} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border-green-200 hover:border-green-300 transition-all shadow-sm hover:shadow-md text-green-800 hover:text-green-900 rounded-lg">
                       <Key className="w-4 h-4" />
                       <div className="text-[10px] font-semibold">KeyInfo</div>
                     </Button>
                     
-                    {isKickoffComplete && (
-                      <Button 
-                        onClick={onUnplannedWorkClick}
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-150 border-orange-200 hover:border-orange-300 transition-all shadow-sm hover:shadow-md text-orange-800 hover:text-orange-900 rounded-lg"
-                      >
+                    {isKickoffComplete && <Button onClick={onUnplannedWorkClick} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-150 border-orange-200 hover:border-orange-300 transition-all shadow-sm hover:shadow-md text-orange-800 hover:text-orange-900 rounded-lg">
                         <Settings className="w-4 h-4" />
                         <div className="text-[10px] font-semibold">Re-Plan</div>
-                      </Button>
-                    )}
+                      </Button>}
                   </div>
                 </div>
 
@@ -143,54 +115,35 @@ export function WorkflowSidebar({
 
                 {/* Step Navigation */}
                 <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                  {Object.entries(groupedSteps).map(([phase, operations]) => (
-                    <div key={phase} className="space-y-2">
+                  {Object.entries(groupedSteps).map(([phase, operations]) => <div key={phase} className="space-y-2">
                       <h4 className="font-semibold text-primary text-sm">{phase}</h4>
-                      {Object.entries(operations as any).map(([operation, opSteps]) => (
-                        <div key={operation} className="ml-2 space-y-1">
+                      {Object.entries(operations as any).map(([operation, opSteps]) => <div key={operation} className="ml-2 space-y-1">
                           <h5 className="text-xs font-medium text-muted-foreground">{operation}</h5>
                           {(opSteps as any[]).map(step => {
-                            const stepIndex = allSteps.findIndex(s => s.id === step.id);
-                            return (
-                              <div 
-                                key={step.id} 
-                                className={`ml-2 p-2 rounded text-xs cursor-pointer transition-fast border ${
-                                  step.id === currentStep?.id ? 'bg-primary/10 text-primary border-primary/20' : 
-                                  completedSteps.has(step.id) ? 'bg-green-50 text-green-700 border-green-200' : 
-                                  'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
-                                }`} 
-                                onClick={() => {
-                                  if (stepIndex >= 0 && isKickoffComplete) {
-                                    onStepClick(stepIndex, step);
-                                  }
-                                }}
-                              >
+                    const stepIndex = allSteps.findIndex(s => s.id === step.id);
+                    return <div key={step.id} className={`ml-2 p-2 rounded text-xs cursor-pointer transition-fast border ${step.id === currentStep?.id ? 'bg-primary/10 text-primary border-primary/20' : completedSteps.has(step.id) ? 'bg-green-50 text-green-700 border-green-200' : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'}`} onClick={() => {
+                      if (stepIndex >= 0 && isKickoffComplete) {
+                        onStepClick(stepIndex, step);
+                      }
+                    }}>
                                 <div className="flex items-center gap-2">
                                   {getStepIndicator(step.stepType || 'prime')}
                                   {completedSteps.has(step.id) && <CheckCircle className="w-3 h-3" />}
                                   <span className="truncate">{step.step}</span>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+                              </div>;
+                  })}
+                        </div>)}
+                    </div>)}
                 </div>
 
                 {/* Step Types Button - Moved to Bottom */}
                 <div className="mt-4 pt-4 border-t border-border">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setShowStepTypesInfo(true)}
-                    className="w-full py-2 px-4 text-sm"
-                  >
+                  <Button variant="outline" onClick={() => setShowStepTypesInfo(true)} className="w-full py-1.5 px-4 text-xs ">
                     Step Types
                   </Button>
                 </div>
-              </div>
-            )}
+              </div>}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
@@ -227,6 +180,5 @@ export function WorkflowSidebar({
           </div>
         </DialogContent>
       </Dialog>
-    </Sidebar>
-  );
+    </Sidebar>;
 }
