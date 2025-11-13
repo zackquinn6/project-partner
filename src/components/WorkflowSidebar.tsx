@@ -71,7 +71,7 @@ export function WorkflowSidebar({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Layers className="w-4 h-4 text-primary" />
-                    <h3 className="text-sm font-semibold text-primary">Detail Level</h3>
+                    <h3 className="font-semibold text-primary text-xs">Detail Level</h3>
                   </div>
                   <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
                     <SelectTrigger className="w-full text-xs">
