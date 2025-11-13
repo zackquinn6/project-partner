@@ -239,25 +239,35 @@ export default function UserView({
     ? (currentProjectRun.phases || [])  // Project runs: use immutable snapshot
     : (dynamicPhases.length > 0 ? dynamicPhases : currentProject?.phases || []); // Templates: use dynamic phases
   
-  // Debug active project structure
-  console.log('🔍 Active project debug:', {
+  // Debug active project structure - CRITICAL DEBUGGING
+  console.log('🔍 UserView Active project debug:', {
     hasCurrentProject: !!currentProject,
     hasCurrentProjectRun: !!currentProjectRun,
+    currentProjectRunId: currentProjectRun?.id,
+    currentProjectRunName: currentProjectRun?.name,
     activeProjectId: activeProject?.id,
     activeProjectName: activeProject?.name,
     isUsingDynamicPhases: !!currentProject && !currentProjectRun && dynamicPhases.length > 0,
     isUsingImmutableSnapshot: !!currentProjectRun,
     dynamicPhasesLoading,
+    rawProjectRunPhases: currentProjectRun?.phases ? 'exists' : 'missing',
+    rawProjectRunPhasesType: typeof currentProjectRun?.phases,
+    rawProjectRunPhasesIsArray: Array.isArray(currentProjectRun?.phases),
     phasesLength: workflowPhases?.length || 0,
+    workflowPhasesType: typeof workflowPhases,
+    workflowPhasesIsArray: Array.isArray(workflowPhases),
     firstPhase: workflowPhases?.[0] ? {
+      id: workflowPhases[0].id,
       name: workflowPhases[0].name,
+      operationsExists: !!workflowPhases[0].operations,
+      operationsIsArray: Array.isArray(workflowPhases[0].operations),
       operationsCount: workflowPhases[0].operations?.length || 0,
-      firstOperationStepsCount: workflowPhases[0].operations?.[0]?.steps?.length || 0,
-      sampleStep: workflowPhases[0].operations?.[0]?.steps?.[0] ? {
-        id: workflowPhases[0].operations[0].steps[0].id,
-        step: workflowPhases[0].operations[0].steps[0].step,
-        materialsLength: workflowPhases[0].operations[0].steps[0].materials?.length || 0,
-        toolsLength: workflowPhases[0].operations[0].steps[0].tools?.length || 0
+      firstOperation: workflowPhases[0].operations?.[0] ? {
+        id: workflowPhases[0].operations[0].id,
+        name: workflowPhases[0].operations[0].name,
+        stepsExists: !!workflowPhases[0].operations[0].steps,
+        stepsIsArray: Array.isArray(workflowPhases[0].operations[0].steps),
+        stepsCount: workflowPhases[0].operations[0].steps?.length || 0
       } : null
     } : null
   });
@@ -307,6 +317,13 @@ export default function UserView({
       })
     )
   ) : [];
+  
+  // CRITICAL DEBUG: Log allSteps calculation
+  console.log('🔍 UserView allSteps calculation:', {
+    workflowPhasesLength: workflowPhases.length,
+    allStepsLength: allSteps.length,
+    allStepsFirst3: allSteps.slice(0, 3).map(s => ({ id: s.id, step: s.step, phaseName: s.phaseName, operationName: s.operationName }))
+  });
   
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
