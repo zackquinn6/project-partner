@@ -1291,38 +1291,22 @@ export default function UserView({
     }
   };
 
-  // Group steps by phase and operation for sidebar navigation - FIXED: Use workflowPhases to match allSteps
-  // CRITICAL FIX: Only process first occurrence of each phase name to avoid duplicate overwrites
+  // Group steps by phase and operation for sidebar navigation
+  // NOTE: Database function now handles phase deduplication at source
   const groupedSteps = workflowPhases.reduce((acc, phase) => {
     if (!phase || !phase.name || !phase.operations || !Array.isArray(phase.operations)) {
       console.warn('⚠️ Invalid phase structure:', phase);
       return acc;
     }
     
-    // Skip if this phase name already exists (prevents empty duplicates from overwriting)
-    if (acc[phase.name]) {
-      console.log('⏭️ Skipping duplicate phase:', phase.name, 'with', phase.operations.length, 'operations');
-      return acc;
-    }
-    
-    // Only process phases that have operations with steps
-    const operationsWithSteps = phase.operations.reduce((opAcc, operation) => {
+    acc[phase.name] = phase.operations.reduce((opAcc, operation) => {
       if (!operation || !operation.name || !operation.steps || !Array.isArray(operation.steps)) {
         console.warn('⚠️ Invalid operation structure:', operation);
         return opAcc;
       }
-      // Only include operations that actually have steps
-      if (operation.steps.length > 0) {
-        opAcc[operation.name] = operation.steps;
-      }
+      opAcc[operation.name] = operation.steps;
       return opAcc;
     }, {} as Record<string, any[]>);
-    
-    // Only add phase if it has operations with steps
-    if (Object.keys(operationsWithSteps).length > 0) {
-      acc[phase.name] = operationsWithSteps;
-    }
-    
     return acc;
   }, {} as Record<string, Record<string, any[]>>) || {};
   
