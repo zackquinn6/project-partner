@@ -164,7 +164,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     refetch: refetchProjects,
     mutate: updateProjectsCache
   } = useDataFetch<Project>({
-    table: 'projects',
+    table: 'project_templates_live',
     select: '*',
     filters: [{ column: 'is_current_version', value: true }],
     orderBy: { column: 'created_at', ascending: false },

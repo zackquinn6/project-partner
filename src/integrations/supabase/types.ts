@@ -2854,9 +2854,11 @@ export type Database = {
           flow_type: string | null
           id: string
           is_custom_phase: boolean | null
+          is_reference: boolean
           name: string
           phase_id: string | null
           project_id: string
+          source_operation_id: string | null
           standard_phase_id: string | null
           updated_at: string | null
           user_prompt: string | null
@@ -2873,9 +2875,11 @@ export type Database = {
           flow_type?: string | null
           id?: string
           is_custom_phase?: boolean | null
+          is_reference?: boolean
           name: string
           phase_id?: string | null
           project_id: string
+          source_operation_id?: string | null
           standard_phase_id?: string | null
           updated_at?: string | null
           user_prompt?: string | null
@@ -2892,9 +2896,11 @@ export type Database = {
           flow_type?: string | null
           id?: string
           is_custom_phase?: boolean | null
+          is_reference?: boolean
           name?: string
           phase_id?: string | null
           project_id?: string
+          source_operation_id?: string | null
           standard_phase_id?: string | null
           updated_at?: string | null
           user_prompt?: string | null
@@ -2946,6 +2952,7 @@ export type Database = {
           step_number: number
           step_title: string
           step_type: string | null
+          step_type_id: string | null
           tools: Json | null
           updated_at: string | null
         }
@@ -2964,6 +2971,7 @@ export type Database = {
           step_number: number
           step_title: string
           step_type?: string | null
+          step_type_id?: string | null
           tools?: Json | null
           updated_at?: string | null
         }
@@ -2982,6 +2990,7 @@ export type Database = {
           step_number?: number
           step_title?: string
           step_type?: string | null
+          step_type_id?: string | null
           tools?: Json | null
           updated_at?: string | null
         }
@@ -2991,6 +3000,13 @@ export type Database = {
             columns: ["operation_id"]
             isOneToOne: false
             referencedRelation: "template_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_steps_step_type_id_fkey"
+            columns: ["step_type_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_step_types"
             referencedColumns: ["id"]
           },
         ]
@@ -3452,6 +3468,275 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_step_materials: {
+        Row: {
+          alternates: string[] | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          legacy_material_id: string | null
+          metadata: Json
+          name: string
+          notes: string | null
+          quantity: string | null
+          step_id: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          alternates?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          legacy_material_id?: string | null
+          metadata?: Json
+          name: string
+          notes?: string | null
+          quantity?: string | null
+          step_id: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alternates?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          legacy_material_id?: string | null
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          quantity?: string | null
+          step_id?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_step_materials_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_step_outputs: {
+        Row: {
+          allowances: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          legacy_output_id: string | null
+          metadata: Json
+          must_get_right: string | null
+          name: string
+          output_type: string | null
+          potential_effects: string | null
+          quality_checks: string | null
+          reference_specification: string | null
+          requirement: string | null
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          allowances?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          legacy_output_id?: string | null
+          metadata?: Json
+          must_get_right?: string | null
+          name: string
+          output_type?: string | null
+          potential_effects?: string | null
+          quality_checks?: string | null
+          reference_specification?: string | null
+          requirement?: string | null
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          allowances?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          legacy_output_id?: string | null
+          metadata?: Json
+          must_get_right?: string | null
+          name?: string
+          output_type?: string | null
+          potential_effects?: string | null
+          quality_checks?: string | null
+          reference_specification?: string | null
+          requirement?: string | null
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_step_outputs_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_step_process_variables: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          label: string | null
+          metadata: Json
+          options: Json | null
+          required: boolean
+          source_step_id: string | null
+          source_step_name: string | null
+          step_id: string
+          target_value: string | null
+          unit: string | null
+          updated_at: string
+          variable_key: string | null
+          variable_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          label?: string | null
+          metadata?: Json
+          options?: Json | null
+          required?: boolean
+          source_step_id?: string | null
+          source_step_name?: string | null
+          step_id: string
+          target_value?: string | null
+          unit?: string | null
+          updated_at?: string
+          variable_key?: string | null
+          variable_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          label?: string | null
+          metadata?: Json
+          options?: Json | null
+          required?: boolean
+          source_step_id?: string | null
+          source_step_name?: string | null
+          step_id?: string
+          target_value?: string | null
+          unit?: string | null
+          updated_at?: string
+          variable_key?: string | null
+          variable_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_step_process_variables_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_step_tools: {
+        Row: {
+          alternates: string[] | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          legacy_tool_id: string | null
+          metadata: Json
+          name: string
+          notes: string | null
+          quantity: string | null
+          step_id: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          alternates?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          legacy_tool_id?: string | null
+          metadata?: Json
+          name: string
+          notes?: string | null
+          quantity?: string | null
+          step_id: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alternates?: string[] | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          legacy_tool_id?: string | null
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          quantity?: string | null
+          step_id?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_step_tools_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_step_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       workflow_optimizations: {
         Row: {
           affected_steps: string[]
@@ -3520,7 +3805,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      project_templates_live: {
+        Row: {
+          archived_at: string | null
+          beta_released_at: string | null
+          category: string[] | null
+          cover_image: string | null
+          created_at: string
+          created_by: string | null
+          created_from_revision: number | null
+          description: string | null
+          difficulty: string | null
+          diy_length_challenges: string | null
+          effort_level: string | null
+          end_date: string | null
+          estimated_time: string | null
+          estimated_time_per_unit: number | null
+          id: string
+          image: string | null
+          images: string[] | null
+          is_current_version: boolean | null
+          is_standard_template: boolean | null
+          name: string
+          owner_id: string | null
+          parent_project_id: string | null
+          phase_revision_alerts: Json | null
+          phases: Json
+          plan_end_date: string
+          publish_status: string
+          published_at: string | null
+          release_notes: string | null
+          revision_notes: string | null
+          revision_number: number | null
+          scaling_unit: string | null
+          skill_level: string | null
+          start_date: string
+          updated_at: string
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_admin_by_email: { Args: { user_email: string }; Returns: string }
@@ -3671,6 +3994,10 @@ export type Database = {
       get_average_market_price: {
         Args: { variation_id: string }
         Returns: number
+      }
+      get_project_workflow_json: {
+        Args: { p_project_id: string }
+        Returns: Json
       }
       get_failed_login_summary: {
         Args: { days_back?: number }
@@ -3831,6 +4158,10 @@ export type Database = {
         Returns: undefined
       }
       migrate_phases_from_json_to_table: { Args: never; Returns: undefined }
+      build_phases_json_with_dynamic_standard: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
       rebuild_phases_json_from_project_phases: {
         Args: { p_project_id: string }
         Returns: Json
