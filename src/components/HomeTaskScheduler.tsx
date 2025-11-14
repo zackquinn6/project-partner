@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, AlertTriangle, CheckCircle2, Loader2, CalendarIcon, Save, Mail, Info } from "lucide-react";
+import { Calendar, AlertTriangle, CheckCircle2, Loader2, CalendarIcon, Save, Mail, Info, Users } from "lucide-react";
 import { scheduleHomeTasksOptimized } from "@/utils/homeTaskScheduler";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
