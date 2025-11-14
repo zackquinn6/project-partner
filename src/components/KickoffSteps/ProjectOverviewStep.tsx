@@ -147,7 +147,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         const split = categories.split(',').map((c: string) => c.trim()).filter(Boolean);
         // Remove any JSON-like artifacts (quotes, braces)
         const cleaned = split.map(cat => 
-          cat.replace(/^["']|["']$/g, '').replace(/^\{|\}$/g, '').trim()
+          cat.replace(/["']/g, '').replace(/^\{|\}$/g, '').trim()
         ).filter(Boolean);
         return Array.from(new Set(cleaned));
       }
@@ -155,7 +155,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     
     // For any other type, convert to string and clean
     const str = String(categories);
-    const cleaned = str.replace(/^["']|["']$/g, '').replace(/^\{|\}$/g, '').trim();
+    const cleaned = str.replace(/["']/g, '').replace(/^\{|\}$/g, '').trim();
     return cleaned ? [cleaned] : [];
   };
 
