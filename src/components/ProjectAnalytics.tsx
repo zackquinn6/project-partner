@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
-import { CheckCircle, Clock, AlertTriangle, TrendingUp, Star } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, TrendingUp, Star, Camera, BarChart3 } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { AnalyticsFilters } from './AnalyticsFilters';
 import { generateDemoData, calculateRealAnalytics, exportAnalyticsData, AnalyticsData } from '@/utils/analyticsData';
+import { AdminPhotoAggregation } from './AdminPhotoAggregation';
 import { DateRange } from 'react-day-picker';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const ProjectAnalytics: React.FC = () => {
   const { projects, projectRuns } = useProject();
+  const { isAdmin } = useUserRole();
   
   // Filter states
   const [selectedProject, setSelectedProject] = useState('all');
@@ -17,6 +21,7 @@ const ProjectAnalytics: React.FC = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [demoMode, setDemoMode] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [activeTab, setActiveTab] = useState('analytics');
 
   // Calculate analytics data
   useEffect(() => {
@@ -58,20 +63,34 @@ const ProjectAnalytics: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Analytics Filters */}
-      <AnalyticsFilters
-        selectedProject={selectedProject}
-        onProjectChange={setSelectedProject}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        demoMode={demoMode}
-        onDemoModeToggle={() => setDemoMode(!demoMode)}
-        onExport={handleExport}
-        projects={projects}
-      />
-      {/* Key Metrics */}
+      {isAdmin && (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="photos" className="gap-2">
+              <Camera className="w-4 h-4" />
+              Photos
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="analytics" className="mt-6 space-y-6">
+            {/* Analytics Filters */}
+            <AnalyticsFilters
+              selectedProject={selectedProject}
+              onProjectChange={setSelectedProject}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              demoMode={demoMode}
+              onDemoModeToggle={() => setDemoMode(!demoMode)}
+              onExport={handleExport}
+              projects={projects}
+            />
+            {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="gradient-card border-0 shadow-card">
           <CardContent className="p-6">
@@ -345,6 +364,32 @@ const ProjectAnalytics: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+          </TabsContent>
+
+          <TabsContent value="photos" className="mt-6">
+            <AdminPhotoAggregation />
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {!isAdmin && (
+        <>
+          {/* Analytics Filters - for non-admin users */}
+          <AnalyticsFilters
+            selectedProject={selectedProject}
+            onProjectChange={setSelectedProject}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            demoMode={demoMode}
+            onDemoModeToggle={() => setDemoMode(!demoMode)}
+            onExport={handleExport}
+            projects={projects}
+          />
+          {/* Non-admin users see the standard analytics view without photo tab */}
+        </>
       )}
     </div>
   );

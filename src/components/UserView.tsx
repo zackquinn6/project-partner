@@ -33,6 +33,8 @@ import { MaterialsSelectionDialog } from './MaterialsSelectionDialog';
 import { KickoffWorkflow } from './KickoffWorkflow';
 import { UnplannedWorkWindow } from './UnplannedWorkWindow';
 import { ProjectSurvey } from './ProjectSurvey';
+import { PhotoUpload } from './PhotoUpload';
+import { PhotoGallery } from './PhotoGallery';
 import { ProjectCompletionPopup } from './ProjectCompletionPopup';
 import { ToolsMaterialsSection } from './ToolsMaterialsSection';
 import ProfileManager from './ProfileManager';
@@ -143,6 +145,7 @@ export default function UserView({
   const [homeManagerOpen, setHomeManagerOpen] = useState(false);
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
+  const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
   const [scaledProgressDialogOpen, setScaledProgressDialogOpen] = useState(false);
   const [currentScaledStep, setCurrentScaledStep] = useState<{ id: string; title: string } | null>(null);
   const [selectedMaterialsForShopping, setSelectedMaterialsForShopping] = useState<{
@@ -1777,6 +1780,31 @@ export default function UserView({
             </CardContent>
           </Card>
 
+          {/* Photo Gallery - Show in celebration step */}
+          {currentStep && currentStep.id === 'celebrate-step' && currentProjectRun && (
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-blue-600" />
+                  Project Photos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  View all photos you've captured throughout this project journey.
+                </p>
+                <Button 
+                  onClick={() => setPhotoGalleryOpen(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  View Project Photos
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Apps Section - Positioned prominently after content */}
           {currentStep && currentStep.apps && currentStep.apps.length > 0 && (
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-card">
@@ -1888,6 +1916,16 @@ export default function UserView({
                 </div>
 
                 <div className="flex items-center gap-3">
+                  {/* Photo Upload Button - Always visible for current step */}
+                  {currentStep && currentProjectRun && (
+                    <PhotoUpload
+                      projectRunId={currentProjectRun.id}
+                      templateId={currentProjectRun.templateId || null}
+                      stepId={currentStep.id}
+                      stepName={currentStep.step}
+                    />
+                  )}
+
                   {currentStep && !completedSteps.has(currentStep.id) && (
                     areAllOutputsCompleted(currentStep) ? (
                       currentStep.stepType === 'scaled' ? (
@@ -2411,6 +2449,18 @@ export default function UserView({
         open={projectPerformanceOpen}
         onOpenChange={setProjectPerformanceOpen}
       />
+
+      {/* Photo Gallery */}
+      {currentProjectRun && (
+        <PhotoGallery
+          open={photoGalleryOpen}
+          onOpenChange={setPhotoGalleryOpen}
+          projectRunId={currentProjectRun.id}
+          templateId={currentProjectRun.templateId || undefined}
+          mode="user"
+          title="My Project Photos"
+        />
+      )}
 
       {/* Scaled Step Progress Dialog */}
       {currentScaledStep && currentProjectRun && (
