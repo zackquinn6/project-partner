@@ -27,16 +27,19 @@ ON CONFLICT (key) DO NOTHING;
 ALTER TABLE public.workflow_step_types
   ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins manage workflow_step_types" ON public.workflow_step_types;
 CREATE POLICY "Admins manage workflow_step_types"
   ON public.workflow_step_types
   FOR ALL
   USING (public.is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "Authenticated read workflow_step_types" ON public.workflow_step_types;
 CREATE POLICY "Authenticated read workflow_step_types"
   ON public.workflow_step_types
   FOR SELECT
   USING (auth.uid() IS NOT NULL);
 
+DROP TRIGGER IF EXISTS trg_workflow_step_types_updated_at ON public.workflow_step_types;
 CREATE TRIGGER trg_workflow_step_types_updated_at
   BEFORE UPDATE ON public.workflow_step_types
   FOR EACH ROW
@@ -136,53 +139,65 @@ ALTER TABLE public.workflow_step_tools ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workflow_step_outputs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workflow_step_process_variables ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins manage workflow_step_materials" ON public.workflow_step_materials;
 CREATE POLICY "Admins manage workflow_step_materials"
   ON public.workflow_step_materials FOR ALL
   USING (public.is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "Admins manage workflow_step_tools" ON public.workflow_step_tools;
 CREATE POLICY "Admins manage workflow_step_tools"
   ON public.workflow_step_tools FOR ALL
   USING (public.is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "Admins manage workflow_step_outputs" ON public.workflow_step_outputs;
 CREATE POLICY "Admins manage workflow_step_outputs"
   ON public.workflow_step_outputs FOR ALL
   USING (public.is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "Admins manage workflow_step_process_variables" ON public.workflow_step_process_variables;
 CREATE POLICY "Admins manage workflow_step_process_variables"
   ON public.workflow_step_process_variables FOR ALL
   USING (public.is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "Authenticated read workflow_step_materials" ON public.workflow_step_materials;
 CREATE POLICY "Authenticated read workflow_step_materials"
   ON public.workflow_step_materials FOR SELECT
   USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Authenticated read workflow_step_tools" ON public.workflow_step_tools;
 CREATE POLICY "Authenticated read workflow_step_tools"
   ON public.workflow_step_tools FOR SELECT
   USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Authenticated read workflow_step_outputs" ON public.workflow_step_outputs;
 CREATE POLICY "Authenticated read workflow_step_outputs"
   ON public.workflow_step_outputs FOR SELECT
   USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Authenticated read workflow_step_process_variables" ON public.workflow_step_process_variables;
 CREATE POLICY "Authenticated read workflow_step_process_variables"
   ON public.workflow_step_process_variables FOR SELECT
   USING (auth.uid() IS NOT NULL);
 
+DROP TRIGGER IF EXISTS trg_workflow_step_materials_updated_at ON public.workflow_step_materials;
 CREATE TRIGGER trg_workflow_step_materials_updated_at
   BEFORE UPDATE ON public.workflow_step_materials
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS trg_workflow_step_tools_updated_at ON public.workflow_step_tools;
 CREATE TRIGGER trg_workflow_step_tools_updated_at
   BEFORE UPDATE ON public.workflow_step_tools
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS trg_workflow_step_outputs_updated_at ON public.workflow_step_outputs;
 CREATE TRIGGER trg_workflow_step_outputs_updated_at
   BEFORE UPDATE ON public.workflow_step_outputs
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS trg_workflow_step_process_variables_updated_at ON public.workflow_step_process_variables;
 CREATE TRIGGER trg_workflow_step_process_variables_updated_at
   BEFORE UPDATE ON public.workflow_step_process_variables
   FOR EACH ROW
@@ -191,8 +206,38 @@ CREATE TRIGGER trg_workflow_step_process_variables_updated_at
 --------------------------------------------------
 -- 3. Map legacy template_steps to step type table
 --------------------------------------------------
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE table_schema = 'public'
+      AND table_name = 'template_steps'
+      AND constraint_name = 'template_steps_step_type_id_fkey'
+  ) THEN
+    EXECUTE 'ALTER TABLE public.template_steps DROP CONSTRAINT template_steps_step_type_id_fkey';
+  END IF;
+END$$;
+
 ALTER TABLE public.template_steps
-  ADD COLUMN IF NOT EXISTS step_type_id UUID REFERENCES public.workflow_step_types(id);
+  ADD COLUMN IF NOT EXISTS step_type_id UUID;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE table_schema = 'public'
+      AND table_name = 'template_steps'
+      AND constraint_name = 'template_steps_step_type_id_fkey'
+  ) THEN
+    EXECUTE 'ALTER TABLE public.template_steps ADD CONSTRAINT template_steps_step_type_id_fkey FOREIGN KEY (step_type_id) REFERENCES public.workflow_step_types(id) ON DELETE SET NULL';
+  END IF;
+END$$;
+
+UPDATE public.template_steps
+SET step_type_id = NULL
+WHERE step_type_id IS NOT NULL;
 
 UPDATE public.template_steps ts
 SET step_type_id = (

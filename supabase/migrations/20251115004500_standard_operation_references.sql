@@ -261,9 +261,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 -- 6. Update project creation to use reference operations
 ----------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.create_project_with_standard_foundation_v2(
-  project_name TEXT,
-  project_description TEXT,
-  project_category TEXT DEFAULT 'general',
+  p_project_name TEXT,
+  p_project_description TEXT,
+  p_category TEXT DEFAULT 'general',
   p_created_by UUID DEFAULT auth.uid()
 ) RETURNS UUID AS $$
 DECLARE
@@ -281,9 +281,9 @@ BEGIN
     created_by,
     is_current_version
   ) VALUES (
-    project_name,
-    project_description,
-    project_category,
+    p_project_name,
+    p_project_description,
+    p_category,
     'draft',
     p_created_by,
     true

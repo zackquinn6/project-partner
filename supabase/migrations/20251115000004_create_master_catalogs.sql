@@ -35,6 +35,40 @@ COMMENT ON TABLE public.step_types IS 'Categories of workflow steps for classifi
 -- MATERIALS CATALOG
 -- ============================================================================
 
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+      AND table_name = 'materials' 
+      AND column_name = 'item'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+      AND table_name = 'materials' 
+      AND column_name = 'name'
+  ) THEN
+    ALTER TABLE public.materials RENAME COLUMN item TO name;
+  END IF;
+END$$;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+      AND table_name = 'materials' 
+      AND column_name = 'unit_size'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+      AND table_name = 'materials' 
+      AND column_name = 'unit'
+  ) THEN
+    ALTER TABLE public.materials RENAME COLUMN unit_size TO unit;
+  END IF;
+END$$;
+
 CREATE TABLE IF NOT EXISTS public.materials (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -50,8 +84,32 @@ CREATE TABLE IF NOT EXISTS public.materials (
   CONSTRAINT unique_material_name_category UNIQUE(name, category)
 );
 
-CREATE INDEX idx_materials_category ON public.materials(category);
-CREATE INDEX idx_materials_name ON public.materials(name);
+ALTER TABLE public.materials
+  ADD COLUMN IF NOT EXISTS name TEXT,
+  ADD COLUMN IF NOT EXISTS description TEXT,
+  ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'uncategorized',
+  ADD COLUMN IF NOT EXISTS unit TEXT,
+  ADD COLUMN IF NOT EXISTS avg_cost_per_unit DECIMAL(10, 2),
+  ADD COLUMN IF NOT EXISTS is_rental_available BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS supplier_link TEXT,
+  ADD COLUMN IF NOT EXISTS notes TEXT,
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'unique_material_name_category'
+      AND conrelid = 'public.materials'::regclass
+  ) THEN
+    ALTER TABLE public.materials
+      ADD CONSTRAINT unique_material_name_category UNIQUE(name, category);
+  END IF;
+END$$;
+
+CREATE INDEX IF NOT EXISTS idx_materials_category ON public.materials(category);
+CREATE INDEX IF NOT EXISTS idx_materials_name ON public.materials(name);
 
 COMMENT ON TABLE public.materials IS 'Master catalog of materials used across all projects';
 COMMENT ON COLUMN public.materials.unit IS 'Unit of measurement for quantity calculations';
@@ -60,6 +118,23 @@ COMMENT ON COLUMN public.materials.avg_cost_per_unit IS 'Average cost for budget
 -- ============================================================================
 -- TOOLS CATALOG
 -- ============================================================================
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+      AND table_name = 'tools' 
+      AND column_name = 'item'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+      AND table_name = 'tools' 
+      AND column_name = 'name'
+  ) THEN
+    ALTER TABLE public.tools RENAME COLUMN item TO name;
+  END IF;
+END$$;
 
 CREATE TABLE IF NOT EXISTS public.tools (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -77,9 +152,23 @@ CREATE TABLE IF NOT EXISTS public.tools (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_tools_category ON public.tools(category);
-CREATE INDEX idx_tools_name ON public.tools(name);
-CREATE INDEX idx_tools_rental_available ON public.tools(is_rental_available);
+ALTER TABLE public.tools
+  ADD COLUMN IF NOT EXISTS name TEXT,
+  ADD COLUMN IF NOT EXISTS description TEXT,
+  ADD COLUMN IF NOT EXISTS category TEXT,
+  ADD COLUMN IF NOT EXISTS is_rental_available BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS avg_rental_cost_per_day DECIMAL(10, 2),
+  ADD COLUMN IF NOT EXISTS purchase_cost_estimate DECIMAL(10, 2),
+  ADD COLUMN IF NOT EXISTS rental_supplier_link TEXT,
+  ADD COLUMN IF NOT EXISTS purchase_supplier_link TEXT,
+  ADD COLUMN IF NOT EXISTS safety_notes TEXT,
+  ADD COLUMN IF NOT EXISTS notes TEXT,
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+CREATE INDEX IF NOT EXISTS idx_tools_category ON public.tools(category);
+CREATE INDEX IF NOT EXISTS idx_tools_name ON public.tools(name);
+CREATE INDEX IF NOT EXISTS idx_tools_rental_available ON public.tools(is_rental_available);
 
 COMMENT ON TABLE public.tools IS 'Master catalog of tools used across all projects';
 COMMENT ON COLUMN public.tools.is_rental_available IS 'Whether this tool is commonly available for rent';
@@ -88,19 +177,27 @@ COMMENT ON COLUMN public.tools.is_rental_available IS 'Whether this tool is comm
 -- OUTPUTS CATALOG
 -- ============================================================================
 
-CREATE TYPE public.output_type AS ENUM (
-  'none',
-  'measurement',
-  'decision',
-  'document',
-  'photo',
-  'inspection',
-  'material_list',
-  'tool_list',
-  'calculation',
-  'approval',
-  'schedule'
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type WHERE typname = 'output_type' AND typnamespace = 'public'::regnamespace
+  ) THEN
+    EXECUTE '
+      CREATE TYPE public.output_type AS ENUM (
+        ''none'',
+        ''measurement'',
+        ''decision'',
+        ''document'',
+        ''photo'',
+        ''inspection'',
+        ''material_list'',
+        ''tool_list'',
+        ''calculation'',
+        ''approval'',
+        ''schedule''
+      )';
+  END IF;
+END$$;
 
 CREATE TABLE IF NOT EXISTS public.outputs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -114,8 +211,8 @@ CREATE TABLE IF NOT EXISTS public.outputs (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_outputs_type ON public.outputs(type);
-CREATE INDEX idx_outputs_name ON public.outputs(name);
+CREATE INDEX IF NOT EXISTS idx_outputs_type ON public.outputs(type);
+CREATE INDEX IF NOT EXISTS idx_outputs_name ON public.outputs(name);
 
 COMMENT ON TABLE public.outputs IS 'Master catalog of step outputs (deliverables)';
 COMMENT ON COLUMN public.outputs.validation_rules IS 'JSON schema defining required fields and validation rules';
@@ -124,14 +221,22 @@ COMMENT ON COLUMN public.outputs.validation_rules IS 'JSON schema defining requi
 -- PROCESS VARIABLES
 -- ============================================================================
 
-CREATE TYPE public.variable_type AS ENUM (
-  'number',
-  'text',
-  'boolean',
-  'date',
-  'measurement',
-  'list'
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type WHERE typname = 'variable_type' AND typnamespace = 'public'::regnamespace
+  ) THEN
+    EXECUTE '
+      CREATE TYPE public.variable_type AS ENUM (
+        ''number'',
+        ''text'',
+        ''boolean'',
+        ''date'',
+        ''measurement'',
+        ''list''
+      )';
+  END IF;
+END$$;
 
 CREATE TABLE IF NOT EXISTS public.process_variables (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -148,8 +253,8 @@ CREATE TABLE IF NOT EXISTS public.process_variables (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_process_variables_name ON public.process_variables(name);
-CREATE INDEX idx_process_variables_type ON public.process_variables(variable_type);
+CREATE INDEX IF NOT EXISTS idx_process_variables_name ON public.process_variables(name);
+CREATE INDEX IF NOT EXISTS idx_process_variables_type ON public.process_variables(variable_type);
 
 COMMENT ON TABLE public.process_variables IS 'Dynamic variables used in workflows for calculations and decisions';
 COMMENT ON COLUMN public.process_variables.used_in_calculations IS 'Whether this variable is used in material/cost calculations';
@@ -171,8 +276,8 @@ CREATE TABLE IF NOT EXISTS public.step_materials (
   CONSTRAINT unique_step_material UNIQUE(step_id, material_id)
 );
 
-CREATE INDEX idx_step_materials_step ON public.step_materials(step_id);
-CREATE INDEX idx_step_materials_material ON public.step_materials(material_id);
+CREATE INDEX IF NOT EXISTS idx_step_materials_step ON public.step_materials(step_id);
+CREATE INDEX IF NOT EXISTS idx_step_materials_material ON public.step_materials(material_id);
 
 COMMENT ON TABLE public.step_materials IS 'Junction table linking steps to required materials';
 COMMENT ON COLUMN public.step_materials.quantity_formula IS 'Formula for dynamic quantity calculation using process variables';
@@ -188,8 +293,8 @@ CREATE TABLE IF NOT EXISTS public.step_tools (
   CONSTRAINT unique_step_tool UNIQUE(step_id, tool_id)
 );
 
-CREATE INDEX idx_step_tools_step ON public.step_tools(step_id);
-CREATE INDEX idx_step_tools_tool ON public.step_tools(tool_id);
+CREATE INDEX IF NOT EXISTS idx_step_tools_step ON public.step_tools(step_id);
+CREATE INDEX IF NOT EXISTS idx_step_tools_tool ON public.step_tools(tool_id);
 
 COMMENT ON TABLE public.step_tools IS 'Junction table linking steps to required tools';
 
@@ -204,8 +309,8 @@ CREATE TABLE IF NOT EXISTS public.step_outputs (
   CONSTRAINT unique_step_output UNIQUE(step_id, output_id)
 );
 
-CREATE INDEX idx_step_outputs_step ON public.step_outputs(step_id);
-CREATE INDEX idx_step_outputs_output ON public.step_outputs(output_id);
+CREATE INDEX IF NOT EXISTS idx_step_outputs_step ON public.step_outputs(step_id);
+CREATE INDEX IF NOT EXISTS idx_step_outputs_output ON public.step_outputs(output_id);
 
 COMMENT ON TABLE public.step_outputs IS 'Junction table linking steps to expected outputs';
 
@@ -220,8 +325,8 @@ CREATE TABLE IF NOT EXISTS public.step_variables (
   CONSTRAINT unique_step_variable UNIQUE(step_id, variable_id)
 );
 
-CREATE INDEX idx_step_variables_step ON public.step_variables(step_id);
-CREATE INDEX idx_step_variables_variable ON public.step_variables(variable_id);
+CREATE INDEX IF NOT EXISTS idx_step_variables_step ON public.step_variables(step_id);
+CREATE INDEX IF NOT EXISTS idx_step_variables_variable ON public.step_variables(variable_id);
 
 COMMENT ON TABLE public.step_variables IS 'Junction table linking steps to process variables they collect or use';
 
@@ -246,43 +351,66 @@ ALTER TABLE public.step_outputs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.step_variables ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can view catalogs
+DROP POLICY IF EXISTS "Everyone can view step types" ON public.step_types;
 CREATE POLICY "Everyone can view step types" ON public.step_types FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view materials" ON public.materials;
 CREATE POLICY "Everyone can view materials" ON public.materials FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view tools" ON public.tools;
 CREATE POLICY "Everyone can view tools" ON public.tools FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view outputs" ON public.outputs;
 CREATE POLICY "Everyone can view outputs" ON public.outputs FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view process variables" ON public.process_variables;
 CREATE POLICY "Everyone can view process variables" ON public.process_variables FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view step materials" ON public.step_materials;
 CREATE POLICY "Everyone can view step materials" ON public.step_materials FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view step tools" ON public.step_tools;
 CREATE POLICY "Everyone can view step tools" ON public.step_tools FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view step outputs" ON public.step_outputs;
 CREATE POLICY "Everyone can view step outputs" ON public.step_outputs FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view step variables" ON public.step_variables;
 CREATE POLICY "Everyone can view step variables" ON public.step_variables FOR SELECT USING (true);
 
 -- Only admins can manage catalogs
+DROP POLICY IF EXISTS "Admins can manage step types" ON public.step_types;
 CREATE POLICY "Admins can manage step types" ON public.step_types FOR ALL USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "Admins can manage materials" ON public.materials;
 CREATE POLICY "Admins can manage materials" ON public.materials FOR ALL USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "Admins can manage tools" ON public.tools;
 CREATE POLICY "Admins can manage tools" ON public.tools FOR ALL USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "Admins can manage outputs" ON public.outputs;
 CREATE POLICY "Admins can manage outputs" ON public.outputs FOR ALL USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "Admins can manage process variables" ON public.process_variables;
 CREATE POLICY "Admins can manage process variables" ON public.process_variables FOR ALL USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "Admins can manage step materials" ON public.step_materials;
 CREATE POLICY "Admins can manage step materials" ON public.step_materials FOR ALL USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "Admins can manage step tools" ON public.step_tools;
 CREATE POLICY "Admins can manage step tools" ON public.step_tools FOR ALL USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "Admins can manage step outputs" ON public.step_outputs;
 CREATE POLICY "Admins can manage step outputs" ON public.step_outputs FOR ALL USING (is_admin(auth.uid()));
+DROP POLICY IF EXISTS "Admins can manage step variables" ON public.step_variables;
 CREATE POLICY "Admins can manage step variables" ON public.step_variables FOR ALL USING (is_admin(auth.uid()));
 
 -- ============================================================================
 -- TRIGGERS FOR updated_at
 -- ============================================================================
 
+DROP TRIGGER IF EXISTS update_step_types_updated_at ON public.step_types;
 CREATE TRIGGER update_step_types_updated_at BEFORE UPDATE ON public.step_types
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_materials_updated_at ON public.materials;
 CREATE TRIGGER update_materials_updated_at BEFORE UPDATE ON public.materials
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_tools_updated_at ON public.tools;
 CREATE TRIGGER update_tools_updated_at BEFORE UPDATE ON public.tools
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_outputs_updated_at ON public.outputs;
 CREATE TRIGGER update_outputs_updated_at BEFORE UPDATE ON public.outputs
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_process_variables_updated_at ON public.process_variables;
 CREATE TRIGGER update_process_variables_updated_at BEFORE UPDATE ON public.process_variables
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
@@ -398,7 +526,7 @@ DECLARE
   step_record RECORD;
   output_json JSONB;
   output_name TEXT;
-  output_id UUID;
+  output_record_id UUID;
   output_type_val TEXT;
   migrated_count INTEGER := 0;
 BEGIN
@@ -422,12 +550,12 @@ BEGIN
         ON CONFLICT (name) DO UPDATE SET
           description = COALESCE(EXCLUDED.description, outputs.description),
           type = EXCLUDED.type
-        RETURNING id INTO output_id;
+        RETURNING id INTO output_record_id;
         
         INSERT INTO step_outputs (step_id, output_id, is_required, notes)
         VALUES (
           step_record.id,
-          output_id,
+          output_record_id,
           COALESCE((output_json->>'isRequired')::BOOLEAN, false),
           output_json->>'notes'
         )

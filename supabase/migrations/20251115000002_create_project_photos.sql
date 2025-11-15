@@ -55,11 +55,7 @@ CREATE POLICY "Admins can view project_partner and public photos"
   FOR SELECT 
   USING (
     privacy_level IN ('project_partner', 'public') 
-    AND EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE profiles.user_id = auth.uid() 
-      AND profiles.role = 'admin'
-    )
+    AND public.is_admin(auth.uid())
   );
 
 -- Policy 6: Public photos are visible to all authenticated users
@@ -96,7 +92,7 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for project-photos bucket
--- Policy 1: Users can upload to their own folder
+DROP POLICY IF EXISTS "Users can upload their own project photos" ON storage.objects;
 CREATE POLICY "Users can upload their own project photos"
 ON storage.objects FOR INSERT
 TO authenticated
@@ -105,7 +101,7 @@ WITH CHECK (
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Policy 2: Users can view their own photos
+DROP POLICY IF EXISTS "Users can view their own project photos" ON storage.objects;
 CREATE POLICY "Users can view their own project photos"
 ON storage.objects FOR SELECT
 TO authenticated
@@ -114,18 +110,14 @@ USING (
   AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Policy 3: Admins can view project_partner and public photos
 -- This requires checking the project_photos table for privacy level
+DROP POLICY IF EXISTS "Admins can view project partner photos" ON storage.objects;
 CREATE POLICY "Admins can view project partner photos"
 ON storage.objects FOR SELECT
 TO authenticated
 USING (
   bucket_id = 'project-photos' 
-  AND EXISTS (
-    SELECT 1 FROM public.profiles 
-    WHERE profiles.user_id = auth.uid() 
-    AND profiles.role = 'admin'
-  )
+  AND public.is_admin(auth.uid())
   AND EXISTS (
     SELECT 1 FROM public.project_photos 
     WHERE project_photos.storage_path = name 
@@ -133,7 +125,7 @@ USING (
   )
 );
 
--- Policy 4: Public photos are visible to all authenticated users
+DROP POLICY IF EXISTS "Public photos visible to all" ON storage.objects;
 CREATE POLICY "Public photos visible to all"
 ON storage.objects FOR SELECT
 TO authenticated
@@ -146,7 +138,7 @@ USING (
   )
 );
 
--- Policy 5: Users can delete their own photos
+DROP POLICY IF EXISTS "Users can delete their own project photos" ON storage.objects;
 CREATE POLICY "Users can delete their own project photos"
 ON storage.objects FOR DELETE
 TO authenticated
