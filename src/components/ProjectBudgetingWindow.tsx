@@ -57,17 +57,51 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
 
   useEffect(() => {
     if (currentProjectRun?.budget_data) {
-      // Handle both object and parsed JSON string
-      const budgetData = typeof currentProjectRun.budget_data === 'string' 
-        ? JSON.parse(currentProjectRun.budget_data) 
-        : currentProjectRun.budget_data;
-      
-      setBudgetItems(budgetData.lineItems || []);
-      setActualEntries(budgetData.actualEntries || []);
-      console.log('✅ Loaded budget data:', { 
-        itemsCount: budgetData.lineItems?.length || 0, 
-        entriesCount: budgetData.actualEntries?.length || 0 
-      });
+      try {
+        // Handle both object and parsed JSON string
+        const budgetData = typeof currentProjectRun.budget_data === 'string' 
+          ? JSON.parse(currentProjectRun.budget_data) 
+          : currentProjectRun.budget_data;
+        
+        // Validate and normalize lineItems
+        const normalizedItems: BudgetLineItem[] = (budgetData.lineItems || []).map((item: any) => ({
+          id: item.id || `budget-${Date.now()}-${Math.random()}`,
+          section: String(item.section || ''),
+          item: String(item.item || ''),
+          budgetedAmount: typeof item.budgetedAmount === 'number' ? item.budgetedAmount : parseFloat(String(item.budgetedAmount || 0)) || 0,
+          actualAmount: typeof item.actualAmount === 'number' ? item.actualAmount : parseFloat(String(item.actualAmount || 0)) || 0,
+          category: ['material', 'labor', 'other'].includes(item.category) ? item.category : 'other',
+          notes: item.notes || undefined
+        }));
+        
+        // Validate and normalize actualEntries
+        const normalizedEntries: ActualEntry[] = (budgetData.actualEntries || []).map((entry: any) => ({
+          id: entry.id || `actual-${Date.now()}-${Math.random()}`,
+          lineItemId: entry.lineItemId || undefined,
+          description: String(entry.description || ''),
+          amount: typeof entry.amount === 'number' ? entry.amount : parseFloat(String(entry.amount || 0)) || 0,
+          date: entry.date || new Date().toISOString().split('T')[0],
+          category: ['material', 'labor', 'other'].includes(entry.category) ? entry.category : 'other',
+          receiptUrl: entry.receiptUrl || undefined,
+          notes: entry.notes || undefined
+        }));
+        
+        setBudgetItems(normalizedItems);
+        setActualEntries(normalizedEntries);
+        console.log('✅ Loaded budget data:', { 
+          itemsCount: normalizedItems.length, 
+          entriesCount: normalizedEntries.length 
+        });
+      } catch (error) {
+        console.error('❌ Error parsing budget data:', error);
+        toast({ 
+          title: 'Error loading budget data', 
+          description: 'Some data may be corrupted. Please check your budget entries.',
+          variant: 'destructive' 
+        });
+        setBudgetItems([]);
+        setActualEntries([]);
+      }
     } else {
       // Reset when no project run or no budget data
       setBudgetItems([]);
@@ -213,8 +247,20 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   };
 
   const calculateTotals = () => {
-    const totalBudgeted = budgetItems.reduce((sum, item) => sum + item.budgetedAmount, 0);
-    const totalActual = actualEntries.reduce((sum, entry) => sum + entry.amount, 0);
+    const totalBudgeted = Array.isArray(budgetItems) 
+      ? budgetItems.reduce((sum, item) => {
+          if (!item) return sum;
+          const amount = typeof item.budgetedAmount === 'number' ? item.budgetedAmount : parseFloat(String(item.budgetedAmount || 0)) || 0;
+          return sum + amount;
+        }, 0)
+      : 0;
+    const totalActual = Array.isArray(actualEntries)
+      ? actualEntries.reduce((sum, entry) => {
+          if (!entry) return sum;
+          const amount = typeof entry.amount === 'number' ? entry.amount : parseFloat(String(entry.amount || 0)) || 0;
+          return sum + amount;
+        }, 0)
+      : 0;
     const variance = totalBudgeted - totalActual;
     return { totalBudgeted, totalActual, variance };
   };
@@ -222,13 +268,22 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   const { totalBudgeted, totalActual, variance } = calculateTotals();
 
   const getSectionTotal = (section: string) => {
-    const sectionItems = budgetItems.filter(item => item.section === section);
-    const budgeted = sectionItems.reduce((sum, item) => sum + item.budgetedAmount, 0);
-    const actual = sectionItems.reduce((sum, item) => sum + item.actualAmount, 0);
+    if (!Array.isArray(budgetItems)) return { budgeted: 0, actual: 0 };
+    const sectionItems = budgetItems.filter(item => item && item.section === section);
+    const budgeted = sectionItems.reduce((sum, item) => {
+      const amount = typeof item.budgetedAmount === 'number' ? item.budgetedAmount : parseFloat(String(item.budgetedAmount || 0)) || 0;
+      return sum + amount;
+    }, 0);
+    const actual = sectionItems.reduce((sum, item) => {
+      const amount = typeof item.actualAmount === 'number' ? item.actualAmount : parseFloat(String(item.actualAmount || 0)) || 0;
+      return sum + amount;
+    }, 0);
     return { budgeted, actual };
   };
 
-  const uniqueSections = [...new Set(budgetItems.map(item => item.section))];
+  const uniqueSections = Array.isArray(budgetItems) 
+    ? [...new Set(budgetItems.filter(item => item && item.section).map(item => item.section))]
+    : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -336,45 +391,66 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           </Card>
 
           <div className="space-y-4">
-            {uniqueSections.map(section => {
-              const sectionTotals = getSectionTotal(section);
-              const sectionItems = budgetItems.filter(item => item.section === section);
-              
-              return (
-                <Card key={section}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{section}</CardTitle>
-                      <div className="text-sm text-muted-foreground">
-                        Budget: ${sectionTotals.budgeted.toFixed(2)} | Actual: ${sectionTotals.actual.toFixed(2)}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {sectionItems.map(item => (
-                        <div key={item.id} className="flex items-center justify-between p-2 border rounded">
-                          <div className="flex-1">
-                            <div className="font-medium">{item.item}</div>
-                            <div className="text-sm text-muted-foreground">
-                              <Badge variant="outline" className="mr-2">{item.category}</Badge>
-                              Budget: ${item.budgetedAmount.toFixed(2)} | Actual: ${item.actualAmount.toFixed(2)}
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeBudgetItem(item.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+            {uniqueSections.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">No budget items yet. Add your first line item above.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              uniqueSections.map(section => {
+                if (!section) return null;
+                const sectionTotals = getSectionTotal(section);
+                const sectionItems = Array.isArray(budgetItems) 
+                  ? budgetItems.filter(item => item && item.section === section)
+                  : [];
+                
+                return (
+                  <Card key={section}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{section}</CardTitle>
+                        <div className="text-sm text-muted-foreground">
+                          Budget: ${sectionTotals.budgeted.toFixed(2)} | Actual: ${sectionTotals.actual.toFixed(2)}
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {sectionItems.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No items in this section</p>
+                        ) : (
+                          sectionItems.map(item => {
+                            if (!item || !item.id) return null;
+                            const budgetedAmount = typeof item.budgetedAmount === 'number' ? item.budgetedAmount : parseFloat(String(item.budgetedAmount || 0)) || 0;
+                            const actualAmount = typeof item.actualAmount === 'number' ? item.actualAmount : parseFloat(String(item.actualAmount || 0)) || 0;
+                            
+                            return (
+                              <div key={item.id} className="flex items-center justify-between p-2 border rounded">
+                                <div className="flex-1">
+                                  <div className="font-medium">{item.item || 'Untitled Item'}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    <Badge variant="outline" className="mr-2">{item.category || 'other'}</Badge>
+                                    Budget: ${budgetedAmount.toFixed(2)} | Actual: ${actualAmount.toFixed(2)}
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeBudgetItem(item.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
           </div>
         </TabsContent>
 
@@ -433,10 +509,12 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">None (New expense)</SelectItem>
-                      {budgetItems.map(item => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.section} - {item.item}
-                        </SelectItem>
+                      {Array.isArray(budgetItems) && budgetItems.map(item => (
+                        item && item.id ? (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.section || 'Uncategorized'} - {item.item || 'Untitled Item'}
+                          </SelectItem>
+                        ) : null
                       ))}
                     </SelectContent>
                   </Select>
@@ -455,43 +533,53 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {actualEntries.length === 0 ? (
+                {!actualEntries || actualEntries.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No spending recorded yet</p>
                 ) : (
-                  actualEntries.map(entry => (
-                    <div key={entry.id} className="flex items-center justify-between p-3 border rounded">
-                      <div className="flex-1">
-                        <div className="font-medium">{entry.description}</div>
-                        <div className="text-sm text-muted-foreground">
-                          <Badge variant="outline" className="mr-2">{entry.category}</Badge>
-                          {entry.date} | ${entry.amount.toFixed(2)}
-                          {entry.lineItemId && (
-                            <span className="ml-2 text-blue-600">
-                              (Matched to: {budgetItems.find(i => i.id === entry.lineItemId)?.item})
-                            </span>
+                  actualEntries.map(entry => {
+                    if (!entry || !entry.id) return null;
+                    
+                    const amount = typeof entry.amount === 'number' ? entry.amount : parseFloat(String(entry.amount || 0)) || 0;
+                    const date = entry.date || new Date().toISOString().split('T')[0];
+                    const matchedItem = entry.lineItemId && Array.isArray(budgetItems) 
+                      ? budgetItems.find(i => i && i.id === entry.lineItemId) 
+                      : null;
+                    
+                    return (
+                      <div key={entry.id} className="flex items-center justify-between p-3 border rounded">
+                        <div className="flex-1">
+                          <div className="font-medium">{entry.description || 'Untitled Entry'}</div>
+                          <div className="text-sm text-muted-foreground">
+                            <Badge variant="outline" className="mr-2">{entry.category || 'other'}</Badge>
+                            {date} | ${amount.toFixed(2)}
+                            {matchedItem && (
+                              <span className="ml-2 text-blue-600">
+                                (Matched to: {matchedItem.item || 'Unknown Item'})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <label>
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*,.pdf"
+                              onChange={(e) => e.target.files?.[0] && handleReceiptUpload(entry.id, e.target.files[0])}
+                            />
+                            <Button variant="outline" size="sm" asChild>
+                              <span>
+                                <Upload className="w-4 h-4" />
+                              </span>
+                            </Button>
+                          </label>
+                          {entry.receiptUrl && (
+                            <Badge variant="secondary">Receipt</Badge>
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <label>
-                          <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*,.pdf"
-                            onChange={(e) => e.target.files?.[0] && handleReceiptUpload(entry.id, e.target.files[0])}
-                          />
-                          <Button variant="outline" size="sm" asChild>
-                            <span>
-                              <Upload className="w-4 h-4" />
-                            </span>
-                          </Button>
-                        </label>
-                        {entry.receiptUrl && (
-                          <Badge variant="secondary">Receipt</Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </CardContent>

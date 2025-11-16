@@ -28,6 +28,10 @@ interface PhotoUploadProps {
   templateId: string | null;
   stepId: string;
   stepName: string;
+  phaseId?: string;
+  phaseName?: string;
+  operationId?: string;
+  operationName?: string;
   onPhotoUploaded?: () => void;
 }
 
@@ -38,6 +42,10 @@ export function PhotoUpload({
   templateId, 
   stepId, 
   stepName,
+  phaseId,
+  phaseName,
+  operationId,
+  operationName,
   onPhotoUploaded 
 }: PhotoUploadProps) {
   const { user } = useAuth();
@@ -104,6 +112,11 @@ export function PhotoUpload({
           project_run_id: projectRunId,
           template_id: templateId,
           step_id: stepId,
+          step_name: stepName,
+          phase_id: phaseId || null,
+          phase_name: phaseName || null,
+          operation_id: operationId || null,
+          operation_name: operationName || null,
           storage_path: filePath,
           file_name: selectedFile.name,
           file_size: selectedFile.size,

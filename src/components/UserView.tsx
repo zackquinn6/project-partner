@@ -368,7 +368,9 @@ export default function UserView({
               return {
                 ...step,
                 phaseName: phase.name,
+                phaseId: phase.id,
                 operationName: operation.name,
+                operationId: operation.id,
                 materials,
                 tools
               };
@@ -2056,6 +2058,10 @@ export default function UserView({
                       templateId={currentProjectRun.templateId || null}
                       stepId={currentStep.id}
                       stepName={currentStep.step}
+                      phaseId={currentStep.phaseId}
+                      phaseName={currentStep.phaseName}
+                      operationId={currentStep.operationId}
+                      operationName={currentStep.operationName}
                     />
                   )}
 

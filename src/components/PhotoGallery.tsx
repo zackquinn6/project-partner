@@ -29,6 +29,11 @@ interface Photo {
   project_run_id: string;
   template_id: string | null;
   step_id: string;
+  step_name?: string | null;
+  phase_id?: string | null;
+  phase_name?: string | null;
+  operation_id?: string | null;
+  operation_name?: string | null;
   storage_path: string;
   file_name: string;
   file_size: number;
@@ -278,6 +283,13 @@ export function PhotoGallery({
                       </div>
                       <div className="space-y-1">
                         <div className="text-xs font-medium truncate">{photo.file_name}</div>
+                        {(photo.phase_name || photo.operation_name || photo.step_name) && (
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {photo.phase_name && `${photo.phase_name}`}
+                            {photo.operation_name && ` → ${photo.operation_name}`}
+                            {photo.step_name && ` → ${photo.step_name}`}
+                          </div>
+                        )}
                         <div className="flex items-center justify-between">
                           {getPrivacyBadge(photo.privacy_level)}
                           <span className="text-xs text-muted-foreground">
@@ -318,6 +330,23 @@ export function PhotoGallery({
               ) : (
                 <div className="flex items-center justify-center py-12 bg-muted rounded-lg">
                   <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              )}
+
+              {(selectedPhoto.phase_name || selectedPhoto.operation_name || selectedPhoto.step_name) && (
+                <div>
+                  <Label className="text-sm font-medium">Project Location</Label>
+                  <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                    {selectedPhoto.phase_name && (
+                      <div><span className="font-medium">Phase:</span> {selectedPhoto.phase_name}</div>
+                    )}
+                    {selectedPhoto.operation_name && (
+                      <div><span className="font-medium">Operation:</span> {selectedPhoto.operation_name}</div>
+                    )}
+                    {selectedPhoto.step_name && (
+                      <div><span className="font-medium">Step:</span> {selectedPhoto.step_name}</div>
+                    )}
+                  </div>
                 </div>
               )}
 
