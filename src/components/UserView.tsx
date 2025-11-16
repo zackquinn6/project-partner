@@ -401,7 +401,14 @@ export default function UserView({
   
   useEffect(() => {
     // Only regenerate once per project run
-    if (hasCheckedPhases.current || isRegeneratingPhases || !currentProjectRun) return;
+    if (hasCheckedPhases.current || isRegeneratingPhases || !currentProjectRun) {
+      console.log('🔄 Regeneration check skipped:', {
+        hasChecked: hasCheckedPhases.current,
+        isRegenerating: isRegeneratingPhases,
+        hasRun: !!currentProjectRun
+      });
+      return;
+    }
     
     // Check if phases exist but have no steps
     const hasPhases = workflowPhases.length > 0;
@@ -415,8 +422,20 @@ export default function UserView({
       )
     );
     
-    // If phases exist but no operations/steps, regenerate from template
-    if (hasPhases && !hasSteps && (!phasesHaveOperations || !operationsHaveSteps)) {
+    console.log('🔍 Regeneration check:', {
+      runId: currentProjectRun.id,
+      templateId: currentProjectRun.templateId,
+      hasPhases,
+      hasSteps,
+      phasesHaveOperations,
+      operationsHaveSteps,
+      phasesLength: workflowPhases.length,
+      allStepsLength: allSteps.length,
+      shouldRegenerate: hasPhases && !hasSteps
+    });
+    
+    // If phases exist but no steps, regenerate from template (regardless of operations)
+    if (hasPhases && !hasSteps) {
       console.warn('⚠️ Project run has phases but no operations/steps. Regenerating from template...', {
         runId: currentProjectRun.id,
         templateId: currentProjectRun.templateId,
