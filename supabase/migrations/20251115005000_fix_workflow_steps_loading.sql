@@ -161,32 +161,35 @@ BEGIN
         COALESCE(operation_record.is_reference, false)
       );
 
-      -- Only add operation if it has steps OR if it's not a reference (to preserve structure)
-      IF jsonb_array_length(steps_json) > 0 OR NOT COALESCE(operation_record.is_reference, false) THEN
-        operations_json := operations_json || jsonb_build_object(
+      -- Always add the operation, even if it has no steps (to preserve structure)
+      -- Empty steps array is valid - operations can exist without steps
+      -- CRITICAL FIX: Use jsonb_build_array to wrap object, then concatenate arrays
+      operations_json := operations_json || jsonb_build_array(
+        jsonb_build_object(
           'id', operation_record.id,
           'name', COALESCE(operation_record.name, operation_record.source_name),
           'description', COALESCE(operation_record.description, operation_record.source_description),
           'flowType', COALESCE(operation_record.flow_type, operation_record.source_flow_type, 'prime'),
           'userPrompt', COALESCE(operation_record.user_prompt, operation_record.source_user_prompt),
           'alternateGroup', COALESCE(operation_record.alternate_group, operation_record.source_alternate_group),
-          'steps', steps_json,
+          'steps', COALESCE(steps_json, '[]'::jsonb),
           'isStandard', COALESCE(operation_record.is_reference, false) OR phase_record.is_standard,
           'sourceOperationId', operation_record.source_operation_id
-        );
-      END IF;
+        )
+      );
     END LOOP;
 
-    -- Only add phase if it has operations
-    IF jsonb_array_length(operations_json) > 0 THEN
-      phases_json := phases_json || jsonb_build_object(
+    -- Always add phase (same as original - no filtering)
+    -- CRITICAL FIX: Use jsonb_build_array to wrap object, then concatenate arrays
+    phases_json := phases_json || jsonb_build_array(
+      jsonb_build_object(
         'id', phase_record.id,
         'name', phase_record.name,
         'description', phase_record.description,
-        'operations', operations_json,
+        'operations', COALESCE(operations_json, '[]'::jsonb),
         'isStandard', phase_record.is_standard
-      );
-    END IF;
+      )
+    );
   END LOOP;
 
   RETURN phases_json;
@@ -238,3 +241,15 @@ FROM public.projects p;
 GRANT SELECT ON public.project_templates_live TO authenticated;
 GRANT SELECT ON public.project_templates_live TO anon;
 
+-- Create missing RPC function that the frontend expects
+CREATE OR REPLACE FUNCTION public.get_project_workflow_with_standards(p_project_id UUID)
+RETURNS JSONB AS $$
+BEGIN
+  -- Return the phases JSON from rebuild_phases_json_from_project_phases
+  -- This already handles standard operations via source_operation_id
+  RETURN COALESCE(
+    public.rebuild_phases_json_from_project_phases(p_project_id),
+    '[]'::jsonb
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;

@@ -1,6 +1,6 @@
--- Revert the filtering logic that was breaking workflow loading
--- The original code always added operations and phases without filtering
--- This ensures workflow content is always accessible
+-- ROOT CAUSE FIX: Fix JSONB array concatenation in rebuild_phases_json_from_project_phases
+-- The issue: operations_json || jsonb_build_object(...) doesn't add object to array
+-- The fix: Use jsonb_build_array(jsonb_build_object(...)) then concatenate arrays
 
 CREATE OR REPLACE FUNCTION public.rebuild_phases_json_from_project_phases(p_project_id UUID)
 RETURNS JSONB AS $$
@@ -41,8 +41,8 @@ BEGIN
         COALESCE(operation_record.is_reference, false)
       );
 
-      -- Always add the operation (same as original - no filtering)
-      -- CRITICAL FIX: Use jsonb_build_array to wrap object, then concatenate arrays
+      -- CRITICAL FIX: Wrap object in array, then concatenate arrays
+      -- operations_json || jsonb_build_object(...) doesn't work - need to use jsonb_build_array
       operations_json := operations_json || jsonb_build_array(
         jsonb_build_object(
           'id', operation_record.id,
@@ -58,8 +58,8 @@ BEGIN
       );
     END LOOP;
 
-    -- Always add phase (same as original - no filtering)
-    -- CRITICAL FIX: Use jsonb_build_array to wrap object, then concatenate arrays
+    -- CRITICAL FIX: Wrap object in array, then concatenate arrays
+    -- phases_json || jsonb_build_object(...) doesn't work - need to use jsonb_build_array
     phases_json := phases_json || jsonb_build_array(
       jsonb_build_object(
         'id', phase_record.id,
