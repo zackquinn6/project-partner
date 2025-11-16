@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Output, Project, AppReference, Phase } from '@/interfaces/Project';
 import ProjectListing from './ProjectListing';
 import { MobileProjectListing } from './MobileProjectListing';
@@ -330,66 +329,82 @@ export default function UserView({
   
   // Flatten all steps with phases directly from project
   // SIMPLE DATA PULL: Just extract whatever steps exist in the stored phases snapshot
-  const allSteps = (workflowPhases.length > 0 && Array.isArray(workflowPhases)) 
-    ? workflowPhases
-        .filter(phase => phase && phase.name)
-        .flatMap(phase => {
-          // Handle both array and non-array operations
-          const operations = Array.isArray(phase.operations) 
-            ? phase.operations 
-            : (phase.operations ? [phase.operations] : []);
+  // ROOT CAUSE FIX: Handle any data structure - be defensive and extract steps regardless of structure
+  let allSteps: any[] = [];
+  
+  try {
+    if (workflowPhases && workflowPhases.length > 0 && Array.isArray(workflowPhases)) {
+      for (const phase of workflowPhases) {
+        if (!phase || !phase.name) continue;
+        
+        // Get operations - handle array, object, or missing
+        let operations: any[] = [];
+        if (Array.isArray(phase.operations)) {
+          operations = phase.operations;
+        } else if (phase.operations && typeof phase.operations === 'object') {
+          operations = [phase.operations];
+        }
+        
+        for (const operation of operations) {
+          if (!operation) continue;
           
-          return operations
-            .filter(operation => operation && operation.name)
-            .flatMap(operation => {
-              // Handle both array and non-array steps
-              const steps = Array.isArray(operation.steps)
-                ? operation.steps
-                : (operation.steps ? [operation.steps] : []);
-              
-              return steps
-                .filter(step => step && step.id)
-                .map(step => {
-                  // Add sample materials and tools for demonstration (since project templates are empty)
-                  let materials = step.materials || [];
-                  let tools = step.tools || [];
-                  
-                  // Add sample data to specific steps for testing
-                  if (step.step?.includes('Measure') || step.id === 'measure-room') {
-                    materials = [
-                      { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', alternates: ['Laser measure', 'Ruler'] },
-                      { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', alternates: ['Phone app', 'Digital notepad'] }
-                    ];
-                    tools = [
-                      { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', alternates: ['Traditional bubble level', 'Water level'] }
-                    ];
-                  } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
-                    materials = [
-                      { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', alternates: ['Luxury vinyl', 'Natural stone'] },
-                      { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', alternates: ['Unsanded grout', 'Epoxy grout'] },
-                      { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', alternates: ['Mortar mix', 'Premium adhesive'] }
-                    ];
-                  } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
-                    materials = [
-                      { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', alternates: ['Self-priming sealer', 'Bonding agent'] }
-                    ];
-                    tools = [
-                      { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', alternates: ['Putty knife', 'Chisel'] },
-                      { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', alternates: ['Regular vacuum', 'Broom and dustpan'] }
-                    ];
-                  }
-                  
-                  return {
-                    ...step,
-                    phaseName: phase.name || 'Uncategorized',
-                    operationName: operation.name || 'General',
-                    materials,
-                    tools
-                  };
-                })
-            )
-        )
-    : [];
+          // Get steps - handle array, object, or missing
+          let steps: any[] = [];
+          if (Array.isArray(operation.steps)) {
+            steps = operation.steps;
+          } else if (operation.steps && typeof operation.steps === 'object') {
+            steps = [operation.steps];
+          }
+          
+          for (const step of steps) {
+            if (!step || !step.id) continue;
+            
+            // Add sample materials and tools for demonstration (since project templates are empty)
+            let materials = step.materials || [];
+            let tools = step.tools || [];
+            
+            // Add sample data to specific steps for testing
+            if (step.step?.includes('Measure') || step.id === 'measure-room') {
+              materials = [
+                { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', alternates: ['Laser measure', 'Ruler'] },
+                { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', alternates: ['Phone app', 'Digital notepad'] }
+              ];
+              tools = [
+                { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', alternates: ['Traditional bubble level', 'Water level'] }
+              ];
+            } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
+              materials = [
+                { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', alternates: ['Luxury vinyl', 'Natural stone'] },
+                { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', alternates: ['Unsanded grout', 'Epoxy grout'] },
+                { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', alternates: ['Mortar mix', 'Premium adhesive'] }
+              ];
+            } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
+              materials = [
+                { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', alternates: ['Self-priming sealer', 'Bonding agent'] }
+              ];
+              tools = [
+                { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', alternates: ['Putty knife', 'Chisel'] },
+                { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', alternates: ['Regular vacuum', 'Broom and dustpan'] }
+              ];
+            }
+            
+            allSteps.push({
+              ...step,
+              phaseName: phase.name || 'Uncategorized',
+              operationName: operation.name || 'General',
+              materials,
+              tools
+            });
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('🚨 Error extracting steps from phases:', error, {
+      workflowPhases,
+      errorMessage: error instanceof Error ? error.message : String(error)
+    });
+  }
   
   // CRITICAL DEBUG: Log allSteps calculation
   console.log('🔍 UserView allSteps calculation:', {
