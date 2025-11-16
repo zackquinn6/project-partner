@@ -133,22 +133,61 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   // Use appropriate projects based on authentication status
   const availableProjects = user ? projects : publicProjects;
   
+  // Debug logging for projects
+  useEffect(() => {
+    console.log('🔍 ProjectCatalog Debug:', {
+      user: !!user,
+      isAdminMode,
+      projectsCount: projects.length,
+      publicProjectsCount: publicProjects.length,
+      projects: projects.map(p => ({ 
+        id: p.id, 
+        name: p.name, 
+        publishStatus: p.publishStatus,
+        isCurrentVersion: (p as any).is_current_version 
+      }))
+    });
+  }, [projects, publicProjects, user, isAdminMode]);
+
   // Filter projects to show published and beta projects or all projects in admin mode
-  const publishedProjects = useMemo(() => 
-    user 
+  const publishedProjects = useMemo(() => {
+    const filtered = user 
       ? projects.filter(project => {
+          const publishStatus = project.publishStatus || (project as any).publish_status;
           const isValidStatus = (
-            project.publishStatus === 'published' || 
-            project.publishStatus === 'beta-testing' || 
+            publishStatus === 'published' || 
+            publishStatus === 'beta-testing' || 
             isAdminMode
           );
           const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
+          const isNotStandardFoundation = project.id !== '00000000-0000-0000-0000-000000000001';
           
-          return isValidStatus && isNotManualTemplate;
+          const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation;
+          
+          if (!shouldInclude) {
+            console.log('🚫 Filtered out project:', {
+              name: project.name,
+              publishStatus,
+              isAdminMode,
+              isNotManualTemplate,
+              isNotStandardFoundation
+            });
+          }
+          
+          return shouldInclude;
         })
       : publicProjects.filter(project => 
-          project.id !== '00000000-0000-0000-0000-000000000000' // Hide manual project template
-        ), [projects, user, isAdminMode, publicProjects]);
+          project.id !== '00000000-0000-0000-0000-000000000000' && // Hide manual project template
+          project.id !== '00000000-0000-0000-0000-000000000001' // Hide standard foundation
+        );
+    
+    console.log('✅ publishedProjects:', {
+      count: filtered.length,
+      projects: filtered.map(p => ({ name: p.name, publishStatus: p.publishStatus || (p as any).publish_status }))
+    });
+    
+    return filtered;
+  }, [projects, user, isAdminMode, publicProjects]);
 
   // Get unique filter options
   const availableCategories = useMemo(() => 
