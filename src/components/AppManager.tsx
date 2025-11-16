@@ -178,7 +178,17 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
   };
 
   const handleSaveNative = async () => {
-    if (!editingApp) return;
+    if (!editingApp) {
+      toast.error('No app selected for editing');
+      return;
+    }
+
+    // Validate form data
+    const appName = editForm.appName?.trim();
+    if (!appName || appName.length === 0) {
+      toast.error('App name is required');
+      return;
+    }
 
     try {
       // Extract actionKey from app.id (format: "app-{actionKey}") or use app.id
@@ -187,67 +197,94 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
         : editingApp.id;
       const actionKey = editingApp.actionKey || appId;
 
+      console.log('💾 Saving app override:', {
+        appId,
+        actionKey,
+        appName,
+        description: editForm.description,
+        icon: editForm.icon,
+        editingAppId: editingApp.id
+      });
+
       // Upsert app override in database (this will trigger update in all template_steps)
-      const { error: upsertError } = await supabase
+      const { data: upsertData, error: upsertError } = await supabase
         .from('app_overrides')
         .upsert({
           app_id: actionKey, // Use actionKey as the primary identifier
-          app_name: editForm.appName || editingApp.appName,
-          description: editForm.description || editingApp.description,
-          icon: editForm.icon || editingApp.icon,
+          app_name: appName,
+          description: editForm.description?.trim() || null,
+          icon: editForm.icon || editingApp.icon || 'Sparkles',
           display_order: editingApp.displayOrder || 1,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'app_id'
-        });
+        })
+        .select();
 
-      if (upsertError) throw upsertError;
+      if (upsertError) {
+        console.error('❌ Upsert error:', upsertError);
+        throw upsertError;
+      }
+
+      console.log('✅ App override saved:', upsertData);
 
       // Manually trigger the update function to update all template_steps
-      const { error: updateError } = await supabase.rpc('update_app_names_in_templates', {
+      const { data: updateData, error: updateError } = await supabase.rpc('update_app_names_in_templates', {
         p_app_id: actionKey,
-        p_app_name: editForm.appName || editingApp.appName,
-        p_description: editForm.description || editingApp.description,
-        p_icon: editForm.icon || editingApp.icon
+        p_app_name: appName,
+        p_description: editForm.description?.trim() || null,
+        p_icon: editForm.icon || editingApp.icon || 'Sparkles'
       });
 
       if (updateError) {
-        console.error('Error updating templates:', updateError);
+        console.error('❌ Error updating templates:', updateError);
         // Don't throw - the trigger should have handled it, but log the error
+        toast.error(`App saved but template update failed: ${updateError.message}`);
+      } else {
+        console.log('✅ Templates updated:', updateData);
       }
 
       // Rebuild phases JSON for all project templates to refresh app names
-      const { data: projectsData } = await supabase
+      const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('id')
         .eq('is_standard_template', false);
 
-      // Update in background (don't await - let it happen async)
-      if (projectsData && projectsData.length > 0) {
+      if (projectsError) {
+        console.error('❌ Error fetching projects:', projectsError);
+      } else if (projectsData && projectsData.length > 0) {
+        // Update in background (don't await - let it happen async)
         Promise.all(
           projectsData.map(project => 
             supabase.rpc('rebuild_phases_json_from_project_phases', {
               p_project_id: project.id
             })
           )
-        ).catch(err => console.error('Error rebuilding project phases:', err));
+        ).then(() => {
+          console.log('✅ All project phases rebuilt');
+        }).catch(err => {
+          console.error('❌ Error rebuilding project phases:', err);
+        });
       }
 
-      toast.success(`App "${editForm.appName || editingApp.appName}" updated in all project templates`);
+      toast.success(`App "${appName}" updated successfully`);
       
       // Update local state
       setNativeApps(prev => prev.map(app => 
         app.id === editingApp.id 
-          ? { ...app, ...editForm }
+          ? { ...app, appName, description: editForm.description, icon: editForm.icon || app.icon }
           : app
       ));
       
       setEditingApp(null);
       setEditForm({});
-      loadApps(); // Reload to get fresh data
+      
+      // Reload to get fresh data
+      await loadApps();
     } catch (error) {
-      console.error('Error saving native app:', error);
-      toast.error(`Failed to save app: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Error saving native app:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to save app: ${errorMessage}`);
     }
   };
 
@@ -551,9 +588,14 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
                               <TableCell>
                                 {isEditing ? (
                                   <Input
-                                    value={editForm.appName || app.appName}
-                                    onChange={(e) => setEditForm({ ...editForm, appName: e.target.value })}
+                                    value={editForm.appName ?? app.appName ?? ''}
+                                    onChange={(e) => {
+                                      const newValue = e.target.value;
+                                      console.log('📝 App name changed:', { old: editForm.appName, new: newValue });
+                                      setEditForm({ ...editForm, appName: newValue });
+                                    }}
                                     className="h-8"
+                                    placeholder="App name"
                                   />
                                 ) : (
                                   <div className="flex items-center gap-2">
