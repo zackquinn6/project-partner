@@ -111,21 +111,26 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   useEffect(() => {
     if (!user && !isAdminMode) {
       const fetchPublicProjects = async () => {
+        console.log('🔍 Fetching public projects...');
         const { data, error } = await supabase
-          .from('projects')
+          .from('project_templates_live')
           .select('*')
           .in('publish_status', ['published', 'beta-testing'])
-          .eq('is_current_version', true)
           .order('updated_at', { ascending: false });
+        
+        console.log('📦 Public projects fetch result:', { dataCount: data?.length || 0, error });
         
         if (data && !error) {
           setPublicProjects(data);
+        } else if (error) {
+          console.error('❌ Error fetching public projects:', error);
         }
       };
       
       fetchPublicProjects();
     } else if (user && !isAdminMode) {
       // Refresh projects when catalog is opened to ensure latest revisions
+      console.log('🔄 User authenticated, fetching projects via context...');
       fetchProjects();
     }
   }, [user, isAdminMode, fetchProjects]);
@@ -145,8 +150,25 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         name: p.name, 
         publishStatus: p.publishStatus,
         isCurrentVersion: (p as any).is_current_version 
+      })),
+      publicProjects: publicProjects.map(p => ({
+        id: p.id,
+        name: p.name,
+        publish_status: p.publish_status
       }))
     });
+    
+    // Also try a direct query to see if data exists
+    if (projects.length === 0 && user) {
+      console.log('⚠️ No projects from context, trying direct query...');
+      supabase
+        .from('project_templates_live')
+        .select('id, name, publish_status, is_current_version')
+        .limit(10)
+        .then(({ data, error }) => {
+          console.log('🔍 Direct query result:', { dataCount: data?.length || 0, error, sample: data?.[0] });
+        });
+    }
   }, [projects, publicProjects, user, isAdminMode]);
 
   // Filter projects to show published and beta projects or all projects in admin mode

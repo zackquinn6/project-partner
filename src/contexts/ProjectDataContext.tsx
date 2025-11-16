@@ -200,8 +200,42 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     filters: [],
     orderBy: { column: 'created_at', ascending: false },
     transform: transformProjects,
-    cacheKey: 'projects'
+    cacheKey: 'projects',
+    enabled: true // Explicitly enable
   });
+  
+  // Additional debug: Try direct query if projects are empty
+  React.useEffect(() => {
+    if (!projectsLoading && projects.length === 0 && !projectsError) {
+      console.log('⚠️ ProjectDataContext: No projects loaded, trying direct query...');
+      supabase
+        .from('project_templates_live')
+        .select('id, name, publish_status, is_current_version')
+        .limit(5)
+        .then(({ data, error }) => {
+          console.log('🔍 Direct query to project_templates_live:', {
+            dataCount: data?.length || 0,
+            error,
+            sample: data?.[0]
+          });
+          
+          // Also try projects table directly
+          if (data?.length === 0) {
+            supabase
+              .from('projects')
+              .select('id, name, publish_status, is_current_version')
+              .limit(5)
+              .then(({ data: projectsData, error: projectsError }) => {
+                console.log('🔍 Direct query to projects table:', {
+                  dataCount: projectsData?.length || 0,
+                  error: projectsError,
+                  sample: projectsData?.[0]
+                });
+              });
+          }
+        });
+    }
+  }, [projectsLoading, projects.length, projectsError]);
   
   // Debug logging
   React.useEffect(() => {
