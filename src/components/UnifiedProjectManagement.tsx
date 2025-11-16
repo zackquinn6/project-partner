@@ -1031,9 +1031,10 @@ export function UnifiedProjectManagement({
               <Button variant="outline" onClick={() => setCreateRevisionDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => {
+              <Button onClick={async () => {
               console.log('🟢 Create Draft Revision button (inside dialog) clicked');
-              createNewRevision();
+              await createNewRevision();
+              // Dialog will be closed in createNewRevision on success
             }}>
                 Create Draft Revision
               </Button>
