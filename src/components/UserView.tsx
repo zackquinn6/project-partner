@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
-import { Output, Project, AppReference } from '@/interfaces/Project';
+import { supabase } from '@/integrations/supabase/client';
+import { Output, Project, AppReference, Phase } from '@/interfaces/Project';
 import ProjectListing from './ProjectListing';
 import { MobileProjectListing } from './MobileProjectListing';
 import { MobileWorkflowView } from './MobileWorkflowView';
@@ -393,6 +394,91 @@ export default function UserView({
       })) : []
     }))
   });
+  
+  // Auto-regenerate phases for project runs if they're empty or incomplete
+  const [isRegeneratingPhases, setIsRegeneratingPhases] = useState(false);
+  const hasCheckedPhases = useRef(false);
+  
+  useEffect(() => {
+    // Only regenerate once per project run
+    if (hasCheckedPhases.current || isRegeneratingPhases || !currentProjectRun) return;
+    
+    // Check if phases exist but have no steps
+    const hasPhases = workflowPhases.length > 0;
+    const hasSteps = allSteps.length > 0;
+    const phasesHaveOperations = workflowPhases.some(phase => 
+      Array.isArray(phase.operations) && phase.operations.length > 0
+    );
+    const operationsHaveSteps = workflowPhases.some(phase => 
+      Array.isArray(phase.operations) && phase.operations.some((op: any) => 
+        Array.isArray(op.steps) && op.steps.length > 0
+      )
+    );
+    
+    // If phases exist but no operations/steps, regenerate from template
+    if (hasPhases && !hasSteps && (!phasesHaveOperations || !operationsHaveSteps)) {
+      console.warn('⚠️ Project run has phases but no operations/steps. Regenerating from template...', {
+        runId: currentProjectRun.id,
+        templateId: currentProjectRun.templateId,
+        phasesLength: workflowPhases.length,
+        hasOperations: phasesHaveOperations,
+        hasSteps: operationsHaveSteps
+      });
+      
+      hasCheckedPhases.current = true;
+      setIsRegeneratingPhases(true);
+      
+      // Regenerate phases from template using RPC
+      (async () => {
+        try {
+          const { data: regeneratedPhases, error } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
+            p_project_id: currentProjectRun.templateId
+          });
+          
+          if (error) {
+            console.error('🚨 Failed to regenerate phases:', error);
+            setIsRegeneratingPhases(false);
+            return;
+          }
+          
+          // Parse regenerated phases
+          let parsedPhases: Phase[] = [];
+          if (regeneratedPhases) {
+            if (typeof regeneratedPhases === 'string') {
+              parsedPhases = JSON.parse(regeneratedPhases);
+            } else if (Array.isArray(regeneratedPhases)) {
+              parsedPhases = regeneratedPhases;
+            }
+          }
+          
+          if (parsedPhases.length > 0) {
+            // Update project run with regenerated phases
+            const updatedRun = {
+              ...currentProjectRun,
+              phases: parsedPhases
+            };
+            
+            await updateProjectRun(updatedRun);
+            console.log('✅ Regenerated phases for project run:', {
+              runId: currentProjectRun.id,
+              phasesCount: parsedPhases.length
+            });
+          }
+        } catch (err) {
+          console.error('🚨 Error regenerating phases:', err);
+        } finally {
+          setIsRegeneratingPhases(false);
+        }
+      })();
+    } else {
+      hasCheckedPhases.current = true;
+    }
+  }, [currentProjectRun?.id, workflowPhases.length, allSteps.length, updateProjectRun]);
+  
+  // Reset check when project run changes
+  useEffect(() => {
+    hasCheckedPhases.current = false;
+  }, [currentProjectRun?.id]);
   
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
