@@ -1307,6 +1307,16 @@ export default function UserView({
     acc[phaseName][operationName].push(step);
     return acc;
   }, {} as Record<string, Record<string, typeof allSteps>>);
+
+  const hasSidebarSteps = Object.values(groupedSteps).some(operations =>
+    Object.values(operations).some(opSteps => opSteps.length > 0)
+  );
+
+  if (!hasSidebarSteps && allSteps.length > 0) {
+    groupedSteps['All Steps'] = {
+      Workflow: [...allSteps]
+    };
+  }
   
   // Debug the phase structure in detail
   console.log("🔍 WorkflowPhases detailed structure:", {
