@@ -393,11 +393,9 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
         </DialogHeader>
         
         <Tabs defaultValue="details" className="w-full flex-1 flex flex-col min-h-0 overflow-hidden">
-        <TabsList className="grid w-full grid-cols-5 mb-6">
-          <TabsTrigger value="details">Details & Photos</TabsTrigger>
-          <TabsTrigger value="spaces">Spaces</TabsTrigger>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="details">House Info</TabsTrigger>
+          <TabsTrigger value="projects">Projects & Maintenance</TabsTrigger>
           <TabsTrigger value="risks">Risks</TabsTrigger>
         </TabsList>
 
@@ -625,94 +623,110 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
               </CardContent>
             </Card>
           </div>
+
+          {/* Spaces Section - Combined from Spaces tab */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Spaces</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {home && <HomeSpacesTab homeId={home.id} />}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="spaces" className="flex-1 overflow-y-auto">
-          {home && <HomeSpacesTab homeId={home.id} />}
-        </TabsContent>
-
-        <TabsContent value="projects" className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-muted-foreground">Loading projects...</div>
-            </div>
-          ) : completedProjects.length > 0 ? (
-            <div className="grid gap-4">
-              {completedProjects.map(project => (
-                <Card key={project.id}>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{project.name}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Category: {project.category || 'Not specified'}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">
-                            Completed: {project.end_date 
-                              ? new Date(project.end_date).toLocaleDateString()
-                              : 'Date not recorded'
-                            }
-                          </span>
+        <TabsContent value="projects" className="flex-1 overflow-y-auto space-y-6">
+          {/* Projects Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Completed Projects</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Loading projects...</div>
+                </div>
+              ) : completedProjects.length > 0 ? (
+                <div className="grid gap-4">
+                  {completedProjects.map(project => (
+                    <Card key={project.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium">{project.name}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Category: {project.category || 'Not specified'}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <span className="text-sm">
+                                Completed: {project.end_date 
+                                  ? new Date(project.end_date).toLocaleDateString()
+                                  : 'Date not recorded'
+                                }
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="text-center py-8">
-                <CheckCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">No completed projects for this home yet</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <CheckCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No completed projects for this home yet</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        <TabsContent value="maintenance" className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-muted-foreground">Loading maintenance...</div>
-            </div>
-          ) : completedMaintenance.length > 0 ? (
-            <div className="grid gap-4">
-              {completedMaintenance.map(maintenance => (
-                <Card key={maintenance.id}>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{maintenance.user_maintenance_tasks.title}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Category: {maintenance.user_maintenance_tasks.category}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">
-                            Completed: {new Date(maintenance.completed_at).toLocaleDateString()}
-                          </span>
+          {/* Maintenance Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Completed Maintenance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Loading maintenance...</div>
+                </div>
+              ) : completedMaintenance.length > 0 ? (
+                <div className="grid gap-4">
+                  {completedMaintenance.map(maintenance => (
+                    <Card key={maintenance.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium">{maintenance.user_maintenance_tasks.title}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Category: {maintenance.user_maintenance_tasks.category}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <span className="text-sm">
+                                Completed: {new Date(maintenance.completed_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {maintenance.notes && (
+                              <p className="text-sm mt-2 p-2 bg-muted rounded">
+                                {maintenance.notes}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        {maintenance.notes && (
-                          <p className="text-sm mt-2 p-2 bg-muted rounded">
-                            {maintenance.notes}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="text-center py-8">
-                <CheckCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">No completed maintenance for this home yet</p>
-              </CardContent>
-            </Card>
-          )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <CheckCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No completed maintenance for this home yet</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="risks" className="flex-1 overflow-y-auto">
