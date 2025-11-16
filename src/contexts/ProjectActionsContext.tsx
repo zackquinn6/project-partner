@@ -366,6 +366,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
 
     // IMMEDIATE optimistic cache update - no debounce for step completion
+    // Ensure progress is always a number (handle null, undefined, or missing)
     const safeProgress = Math.round(projectRun.progress ?? 0);
     const updatedProjectRun = { ...projectRun, progress: safeProgress };
     const updatedProjectRuns = projectRuns.map(run => run.id === projectRun.id ? updatedProjectRun : run);
@@ -404,7 +405,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             current_operation_id: projectRun.currentOperationId,
             current_step_id: projectRun.currentStepId,
             completed_steps: JSON.stringify(projectRun.completedSteps),
-            progress: safeProgress,
+            progress: safeProgress || 0, // Extra safety check - ensure never null
             phases: JSON.stringify(projectRun.phases),
             category: Array.isArray(projectRun.category) ? projectRun.category.join(', ') : projectRun.category,
             effort_level: projectRun.effortLevel,
