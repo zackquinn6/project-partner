@@ -215,6 +215,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         description: "Failed to add project run",
         variant: "destructive",
       });
+      // Re-throw error so caller can handle it
+      throw error;
     }
   }, [isGuest, addGuestProjectRun, user, refetchProjectRuns]);
 

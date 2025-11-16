@@ -312,10 +312,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       // Always create a new project run - user expects a fresh start
       setSelectedTemplate(project);
       console.log('✅ Creating new project run for:', project.name);
-      proceedToNewProject(project);
+      await proceedToNewProject(project);
       
     } catch (error) {
       console.error('❌ Error in handleSelectProject:', error);
+      setIsCreatingNewProject(false); // Reset flag on error
+      alert(`Failed to start project: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -455,9 +457,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       setIsDIYSurveyOpen(true);
     }
   };
-  const proceedToNewProject = (template?: any) => {
+  const proceedToNewProject = async (template?: any) => {
     const projectTemplate = template || selectedTemplate;
-    if (!projectTemplate) return;
+    if (!projectTemplate) {
+      console.error('❌ proceedToNewProject: No template provided');
+      return;
+    }
 
     console.log('🎯 proceedToNewProject: Starting new project creation for:', projectTemplate.name);
     
@@ -474,64 +479,83 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     setIsProfileManagerOpen(false);
     setIsBetaWarningOpen(false);
 
-    // Create a new project RUN based on the template without setup info
-    const newProjectRun = {
-      templateId: projectTemplate.id,
-      name: projectTemplate.name,
-      description: projectTemplate.description,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      startDate: new Date(),
-      planEndDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-      status: 'not-started' as const,
-      // No user customization data when skipping
-      completedSteps: [],
-      progress: 0,
-      // Copy template data
-      phases: projectTemplate.phases,
-      category: projectTemplate.category,
-      effortLevel: projectTemplate.effortLevel,
-      skillLevel: projectTemplate.skillLevel,
-      estimatedTime: projectTemplate.estimatedTime,
-      diyLengthChallenges: projectTemplate.diyLengthChallenges
-    };
-    
-    // Set timeout to reset flag if creation doesn't complete
-    const resetTimeout = setTimeout(() => {
-      console.log('⏱️ Project creation timeout - resetting flag');
-      setIsCreatingNewProject(false);
-    }, 5000);
-    
-    // Pass navigation callback to addProjectRun
-    addProjectRun(newProjectRun, (projectRunId: string) => {
-      clearTimeout(resetTimeout);
-      console.log("🎯 ProjectCatalog: Project run created (new project), navigating to kickoff with ID:", projectRunId);
+    try {
+      // Create a new project RUN based on the template without setup info
+      const newProjectRun = {
+        templateId: projectTemplate.id,
+        name: projectTemplate.name,
+        description: projectTemplate.description || '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        startDate: new Date(),
+        planEndDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        status: 'not-started' as const,
+        // No user customization data when skipping
+        completedSteps: [],
+        progress: 0,
+        // Copy template data
+        phases: projectTemplate.phases || [],
+        category: projectTemplate.category,
+        effortLevel: projectTemplate.effortLevel,
+        skillLevel: projectTemplate.skillLevel,
+        estimatedTime: projectTemplate.estimatedTime,
+        diyLengthChallenges: projectTemplate.diyLengthChallenges
+      };
       
-      // Reset state immediately
-      setSelectedTemplate(null);
-      setIsCreatingNewProject(false);
+      console.log('📦 Created project run data:', {
+        templateId: newProjectRun.templateId,
+        name: newProjectRun.name,
+        hasPhases: !!newProjectRun.phases && Array.isArray(newProjectRun.phases)
+      });
       
-      // Navigate immediately to kickoff
-      // Navigate to user view and trigger kickoff workflow
-      if (window.innerWidth < 768) {
-        // On mobile, navigate to mobile workflow view 
-        navigate('/', {
-          state: {
-            view: 'user',
-            projectRunId: projectRunId,
-            mobileView: 'workflow'
-          }
-        });
-      } else {
-        // On desktop, navigate to user view
-        navigate('/', {
-          state: {
-            view: 'user',
-            projectRunId: projectRunId
-          }
-        });
-      }
-    });
+      // Set timeout to reset flag if creation doesn't complete
+      const resetTimeout = setTimeout(() => {
+        console.log('⏱️ Project creation timeout - resetting flag');
+        setIsCreatingNewProject(false);
+      }, 10000); // Increased timeout to 10 seconds
+      
+      // Pass navigation callback to addProjectRun
+      await addProjectRun(newProjectRun, (projectRunId: string) => {
+        clearTimeout(resetTimeout);
+        console.log("🎯 ProjectCatalog: Project run created (new project), navigating to kickoff with ID:", projectRunId);
+        
+        // Reset state immediately
+        setSelectedTemplate(null);
+        setIsCreatingNewProject(false);
+        
+        // Navigate immediately to kickoff
+        // Navigate to user view and trigger kickoff workflow
+        if (window.innerWidth < 768) {
+          // On mobile, navigate to mobile workflow view 
+          navigate('/', {
+            state: {
+              view: 'user',
+              projectRunId: projectRunId,
+              mobileView: 'workflow'
+            }
+          });
+        } else {
+          // On desktop, navigate to user view
+          navigate('/', {
+            state: {
+              view: 'user',
+              projectRunId: projectRunId
+            }
+          });
+        }
+      }).catch((error) => {
+        // Handle error from addProjectRun
+        clearTimeout(resetTimeout);
+        console.error('❌ Error in addProjectRun:', error);
+        setIsCreatingNewProject(false);
+        // Show error to user
+        alert(`Failed to start project: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      });
+    } catch (error) {
+      console.error('❌ Error in proceedToNewProject:', error);
+      setIsCreatingNewProject(false);
+      alert(`Failed to start project: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleSkipSetup = () => {
