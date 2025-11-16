@@ -37,53 +37,64 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
 
   // Memoized transform function for projects (synchronous, loads from JSON first)
   const transformProjects = React.useMemo(() => (data: any[]): Project[] => {
+    if (!data || !Array.isArray(data)) {
+      console.error('❌ transformProjects: data is not an array:', data);
+      return [];
+    }
+    
     return data.map(project => {
-      let phases = [];
-      if (project.phases) {
-        try {
-          let parsedPhases = project.phases;
-          
-          if (typeof parsedPhases === 'string') {
-            parsedPhases = JSON.parse(parsedPhases);
+      try {
+        let phases = [];
+        if (project.phases) {
+          try {
+            let parsedPhases = project.phases;
+            
+            if (typeof parsedPhases === 'string') {
+              parsedPhases = JSON.parse(parsedPhases);
+            }
+            
+            if (typeof parsedPhases === 'string') {
+              console.warn('Phases were double-encoded for project:', project.name);
+              parsedPhases = JSON.parse(parsedPhases);
+            }
+            
+            phases = parsedPhases;
+          } catch (e) {
+            console.error('Failed to parse phases JSON for project:', project.name, e);
+            phases = [];
           }
-          
-          if (typeof parsedPhases === 'string') {
-            console.warn('Phases were double-encoded for project:', project.name);
-            parsedPhases = JSON.parse(parsedPhases);
-          }
-          
-          phases = parsedPhases;
-        } catch (e) {
-          console.error('Failed to parse phases JSON for project:', project.name, e);
-          phases = [];
         }
+        
+        return {
+          id: project.id,
+          name: project.name,
+          description: project.description || '',
+          diyLengthChallenges: project.diy_length_challenges,
+          image: project.image,
+          images: project.images,
+          cover_image: project.cover_image,
+          createdAt: project.created_at ? new Date(project.created_at) : new Date(),
+          updatedAt: project.updated_at ? new Date(project.updated_at) : new Date(),
+          startDate: project.start_date ? new Date(project.start_date) : new Date(),
+          planEndDate: project.plan_end_date ? new Date(project.plan_end_date) : new Date(),
+          endDate: project.end_date ? new Date(project.end_date) : undefined,
+          status: 'not-started' as const, // Projects don't have status - only project_runs do
+          publishStatus: project.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived',
+          category: project.category,
+          difficulty: project.difficulty,
+          effortLevel: project.effort_level as Project['effortLevel'],
+          skillLevel: project.skill_level as Project['skillLevel'],
+          estimatedTime: project.estimated_time,
+          estimatedTimePerUnit: project.estimated_time_per_unit,
+          scalingUnit: project.scaling_unit as Project['scalingUnit'],
+          phases: Array.isArray(phases) ? phases : []
+        };
+      } catch (e) {
+        console.error('❌ transformProjects: Error transforming project:', project?.name, project?.id, e);
+        // Return null to filter out later, or return a minimal valid project
+        return null as any;
       }
-      
-      return {
-        id: project.id,
-        name: project.name,
-        description: project.description || '',
-        diyLengthChallenges: project.diy_length_challenges,
-        image: project.image,
-        images: project.images,
-        cover_image: project.cover_image,
-        createdAt: new Date(project.created_at),
-        updatedAt: new Date(project.updated_at),
-        startDate: new Date(project.start_date),
-        planEndDate: new Date(project.plan_end_date),
-        endDate: project.end_date ? new Date(project.end_date) : undefined,
-        status: project.status as 'not-started' | 'in-progress' | 'complete',
-        publishStatus: project.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived',
-        category: project.category,
-        difficulty: project.difficulty,
-        effortLevel: project.effort_level as Project['effortLevel'],
-        skillLevel: project.skill_level as Project['skillLevel'],
-        estimatedTime: project.estimated_time,
-        estimatedTimePerUnit: project.estimated_time_per_unit,
-        scalingUnit: project.scaling_unit as Project['scalingUnit'],
-        phases: Array.isArray(phases) ? phases : []
-      };
-    });
+    }).filter((p): p is Project => p !== null); // Filter out nulls from errors
   }, []);
 
   // Memoized transform function for project runs
@@ -187,6 +198,20 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     transform: transformProjects,
     cacheKey: 'projects'
   });
+  
+  // Debug logging
+  React.useEffect(() => {
+    if (projectsError) {
+      console.error('❌ ProjectDataContext: Error fetching projects:', projectsError);
+    }
+    if (projects) {
+      console.log('📦 ProjectDataContext: Fetched projects:', { 
+        count: projects.length, 
+        projectNames: projects.map(p => p.name),
+        firstProject: projects[0] ? { id: projects[0].id, name: projects[0].name, phasesCount: projects[0].phases?.length || 0 } : null
+      });
+    }
+  }, [projects, projectsError, projectsLoading]);
 
   // Listen for refetch requests from cascade operations
   useEffect(() => {
