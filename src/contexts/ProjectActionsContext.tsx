@@ -122,41 +122,34 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     if (!user) return null;
 
     try {
-      // ensureStandardPhasesForNewProject preserves existing phases (including apps)
-      // and only adds missing standard phases. This ensures apps defined in the
-      // template project are copied to the new project run.
-      const phasesWithStandard = ensureStandardPhasesForNewProject(project.phases);
-      
-      const { data, error } = await supabase
-        .from('project_runs')
-        .insert({
-          template_id: project.id,
-          user_id: user.id,
-          home_id: homeId || null,
-          name: project.name,
-          description: project.description,
-          diy_length_challenges: project.diyLengthChallenges,
-          start_date: new Date().toISOString(),
-          plan_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'not-started',
-          custom_project_name: customName,
-          completed_steps: JSON.stringify([]),
-          progress: 0,
-          phases: JSON.stringify(phasesWithStandard),
-          category: Array.isArray(project.category) ? project.category.join(', ') : project.category,
-          effort_level: project.effortLevel,
-          skill_level: project.skillLevel,
-          estimated_time: project.estimatedTime,
-          scaling_unit: project.scalingUnit,
-          estimated_time_per_unit: project.estimatedTimePerUnit
-        })
-        .select()
-        .single();
+      // Use database function to create project run snapshot with properly built phases
+      // This ensures phases include operations and steps from the template
+      const { data, error } = await supabase.rpc('create_project_run_snapshot', {
+        p_template_id: project.id,
+        p_user_id: user.id,
+        p_run_name: customName || project.name,
+        p_home_id: homeId || null,
+        p_start_date: new Date().toISOString(),
+        p_plan_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      });
 
       if (error) throw error;
 
+      // Update additional fields that the function doesn't handle
+      if (customName || project.diyLengthChallenges || project.scalingUnit || project.estimatedTimePerUnit) {
+        await supabase
+          .from('project_runs')
+          .update({
+            custom_project_name: customName || null,
+            diy_length_challenges: project.diyLengthChallenges || null,
+            scaling_unit: project.scalingUnit || null,
+            estimated_time_per_unit: project.estimatedTimePerUnit || null
+          })
+          .eq('id', data);
+      }
+
       await refetchProjectRuns();
-      return data?.id || null;
+      return data || null;
     } catch (error) {
       console.error('Error creating project run:', error);
       toast({
@@ -373,7 +366,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
 
     // IMMEDIATE optimistic cache update - no debounce for step completion
-    const safeProgress = Math.round(projectRun.progress || 0);
+    const safeProgress = Math.round(projectRun.progress ?? 0);
     const updatedProjectRun = { ...projectRun, progress: safeProgress };
     const updatedProjectRuns = projectRuns.map(run => run.id === projectRun.id ? updatedProjectRun : run);
     updateProjectRunsCache(updatedProjectRuns);
