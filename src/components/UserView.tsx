@@ -376,32 +376,34 @@ export default function UserView({
         )
     ) || [];
   
-  // CRITICAL DEBUG: Log allSteps calculation - see what's actually being extracted
-  console.log('🔍 UserView allSteps calculation (ROOT CAUSE DEBUG):', {
+  // CRITICAL DEBUG: Log what's actually in the data - simplified output
+  const firstPhase = workflowPhases?.[0];
+  const firstOperation = firstPhase?.operations?.[0];
+  const firstStep = firstOperation?.steps?.[0];
+  
+  console.log('🔍 ROOT CAUSE - First Phase Structure:', {
+    phaseName: firstPhase?.name,
+    phaseId: firstPhase?.id,
+    hasOperations: !!firstPhase?.operations,
+    operationsType: typeof firstPhase?.operations,
+    operationsIsArray: Array.isArray(firstPhase?.operations),
+    operationsLength: Array.isArray(firstPhase?.operations) ? firstPhase.operations.length : 'N/A',
+    firstOperationName: firstOperation?.name,
+    firstOperationId: firstOperation?.id,
+    hasSteps: !!firstOperation?.steps,
+    stepsType: typeof firstOperation?.steps,
+    stepsIsArray: Array.isArray(firstOperation?.steps),
+    stepsLength: Array.isArray(firstOperation?.steps) ? firstOperation.steps.length : 'N/A',
+    firstStepId: firstStep?.id,
+    firstStepTitle: firstStep?.step,
+    RAW_FIRST_PHASE: firstPhase,
+    RAW_FIRST_OPERATION: firstOperation,
+    RAW_FIRST_STEP: firstStep
+  });
+  
+  console.log('🔍 UserView allSteps calculation:', {
     workflowPhasesLength: workflowPhases?.length || 0,
-    workflowPhasesExists: !!workflowPhases,
-    allStepsLength: allSteps.length,
-    allStepsFirst3: allSteps.slice(0, 3).map(s => ({ id: s.id, step: s.step, phaseName: s.phaseName, operationName: s.operationName })),
-    phasesDetail: workflowPhases?.map((phase, idx) => ({
-      index: idx,
-      phaseName: phase?.name,
-      phaseId: phase?.id,
-      hasOperations: !!phase?.operations,
-      operationsType: typeof phase?.operations,
-      operationsIsArray: Array.isArray(phase?.operations),
-      operationsLength: Array.isArray(phase?.operations) ? phase.operations.length : (phase?.operations ? 1 : 0),
-      operations: phase?.operations ? (Array.isArray(phase.operations) ? phase.operations : [phase.operations]).slice(0, 2).map((op: any, opIdx: number) => ({
-        opIndex: opIdx,
-        opName: op?.name,
-        opId: op?.id,
-        hasSteps: !!op?.steps,
-        stepsType: typeof op?.steps,
-        stepsIsArray: Array.isArray(op?.steps),
-        stepsLength: Array.isArray(op?.steps) ? op.steps.length : (op?.steps ? 1 : 0),
-        stepsRaw: op?.steps,
-        stepsSample: op?.steps ? (Array.isArray(op.steps) ? op.steps.slice(0, 2) : [op.steps]).map((s: any) => ({ id: s?.id, step: s?.step })) : []
-      })) : []
-    })) || []
+    allStepsLength: allSteps.length
   });
   
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
