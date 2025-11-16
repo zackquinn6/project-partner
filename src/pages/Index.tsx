@@ -238,6 +238,23 @@ const Index = () => {
     };
   }, []);
 
+  // Listen for force-progress-board-listing event - CRITICAL for Progress Board button
+  useEffect(() => {
+    const handleForceProgressBoardListing = () => {
+      console.log('🔄 Index: Force Progress Board listing event received - clearing project and forcing listing mode');
+      // Clear current project run in global context
+      setCurrentProjectRun(null);
+      setCurrentProject(null);
+      // Force listing mode
+      setForceListingMode(true);
+      // Ensure we're in user view
+      setCurrentView('user');
+    };
+
+    window.addEventListener('force-progress-board-listing', handleForceProgressBoardListing);
+    return () => window.removeEventListener('force-progress-board-listing', handleForceProgressBoardListing);
+  }, [setCurrentProjectRun, setCurrentProject]);
+
   // Listen for clear reset flags event and sync with Index
   useEffect(() => {
     const handleClearResetFlags = () => {
