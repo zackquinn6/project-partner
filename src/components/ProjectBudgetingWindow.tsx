@@ -63,63 +63,89 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   }, [currentProjectRun]);
 
   const saveBudgetData = async (items: BudgetLineItem[], entries: ActualEntry[]) => {
-    if (!currentProjectRun) return;
+    if (!currentProjectRun) {
+      toast({ title: 'No project selected', variant: 'destructive' });
+      return;
+    }
 
-    const budgetData = {
-      lineItems: items,
-      actualEntries: entries,
-      lastUpdated: new Date().toISOString()
-    };
+    try {
+      const budgetData = {
+        lineItems: items,
+        actualEntries: entries,
+        lastUpdated: new Date().toISOString()
+      };
 
-    await updateProjectRun({
-      ...currentProjectRun,
-      budget_data: budgetData
-    });
+      await updateProjectRun({
+        ...currentProjectRun,
+        budget_data: budgetData
+      });
+      
+      console.log('✅ Budget data saved successfully');
+    } catch (error) {
+      console.error('❌ Error saving budget data:', error);
+      toast({ 
+        title: 'Failed to save budget data', 
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive' 
+      });
+    }
   };
 
-  const addBudgetItem = () => {
-    if (!newItemSection || !newItemName || !newItemAmount) {
+  const addBudgetItem = async () => {
+    if (!newItemSection.trim() || !newItemName.trim() || !newItemAmount.trim()) {
       toast({ title: 'Please fill in all fields', variant: 'destructive' });
+      return;
+    }
+
+    const parsedAmount = parseFloat(newItemAmount);
+    if (isNaN(parsedAmount) || parsedAmount < 0) {
+      toast({ title: 'Please enter a valid positive number for amount', variant: 'destructive' });
       return;
     }
 
     const newItem: BudgetLineItem = {
       id: `budget-${Date.now()}`,
-      section: newItemSection,
-      item: newItemName,
-      budgetedAmount: parseFloat(newItemAmount),
+      section: newItemSection.trim(),
+      item: newItemName.trim(),
+      budgetedAmount: parsedAmount,
       actualAmount: 0,
       category: newItemCategory
     };
 
     const updatedItems = [...budgetItems, newItem];
     setBudgetItems(updatedItems);
-    saveBudgetData(updatedItems, actualEntries);
+    await saveBudgetData(updatedItems, actualEntries);
 
     setNewItemSection('');
     setNewItemName('');
     setNewItemAmount('');
-    toast({ title: 'Budget item added' });
+    toast({ title: 'Budget item added successfully' });
   };
 
-  const removeBudgetItem = (id: string) => {
+  const removeBudgetItem = async (id: string) => {
     const updatedItems = budgetItems.filter(item => item.id !== id);
     setBudgetItems(updatedItems);
-    saveBudgetData(updatedItems, actualEntries);
+    await saveBudgetData(updatedItems, actualEntries);
     toast({ title: 'Budget item removed' });
   };
 
-  const addActualEntry = () => {
-    if (!newActualDescription || !newActualAmount) {
-      toast({ title: 'Please fill in required fields', variant: 'destructive' });
+  const addActualEntry = async () => {
+    if (!newActualDescription.trim() || !newActualAmount.trim()) {
+      toast({ title: 'Please fill in description and amount', variant: 'destructive' });
+      return;
+    }
+
+    const parsedAmount = parseFloat(newActualAmount);
+    if (isNaN(parsedAmount) || parsedAmount < 0) {
+      toast({ title: 'Please enter a valid positive number for amount', variant: 'destructive' });
       return;
     }
 
     const newEntry: ActualEntry = {
       id: `actual-${Date.now()}`,
       lineItemId: selectedLineItemForActual || undefined,
-      description: newActualDescription,
-      amount: parseFloat(newActualAmount),
+      description: newActualDescription.trim(),
+      amount: parsedAmount,
       date: newActualDate,
       category: newActualCategory
     };
@@ -136,12 +162,12 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
 
     setActualEntries(updatedEntries);
     setBudgetItems(updatedItems);
-    saveBudgetData(updatedItems, updatedEntries);
+    await saveBudgetData(updatedItems, updatedEntries);
 
     setNewActualDescription('');
     setNewActualAmount('');
     setSelectedLineItemForActual('');
-    toast({ title: 'Actual spend recorded' });
+    toast({ title: 'Actual spend recorded successfully' });
   };
 
   const handleReceiptUpload = async (entryId: string, file: File) => {
@@ -289,7 +315,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                   </Select>
                 </div>
               </div>
-              <Button onClick={addBudgetItem}>
+              <Button onClick={async () => await addBudgetItem()}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Line Item
               </Button>
@@ -403,7 +429,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                   </Select>
                 </div>
               </div>
-              <Button onClick={addActualEntry}>
+              <Button onClick={async () => await addActualEntry()}>
                 <DollarSign className="w-4 h-4 mr-2" />
                 Record Spend
               </Button>
