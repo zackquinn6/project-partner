@@ -328,104 +328,80 @@ export default function UserView({
   });
   
   // Flatten all steps with phases directly from project
-  // SIMPLE DATA PULL: Just extract whatever steps exist in the stored phases snapshot
-  // ROOT CAUSE FIX: Handle any data structure - be defensive and extract steps regardless of structure
-  let allSteps: any[] = [];
+  // NORMAL CODE METHODOLOGY: phases -> operations[] -> steps[]
+  // Structure: phase.operations is always an array, operation.steps is always an array
+  const allSteps = workflowPhases
+    ?.flatMap((phase) => 
+      (phase.operations || [])
+        .flatMap((operation) => 
+          (operation.steps || [])
+            .map((step) => {
+              // Add sample materials and tools for demonstration (since project templates are empty)
+              let materials = step.materials || [];
+              let tools = step.tools || [];
+              
+              // Add sample data to specific steps for testing
+              if (step.step?.includes('Measure') || step.id === 'measure-room') {
+                materials = [
+                  { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', alternates: ['Laser measure', 'Ruler'] },
+                  { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', alternates: ['Phone app', 'Digital notepad'] }
+                ];
+                tools = [
+                  { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', alternates: ['Traditional bubble level', 'Water level'] }
+                ];
+              } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
+                materials = [
+                  { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', alternates: ['Luxury vinyl', 'Natural stone'] },
+                  { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', alternates: ['Unsanded grout', 'Epoxy grout'] },
+                  { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', alternates: ['Mortar mix', 'Premium adhesive'] }
+                ];
+              } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
+                materials = [
+                  { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', alternates: ['Self-priming sealer', 'Bonding agent'] }
+                ];
+                tools = [
+                  { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', alternates: ['Putty knife', 'Chisel'] },
+                  { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', alternates: ['Regular vacuum', 'Broom and dustpan'] }
+                ];
+              }
+              
+              return {
+                ...step,
+                phaseName: phase.name,
+                operationName: operation.name,
+                materials,
+                tools
+              };
+            })
+        )
+    ) || [];
   
-  try {
-    if (workflowPhases && workflowPhases.length > 0 && Array.isArray(workflowPhases)) {
-      for (const phase of workflowPhases) {
-        if (!phase || !phase.name) continue;
-        
-        // Get operations - handle array, object, or missing
-        let operations: any[] = [];
-        if (Array.isArray(phase.operations)) {
-          operations = phase.operations;
-        } else if (phase.operations && typeof phase.operations === 'object') {
-          operations = [phase.operations];
-        }
-        
-        for (const operation of operations) {
-          if (!operation) continue;
-          
-          // Get steps - handle array, object, or missing
-          let steps: any[] = [];
-          if (Array.isArray(operation.steps)) {
-            steps = operation.steps;
-          } else if (operation.steps && typeof operation.steps === 'object') {
-            steps = [operation.steps];
-          }
-          
-          for (const step of steps) {
-            if (!step || !step.id) continue;
-            
-            // Add sample materials and tools for demonstration (since project templates are empty)
-            let materials = step.materials || [];
-            let tools = step.tools || [];
-            
-            // Add sample data to specific steps for testing
-            if (step.step?.includes('Measure') || step.id === 'measure-room') {
-              materials = [
-                { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', alternates: ['Laser measure', 'Ruler'] },
-                { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', alternates: ['Phone app', 'Digital notepad'] }
-              ];
-              tools = [
-                { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', alternates: ['Traditional bubble level', 'Water level'] }
-              ];
-            } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
-              materials = [
-                { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', alternates: ['Luxury vinyl', 'Natural stone'] },
-                { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', alternates: ['Unsanded grout', 'Epoxy grout'] },
-                { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', alternates: ['Mortar mix', 'Premium adhesive'] }
-              ];
-            } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
-              materials = [
-                { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', alternates: ['Self-priming sealer', 'Bonding agent'] }
-              ];
-              tools = [
-                { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', alternates: ['Putty knife', 'Chisel'] },
-                { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', alternates: ['Regular vacuum', 'Broom and dustpan'] }
-              ];
-            }
-            
-            allSteps.push({
-              ...step,
-              phaseName: phase.name || 'Uncategorized',
-              operationName: operation.name || 'General',
-              materials,
-              tools
-            });
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error('🚨 Error extracting steps from phases:', error, {
-      workflowPhases,
-      errorMessage: error instanceof Error ? error.message : String(error)
-    });
-  }
-  
-  // CRITICAL DEBUG: Log allSteps calculation
-  console.log('🔍 UserView allSteps calculation:', {
-    workflowPhasesLength: workflowPhases.length,
+  // CRITICAL DEBUG: Log allSteps calculation - see what's actually being extracted
+  console.log('🔍 UserView allSteps calculation (ROOT CAUSE DEBUG):', {
+    workflowPhasesLength: workflowPhases?.length || 0,
+    workflowPhasesExists: !!workflowPhases,
     allStepsLength: allSteps.length,
     allStepsFirst3: allSteps.slice(0, 3).map(s => ({ id: s.id, step: s.step, phaseName: s.phaseName, operationName: s.operationName })),
-    phasesStructure: workflowPhases.map(phase => ({
-      phaseName: phase.name,
-      phaseId: phase.id,
-      hasOperations: !!phase.operations,
-      operationsIsArray: Array.isArray(phase.operations),
-      operationsCount: Array.isArray(phase.operations) ? phase.operations.length : 0,
-      operations: Array.isArray(phase.operations) ? phase.operations.map((op: any) => ({
-        opName: op.name,
-        opId: op.id,
-        hasSteps: !!op.steps,
-        stepsIsArray: Array.isArray(op.steps),
-        stepsCount: Array.isArray(op.steps) ? op.steps.length : 0,
-        stepsSample: Array.isArray(op.steps) && op.steps.length > 0 ? op.steps.slice(0, 2).map((s: any) => ({ id: s.id, step: s.step })) : []
+    phasesDetail: workflowPhases?.map((phase, idx) => ({
+      index: idx,
+      phaseName: phase?.name,
+      phaseId: phase?.id,
+      hasOperations: !!phase?.operations,
+      operationsType: typeof phase?.operations,
+      operationsIsArray: Array.isArray(phase?.operations),
+      operationsLength: Array.isArray(phase?.operations) ? phase.operations.length : (phase?.operations ? 1 : 0),
+      operations: phase?.operations ? (Array.isArray(phase.operations) ? phase.operations : [phase.operations]).slice(0, 2).map((op: any, opIdx: number) => ({
+        opIndex: opIdx,
+        opName: op?.name,
+        opId: op?.id,
+        hasSteps: !!op?.steps,
+        stepsType: typeof op?.steps,
+        stepsIsArray: Array.isArray(op?.steps),
+        stepsLength: Array.isArray(op?.steps) ? op.steps.length : (op?.steps ? 1 : 0),
+        stepsRaw: op?.steps,
+        stepsSample: op?.steps ? (Array.isArray(op.steps) ? op.steps.slice(0, 2) : [op.steps]).map((s: any) => ({ id: s?.id, step: s?.step })) : []
       })) : []
-    }))
+    })) || []
   });
   
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
