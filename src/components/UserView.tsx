@@ -243,6 +243,24 @@ export default function UserView({
     : (dynamicPhases.length > 0 ? dynamicPhases : currentProject?.phases || []); // Templates: use dynamic phases
   
   // Debug active project structure - CRITICAL DEBUGGING
+  console.log('🔍 WorkflowPhases source:', {
+    isProjectRun: !!currentProjectRun,
+    projectRunId: currentProjectRun?.id,
+    currentProjectId: currentProject?.id,
+    dynamicPhasesLength: dynamicPhases.length,
+    currentProjectPhasesLength: currentProject?.phases?.length || 0,
+    workflowPhasesLength: workflowPhases.length,
+    workflowPhasesSample: workflowPhases.slice(0, 1).map(p => ({
+      name: p?.name,
+      id: p?.id,
+      hasOperations: !!p?.operations,
+      operationsIsArray: Array.isArray(p?.operations),
+      operationsCount: Array.isArray(p?.operations) ? p.operations.length : 'N/A',
+      operationsSample: Array.isArray(p?.operations) && p.operations.length > 0 ? p.operations[0] : null
+    }))
+  });
+  
+  // Debug active project structure - CRITICAL DEBUGGING
   console.log('🔍 UserView Active project debug:', {
     hasCurrentProject: !!currentProject,
     hasCurrentProjectRun: !!currentProjectRun,
