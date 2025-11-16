@@ -28,12 +28,39 @@ export function useDynamicPhases(projectId: string | undefined) {
           p_project_id: projectId
         });
 
+        console.log('🔍 useDynamicPhases RPC call:', {
+          projectId,
+          data,
+          dataType: typeof data,
+          dataIsArray: Array.isArray(data),
+          dataLength: Array.isArray(data) ? data.length : 'N/A',
+          rpcError
+        });
+
         if (rpcError) {
+          console.error('🚨 RPC Error:', rpcError);
           throw rpcError;
         }
 
         // Parse the result as Phase array
-        const parsedPhases = (data || []) as Phase[];
+        // RPC returns JSONB which Supabase should auto-parse, but check if it needs manual parsing
+        let parsedPhases: Phase[] = [];
+        if (data) {
+          if (typeof data === 'string') {
+            parsedPhases = JSON.parse(data);
+          } else if (Array.isArray(data)) {
+            parsedPhases = data;
+          } else {
+            console.warn('⚠️ Unexpected data format from RPC:', data);
+          }
+        }
+        
+        console.log('✅ Parsed phases:', {
+          count: parsedPhases.length,
+          firstPhase: parsedPhases[0]?.name,
+          phases: parsedPhases
+        });
+        
         setPhases(parsedPhases);
       } catch (err) {
         console.error('Failed to fetch dynamic phases:', err);
