@@ -184,6 +184,8 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
   }, []);
 
   // Fetch projects data
+  // Note: We fetch all projects from project_templates_live, then filter by publish_status in components
+  // The is_current_version filter is handled by the view itself or in component-level filtering
   const {
     data: projects,
     loading: projectsLoading,
@@ -193,7 +195,9 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
   } = useDataFetch<Project>({
     table: 'project_templates_live',
     select: '*',
-    filters: [{ column: 'is_current_version', value: true }],
+    // Remove is_current_version filter - let components handle filtering
+    // This ensures we see all projects and can debug visibility issues
+    filters: [],
     orderBy: { column: 'created_at', ascending: false },
     transform: transformProjects,
     cacheKey: 'projects'

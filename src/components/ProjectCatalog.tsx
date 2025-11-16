@@ -154,6 +154,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     const filtered = user 
       ? projects.filter(project => {
           const publishStatus = project.publishStatus || (project as any).publish_status;
+          const isCurrentVersion = (project as any).is_current_version !== false; // Default to true if not specified
+          
           const isValidStatus = (
             publishStatus === 'published' || 
             publishStatus === 'beta-testing' || 
@@ -162,12 +164,14 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
           const isNotStandardFoundation = project.id !== '00000000-0000-0000-0000-000000000001';
           
-          const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation;
+          // Include if: (published/beta OR admin mode) AND not manual template AND not standard foundation AND is current version
+          const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation && isCurrentVersion;
           
           if (!shouldInclude) {
             console.log('🚫 Filtered out project:', {
               name: project.name,
               publishStatus,
+              isCurrentVersion,
               isAdminMode,
               isNotManualTemplate,
               isNotStandardFoundation
@@ -183,7 +187,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     
     console.log('✅ publishedProjects:', {
       count: filtered.length,
-      projects: filtered.map(p => ({ name: p.name, publishStatus: p.publishStatus || (p as any).publish_status }))
+      projects: filtered.map(p => ({ 
+        name: p.name, 
+        publishStatus: p.publishStatus || (p as any).publish_status,
+        isCurrentVersion: (p as any).is_current_version 
+      }))
     });
     
     return filtered;
