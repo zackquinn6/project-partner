@@ -57,8 +57,21 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
 
   useEffect(() => {
     if (currentProjectRun?.budget_data) {
-      setBudgetItems(currentProjectRun.budget_data.lineItems || []);
-      setActualEntries(currentProjectRun.budget_data.actualEntries || []);
+      // Handle both object and parsed JSON string
+      const budgetData = typeof currentProjectRun.budget_data === 'string' 
+        ? JSON.parse(currentProjectRun.budget_data) 
+        : currentProjectRun.budget_data;
+      
+      setBudgetItems(budgetData.lineItems || []);
+      setActualEntries(budgetData.actualEntries || []);
+      console.log('✅ Loaded budget data:', { 
+        itemsCount: budgetData.lineItems?.length || 0, 
+        entriesCount: budgetData.actualEntries?.length || 0 
+      });
+    } else {
+      // Reset when no project run or no budget data
+      setBudgetItems([]);
+      setActualEntries([]);
     }
   }, [currentProjectRun]);
 
