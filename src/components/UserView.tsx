@@ -1293,53 +1293,39 @@ export default function UserView({
 
   // Group steps by phase + operation using the flattened allSteps array
   // This guarantees the sidebar only depends on the same data powering the main workflow view.
-  const groupedStepsFromPhases = workflowPhases.reduce((acc, phase) => {
-    if (!phase || !phase.name || !Array.isArray(phase.operations)) {
-      return acc;
-    }
+  // CRITICAL: Use allSteps directly since it's already the deduped, flattened list
+  const groupedSteps = allSteps.length > 0 
+    ? allSteps.reduce((acc, step) => {
+        const phaseName = step.phaseName || 'Uncategorized';
+        const operationName = step.operationName || 'General';
 
-    const existingOperations = acc[phase.name] || {};
+        if (!acc[phaseName]) {
+          acc[phaseName] = {};
+        }
+        if (!acc[phaseName][operationName]) {
+          acc[phaseName][operationName] = [];
+        }
 
-    phase.operations.forEach(operation => {
-      if (!operation || !operation.name || !Array.isArray(operation.steps)) {
-        return;
-      }
+        // Dedupe by step ID
+        if (!acc[phaseName][operationName].some(existingStep => existingStep.id === step.id)) {
+          acc[phaseName][operationName].push(step);
+        }
 
-      const existingSteps = existingOperations[operation.name] || [];
-      const newSteps = operation.steps.filter(step => step && step.id);
-
-      if (newSteps.length > 0) {
-        const deduped = [...existingSteps];
-        newSteps.forEach(step => {
-          if (!deduped.some(existingStep => existingStep.id === step.id)) {
-            deduped.push(step);
-          }
-        });
-        existingOperations[operation.name] = deduped;
-      }
-    });
-
-    acc[phase.name] = existingOperations;
-    return acc;
-  }, {} as Record<string, Record<string, any[]>>);
-
-  const groupedStepsHasData = Object.values(groupedStepsFromPhases).some(operations =>
-    Object.values(operations).some(opSteps => opSteps.length > 0)
-  );
-
-  const groupedSteps = groupedStepsHasData
-    ? groupedStepsFromPhases
-    : (allSteps.length > 0
-        ? {
-            'All Steps': {
-              Workflow: [...allSteps]
-            }
-          }
-        : {});
+        return acc;
+      }, {} as Record<string, Record<string, typeof allSteps>>)
+    : {};
   
   // Debug the phase structure in detail
   console.log("🔍 WorkflowPhases detailed structure:", {
     workflowPhasesCount: workflowPhases.length,
+    allStepsLength: allSteps.length,
+    groupedStepsKeys: Object.keys(groupedSteps),
+    groupedStepsEmpty: Object.keys(groupedSteps).length === 0,
+    groupedStepsSample: Object.entries(groupedSteps).slice(0, 2).map(([phase, ops]) => ({
+      phase,
+      operations: Object.keys(ops as any),
+      totalStepsInPhase: Object.values(ops as any).reduce((sum: number, opSteps: any) => sum + (Array.isArray(opSteps) ? opSteps.length : 0), 0)
+    })),
     phasesWithOperations: workflowPhases.map(p => ({
       phaseName: p.name,
       operationsCount: p.operations?.length || 0,
@@ -1348,11 +1334,6 @@ export default function UserView({
         stepsCount: op.steps?.length || 0,
         stepNames: op.steps?.map(s => s.step).slice(0, 3)
       })) || []
-    })),
-    groupedStepsKeys: Object.keys(groupedSteps),
-    groupedStepsSample: Object.entries(groupedSteps).slice(0, 2).map(([phase, ops]) => ({
-      phase,
-      operations: Object.keys(ops as any)
     }))
   });
   
