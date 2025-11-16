@@ -332,7 +332,22 @@ export default function UserView({
   console.log('🔍 UserView allSteps calculation:', {
     workflowPhasesLength: workflowPhases.length,
     allStepsLength: allSteps.length,
-    allStepsFirst3: allSteps.slice(0, 3).map(s => ({ id: s.id, step: s.step, phaseName: s.phaseName, operationName: s.operationName }))
+    allStepsFirst3: allSteps.slice(0, 3).map(s => ({ id: s.id, step: s.step, phaseName: s.phaseName, operationName: s.operationName })),
+    phasesStructure: workflowPhases.map(phase => ({
+      phaseName: phase.name,
+      phaseId: phase.id,
+      hasOperations: !!phase.operations,
+      operationsIsArray: Array.isArray(phase.operations),
+      operationsCount: Array.isArray(phase.operations) ? phase.operations.length : 0,
+      operations: Array.isArray(phase.operations) ? phase.operations.map((op: any) => ({
+        opName: op.name,
+        opId: op.id,
+        hasSteps: !!op.steps,
+        stepsIsArray: Array.isArray(op.steps),
+        stepsCount: Array.isArray(op.steps) ? op.steps.length : 0,
+        stepsSample: Array.isArray(op.steps) && op.steps.length > 0 ? op.steps.slice(0, 2).map((s: any) => ({ id: s.id, step: s.step })) : []
+      })) : []
+    }))
   });
   
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
