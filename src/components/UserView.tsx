@@ -1291,38 +1291,22 @@ export default function UserView({
     }
   };
 
-  // Group steps by phase and operation for sidebar navigation
-  // NOTE: Database function now handles phase deduplication at source
-  const groupedSteps = workflowPhases.reduce((acc, phase) => {
-    if (!phase || !phase.name || !Array.isArray(phase.operations)) {
-      console.warn('⚠️ Invalid phase structure:', phase);
-      return acc;
+  // Group steps by phase + operation using the flattened allSteps array
+  // This guarantees the sidebar only depends on the same data powering the main workflow view.
+  const groupedSteps = allSteps.reduce((acc, step) => {
+    const phaseName = step.phaseName || 'Uncategorized';
+    const operationName = step.operationName || 'General';
+
+    if (!acc[phaseName]) {
+      acc[phaseName] = {};
+    }
+    if (!acc[phaseName][operationName]) {
+      acc[phaseName][operationName] = [];
     }
 
-    const existingOperations = acc[phase.name] || {};
-
-    const mergedOperations = phase.operations.reduce((opAcc, operation) => {
-      if (!operation || !operation.name || !Array.isArray(operation.steps)) {
-        console.warn('⚠️ Invalid operation structure:', operation);
-        return opAcc;
-      }
-
-      // Only record operations that actually have steps
-      if (operation.steps.length > 0) {
-        opAcc[operation.name] = operation.steps;
-      }
-      return opAcc;
-    }, { ...existingOperations } as Record<string, any[]>);
-
-    // If this phase variant didn't add any steps, keep what we already had
-    if (Object.keys(mergedOperations).length > 0) {
-      acc[phase.name] = mergedOperations;
-    } else if (!acc[phase.name]) {
-      acc[phase.name] = {};
-    }
-
+    acc[phaseName][operationName].push(step);
     return acc;
-  }, {} as Record<string, Record<string, any[]>>) || {};
+  }, {} as Record<string, Record<string, typeof allSteps>>);
   
   // Debug the phase structure in detail
   console.log("🔍 WorkflowPhases detailed structure:", {
