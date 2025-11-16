@@ -85,13 +85,50 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
   const loadApps = async () => {
     setLoading(true);
     try {
-      // Load native apps (including workspace apps)
+      // Load app overrides from database
+      const { data: appOverrides, error: overrideError } = await supabase
+        .from('app_overrides')
+        .select('*');
+
+      const overrideMap = new Map<string, { app_name: string; description?: string; icon?: string }>();
+      if (!overrideError && appOverrides) {
+        appOverrides.forEach(override => {
+          overrideMap.set(override.app_id, override);
+        });
+      }
+
+      // Load native apps (including workspace apps) and apply overrides
       const allNativeApps = getAllNativeApps();
-      const workspaceAppsList = Object.keys(WORKSPACE_APPS).map(key => ({
-        id: `app-${key}`,
-        ...WORKSPACE_APPS[key]
-      }));
-      setNativeApps([...allNativeApps, ...workspaceAppsList]);
+      const appsWithOverrides = allNativeApps.map(app => {
+        const actionKey = app.actionKey || app.id.replace('app-', '');
+        const override = overrideMap.get(actionKey);
+        if (override) {
+          // Apply override from database
+          return {
+            ...app,
+            appName: override.app_name,
+            description: override.description || app.description,
+            icon: override.icon || app.icon
+          };
+        }
+        return app;
+      });
+
+      const workspaceAppsList = Object.keys(WORKSPACE_APPS).map(key => {
+        const override = overrideMap.get(key);
+        const baseApp = { id: `app-${key}`, ...WORKSPACE_APPS[key] };
+        if (override) {
+          return {
+            ...baseApp,
+            appName: override.app_name,
+            description: override.description || baseApp.description,
+            icon: override.icon || baseApp.icon
+          };
+        }
+        return baseApp;
+      });
+      
+      setNativeApps([...appsWithOverrides, ...workspaceAppsList]);
 
       // Load external apps from all project templates
       const { data: stepsData, error } = await supabase

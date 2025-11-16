@@ -28,31 +28,31 @@ BEGIN
     updated_apps := jsonb_build_array();
     
     -- Update each app in the array if it matches
-    FOR i IN 0..jsonb_array_length(step_record.apps) - 1 LOOP
-      DECLARE
-        current_app JSONB;
-        app_action_key TEXT;
-        app_id_value TEXT;
-      BEGIN
+    DECLARE
+      current_app JSONB;
+      app_action_key TEXT;
+      app_id_value TEXT;
+      i INTEGER;
+    BEGIN
+      FOR i IN 0..jsonb_array_length(step_record.apps) - 1 LOOP
         current_app := step_record.apps->i;
         app_action_key := current_app->>'actionKey';
         app_id_value := current_app->>'id';
         
-        -- Match by app.id OR actionKey
-        IF (app_id_value = p_app_id OR app_action_key = p_app_id OR 
+        -- Match by app.id OR actionKey (handle both "app-{key}" and just "{key}" formats)
+        IF (app_id_value = p_app_id OR 
+            app_action_key = p_app_id OR 
             app_id_value = CONCAT('app-', p_app_id) OR 
-            app_action_key = p_app_id OR
-            -- Handle cases where app_id is just the actionKey without "app-" prefix
-            (app_id_value LIKE CONCAT('%', p_app_id, '%') AND 
-             (app_action_key IS NULL OR app_action_key = p_app_id))) THEN
+            REPLACE(app_id_value, 'app-', '') = p_app_id OR
+            (app_action_key IS NOT NULL AND app_action_key = p_app_id)) THEN
           
           -- Update the app with new name and optionally description/icon
           updated_apps := updated_apps || jsonb_build_object(
             'id', COALESCE(app_id_value, CONCAT('app-', p_app_id)),
             'appName', p_app_name,
             'appType', COALESCE(current_app->>'appType', 'native'),
-            'icon', COALESCE(p_icon, current_app->>'icon', 'Sparkles'),
-            'description', COALESCE(p_description, current_app->>'description', ''),
+            'icon', COALESCE(NULLIF(p_icon, ''), current_app->>'icon', 'Sparkles'),
+            'description', COALESCE(NULLIF(p_description, ''), current_app->>'description', ''),
             'actionKey', COALESCE(app_action_key, p_app_id),
             'displayOrder', COALESCE((current_app->>'displayOrder')::INTEGER, 1),
             -- Preserve other fields
@@ -66,8 +66,8 @@ BEGIN
           -- Keep the app as-is
           updated_apps := updated_apps || current_app;
         END IF;
-      END;
-    END LOOP;
+      END LOOP;
+    END;
     
     -- If any app was updated, save the changes
     IF app_updated THEN
