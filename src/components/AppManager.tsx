@@ -144,12 +144,59 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
     if (!editingApp) return;
 
     try {
-      // Update the native app in the registry
-      // Note: This would require updating the appsRegistry.ts file
-      // For now, we'll show a toast indicating this needs to be done manually
-      // or we could create a database table for app overrides
-      
-      toast.success('Native app updated. Note: Changes to native apps require code updates.');
+      // Extract actionKey from app.id (format: "app-{actionKey}") or use app.id
+      const appId = editingApp.id.startsWith('app-') 
+        ? editingApp.id.replace('app-', '') 
+        : editingApp.id;
+      const actionKey = editingApp.actionKey || appId;
+
+      // Upsert app override in database (this will trigger update in all template_steps)
+      const { error: upsertError } = await supabase
+        .from('app_overrides')
+        .upsert({
+          app_id: actionKey, // Use actionKey as the primary identifier
+          app_name: editForm.appName || editingApp.appName,
+          description: editForm.description || editingApp.description,
+          icon: editForm.icon || editingApp.icon,
+          display_order: editingApp.displayOrder || 1,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'app_id'
+        });
+
+      if (upsertError) throw upsertError;
+
+      // Manually trigger the update function to update all template_steps
+      const { error: updateError } = await supabase.rpc('update_app_names_in_templates', {
+        p_app_id: actionKey,
+        p_app_name: editForm.appName || editingApp.appName,
+        p_description: editForm.description || editingApp.description,
+        p_icon: editForm.icon || editingApp.icon
+      });
+
+      if (updateError) {
+        console.error('Error updating templates:', updateError);
+        // Don't throw - the trigger should have handled it, but log the error
+      }
+
+      // Rebuild phases JSON for all project templates to refresh app names
+      const { data: projectsData } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('is_standard_template', false);
+
+      // Update in background (don't await - let it happen async)
+      if (projectsData && projectsData.length > 0) {
+        Promise.all(
+          projectsData.map(project => 
+            supabase.rpc('rebuild_phases_json_from_project_phases', {
+              p_project_id: project.id
+            })
+          )
+        ).catch(err => console.error('Error rebuilding project phases:', err));
+      }
+
+      toast.success(`App "${editForm.appName || editingApp.appName}" updated in all project templates`);
       
       // Update local state
       setNativeApps(prev => prev.map(app => 
@@ -160,9 +207,10 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
       
       setEditingApp(null);
       setEditForm({});
+      loadApps(); // Reload to get fresh data
     } catch (error) {
       console.error('Error saving native app:', error);
-      toast.error('Failed to save app');
+      toast.error(`Failed to save app: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
