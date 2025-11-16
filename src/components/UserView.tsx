@@ -238,9 +238,35 @@ export default function UserView({
   );
   
   // Determine which phases to use based on context
-  const workflowPhases = currentProjectRun 
-    ? (currentProjectRun.phases || [])  // Project runs: use immutable snapshot
-    : (dynamicPhases.length > 0 ? dynamicPhases : currentProject?.phases || []); // Templates: use dynamic phases
+  // CRITICAL: For project runs, use the snapshot. For templates, prefer dynamic phases from RPC
+  let workflowPhases: Phase[] = [];
+  if (currentProjectRun) {
+    // Project runs: use immutable snapshot from project_runs.phases
+    workflowPhases = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
+    console.log('📦 Using project run phases:', {
+      runId: currentProjectRun.id,
+      phasesLength: workflowPhases.length,
+      phasesIsArray: Array.isArray(currentProjectRun.phases),
+      rawPhases: currentProjectRun.phases
+    });
+  } else if (currentProject) {
+    // Templates: prefer dynamic phases from RPC, fallback to stored phases
+    if (dynamicPhases.length > 0) {
+      workflowPhases = dynamicPhases;
+      console.log('🔄 Using dynamic phases from RPC:', { phasesLength: dynamicPhases.length });
+    } else if (currentProject.phases && currentProject.phases.length > 0) {
+      workflowPhases = currentProject.phases;
+      console.log('📁 Using stored project phases:', { phasesLength: currentProject.phases.length });
+    } else {
+      console.warn('⚠️ No phases found for project:', {
+        projectId: currentProject.id,
+        projectName: currentProject.name,
+        hasDynamicPhases: dynamicPhases.length > 0,
+        hasStoredPhases: !!(currentProject.phases && currentProject.phases.length > 0),
+        dynamicPhasesLoading
+      });
+    }
+  }
   
   // Debug active project structure - CRITICAL DEBUGGING
   console.log('🔍 WorkflowPhases source:', {
