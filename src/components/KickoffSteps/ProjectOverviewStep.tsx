@@ -26,7 +26,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   checkedOutputs = new Set(),
   onOutputToggle
 }) => {
-  const { currentProjectRun, updateProjectRun, currentProject, deleteProjectRun } = useProject();
+  const { currentProjectRun, updateProjectRun, currentProject, deleteProjectRun, projects } = useProject();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
@@ -65,9 +65,16 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     }
   };
 
+  const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.templateId) || null;
+  const displaySkillLevel = currentProjectRun?.skillLevel || templateProject?.skillLevel;
+  const displayEffortLevel = currentProjectRun?.effortLevel || templateProject?.effortLevel;
+  const displayEstimatedTime = currentProjectRun?.estimatedTime || templateProject?.estimatedTime;
+  const displayScalingUnit = currentProjectRun?.scalingUnit || templateProject?.scalingUnit;
+  const displayDiyChallenges = currentProjectRun?.diyLengthChallenges || templateProject?.diyLengthChallenges;
+
   // Helper function to get skill level comparison
   const getSkillLevelComparison = () => {
-    const projectSkill = (currentProjectRun?.skillLevel || currentProject?.skillLevel || '').toLowerCase();
+    const projectSkill = (displaySkillLevel || '').toLowerCase();
     const userSkill = (userProfile?.skill_level || '').toLowerCase();
     
     if (!projectSkill || !userSkill) return null;
@@ -92,7 +99,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   // Helper function to get effort level comparison
   // Note: Using physical_capability as a proxy for effort level since user profile doesn't have effort_level
   const getEffortLevelComparison = () => {
-    const projectEffort = (currentProjectRun?.effortLevel || currentProject?.effortLevel || '').toLowerCase();
+    const projectEffort = (displayEffortLevel || '').toLowerCase();
     const userCapability = (userProfile?.physical_capability || '').toLowerCase();
     
     if (!projectEffort || !userCapability) return null;
@@ -204,7 +211,12 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
   const skillComparison = getSkillLevelComparison();
   const effortComparison = getEffortLevelComparison();
-  const categories = parseCategories(currentProjectRun?.category || currentProject?.category);
+  const categories = parseCategories(currentProjectRun?.category || templateProject?.category);
+  const formattedScalingUnit = displayScalingUnit
+    ? displayScalingUnit.toLowerCase().startsWith('per ')
+      ? displayScalingUnit
+      : `per ${displayScalingUnit}`
+    : null;
 
   return (
     <div className="space-y-6">
@@ -234,7 +246,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           <div>
             <Label>DIY Challenges</Label>
             <p className="mt-1 text-muted-foreground whitespace-pre-line">
-              {currentProjectRun?.diyLengthChallenges || currentProject?.diyLengthChallenges || 'None specified'}
+              {displayDiyChallenges || 'None specified'}
             </p>
           </div>
 
@@ -260,14 +272,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   variant="outline" 
                   className={
                     `text-sm ${
-                       (currentProjectRun?.skillLevel || currentProject?.skillLevel) === 'Beginner' ? 'bg-green-100 text-green-800' :
-                       (currentProjectRun?.skillLevel || currentProject?.skillLevel) === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                       (currentProjectRun?.skillLevel || currentProject?.skillLevel) === 'Advanced' ? 'bg-red-100 text-red-800' :
+                       displaySkillLevel === 'Beginner' ? 'bg-green-100 text-green-800' :
+                       displaySkillLevel === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                       displaySkillLevel === 'Advanced' ? 'bg-red-100 text-red-800' :
                       'bg-gray-100 text-gray-800'
                     }`
                   }
                 >
-                  {currentProjectRun?.skillLevel || currentProject?.skillLevel || 'Not specified'}
+                  {displaySkillLevel || 'Not specified'}
                 </Badge>
                 {userProfile?.skill_level && (
                   <>
@@ -309,14 +321,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   variant="outline" 
                   className={
                     `text-sm ${
-                       (currentProjectRun?.effortLevel || currentProject?.effortLevel) === 'Low' ? 'bg-blue-100 text-blue-800' :
-                       (currentProjectRun?.effortLevel || currentProject?.effortLevel) === 'Medium' ? 'bg-orange-100 text-orange-800' :
-                       (currentProjectRun?.effortLevel || currentProject?.effortLevel) === 'High' ? 'bg-red-100 text-red-800' :
+                       displayEffortLevel === 'Low' ? 'bg-blue-100 text-blue-800' :
+                       displayEffortLevel === 'Medium' ? 'bg-orange-100 text-orange-800' :
+                       displayEffortLevel === 'High' ? 'bg-red-100 text-red-800' :
                       'bg-gray-100 text-gray-800'
                     }`
                   }
                 >
-                  {currentProjectRun?.effortLevel || currentProject?.effortLevel || 'Not specified'}
+                  {displayEffortLevel || 'Not specified'}
                 </Badge>
                 {userProfile?.physical_capability && (
                   <>
@@ -355,16 +367,13 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               <Label>Estimated Time</Label>
               <div className="mt-2 flex items-center gap-2">
                 <Badge variant="outline" className="text-sm">
-                  {currentProjectRun?.estimatedTime || currentProject?.estimatedTime || 'Not specified'}
+                  {displayEstimatedTime || 'Not specified'}
                 </Badge>
-                {currentProjectRun?.scalingUnit || currentProject?.scalingUnit ? (
-                  <>
-                    <span className="text-sm text-muted-foreground">•</span>
-                    <Badge variant="outline" className="text-sm">
-                      {currentProjectRun?.scalingUnit || currentProject?.scalingUnit}
-                    </Badge>
-                  </>
-                ) : null}
+                {formattedScalingUnit && (
+                  <span className="text-sm text-muted-foreground capitalize">
+                    {formattedScalingUnit}
+                  </span>
+                )}
               </div>
             </div>
           </div>

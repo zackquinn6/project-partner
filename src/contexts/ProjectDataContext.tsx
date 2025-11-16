@@ -150,6 +150,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         effortLevel: run.effort_level as Project['effortLevel'],
         skillLevel: run.skill_level as Project['skillLevel'],
         estimatedTime: run.estimated_time,
+        scalingUnit: run.scaling_unit as Project['scalingUnit'],
         customization_decisions: customizationDecisions,
         instruction_level_preference: (run.instruction_level_preference as 'quick' | 'detailed' | 'new_user') || 'detailed'
       };

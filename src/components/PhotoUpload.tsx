@@ -3,8 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Camera, Upload, X, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -155,7 +154,7 @@ export function PhotoUpload({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Upload Progress Photo</DialogTitle>
             <DialogDescription>
@@ -229,46 +228,29 @@ export function PhotoUpload({
             </div>
 
             {/* Privacy Level */}
-            <div>
-              <Label>Privacy Level</Label>
-              <RadioGroup value={privacyLevel} onValueChange={(value: any) => setPrivacyLevel(value)} className="mt-2 space-y-2">
-                <div className="flex items-start space-x-2 p-3 border rounded-lg">
-                  <RadioGroupItem value="personal" id="privacy-personal" />
-                  <div className="flex-1">
-                    <Label htmlFor="privacy-personal" className="cursor-pointer font-medium">
-                      Personal
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Only you can view. Encrypted storage.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-2 p-3 border rounded-lg bg-blue-50/50 border-blue-200">
-                  <RadioGroupItem value="project_partner" id="privacy-partner" />
-                  <div className="flex-1">
-                    <Label htmlFor="privacy-partner" className="cursor-pointer font-medium">
-                      Project Partner
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Visible to admins for quality control and troubleshooting.
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-xs">Recommended</Badge>
-                </div>
-                
-                <div className="flex items-start space-x-2 p-3 border rounded-lg">
-                  <RadioGroupItem value="public" id="privacy-public" />
-                  <div className="flex-1">
-                    <Label htmlFor="privacy-public" className="cursor-pointer font-medium">
-                      Public
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Share your progress with the community.
-                    </p>
-                  </div>
-                </div>
-              </RadioGroup>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Privacy</Label>
+                <span className="text-[11px] text-muted-foreground">Defaults to Project Partner</span>
+              </div>
+              <Select
+                value={privacyLevel}
+                onValueChange={(value) => setPrivacyLevel(value as 'personal' | 'project_partner' | 'public')}
+              >
+                <SelectTrigger className="h-9 text-xs bg-muted/40 border border-muted-foreground/30">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="text-xs">
+                  <SelectItem value="project_partner">
+                    Project Partner (Recommended)
+                  </SelectItem>
+                  <SelectItem value="personal">Personal (Only Me)</SelectItem>
+                  <SelectItem value="public">Public (Shareable)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Adjust only if you need extra privacy or plan to share publicly.
+              </p>
             </div>
 
             {/* Warning for personal photos */}

@@ -1749,6 +1749,7 @@ export default function UserView({
               setDecisionRollupOpen(true);
             }}
             onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
+            onPhotosClick={() => setPhotoGalleryOpen(true)}
           />
 
           <main className="flex-1 overflow-auto">

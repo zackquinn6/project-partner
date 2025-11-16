@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles } from "lucide-react";
+import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
@@ -22,6 +22,7 @@ interface WorkflowSidebarProps {
   onHelpClick: () => void;
   onUnplannedWorkClick: () => void;
   onKeysToSuccessClick: () => void;
+  onPhotosClick: () => void;
 }
 export function WorkflowSidebar({
   allSteps,
@@ -37,7 +38,8 @@ export function WorkflowSidebar({
   onStepClick,
   onHelpClick,
   onUnplannedWorkClick,
-  onKeysToSuccessClick
+  onKeysToSuccessClick,
+  onPhotosClick
 }: WorkflowSidebarProps) {
   const {
     state
@@ -121,6 +123,19 @@ export function WorkflowSidebar({
                         <div className="text-[10px] font-semibold">Re-Plan</div>
                       </Button>}
                   </div>
+                </div>
+
+                {/* Photos Button */}
+                <div>
+                  <Button
+                    onClick={onPhotosClick}
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-12 flex items-center justify-center gap-2 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
+                  >
+                    <Image className="w-4 h-4" />
+                    <span className="text-[12px] font-semibold">Photos</span>
+                  </Button>
                 </div>
 
                 {/* Separator */}
