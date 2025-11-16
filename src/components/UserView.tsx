@@ -381,24 +381,43 @@ export default function UserView({
   const firstOperation = firstPhase?.operations?.[0];
   const firstStep = firstOperation?.steps?.[0];
   
+  const operationsLength = Array.isArray(firstPhase?.operations) ? firstPhase.operations.length : (firstPhase?.operations ? 1 : 0);
+  const stepsLength = Array.isArray(firstOperation?.steps) ? firstOperation.steps.length : (firstOperation?.steps ? 1 : 0);
+  
   console.log('🔍 ROOT CAUSE - First Phase Structure:', {
     phaseName: firstPhase?.name,
     phaseId: firstPhase?.id,
     hasOperations: !!firstPhase?.operations,
     operationsType: typeof firstPhase?.operations,
     operationsIsArray: Array.isArray(firstPhase?.operations),
-    operationsLength: Array.isArray(firstPhase?.operations) ? firstPhase.operations.length : 'N/A',
+    operationsLength: operationsLength,
     firstOperationName: firstOperation?.name,
     firstOperationId: firstOperation?.id,
     hasSteps: !!firstOperation?.steps,
     stepsType: typeof firstOperation?.steps,
     stepsIsArray: Array.isArray(firstOperation?.steps),
-    stepsLength: Array.isArray(firstOperation?.steps) ? firstOperation.steps.length : 'N/A',
+    stepsLength: stepsLength,
     firstStepId: firstStep?.id,
     firstStepTitle: firstStep?.step,
     RAW_FIRST_PHASE: firstPhase,
     RAW_FIRST_OPERATION: firstOperation,
     RAW_FIRST_STEP: firstStep
+  });
+  
+  // Log the actual structure more explicitly - FORCE OUTPUT
+  console.log('🔍 ROOT CAUSE - Operations and Steps Count:', {
+    phaseName: firstPhase?.name,
+    operationsCount: operationsLength,
+    stepsCount: stepsLength,
+    firstOperationName: firstOperation?.name,
+    firstOperationId: firstOperation?.id,
+    firstStepId: firstStep?.id,
+    firstStepTitle: firstStep?.step,
+    operationsArray: firstPhase?.operations,
+    stepsArray: firstOperation?.steps,
+    FULL_FIRST_PHASE_JSON: JSON.stringify(firstPhase, null, 2),
+    FULL_FIRST_OPERATION_JSON: JSON.stringify(firstOperation, null, 2),
+    FULL_FIRST_STEP_JSON: JSON.stringify(firstStep, null, 2)
   });
   
   console.log('🔍 UserView allSteps calculation:', {
