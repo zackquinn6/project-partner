@@ -277,49 +277,56 @@ export default function UserView({
   
   // Flatten all steps with phases directly from project
   // Include both standard phases AND project-specific phases in workflow display
-  const allSteps = workflowPhases.length > 0 ? workflowPhases
-    .flatMap(phase =>
-    phase.operations.flatMap(operation =>
-      operation.steps.map(step => {
-        // Add sample materials and tools for demonstration (since project templates are empty)
-        let materials = step.materials || [];
-        let tools = step.tools || [];
-        
-          // Add sample data to specific steps for testing
-          if (step.step?.includes('Measure') || step.id === 'measure-room') {
-            materials = [
-              { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', alternates: ['Laser measure', 'Ruler'] },
-              { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', alternates: ['Phone app', 'Digital notepad'] }
-            ];
-            tools = [
-              { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', alternates: ['Traditional bubble level', 'Water level'] }
-            ];
-          } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
-            materials = [
-              { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', alternates: ['Luxury vinyl', 'Natural stone'] },
-              { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', alternates: ['Unsanded grout', 'Epoxy grout'] },
-              { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', alternates: ['Mortar mix', 'Premium adhesive'] }
-            ];
-          } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
-            materials = [
-              { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', alternates: ['Self-priming sealer', 'Bonding agent'] }
-            ];
-            tools = [
-              { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', alternates: ['Putty knife', 'Chisel'] },
-              { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', alternates: ['Regular vacuum', 'Broom and dustpan'] }
-            ];
-          }
-        
-        return {
-          ...step,
-          phaseName: phase.name,
-          operationName: operation.name,
-          materials,
-          tools
-        };
-      })
-    )
-  ) : [];
+  const allSteps = (workflowPhases.length > 0 && Array.isArray(workflowPhases)) 
+    ? workflowPhases
+        .filter(phase => phase && phase.name && Array.isArray(phase.operations))
+        .flatMap(phase =>
+          (phase.operations || [])
+            .filter(operation => operation && operation.name && Array.isArray(operation.steps))
+            .flatMap(operation =>
+              (operation.steps || [])
+                .filter(step => step && step.id)
+                .map(step => {
+                  // Add sample materials and tools for demonstration (since project templates are empty)
+                  let materials = step.materials || [];
+                  let tools = step.tools || [];
+                  
+                  // Add sample data to specific steps for testing
+                  if (step.step?.includes('Measure') || step.id === 'measure-room') {
+                    materials = [
+                      { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', alternates: ['Laser measure', 'Ruler'] },
+                      { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', alternates: ['Phone app', 'Digital notepad'] }
+                    ];
+                    tools = [
+                      { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', alternates: ['Traditional bubble level', 'Water level'] }
+                    ];
+                  } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
+                    materials = [
+                      { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', alternates: ['Luxury vinyl', 'Natural stone'] },
+                      { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', alternates: ['Unsanded grout', 'Epoxy grout'] },
+                      { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', alternates: ['Mortar mix', 'Premium adhesive'] }
+                    ];
+                  } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
+                    materials = [
+                      { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', alternates: ['Self-priming sealer', 'Bonding agent'] }
+                    ];
+                    tools = [
+                      { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', alternates: ['Putty knife', 'Chisel'] },
+                      { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', alternates: ['Regular vacuum', 'Broom and dustpan'] }
+                    ];
+                  }
+                  
+                  return {
+                    ...step,
+                    phaseName: phase.name || 'Uncategorized',
+                    operationName: operation.name || 'General',
+                    materials,
+                    tools
+                  };
+                })
+            )
+        )
+    : [];
   
   // CRITICAL DEBUG: Log allSteps calculation
   console.log('🔍 UserView allSteps calculation:', {
@@ -1296,6 +1303,8 @@ export default function UserView({
   // CRITICAL: Use allSteps directly since it's already the deduped, flattened list
   const groupedSteps = allSteps.length > 0 
     ? allSteps.reduce((acc, step) => {
+        if (!step || !step.id) return acc; // Skip invalid steps
+        
         const phaseName = step.phaseName || 'Uncategorized';
         const operationName = step.operationName || 'General';
 
@@ -1307,13 +1316,25 @@ export default function UserView({
         }
 
         // Dedupe by step ID
-        if (!acc[phaseName][operationName].some(existingStep => existingStep.id === step.id)) {
+        if (!acc[phaseName][operationName].some((existingStep: any) => existingStep.id === step.id)) {
           acc[phaseName][operationName].push(step);
         }
 
         return acc;
-      }, {} as Record<string, Record<string, typeof allSteps>>)
+      }, {} as Record<string, Record<string, any[]>>)
     : {};
+  
+  // Final safety check: if groupedSteps is empty but allSteps has data, create a fallback structure
+  const hasGroupedData = Object.keys(groupedSteps).length > 0 && 
+    Object.values(groupedSteps).some((ops: any) => 
+      Object.values(ops).some((steps: any) => Array.isArray(steps) && steps.length > 0)
+    );
+  
+  const finalGroupedSteps = hasGroupedData 
+    ? groupedSteps 
+    : (allSteps.length > 0 
+        ? { 'All Steps': { 'Workflow': allSteps } } 
+        : {});
   
   // Debug the phase structure in detail
   console.log("🔍 WorkflowPhases detailed structure:", {
@@ -1321,7 +1342,10 @@ export default function UserView({
     allStepsLength: allSteps.length,
     groupedStepsKeys: Object.keys(groupedSteps),
     groupedStepsEmpty: Object.keys(groupedSteps).length === 0,
-    groupedStepsSample: Object.entries(groupedSteps).slice(0, 2).map(([phase, ops]) => ({
+    hasGroupedData,
+    finalGroupedStepsKeys: Object.keys(finalGroupedSteps),
+    finalGroupedStepsEmpty: Object.keys(finalGroupedSteps).length === 0,
+    groupedStepsSample: Object.entries(finalGroupedSteps).slice(0, 2).map(([phase, ops]) => ({
       phase,
       operations: Object.keys(ops as any),
       totalStepsInPhase: Object.values(ops as any).reduce((sum: number, opSteps: any) => sum + (Array.isArray(opSteps) ? opSteps.length : 0), 0)
@@ -1706,7 +1730,7 @@ export default function UserView({
             currentStepIndex={currentStepIndex}
             completedSteps={completedSteps}
             progress={progress}
-            groupedSteps={groupedSteps}
+            groupedSteps={finalGroupedSteps}
             isKickoffComplete={isKickoffComplete}
             instructionLevel={instructionLevel}
             projectName={currentProjectRun?.customProjectName || currentProjectRun?.name || 'Project'}
