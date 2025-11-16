@@ -95,6 +95,21 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           phases = typeof run.phases === 'string' 
             ? JSON.parse(run.phases) 
             : run.phases;
+          
+          // ROOT CAUSE DEBUG: Log what's actually stored in database
+          if (run.id) {
+            console.log('🔍 ProjectDataContext - Project Run Phases (FROM DATABASE):', {
+              runId: run.id,
+              runName: run.name,
+              phasesRawType: typeof run.phases,
+              phasesIsString: typeof run.phases === 'string',
+              phasesParsedLength: Array.isArray(phases) ? phases.length : 'not array',
+              firstPhase: phases[0],
+              firstPhaseOperations: phases[0]?.operations,
+              firstPhaseOperationsLength: Array.isArray(phases[0]?.operations) ? phases[0].operations.length : 'N/A',
+              RAW_PHASES_JSON: typeof run.phases === 'string' ? run.phases : JSON.stringify(run.phases, null, 2)
+            });
+          }
         } catch (e) {
           console.error('Failed to parse project run phases JSON:', e);
           phases = [];
