@@ -97,10 +97,20 @@ export function useDataFetch<T = any>({
       const { data: result, error: fetchError } = await query;
 
       if (fetchError) {
+        console.error(`❌ useDataFetch error for table ${table}:`, fetchError);
         throw new Error(fetchError.message);
       }
 
+      console.log(`📊 useDataFetch: table=${table}, rawCount=${result?.length || 0}`, {
+        filters,
+        orderBy,
+        hasTransform: !!transform
+      });
+
       const transformedData = transform ? transform(result || []) : (result || []) as T[];
+      
+      console.log(`✅ useDataFetch: table=${table}, transformedCount=${transformedData.length}`);
+      
       setData(transformedData);
       lastFetchParams.current = fetchParams;
       

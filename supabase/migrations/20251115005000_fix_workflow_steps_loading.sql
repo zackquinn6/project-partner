@@ -107,7 +107,7 @@ BEGIN
       'materials', COALESCE(materials_json, step_record.materials, '[]'::jsonb),
       'tools', COALESCE(tools_json, step_record.tools, '[]'::jsonb),
       'outputs', COALESCE(outputs_json, step_record.outputs, '[]'::jsonb),
-      'inputs', COALESCE(inputs_json, step_record.process_variables, '[]'::jsonb),
+      'inputs', COALESCE(inputs_json, '[]'::jsonb),
       'apps', COALESCE(step_record.apps, '[]'::jsonb),
       'content', COALESCE(step_record.content_sections, '[]'::jsonb),
       'contentType', 'multi',
