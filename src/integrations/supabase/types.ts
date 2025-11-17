@@ -230,6 +230,42 @@ export type Database = {
         }
         Relationships: []
       }
+      app_overrides: {
+        Row: {
+          app_id: string
+          app_name: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          app_id: string
+          app_name: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string
+          app_name?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           created_at: string | null
@@ -1453,35 +1489,50 @@ export type Database = {
       materials: {
         Row: {
           alternates: string | null
+          avg_cost_per_unit: number | null
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
           id: string
-          item: string
+          is_rental_available: boolean | null
+          name: string
+          notes: string | null
           photo_url: string | null
-          unit_size: string | null
+          supplier_link: string | null
+          unit: string | null
           updated_at: string
         }
         Insert: {
           alternates?: string | null
+          avg_cost_per_unit?: number | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
-          item: string
+          is_rental_available?: boolean | null
+          name: string
+          notes?: string | null
           photo_url?: string | null
-          unit_size?: string | null
+          supplier_link?: string | null
+          unit?: string | null
           updated_at?: string
         }
         Update: {
           alternates?: string | null
+          avg_cost_per_unit?: number | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
-          item?: string
+          is_rental_available?: boolean | null
+          name?: string
+          notes?: string | null
           photo_url?: string | null
-          unit_size?: string | null
+          supplier_link?: string | null
+          unit?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1522,6 +1573,42 @@ export type Database = {
           projects_affected?: string[]
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      outputs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_required: boolean | null
+          name: string
+          notes: string | null
+          type: Database["public"]["Enums"]["output_type"]
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          name: string
+          notes?: string | null
+          type?: Database["public"]["Enums"]["output_type"]
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          name?: string
+          notes?: string | null
+          type?: Database["public"]["Enums"]["output_type"]
+          updated_at?: string
+          validation_rules?: Json | null
         }
         Relationships: []
       }
@@ -1843,6 +1930,51 @@ export type Database = {
           },
         ]
       }
+      process_variables: {
+        Row: {
+          created_at: string
+          default_value: string | null
+          description: string | null
+          display_name: string
+          id: string
+          name: string
+          notes: string | null
+          unit: string | null
+          updated_at: string
+          used_in_calculations: boolean | null
+          validation_rules: Json | null
+          variable_type: Database["public"]["Enums"]["variable_type"]
+        }
+        Insert: {
+          created_at?: string
+          default_value?: string | null
+          description?: string | null
+          display_name: string
+          id?: string
+          name: string
+          notes?: string | null
+          unit?: string | null
+          updated_at?: string
+          used_in_calculations?: boolean | null
+          validation_rules?: Json | null
+          variable_type: Database["public"]["Enums"]["variable_type"]
+        }
+        Update: {
+          created_at?: string
+          default_value?: string | null
+          description?: string | null
+          display_name?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          unit?: string | null
+          updated_at?: string
+          used_in_calculations?: boolean | null
+          validation_rules?: Json | null
+          variable_type?: Database["public"]["Enums"]["variable_type"]
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           agreement_signed_at: string | null
@@ -2071,6 +2203,13 @@ export type Database = {
             foreignKeyName: "project_owners_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_templates_live"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_owners_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -2115,6 +2254,13 @@ export type Database = {
             foreignKeyName: "project_phases_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_templates_live"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_phases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -2123,6 +2269,88 @@ export type Database = {
             columns: ["standard_phase_id"]
             isOneToOne: false
             referencedRelation: "standard_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          file_name: string
+          file_size: number
+          id: string
+          operation_id: string | null
+          operation_name: string | null
+          phase_id: string | null
+          phase_name: string | null
+          privacy_level: string
+          project_run_id: string
+          step_id: string
+          step_name: string | null
+          storage_path: string
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          file_name: string
+          file_size: number
+          id?: string
+          operation_id?: string | null
+          operation_name?: string | null
+          phase_id?: string | null
+          phase_name?: string | null
+          privacy_level?: string
+          project_run_id: string
+          step_id: string
+          step_name?: string | null
+          storage_path: string
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          file_name?: string
+          file_size?: number
+          id?: string
+          operation_id?: string | null
+          operation_name?: string | null
+          phase_id?: string | null
+          phase_name?: string | null
+          privacy_level?: string
+          project_run_id?: string
+          step_id?: string
+          step_name?: string | null
+          storage_path?: string
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_photos_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_photos_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "project_templates_live"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_photos_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2323,6 +2551,7 @@ export type Database = {
           start_date: string
           status: string
           template_id: string | null
+          time_tracking: Json | null
           updated_at: string
           user_id: string
         }
@@ -2361,6 +2590,7 @@ export type Database = {
           start_date?: string
           status?: string
           template_id?: string | null
+          time_tracking?: Json | null
           updated_at?: string
           user_id: string
         }
@@ -2399,6 +2629,7 @@ export type Database = {
           start_date?: string
           status?: string
           template_id?: string | null
+          time_tracking?: Json | null
           updated_at?: string
           user_id?: string
         }
@@ -2408,6 +2639,13 @@ export type Database = {
             columns: ["home_id"]
             isOneToOne: false
             referencedRelation: "homes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_runs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "project_templates_live"
             referencedColumns: ["id"]
           },
           {
@@ -2529,6 +2767,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
+            isOneToOne: false
+            referencedRelation: "project_templates_live"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_parent_project_id_fkey"
             columns: ["parent_project_id"]
@@ -2803,12 +3048,241 @@ export type Database = {
           },
         ]
       }
+      step_materials: {
+        Row: {
+          created_at: string
+          id: string
+          is_optional: boolean | null
+          material_id: string
+          notes: string | null
+          quantity: number | null
+          quantity_formula: string | null
+          step_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_optional?: boolean | null
+          material_id: string
+          notes?: string | null
+          quantity?: number | null
+          quantity_formula?: string | null
+          step_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_optional?: boolean | null
+          material_id?: string
+          notes?: string | null
+          quantity?: number | null
+          quantity_formula?: string | null
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "step_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "step_materials_detail"
+            referencedColumns: ["material_id"]
+          },
+          {
+            foreignKeyName: "step_materials_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      step_outputs: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean | null
+          notes: string | null
+          output_id: string
+          step_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          notes?: string | null
+          output_id: string
+          step_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          notes?: string | null
+          output_id?: string
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_outputs_output_id_fkey"
+            columns: ["output_id"]
+            isOneToOne: false
+            referencedRelation: "outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "step_outputs_output_id_fkey"
+            columns: ["output_id"]
+            isOneToOne: false
+            referencedRelation: "step_outputs_detail"
+            referencedColumns: ["output_id"]
+          },
+          {
+            foreignKeyName: "step_outputs_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      step_tools: {
+        Row: {
+          created_at: string
+          id: string
+          is_optional: boolean | null
+          notes: string | null
+          step_id: string
+          tool_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_optional?: boolean | null
+          notes?: string | null
+          step_id: string
+          tool_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_optional?: boolean | null
+          notes?: string | null
+          step_id?: string
+          tool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_tools_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "step_tools_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "step_tools_detail"
+            referencedColumns: ["tool_id"]
+          },
+          {
+            foreignKeyName: "step_tools_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      step_types: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      step_variables: {
+        Row: {
+          created_at: string
+          id: string
+          is_input: boolean | null
+          is_required: boolean | null
+          step_id: string
+          variable_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_input?: boolean | null
+          is_required?: boolean | null
+          step_id: string
+          variable_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_input?: boolean | null
+          is_required?: boolean | null
+          step_id?: string
+          variable_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_variables_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "step_variables_variable_id_fkey"
+            columns: ["variable_id"]
+            isOneToOne: false
+            referencedRelation: "process_variables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_shopping_list: {
         Row: {
           completed: boolean
           created_at: string
           id: string
           material_name: string
+          quantity: number
           task_id: string
           updated_at: string
           user_id: string
@@ -2818,6 +3292,7 @@ export type Database = {
           created_at?: string
           id?: string
           material_name: string
+          quantity?: number
           task_id: string
           updated_at?: string
           user_id: string
@@ -2827,6 +3302,7 @@ export type Database = {
           created_at?: string
           id?: string
           material_name?: string
+          quantity?: number
           task_id?: string
           updated_at?: string
           user_id?: string
@@ -2855,11 +3331,11 @@ export type Database = {
           id: string
           is_custom_phase: boolean | null
           is_reference: boolean
+          is_standard_phase: boolean
           name: string
           phase_id: string | null
           project_id: string
           source_operation_id: string | null
-          standard_phase_id: string | null
           updated_at: string | null
           user_prompt: string | null
         }
@@ -2876,11 +3352,11 @@ export type Database = {
           id?: string
           is_custom_phase?: boolean | null
           is_reference?: boolean
+          is_standard_phase?: boolean
           name: string
           phase_id?: string | null
           project_id: string
           source_operation_id?: string | null
-          standard_phase_id?: string | null
           updated_at?: string | null
           user_prompt?: string | null
         }
@@ -2897,11 +3373,11 @@ export type Database = {
           id?: string
           is_custom_phase?: boolean | null
           is_reference?: boolean
+          is_standard_phase?: boolean
           name?: string
           phase_id?: string | null
           project_id?: string
           source_operation_id?: string | null
-          standard_phase_id?: string | null
           updated_at?: string | null
           user_prompt?: string | null
         }
@@ -2924,14 +3400,21 @@ export type Database = {
             foreignKeyName: "template_operations_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_templates_live"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_operations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "template_operations_standard_phase_id_fkey"
-            columns: ["standard_phase_id"]
+            foreignKeyName: "template_operations_source_operation_id_fkey"
+            columns: ["source_operation_id"]
             isOneToOne: false
-            referencedRelation: "standard_phases"
+            referencedRelation: "template_operations"
             referencedColumns: ["id"]
           },
         ]
@@ -3058,35 +3541,59 @@ export type Database = {
       tools: {
         Row: {
           alternates: string | null
+          avg_rental_cost_per_day: number | null
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
           example_models: string | null
           id: string
-          item: string
+          is_rental_available: boolean | null
+          name: string
+          notes: string | null
           photo_url: string | null
+          purchase_cost_estimate: number | null
+          purchase_supplier_link: string | null
+          rental_supplier_link: string | null
+          safety_notes: string | null
           updated_at: string
         }
         Insert: {
           alternates?: string | null
+          avg_rental_cost_per_day?: number | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           example_models?: string | null
           id?: string
-          item: string
+          is_rental_available?: boolean | null
+          name: string
+          notes?: string | null
           photo_url?: string | null
+          purchase_cost_estimate?: number | null
+          purchase_supplier_link?: string | null
+          rental_supplier_link?: string | null
+          safety_notes?: string | null
           updated_at?: string
         }
         Update: {
           alternates?: string | null
+          avg_rental_cost_per_day?: number | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           example_models?: string | null
           id?: string
-          item?: string
+          is_rental_available?: boolean | null
+          name?: string
+          notes?: string | null
           photo_url?: string | null
+          purchase_cost_estimate?: number | null
+          purchase_supplier_link?: string | null
+          rental_supplier_link?: string | null
+          safety_notes?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -3468,9 +3975,76 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_optimizations: {
+        Row: {
+          affected_steps: string[]
+          applied: boolean
+          applied_date: string | null
+          average_time_after: number | null
+          average_time_before: number | null
+          confidence: number
+          created_at: string
+          created_by: string | null
+          description: string
+          effort_reduction: number
+          feedback_score: number | null
+          id: string
+          optimization_type: string
+          project_types: string[]
+          status: string
+          time_savings: number
+          title: string
+          updated_at: string
+          user_completions: number | null
+        }
+        Insert: {
+          affected_steps: string[]
+          applied?: boolean
+          applied_date?: string | null
+          average_time_after?: number | null
+          average_time_before?: number | null
+          confidence: number
+          created_at?: string
+          created_by?: string | null
+          description: string
+          effort_reduction?: number
+          feedback_score?: number | null
+          id?: string
+          optimization_type: string
+          project_types: string[]
+          status?: string
+          time_savings?: number
+          title: string
+          updated_at?: string
+          user_completions?: number | null
+        }
+        Update: {
+          affected_steps?: string[]
+          applied?: boolean
+          applied_date?: string | null
+          average_time_after?: number | null
+          average_time_before?: number | null
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          effort_reduction?: number
+          feedback_score?: number | null
+          id?: string
+          optimization_type?: string
+          project_types?: string[]
+          status?: string
+          time_savings?: number
+          title?: string
+          updated_at?: string
+          user_completions?: number | null
+        }
+        Relationships: []
+      }
       workflow_step_materials: {
         Row: {
           alternates: string[] | null
+          category: string | null
           created_at: string
           description: string | null
           display_order: number
@@ -3486,6 +4060,7 @@ export type Database = {
         }
         Insert: {
           alternates?: string[] | null
+          category?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -3501,6 +4076,7 @@ export type Database = {
         }
         Update: {
           alternates?: string[] | null
+          category?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -3657,6 +4233,7 @@ export type Database = {
       workflow_step_tools: {
         Row: {
           alternates: string[] | null
+          category: string | null
           created_at: string
           description: string | null
           display_order: number
@@ -3672,6 +4249,7 @@ export type Database = {
         }
         Insert: {
           alternates?: string[] | null
+          category?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -3687,6 +4265,7 @@ export type Database = {
         }
         Update: {
           alternates?: string[] | null
+          category?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -3737,72 +4316,6 @@ export type Database = {
         }
         Relationships: []
       }
-      workflow_optimizations: {
-        Row: {
-          affected_steps: string[]
-          applied: boolean
-          applied_date: string | null
-          average_time_after: number | null
-          average_time_before: number | null
-          confidence: number
-          created_at: string
-          created_by: string | null
-          description: string
-          effort_reduction: number
-          feedback_score: number | null
-          id: string
-          optimization_type: string
-          project_types: string[]
-          status: string
-          time_savings: number
-          title: string
-          updated_at: string
-          user_completions: number | null
-        }
-        Insert: {
-          affected_steps: string[]
-          applied?: boolean
-          applied_date?: string | null
-          average_time_after?: number | null
-          average_time_before?: number | null
-          confidence: number
-          created_at?: string
-          created_by?: string | null
-          description: string
-          effort_reduction?: number
-          feedback_score?: number | null
-          id?: string
-          optimization_type: string
-          project_types: string[]
-          status?: string
-          time_savings?: number
-          title: string
-          updated_at?: string
-          user_completions?: number | null
-        }
-        Update: {
-          affected_steps?: string[]
-          applied?: boolean
-          applied_date?: string | null
-          average_time_after?: number | null
-          average_time_before?: number | null
-          confidence?: number
-          created_at?: string
-          created_by?: string | null
-          description?: string
-          effort_reduction?: number
-          feedback_score?: number | null
-          id?: string
-          optimization_type?: string
-          project_types?: string[]
-          status?: string
-          time_savings?: number
-          title?: string
-          updated_at?: string
-          user_completions?: number | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       project_templates_live: {
@@ -3811,7 +4324,7 @@ export type Database = {
           beta_released_at: string | null
           category: string[] | null
           cover_image: string | null
-          created_at: string
+          created_at: string | null
           created_by: string | null
           created_from_revision: number | null
           description: string | null
@@ -3821,34 +4334,220 @@ export type Database = {
           end_date: string | null
           estimated_time: string | null
           estimated_time_per_unit: number | null
-          id: string
+          id: string | null
           image: string | null
           images: string[] | null
           is_current_version: boolean | null
           is_standard_template: boolean | null
-          name: string
+          name: string | null
           owner_id: string | null
           parent_project_id: string | null
           phase_revision_alerts: Json | null
-          phases: Json
-          plan_end_date: string
-          publish_status: string
+          phases: Json | null
+          plan_end_date: string | null
+          publish_status: string | null
           published_at: string | null
           release_notes: string | null
           revision_notes: string | null
           revision_number: number | null
           scaling_unit: string | null
           skill_level: string | null
-          start_date: string
-          updated_at: string
+          start_date: string | null
+          updated_at: string | null
         }
-        Relationships: []
+        Insert: {
+          archived_at?: string | null
+          beta_released_at?: string | null
+          category?: string[] | null
+          cover_image?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_from_revision?: number | null
+          description?: string | null
+          difficulty?: string | null
+          diy_length_challenges?: string | null
+          effort_level?: string | null
+          end_date?: string | null
+          estimated_time?: string | null
+          estimated_time_per_unit?: number | null
+          id?: string | null
+          image?: string | null
+          images?: string[] | null
+          is_current_version?: boolean | null
+          is_standard_template?: boolean | null
+          name?: string | null
+          owner_id?: string | null
+          parent_project_id?: string | null
+          phase_revision_alerts?: Json | null
+          phases?: never
+          plan_end_date?: string | null
+          publish_status?: string | null
+          published_at?: string | null
+          release_notes?: string | null
+          revision_notes?: string | null
+          revision_number?: number | null
+          scaling_unit?: string | null
+          skill_level?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          beta_released_at?: string | null
+          category?: string[] | null
+          cover_image?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_from_revision?: number | null
+          description?: string | null
+          difficulty?: string | null
+          diy_length_challenges?: string | null
+          effort_level?: string | null
+          end_date?: string | null
+          estimated_time?: string | null
+          estimated_time_per_unit?: number | null
+          id?: string | null
+          image?: string | null
+          images?: string[] | null
+          is_current_version?: boolean | null
+          is_standard_template?: boolean | null
+          name?: string | null
+          owner_id?: string | null
+          parent_project_id?: string | null
+          phase_revision_alerts?: Json | null
+          phases?: never
+          plan_end_date?: string | null
+          publish_status?: string | null
+          published_at?: string | null
+          release_notes?: string | null
+          revision_notes?: string | null
+          revision_number?: number | null
+          scaling_unit?: string | null
+          skill_level?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
+            isOneToOne: false
+            referencedRelation: "project_templates_live"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      step_materials_detail: {
+        Row: {
+          avg_cost_per_unit: number | null
+          estimated_cost: number | null
+          is_optional: boolean | null
+          material_category: string | null
+          material_description: string | null
+          material_id: string | null
+          material_name: string | null
+          material_unit: string | null
+          notes: string | null
+          quantity: number | null
+          quantity_formula: string | null
+          step_id: string | null
+          step_material_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_materials_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      step_outputs_detail: {
+        Row: {
+          is_required: boolean | null
+          notes: string | null
+          output_description: string | null
+          output_id: string | null
+          output_name: string | null
+          output_type: Database["public"]["Enums"]["output_type"] | null
+          step_id: string | null
+          step_output_id: string | null
+          validation_rules: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_outputs_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      step_tools_detail: {
+        Row: {
+          avg_rental_cost_per_day: number | null
+          is_optional: boolean | null
+          is_rental_available: boolean | null
+          notes: string | null
+          step_id: string | null
+          step_tool_id: string | null
+          tool_category: string | null
+          tool_description: string | null
+          tool_id: string | null
+          tool_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_tools_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "template_steps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
       add_admin_by_email: { Args: { user_email: string }; Returns: string }
+      add_custom_project_phase: {
+        Args: {
+          p_phase_description?: string
+          p_phase_name?: string
+          p_project_id: string
+        }
+        Returns: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_standard: boolean
+          name: string
+          project_id: string
+          standard_phase_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "project_phases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       apply_standard_phase_positioning: {
         Args: { p_custom_phases?: Json; p_project_id: string }
+        Returns: Json
+      }
+      build_phases_json_with_dynamic_standard: {
+        Args: { p_project_id: string }
         Returns: Json
       }
       calculate_pfmea_rpn: {
@@ -3995,10 +4694,6 @@ export type Database = {
         Args: { variation_id: string }
         Returns: number
       }
-      get_project_workflow_json: {
-        Args: { p_project_id: string }
-        Returns: Json
-      }
       get_failed_login_summary: {
         Args: { days_back?: number }
         Returns: {
@@ -4067,6 +4762,29 @@ export type Database = {
               user_id: string
             }[]
           }
+      get_operation_steps_json: {
+        Args: { p_is_standard?: boolean; p_operation_id: string }
+        Returns: Json
+      }
+      get_photos_by_project_type: {
+        Args: never
+        Returns: {
+          personal_count: number
+          photo_count: number
+          project_partner_count: number
+          public_count: number
+          template_id: string
+          template_name: string
+        }[]
+      }
+      get_project_workflow_json: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
+      get_project_workflow_with_standards: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
       get_security_headers: { Args: never; Returns: Json }
       get_security_metrics: {
         Args: { timeframe_hours?: number }
@@ -4085,6 +4803,10 @@ export type Database = {
           project_name: string
         }[]
       }
+      get_step_inputs_json: { Args: { p_step_id: string }; Returns: Json }
+      get_step_materials_json: { Args: { p_step_id: string }; Returns: Json }
+      get_step_outputs_json: { Args: { p_step_id: string }; Returns: Json }
+      get_step_tools_json: { Args: { p_step_id: string }; Returns: Json }
       get_user_notification_settings: {
         Args: { user_uuid: string }
         Returns: {
@@ -4157,11 +4879,13 @@ export type Database = {
         }
         Returns: undefined
       }
-      migrate_phases_from_json_to_table: { Args: never; Returns: undefined }
-      build_phases_json_with_dynamic_standard: {
-        Args: { p_project_id: string }
-        Returns: Json
+      migrate_materials_from_jsonb_to_relational: {
+        Args: never
+        Returns: number
       }
+      migrate_outputs_from_jsonb_to_relational: { Args: never; Returns: number }
+      migrate_phases_from_json_to_table: { Args: never; Returns: undefined }
+      migrate_tools_from_jsonb_to_relational: { Args: never; Returns: number }
       rebuild_phases_json_from_project_phases: {
         Args: { p_project_id: string }
         Returns: Json
@@ -4172,6 +4896,10 @@ export type Database = {
       }
       rebuild_project_from_standard: {
         Args: { project_id_to_rebuild: string }
+        Returns: undefined
+      }
+      rebuild_step_resources_json: {
+        Args: { p_step_id: string }
         Returns: undefined
       }
       refresh_project_run_from_template: {
@@ -4213,6 +4941,15 @@ export type Database = {
           test_name: string
         }[]
       }
+      update_app_names_in_templates: {
+        Args: {
+          p_app_id: string
+          p_app_name: string
+          p_description?: string
+          p_icon?: string
+        }
+        Returns: number
+      }
       update_phase_revision_alert: {
         Args: { p_action: string; p_phase_id: string; p_project_id: string }
         Returns: undefined
@@ -4241,7 +4978,25 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      output_type:
+        | "none"
+        | "measurement"
+        | "decision"
+        | "document"
+        | "photo"
+        | "inspection"
+        | "material_list"
+        | "tool_list"
+        | "calculation"
+        | "approval"
+        | "schedule"
+      variable_type:
+        | "number"
+        | "text"
+        | "boolean"
+        | "date"
+        | "measurement"
+        | "list"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4368,6 +5123,28 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      output_type: [
+        "none",
+        "measurement",
+        "decision",
+        "document",
+        "photo",
+        "inspection",
+        "material_list",
+        "tool_list",
+        "calculation",
+        "approval",
+        "schedule",
+      ],
+      variable_type: [
+        "number",
+        "text",
+        "boolean",
+        "date",
+        "measurement",
+        "list",
+      ],
+    },
   },
 } as const

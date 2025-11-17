@@ -102,23 +102,27 @@ Deno.serve(async (req) => {
 
     result.details.push(`Found ${templates?.length || 0} templates to update (including all revisions)`);
     
-    // SAFETY CHECK: Verify Standard Project has data to cascade
-    const { data: standardOpsCheck, error: standardOpsCheckError } = await supabase
-      .from('template_operations')
-      .select('id, standard_phase_id, name')
-      .eq('project_id', standardProjectId)
-      .not('standard_phase_id', 'is', null);
-    
-    if (standardOpsCheckError) {
-      throw new Error(`Failed to verify standard operations: ${standardOpsCheckError.message}`);
-    }
-    
-    if (!standardOpsCheck || standardOpsCheck.length === 0) {
-      throw new Error('No standard operations found in Standard Project - cannot cascade');
-    }
-    
-    console.log(`SYNC: Standard Project has ${standardOpsCheck.length} standard operations to cascade`);
-    result.details.push(`✓ Verified Standard Project has ${standardOpsCheck.length} operations to cascade`);
+  // SAFETY CHECK: Verify Standard Project has data to cascade
+  const { data: standardOpsCheck, error: standardOpsCheckError } = await supabase
+    .from('template_operations')
+    .select(`
+      id,
+      name,
+      project_phases!inner(standard_phase_id)
+    `)
+    .eq('project_id', standardProjectId)
+    .not('project_phases.standard_phase_id', 'is', null);
+  
+  if (standardOpsCheckError) {
+    throw new Error(`Failed to verify standard operations: ${standardOpsCheckError.message}`);
+  }
+  
+  if (!standardOpsCheck || standardOpsCheck.length === 0) {
+    throw new Error('No standard operations found in Standard Project - cannot cascade');
+  }
+  
+  console.log(`SYNC: Standard Project has ${standardOpsCheck.length} standard operations to cascade`);
+  result.details.push(`✓ Verified Standard Project has ${standardOpsCheck.length} operations to cascade`);
 
     // Step 3: Update each template (including revisions)
     for (const template of templates || []) {
@@ -132,12 +136,16 @@ Deno.serve(async (req) => {
         let stepsUpdatedCount = 0;
         let stepsMissingCount = 0;
         
-        // Get all standard operations from Standard Project
+        // Get all standard operations from Standard Project with their standard_phase_id
         const { data: standardOps, error: standardOpsError } = await supabase
           .from('template_operations')
-          .select('id, standard_phase_id, name')
+          .select(`
+            id,
+            name,
+            project_phases!inner(standard_phase_id)
+          `)
           .eq('project_id', standardProjectId)
-          .not('standard_phase_id', 'is', null);
+          .not('project_phases.standard_phase_id', 'is', null);
 
         if (standardOpsError) {
           throw new Error(`Failed to fetch standard operations: ${standardOpsError.message}`);
@@ -145,12 +153,19 @@ Deno.serve(async (req) => {
 
         // For each standard operation, copy steps to template
         for (const standardOp of standardOps || []) {
-          // Find matching operation in template (by standard_phase_id AND name)
+          const standardPhaseId = (standardOp as any).project_phases?.standard_phase_id;
+          
+          if (!standardPhaseId) continue;
+          
+          // Find matching operation in template (by standard_phase_id via project_phases AND name)
           const { data: templateOp, error: templateOpError } = await supabase
             .from('template_operations')
-            .select('id')
+            .select(`
+              id,
+              project_phases!inner(standard_phase_id)
+            `)
             .eq('project_id', template.id)
-            .eq('standard_phase_id', standardOp.standard_phase_id)
+            .eq('project_phases.standard_phase_id', standardPhaseId)
             .eq('name', standardOp.name)
             .maybeSingle();
 
