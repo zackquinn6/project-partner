@@ -417,7 +417,7 @@ export async function importEnhancedToolsToDatabase(
       const { data: coreTools, error: coreError } = await supabase
         .from('tools')
         .select('id')
-        .eq('item', tool.coreToolName)
+        .eq('name', tool.coreToolName)
         .maybeSingle();
       
       if (coreError && coreError.code !== 'PGRST116') {
@@ -432,7 +432,7 @@ export async function importEnhancedToolsToDatabase(
         const { data: newCoreTool, error: insertError } = await supabase
           .from('tools')
           .insert({
-            item: tool.coreToolName,
+            name: tool.coreToolName,
             description: `${tool.category} - ${tool.name}`,
             example_models: tool.variants.map(v => v.models.map(m => m.modelName).join(', ')).join('; ')
           })

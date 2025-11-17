@@ -151,13 +151,13 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
       <TabsContent value="basic" className="space-y-6 p-6">
         <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
           <div>
-            <Label htmlFor="item">
+            <Label htmlFor="name">
               {type === 'tools' ? 'Tool' : 'Material'} Name *
             </Label>
             <Input
-              id="item"
-              value={formData.item}
-              onChange={(e) => setFormData({ ...formData, item: e.target.value })}
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder={`Enter ${type === 'tools' ? 'tool' : 'material'} name`}
               required
             />
@@ -188,11 +188,11 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
 
           {type === 'materials' && (
             <div>
-              <Label htmlFor="unit_size">Unit Size</Label>
+              <Label htmlFor="unit">Unit Size</Label>
               <Input
-                id="unit_size"
-                value={formData.unit_size}
-                onChange={(e) => setFormData({ ...formData, unit_size: e.target.value })}
+                id="unit"
+                value={formData.unit}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                 placeholder="e.g., 2x4x8ft, 1 gallon, per sq ft"
               />
             </div>

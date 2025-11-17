@@ -5,54 +5,66 @@ import { ensureStandardPhasesForNewProject } from './projectUtils';
 export const tileInstallationTools: LibraryTool[] = [
   {
     id: 'tile-cutter',
-    item: 'Wet Tile Saw',
+    name: 'Wet Tile Saw',
     description: 'Electric wet saw for cutting ceramic and porcelain tiles',
     example_models: 'DEWALT D24000, Ridgid R4092',
+    alternates: null,
+    category: null,
     photo_url: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
   {
     id: 'notched-trowel',
-    item: 'Notched Trowel',
+    name: 'Notched Trowel',
     description: '1/4" x 3/8" notched trowel for spreading tile adhesive',
     example_models: 'Various manufacturers',
+    alternates: null,
+    category: null,
     photo_url: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
   {
     id: 'rubber-float',
-    item: 'Rubber Grout Float',
+    name: 'Rubber Grout Float',
     description: 'Rubber float for applying grout between tiles',
     example_models: 'QEP 10-77, Marshalltown 145',
+    alternates: null,
+    category: null,
     photo_url: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
   {
     id: 'tile-spacers',
-    item: 'Tile Spacers',
+    name: 'Tile Spacers',
     description: 'Plastic spacers for consistent tile gaps',
     example_models: '1/16", 1/8", 3/16" sizes',
+    alternates: null,
+    category: null,
     photo_url: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
   {
     id: 'chalk-line',
-    item: 'Chalk Line',
+    name: 'Chalk Line',
     description: 'For marking layout lines on floor/wall',
     example_models: 'Irwin Strait-Line, Tajima',
+    alternates: null,
+    category: null,
     photo_url: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
   {
     id: 'level-4ft',
-    item: '4-Foot Level',
+    name: '4-Foot Level',
     description: 'For checking surface level and tile alignment',
     example_models: 'Stanley 42-324, Stabila 16',
+    alternates: null,
+    category: null,
     photo_url: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()

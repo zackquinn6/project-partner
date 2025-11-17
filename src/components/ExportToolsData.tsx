@@ -131,7 +131,7 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
         const tool = tools?.find(t => t.id === variation?.core_item_id);
         
         return {
-          'Tool Name': tool?.item || '',
+          'Tool Name': tool?.name || '',
           'Variation Name': variation?.name || '',
           'Model Name': model.model_name,
           'Manufacturer': model.manufacturer || '',
@@ -152,7 +152,7 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
         const tool = tools?.find(t => t.id === variation?.core_item_id);
         
         return {
-          'Tool Name': tool?.item || '',
+          'Tool Name': tool?.name || '',
           'Variation Name': variation?.name || '',
           'Model Name': model?.model_name || '',
           'Retailer': price.retailer,
