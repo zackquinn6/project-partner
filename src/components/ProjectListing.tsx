@@ -336,7 +336,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                             <div className="text-muted-foreground">{formatDate(projectRun.endDate).year}</div>
                           </div>
                         ) : (
-                          <div className="text-xs text-muted-foreground">In Progress</div>
+                          <div className="text-xs text-muted-foreground">-</div>
                         )}
                       </TableCell>
                       <TableCell>

@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit2, Trash2, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -275,17 +275,6 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              // Trigger Zillow sync by dispatching a custom event
-              window.dispatchEvent(new CustomEvent('open-zillow-sync', { detail: { homeId } }));
-            }}
-          >
-          <Upload className="w-4 h-4 mr-2" />
-          Add Property Details
-          </Button>
           {homeDetails && (homeDetails.bedrooms || homeDetails.bathrooms) && spaces.length === 0 && (
             <Button
               variant="outline"

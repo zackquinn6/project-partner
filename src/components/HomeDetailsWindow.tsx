@@ -6,11 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Home, Calendar, CheckCircle, Camera, MapPin, Star, X, AlertTriangle, Info, AlertCircle, Clock, Download, Bed, Bath, Square } from 'lucide-react';
+import { Home, Calendar, CheckCircle, Camera, MapPin, Star, X, AlertTriangle, Info, AlertCircle, Clock, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ZillowSyncDialog } from './ZillowSyncDialog';
 import { HomeSpacesTab } from './HomeSpacesTab';
 
 interface Home {
@@ -72,12 +71,16 @@ interface HomeDetailsWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   home: Home | null;
+  onDeleteHome?: (homeId: string) => Promise<void> | void;
+  onEditRequest?: (home: Home) => void;
 }
 
 export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
   open,
   onOpenChange,
-  home
+  home,
+  onDeleteHome,
+  onEditRequest
 }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -89,54 +92,16 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
   const [notesValue, setNotesValue] = useState('');
   const [uploading, setUploading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [showZillowSync, setShowZillowSync] = useState(false);
-  const [homeDetails, setHomeDetails] = useState<{
-    home_age: number | null;
-    square_footage: number | null;
-    bedrooms: number | null;
-    bathrooms: number | null;
-    last_synced_at: string | null;
-  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (open && home && user) {
       fetchHomeData();
       fetchHomeRisks();
       fetchRiskMitigations();
-      fetchHomeDetails();
       setNotesValue(home.notes || '');
     }
   }, [open, home, user, refreshTrigger]);
-
-  useEffect(() => {
-    const handleZillowSync = (e: CustomEvent) => {
-      if (e.detail?.homeId === home?.id) {
-        setShowZillowSync(true);
-      }
-    };
-
-    window.addEventListener('open-zillow-sync', handleZillowSync as EventListener);
-    return () => {
-      window.removeEventListener('open-zillow-sync', handleZillowSync as EventListener);
-    };
-  }, [home?.id]);
-
-  const fetchHomeDetails = async () => {
-    if (!home) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('home_details')
-        .select('home_age, square_footage, bedrooms, bathrooms, last_synced_at')
-        .eq('home_id', home.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      setHomeDetails(data);
-    } catch (error) {
-      console.error('Error fetching home details:', error);
-    }
-  };
 
   const fetchHomeData = async () => {
     if (!home || !user) return;
@@ -348,6 +313,29 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
     }
   };
 
+  const handleDeleteClick = async () => {
+    if (!home || !onDeleteHome) return;
+    const confirmed = window.confirm('Delete this home? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      await onDeleteHome(home.id);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error deleting home from details view:', error);
+      toast.error('Failed to delete home');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEditClick = () => {
+    if (!home || !onEditRequest) return;
+    onEditRequest(home);
+    onOpenChange(false);
+  };
+
   const getRiskIcon = (level: string, isMitigated?: boolean) => {
     if (isMitigated) return <CheckCircle className="w-4 h-4 text-green-500" />;
     
@@ -393,10 +381,9 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
         </DialogHeader>
         
         <Tabs defaultValue="details" className="w-full flex-1 flex flex-col min-h-0 overflow-hidden">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="details">House Info</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="details">Home Info</TabsTrigger>
           <TabsTrigger value="projects">Projects & Maintenance</TabsTrigger>
-          <TabsTrigger value="risks">Risks</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="flex-1 overflow-y-auto space-y-6">
@@ -404,18 +391,30 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
             {/* Home Information Card */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
                   <CardTitle>Home Information</CardTitle>
-                  {home.address && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowZillowSync(true)}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Sync with Zillow
-                    </Button>
-                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {onEditRequest && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleEditClick}
+                      >
+                        Edit Home
+                      </Button>
+                    )}
+                    {onDeleteHome && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDeleteClick}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {isDeleting ? 'Deleting...' : 'Delete Home'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -455,48 +454,6 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
                     <span className="font-medium">Purchase Date: </span>
                     <span>{new Date(home.purchase_date).toLocaleDateString()}</span>
                   </div>
-                )}
-
-                {homeDetails && (
-                  <>
-                    <Separator className="my-4" />
-                    <div className="space-y-3">
-                      <h4 className="font-semibold flex items-center justify-between">
-                        <span>Zillow Data</span>
-                        {homeDetails.last_synced_at && (
-                          <span className="text-xs text-muted-foreground font-normal">
-                            Last synced: {new Date(homeDetails.last_synced_at).toLocaleDateString()}
-                          </span>
-                        )}
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        {homeDetails.bedrooms !== null && (
-                          <div className="flex items-center gap-2">
-                            <Bed className="w-4 h-4 text-muted-foreground" />
-                            <span>{homeDetails.bedrooms} bedrooms</span>
-                          </div>
-                        )}
-                        {homeDetails.bathrooms !== null && (
-                          <div className="flex items-center gap-2">
-                            <Bath className="w-4 h-4 text-muted-foreground" />
-                            <span>{homeDetails.bathrooms} bathrooms</span>
-                          </div>
-                        )}
-                        {homeDetails.square_footage !== null && (
-                          <div className="flex items-center gap-2">
-                            <Square className="w-4 h-4 text-muted-foreground" />
-                            <span>{homeDetails.square_footage.toLocaleString()} sqft</span>
-                          </div>
-                        )}
-                        {homeDetails.home_age !== null && (
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            <span>{homeDetails.home_age} years old</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
                 )}
 
                 <Separator className="my-4" />
@@ -727,78 +684,71 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="risks" className="flex-1 overflow-y-auto">
-          {homeRisks.length > 0 ? (
-            <div className="grid gap-4">
-              {homeRisks.map(risk => {
-                const mitigation = riskMitigations.find(m => m.risk_id === risk.id);
-                const isMitigated = mitigation?.is_mitigated || false;
-                
-                return (
-                  <Card key={risk.id} className={`border-2 ${getRiskColor(risk.risk_level, isMitigated)}`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        {getRiskIcon(risk.risk_level, isMitigated)}
-                        <div className="flex-1">
-                          <h4 className="font-medium">{risk.material_name}</h4>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {risk.description}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge 
-                              variant={isMitigated ? "default" : "destructive"}
-                              className="text-xs"
-                            >
-                              {isMitigated ? "Mitigated" : risk.risk_level.toUpperCase()}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {risk.start_year}-{risk.end_year || 'present'}
-                            </span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Home Hazard Assessment</CardTitle>
+              <CardDescription>
+                Review known material risks based on your home&apos;s build profile.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {homeRisks.length > 0 ? (
+                <div className="grid gap-4">
+                  {homeRisks.map(risk => {
+                    const mitigation = riskMitigations.find(m => m.risk_id === risk.id);
+                    const isMitigated = mitigation?.is_mitigated || false;
+
+                    return (
+                      <Card key={risk.id} className={`border-2 ${getRiskColor(risk.risk_level, isMitigated)}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            {getRiskIcon(risk.risk_level, isMitigated)}
+                            <div className="flex-1">
+                              <h4 className="font-medium">{risk.material_name}</h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {risk.description}
+                              </p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge 
+                                  variant={isMitigated ? "default" : "destructive"}
+                                  className="text-xs"
+                                >
+                                  {isMitigated ? "Mitigated" : risk.risk_level.toUpperCase()}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {risk.start_year}-{risk.end_year || 'present'}
+                                </span>
+                              </div>
+                              {mitigation?.mitigation_notes && (
+                                <p className="text-sm mt-2 p-2 bg-background rounded border">
+                                  Mitigation: {mitigation.mitigation_notes}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          {mitigation?.mitigation_notes && (
-                            <p className="text-sm mt-2 p-2 bg-background rounded border">
-                              Mitigation: {mitigation.mitigation_notes}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="text-center py-8">
-                <Info className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  {home.build_year 
-                    ? "No specific risks identified for this home's build year"
-                    : "Add a build year to see potential home risks"
-                  }
-                </p>
-              </CardContent>
-            </Card>
-          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Info className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">
+                    {home.build_year 
+                      ? "No specific risks identified for this home's build year"
+                      : "Add a build year to see potential home risks"
+                    }
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
       </DialogContent>
     </Dialog>
-    
-    {home && home.address && (
-      <ZillowSyncDialog
-        open={showZillowSync}
-        onOpenChange={setShowZillowSync}
-        homeId={home.id}
-        homeAddress={`${home.address}${home.city && home.state ? `, ${home.city}, ${home.state}` : ''}`}
-        onSyncComplete={() => {
-          fetchHomeDetails();
-          setRefreshTrigger(prev => prev + 1);
-        }}
-      />
-    )}
     </>
   );
 };

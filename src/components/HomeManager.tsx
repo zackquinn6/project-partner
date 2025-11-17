@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Home, Plus, MapPin, Calendar, Trash2, Star, Upload, Image } from 'lucide-react';
+import { Home, Plus, MapPin, Calendar, Star, Upload, Image } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -373,26 +373,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
                             </CardTitle>
                           </div>
                         </div>
-                        <div className="flex gap-1 flex-shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleEdit(home)} 
-                            className="h-7 px-2 text-[10px] sm:h-9 sm:px-3 sm:text-xs"
-                            title="Edit Home"
-                          >
-                            Edit
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleDelete(home.id)} 
-                            className="h-7 w-7 p-0 sm:h-9 sm:w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            title="Delete Home"
-                          >
-                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                          </Button>
-                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -585,6 +565,8 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       open={showHomeDetails}
       onOpenChange={setShowHomeDetails}
       home={selectedHomeForDetails}
+      onDeleteHome={handleDelete}
+      onEditRequest={handleEdit}
     />
   </>;
 };
