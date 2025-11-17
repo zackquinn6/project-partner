@@ -2076,13 +2076,18 @@ export default function UserView({
                             });
                             setScaledProgressDialogOpen(true);
                           }}
-                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth"
+                          size="sm"
+                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth text-sm"
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
                           Report Progress
                         </Button>
                       ) : (
-                        <Button onClick={handleStepComplete} className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth">
+                        <Button 
+                          onClick={handleStepComplete} 
+                          size="sm"
+                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth text-sm"
+                        >
                           <CheckCircle className="w-4 h-4 mr-2" />
                           Mark Complete
                         </Button>
@@ -2090,8 +2095,8 @@ export default function UserView({
                     ) : (
                       <Button 
                         disabled 
-                        className="opacity-50 cursor-not-allowed" 
-                        size={isMobile ? "sm" : "default"}
+                        className="opacity-50 cursor-not-allowed text-sm" 
+                        size="sm"
                         title={isMobile ? "Complete All Outputs First" : undefined}
                       >
                         <CheckCircle className="w-4 h-4" />
@@ -2105,7 +2110,8 @@ export default function UserView({
                     <DialogTrigger asChild>
                       <Button 
                         variant="outline" 
-                        size={isMobile ? "sm" : "default"}
+                        size="sm"
+                        className="text-sm gap-2"
                         title={isMobile ? "Report Issue" : undefined}
                       >
                         <AlertTriangle className="w-4 h-4" />

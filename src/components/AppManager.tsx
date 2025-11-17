@@ -65,6 +65,7 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
   const [editingApp, setEditingApp] = useState<AppReference | null>(null);
   const [editForm, setEditForm] = useState<Partial<AppReference>>({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showAddExternal, setShowAddExternal] = useState(false);
   const [newExternalApp, setNewExternalApp] = useState({
     appName: '',
@@ -183,6 +184,12 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
       return;
     }
 
+    // Prevent double-saves
+    if (saving) {
+      console.log('⏸️ Save already in progress, ignoring duplicate call');
+      return;
+    }
+
     // Validate form data
     const appName = editForm.appName?.trim();
     if (!appName || appName.length === 0) {
@@ -190,6 +197,7 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
       return;
     }
 
+    setSaving(true);
     try {
       // Extract actionKey from app.id (format: "app-{actionKey}") or use app.id
       const appId = editingApp.id.startsWith('app-') 
@@ -285,6 +293,8 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
       console.error('❌ Error saving native app:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast.error(`Failed to save app: ${errorMessage}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -303,6 +313,13 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
   const handleSaveExternal = async () => {
     if (!editingApp) return;
 
+    // Prevent double-saves
+    if (saving) {
+      console.log('⏸️ Save already in progress, ignoring duplicate call');
+      return;
+    }
+
+    setSaving(true);
     try {
       // Update external app in all template_steps that use it
       const { data: stepsData, error: fetchError } = await supabase
@@ -370,6 +387,8 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
     } catch (error) {
       console.error('Error saving external app:', error);
       toast.error('Failed to save app');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -594,6 +613,13 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
                                       console.log('📝 App name changed:', { old: editForm.appName, new: newValue });
                                       setEditForm({ ...editForm, appName: newValue });
                                     }}
+                                    onKeyDown={(e) => {
+                                      // Prevent Enter key from triggering save
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                      }
+                                    }}
                                     className="h-8"
                                     placeholder="App name"
                                   />
@@ -611,6 +637,13 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
                                   <Textarea
                                     value={editForm.description || app.description || ''}
                                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                    onKeyDown={(e) => {
+                                      // Prevent Enter key from triggering save (unless Ctrl+Enter)
+                                      if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                      }
+                                    }}
                                     className="min-h-[60px] text-sm"
                                     placeholder="App description"
                                   />
@@ -629,9 +662,11 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
                                 {isEditing ? (
                                   <div className="flex gap-1">
                                     <Button
+                                      type="button"
                                       size="sm"
                                       variant="ghost"
                                       onClick={handleSaveNative}
+                                      disabled={saving}
                                       className="h-7 w-7 p-0"
                                     >
                                       <Save className="w-4 h-4" />
@@ -786,9 +821,11 @@ export function AppManager({ open, onOpenChange }: AppManagerProps) {
                                   {isEditing ? (
                                     <div className="flex gap-1">
                                       <Button
+                                        type="button"
                                         size="sm"
                                         variant="ghost"
                                         onClick={handleSaveExternal}
+                                        disabled={saving}
                                         className="h-7 w-7 p-0"
                                       >
                                         <Save className="w-4 h-4" />

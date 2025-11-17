@@ -65,9 +65,10 @@ export function ScrollableDialog({
           className={cn(
             // Mobile: Full screen
             "fixed inset-0 z-[101]",
-            // Desktop: Centered with 90% viewport
-            "md:left-[50%] md:top-[50%] md:inset-auto md:translate-x-[-50%] md:translate-y-[-50%]",
+            // Desktop: Centered with 90% viewport, ensure it's always visible
+            "md:fixed md:left-1/2 md:top-1/2 md:inset-auto md:-translate-x-1/2 md:-translate-y-1/2",
             "md:w-[90vw] md:max-w-[90vw] md:h-[90vh] md:max-h-[90vh]",
+            "md:max-w-[calc(100vw-2rem)] md:max-h-[calc(100vh-2rem)]",
             "bg-background md:border md:rounded-lg shadow-lg",
             "flex flex-col",
             className

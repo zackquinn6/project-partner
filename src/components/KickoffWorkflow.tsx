@@ -240,24 +240,24 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         return null;
     }
   };
-  return <div className="max-w-6xl mx-auto p-2 sm:p-6 space-y-4 sm:space-y-6">
+  return <div className="max-w-6xl mx-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
       {/* Progress Header */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl flex items-center gap-2">
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
                 Project Kickoff
-                {allKickoffStepsComplete && <CheckCircle className="w-6 h-6 text-green-500" />}
+                {allKickoffStepsComplete && <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" />}
               </CardTitle>
-              <CardDescription>Three quick steps check that this project is a good fit - then personalizes the project to you</CardDescription>
+              <CardDescription className="text-xs sm:text-sm mt-1">Three quick steps check that this project is a good fit - then personalizes the project to you</CardDescription>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               <div className="text-right">
-                <div className="text-sm text-muted-foreground mb-1">
+                <div className="text-xs sm:text-sm text-muted-foreground mb-1">
                   Step {currentKickoffStep + 1} of {kickoffSteps.length}
                 </div>
-                <Progress value={progress} className="w-32" />
+                <Progress value={progress} className="w-24 sm:w-32" />
               </div>
             </div>
           </div>
@@ -266,32 +266,32 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
       {/* Step Navigation */}
       <Card>
-        <CardContent className="p-2 sm:p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto w-full sm:w-auto">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 -mx-3 sm:mx-0 px-3 sm:px-0">
               {kickoffSteps.map((step, index) => <div key={step.id} className="flex items-center flex-shrink-0">
                   <div className={`
-                    flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 transition-colors
+                    flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-colors
                     ${index === currentKickoffStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
                   `}>
-                    {isStepCompleted(index) ? <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" /> : <span className="text-xs sm:text-sm font-medium">{index + 1}</span>}
+                    {isStepCompleted(index) ? <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <span className="text-xs sm:text-sm font-medium">{index + 1}</span>}
                   </div>
-                  <div className="ml-1 sm:ml-2 hidden md:block">
+                  <div className="ml-1.5 sm:ml-2 hidden md:block">
                     <p className={`text-xs sm:text-sm font-medium ${index === currentKickoffStep ? 'text-primary' : isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'}`}>
                       {step.title}
                     </p>
                   </div>
-                  {index < kickoffSteps.length - 1 && <div className="mx-2 sm:mx-4 w-4 sm:w-8 h-0.5 bg-muted-foreground/20" />}
+                  {index < kickoffSteps.length - 1 && <div className="mx-2 sm:mx-4 w-4 sm:w-8 h-0.5 bg-muted-foreground/20 flex-shrink-0" />}
                 </div>)}
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentKickoffStep === 0} className="flex-1 sm:flex-initial">
+              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentKickoffStep === 0} className="flex-1 sm:flex-initial text-xs sm:text-sm">
                 <ChevronLeft className="w-4 h-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Previous</span>
                 <span className="sm:hidden">Prev</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentKickoffStep === kickoffSteps.length - 1} className="flex-1 sm:flex-initial">
+              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentKickoffStep === kickoffSteps.length - 1} className="flex-1 sm:flex-initial text-xs sm:text-sm">
                 <span className="hidden sm:inline">Next</span>
                 <span className="sm:hidden">Next</span>
                 <ChevronRight className="w-4 h-4 ml-1 sm:ml-2" />
@@ -302,8 +302,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       </Card>
 
       {/* Current Step Content - Scrollable with Fixed Button */}
-      <div className="flex flex-col h-[calc(100vh-20rem)]">
-        <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex flex-col min-h-0" style={{ maxHeight: 'calc(100vh - 18rem)' }}>
+        <div className="flex-1 overflow-y-auto min-h-0 -mx-3 sm:mx-0 px-3 sm:px-0">
           {renderCurrentStep()}
         </div>
       </div>

@@ -219,13 +219,13 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     : null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
           Project Overview
-          {isCompleted && <CheckCircle className="w-6 h-6 text-green-500" />}
+          {isCompleted && <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" />}
         </h2>
-        <Badge variant={isCompleted ? "default" : "secondary"}>
+        <Badge variant={isCompleted ? "default" : "secondary"} className="self-start sm:self-auto">
           {isCompleted ? "Completed" : "In Progress"}
         </Badge>
       </div>
@@ -250,9 +250,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-4 border-t">
             <div>
-              <Label>Category</Label>
+              <Label className="text-sm">Category</Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {categories.length > 0 ? (
                   categories.map((cat, idx) => (
@@ -261,17 +261,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                     </Badge>
                   ))
                 ) : (
-                  <Badge variant="outline" className="text-sm">Not specified</Badge>
+                  <Badge variant="outline" className="text-xs sm:text-sm">Not specified</Badge>
                 )}
               </div>
             </div>
             <div>
-              <Label>Project Skill Level</Label>
-              <div className="mt-2 flex items-center gap-2">
+              <Label className="text-sm">Project Skill Level</Label>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <Badge 
                   variant="outline" 
                   className={
-                    `text-sm ${
+                    `text-xs sm:text-sm ${
                        displaySkillLevel === 'Beginner' ? 'bg-green-100 text-green-800' :
                        displaySkillLevel === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
                        displaySkillLevel === 'Advanced' ? 'bg-red-100 text-red-800' :
@@ -283,9 +283,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                 </Badge>
                 {userProfile?.skill_level && (
                   <>
-                    <span className="text-sm text-muted-foreground">•</span>
-                    <span className="text-sm text-muted-foreground">Your Skill Level:</span>
-                    <Badge variant="outline" className="text-sm">
+                    <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">•</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Your:</span>
+                    <Badge variant="outline" className="text-xs sm:text-sm">
                       {userProfile.skill_level}
                     </Badge>
                   </>
@@ -294,20 +294,20 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="cursor-help">
+                        <div className="cursor-help flex-shrink-0">
                           {skillComparison.type === 'success' && (
-                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                           )}
                           {skillComparison.type === 'warning' && (
-                            <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
                           )}
                           {skillComparison.type === 'error' && (
-                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
                           )}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="max-w-xs">{skillComparison.message}</p>
+                        <p className="max-w-xs text-xs sm:text-sm">{skillComparison.message}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -315,12 +315,12 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               </div>
             </div>
             <div>
-              <Label>Project Effort Level</Label>
-              <div className="mt-2 flex items-center gap-2">
+              <Label className="text-sm">Project Effort Level</Label>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <Badge 
                   variant="outline" 
                   className={
-                    `text-sm ${
+                    `text-xs sm:text-sm ${
                        displayEffortLevel === 'Low' ? 'bg-blue-100 text-blue-800' :
                        displayEffortLevel === 'Medium' ? 'bg-orange-100 text-orange-800' :
                        displayEffortLevel === 'High' ? 'bg-red-100 text-red-800' :
@@ -332,9 +332,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                 </Badge>
                 {userProfile?.physical_capability && (
                   <>
-                    <span className="text-sm text-muted-foreground">•</span>
-                    <span className="text-sm text-muted-foreground">Your Capability:</span>
-                    <Badge variant="outline" className="text-sm">
+                    <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">•</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Your:</span>
+                    <Badge variant="outline" className="text-xs sm:text-sm">
                       {userProfile.physical_capability}
                     </Badge>
                   </>
@@ -343,20 +343,20 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="cursor-help">
+                        <div className="cursor-help flex-shrink-0">
                           {effortComparison.type === 'success' && (
-                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                           )}
                           {effortComparison.type === 'warning' && (
-                            <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
                           )}
                           {effortComparison.type === 'error' && (
-                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
                           )}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="max-w-xs">{effortComparison.message}</p>
+                        <p className="max-w-xs text-xs sm:text-sm">{effortComparison.message}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -364,13 +364,13 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               </div>
             </div>
             <div>
-              <Label>Estimated Time</Label>
-              <div className="mt-2 flex items-center gap-2">
-                <Badge variant="outline" className="text-sm">
+              <Label className="text-sm">Estimated Time</Label>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="text-xs sm:text-sm">
                   {displayEstimatedTime || 'Not specified'}
                 </Badge>
                 {formattedScalingUnit && (
-                  <span className="text-sm text-muted-foreground capitalize">
+                  <span className="text-xs sm:text-sm text-muted-foreground capitalize">
                     {formattedScalingUnit}
                   </span>
                 )}
@@ -378,30 +378,32 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
           </div>
 
-          <div className="sticky bottom-0 bg-background pt-4 border-t mt-4">
+          <div className="bg-background pt-4 border-t mt-4 pb-2">
             {!isCompleted && (
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button 
                   onClick={handleCancelProject} 
                   variant="outline"
-                  className="w-1/4 border-red-300 text-red-700 hover:bg-red-50"
+                  className="w-full sm:w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm"
                 >
                   <XCircle className="w-4 h-4 mr-2" />
-                  This isn't a good match
+                  <span className="hidden sm:inline">This isn't a good match</span>
+                  <span className="sm:hidden">Not a match</span>
                 </Button>
                 <Button onClick={() => {
                   console.log('🎯 ProjectOverviewStep: onComplete called');
                   onComplete();
-                }} className="flex-1 bg-green-600 hover:bg-green-700">
+                }} className="flex-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm">
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Let's Go - Continue
+                  <span className="hidden sm:inline">Let's Go - Continue</span>
+                  <span className="sm:hidden">Continue</span>
                 </Button>
               </div>
             )}
             
             {isCompleted && (
               <div className="w-full p-2 bg-green-50 border border-green-200 rounded-lg text-center">
-                <p className="text-green-800 text-sm">Project Overview Completed ✓</p>
+                <p className="text-green-800 text-xs sm:text-sm">Project Overview Completed ✓</p>
               </div>
             )}
           </div>

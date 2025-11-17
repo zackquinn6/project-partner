@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -7,6 +7,7 @@ import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Im
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 interface WorkflowSidebarProps {
   allSteps: any[];
   currentStep: any;
@@ -60,6 +61,37 @@ export function WorkflowSidebar({
   });
   const [showStepTypesInfo, setShowStepTypesInfo] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  
+  // Track which phases and operations are open
+  const [openPhases, setOpenPhases] = useState<Set<string>>(new Set());
+  const [openOperations, setOpenOperations] = useState<Set<string>>(new Set());
+  
+  // Find the current step's phase and operation
+  const currentStepPhaseAndOperation = useMemo(() => {
+    if (!currentStep || !groupedSteps) return null;
+    
+    for (const [phase, operations] of Object.entries(groupedSteps)) {
+      for (const [operation, opSteps] of Object.entries(operations as any)) {
+        if (Array.isArray(opSteps)) {
+          const hasCurrentStep = opSteps.some((step: any) => step.id === currentStep.id);
+          if (hasCurrentStep) {
+            return { phase, operation };
+          }
+        }
+      }
+    }
+    return null;
+  }, [currentStep, groupedSteps]);
+  
+  // Auto-open the phase and operation containing the current step
+  useEffect(() => {
+    if (currentStepPhaseAndOperation) {
+      setOpenPhases(prev => new Set([...prev, currentStepPhaseAndOperation.phase]));
+      setOpenOperations(prev => new Set([...prev, `${currentStepPhaseAndOperation.phase}-${currentStepPhaseAndOperation.operation}`]));
+    }
+  }, [currentStepPhaseAndOperation]);
+  
+  
   return <Sidebar collapsible="icon">
       <SidebarTrigger className="m-2 self-end" />
       
@@ -131,48 +163,131 @@ export function WorkflowSidebar({
                     onClick={onPhotosClick}
                     variant="outline"
                     size="sm"
-                    className="w-full h-12 flex items-center justify-center gap-2 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
+                    className="w-full h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
                   >
                     <Image className="w-4 h-4" />
-                    <span className="text-[12px] font-semibold">Photos</span>
+                    <span className="text-[10px] font-semibold">Photos</span>
                   </Button>
                 </div>
 
                 {/* Separator */}
                 <div className="border-t border-border my-4"></div>
 
-                {/* Step Navigation */}
-                <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                {/* Step Navigation with Accordion */}
+                <div className="space-y-2 max-h-[50vh] overflow-y-auto">
                   {!groupedSteps || Object.keys(groupedSteps).length === 0 ? (
                     <div className="text-xs text-muted-foreground text-center py-4">
                       No workflow steps available. Please check project structure.
                     </div>
                   ) : (
-                    Object.entries(groupedSteps).map(([phase, operations]) => <div key={phase} className="space-y-2">
-                      <h4 className="font-semibold text-primary text-sm">{phase}</h4>
-                      {Object.entries(operations as any).map(([operation, opSteps]) => {
-                        if (!Array.isArray(opSteps) || opSteps.length === 0) {
-                          return null;
-                        }
-                        return <div key={operation} className="ml-2 space-y-1">
-                          <h5 className="text-xs font-medium text-muted-foreground">{operation}</h5>
-                          {opSteps.map(step => {
-                            const stepIndex = allSteps.findIndex(s => s.id === step.id);
-                            return <div key={step.id} className={`ml-2 p-2 rounded text-xs cursor-pointer transition-fast border ${step.id === currentStep?.id ? 'bg-primary/10 text-primary border-primary/20' : completedSteps.has(step.id) ? 'bg-green-50 text-green-700 border-green-200' : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'}`} onClick={() => {
-                              if (stepIndex >= 0 && isKickoffComplete) {
-                                onStepClick(stepIndex, step);
-                              }
-                            }}>
-                              <div className="flex items-center gap-2">
-                                {getStepIndicator(step.stepType || 'prime')}
-                                {completedSteps.has(step.id) && <CheckCircle className="w-3 h-3" />}
-                                <span className="truncate">{step.step}</span>
-                              </div>
-                            </div>;
-                          })}
-                        </div>;
+                    <Accordion 
+                      type="multiple" 
+                      value={Array.from(openPhases)}
+                      onValueChange={(values) => {
+                        // Update state when accordion changes
+                        const newOpenPhases = new Set(values);
+                        setOpenPhases(newOpenPhases);
+                      }}
+                      className="w-full"
+                    >
+                      {Object.entries(groupedSteps).map(([phase, operations]) => {
+                        const phaseOperations = Object.entries(operations as any);
+                        const hasSteps = phaseOperations.some(([_, opSteps]) => 
+                          Array.isArray(opSteps) && opSteps.length > 0
+                        );
+                        
+                        if (!hasSteps) return null;
+                        
+                        return (
+                          <AccordionItem key={phase} value={phase} className="border-none">
+                            <AccordionTrigger 
+                              className="py-2 px-0 hover:no-underline text-sm font-semibold text-primary"
+                            >
+                              <span>{phase}</span>
+                            </AccordionTrigger>
+                            <AccordionContent className="pt-1 pb-2">
+                              <Accordion 
+                                type="multiple"
+                                value={phaseOperations
+                                  .map(([operation]) => `${phase}-${operation}`)
+                                  .filter(key => openOperations.has(key))
+                                }
+                                onValueChange={(values) => {
+                                  // Update state when nested accordion changes
+                                  const newOpenOps = new Set(values);
+                                  setOpenOperations(prev => {
+                                    const updated = new Set(prev);
+                                    // Remove all operations for this phase
+                                    phaseOperations.forEach(([op]) => {
+                                      updated.delete(`${phase}-${op}`);
+                                    });
+                                    // Add back the ones that should be open
+                                    newOpenOps.forEach(key => {
+                                      if (key.startsWith(`${phase}-`)) {
+                                        updated.add(key);
+                                      }
+                                    });
+                                    return updated;
+                                  });
+                                }}
+                                className="w-full"
+                              >
+                                {phaseOperations.map(([operation, opSteps]) => {
+                                  if (!Array.isArray(opSteps) || opSteps.length === 0) {
+                                    return null;
+                                  }
+                                  const operationKey = `${phase}-${operation}`;
+                                  
+                                  return (
+                                    <AccordionItem 
+                                      key={operationKey} 
+                                      value={operationKey}
+                                      className="border-none ml-2"
+                                    >
+                                      <AccordionTrigger 
+                                        className="py-1.5 px-0 hover:no-underline text-xs font-medium text-muted-foreground"
+                                      >
+                                        <span>{operation}</span>
+                                      </AccordionTrigger>
+                                      <AccordionContent className="pt-1 pb-1">
+                                        <div className="space-y-1 ml-2">
+                                          {opSteps.map((step: any) => {
+                                            const stepIndex = allSteps.findIndex(s => s.id === step.id);
+                                            return (
+                                              <div 
+                                                key={step.id} 
+                                                className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
+                                                  step.id === currentStep?.id 
+                                                    ? 'bg-primary/10 text-primary border-primary/20' 
+                                                    : completedSteps.has(step.id) 
+                                                    ? 'bg-green-50 text-green-700 border-green-200' 
+                                                    : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                                                }`} 
+                                                onClick={() => {
+                                                  if (stepIndex >= 0 && isKickoffComplete) {
+                                                    onStepClick(stepIndex, step);
+                                                  }
+                                                }}
+                                              >
+                                                <div className="flex items-center gap-2">
+                                                  {getStepIndicator(step.stepType || 'prime')}
+                                                  {completedSteps.has(step.id) && <CheckCircle className="w-3 h-3" />}
+                                                  <span className="truncate">{step.step}</span>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  );
+                                })}
+                              </Accordion>
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
                       })}
-                    </div>)
+                    </Accordion>
                   )}
                 </div>
 

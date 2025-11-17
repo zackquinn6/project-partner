@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -86,10 +86,31 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       const { data, error } = await supabase
         .from('tools')
         .select('*')
-        .order('item');
+        .order('name', { ascending: true, nullsFirst: false });
       
-      if (error) throw error;
-      setAvailableTools(data || []);
+      if (error) {
+        console.error('Error fetching tools:', error);
+        // Fallback: try ordering by 'item' if 'name' doesn't exist
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('tools')
+          .select('*')
+          .order('item', { ascending: true, nullsFirst: false });
+        
+        if (fallbackError) {
+          throw fallbackError;
+        }
+        setAvailableTools(fallbackData || []);
+        return;
+      }
+      
+      // Map 'name' to 'item' for backward compatibility if needed
+      const mappedData = (data || []).map(tool => ({
+        ...tool,
+        item: tool.name || tool.item || ''
+      }));
+      
+      setAvailableTools(mappedData);
+      console.log('✅ Fetched available tools:', mappedData.length);
     } catch (error) {
       console.error('Error fetching tools:', error);
     }
@@ -140,38 +161,89 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     fetchToolVariations();
   }, [availableTools]);
 
-  const filteredTools = availableTools
-    .filter(tool => {
-      const matchesSearch = tool.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      if (!matchesSearch) return false;
-
-      // Get all variations for this core tool
-      const variations = toolVariations[tool.id] || [];
-      
-      // If tool has no variations, check if core tool itself is owned
-      if (variations.length === 0) {
-        const coreToolOwned = userTools.some(userTool => userTool.id === tool.id);
-        return !coreToolOwned;
-      }
-      
-      // If tool has variations, check if ALL variations are owned
-      // Create a fresh set each time to ensure we have the latest userTools state
-      const ownedVariationIds = new Set(userTools.map(userTool => userTool.id));
-      const allVariationsOwned = variations.every(variation => 
-        ownedVariationIds.has(variation.id)
+  // Track when variations have been checked for all tools
+  const [variationsChecked, setVariationsChecked] = useState(false);
+  
+  useEffect(() => {
+    // Mark variations as checked once we have tools and the variations map is populated
+    // (even if empty, it means we've checked)
+    if (availableTools.length > 0) {
+      // Check if we've attempted to fetch variations (toolVariations object exists)
+      // We consider it "checked" if we have the same number of tool IDs in variations map
+      // OR if we've waited long enough for the async fetch to complete
+      const hasCheckedAllTools = availableTools.every(tool => 
+        toolVariations.hasOwnProperty(tool.id)
       );
       
-      // Also check if the core tool itself is owned (for tools that have both core and variations)
-      const coreToolOwned = ownedVariationIds.has(tool.id);
-      
-      // Show tool only if:
-      // 1. Not all variations are owned AND
-      // 2. The core tool itself is not owned
-      return !allVariationsOwned && !coreToolOwned;
-    })
-    .sort((a, b) => a.item.localeCompare(b.item));
+      if (hasCheckedAllTools || Object.keys(toolVariations).length > 0) {
+        setVariationsChecked(true);
+      } else {
+        // Fallback: mark as checked after a reasonable delay
+        const timer = setTimeout(() => {
+          setVariationsChecked(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [availableTools, toolVariations]);
+  
+  const filteredTools = useMemo(() => {
+    // If variations haven't been checked yet and we have tools, show all tools that match search
+    // This prevents filtering out tools before we know if they have variations
+    if (!variationsChecked && availableTools.length > 0) {
+      return availableTools
+        .filter(tool => {
+          const toolName = tool.item || tool.name || '';
+          const matchesSearch = toolName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                               (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
+          return matchesSearch;
+        })
+        .sort((a, b) => {
+          const aName = a.item || a.name || '';
+          const bName = b.item || b.name || '';
+          return aName.localeCompare(bName);
+        });
+    }
+    
+    // Once variations are loaded, apply full filtering logic
+    return availableTools
+      .filter(tool => {
+        const toolName = tool.item || tool.name || '';
+        const matchesSearch = toolName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        if (!matchesSearch) return false;
+
+        // Get all variations for this core tool
+        const variations = toolVariations[tool.id] || [];
+        
+        // If tool has no variations, check if core tool itself is owned
+        if (variations.length === 0) {
+          const coreToolOwned = userTools.some(userTool => userTool.id === tool.id);
+          return !coreToolOwned;
+        }
+        
+        // If tool has variations, check if ALL variations are owned
+        // Create a fresh set each time to ensure we have the latest userTools state
+        const ownedVariationIds = new Set(userTools.map(userTool => userTool.id));
+        const allVariationsOwned = variations.every(variation => 
+          ownedVariationIds.has(variation.id)
+        );
+        
+        // Also check if the core tool itself is owned (for tools that have both core and variations)
+        const coreToolOwned = ownedVariationIds.has(tool.id);
+        
+        // Show tool only if:
+        // 1. Not all variations are owned AND
+        // 2. The core tool itself is not owned
+        return !allVariationsOwned && !coreToolOwned;
+      })
+      .sort((a, b) => {
+        const aName = a.item || a.name || '';
+        const bName = b.item || b.name || '';
+        return aName.localeCompare(bName);
+      });
+  }, [availableTools, searchTerm, toolVariations, userTools, variationsChecked]);
 
   const handleAddTool = async (tool: Tool) => {
     // Always check if this tool has variations first
