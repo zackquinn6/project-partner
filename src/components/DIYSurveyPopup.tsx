@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { ArrowRight, ArrowLeft, Sparkles, Wrench, CheckCircle2, Trophy, Target, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { useTempQuiz } from "@/contexts/TempQuizContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { ProjectSkillsWindow } from "@/components/ProjectSkillsWindow";
 
 interface DIYSurveyPopupProps {
   open: boolean;
@@ -73,8 +75,9 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     fullName: initialData?.fullName || "",
     nickname: initialData?.nickname || ""
   });
+  const [showProjectSkillsWindow, setShowProjectSkillsWindow] = useState(false);
 
-  const totalSteps = mode === 'verify' ? 6 : (mode === 'personality' ? 12 : 5);
+  const totalSteps = mode === 'verify' ? 6 : (mode === 'personality' ? 12 : 4);
   const progress = mode === 'personality' && currentStep >= 0 ? 
     ((currentStep + 1) / 11) * 100 : 
     (currentStep / totalSteps) * 100;
@@ -507,9 +510,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       case 0: return true; // Verify step
       case 1: return answers.fullName.trim() !== ""; // Name step - require full name
       case 2: return answers.skillLevel !== "" && answers.physicalCapability !== "";
-      case 3: return true; // Can proceed even with no selections
-      case 4: return answers.preferredLearningMethods.length > 0;
-      case 5: return true; // Owned tools is optional
+      case 3: return answers.preferredLearningMethods.length > 0;
+      case 4: return true; // Owned tools is optional
       default: return false;
     }
   };
@@ -741,131 +743,114 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               <div className="text-center">
                 <h4 className="text-lg font-semibold">What's your experience level?</h4>
               </div>
-              <RadioGroup value={answers.skillLevel} onValueChange={(value) => setAnswers(prev => ({ ...prev, skillLevel: value }))}>
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                  <CardContent className="p-2.5 md:p-4">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                      <RadioGroupItem value="newbie" id="newbie" className="h-4 w-4 shrink-0" />
-                      <Label htmlFor="newbie" className="flex-1 cursor-pointer">
-                        <div className="font-semibold text-sm md:text-base">🔰 Newbie</div>
-                        <div className="text-xs md:text-sm text-muted-foreground">I'm just getting started—teach me everything.</div>
-                      </Label>
+              <Card>
+                <CardContent className="p-4 space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Skill Level</Label>
+                      <span className="text-sm font-semibold">
+                        {answers.skillLevel === "newbie" ? "🔰 Newbie" : 
+                         answers.skillLevel === "confident" ? "🧰 Confident-ish" : 
+                         answers.skillLevel === "hero" ? "🛠️ Hands-on Hero" : 
+                         "Select your level"}
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                  <CardContent className="p-2.5 md:p-4">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                      <RadioGroupItem value="confident" id="confident" className="h-4 w-4 shrink-0" />
-                      <Label htmlFor="confident" className="flex-1 cursor-pointer">
-                        <div className="font-semibold text-sm md:text-base">🧰 Confident-ish</div>
-                        <div className="text-xs md:text-sm text-muted-foreground">I've done a few projects and want to level up.</div>
-                      </Label>
+                    <Slider
+                      value={[
+                        answers.skillLevel === "newbie" ? 0 : 
+                        answers.skillLevel === "confident" ? 1 : 
+                        answers.skillLevel === "hero" ? 2 : 0
+                      ]}
+                      onValueChange={(value) => {
+                        const levelMap = ["newbie", "confident", "hero"];
+                        setAnswers(prev => ({ ...prev, skillLevel: levelMap[value[0]] }));
+                      }}
+                      min={0}
+                      max={2}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <div className="text-center">
+                        <div className="font-medium">🔰 Newbie</div>
+                        <div className="text-[10px]">Just getting started</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium">🧰 Confident-ish</div>
+                        <div className="text-[10px]">Done a few projects</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium">🛠️ Hands-on Hero</div>
+                        <div className="text-[10px]">Tackled big stuff</div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                  <CardContent className="p-2.5 md:p-4">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                      <RadioGroupItem value="hero" id="hero" className="h-4 w-4 shrink-0" />
-                      <Label htmlFor="hero" className="flex-1 cursor-pointer">
-                        <div className="font-semibold text-sm md:text-base">🛠️ Hands-on Hero</div>
-                        <div className="text-xs md:text-sm text-muted-foreground">I've tackled big stuff and want to go further.</div>
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
-              </RadioGroup>
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowProjectSkillsWindow(true)}
+                    className="w-full"
+                  >
+                    Optional: Define Project Skills
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Physical Capability */}
+            {/* Physical Capability / Effort Level */}
             <div className="space-y-4">
               <div className="text-center">
-                <h4 className="text-lg font-semibold">What's your physical capability?</h4>
+                <h4 className="text-lg font-semibold">What's your physical capability / effort level?</h4>
               </div>
-              <RadioGroup value={answers.physicalCapability} onValueChange={(value) => setAnswers(prev => ({ ...prev, physicalCapability: value }))}>
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                  <CardContent className="p-2.5 md:p-4">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                      <RadioGroupItem value="light" id="light" className="h-4 w-4 shrink-0" />
-                      <Label htmlFor="light" className="flex-1 cursor-pointer">
-                        <div className="font-semibold text-sm md:text-base">Light-duty only</div>
-                        <div className="text-xs md:text-sm text-muted-foreground">I prefer short sessions - but hey every improvement counts!</div>
-                      </Label>
+              <Card>
+                <CardContent className="p-4 space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Effort Level</Label>
+                      <span className="text-sm font-semibold">
+                        {answers.physicalCapability === "light" ? "Light-duty only" : 
+                         answers.physicalCapability === "medium" ? "Medium-duty" : 
+                         answers.physicalCapability === "heavy" ? "Heavy-duty" : 
+                         "Select your level"}
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                  <CardContent className="p-2.5 md:p-4">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                      <RadioGroupItem value="medium" id="medium" className="h-4 w-4 shrink-0" />
-                      <Label htmlFor="medium" className="flex-1 cursor-pointer">
-                        <div className="font-semibold text-sm md:text-base">Medium-duty</div>
-                        <div className="text-xs md:text-sm text-muted-foreground">I can lift 60lb+ and enough stamina for 1/2-day projects</div>
-                      </Label>
+                    <Slider
+                      value={[
+                        answers.physicalCapability === "light" ? 0 : 
+                        answers.physicalCapability === "medium" ? 1 : 
+                        answers.physicalCapability === "heavy" ? 2 : 0
+                      ]}
+                      onValueChange={(value) => {
+                        const levelMap = ["light", "medium", "heavy"];
+                        setAnswers(prev => ({ ...prev, physicalCapability: levelMap[value[0]] }));
+                      }}
+                      min={0}
+                      max={2}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <div className="text-center">
+                        <div className="font-medium">Light-duty only</div>
+                        <div className="text-[10px]">Short sessions</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium">Medium-duty</div>
+                        <div className="text-[10px]">60lb+, 1/2-day projects</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium">Heavy-duty</div>
+                        <div className="text-[10px]">Full-day, heavy lifting</div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-                  <CardContent className="p-2.5 md:p-4">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                      <RadioGroupItem value="heavy" id="heavy" className="h-4 w-4 shrink-0" />
-                      <Label htmlFor="heavy" className="flex-1 cursor-pointer">
-                        <div className="font-semibold text-sm md:text-base">Heavy-duty</div>
-                        <div className="text-xs md:text-sm text-muted-foreground">I can run full-day projects with heavy lifting</div>
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
-              </RadioGroup>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         );
 
       case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h3 className="text-2xl font-bold">🚫 What types of projects do you avoid (for now)?</h3>
-              <p className="text-muted-foreground">Check all that apply:</p>
-              <p className="text-sm text-muted-foreground">This helps us get a feel for what you aren't so comfortable with. We'll use this while helping you plan out your projects</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 md:gap-3">
-              {[
-                "Demo & heavy lifting",
-                "Drywall finishing",
-                "Painting",
-                "Electrical",
-                "Plumbing",
-                "Precision & high patience: tiling, trim",
-                "Permit-required stuff",
-                "High heights / ladders"
-              ].map((project) => (
-                <Card key={project} className="hover:border-primary/50 transition-colors">
-                  <CardContent className="p-2 md:p-3">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                      <Checkbox 
-                        id={project}
-                        checked={answers.avoidProjects.includes(project)}
-                        onCheckedChange={(checked) => handleAvoidProjectChange(project, checked as boolean)}
-                        className="h-4 w-4 shrink-0"
-                      />
-                      <Label htmlFor={project} className="cursor-pointer font-medium text-xs md:text-sm leading-tight">
-                        {project}
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 4:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -898,7 +883,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
         );
 
-      case 5:
+      case 4:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -950,8 +935,22 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     }
   };
 
+  const handleProjectSkillsSave = (avoidProjects: string[], projectSkills?: Record<string, number>) => {
+    setAnswers(prev => ({
+      ...prev,
+      avoidProjects
+    }));
+    // Note: projectSkills could be stored separately if needed in the future
+  };
+
   return (
     <>
+      <ProjectSkillsWindow
+        open={showProjectSkillsWindow}
+        onOpenChange={setShowProjectSkillsWindow}
+        initialAvoidProjects={answers.avoidProjects}
+        onSave={handleProjectSkillsSave}
+      />
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
