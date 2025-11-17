@@ -1,6 +1,5 @@
 -- Fix create_project_with_standard_foundation_v2 to remove standard_phase_id reference
--- The standard_phase_id column was removed from template_operations in migration 20251115006800
--- This ensures the function doesn't try to insert into a non-existent column
+-- Run this directly in Supabase SQL Editor if the migration didn't apply correctly
 
 CREATE OR REPLACE FUNCTION public.create_project_with_standard_foundation_v2(
   p_project_name TEXT,
