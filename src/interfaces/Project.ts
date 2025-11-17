@@ -19,20 +19,24 @@ export interface Tool {
 // New library interfaces matching database schema
 export interface LibraryTool {
   id: string;
-  item: string;
+  name: string;
   description: string | null;
   example_models: string | null;
   photo_url: string | null;
+  alternates: string | null;
+  category: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface LibraryMaterial {
   id: string;
-  item: string;
+  name: string;
   description: string | null;
-  unit_size: string | null;
+  unit: string | null;
   photo_url: string | null;
+  alternates: string | null;
+  category: string | null;
   created_at: string;
   updated_at: string;
 }

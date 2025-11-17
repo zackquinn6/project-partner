@@ -16,10 +16,10 @@ interface BulkUploadProps {
 }
 
 interface ParsedItem {
-  item: string;
+  name: string;
   description?: string;
   example_models?: string;
-  unit_size?: string;
+  unit?: string;
   errors?: string[];
 }
 
@@ -60,12 +60,12 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
     
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim());
-      const item: ParsedItem = { item: '', errors: [] };
+      const item: ParsedItem = { name: '', errors: [] };
       
       headers.forEach((header, index) => {
         const value = values[index] || '';
-        if (header === 'item') {
-          item.item = value;
+        if (header === 'name' || header === 'item') {
+          item.name = value;
           if (!value) {
             item.errors?.push('Item name is required');
           }
@@ -74,7 +74,7 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
         }
       });
 
-      if (item.item) {
+      if (item.name) {
         items.push(item);
       }
     }
@@ -115,11 +115,11 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
       const { error } = await supabase
         .from(type)
         .insert(validItems.map(item => ({
-          item: item.item,
+          name: item.name,
           description: item.description || null,
           ...(type === 'tools' 
             ? { example_models: item.example_models || null }
-            : { unit_size: item.unit_size || null }
+            : { unit: item.unit || null }
           )
         })));
 
@@ -236,15 +236,15 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
                     }`}
                   >
                     <div className="flex-1">
-                      <div className="font-medium">{item.item}</div>
+                      <div className="font-medium">{item.name}</div>
                       {item.description && (
                         <div className="text-sm text-muted-foreground">{item.description}</div>
                       )}
                       {type === 'tools' && item.example_models && (
                         <div className="text-xs text-muted-foreground">Models: {item.example_models}</div>
                       )}
-                      {type === 'materials' && item.unit_size && (
-                        <div className="text-xs text-muted-foreground">Unit: {item.unit_size}</div>
+                      {type === 'materials' && item.unit && (
+                        <div className="text-xs text-muted-foreground">Unit: {item.unit}</div>
                       )}
                       {item.errors?.length && (
                         <div className="text-xs text-destructive mt-1">
