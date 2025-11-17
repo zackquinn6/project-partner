@@ -66,16 +66,23 @@ export function WorkflowSidebar({
   const [openPhases, setOpenPhases] = useState<Set<string>>(new Set());
   const [openOperations, setOpenOperations] = useState<Set<string>>(new Set());
   
-  // Find the current step's phase and operation
+  // Find the current step's phase and operation, and determine operation order
   const currentStepPhaseAndOperation = useMemo(() => {
     if (!currentStep || !groupedSteps) return null;
     
     for (const [phase, operations] of Object.entries(groupedSteps)) {
-      for (const [operation, opSteps] of Object.entries(operations as any)) {
+      const phaseOps = Object.entries(operations as any);
+      for (let i = 0; i < phaseOps.length; i++) {
+        const [operation, opSteps] = phaseOps[i];
         if (Array.isArray(opSteps)) {
           const hasCurrentStep = opSteps.some((step: any) => step.id === currentStep.id);
           if (hasCurrentStep) {
-            return { phase, operation };
+            return { 
+              phase, 
+              operation,
+              operationIndex: i,
+              allOperationsInPhase: phaseOps.map(([op]) => op)
+            };
           }
         }
       }
@@ -83,13 +90,24 @@ export function WorkflowSidebar({
     return null;
   }, [currentStep, groupedSteps]);
   
-  // Auto-open the phase and operation containing the current step
+  // Auto-open/collapse based on current step
+  // This runs whenever the current step changes (via next/previous navigation or step click)
   useEffect(() => {
     if (currentStepPhaseAndOperation) {
-      setOpenPhases(prev => new Set([...prev, currentStepPhaseAndOperation.phase]));
-      setOpenOperations(prev => new Set([...prev, `${currentStepPhaseAndOperation.phase}-${currentStepPhaseAndOperation.operation}`]));
+      const { phase, operation } = currentStepPhaseAndOperation;
+      
+      // Close ALL phases except the current one
+      setOpenPhases(new Set([phase]));
+      
+      // Close ALL operations except the current one
+      // Only open the current operation - all others (including future ones) should be closed
+      setOpenOperations(new Set([`${phase}-${operation}`]));
+    } else {
+      // If no current step found, close everything
+      setOpenPhases(new Set());
+      setOpenOperations(new Set());
     }
-  }, [currentStepPhaseAndOperation]);
+  }, [currentStepPhaseAndOperation, currentStepIndex, currentStep?.id]); // Trigger on step change
   
   
   return <Sidebar collapsible="icon">

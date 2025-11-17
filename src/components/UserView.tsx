@@ -226,6 +226,7 @@ export default function UserView({
       window.removeEventListener('openProjectCustomizer', handleOpenProjectCustomizer);
     };
   }, []);
+
   
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
@@ -1165,6 +1166,27 @@ export default function UserView({
         console.warn('Unknown app action:', app.actionKey);
     }
   };
+
+  // Add event listener for open-app custom event
+  useEffect(() => {
+    const handleOpenApp = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('🎯 UserView: open-app event received', customEvent.detail);
+      if (customEvent.detail && customEvent.detail.actionKey) {
+        handleLaunchApp({
+          appType: 'native',
+          actionKey: customEvent.detail.actionKey
+        } as AppReference);
+      }
+    };
+
+    window.addEventListener('open-app', handleOpenApp as EventListener);
+
+    return () => {
+      window.removeEventListener('open-app', handleOpenApp as EventListener);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // handleLaunchApp is stable (uses only setState functions)
   
   // Fetch step instructions based on instruction level
   const { instruction, loading: instructionLoading } = useStepInstructions(

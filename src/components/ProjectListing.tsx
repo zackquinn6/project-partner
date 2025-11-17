@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Play, Trash2, Plus, User, Wrench, Home, Users, Zap, Folder, Calculator, HelpCircle, Hammer, BookOpen, MapPin, Edit } from "lucide-react";
+import { Play, Trash2, Plus, User, Wrench, Home, Users, Zap, Folder, Calculator, HelpCircle, Hammer, BookOpen, MapPin, Edit, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { Project } from '@/interfaces/Project';
@@ -19,6 +19,7 @@ import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 import { ManualProjectDialog } from '@/components/ManualProjectDialog';
 import { ManualProjectEditDialog } from '@/components/ManualProjectEditDialog';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
+import { PhotoGallery } from '@/components/PhotoGallery';
 
 interface ProjectListingProps {
   onProjectSelect?: (project: Project | null | 'workflow') => void;
@@ -35,6 +36,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const [showManualProjectDialog, setShowManualProjectDialog] = useState(false);
   const [showManualProjectEditDialog, setShowManualProjectEditDialog] = useState(false);
   const [editingProjectRun, setEditingProjectRun] = useState<ProjectRun | null>(null);
+  const [showPhotoGallery, setShowPhotoGallery] = useState(false);
 
   const calculateProgress = (projectRun: ProjectRun) => {
     return calculateProjectProgress(projectRun);
@@ -121,6 +123,16 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={() => setShowPhotoGallery(true)}
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">View All Photos</span>
+                <span className="sm:hidden">Photos</span>
+              </Button>
               <Button 
                 onClick={() => navigate('/projects')}
                 variant="default"
@@ -434,6 +446,12 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
           console.log('Manual project updated');
           // Project runs will refresh automatically
         }}
+      />
+      <PhotoGallery
+        open={showPhotoGallery}
+        onOpenChange={setShowPhotoGallery}
+        mode="user"
+        title="All Project Photos"
       />
       {/* Removed duplicate CommunityPostsWindow - handled by Navigation */}
     </div>

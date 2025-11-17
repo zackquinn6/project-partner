@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { MultiContentEditor } from '@/components/MultiContentEditor';
 import { MultiContentRenderer } from '@/components/MultiContentRenderer';
@@ -136,7 +135,6 @@ export default function EditWorkflowView({
     parentId?: string;
   } | null>(null);
 
-  const [isCascading, setIsCascading] = useState(false);
   
   // Get phases directly from project - use dynamic phases for templates
   const displayPhases = phases;
@@ -710,20 +708,9 @@ export default function EditWorkflowView({
                 {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name || 'Untitled Project'}`}
               </h1>
               {isEditingStandardProject && (
-                <>
-                  <p className="text-sm text-orange-600 dark:text-orange-400 font-medium mt-1">
-                    ⚠️ Editing Standard Foundation - Changes will cascade to new projects
-                  </p>
-                  {isCascading && (
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Syncing standard phases to all project templates...</span>
-                      </div>
-                      <Progress value={undefined} className="h-1" />
-                    </div>
-                  )}
-                </>
+                <p className="text-sm text-orange-600 dark:text-orange-400 font-medium mt-1">
+                  ⚠️ Editing Standard Foundation - Changes will be reflected in all project templates via dynamic referencing
+                </p>
               )}
               {!isEditingStandardProject && dynamicPhasesLoading && (
                 <div className="mt-2 space-y-1">
@@ -764,73 +751,15 @@ export default function EditWorkflowView({
                        Process Improvement
                      </Button>
                       <Button 
-                        onClick={async () => {
-                          if (isEditingStandardProject) {
-                            console.log('💾 Save and Close: Cascading Standard Project changes to all templates...');
-                            setIsCascading(true);
-                            toast.loading('Syncing standard phases to all project templates...', { id: 'cascade-sync' });
-                            
-                            try {
-                              const { data: syncResult, error: syncError } = await supabase.functions.invoke('sync-standard-phases', {
-                                method: 'POST',
-                              });
-                              
-                              // Dismiss loading toast
-                              toast.dismiss('cascade-sync');
-                              setIsCascading(false);
-                             
-                              if (syncError) {
-                                console.error('Save and Close: Error cascading to templates:', syncError);
-                                setIsCascading(false);
-                                toast.error('Cascade to templates failed', { 
-                                  description: `Error: ${syncError.message || 'Unknown error'}. Click "Sync Standard Phases" button in Admin Panel to manually sync`,
-                                  duration: 10000,
-                                });
-                             } else {
-                               const result = syncResult as {
-                                 success: boolean;
-                                 templatesUpdated: number;
-                                 templatesFailed: number;
-                               };
-                               
-                               console.log('Save and Close: Cascade completed:', result);
-                               
-                               // Invalidate projects cache to ensure users see latest template data
-                               console.log('🔄 Save and Close: Refreshing projects cache to show latest changes');
-                               try {
-                                 window.dispatchEvent(new CustomEvent('refetch-projects'));
-                               } catch (e) {
-                                 console.error('Failed to trigger cache refresh:', e);
-                               }
-                               
-                               toast.success(
-                                 `Changes cascaded to ${result.templatesUpdated} template(s)`,
-                                 { 
-                                   description: 'All project templates now have your latest standard phase changes',
-                                   duration: 5000,
-                                 }
-                               );
-                             }
-                            } catch (cascadeError) {
-                              console.error('Save and Close: Exception during cascade:', cascadeError);
-                              toast.dismiss('cascade-sync');
-                              setIsCascading(false);
-                              toast.error('Cascade failed', { 
-                                description: 'Click "Sync Standard Phases" button in Admin Panel to manually sync',
-                                duration: 10000,
-                              });
-                            }
-                          }
-                          
+                        onClick={() => {
                           onBackToAdmin();
                         }} 
                         variant="default" 
                         size="sm" 
                         className="flex items-center gap-2"
-                        disabled={isCascading}
                       >
                         <Save className="w-4 h-4" />
-                        {isCascading ? 'Syncing...' : 'Save and Close'}
+                        Save and Close
                       </Button>
                    </>}
                </div>

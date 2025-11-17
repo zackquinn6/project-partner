@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Camera, X, Download, Trash2, Lock, Users, Globe, Image as ImageIcon, Calendar, Loader2 } from 'lucide-react';
+import { Camera, Download, Trash2, Image as ImageIcon, Calendar, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -27,6 +25,7 @@ interface Photo {
   id: string;
   user_id: string;
   project_run_id: string;
+  project_run_name?: string | null;
   template_id: string | null;
   step_id: string;
   step_name?: string | null;
@@ -64,42 +63,141 @@ export function PhotoGallery({
   const [loading, setLoading] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [filterPrivacy, setFilterPrivacy] = useState<string>('all');
-  const [stepFilter, setStepFilter] = useState<string>('all');
+  const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
+  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [availableProjects, setAvailableProjects] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     if (open) {
+      fetchAvailableProjects();
       fetchPhotos();
     }
-  }, [open, projectRunId, templateId, filterPrivacy]);
+  }, [open, projectRunId, templateId, projectFilter, dateFilter]);
+
+  const fetchAvailableProjects = async () => {
+    if (!user || projectRunId) return; // Don't fetch if filtering by specific project
+
+    try {
+      // Get all unique project runs that have photos
+      const { data: projectRuns, error } = await supabase
+        .from('project_runs')
+        .select('id, name, custom_project_name')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+
+      const projects = (projectRuns || []).map(run => ({
+        id: run.id,
+        name: run.custom_project_name || run.name
+      }));
+
+      setAvailableProjects(projects);
+    } catch (error) {
+      console.error('Error fetching available projects:', error);
+    }
+  };
 
   const fetchPhotos = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
+      // Build query
       let query = supabase
         .from('project_photos')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
+      // Filter by specific project run if provided
       if (projectRunId) {
         query = query.eq('project_run_id', projectRunId);
       } else if (templateId) {
         query = query.eq('template_id', templateId);
-      } else if (mode === 'user') {
-        // Show all user's photos
-        query = query.eq('user_id', user.id);
       }
 
-      if (filterPrivacy !== 'all') {
-        query = query.eq('privacy_level', filterPrivacy);
+      // Apply project filter
+      if (projectFilter !== 'all' && !projectRunId) {
+        query = query.eq('project_run_id', projectFilter);
+      }
+
+      // Apply date filter
+      if (dateFilter !== 'all') {
+        const now = new Date();
+        let startDate: Date;
+        
+        switch (dateFilter) {
+          case 'today':
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            break;
+          case 'week':
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - 7);
+            break;
+          case 'month':
+            startDate = new Date(now);
+            startDate.setMonth(now.getMonth() - 1);
+            break;
+          case 'year':
+            startDate = new Date(now);
+            startDate.setFullYear(now.getFullYear() - 1);
+            break;
+          default:
+            startDate = new Date(0);
+        }
+        
+        query = query.gte('created_at', startDate.toISOString());
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
-      setPhotos((data || []) as Photo[]);
+      
+      // Fetch project run names for all unique project_run_ids
+      const projectRunIds = [...new Set((data || []).map((p: any) => p.project_run_id))];
+      const { data: projectRunsData } = await supabase
+        .from('project_runs')
+        .select('id, name, custom_project_name')
+        .in('id', projectRunIds);
+      
+      const projectRunMap = new Map(
+        (projectRunsData || []).map((run: any) => [
+          run.id,
+          run.custom_project_name || run.name
+        ])
+      );
+      
+      // Map the data to include project run name
+      const fetchedPhotos: Photo[] = (data || []).map((photo: any) => ({
+        ...photo,
+        project_run_name: projectRunMap.get(photo.project_run_id) || null
+      }));
+      
+      setPhotos(fetchedPhotos);
+      
+      // Load thumbnail URLs for all photos
+      const thumbnailPromises = fetchedPhotos.map(async (photo) => {
+        try {
+          const { data: urlData, error: urlError } = await supabase.storage
+            .from('project-photos')
+            .createSignedUrl(photo.storage_path, 3600);
+          
+          if (urlError) throw urlError;
+          return { id: photo.id, url: urlData.signedUrl };
+        } catch (error) {
+          console.error(`Error loading thumbnail for photo ${photo.id}:`, error);
+          return { id: photo.id, url: null };
+        }
+      });
+      
+      const thumbnailResults = await Promise.all(thumbnailPromises);
+      const thumbnailMap: Record<string, string> = {};
+      thumbnailResults.forEach(({ id, url }) => {
+        if (url) thumbnailMap[id] = url;
+      });
+      setThumbnailUrls(thumbnailMap);
     } catch (error) {
       console.error('Error fetching photos:', error);
       toast.error('Failed to load photos');
@@ -181,42 +279,6 @@ export function PhotoGallery({
     }
   };
 
-  const getPrivacyIcon = (level: string) => {
-    switch (level) {
-      case 'personal':
-        return <Lock className="w-3 h-3" />;
-      case 'project_partner':
-        return <Users className="w-3 h-3" />;
-      case 'public':
-        return <Globe className="w-3 h-3" />;
-      default:
-        return null;
-    }
-  };
-
-  const getPrivacyBadge = (level: string) => {
-    const variants: Record<string, string> = {
-      personal: 'bg-red-100 text-red-800',
-      project_partner: 'bg-blue-100 text-blue-800',
-      public: 'bg-green-100 text-green-800'
-    };
-
-    const labels: Record<string, string> = {
-      personal: 'Personal',
-      project_partner: 'Project Partner',
-      public: 'Public'
-    };
-
-    return (
-      <Badge className={`text-xs ${variants[level] || ''}`}>
-        {getPrivacyIcon(level)}
-        <span className="ml-1">{labels[level] || level}</span>
-      </Badge>
-    );
-  };
-
-  // Get unique step IDs for filtering
-  const uniqueSteps = Array.from(new Set(photos.map(p => p.step_id)));
 
   return (
     <>
@@ -240,20 +302,37 @@ export function PhotoGallery({
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
-            {/* Filters */}
-            <div className="flex gap-2 mb-4">
-              <Select value={filterPrivacy} onValueChange={setFilterPrivacy}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Privacy Levels</SelectItem>
-                  <SelectItem value="personal">Personal</SelectItem>
-                  <SelectItem value="project_partner">Project Partner</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Filters - only show when viewing all photos (not filtered by specific project) */}
+            {!projectRunId && !templateId && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Select value={projectFilter} onValueChange={setProjectFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Projects</SelectItem>
+                    {availableProjects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Filter by date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="week">Last 7 Days</SelectItem>
+                    <SelectItem value="month">Last Month</SelectItem>
+                    <SelectItem value="year">Last Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {loading ? (
               <div className="flex items-center justify-center py-12">
@@ -270,32 +349,26 @@ export function PhotoGallery({
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="flex flex-wrap gap-2">
                 {photos.map((photo) => (
                   <Card 
                     key={photo.id} 
-                    className="cursor-pointer hover:shadow-lg transition-shadow"
+                    className="cursor-pointer hover:shadow-lg transition-shadow w-[60px]"
                     onClick={() => handlePhotoClick(photo)}
                   >
-                    <CardContent className="p-2">
-                      <div className="aspect-square bg-muted rounded-lg mb-2 flex items-center justify-center overflow-hidden">
-                        <ImageIcon className="w-12 h-12 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium truncate">{photo.file_name}</div>
-                        {(photo.phase_name || photo.operation_name || photo.step_name) && (
-                          <div className="text-[10px] text-muted-foreground truncate">
-                            {photo.phase_name && `${photo.phase_name}`}
-                            {photo.operation_name && ` → ${photo.operation_name}`}
-                            {photo.step_name && ` → ${photo.step_name}`}
+                    <CardContent className="p-1">
+                      <div className="aspect-square bg-muted rounded overflow-hidden">
+                        {thumbnailUrls[photo.id] ? (
+                          <img 
+                            src={thumbnailUrls[photo.id]} 
+                            alt={photo.file_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-muted-foreground" />
                           </div>
                         )}
-                        <div className="flex items-center justify-between">
-                          {getPrivacyBadge(photo.privacy_level)}
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(photo.created_at), 'MMM d')}
-                          </span>
-                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -312,80 +385,94 @@ export function PhotoGallery({
           setSelectedPhoto(null);
           setPhotoUrl(null);
         }}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-5xl">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
                 <span>{selectedPhoto.file_name}</span>
-                {getPrivacyBadge(selectedPhoto.privacy_level)}
               </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4">
-              {photoUrl ? (
-                <img 
-                  src={photoUrl} 
-                  alt={selectedPhoto.file_name}
-                  className="w-full rounded-lg"
-                />
-              ) : (
-                <div className="flex items-center justify-center py-12 bg-muted rounded-lg">
-                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                </div>
-              )}
-
-              {(selectedPhoto.phase_name || selectedPhoto.operation_name || selectedPhoto.step_name) && (
-                <div>
-                  <Label className="text-sm font-medium">Project Location</Label>
-                  <div className="text-sm text-muted-foreground mt-1 space-y-1">
-                    {selectedPhoto.phase_name && (
-                      <div><span className="font-medium">Phase:</span> {selectedPhoto.phase_name}</div>
-                    )}
-                    {selectedPhoto.operation_name && (
-                      <div><span className="font-medium">Operation:</span> {selectedPhoto.operation_name}</div>
-                    )}
-                    {selectedPhoto.step_name && (
-                      <div><span className="font-medium">Step:</span> {selectedPhoto.step_name}</div>
-                    )}
+            <div className="flex gap-4">
+              {/* Photo on the left */}
+              <div className="flex-1">
+                {photoUrl ? (
+                  <img 
+                    src={photoUrl} 
+                    alt={selectedPhoto.file_name}
+                    className="w-full rounded-lg"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center py-12 bg-muted rounded-lg">
+                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                   </div>
-                </div>
-              )}
-
-              {selectedPhoto.caption && (
-                <div>
-                  <Label className="text-sm font-medium">Caption</Label>
-                  <p className="text-sm text-muted-foreground mt-1">{selectedPhoto.caption}</p>
-                </div>
-              )}
-
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {format(new Date(selectedPhoto.created_at), 'PPp')}
-                </div>
-                <div>
-                  {(selectedPhoto.file_size / 1024 / 1024).toFixed(2)} MB
-                </div>
+                )}
               </div>
 
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownload(selectedPhoto)}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
-                {mode === 'user' && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeletePhoto(selectedPhoto.id, selectedPhoto.storage_path)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </Button>
+              {/* Info on the right */}
+              <div className="w-64 space-y-4 flex flex-col">
+                {selectedPhoto.project_run_name && (
+                  <div>
+                    <Label className="text-sm font-medium">Project</Label>
+                    <p className="text-sm text-muted-foreground mt-1">{selectedPhoto.project_run_name}</p>
+                  </div>
                 )}
+
+                {(selectedPhoto.phase_name || selectedPhoto.operation_name || selectedPhoto.step_name) && (
+                  <div>
+                    <Label className="text-sm font-medium">Project Location</Label>
+                    <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                      {selectedPhoto.phase_name && (
+                        <div><span className="font-medium">Phase:</span> {selectedPhoto.phase_name}</div>
+                      )}
+                      {selectedPhoto.operation_name && (
+                        <div><span className="font-medium">Operation:</span> {selectedPhoto.operation_name}</div>
+                      )}
+                      {selectedPhoto.step_name && (
+                        <div><span className="font-medium">Step:</span> {selectedPhoto.step_name}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {selectedPhoto.caption && (
+                  <div>
+                    <Label className="text-sm font-medium">Caption</Label>
+                    <p className="text-sm text-muted-foreground mt-1">{selectedPhoto.caption}</p>
+                  </div>
+                )}
+
+                <div className="space-y-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {format(new Date(selectedPhoto.created_at), 'PPp')}
+                  </div>
+                  <div>
+                    {(selectedPhoto.file_size / 1024 / 1024).toFixed(2)} MB
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 mt-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(selectedPhoto)}
+                    className="w-full"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                  {mode === 'user' && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeletePhoto(selectedPhoto.id, selectedPhoto.storage_path)}
+                      className="w-full"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </DialogContent>

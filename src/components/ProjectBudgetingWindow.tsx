@@ -383,7 +383,10 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                   </Select>
                 </div>
               </div>
-              <Button onClick={async () => await addBudgetItem()}>
+              <Button onClick={async () => {
+                console.log('🎯 ProjectBudgetingWindow: Add Line Item button clicked');
+                await addBudgetItem();
+              }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Line Item
               </Button>
@@ -503,12 +506,12 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                 </div>
                 <div>
                   <Label>Match to Budget Item (Optional)</Label>
-                  <Select value={selectedLineItemForActual} onValueChange={setSelectedLineItemForActual}>
+                  <Select value={selectedLineItemForActual || 'none'} onValueChange={(value) => setSelectedLineItemForActual(value === 'none' ? '' : value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select item" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None (New expense)</SelectItem>
+                      <SelectItem value="none">None (New expense)</SelectItem>
                       {Array.isArray(budgetItems) && budgetItems.map(item => (
                         item && item.id ? (
                           <SelectItem key={item.id} value={item.id}>

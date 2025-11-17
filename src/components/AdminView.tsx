@@ -36,65 +36,6 @@ export const AdminView: React.FC = () => {
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [appManagerOpen, setAppManagerOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'admin' | 'structure-manager'>('admin');
-  const [isSyncing, setIsSyncing] = useState(false);
-  const handleSyncStandardPhases = async () => {
-    setIsSyncing(true);
-
-    // Show initial loading toast
-    toast.loading('Syncing standard phases to all project templates...', {
-      id: 'sync-phases'
-    });
-    try {
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('sync-standard-phases', {
-        method: 'POST'
-      });
-      if (error) {
-        console.error('Edge function error:', error);
-        throw error;
-      }
-      const result = data as {
-        success: boolean;
-        templatesUpdated: number;
-        templatesFailed: number;
-        details: string[];
-      };
-      console.log('Sync result:', result);
-      if (result.success) {
-        // Dismiss loading toast
-        toast.dismiss('sync-phases');
-
-        // Wait a brief moment to ensure loading toast is dismissed
-        setTimeout(() => {
-          // Show prominent success toast with longer duration
-          toast.success(`✅ Standard Phases Synced Successfully!`, {
-            description: `${result.templatesUpdated} template(s) updated with latest standard phases. ${result.templatesFailed > 0 ? `⚠️ ${result.templatesFailed} failed.` : '✨ All templates updated successfully!'}`,
-            duration: 10000 // 10 seconds
-          });
-        }, 100);
-
-        // Show detailed results in console
-        console.log('Standard Phase Sync Results:', result.details.join('\n'));
-      } else {
-        throw new Error('Sync reported failure');
-      }
-    } catch (error) {
-      console.error('Failed to sync standard phases:', error);
-
-      // Dismiss loading toast
-      toast.dismiss('sync-phases');
-
-      // Show error toast
-      toast.error('Failed to sync standard phases', {
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
-        duration: 6000
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   if (currentView === 'structure-manager') {
     return <StructureManager onBack={() => setCurrentView('admin')} />;
