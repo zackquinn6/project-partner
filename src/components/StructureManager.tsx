@@ -442,7 +442,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Get the project_phases record to link the operation
       const { data: projectPhase } = await supabase
         .from('project_phases')
-        .select('id')
+        .select('id, name, description, display_order, is_standard')
         .eq('id', phaseId)
         .eq('project_id', currentProject.id)
         .single();
@@ -453,15 +453,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       // Insert operation into template_operations using project_phase ID
+      const operationPayload: Record<string, any> = {
+        project_id: currentProject.id,
+        phase_id: projectPhase.id,
+        name: 'New Operation',
+        description: 'Operation description',
+        display_order: operationCount,
+        flow_type: 'prime'
+      };
+
+      if (!projectPhase.is_standard) {
+        operationPayload.custom_phase_name = projectPhase.name;
+        operationPayload.custom_phase_description = projectPhase.description;
+        operationPayload.custom_phase_display_order = projectPhase.display_order;
+      }
+
       const { data: newOperation, error } = await supabase
         .from('template_operations')
-        .insert({
-          project_id: currentProject.id,
-          phase_id: projectPhase.id,
-          name: 'New Operation',
-          description: 'Operation description',
-          display_order: operationCount
-        })
+        .insert(operationPayload)
         .select()
         .single();
 

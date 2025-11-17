@@ -66,11 +66,11 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   };
 
   const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.templateId) || null;
-  const displaySkillLevel = currentProjectRun?.skillLevel || templateProject?.skillLevel;
-  const displayEffortLevel = currentProjectRun?.effortLevel || templateProject?.effortLevel;
-  const displayEstimatedTime = currentProjectRun?.estimatedTime || templateProject?.estimatedTime;
-  const displayScalingUnit = currentProjectRun?.scalingUnit || templateProject?.scalingUnit;
-  const displayDiyChallenges = currentProjectRun?.diyLengthChallenges || templateProject?.diyLengthChallenges;
+  const displaySkillLevel = currentProjectRun?.skillLevel ?? templateProject?.skillLevel;
+  const displayEffortLevel = templateProject?.effortLevel ?? currentProjectRun?.effortLevel;
+  const displayEstimatedTime = currentProjectRun?.estimatedTime ?? templateProject?.estimatedTime;
+  const displayScalingUnit = currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit;
+  const displayDiyChallenges = currentProjectRun?.diyLengthChallenges ?? templateProject?.diyLengthChallenges;
 
   // Helper function to get skill level comparison
   const getSkillLevelComparison = () => {
