@@ -330,29 +330,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return;
     }
     
-    const phaseName = 'New Phase';
-    const phaseDescription = 'Phase description';
-    const customPhaseCount = currentProject.phases.filter(p => !p.isStandard && !p.isLinked).length;
-    
-    // Calculate display order for custom phases (between standard phases)
-    const displayOrder = 100 + (customPhaseCount * 10);
-    
     try {
-      // Insert directly into project_phases table (new architecture)
-      const { data: newPhase, error: insertError } = await supabase
-        .from('project_phases')
-        .insert({
-          project_id: currentProject.id,
-          name: phaseName,
-          description: phaseDescription,
-          display_order: displayOrder,
-          is_standard: false,
-          standard_phase_id: null
-        })
-        .select()
-        .single();
+      const phaseName = 'New Phase';
+      const phaseDescription = 'Phase description';
 
-      if (insertError) throw insertError;
+      // Use RPC to safely insert a custom phase with a unique display order
+      const { data: newPhase, error: addPhaseError } = await supabase.rpc('add_custom_project_phase', {
+        p_project_id: currentProject.id,
+        p_phase_name: phaseName,
+        p_phase_description: phaseDescription
+      });
+
+      if (addPhaseError) throw addPhaseError;
 
       // Rebuild phases JSON from relational data
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {

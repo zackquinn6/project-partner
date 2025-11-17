@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect, useMemo } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -452,6 +450,8 @@ export function AppManager({
     }
   };
   const iconOptions = ['ExternalLink', 'Link', 'Globe', 'Sparkles', 'Zap', 'Tool', 'Settings', 'FileText', 'Image', 'Video', 'Home', 'User', 'Calendar', 'ShoppingCart', 'DollarSign', 'TrendingUp', 'Wrench', 'Hammer', 'ListChecks', 'BookOpen', 'FolderOpen', 'Package'];
+  const combinedApps = useMemo(() => [...nativeApps, ...externalApps], [nativeApps, externalApps]);
+
   if (loading) {
     return <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
@@ -471,7 +471,8 @@ export function AppManager({
         </DialogContent>
       </Dialog>;
   }
-  return <Dialog open={open} onOpenChange={onOpenChange}>
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
         <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between gap-2">
@@ -481,348 +482,287 @@ export function AppManager({
             </Button>
           </div>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
-          <Tabs defaultValue="native" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="native" className="text-xs md:text-sm">
-                Native Apps ({nativeApps.length})
-              </TabsTrigger>
-              <TabsTrigger value="external" className="text-xs md:text-sm">
-                External Apps ({externalApps.length})
-              </TabsTrigger>
-              <TabsTrigger value="add" className="text-xs md:text-sm">
-                Add External App
-              </TabsTrigger>
-            </TabsList>
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4 space-y-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-base font-semibold">Apps Overview</h3>
+              <p className="text-sm text-muted-foreground">Manage native and external apps from a single table.</p>
+            </div>
+            <Button size="sm" onClick={() => setShowAddExternal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add External App
+            </Button>
+          </div>
 
-            <TabsContent value="native" className="mt-4 space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Native Apps</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Built-in Project Partner apps. Changes require code updates to persist.
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="border rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">Icon</TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead className="w-24">Type</TableHead>
-                          <TableHead className="w-24">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {nativeApps.map(app => {
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">All Apps</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Native apps are built-in Project Partner experiences. External apps are linked or embedded tools referenced in workflows.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {combinedApps.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No apps found.</p>
+                  <p className="text-sm mt-2">Use the “Add External App” button to create one.</p>
+                </div>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">Icon</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="w-48">URL</TableHead>
+                        <TableHead className="w-32">Type</TableHead>
+                        <TableHead className="w-32">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {combinedApps.map(app => {
                         const IconComponent = getIconComponent(app.icon);
                         const isEditing = editingApp?.id === app.id;
-                        return <TableRow key={app.id}>
-                              <TableCell>
-                                {isEditing ? <Select value={editForm.icon || app.icon} onValueChange={value => setEditForm({
-                              ...editForm,
-                              icon: value
-                            })}>
-                                    <SelectTrigger className="h-8 w-24">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {iconOptions.map(icon => {
-                                  const Icon = getIconComponent(icon);
-                                  return <SelectItem key={icon} value={icon}>
-                                            <div className="flex items-center gap-2">
-                                              <Icon className="w-4 h-4" />
-                                              <span>{icon}</span>
-                                            </div>
-                                          </SelectItem>;
-                                })}
-                                    </SelectContent>
-                                  </Select> : <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <IconComponent className="w-4 h-4 text-primary" />
-                                  </div>}
-                              </TableCell>
-                              <TableCell>
-                                {isEditing ? <Input value={editForm.appName ?? app.appName ?? ''} onChange={e => {
-                              const newValue = e.target.value;
-                              console.log('📝 App name changed:', {
-                                old: editForm.appName,
-                                new: newValue
-                              });
-                              setEditForm({
-                                ...editForm,
-                                appName: newValue
-                              });
-                            }} onKeyDown={e => {
-                              // Prevent Enter key from triggering save
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }
-                            }} className="h-8" placeholder="App name" /> : <div className="flex items-center gap-2">
-                                    <span className="font-medium">{app.appName}</span>
-                                    {app.isBeta && <Badge variant="secondary" className="text-[10px]">BETA</Badge>}
-                                  </div>}
-                              </TableCell>
-                              <TableCell>
-                                {isEditing ? <Textarea value={editForm.description || app.description || ''} onChange={e => setEditForm({
-                              ...editForm,
-                              description: e.target.value
-                            })} onKeyDown={e => {
-                              // Prevent Enter key from triggering save (unless Ctrl+Enter)
-                              if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }
-                            }} className="min-h-[60px] text-sm" placeholder="App description" /> : <span className="text-sm text-muted-foreground">
-                                    {app.description || 'No description'}
-                                  </span>}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="text-xs">
-                                  {app.appType}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {isEditing ? <div className="flex gap-1">
-                                    <Button type="button" size="sm" variant="ghost" onClick={handleSaveNative} disabled={saving} className="h-7 w-7 p-0">
-                                      <Save className="w-4 h-4" />
-                                    </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => {
-                                setEditingApp(null);
-                                setEditForm({});
-                              }} className="h-7 w-7 p-0">
-                                      <X className="w-4 h-4" />
-                                    </Button>
-                                  </div> : <Button size="sm" variant="ghost" onClick={() => handleEditNative(app)} className="h-7 w-7 p-0">
+                        const isNative = app.appType === 'native';
+                        const typeLabel = isNative
+                          ? 'Native'
+                          : app.appType === 'external-embed'
+                            ? 'External Embed'
+                            : 'External Link';
+                        const handleSave = isNative ? handleSaveNative : handleSaveExternal;
+                        const handleEdit = () => (isNative ? handleEditNative(app) : handleEditExternal(app));
+                        const handleCancelEdit = () => {
+                          setEditingApp(null);
+                          setEditForm({});
+                        };
+                        return (
+                          <TableRow key={app.id}>
+                            <TableCell>
+                              {isEditing ? (
+                                <Select
+                                  value={editForm.icon || app.icon}
+                                  onValueChange={value => setEditForm({ ...editForm, icon: value })}
+                                >
+                                  <SelectTrigger className="h-8 w-24">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {iconOptions.map(icon => {
+                                      const Icon = getIconComponent(icon);
+                                      return (
+                                        <SelectItem key={icon} value={icon}>
+                                          <div className="flex items-center gap-2">
+                                            <Icon className="w-4 h-4" />
+                                            <span>{icon}</span>
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <IconComponent className="w-4 h-4 text-primary" />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isEditing ? (
+                                <Input
+                                  value={editForm.appName ?? app.appName ?? ''}
+                                  onChange={e => setEditForm({ ...editForm, appName: e.target.value })}
+                                  className="h-8"
+                                  placeholder="App name"
+                                />
+                              ) : (
+                                <span className="font-medium">{app.appName}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isEditing ? (
+                                <Textarea
+                                  value={editForm.description || app.description || ''}
+                                  onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                                  className="min-h-[60px] text-sm"
+                                  placeholder="App description"
+                                />
+                              ) : (
+                                <span className="text-sm text-muted-foreground">
+                                  {app.description || 'No description'}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isNative ? (
+                                <span className="text-xs text-muted-foreground italic">Not applicable</span>
+                              ) : isEditing ? (
+                                <Input
+                                  value={editForm.embedUrl || editForm.linkUrl || app.embedUrl || app.linkUrl || ''}
+                                  onChange={e => {
+                                    if (app.appType === 'external-embed') {
+                                      setEditForm({ ...editForm, embedUrl: e.target.value });
+                                    } else {
+                                      setEditForm({ ...editForm, linkUrl: e.target.value });
+                                    }
+                                  }}
+                                  className="h-8 text-xs"
+                                  placeholder="https://..."
+                                />
+                              ) : (
+                                <span className="text-xs text-muted-foreground truncate max-w-[220px] block">
+                                  {app.embedUrl || app.linkUrl || 'No URL'}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                {typeLabel}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {isEditing ? (
+                                <div className="flex gap-1">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className="h-7 w-7 p-0"
+                                  >
+                                    <Save className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleCancelEdit}
+                                    className="h-7 w-7 p-0"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="ghost" onClick={handleEdit} className="h-7 w-7 p-0">
                                     <Edit className="w-4 h-4" />
-                                  </Button>}
-                              </TableCell>
-                            </TableRow>;
-                      })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="external" className="mt-4 space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">External Apps</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    External apps found in project templates. Changes will update all workflow steps using these apps.
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  {externalApps.length === 0 ? <div className="text-center py-8 text-muted-foreground">
-                      <p>No external apps found in project templates.</p>
-                      <p className="text-sm mt-2">Add external apps using the "Add External App" tab.</p>
-                    </div> : <div className="border rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-12">Icon</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>URL</TableHead>
-                            <TableHead className="w-24">Type</TableHead>
-                            <TableHead className="w-32">Actions</TableHead>
+                                  </Button>
+                                  {!isNative && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleDeleteExternal(app)}
+                                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {externalApps.map(app => {
-                        const IconComponent = getIconComponent(app.icon);
-                        const isEditing = editingApp?.id === app.id;
-                        return <TableRow key={app.id}>
-                                <TableCell>
-                                  {isEditing ? <Select value={editForm.icon || app.icon} onValueChange={value => setEditForm({
-                              ...editForm,
-                              icon: value
-                            })}>
-                                      <SelectTrigger className="h-8 w-24">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {iconOptions.map(icon => {
-                                  const Icon = getIconComponent(icon);
-                                  return <SelectItem key={icon} value={icon}>
-                                              <div className="flex items-center gap-2">
-                                                <Icon className="w-4 h-4" />
-                                                <span>{icon}</span>
-                                              </div>
-                                            </SelectItem>;
-                                })}
-                                      </SelectContent>
-                                    </Select> : <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                      <IconComponent className="w-4 h-4 text-primary" />
-                                    </div>}
-                                </TableCell>
-                                <TableCell>
-                                  {isEditing ? <Input value={editForm.appName || app.appName} onChange={e => setEditForm({
-                              ...editForm,
-                              appName: e.target.value
-                            })} className="h-8" /> : <span className="font-medium">{app.appName}</span>}
-                                </TableCell>
-                                <TableCell>
-                                  {isEditing ? <Textarea value={editForm.description || app.description || ''} onChange={e => setEditForm({
-                              ...editForm,
-                              description: e.target.value
-                            })} className="min-h-[60px] text-sm" placeholder="App description" /> : <span className="text-sm text-muted-foreground">
-                                      {app.description || 'No description'}
-                                    </span>}
-                                </TableCell>
-                                <TableCell>
-                                  {isEditing ? <Input value={editForm.embedUrl || editForm.linkUrl || app.embedUrl || app.linkUrl || ''} onChange={e => {
-                              if (app.appType === 'external-embed') {
-                                setEditForm({
-                                  ...editForm,
-                                  embedUrl: e.target.value
-                                });
-                              } else {
-                                setEditForm({
-                                  ...editForm,
-                                  linkUrl: e.target.value
-                                });
-                              }
-                            }} className="h-8 text-xs" placeholder="URL" /> : <span className="text-xs text-muted-foreground truncate max-w-[200px] block">
-                                      {app.embedUrl || app.linkUrl || 'No URL'}
-                                    </span>}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className="text-xs">
-                                    {app.appType === 'external-embed' ? 'Embed' : 'Link'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  {isEditing ? <div className="flex gap-1">
-                                      <Button type="button" size="sm" variant="ghost" onClick={handleSaveExternal} disabled={saving} className="h-7 w-7 p-0">
-                                        <Save className="w-4 h-4" />
-                                      </Button>
-                                      <Button size="sm" variant="ghost" onClick={() => {
-                                setEditingApp(null);
-                                setEditForm({});
-                              }} className="h-7 w-7 p-0">
-                                        <X className="w-4 h-4" />
-                                      </Button>
-                                    </div> : <div className="flex gap-1">
-                                      <Button size="sm" variant="ghost" onClick={() => handleEditExternal(app)} className="h-7 w-7 p-0">
-                                        <Edit className="w-4 h-4" />
-                                      </Button>
-                                      <Button size="sm" variant="ghost" onClick={() => handleDeleteExternal(app)} className="h-7 w-7 p-0 text-destructive hover:text-destructive">
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    </div>}
-                                </TableCell>
-                              </TableRow>;
+                        );
                       })}
-                        </TableBody>
-                      </Table>
-                    </div>}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="add" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Add External App</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Create a new external app that can be added to workflow steps.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="new-app-name">App Name *</Label>
-                    <Input id="new-app-name" value={newExternalApp.appName} onChange={e => setNewExternalApp({
-                    ...newExternalApp,
-                    appName: e.target.value
-                  })} placeholder="e.g., Cost Calculator" />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="new-app-description">Description</Label>
-                    <Textarea id="new-app-description" value={newExternalApp.description} onChange={e => setNewExternalApp({
-                    ...newExternalApp,
-                    description: e.target.value
-                  })} placeholder="Brief description of the app" rows={2} />
-                  </div>
-
-                  <div>
-                    <Label>App Type *</Label>
-                    <RadioGroup value={newExternalApp.appType} onValueChange={value => setNewExternalApp({
-                    ...newExternalApp,
-                    appType: value as 'external-embed' | 'external-link'
-                  })} className="flex gap-4 mt-2">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="external-link" id="type-link" />
-                        <Label htmlFor="type-link" className="font-normal cursor-pointer">
-                          Link (Opens in new tab)
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="external-embed" id="type-embed" />
-                        <Label htmlFor="type-embed" className="font-normal cursor-pointer">
-                          Embed (iFrame)
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="new-app-url">
-                      {newExternalApp.appType === 'external-embed' ? 'Embed URL *' : 'Link URL *'}
-                    </Label>
-                    <Input id="new-app-url" value={newExternalApp.url} onChange={e => setNewExternalApp({
-                    ...newExternalApp,
-                    url: e.target.value
-                  })} placeholder="https://..." />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="new-app-icon">Icon</Label>
-                    <Select value={newExternalApp.icon} onValueChange={value => setNewExternalApp({
-                    ...newExternalApp,
-                    icon: value
-                  })}>
-                      <SelectTrigger id="new-app-icon">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {iconOptions.map(icon => {
-                        const IconComponent = getIconComponent(icon);
-                        return <SelectItem key={icon} value={icon}>
-                              <div className="flex items-center gap-2">
-                                <IconComponent className="w-4 h-4" />
-                                <span>{icon}</span>
-                              </div>
-                            </SelectItem>;
-                      })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {newExternalApp.appType === 'external-link' && <div className="flex items-center space-x-2">
-                      <input type="checkbox" id="open-new-tab" checked={newExternalApp.openInNewTab} onChange={e => setNewExternalApp({
-                    ...newExternalApp,
-                    openInNewTab: e.target.checked
-                  })} className="rounded" />
-                      <Label htmlFor="open-new-tab" className="font-normal cursor-pointer">
-                        Open in new tab
-                      </Label>
-                    </div>}
-
-                  <Button onClick={handleAddExternal} className="w-full">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add External App
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </DialogContent>
-    </Dialog>;
+      <Dialog open={showAddExternal} onOpenChange={setShowAddExternal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add External App</DialogTitle>
+            <DialogDescription>Create a link or embed that can be reused in workflow steps.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-app-name">App Name *</Label>
+              <Input
+                id="new-app-name"
+                value={newExternalApp.appName}
+                onChange={e => setNewExternalApp({ ...newExternalApp, appName: e.target.value })}
+                placeholder="e.g., Cost Calculator"
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-app-description">Description</Label>
+              <Textarea
+                id="new-app-description"
+                value={newExternalApp.description}
+                onChange={e => setNewExternalApp({ ...newExternalApp, description: e.target.value })}
+                placeholder="Brief description of the app"
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label>App Type *</Label>
+              <RadioGroup
+                value={newExternalApp.appType}
+                onValueChange={value => setNewExternalApp({ ...newExternalApp, appType: value as 'external-embed' | 'external-link' })}
+                className="flex gap-4 mt-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="external-link" id="type-link" />
+                  <Label htmlFor="type-link" className="font-normal cursor-pointer">Link (opens new tab)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="external-embed" id="type-embed" />
+                  <Label htmlFor="type-embed" className="font-normal cursor-pointer">Embed (iFrame)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div>
+              <Label htmlFor="new-app-url">{newExternalApp.appType === 'external-embed' ? 'Embed URL *' : 'Link URL *'}</Label>
+              <Input
+                id="new-app-url"
+                value={newExternalApp.url}
+                onChange={e => setNewExternalApp({ ...newExternalApp, url: e.target.value })}
+                placeholder="https://..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-app-icon">Icon</Label>
+              <Select value={newExternalApp.icon} onValueChange={value => setNewExternalApp({ ...newExternalApp, icon: value })}>
+                <SelectTrigger id="new-app-icon">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {iconOptions.map(icon => {
+                    const IconComponent = getIconComponent(icon);
+                    return (
+                      <SelectItem key={icon} value={icon}>
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="w-4 h-4" />
+                          <span>{icon}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            {newExternalApp.appType === 'external-link' && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="open-new-tab"
+                  checked={newExternalApp.openInNewTab}
+                  onChange={e => setNewExternalApp({ ...newExternalApp, openInNewTab: e.target.checked })}
+                  className="rounded"
+                />
+                <Label htmlFor="open-new-tab" className="font-normal cursor-pointer">Open in new tab</Label>
+              </div>
+            )}
+            <Button onClick={handleAddExternal} className="w-full">
+              <Plus className="w-4 h-4 mr-2" />
+              Add External App
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Dialog>
+  );
 }
