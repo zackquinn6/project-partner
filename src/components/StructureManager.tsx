@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight, Link, ExternalLink, ArrowLeft, GitBranch, MoreVertical } from 'lucide-react';
+import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight, Link, ExternalLink, ArrowLeft, GitBranch, MoreVertical, Loader2 } from 'lucide-react';
 import { FlowTypeSelector, getFlowTypeBadge } from './FlowTypeSelector';
 import { StepTypeSelector, getStepTypeIcon } from './StepTypeSelector';
 import { Label } from '@/components/ui/label';
@@ -77,6 +77,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [showIncorporationDialog, setShowIncorporationDialog] = useState(false);
   const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
   const [oneTimeCorrectionApplied, setOneTimeCorrectionApplied] = useState(false);
+  const [isAddingPhase, setIsAddingPhase] = useState(false);
 
   // Collapsible state
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -330,6 +331,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return;
     }
     
+    if (isAddingPhase) return; // Prevent multiple clicks
+    
+    setIsAddingPhase(true);
+    
     try {
       const phaseName = 'New Phase';
       const phaseDescription = 'Phase description';
@@ -369,6 +374,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     } catch (error) {
       console.error('Error adding phase:', error);
       toast.error('Failed to add phase');
+    } finally {
+      setIsAddingPhase(false);
     }
   };
   const handleIncorporatePhase = (incorporatedPhase: Phase & {
@@ -952,9 +959,23 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                      Expand All
                    </>}
                </Button>
-              <Button size="sm" onClick={addPhase} className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add Phase
+              <Button 
+                size="sm" 
+                onClick={addPhase} 
+                className="flex items-center gap-2"
+                disabled={isAddingPhase}
+              >
+                {isAddingPhase ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Add Phase
+                  </>
+                )}
               </Button>
               <Button size="sm" onClick={onBack} className="flex items-center gap-2">
                 <Save className="w-4 h-4" />
