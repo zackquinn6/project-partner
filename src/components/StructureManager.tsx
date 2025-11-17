@@ -211,15 +211,69 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
     if (type === 'phases') {
       try {
+        // Get the phase being dragged
+        const draggedPhase = displayPhases[source.index];
+        const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+        const isStandardPhase = !draggedPhase.isLinked && standardPhaseNames.includes(draggedPhase.name);
+        
+        // Validate drag constraints for standard phases
+        if (isStandardPhase) {
+          if (draggedPhase.name === 'Kickoff' && destination.index !== 0) {
+            toast.error('Kickoff phase must be the first phase');
+            return;
+          }
+          if (draggedPhase.name === 'Planning' && destination.index !== 1) {
+            toast.error('Planning phase must be the second phase');
+            return;
+          }
+          if (draggedPhase.name === 'Ordering' && destination.index !== 2) {
+            toast.error('Order phase must be the third phase');
+            return;
+          }
+          if (draggedPhase.name === 'Close Project' && destination.index !== displayPhases.length - 1) {
+            toast.error('Close Project phase must be the last phase');
+            return;
+          }
+        }
+        
+        // Validate that we're not moving a custom/incorporated phase to an invalid position
+        // Custom and incorporated phases can only be between Order (index 2) and Close Project (last)
+        if (!isStandardPhase) {
+          // Calculate the actual Close Project index after the drag operation
+          // If dragging from before Close Project to after, the index shifts
+          let closeProjectIndex = displayPhases.findIndex(p => p.name === 'Close Project' && !p.isLinked);
+          
+          // Adjust for the drag operation: if dragging from before Close Project, its index decreases by 1
+          if (source.index < closeProjectIndex && destination.index >= closeProjectIndex) {
+            closeProjectIndex = closeProjectIndex - 1;
+          } else if (source.index > closeProjectIndex && destination.index <= closeProjectIndex) {
+            closeProjectIndex = closeProjectIndex + 1;
+          }
+          
+          const lastValidIndex = closeProjectIndex > -1 ? closeProjectIndex - 1 : displayPhases.length - 2;
+          
+          if (destination.index < 3) {
+            toast.error('Custom and incorporated phases must come after the first 3 standard phases');
+            return;
+          }
+          if (destination.index > lastValidIndex) {
+            toast.error('Custom and incorporated phases must come before Close Project');
+            return;
+          }
+        }
+        
         // Use displayPhases for the correct order, but update currentProject.phases
         const reorderedDisplayPhases = Array.from(displayPhases);
         const [removed] = reorderedDisplayPhases.splice(source.index, 1);
         reorderedDisplayPhases.splice(destination.index, 0, removed);
+        
+        // Re-enforce ordering to ensure constraints are met (handles edge cases)
+        const finalOrderedPhases = enforceStandardPhaseOrdering(reorderedDisplayPhases);
 
         // Update the project phases array to match the new order
         const updatedProject = {
           ...currentProject,
-          phases: reorderedDisplayPhases,
+          phases: finalOrderedPhases,
           updatedAt: new Date()
         };
         
@@ -228,14 +282,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Update display_order in project_phases table
         // For standard phases in Standard Project, update standard_phases table
         // For custom phases, update project_phases table
-        for (let i = 0; i < reorderedDisplayPhases.length; i++) {
-          const phase = reorderedDisplayPhases[i];
+        for (let i = 0; i < finalOrderedPhases.length; i++) {
+          const phase = finalOrderedPhases[i];
           
-          if (phase.isLinked) {
-            // Skip linked/incorporated phases - they maintain their original order
-            continue;
-          }
-          
+          // Update display_order for all phases (including incorporated)
+          // Incorporated phases can now be reordered along with custom phases
           if (isEditingStandardProject && phase.isStandard) {
             // When editing Standard Project, update standard_phases table
             const { data: standardPhase, error: fetchError } = await supabase
@@ -257,8 +308,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 console.error('❌ Error updating standard phase display_order:', updateError);
               }
             }
-          } else if (!phase.isStandard) {
-            // Update custom phases in project_phases table
+          } else if (!phase.isStandard || phase.isLinked) {
+            // Update custom phases and incorporated phases in project_phases table
             const { data: projectPhase, error: fetchError } = await supabase
               .from('project_phases')
               .select('id')
@@ -278,6 +329,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               if (updateError) {
                 console.error('❌ Error updating phase display_order:', updateError);
               }
+            } else if (phase.isLinked) {
+              // For incorporated phases without project_phases record, 
+              // they might be stored differently - log for debugging
+              console.log('⚠️ Incorporated phase without project_phases record:', phase.id, phase.name);
             }
           }
         }

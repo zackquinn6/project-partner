@@ -2,48 +2,49 @@ import { Phase } from "@/interfaces/Project";
 
 /**
  * Ensures standard phases are in the correct order in a project
- * Standard phases: Kickoff -> Planning -> Ordering -> [Custom Phases] -> Close Project
+ * Standard phases: Kickoff -> Planning -> Order -> [Custom/Incorporated Phases in any order] -> Close Project
+ * 
+ * Custom phases and incorporated phases can be reordered throughout the workflow,
+ * as long as the first 3 phases are Kickoff, Planning, Order (in that order)
+ * and Close Project is always last.
  */
 export function enforceStandardPhaseOrdering(phases: Phase[]): Phase[] {
   const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
   
-  // Separate standard and custom phases
-  const standardPhases: Phase[] = [];
-  const customPhases: Phase[] = [];
-  const linkedPhases: Phase[] = [];
+  // Extract standard phases
+  const kickoffPhase = phases.find(p => p.name === 'Kickoff' && !p.isLinked);
+  const planningPhase = phases.find(p => p.name === 'Planning' && !p.isLinked);
+  const orderingPhase = phases.find(p => p.name === 'Ordering' && !p.isLinked);
+  const closeProjectPhase = phases.find(p => p.name === 'Close Project' && !p.isLinked);
   
-  phases.forEach(phase => {
-    if (phase.isLinked) {
-      linkedPhases.push(phase);
-    } else if (standardPhaseNames.includes(phase.name)) {
-      standardPhases.push(phase);
-    } else {
-      customPhases.push(phase);
-    }
+  // Get all non-standard phases (custom and incorporated) while preserving their order
+  const nonStandardPhases = phases.filter(phase => {
+    if (phase.isLinked) return true; // Include incorporated phases
+    return !standardPhaseNames.includes(phase.name); // Include custom phases
   });
   
-  // Sort standard phases in the correct order
-  const orderedStandardPhases = [
-    standardPhases.find(p => p.name === 'Kickoff'),
-    standardPhases.find(p => p.name === 'Planning'), 
-    standardPhases.find(p => p.name === 'Ordering'),
-  ].filter(Boolean) as Phase[];
+  // Build ordered array: First 3 standard phases -> Custom/Incorporated (preserve order) -> Close Project
+  const orderedPhases: Phase[] = [];
   
-  const closeProjectPhase = standardPhases.find(p => p.name === 'Close Project');
+  // Add first 3 standard phases in fixed order
+  if (kickoffPhase) orderedPhases.push(kickoffPhase);
+  if (planningPhase) orderedPhases.push(planningPhase);
+  if (orderingPhase) orderedPhases.push(orderingPhase);
   
-  // Combine in correct order: Standard -> Custom -> Linked -> Close Project
-  const orderedPhases = [
-    ...orderedStandardPhases,
-    ...customPhases,
-    ...linkedPhases,
-    ...(closeProjectPhase ? [closeProjectPhase] : [])
-  ];
+  // Add custom and incorporated phases in their current order (preserves drag-and-drop reordering)
+  orderedPhases.push(...nonStandardPhases);
+  
+  // Add Close Project last
+  if (closeProjectPhase) orderedPhases.push(closeProjectPhase);
   
   return orderedPhases;
 }
 
 /**
  * Validates that standard phases are in the correct order
+ * First 3 phases must be: Kickoff, Planning, Order (in that order)
+ * Close Project must be last
+ * Custom and incorporated phases can be anywhere in between
  */
 export function validateStandardPhaseOrdering(phases: Phase[]): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
@@ -53,23 +54,23 @@ export function validateStandardPhaseOrdering(phases: Phase[]): { isValid: boole
   const orderingIndex = phases.findIndex(p => p.name === 'Ordering' && !p.isLinked);
   const closeProjectIndex = phases.findIndex(p => p.name === 'Close Project' && !p.isLinked);
   
-  // Check if standard phases exist and are in correct order
-  if (kickoffIndex !== -1 && planningIndex !== -1 && kickoffIndex > planningIndex) {
-    errors.push('Kickoff phase must come before Planning phase');
+  // Check that first 3 phases are Kickoff, Planning, Order (in that order)
+  if (kickoffIndex !== -1 && kickoffIndex !== 0) {
+    errors.push('Kickoff phase must be the first phase');
   }
   
-  if (planningIndex !== -1 && orderingIndex !== -1 && planningIndex > orderingIndex) {
-    errors.push('Planning phase must come before Ordering phase');
+  if (planningIndex !== -1 && planningIndex !== 1) {
+    errors.push('Planning phase must be the second phase');
   }
   
-  if (kickoffIndex !== -1 && orderingIndex !== -1 && kickoffIndex > orderingIndex) {
-    errors.push('Kickoff phase must come before Ordering phase');
+  if (orderingIndex !== -1 && orderingIndex !== 2) {
+    errors.push('Order phase must be the third phase');
   }
   
   // Check that Close Project is last (if it exists)
   if (closeProjectIndex !== -1) {
-    const hasPhaseAfterClose = phases.slice(closeProjectIndex + 1).length > 0;
-    if (hasPhaseAfterClose) {
+    const expectedLastIndex = phases.length - 1;
+    if (closeProjectIndex !== expectedLastIndex) {
       errors.push('Close Project must be the last phase');
     }
   }
