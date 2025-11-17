@@ -19,10 +19,10 @@ interface LibraryItemFormProps {
 
 export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFormProps) {
   const [formData, setFormData] = useState({
-    item: item?.item || '',
+    name: item?.name || '',
     description: item?.description || '',
     example_models: item?.example_models || '', // for tools
-    unit_size: item?.unit_size || '', // for materials
+    unit: item?.unit || '', // for materials
     alternates: item?.alternates || '', // JSON string of alternates
   });
   const [uploading, setUploading] = useState(false);
@@ -76,7 +76,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.item.trim()) {
+    if (!formData.name.trim()) {
       toast.error('Item name is required');
       return;
     }
@@ -95,7 +95,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
       }
 
       const dataToSave = {
-        item: formData.item.trim(),
+        name: formData.name.trim(),
         description: formData.description.trim() || null,
         photo_url: finalPhotoUrl || null,
         alternates: formData.alternates || null,
@@ -103,7 +103,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
           example_models: formData.example_models.trim() || null 
         }),
         ...(type === 'materials' && { 
-          unit_size: formData.unit_size.trim() || null 
+          unit: formData.unit.trim() || null 
         }),
       };
 

@@ -19,7 +19,7 @@ export function ExportMaterialsData({ className = "" }: ExportMaterialsDataProps
       const { data: materials, error: materialsError } = await supabase
         .from('materials')
         .select('*')
-        .order('item');
+        .order('name');
 
       if (materialsError) throw materialsError;
 
@@ -47,9 +47,9 @@ export function ExportMaterialsData({ className = "" }: ExportMaterialsDataProps
 
       // Materials sheet
       const materialsData = (materials || []).map(material => ({
-        'Material Name': material.item,
+        'Material Name': material.name,
         'Description': material.description || '',
-        'Unit Size': material.unit_size || '',
+        'Unit Size': material.unit || '',
         'Photo URL': material.photo_url || '',
         'Created At': new Date(material.created_at).toLocaleDateString(),
         'Updated At': new Date(material.updated_at).toLocaleDateString()
@@ -75,7 +75,7 @@ export function ExportMaterialsData({ className = "" }: ExportMaterialsDataProps
         }
 
         return {
-          'Material Name': material?.item || '',
+          'Material Name': material?.name || '',
           'Variation Name': variation.name,
           'Description': variation.description || '',
           'SKU/Part Numbers': variation.sku || '',
