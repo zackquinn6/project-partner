@@ -371,27 +371,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         toast.error('Failed to reorder phases');
       }
     } else if (type === 'operations') {
-      const phaseId = source.droppableId.split('-')[1];
-      const phase = displayPhases.find(p => p.id === phaseId);
-
-      // Allow reordering operations (including custom operations in standard phases)
-      // Standard operations remain locked by their isStandard flag
-
-      const updatedProject = {
-        ...currentProject
-      };
-      const phaseIndex = currentProject.phases.findIndex(p => p.id === phaseId);
-      if (phaseIndex !== -1) {
-        const operations = Array.from(currentProject.phases[phaseIndex].operations);
-        const [removed] = operations.splice(source.index, 1);
-        operations.splice(destination.index, 0, removed);
-        updatedProject.phases[phaseIndex].operations = operations;
-        updatedProject.updatedAt = new Date();
-        
-        console.log('🎯 Updating project with reordered operations');
-        await updateProject(updatedProject);
-        toast.success('Operation reordered successfully');
-      }
+      // Operations cannot be reordered - drag and drop disabled
+      toast.error('Operations cannot be reordered');
+      return;
     } else if (type === 'steps') {
       const [phaseId, operationId] = source.droppableId.split('-').slice(1);
       // Allow reordering steps (including custom steps in standard phases)
@@ -1081,7 +1063,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold">Structure Manager</h2>
-              <p className="text-muted-foreground">Drag and drop to reorder, copy/paste to duplicate</p>
+              <p className="text-muted-foreground">Drag and drop phases to reorder, copy/paste to duplicate</p>
             </div>
             <div className="flex items-center gap-2">
               {clipboard && <Badge variant="outline" className="flex items-center gap-1">
@@ -1237,14 +1219,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                               {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                                   {phase.operations.map((operation, operationIndex) => {
                                 const isOperationEditing = editingItem?.type === 'operation' && editingItem.id === operation.id;
-                                return <Draggable key={operation.id} draggableId={operation.id} index={operationIndex} isDragDisabled={(isStandardPhase && !isEditingStandardProject) || phase.name === 'Close Project'}>
+                                return <Draggable key={operation.id} draggableId={operation.id} index={operationIndex} isDragDisabled={true}>
                                         {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`ml-6 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/20' : ''}`}>
                                             <CardHeader className="pb-3">
                                               <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3 flex-1">
-                                                  {(!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' ? <div {...provided.dragHandleProps}>
-                                                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
-                                                    </div> : <div className="w-4" />}
+                                                  <div className="w-4" />
                                                   
                                                   {isOperationEditing ? <div className="flex-1 space-y-2">
                                                       <Input value={editingItem.data.name} onChange={e => setEditingItem({
