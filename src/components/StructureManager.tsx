@@ -393,7 +393,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         updatedProject.updatedAt = new Date();
         
         console.log('🎯 Updating project with reordered operations');
+        
+        // Update display_order in database
         await updateProject(updatedProject);
+        
+        // Rebuild phases JSON from relational data to ensure consistency
+        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+          p_project_id: currentProject.id
+        });
+
+        if (rebuildError) {
+          console.error('❌ Error rebuilding phases:', rebuildError);
+        } else {
+          // Update project with rebuilt phases
+          const { error: updateError } = await supabase
+            .from('projects')
+            .update({ phases: rebuiltPhases as any })
+            .eq('id', currentProject.id);
+            
+          if (!updateError) {
+            // Update local context with rebuilt phases
+            updateProject({
+              ...currentProject,
+              phases: rebuiltPhases as any,
+              updatedAt: new Date()
+            });
+          }
+        }
+        
         toast.success('Operation reordered successfully');
       }
     } else if (type === 'steps') {
@@ -421,7 +448,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           updatedProject.updatedAt = new Date();
           
           console.log('🎯 Updating project with reordered steps');
+          
+          // Update display_order in database
           await updateProject(updatedProject);
+          
+          // Rebuild phases JSON from relational data to ensure consistency
+          const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+            p_project_id: currentProject.id
+          });
+
+          if (rebuildError) {
+            console.error('❌ Error rebuilding phases:', rebuildError);
+          } else {
+            // Update project with rebuilt phases
+            const { error: updateError } = await supabase
+              .from('projects')
+              .update({ phases: rebuiltPhases as any })
+              .eq('id', currentProject.id);
+              
+            if (!updateError) {
+              // Update local context with rebuilt phases
+              updateProject({
+                ...currentProject,
+                phases: rebuiltPhases as any,
+                updatedAt: new Date()
+              });
+            }
+          }
+          
           toast.success('Step reordered successfully');
         }
       }
@@ -983,7 +1037,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
     });
   };
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editingItem || !currentProject) return;
     const updatedProject = {
       ...currentProject
@@ -995,6 +1049,35 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           ...updatedProject.phases[phaseIndex],
           ...editingItem.data
         };
+        
+        // Update phase name/description in project_phases table
+        const phase = updatedProject.phases[phaseIndex];
+        if (!phase.isStandard || isEditingStandardProject) {
+          // Update custom phases in project_phases table
+          const { data: projectPhase, error: fetchError } = await supabase
+            .from('project_phases')
+            .select('id')
+            .eq('id', phase.id)
+            .eq('project_id', currentProject.id)
+            .single();
+          
+          if (projectPhase && !fetchError) {
+            const { error: updateError } = await supabase
+              .from('project_phases')
+              .update({ 
+                name: editingItem.data.name,
+                description: editingItem.data.description || null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', projectPhase.id);
+            
+            if (updateError) {
+              console.error('❌ Error updating phase name:', updateError);
+              toast.error('Failed to save phase name');
+              return;
+            }
+          }
+        }
       }
     } else if (editingItem.type === 'operation') {
       for (const phase of updatedProject.phases) {
@@ -1161,8 +1244,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                           <CardHeader className="py-1 px-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1 flex-1">
-                                {!isStandardPhase || isEditingStandardProject ? <div {...provided.dragHandleProps}>
-                                    <GripVertical className="w-3 h-3 text-muted-foreground cursor-grab" />
+                                {!isStandardPhase || isEditingStandardProject ? <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                    <GripVertical className="w-3 h-3 text-muted-foreground" />
                                   </div> : <div className="w-3" />}
                                 
                                 {isEditing ? <div className="flex-1 space-y-1">
@@ -1254,8 +1337,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                             <CardHeader className="pb-3">
                                               <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3 flex-1">
-                                                  {!phase.isLinked ? <div {...provided.dragHandleProps}>
-                                                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
+                                                  {!phase.isLinked ? <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                                      <GripVertical className="w-4 h-4 text-muted-foreground" />
                                                     </div> : <div className="w-4" />}
                                                   
                                                   {isOperationEditing ? <div className="flex-1 space-y-2">
@@ -1341,8 +1424,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                               <CardContent className="p-3">
                                                                 <div className="flex items-center justify-between">
                                                                   <div className="flex items-center gap-2 flex-1">
-                                                                    {!phase.isLinked && (!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' ? <div {...provided.dragHandleProps}>
-                                                                        <GripVertical className="w-3 h-3 text-muted-foreground cursor-grab" />
+                                                                    {!phase.isLinked && (!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' ? <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                                                        <GripVertical className="w-3 h-3 text-muted-foreground" />
                                                                       </div> : <div className="w-3" />}
                                                                     
                                                                      {isStepEditing ? <div className="flex-1 space-y-2">
