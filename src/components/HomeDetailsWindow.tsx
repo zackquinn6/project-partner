@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { HomeSpacesTab } from './HomeSpacesTab';
+import { useNavigate } from 'react-router-dom';
 
 interface Home {
   id: string;
@@ -83,6 +84,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
   onEditRequest
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [completedProjects, setCompletedProjects] = useState<ProjectRun[]>([]);
   const [completedMaintenance, setCompletedMaintenance] = useState<CompletedMaintenance[]>([]);
@@ -405,13 +407,15 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
                     )}
                     {onDeleteHome && (
                       <Button
-                        variant="destructive"
-                        size="sm"
+                        variant="ghost"
+                        size="icon"
                         onClick={handleDeleteClick}
                         disabled={isDeleting}
+                        className="text-muted-foreground hover:text-destructive"
+                        title="Delete home"
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        {isDeleting ? 'Deleting...' : 'Delete Home'}
+                        <Trash2 className="w-4 h-4" />
+                        <span className="sr-only">Delete Home</span>
                       </Button>
                     )}
                   </div>
@@ -595,8 +599,15 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
         <TabsContent value="projects" className="flex-1 overflow-y-auto space-y-6">
           {/* Projects Section */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Completed Projects</CardTitle>
+              <Button
+                size="sm"
+                onClick={() => navigate('/projects')}
+                className="self-start sm:self-auto"
+              >
+                Start a New Project Today
+              </Button>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -640,8 +651,16 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
 
           {/* Maintenance Section */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Completed Maintenance</CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
+                className="self-start sm:self-auto"
+              >
+                Open Home Maintenance
+              </Button>
             </CardHeader>
             <CardContent>
               {loading ? (

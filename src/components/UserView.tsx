@@ -2077,30 +2077,30 @@ export default function UserView({
                             setScaledProgressDialogOpen(true);
                           }}
                           size="sm"
-                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth text-sm"
+                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth text-xs"
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          Report Progress
+                          <span className="text-xs">Report Progress</span>
                         </Button>
                       ) : (
                         <Button 
                           onClick={handleStepComplete} 
                           size="sm"
-                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth text-sm"
+                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth text-xs"
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          Mark Complete
+                          <span className="text-xs">Mark Complete</span>
                         </Button>
                       )
                     ) : (
                       <Button 
                         disabled 
-                        className="opacity-50 cursor-not-allowed text-sm" 
+                        className="opacity-50 cursor-not-allowed text-xs" 
                         size="sm"
                         title={isMobile ? "Complete All Outputs First" : undefined}
                       >
                         <CheckCircle className="w-4 h-4" />
-                        {!isMobile && <span className="ml-2">Complete All Outputs First</span>}
+                        {!isMobile && <span className="ml-2 text-xs">Complete All Outputs First</span>}
                       </Button>
                     )
                   )}
@@ -2111,11 +2111,11 @@ export default function UserView({
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="text-sm gap-2"
+                        className="gap-2 text-xs sm:text-sm"
                         title={isMobile ? "Report Issue" : undefined}
                       >
                         <AlertTriangle className="w-4 h-4" />
-                        {!isMobile && <span className="ml-2">Report Issue</span>}
+                        {!isMobile && <span className="ml-2 text-xs sm:text-sm">Report Issue</span>}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
