@@ -210,20 +210,111 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     console.log('🎯 handleDragEnd called:', { type, source: source.index, destination: destination.index });
 
     if (type === 'phases') {
-      // Allow reordering phases in Edit Standard mode
-      const updatedProject = {
-        ...currentProject
-      };
-      const newPhases = Array.from(updatedProject.phases);
-      const [removed] = newPhases.splice(source.index, 1);
-      newPhases.splice(destination.index, 0, removed);
+      try {
+        // Use displayPhases for the correct order, but update currentProject.phases
+        const reorderedDisplayPhases = Array.from(displayPhases);
+        const [removed] = reorderedDisplayPhases.splice(source.index, 1);
+        reorderedDisplayPhases.splice(destination.index, 0, removed);
 
-      updatedProject.phases = newPhases;
-      updatedProject.updatedAt = new Date();
-      
-      console.log('🎯 Updating project with reordered phases');
-      await updateProject(updatedProject);
-      toast.success('Phase reordered successfully');
+        // Update the project phases array to match the new order
+        const updatedProject = {
+          ...currentProject,
+          phases: reorderedDisplayPhases,
+          updatedAt: new Date()
+        };
+        
+        console.log('🎯 Updating project with reordered phases');
+        
+        // Update display_order in project_phases table
+        // For standard phases in Standard Project, update standard_phases table
+        // For custom phases, update project_phases table
+        for (let i = 0; i < reorderedDisplayPhases.length; i++) {
+          const phase = reorderedDisplayPhases[i];
+          
+          if (phase.isLinked) {
+            // Skip linked/incorporated phases - they maintain their original order
+            continue;
+          }
+          
+          if (isEditingStandardProject && phase.isStandard) {
+            // When editing Standard Project, update standard_phases table
+            const { data: standardPhase, error: fetchError } = await supabase
+              .from('standard_phases')
+              .select('id')
+              .eq('name', phase.name)
+              .single();
+            
+            if (standardPhase && !fetchError) {
+              const { error: updateError } = await supabase
+                .from('standard_phases')
+                .update({ 
+                  display_order: i,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', standardPhase.id);
+              
+              if (updateError) {
+                console.error('❌ Error updating standard phase display_order:', updateError);
+              }
+            }
+          } else if (!phase.isStandard) {
+            // Update custom phases in project_phases table
+            const { data: projectPhase, error: fetchError } = await supabase
+              .from('project_phases')
+              .select('id')
+              .eq('id', phase.id)
+              .eq('project_id', currentProject.id)
+              .single();
+            
+            if (projectPhase && !fetchError) {
+              const { error: updateError } = await supabase
+                .from('project_phases')
+                .update({ 
+                  display_order: i,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', projectPhase.id);
+              
+              if (updateError) {
+                console.error('❌ Error updating phase display_order:', updateError);
+              }
+            }
+          }
+        }
+        
+        // Rebuild phases JSON from relational data to ensure consistency
+        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+          p_project_id: currentProject.id
+        });
+
+        if (rebuildError) {
+          console.error('❌ Error rebuilding phases:', rebuildError);
+          throw rebuildError;
+        }
+
+        // Update project with rebuilt phases
+        const { error: updateError } = await supabase
+          .from('projects')
+          .update({ phases: rebuiltPhases as any })
+          .eq('id', currentProject.id);
+          
+        if (updateError) {
+          console.error('❌ Error updating project:', updateError);
+          throw updateError;
+        }
+
+        // Update local context
+        updateProject({
+          ...currentProject,
+          phases: rebuiltPhases as any,
+          updatedAt: new Date()
+        });
+        
+        toast.success('Phase reordered successfully');
+      } catch (error) {
+        console.error('❌ Error reordering phases:', error);
+        toast.error('Failed to reorder phases');
+      }
     } else if (type === 'operations') {
       const phaseId = source.droppableId.split('-')[1];
       const phase = displayPhases.find(p => p.id === phaseId);
