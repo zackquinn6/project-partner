@@ -99,7 +99,7 @@ export function PhotoGallery({
       const { data, error } = await query;
 
       if (error) throw error;
-      setPhotos(data || []);
+      setPhotos((data || []) as Photo[]);
     } catch (error) {
       console.error('Error fetching photos:', error);
       toast.error('Failed to load photos');

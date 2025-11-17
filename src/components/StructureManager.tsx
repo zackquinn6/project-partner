@@ -470,7 +470,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       const { data: newOperation, error } = await supabase
         .from('template_operations')
-        .insert(operationPayload)
+        .insert([operationPayload])
         .select()
         .single();
 

@@ -19,7 +19,7 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
       const { data: tools, error: toolsError } = await supabase
         .from('tools')
         .select('*')
-        .order('item');
+        .order('name');
 
       if (toolsError) throw toolsError;
 
@@ -69,7 +69,7 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
         if (toolVariations.length === 0) {
           // Tool with no variants
           toolsWithVariants.push({
-            'Tool Name': tool.item,
+            'Tool Name': tool.name,
             'Description': tool.description || '',
             'Variant Name': 'No variants',
             'Created At': new Date(tool.created_at).toLocaleDateString(),
@@ -79,7 +79,7 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
           // Each variant gets its own row
           for (const variation of toolVariations) {
             toolsWithVariants.push({
-              'Tool Name': tool.item,
+              'Tool Name': tool.name,
               'Description': tool.description || '',
               'Variant Name': variation.name,
               'Created At': new Date(tool.created_at).toLocaleDateString(),
@@ -109,7 +109,7 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
         }
 
         return {
-          'Tool Name': tool?.item || '',
+          'Tool Name': tool?.name || '',
           'Variation Name': variation.name,
           'Description': variation.description || '',
           'SKU/Model Numbers': variation.sku || '',
