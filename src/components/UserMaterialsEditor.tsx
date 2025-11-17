@@ -13,18 +13,18 @@ import { VariationViewer } from "./VariationViewer";
 
 interface Material {
   id: string;
-  item: string;
+  name: string;
   description?: string;
-  unit_size?: string;
+  unit?: string;
   photo_url?: string;
 }
 
 interface UserOwnedMaterial {
   id: string;
-  item: string;
+  name: string;
   description?: string;
   custom_description?: string;
-  unit_size?: string;
+  unit?: string;
   photo_url?: string;
   quantity: number;
   brand?: string;

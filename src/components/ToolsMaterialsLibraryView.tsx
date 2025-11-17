@@ -15,7 +15,7 @@ import { UserMaterialsEditor } from "./UserMaterialsEditor";
 
 interface Tool {
   id: string;
-  item: string;
+  name: string;
   description?: string;
   example_models?: string;
   photo_url?: string;
@@ -23,7 +23,7 @@ interface Tool {
 
 interface UserOwnedTool {
   id: string;
-  item: string;
+  name: string;
   description?: string;
   custom_description?: string;
   example_models?: string;
@@ -35,18 +35,18 @@ interface UserOwnedTool {
 
 interface Material {
   id: string;
-  item: string;
+  name: string;
   description?: string;
-  unit_size?: string;
+  unit?: string;
   photo_url?: string;
 }
 
 interface UserOwnedMaterial {
   id: string;
-  item: string;
+  name: string;
   description?: string;
   custom_description?: string;
-  unit_size?: string;
+  unit?: string;
   photo_url?: string;
   quantity: number;
   brand?: string;

@@ -15,7 +15,7 @@ import { VariationViewer } from "./VariationViewer";
 
 interface Tool {
   id: string;
-  item: string;
+  name: string;
   description?: string;
   example_models?: string;
   photo_url?: string;
@@ -23,7 +23,7 @@ interface Tool {
 
 interface UserOwnedTool {
   id: string;
-  item: string;
+  name: string;
   description?: string;
   custom_description?: string;
   example_models?: string;
