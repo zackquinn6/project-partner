@@ -50,7 +50,8 @@ export default function Auth() {
       if (returnPath === 'projects') {
         navigate('/projects');
       } else {
-        navigate('/');
+        // Default: Open project catalog when user logs in
+        navigate('/projects');
       }
     }
   }, [user, loading, navigate, searchParams]);

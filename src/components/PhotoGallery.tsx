@@ -353,11 +353,11 @@ export function PhotoGallery({
                 {photos.map((photo) => (
                   <Card 
                     key={photo.id} 
-                    className="cursor-pointer hover:shadow-lg transition-shadow w-[60px]"
+                    className="cursor-pointer hover:shadow-lg transition-shadow w-[75px]"
                     onClick={() => handlePhotoClick(photo)}
                   >
                     <CardContent className="p-1">
-                      <div className="aspect-square bg-muted rounded overflow-hidden">
+                      <div className="aspect-square bg-muted rounded overflow-hidden mb-1">
                         {thumbnailUrls[photo.id] ? (
                           <img 
                             src={thumbnailUrls[photo.id]} 
@@ -366,9 +366,12 @@ export function PhotoGallery({
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                            <ImageIcon className="w-5 h-5 text-muted-foreground" />
                           </div>
                         )}
+                      </div>
+                      <div className="text-[9px] text-muted-foreground truncate text-center" title={photo.file_name}>
+                        {photo.file_name}
                       </div>
                     </CardContent>
                   </Card>

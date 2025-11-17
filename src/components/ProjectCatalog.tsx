@@ -723,13 +723,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               <Button
                 variant="ghost"
                 onClick={() => {
-                  console.log('ProjectCatalog: Back button clicked (desktop)');
-                  navigate(-1); // Go back instead of navigate to '/'
+                  console.log('ProjectCatalog: Go To My Workspace button clicked (desktop)');
+                  navigate('/'); // Navigate to home/workspace
                 }}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back
+                Go To My Workspace
               </Button>
             </div>
 
