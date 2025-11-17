@@ -77,7 +77,11 @@ DECLARE
   std_phase RECORD;
   new_phase_id UUID;
   std_operation RECORD;
+  category_array TEXT[];
 BEGIN
+  -- Convert single category text to array (category column is text[])
+  category_array := ARRAY[COALESCE(p_category, 'general')];
+  
   -- Create project
   INSERT INTO public.projects (
     name,
@@ -89,7 +93,7 @@ BEGIN
   ) VALUES (
     p_project_name,
     p_project_description,
-    COALESCE(p_category, 'general'),
+    category_array,
     'draft',
     p_created_by,
     true

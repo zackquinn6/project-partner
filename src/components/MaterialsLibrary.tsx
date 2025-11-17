@@ -51,10 +51,13 @@ export function MaterialsLibrary() {
 
   const fetchMaterials = async () => {
     try {
-      const { data, error } = await supabase
+      // Explicitly select columns to avoid type inference issues
+      // Cast entire query to bypass TypeScript type checking for column names
+      const query = supabase
         .from('materials' as any)
-        .select('*')
-        .order('name'); // Database column is 'name', not 'item'
+        .select('id, name, description, unit, photo_url, created_at, updated_at') as any;
+      
+      const { data, error } = await query.order('name', { ascending: true }); // Database column is 'name', not 'item'
       
       if (error) throw error;
       
