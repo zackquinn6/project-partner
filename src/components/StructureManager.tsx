@@ -443,8 +443,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const { data: projectPhase } = await supabase
         .from('project_phases')
         .select('id')
+        .eq('id', phaseId)
         .eq('project_id', currentProject.id)
-        .eq('name', phase.name)
         .single();
 
       if (!projectPhase) {
@@ -453,7 +453,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       // Insert operation into template_operations using project_phase ID
-      const { error } = await supabase
+      const { data: newOperation, error } = await supabase
         .from('template_operations')
         .insert({
           project_id: currentProject.id,
@@ -461,9 +461,32 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           name: 'New Operation',
           description: 'Operation description',
           display_order: operationCount
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Add a default step to this operation
+      const { error: defaultStepError } = await supabase
+        .from('template_steps')
+        .insert({
+          operation_id: newOperation.id,
+          step_number: 1,
+          step_title: 'New Step',
+          description: 'Step description',
+          content_sections: [],
+          materials: [],
+          tools: [],
+          outputs: [],
+          apps: [],
+          estimated_time_minutes: 0,
+          display_order: 0,
+          flow_type: 'prime',
+          step_type: 'prime'
+        });
+
+      if (defaultStepError) throw defaultStepError;
 
       // Rebuild phases JSON from project_phases
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
@@ -592,7 +615,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         .from('project_phases')
         .select('id')
         .eq('project_id', currentProject.id)
-        .eq('name', phase?.name)
+        .eq('id', phaseId)
         .single();
 
       if (!projectPhase) {
