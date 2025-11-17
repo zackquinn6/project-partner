@@ -8,7 +8,6 @@ DO $$
 DECLARE
   trigger_count INTEGER;
   view_count INTEGER;
-  function_count INTEGER;
 BEGIN
   -- Count triggers on template_operations
   SELECT COUNT(*) INTO trigger_count
@@ -23,15 +22,7 @@ BEGIN
     AND view_definition LIKE '%template_operations%'
     AND view_definition LIKE '%standard_phase_id%';
   
-  -- Count functions that might reference it
-  SELECT COUNT(*) INTO function_count
-  FROM pg_proc p
-  JOIN pg_namespace n ON p.pronamespace = n.oid
-  WHERE n.nspname = 'public'
-    AND pg_get_functiondef(p.oid) LIKE '%template_operations%'
-    AND pg_get_functiondef(p.oid) LIKE '%standard_phase_id%';
-  
-  RAISE NOTICE 'Diagnostic: triggers=%, views=%, functions=%', trigger_count, view_count, function_count;
+  RAISE NOTICE 'Diagnostic: triggers=%, views=%', trigger_count, view_count;
 END;
 $$;
 
