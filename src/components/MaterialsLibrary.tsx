@@ -16,13 +16,24 @@ import { toast } from "sonner";
 
 interface Material {
   id: string;
-  item: string;
+  item: string; // Mapped from database 'name' column
   description: string | null;
-  unit_size: string | null;
+  unit_size: string | null; // Mapped from database 'unit' column
   photo_url: string | null;
   created_at: string;
   updated_at: string;
 }
+
+// Database row type (matches actual schema)
+type MaterialRow = {
+  id: string;
+  name: string; // Database column name
+  description: string | null;
+  unit: string | null; // Database column name
+  photo_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 type SortField = 'item' | 'description' | 'unit_size';
 type SortDirection = 'asc' | 'desc';
@@ -43,10 +54,22 @@ export function MaterialsLibrary() {
       const { data, error } = await supabase
         .from('materials' as any)
         .select('*')
-        .order('item');
+        .order('name'); // Database column is 'name', not 'item'
       
       if (error) throw error;
-      setMaterials((data as unknown as Material[]) || []);
+      
+      // Map database rows to UI interface (name -> item, unit -> unit_size)
+      const materialsData = ((data as unknown as MaterialRow[]) || []).map((row): Material => ({
+        id: row.id,
+        item: row.name, // Map 'name' to 'item' for UI
+        description: row.description,
+        unit_size: row.unit, // Map 'unit' to 'unit_size' for UI
+        photo_url: row.photo_url,
+        created_at: row.created_at,
+        updated_at: row.updated_at
+      }));
+      
+      setMaterials(materialsData);
     } catch (error) {
       console.error('Error fetching materials:', error);
       toast.error('Failed to load materials');

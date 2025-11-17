@@ -473,9 +473,9 @@ export function UnifiedProjectManagement({
         data,
         error
       } = await supabase.rpc('create_project_with_standard_foundation_v2', {
-        project_name: newProject.name,
-        project_description: newProject.description || '',
-        project_category: newProject.categories.length > 0 ? newProject.categories : []
+        p_project_name: newProject.name,
+        p_project_description: newProject.description || '',
+        p_category: newProject.categories.length > 0 ? newProject.categories[0] : 'general'
       });
       if (error) {
         console.error('❌ Create project error:', error);
