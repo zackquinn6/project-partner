@@ -5,7 +5,7 @@ export interface ProjectRun {
   templateId: string; // Reference to the template project
   name: string;
   description: string;
-  diyLengthChallenges?: string; // Copied from template project
+  projectChallenges?: string; // Copied from template project
   isManualEntry?: boolean; // True for user-uploaded manual project entries
   createdAt: Date;
   updatedAt: Date;

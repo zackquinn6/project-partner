@@ -146,7 +146,7 @@ export default function Navigation({
       templateId: freshRun.template_id,
       name: freshRun.name,
       description: freshRun.description || '',
-      diyLengthChallenges: freshRun.diy_length_challenges,
+      projectChallenges: freshRun.project_challenges,
       isManualEntry: freshRun.is_manual_entry || false,
       createdAt: new Date(freshRun.created_at),
       updatedAt: new Date(freshRun.updated_at),

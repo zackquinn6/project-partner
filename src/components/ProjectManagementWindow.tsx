@@ -653,12 +653,12 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               />
             </div>
             <div>
-              <label className="text-sm font-medium">DIY Challenges</label>
+              <label className="text-sm font-medium">Project Challenges</label>
               <Textarea 
-                value={currentProject.diyLengthChallenges || ''} 
-                onChange={(e) => updateProjectData({...currentProject, diyLengthChallenges: e.target.value})}
+                value={currentProject.projectChallenges || ''} 
+                onChange={(e) => updateProjectData({...currentProject, projectChallenges: e.target.value})}
                 className="mt-1"
-                placeholder="Describe the most difficult aspects of this project for DIY enthusiasts..."
+                placeholder="Describe the most difficult aspects of this project..."
               />
               <p className="text-xs text-muted-foreground mt-1">Admin field: Explain the most challenging parts of this project</p>
             </div>

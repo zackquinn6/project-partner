@@ -2731,7 +2731,7 @@ export type Database = {
           customization_decisions: Json | null
           description: string | null
           difficulty: string | null
-          diy_length_challenges: string | null
+          project_challenges: string | null
           effort_level: string | null
           end_date: string | null
           estimated_time: string | null
@@ -2770,7 +2770,7 @@ export type Database = {
           customization_decisions?: Json | null
           description?: string | null
           difficulty?: string | null
-          diy_length_challenges?: string | null
+          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -2809,7 +2809,7 @@ export type Database = {
           customization_decisions?: Json | null
           description?: string | null
           difficulty?: string | null
-          diy_length_challenges?: string | null
+          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -2870,7 +2870,7 @@ export type Database = {
           created_from_revision: number | null
           description: string | null
           difficulty: string | null
-          diy_length_challenges: string | null
+          project_challenges: string | null
           effort_level: string | null
           end_date: string | null
           estimated_time: string | null
@@ -2906,7 +2906,7 @@ export type Database = {
           created_from_revision?: number | null
           description?: string | null
           difficulty?: string | null
-          diy_length_challenges?: string | null
+          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -2942,7 +2942,7 @@ export type Database = {
           created_from_revision?: number | null
           description?: string | null
           difficulty?: string | null
-          diy_length_challenges?: string | null
+          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -4534,7 +4534,7 @@ export type Database = {
           created_from_revision: number | null
           description: string | null
           difficulty: string | null
-          diy_length_challenges: string | null
+          project_challenges: string | null
           effort_level: string | null
           end_date: string | null
           estimated_time: string | null
@@ -4570,7 +4570,7 @@ export type Database = {
           created_from_revision?: number | null
           description?: string | null
           difficulty?: string | null
-          diy_length_challenges?: string | null
+          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -4606,7 +4606,7 @@ export type Database = {
           created_from_revision?: number | null
           description?: string | null
           difficulty?: string | null
-          diy_length_challenges?: string | null
+          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -4832,7 +4832,7 @@ export type Database = {
               p_category?: string
               p_description?: string
               p_difficulty?: string
-              p_diy_length_challenges?: string
+              p_project_challenges?: string
               p_effort_level?: string
               p_estimated_time?: string
               p_image?: string
@@ -4847,7 +4847,7 @@ export type Database = {
               p_categories?: string[]
               p_description?: string
               p_difficulty?: string
-              p_diy_length_challenges?: string
+              p_project_challenges?: string
               p_effort_level?: string
               p_estimated_time?: string
               p_image?: string

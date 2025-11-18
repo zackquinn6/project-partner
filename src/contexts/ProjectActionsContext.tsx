@@ -118,7 +118,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .update({
             skill_level: projectData.skillLevel || null,
             scaling_unit: projectData.scalingUnit || null,
-            diy_length_challenges: projectData.diyLengthChallenges || null,
+            project_challenges: projectData.projectChallenges || null,
             estimated_time_per_unit: projectData.estimatedTimePerUnit || null
           })
           .eq('id', projectId);
@@ -165,12 +165,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       if (error) throw error;
 
       // Update additional fields that the function doesn't handle
-      if (customName || project.diyLengthChallenges || project.scalingUnit || project.estimatedTimePerUnit) {
+      if (customName || project.projectChallenges || project.scalingUnit || project.estimatedTimePerUnit) {
         await supabase
           .from('project_runs')
           .update({
             custom_project_name: customName || null,
-            diy_length_challenges: project.diyLengthChallenges || null,
+            project_challenges: project.projectChallenges || null,
             scaling_unit: project.scalingUnit || null,
             estimated_time_per_unit: project.estimatedTimePerUnit || null
           })
@@ -280,7 +280,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           skill_level: project.skillLevel,
           effort_level: project.effortLevel,
           estimated_time: project.estimatedTime,
-          diy_length_challenges: project.diyLengthChallenges,
+          project_challenges: project.projectChallenges,
           image: project.image,
           updated_at: new Date().toISOString()
         })
@@ -602,7 +602,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           estimatedTime: freshRun.estimated_time,
           effortLevel: freshRun.effort_level as 'Low' | 'Medium' | 'High',
           skillLevel: freshRun.skill_level as 'Beginner' | 'Intermediate' | 'Advanced',
-          diyLengthChallenges: freshRun.diy_length_challenges,
+          projectChallenges: freshRun.project_challenges,
           projectLeader: freshRun.project_leader,
           customProjectName: freshRun.custom_project_name,
           accountabilityPartner: freshRun.accountability_partner,

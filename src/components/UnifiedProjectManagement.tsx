@@ -45,7 +45,7 @@ interface Project {
   skill_level: string | null;
   estimated_time: string | null;
   scaling_unit: string | null;
-  diy_length_challenges: string | null;
+  project_challenges: string | null;
   created_by: string;
   owner_id: string | null;
   phases?: any; // JSON field for phases
@@ -176,7 +176,7 @@ export function UnifiedProjectManagement({
         skill_level: editedProject.skill_level !== undefined ? editedProject.skill_level : selectedProject.skill_level,
         estimated_time: editedProject.estimated_time !== undefined ? editedProject.estimated_time : selectedProject.estimated_time,
         scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
-        diy_length_challenges: editedProject.diy_length_challenges !== undefined ? editedProject.diy_length_challenges : selectedProject.diy_length_challenges,
+        project_challenges: editedProject.project_challenges !== undefined ? editedProject.project_challenges : selectedProject.project_challenges,
         updated_at: new Date().toISOString()
       };
       console.log('💾 Saving project edit:', {
@@ -800,12 +800,12 @@ export function UnifiedProjectManagement({
                         </div>
 
                          <div className="space-y-1">
-                           <Label className="text-sm">DIY Challenges</Label>
-                           {editingProject ? <Textarea value={editedProject.diy_length_challenges || ''} onChange={e => setEditedProject(prev => ({
+                           <Label className="text-sm">Project Challenges</Label>
+                           {editingProject ? <Textarea value={editedProject.project_challenges || ''} onChange={e => setEditedProject(prev => ({
                         ...prev,
-                        diy_length_challenges: e.target.value
-                      }))} rows={3} className="text-sm" placeholder="Describe any DIY challenges or considerations..." /> : <div className="p-2 bg-muted rounded min-h-[60px] text-sm">
-                               {selectedProject.diy_length_challenges || 'No DIY challenges specified'}
+                        project_challenges: e.target.value
+                      }))} rows={3} className="text-sm" placeholder="Describe any project challenges or considerations..." /> : <div className="p-2 bg-muted rounded min-h-[60px] text-sm">
+                               {selectedProject.project_challenges || 'No project challenges specified'}
                              </div>}
                          </div>
 

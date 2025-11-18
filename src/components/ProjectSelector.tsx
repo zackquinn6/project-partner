@@ -51,7 +51,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       name: newProjectForm.name,
       description: newProjectForm.description,
       category: newProjectForm.category ? [newProjectForm.category] : undefined,
-      diyLengthChallenges: '', // Initialize empty DIY challenges field for new projects
+      projectChallenges: '', // Initialize empty project challenges field for new projects
       createdAt: new Date(),
       updatedAt: new Date(),
       publishStatus: 'draft' as const,
@@ -338,10 +338,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                       )}
                        <p className="text-sm text-muted-foreground mb-3">{currentProject.description}</p>
                        
-                       {currentProject.diyLengthChallenges && (
+                       {currentProject.projectChallenges && (
                          <div className="mb-3">
-                           <h4 className="text-sm font-medium mb-1">DIY Challenges</h4>
-                           <p className="text-sm text-muted-foreground">{currentProject.diyLengthChallenges}</p>
+                           <h4 className="text-sm font-medium mb-1">Project Challenges</h4>
+                           <p className="text-sm text-muted-foreground">{currentProject.projectChallenges}</p>
                          </div>
                        )}
                        

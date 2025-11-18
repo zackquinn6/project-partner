@@ -35,7 +35,7 @@ export async function importGeneratedProject(
   projectInfo?: {
     effortLevel?: 'Low' | 'Medium' | 'High';
     skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
-    diyChallenges?: string;
+    projectChallenges?: string;
   },
   existingProjectId?: string
 ): Promise<ImportResult> {
@@ -68,7 +68,7 @@ export async function importGeneratedProject(
           category,
           effort_level: projectInfo?.effortLevel || null,
           skill_level: projectInfo?.skillLevel || null,
-          diy_length_challenges: projectInfo?.diyChallenges || null,
+          project_challenges: projectInfo?.projectChallenges || null,
         })
         .eq('id', existingProjectId);
 
@@ -169,7 +169,7 @@ export async function importGeneratedProject(
           category,
           effort_level: projectInfo?.effortLevel || null,
           skill_level: projectInfo?.skillLevel || null,
-          diy_length_challenges: projectInfo?.diyChallenges || null,
+          project_challenges: projectInfo?.projectChallenges || null,
         })
         .eq('id', projectId);
 

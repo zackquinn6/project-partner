@@ -71,7 +71,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const displayEffortLevel = templateProject?.effortLevel ?? currentProjectRun?.effortLevel;
   const displayEstimatedTime = currentProjectRun?.estimatedTime ?? templateProject?.estimatedTime;
   const displayScalingUnit = currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit;
-  const displayDiyChallenges = currentProjectRun?.diyLengthChallenges ?? templateProject?.diyLengthChallenges;
+  const displayProjectChallenges = currentProjectRun?.projectChallenges ?? templateProject?.projectChallenges;
 
   // Helper function to get skill level comparison
   const getSkillLevelComparison = () => {
@@ -236,9 +236,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             <p className="mt-1 text-muted-foreground">{currentProjectRun.description}</p>
           </div>
           <div>
-            <Label>DIY Challenges</Label>
+            <Label>Project Challenges</Label>
             <p className="mt-1 text-muted-foreground whitespace-pre-line">
-              {displayDiyChallenges || 'None specified'}
+              {displayProjectChallenges || 'None specified'}
             </p>
           </div>
 
