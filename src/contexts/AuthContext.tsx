@@ -67,7 +67,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
     
-    const redirectUrl = `${window.location.origin}/`;
+    // Use production URL for email confirmation links
+    const redirectUrl = 'https://projectpartner.toolio.us/';
     
     const { error } = await supabase.auth.signUp({
       email: sanitizedEmail,
