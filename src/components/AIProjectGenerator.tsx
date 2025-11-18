@@ -303,15 +303,15 @@ export function AIProjectGenerator({
                 </CardHeader>
                 <CardContent>
                   <Select 
-                    value={selectedExistingProject || ''} 
-                    onValueChange={(value) => setSelectedExistingProject(value || null)}
+                    value={selectedExistingProject || 'new'} 
+                    onValueChange={(value) => setSelectedExistingProject(value === 'new' ? null : value)}
                     disabled={isGenerating}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a project to update (or leave blank for new project)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Create New Project</SelectItem>
+                      <SelectItem value="new">Create New Project</SelectItem>
                       {projects && projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
