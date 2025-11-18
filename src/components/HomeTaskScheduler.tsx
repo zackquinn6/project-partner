@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -8,34 +8,56 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { format, startOfToday, isBefore } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface HomeTaskSchedulerProps {
   userId: string;
   homeId: string | null;
+  activeTab?: string; // Track when schedule tab becomes active
 }
 
-export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
+// Helper function to get today's date at midnight
+const getToday = () => startOfToday();
+
+export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedulerProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [schedule, setSchedule] = useState<any>(null);
-  // Initialize start date to tomorrow to avoid generating schedules in the past
-  const [startDate, setStartDate] = useState<Date>(() => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    return tomorrow;
-  });
+  // Initialize start date to today to avoid generating schedules in the past
+  const [startDate, setStartDate] = useState<Date>(() => getToday());
+  const hasInitializedRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEmailing, setIsEmailing] = useState(false);
   const [currentScheduleId, setCurrentScheduleId] = useState<string | null>(null);
   const [existingAssignments, setExistingAssignments] = useState<any[]>([]);
 
   useEffect(() => {
+    const today = getToday();
+    // Always ensure start date is today or in the future
+    if (isBefore(startDate, today)) {
+      setStartDate(today);
+    }
     loadLatestSchedule();
     loadExistingAssignments();
   }, [userId, homeId]);
+
+  // Reset start date to today whenever schedule tab becomes active
+  useEffect(() => {
+    if (activeTab === 'schedule') {
+      const today = getToday();
+      // Reset to today when schedule tab opens
+      setStartDate(today);
+    }
+  }, [activeTab]);
+
+  // Also check on mount
+  useEffect(() => {
+    const today = getToday();
+    if (isBefore(startDate, today)) {
+      setStartDate(today);
+    }
+  }, []);
 
   const loadExistingAssignments = async () => {
     try {
@@ -84,7 +106,16 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
       
       if (!error && data) {
         setCurrentScheduleId(data.id);
-        setStartDate(new Date(data.start_date));
+        const loadedDate = new Date(data.start_date);
+        const today = getToday();
+        
+        // Only use loaded date if it's today or in the future
+        if (!isBefore(loadedDate, today)) {
+          setStartDate(loadedDate);
+        } else {
+          // Reset to today if loaded date is in the past
+          setStartDate(today);
+        }
         
         // Reconstruct schedule from stored data
         if (data.schedule_data && typeof data.schedule_data === 'object') {
@@ -350,7 +381,22 @@ export function HomeTaskScheduler({ userId, homeId }: HomeTaskSchedulerProps) {
                 <CalendarComponent
                   mode="single"
                   selected={startDate}
-                  onSelect={(date) => date && setStartDate(date)}
+                  onSelect={(date) => {
+                    if (date) {
+                      const today = getToday();
+                      // Only allow dates that are today or in the future
+                      if (!isBefore(date, today)) {
+                        setStartDate(date);
+                      } else {
+                        // If user tries to select a past date, reset to today
+                        setStartDate(today);
+                      }
+                    }
+                  }}
+                  disabled={(date) => {
+                    // Disable all dates before today
+                    return isBefore(date, getToday());
+                  }}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
                 />

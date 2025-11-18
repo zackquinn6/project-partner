@@ -716,6 +716,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                     <HomeTaskScheduler
                       userId={user.id}
                       homeId={selectedHomeId === 'all' ? null : selectedHomeId}
+                      activeTab={activeTab}
                     />
                   )}
                 </TabsContent>
