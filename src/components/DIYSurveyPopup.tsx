@@ -76,6 +76,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     nickname: initialData?.nickname || ""
   });
   const [showProjectSkillsWindow, setShowProjectSkillsWindow] = useState(false);
+  const [projectSkills, setProjectSkills] = useState<Record<string, number>>({});
 
   const totalSteps = mode === 'verify' ? 6 : (mode === 'personality' ? 12 : 4);
   const progress = mode === 'personality' && currentStep >= 0 ? 
@@ -417,6 +418,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               home_state: answers.homeState,
               preferred_learning_methods: answers.preferredLearningMethods,
               owned_tools: answers.ownedTools,
+              project_skills: Object.keys(projectSkills).length > 0 ? projectSkills : null,
               survey_completed_at: new Date().toISOString()
             })
             .eq('user_id', user.id);
@@ -935,12 +937,15 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     }
   };
 
-  const handleProjectSkillsSave = (avoidProjects: string[], projectSkills?: Record<string, number>) => {
+  const handleProjectSkillsSave = (avoidProjects: string[], projectSkillsData?: Record<string, number>) => {
     setAnswers(prev => ({
       ...prev,
       avoidProjects
     }));
-    // Note: projectSkills could be stored separately if needed in the future
+    // Store project skills for saving to database
+    if (projectSkillsData) {
+      setProjectSkills(projectSkillsData);
+    }
   };
 
   return (

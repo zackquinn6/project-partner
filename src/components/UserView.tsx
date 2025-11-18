@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Output, Project, AppReference, Phase } from '@/interfaces/Project';
 import ProjectListing from './ProjectListing';
 import { MobileProjectListing } from './MobileProjectListing';
@@ -684,6 +685,72 @@ export default function UserView({
       return false;
     }
   };
+
+  // Track step start time when user views a step (for analytics)
+  useEffect(() => {
+    if (!currentStep || !currentProjectRun) return;
+
+    // Record started_at timestamp when step is first viewed
+    const trackStepStart = async () => {
+      try {
+        const { data: existingStep, error: fetchError } = await supabase
+          .from('project_run_steps')
+          .select('id, started_at')
+          .eq('project_run_id', currentProjectRun.id)
+          .eq('template_step_id', currentStep.id)
+          .maybeSingle();
+
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          console.error('Error fetching project_run_step for start tracking:', fetchError);
+          return;
+        }
+
+        // Only set started_at if it doesn't exist yet
+        if (!existingStep || !existingStep.started_at) {
+          const now = new Date().toISOString();
+          const stepData = {
+            project_run_id: currentProjectRun.id,
+            template_step_id: currentStep.id,
+            started_at: now,
+            updated_at: now
+          };
+
+          if (existingStep) {
+            // Update existing record with started_at
+            const { error: updateError } = await supabase
+              .from('project_run_steps')
+              .update({
+                started_at: now,
+                updated_at: now
+              })
+              .eq('id', existingStep.id);
+
+            if (updateError) {
+              console.error('Error updating project_run_step started_at:', updateError);
+            } else {
+              console.log('✅ Step start timestamp recorded in project_run_steps');
+            }
+          } else {
+            // Insert new record with started_at
+            const { error: insertError } = await supabase
+              .from('project_run_steps')
+              .insert(stepData);
+
+            if (insertError) {
+              console.error('Error inserting project_run_step started_at:', insertError);
+            } else {
+              console.log('✅ Step start timestamp recorded in project_run_steps');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error tracking step start:', error);
+        // Don't fail if timestamp tracking fails
+      }
+    };
+
+    trackStepStart();
+  }, [currentStep?.id, currentProjectRun?.id]); // Track when step or project changes
   // Helper functions for check-off functionality
   const toggleMaterialCheck = (stepId: string, materialId: string) => {
     setCheckedMaterials(prev => {
@@ -869,7 +936,65 @@ export default function UserView({
           // CRITICAL: Wait for database update to complete before clearing flag
           await updateProjectRun(updatedProjectRun);
           
-           console.log("✅ Step completion persisted to database successfully");
+          // Record step completion timestamp in project_run_steps table for analytics
+          try {
+            const { data: existingStep, error: fetchError } = await supabase
+              .from('project_run_steps')
+              .select('id, started_at')
+              .eq('project_run_id', currentProjectRun.id)
+              .eq('template_step_id', currentStep.id)
+              .maybeSingle();
+
+            if (fetchError && fetchError.code !== 'PGRST116') {
+              console.error('Error fetching project_run_step:', fetchError);
+            }
+
+            const now = new Date().toISOString();
+            const stepData = {
+              project_run_id: currentProjectRun.id,
+              template_step_id: currentStep.id,
+              is_completed: true,
+              completion_percentage: 100,
+              completed_at: now,
+              updated_at: now
+            };
+
+            if (existingStep) {
+              // Update existing record
+              const { error: updateError } = await supabase
+                .from('project_run_steps')
+                .update({
+                  ...stepData,
+                  started_at: existingStep.started_at || now // Preserve started_at if it exists
+                })
+                .eq('id', existingStep.id);
+
+              if (updateError) {
+                console.error('Error updating project_run_step:', updateError);
+              } else {
+                console.log('✅ Step completion timestamp recorded in project_run_steps');
+              }
+            } else {
+              // Insert new record
+              const { error: insertError } = await supabase
+                .from('project_run_steps')
+                .insert({
+                  ...stepData,
+                  started_at: now // Set started_at to now if not previously tracked
+                });
+
+              if (insertError) {
+                console.error('Error inserting project_run_step:', insertError);
+              } else {
+                console.log('✅ Step completion timestamp recorded in project_run_steps');
+              }
+            }
+          } catch (error) {
+            console.error('Error recording step timestamp:', error);
+            // Don't fail the step completion if timestamp recording fails
+          }
+          
+          console.log("✅ Step completion persisted to database successfully");
         }
         
         // End time tracking for step
