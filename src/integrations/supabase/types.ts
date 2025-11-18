@@ -1501,6 +1501,7 @@ export type Database = {
           photo_url: string | null
           supplier_link: string | null
           unit: string | null
+          unit_size: string | null
           updated_at: string
         }
         Insert: {
@@ -1517,6 +1518,7 @@ export type Database = {
           photo_url?: string | null
           supplier_link?: string | null
           unit?: string | null
+          unit_size?: string | null
           updated_at?: string
         }
         Update: {
@@ -1533,6 +1535,7 @@ export type Database = {
           photo_url?: string | null
           supplier_link?: string | null
           unit?: string | null
+          unit_size?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -3748,6 +3751,7 @@ export type Database = {
           example_models: string | null
           id: string
           is_rental_available: boolean | null
+          item: string | null
           name: string
           notes: string | null
           photo_url: string | null
@@ -3767,6 +3771,7 @@ export type Database = {
           example_models?: string | null
           id?: string
           is_rental_available?: boolean | null
+          item?: string | null
           name: string
           notes?: string | null
           photo_url?: string | null
@@ -3786,6 +3791,7 @@ export type Database = {
           example_models?: string | null
           id?: string
           is_rental_available?: boolean | null
+          item?: string | null
           name?: string
           notes?: string | null
           photo_url?: string | null
