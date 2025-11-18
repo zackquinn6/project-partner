@@ -80,6 +80,8 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
     return requiredCount === 0 || madeCount === requiredCount;
   };
 
+  // Note: This component should always receive at least one space (default "Space 1")
+  // The check below is kept as a safety fallback but should rarely be needed
   if (spaces.length === 0) {
     return (
       <Card>

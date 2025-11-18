@@ -76,20 +76,41 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [homeName, setHomeName] = useState<string>('');
   const [showKickoffEdit, setShowKickoffEdit] = useState(false);
 
+  // Helper function to create default "Space 1" placeholder
+  const createDefaultSpace = (): ProjectSpace => ({
+    id: 'default-space-1',
+    name: 'Space 1',
+    spaceType: 'general',
+    isFromHome: false
+  });
+
   // Load customization decisions from database on mount
   useEffect(() => {
-    if (!open || !currentProjectRun?.customization_decisions) return;
+    if (!open) return;
     
-    const savedData = currentProjectRun.customization_decisions as any;
-    setCustomizationState({
-      spaces: savedData.spaces || [],
-      spaceDecisions: savedData.spaceDecisions || {},
-      standardDecisions: savedData.standardDecisions || {},
-      ifNecessaryWork: savedData.ifNecessaryWork || {},
-      customPlannedWork: savedData.customPlannedWork || [],
-      customUnplannedWork: savedData.customUnplannedWork || [],
-      workflowOrder: savedData.workflowOrder || []
-    });
+    if (currentProjectRun?.customization_decisions) {
+      const savedData = currentProjectRun.customization_decisions as any;
+      const savedSpaces = savedData.spaces || [];
+      
+      // If no spaces are saved, initialize with default "Space 1"
+      const spaces = savedSpaces.length > 0 ? savedSpaces : [createDefaultSpace()];
+      
+      setCustomizationState({
+        spaces,
+        spaceDecisions: savedData.spaceDecisions || {},
+        standardDecisions: savedData.standardDecisions || {},
+        ifNecessaryWork: savedData.ifNecessaryWork || {},
+        customPlannedWork: savedData.customPlannedWork || [],
+        customUnplannedWork: savedData.customUnplannedWork || [],
+        workflowOrder: savedData.workflowOrder || []
+      });
+    } else {
+      // No saved customization decisions - initialize with default "Space 1"
+      setCustomizationState(prev => ({
+        ...prev,
+        spaces: [createDefaultSpace()]
+      }));
+    }
   }, [open, currentProjectRun]);
 
   // Load home name
