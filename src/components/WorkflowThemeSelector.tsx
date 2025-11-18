@@ -19,71 +19,45 @@ export function WorkflowThemeSelector({
 
   // Apply theme to workflow view container
   useEffect(() => {
-    // Find the workflow view container (main element in UserView)
-    const workflowContainer = document.querySelector('main.flex-1.overflow-auto');
-    if (!workflowContainer) return;
-    const container = workflowContainer as HTMLElement;
+    const applyTheme = (container: HTMLElement) => {
+      // Apply theme mode class to container
+      if (themeMode === 'dark') {
+        container.classList.add('dark-theme');
+        container.classList.remove('light-theme');
+      } else {
+        container.classList.add('light-theme');
+        container.classList.remove('dark-theme');
+      }
 
-    // Apply theme mode class to container
-    if (themeMode === 'dark') {
-      container.classList.add('dark-theme');
-      container.classList.remove('light-theme');
-    } else {
-      container.classList.add('light-theme');
-      container.classList.remove('dark-theme');
-    }
+      // Apply color scheme - remove old scheme first, then add new one
+      container.removeAttribute('data-color-scheme');
+      // Force a reflow to ensure CSS updates
+      void container.offsetHeight;
+      container.setAttribute('data-color-scheme', colorScheme);
 
-    // Apply color scheme
-    container.setAttribute('data-color-scheme', colorScheme);
-
-    // Set CSS custom properties for color scheme on the container
-    const colorSchemes: Record<ColorScheme, {
-      primary: string;
-      secondary: string;
-      accent: string;
-    }> = {
-      default: {
-        primary: 'hsl(222.2, 47.4%, 11.2%)',
-        secondary: 'hsl(210, 40%, 96.1%)',
-        accent: 'hsl(210, 40%, 98%)'
-      },
-      blue: {
-        primary: 'hsl(217, 91%, 60%)',
-        secondary: 'hsl(217, 91%, 95%)',
-        accent: 'hsl(217, 91%, 98%)'
-      },
-      green: {
-        primary: 'hsl(142, 76%, 36%)',
-        secondary: 'hsl(142, 76%, 95%)',
-        accent: 'hsl(142, 76%, 98%)'
-      },
-      purple: {
-        primary: 'hsl(262, 83%, 58%)',
-        secondary: 'hsl(262, 83%, 95%)',
-        accent: 'hsl(262, 83%, 98%)'
-      },
-      orange: {
-        primary: 'hsl(25, 95%, 53%)',
-        secondary: 'hsl(25, 95%, 95%)',
-        accent: 'hsl(25, 95%, 98%)'
-      },
-      red: {
-        primary: 'hsl(0, 84%, 60%)',
-        secondary: 'hsl(0, 84%, 95%)',
-        accent: 'hsl(0, 84%, 98%)'
+      // Also apply to root for global dark mode if needed
+      const root = document.documentElement;
+      if (themeMode === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
       }
     };
-    const scheme = colorSchemes[colorScheme];
-    // Apply color scheme via data attribute (CSS will handle it)
-    container.setAttribute('data-color-scheme', colorScheme);
 
-    // Also apply to root for global dark mode if needed
-    const root = document.documentElement;
-    if (themeMode === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
+    // Find the workflow view container (main element in UserView)
+    const workflowContainer = document.querySelector('main.flex-1.overflow-auto');
+    if (!workflowContainer) {
+      // Retry after a short delay if container not found
+      const timeout = setTimeout(() => {
+        const retryContainer = document.querySelector('main.flex-1.overflow-auto');
+        if (retryContainer) {
+          applyTheme(retryContainer as HTMLElement);
+        }
+      }, 100);
+      return () => clearTimeout(timeout);
     }
+    
+    applyTheme(workflowContainer as HTMLElement);
   }, [themeMode, colorScheme]);
   return <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>

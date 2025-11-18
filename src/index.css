@@ -250,34 +250,105 @@ All colors MUST be HSL.
   --workflow-accent: 210 40% 98%;
 }
 
+/* Dark mode color scheme adjustments for better visibility */
+main.flex-1.overflow-auto.dark-theme[data-color-scheme="default"] {
+  --workflow-primary: 220 50% 70%;
+}
+
+main.flex-1.overflow-auto.dark-theme[data-color-scheme="blue"] {
+  --workflow-primary: 217 91% 70%;
+}
+
+main.flex-1.overflow-auto.dark-theme[data-color-scheme="green"] {
+  --workflow-primary: 142 76% 55%;
+}
+
+main.flex-1.overflow-auto.dark-theme[data-color-scheme="purple"] {
+  --workflow-primary: 262 83% 70%;
+}
+
+main.flex-1.overflow-auto.dark-theme[data-color-scheme="orange"] {
+  --workflow-primary: 25 95% 65%;
+}
+
+main.flex-1.overflow-auto.dark-theme[data-color-scheme="red"] {
+  --workflow-primary: 0 84% 70%;
+}
+
 /* Apply color scheme to primary elements - only within workflow container */
 main.flex-1.overflow-auto[data-color-scheme] .text-primary,
 main.flex-1.overflow-auto[data-color-scheme] [class*="text-primary"] {
-  color: hsl(var(--workflow-primary));
+  color: hsl(var(--workflow-primary)) !important;
 }
 
 main.flex-1.overflow-auto[data-color-scheme] .bg-primary,
 main.flex-1.overflow-auto[data-color-scheme] [class*="bg-primary"] {
-  background-color: hsl(var(--workflow-primary));
+  background-color: hsl(var(--workflow-primary)) !important;
 }
 
 main.flex-1.overflow-auto[data-color-scheme] .border-primary,
 main.flex-1.overflow-auto[data-color-scheme] [class*="border-primary"] {
-  border-color: hsl(var(--workflow-primary));
+  border-color: hsl(var(--workflow-primary)) !important;
+}
+
+/* Ensure color scheme applies to gradient and other primary elements */
+main.flex-1.overflow-auto[data-color-scheme] .gradient-primary {
+  background: linear-gradient(135deg, hsl(var(--workflow-primary)) 0%, hsl(var(--workflow-primary) / 0.8) 100%) !important;
 }
 
 /* Dark theme text color fix - only within workflow container */
-main.flex-1.overflow-auto.dark-theme,
-main.flex-1.overflow-auto.dark-theme * {
-  color: hsl(0 0% 100%) !important;
+/* Base text should be white/grey on dark backgrounds */
+main.flex-1.overflow-auto.dark-theme {
+  color: hsl(0 0% 95%) !important;
+}
+
+main.flex-1.overflow-auto.dark-theme p,
+main.flex-1.overflow-auto.dark-theme span,
+main.flex-1.overflow-auto.dark-theme div,
+main.flex-1.overflow-auto.dark-theme h1,
+main.flex-1.overflow-auto.dark-theme h2,
+main.flex-1.overflow-auto.dark-theme h3,
+main.flex-1.overflow-auto.dark-theme h4,
+main.flex-1.overflow-auto.dark-theme h5,
+main.flex-1.overflow-auto.dark-theme h6,
+main.flex-1.overflow-auto.dark-theme label {
+  color: hsl(0 0% 95%) !important;
 }
 
 main.flex-1.overflow-auto.dark-theme .text-muted-foreground {
   color: hsl(220 15% 70%) !important;
 }
 
+/* Primary text should use primary color but ensure visibility */
 main.flex-1.overflow-auto.dark-theme .text-primary {
   color: hsl(var(--workflow-primary)) !important;
+}
+
+/* Ensure buttons have proper text color in dark mode */
+main.flex-1.overflow-auto.dark-theme button:not(.bg-primary):not(.text-primary) {
+  color: hsl(0 0% 95%) !important;
+}
+
+/* Cards and backgrounds should have dark backgrounds with light text */
+main.flex-1.overflow-auto.dark-theme [class*="card"],
+main.flex-1.overflow-auto.dark-theme [class*="Card"] {
+  background-color: hsl(220 35% 10%) !important;
+  color: hsl(0 0% 95%) !important;
+}
+
+/* Checkbox styling - ensure unchecked boxes are visible */
+main.flex-1.overflow-auto [role="checkbox"]:not([data-state="checked"]) {
+  background-color: transparent !important;
+  border-color: hsl(var(--workflow-primary) / 0.5) !important;
+}
+
+main.flex-1.overflow-auto.dark-theme [role="checkbox"]:not([data-state="checked"]) {
+  border-color: hsl(var(--workflow-primary) / 0.7) !important;
+}
+
+main.flex-1.overflow-auto [role="checkbox"][data-state="checked"] {
+  background-color: hsl(var(--workflow-primary)) !important;
+  border-color: hsl(var(--workflow-primary)) !important;
 }
 
 /* Gradient text */
