@@ -248,6 +248,7 @@ export function UnifiedProjectManagement({
       }
       
       console.log('✅ Project saved successfully:', data);
+      console.log('📋 Saved project_challenges value:', data?.[0]?.project_challenges);
       toast.success("Project updated successfully!");
       setEditingProject(false);
       setEditedProject({});
@@ -255,9 +256,22 @@ export function UnifiedProjectManagement({
       // Refresh projects to show updated data
       await fetchProjects();
 
-      // Update selectedProject with new data
+      // Update selectedProject with new data - ensure we get the latest from database
       if (data && data[0]) {
-        setSelectedProject(data[0] as Project);
+        // Re-fetch the specific project to ensure we have all fields
+        const { data: freshData, error: fetchError } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', selectedProject.id)
+          .single();
+        
+        if (!fetchError && freshData) {
+          console.log('🔄 Fresh project data:', freshData);
+          setSelectedProject(freshData as Project);
+        } else {
+          // Fallback to data from update response
+          setSelectedProject(data[0] as Project);
+        }
       }
     } catch (error) {
       console.error('Error updating project:', error);
