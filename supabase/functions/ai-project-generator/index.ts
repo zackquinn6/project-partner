@@ -37,37 +37,59 @@ serve(async (req) => {
     // Note: This would require database access - for now, we'll pass empty arrays
     // In production, you'd query the database here
     
-    // Build the prompt
-    const systemPrompt = `You are an expert DIY project planner specializing in home improvement projects.
+    // Build the prompt using the project name and category from request
+    const systemPrompt = `You are an expert DIY project planner specializing in ${request.category.join(', ')} projects.
 Generate comprehensive, detailed project structures with phases, operations, steps, instructions, tools, materials, outputs, process variables, time estimates, and risk management.`;
 
-    const userPrompt = `Create an interior painting project.
+    // Build comprehensive prompt based on project name and category
+    const includeDecisionTrees = request.contentSelection?.decisionTrees ?? true;
+    const includeAlternateTools = request.contentSelection?.alternateTools ?? true;
+    
+    const userPrompt = `You are an expert DIY project planner specializing in ${request.category.join(', ')} projects.
 
-Include content for the following template sections:
+Create a comprehensive ${sanitizeInput(request.projectName)} project with complete structure and content.
 
-1. Structure: phases, operations, and steps.
-
-2. Step Instructions: across 3 skill levels ranging from least to most detail
-   - QUICK: Brief overview (2-3 sentences) for experienced DIYers
-   - DETAILED: Standard instructions (5-7 sentences) with key details
-   - CONTRACTOR: Expert-level (8-12 sentences) with technical specifications
-
-3. Outputs, quantified. e.g. 100% coverage, no visible brush marks, primer dry to touch
-
-4. Tools and materials lists: e.g. paint, primer, paint brush, etc.
-   4a. Use only tools and materials that have been added to tools library.
-   Use matching to find similar items.
-
-5. Process variables: e.g. for prep step: cleaner application coverage. For painting: lighting brightness
-
-6. Time estimates: high, med, low time ranges in hours
-
-7. Risk management: key risks for the whole project and mitigation measures.
-   e.g. spill paint on carpet: med likelihood, high impact, mitigation: drop cloths across all carpet: Spend extra $25 on cloths or rent to eliminate risk.
-
-PROJECT NAME: ${sanitizeInput(request.projectName)}
+PROJECT: ${sanitizeInput(request.projectName)}
 ${request.projectDescription ? `DESCRIPTION: ${sanitizeInput(request.projectDescription)}` : ''}
 CATEGORY: ${request.category.join(', ')}
+${request.aiInstructions ? `\nSPECIFIC INSTRUCTIONS: ${sanitizeInput(request.aiInstructions)}\n` : ''}
+
+Generate a complete project structure with the following requirements:
+
+1. STRUCTURE: Create phases, operations, and steps
+   - Phases should represent major project stages (e.g., Preparation, Execution, Finishing)
+   - Operations should group related tasks within each phase
+   - Steps should be specific, actionable tasks
+
+2. STEP INSTRUCTIONS: Provide 3 skill levels for each step
+   - QUICK: Brief overview (2-3 sentences) for experienced DIYers
+   - DETAILED: Standard instructions (5-7 sentences) with key details
+   - CONTRACTOR: Expert-level (8-12 sentences) with technical specifications and best practices
+
+3. OUTPUTS: Quantified deliverables for each step
+   - Each output must have a measurable requirement (e.g., "100% coverage", "No visible brush marks", "Primer dry to touch")
+   - Include output name, description, type, and specific requirement
+
+4. TOOLS AND MATERIALS: 
+   - Use only tools and materials that have been added to tools library
+   - Match suggested items to library items (use exact names from library)
+   - If an item isn't in library, suggest it but note it needs to be added
+   - Include quantities where applicable
+
+5. PROCESS VARIABLES: Dynamic variables for each step
+   - For prep steps: e.g., "cleaner_application_coverage" (percentage)
+   - For execution steps: e.g., "material_coverage_rate" (square feet per unit)
+   - Include: name (snake_case), displayName, description, variableType, unit (if applicable)
+
+6. TIME ESTIMATES: High, medium, low time ranges in hours
+   - Low: Fastest possible time for experienced person
+   - Medium: Average time for intermediate skill level
+   - High: Time for beginner or complex scenarios
+
+7. RISK MANAGEMENT: Key risks for the whole project
+   - For each risk: risk description, likelihood (low/medium/high), impact (low/medium/high)
+   - Mitigation: Specific mitigation measure
+   - Mitigation cost: Optional cost estimate (e.g., "$25 for drop cloths")
 
 Return ONLY valid JSON in this exact structure:
 {

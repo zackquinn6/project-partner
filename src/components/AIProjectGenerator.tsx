@@ -191,7 +191,7 @@ export function AIProjectGenerator({
       }, 500);
 
       const request: ProjectGenerationRequest = {
-        projectName,
+        projectName: projectName.trim(),
         projectDescription: undefined, // AI will generate this
         category: selectedCategories,
         aiModel,
@@ -199,6 +199,13 @@ export function AIProjectGenerator({
         contentSelection,
         aiInstructions: aiInstructions || undefined,
       };
+
+      console.log('🚀 Generating project with request:', {
+        projectName: request.projectName,
+        category: request.category,
+        aiInstructions: request.aiInstructions,
+        contentSelection: request.contentSelection
+      });
 
       const result = await generateProjectWithAI(request);
       
