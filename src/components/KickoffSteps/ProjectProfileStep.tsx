@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,8 +38,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const [selectedHomeId, setSelectedHomeId] = useState<string>('');
   const [projectForm, setProjectForm] = useState({
     customProjectName: '',
-    projectLeader: '',
-    accountabilityPartner: '',
     description: ''
   });
   const [loading, setLoading] = useState(true);
@@ -53,8 +51,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     if (currentProjectRun) {
       setProjectForm({
         customProjectName: currentProjectRun.customProjectName || currentProjectRun.name || '',
-        projectLeader: currentProjectRun.projectLeader || '',
-        accountabilityPartner: currentProjectRun.accountabilityPartner || '',
         description: '' // Always start with blank notes field
       });
       
@@ -95,7 +91,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!currentProjectRun) return;
     
     if (!selectedHomeId) {
@@ -112,8 +108,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       const updatedProjectRun = {
         ...currentProjectRun,
         customProjectName: projectForm.customProjectName.trim(),
-        projectLeader: projectForm.projectLeader.trim(),
-        accountabilityPartner: projectForm.accountabilityPartner.trim(),
         description: projectForm.description.trim(),
         home_id: selectedHomeId,
         updatedAt: new Date()
@@ -128,7 +122,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       console.error('Error saving project profile:', error);
       toast.error('Failed to save project profile');
     }
-  };
+  }, [currentProjectRun, selectedHomeId, projectForm, updateProjectRun, onComplete]);
+
+  // Expose handleSave via window for parent component
+  useEffect(() => {
+    (window as any).__projectProfileStepSave = handleSave;
+    return () => {
+      delete (window as any).__projectProfileStepSave;
+    };
+  }, [handleSave]);
 
   const handleHomeManagerClose = (open: boolean) => {
     if (!open) {
@@ -183,7 +185,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           <div className="space-y-3 sm:space-y-4">
             <div>
               <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                <span className="text-[10px] sm:text-xs text-muted-foreground">1 of 5</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground">1 of 3</span>
                 <label className="text-xs sm:text-sm font-medium">Name your project</label>
               </div>
               <Input
@@ -199,7 +201,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
             <div>
               <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                <span className="text-[10px] sm:text-xs text-muted-foreground">2 of 5</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground">2 of 3</span>
                 <label className="text-xs sm:text-sm font-medium">Describe your project</label>
               </div>
               {/* Admin-created description (readonly) */}
@@ -223,43 +225,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                  <span className="text-[10px] sm:text-xs text-muted-foreground">3 of 5</span>
-                  <label className="text-xs sm:text-sm font-medium">Project Leader</label>
-                </div>
-                <Input
-                  value={projectForm.projectLeader}
-                  onChange={(e) => setProjectForm(prev => ({
-                    ...prev,
-                    projectLeader: e.target.value
-                  }))}
-                  placeholder="Who's leading?"
-                  className="text-xs sm:text-sm h-9 sm:h-10"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                  <span className="text-[10px] sm:text-xs text-muted-foreground">4 of 5</span>
-                  <label className="text-xs sm:text-sm font-medium">Accountability Partner</label>
-                </div>
-                <Input
-                  value={projectForm.accountabilityPartner}
-                  onChange={(e) => setProjectForm(prev => ({
-                    ...prev,
-                    accountabilityPartner: e.target.value
-                  }))}
-                  placeholder="Who'll keep you on track?"
-                  className="text-xs sm:text-sm h-9 sm:h-10"
-                />
-              </div>
-            </div>
-
             <div>
               <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                <span className="text-[10px] sm:text-xs text-muted-foreground">5 of 5</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground">3 of 3</span>
                 <label className="text-xs sm:text-sm font-medium">Select Home</label>
               </div>
               {loading ? (
@@ -305,27 +273,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
           </div>
 
-          <div className="bg-background pt-3 sm:pt-4 border-t mt-3 sm:mt-4 pb-2">
-            {!isCompleted ? (
-              <div className="flex gap-2">
-                <div className="hidden sm:block w-1/4" />
-                <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-9 sm:h-10">
-                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                  <span className="hidden sm:inline">Project Profile Complete - Continue</span>
-                  <span className="sm:hidden">Complete - Continue</span>
-                </Button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <div className="hidden sm:block w-1/4" />
-                <Button className="flex-1 bg-green-100 text-green-800 hover:bg-green-200 text-xs sm:text-sm h-9 sm:h-10" disabled>
-                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                  <span className="hidden sm:inline">Profile Complete - Continue</span>
-                  <span className="sm:hidden">Complete</span>
-                </Button>
-              </div>
-            )}
-          </div>
         </CardContent>
       </Card>
 

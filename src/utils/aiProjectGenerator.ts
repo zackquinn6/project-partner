@@ -12,6 +12,7 @@ export interface ProjectGenerationRequest {
   aiModel?: 'gpt-4o-mini' | 'gpt-4-turbo' | 'gpt-4o';
   includeWebScraping?: boolean;
   webSources?: string[];
+  aiInstructions?: string; // User-provided instructions for AI
   contentSelection?: {
     structure?: boolean;
     tools?: boolean;
@@ -176,6 +177,7 @@ export async function generateProjectWithAI(
         aiModel: request.aiModel || 'gpt-4o-mini',
         includeWebScraping: request.includeWebScraping ?? true,
         webSources: request.webSources || [],
+        aiInstructions: request.aiInstructions,
         contentSelection: request.contentSelection,
       },
     });

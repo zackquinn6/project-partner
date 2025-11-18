@@ -9,6 +9,7 @@ export interface PromptContext {
   category: string[];
   existingTools?: string[];
   existingMaterials?: string[];
+  aiInstructions?: string; // User-provided instructions for AI
   contentSelection?: {
     structure?: boolean;
     tools?: boolean;
@@ -27,7 +28,7 @@ export interface PromptContext {
  * Main prompt for generating complete project structure
  */
 export function getProjectGenerationPrompt(context: PromptContext): string {
-  const { projectName, projectDescription, category, existingTools = [], existingMaterials = [], contentSelection } = context;
+  const { projectName, projectDescription, category, existingTools = [], existingMaterials = [], aiInstructions, contentSelection } = context;
   const includeDecisionTrees = contentSelection?.decisionTrees ?? true;
   const includeAlternateTools = contentSelection?.alternateTools ?? true;
 
@@ -38,6 +39,7 @@ Create a comprehensive ${projectName} project with complete structure and conten
 PROJECT: ${projectName}
 ${projectDescription ? `DESCRIPTION: ${projectDescription}` : ''}
 CATEGORY: ${category.join(', ')}
+${aiInstructions ? `\nSPECIFIC INSTRUCTIONS: ${aiInstructions}\n` : ''}
 
 ${existingTools.length > 0 ? `AVAILABLE TOOLS IN LIBRARY: ${existingTools.join(', ')}` : ''}
 ${existingMaterials.length > 0 ? `AVAILABLE MATERIALS IN LIBRARY: ${existingMaterials.join(', ')}` : ''}

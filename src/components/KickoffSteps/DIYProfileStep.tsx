@@ -257,40 +257,13 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
           {renderProfileView()}
           
-          <div className="bg-background pt-3 sm:pt-4 border-t mt-3 sm:mt-4 pb-2 sticky bottom-0">
-            {!isCompleted && existingProfile && (
-              <div className="flex gap-2">
-                <div className="hidden sm:block w-1/4" />
-                <Button onClick={() => {
-                  console.log('🎯 DIYProfileStep: onComplete called');
-                  onComplete();
-                }} className="flex-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-9 sm:h-10">
-                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                  <span className="hidden sm:inline">DIY Profile Complete - Continue</span>
-                  <span className="sm:hidden">Complete - Continue</span>
-                </Button>
-              </div>
-            )}
-            
-            {!isCompleted && !existingProfile && (
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Complete your profile above to continue
-                </p>
-              </div>
-            )}
-
-            {isCompleted && (
-              <div className="flex gap-2">
-                <div className="hidden sm:block w-1/4" />
-                <Button className="flex-1 bg-green-100 text-green-800 hover:bg-green-200 text-xs sm:text-sm h-9 sm:h-10" disabled>
-                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                  <span className="hidden sm:inline">Profile Complete - Continue</span>
-                  <span className="sm:hidden">Complete</span>
-                </Button>
-              </div>
-            )}
-          </div>
+          {!isCompleted && !existingProfile && (
+            <div className="text-center p-4 bg-muted/50 rounded-lg border border-muted">
+              <p className="text-sm text-muted-foreground">
+                Complete your profile above to continue
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

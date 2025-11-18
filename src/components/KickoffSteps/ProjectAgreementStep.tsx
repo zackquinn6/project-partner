@@ -149,8 +149,6 @@ ACCEPTANCE
 By using Project Partner, the Participant acknowledges they have read, understand, and agree to these Terms.
 
 Project: ${currentProjectRun?.name || 'N/A'}
-Project Leader: ${currentProjectRun?.projectLeader || 'Not specified'}
-Team Mate: ${currentProjectRun?.accountabilityPartner || 'Not specified'}
 Date: ${new Date().toLocaleDateString()}
 `;
 
