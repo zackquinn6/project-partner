@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { OutputEditForm } from './OutputEditForm';
 import { MultiContentEditor } from './MultiContentEditor';
@@ -77,6 +78,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
   const [oneTimeCorrectionApplied, setOneTimeCorrectionApplied] = useState(false);
   const [isAddingPhase, setIsAddingPhase] = useState(false);
+  const [deletePhaseDialogOpen, setDeletePhaseDialogOpen] = useState(false);
+  const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
+  const [isDeletingPhase, setIsDeletingPhase] = useState(false);
 
   // Collapsible state
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -359,12 +363,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     if (!currentProject) return;
     
     try {
-      const updatePromises: Promise<void>[] = [];
+      // Two-pass update to avoid unique constraint conflicts
+      // Pass 1: Set all display_order values to temporary negative values to free up slots
+      const tempUpdatePromises: Promise<void>[] = [];
       
       for (let i = 0; i < reorderedPhases.length; i++) {
         const phase = reorderedPhases[i];
         
         if (isEditingStandardProject && phase.isStandard) {
+          // Standard phases - update standard_phases table
           const updatePromise = (async () => {
             const { data: standardPhase } = await supabase
               .from('standard_phases')
@@ -373,6 +380,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               .single();
             
             if (standardPhase) {
+              // For standard phases, we can update directly since there's no unique constraint conflict
               await supabase
                 .from('standard_phases')
                 .update({ 
@@ -382,8 +390,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 .eq('id', standardPhase.id);
             }
           })();
-          updatePromises.push(updatePromise);
+          tempUpdatePromises.push(updatePromise);
         } else {
+          // Custom/incorporated phases - update project_phases table
+          const updatePromise = (async () => {
+            const { data: phaseData } = await supabase
+              .from('project_phases')
+              .select('id')
+              .eq('id', phase.id)
+              .eq('project_id', currentProject.id)
+              .maybeSingle();
+            
+            if (phaseData) {
+              // First pass: set to temporary negative value to avoid conflicts
+              await supabase
+                .from('project_phases')
+                .update({ 
+                  display_order: -(i + 1000), // Use negative values as temporary
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', phaseData.id);
+            }
+          })();
+          tempUpdatePromises.push(updatePromise);
+        }
+      }
+      
+      await Promise.all(tempUpdatePromises);
+      
+      // Pass 2: Update to final display_order values (now safe since all slots are free)
+      const finalUpdatePromises: Promise<void>[] = [];
+      
+      for (let i = 0; i < reorderedPhases.length; i++) {
+        const phase = reorderedPhases[i];
+        
+        if (!isEditingStandardProject || !phase.isStandard) {
+          // Only update project_phases in second pass (standard_phases already done in first pass)
           const updatePromise = (async () => {
             const { data: phaseData } = await supabase
               .from('project_phases')
@@ -402,11 +444,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 .eq('id', phaseData.id);
             }
           })();
-          updatePromises.push(updatePromise);
+          finalUpdatePromises.push(updatePromise);
         }
       }
       
-      await Promise.all(updatePromises);
+      await Promise.all(finalUpdatePromises);
       
       // Rebuild phases JSON
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
@@ -580,6 +622,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     if (isAddingPhase) return; // Prevent multiple clicks
     
     setIsAddingPhase(true);
+    const startTime = Date.now();
+    const minDisplayTime = 2000; // Minimum 2 seconds to show loading state
     
     try {
       // Get unique phase name by checking existing phases
@@ -617,10 +661,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         updatedAt: new Date()
       });
       
+      // Ensure minimum display time for loading state
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+      
       toast.success('Phase added successfully');
     } catch (error) {
       console.error('Error adding phase:', error);
       toast.error('Failed to add phase');
+      
+      // Ensure minimum display time even on error
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
     } finally {
       setIsAddingPhase(false);
     }
@@ -878,7 +936,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   };
 
   // Delete operations - Allow deleting in Edit Standard mode
-  const deletePhase = async (phaseId: string) => {
+  const handleDeletePhaseClick = (phaseId: string) => {
     if (!currentProject) return;
 
     // Check if this is a standard phase
@@ -890,9 +948,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return;
     }
 
-    if (!confirm('Are you sure you want to delete this phase? This will also delete all its operations and steps.')) {
-      return;
-    }
+    setPhaseToDelete(phaseId);
+    setDeletePhaseDialogOpen(true);
+  };
+
+  const deletePhase = async () => {
+    if (!currentProject || !phaseToDelete) return;
+
+    setIsDeletingPhase(true);
+    const startTime = Date.now();
+    const minDisplayTime = 2000; // Minimum 2 seconds to show loading state
 
     try {
       // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
@@ -900,7 +965,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         .from('project_phases')
         .select('id')
         .eq('project_id', currentProject.id)
-        .eq('id', phaseId)
+        .eq('id', phaseToDelete)
         .single();
 
       if (!projectPhase) {
@@ -956,10 +1021,28 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         updatedAt: new Date()
       });
 
+      // Ensure minimum display time for loading state
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+
       toast.success('Phase deleted');
+      setDeletePhaseDialogOpen(false);
+      setPhaseToDelete(null);
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
+      
+      // Ensure minimum display time even on error
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+    } finally {
+      setIsDeletingPhase(false);
     }
   };
   const deleteOperation = async (phaseId: string, operationId: string) => {
@@ -1458,7 +1541,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                             <Edit className="w-4 h-4" />
                                           </Button>
                                           
-                                          <Button size="sm" variant="ghost" onClick={() => deletePhase(phase.id)}>
+                                          <Button size="sm" variant="ghost" onClick={() => handleDeletePhaseClick(phase.id)}>
                                             <Trash2 className="w-4 h-4" />
                                           </Button>
                                         </>}
@@ -1775,6 +1858,35 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       {/* Phase Incorporation Dialog */}
       <PhaseIncorporationDialog open={showIncorporationDialog} onOpenChange={setShowIncorporationDialog} onIncorporatePhase={handleIncorporatePhase} />
+
+      {/* Delete Phase Confirmation Dialog */}
+      <AlertDialog open={deletePhaseDialogOpen} onOpenChange={setDeletePhaseDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Phase</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this phase? This will also delete all its operations and steps. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingPhase}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deletePhase}
+              disabled={isDeletingPhase}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingPhase ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Phase'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Decision Tree Manager */}
       <DecisionTreeManager open={showDecisionTreeManager} onOpenChange={setShowDecisionTreeManager} currentProject={currentProject} />
