@@ -31,7 +31,7 @@ serve(async (req) => {
     
     const request: ProjectGenerationRequest = await req.json();
     
-    console.log('Generating project:', request.projectName, 'Model:', request.aiModel || 'gpt-4o-mini');
+    console.log('Generating project:', request.projectName, 'Category:', request.category, 'Model:', request.aiModel || 'gpt-4o-mini');
 
     // Fetch existing tools and materials from database
     // Note: This would require database access - for now, we'll pass empty arrays
@@ -172,7 +172,17 @@ Return ONLY valid JSON in this exact structure:
       "mitigationCost": "Optional cost estimate"
     }
   ]
-}`;
+}
+
+IMPORTANT:
+- Be comprehensive and detailed
+- Use professional terminology appropriate for ${request.category.join(', ')} projects
+- Ensure all outputs are quantified
+- Match tools/materials to library when possible
+- Include realistic time estimates
+- Cover all major risks with practical mitigations
+- Make instructions appropriate for each skill level
+- Focus specifically on ${sanitizeInput(request.projectName)} - do NOT generate content for other project types`;
 
     const model = request.aiModel || 'gpt-4o-mini';
     const modelName = model === 'gpt-4o-mini' ? 'gpt-4o-mini' : 
