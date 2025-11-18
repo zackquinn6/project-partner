@@ -167,7 +167,6 @@ export function UnifiedProjectManagement({
     if (!selectedProject || !editedProject) return;
     try {
       // Only send editable database columns (not computed or joined fields)
-      // Note: images and cover_image are managed separately by ProjectImageManager
       const updateData: any = {
         name: editedProject.name || selectedProject.name,
         description: editedProject.description !== undefined ? editedProject.description : selectedProject.description,
@@ -176,22 +175,73 @@ export function UnifiedProjectManagement({
         skill_level: editedProject.skill_level !== undefined ? editedProject.skill_level : selectedProject.skill_level,
         estimated_time: editedProject.estimated_time !== undefined ? editedProject.estimated_time : selectedProject.estimated_time,
         scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
-        project_challenges: editedProject.project_challenges !== undefined ? editedProject.project_challenges : selectedProject.project_challenges,
         updated_at: new Date().toISOString()
       };
+
+      // Include images and cover_image if they exist in editedProject or selectedProject
+      if (editedProject.images !== undefined || selectedProject.images) {
+        updateData.images = editedProject.images !== undefined ? editedProject.images : selectedProject.images;
+      }
+      if (editedProject.cover_image !== undefined || selectedProject.cover_image) {
+        updateData.cover_image = editedProject.cover_image !== undefined ? editedProject.cover_image : selectedProject.cover_image;
+      }
+
+      // Try to include project_challenges, but fall back to diy_length_challenges if column doesn't exist
+      const challengesValue = editedProject.project_challenges !== undefined 
+        ? editedProject.project_challenges 
+        : (selectedProject.project_challenges || null);
+      
+      // First try with new column name
+      if (challengesValue !== undefined && challengesValue !== null) {
+        updateData.project_challenges = challengesValue;
+      }
+
       console.log('💾 Saving project edit:', {
         projectId: selectedProject.id,
         fields: Object.keys(updateData),
         changes: updateData
       });
+
       const {
         error,
         data
       } = await supabase.from('projects').update(updateData).eq('id', selectedProject.id).select();
+      
       if (error) {
+        // If error is about project_challenges column not existing, try with old column name
+        if (error.message && error.message.includes('project_challenges')) {
+          console.log('⚠️ project_challenges column not found, trying with diy_length_challenges');
+          delete updateData.project_challenges;
+          if (challengesValue !== undefined && challengesValue !== null) {
+            updateData.diy_length_challenges = challengesValue;
+          }
+          
+          const { error: retryError, data: retryData } = await supabase
+            .from('projects')
+            .update(updateData)
+            .eq('id', selectedProject.id)
+            .select();
+          
+          if (retryError) {
+            console.error('❌ Save error (retry):', retryError);
+            throw retryError;
+          }
+          
+          console.log('✅ Project saved successfully (with fallback):', retryData);
+          toast.success("Project updated successfully!");
+          setEditingProject(false);
+          setEditedProject({});
+          await fetchProjects();
+          if (retryData && retryData[0]) {
+            setSelectedProject(retryData[0] as Project);
+          }
+          return;
+        }
+        
         console.error('❌ Save error:', error);
         throw error;
       }
+      
       console.log('✅ Project saved successfully:', data);
       toast.success("Project updated successfully!");
       setEditingProject(false);

@@ -1,10 +1,42 @@
--- Rename diy_length_challenges to project_challenges in projects table
-ALTER TABLE public.projects 
-  RENAME COLUMN diy_length_challenges TO project_challenges;
+-- Rename diy_length_challenges to project_challenges in projects table (idempotent)
+DO $$ 
+BEGIN
+  -- Check if old column exists and new column doesn't exist
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'projects' 
+    AND column_name = 'diy_length_challenges'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'projects' 
+    AND column_name = 'project_challenges'
+  ) THEN
+    ALTER TABLE public.projects 
+      RENAME COLUMN diy_length_challenges TO project_challenges;
+  END IF;
+END $$;
 
--- Rename diy_length_challenges to project_challenges in project_runs table
-ALTER TABLE public.project_runs 
-  RENAME COLUMN diy_length_challenges TO project_challenges;
+-- Rename diy_length_challenges to project_challenges in project_runs table (idempotent)
+DO $$ 
+BEGIN
+  -- Check if old column exists and new column doesn't exist
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'project_runs' 
+    AND column_name = 'diy_length_challenges'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'project_runs' 
+    AND column_name = 'project_challenges'
+  ) THEN
+    ALTER TABLE public.project_runs 
+      RENAME COLUMN diy_length_challenges TO project_challenges;
+  END IF;
+END $$;
 
 -- Update project_templates_live view to use new column name
 CREATE OR REPLACE VIEW public.project_templates_live AS
