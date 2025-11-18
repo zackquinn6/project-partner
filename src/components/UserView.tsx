@@ -38,6 +38,7 @@ import { PhotoUpload } from './PhotoUpload';
 import { NoteUpload } from './NoteUpload';
 import { NotesGallery } from './NotesGallery';
 import { PhotoGallery } from './PhotoGallery';
+import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 import { ProjectCompletionPopup } from './ProjectCompletionPopup';
 import { ToolsMaterialsSection } from './ToolsMaterialsSection';
 import ProfileManager from './ProfileManager';
@@ -2041,7 +2042,9 @@ export default function UserView({
                   </CardDescription>}
                 </div>
                 
-                {/* Don't show ordering button for ordering steps since it's now in content */}
+                <div className="flex items-center gap-2">
+                  <WorkflowThemeSelector projectRunId={currentProjectRun?.id} />
+                </div>
 
               </div>
             </CardHeader>

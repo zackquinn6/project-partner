@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Camera, Upload, X, Loader2, AlertTriangle } from 'lucide-react';
@@ -53,6 +54,7 @@ export function PhotoUpload({
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoName, setPhotoName] = useState('');
   const [caption, setCaption] = useState('');
   const [privacyLevel, setPrivacyLevel] = useState<'personal' | 'project_partner' | 'public'>('project_partner');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,6 +77,10 @@ export function PhotoUpload({
     }
 
     setSelectedFile(file);
+    
+    // Set photo name to filename without extension
+    const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+    setPhotoName(fileNameWithoutExt);
     
     // Create preview
     const reader = new FileReader();
@@ -121,8 +127,9 @@ export function PhotoUpload({
           file_name: selectedFile.name,
           file_size: selectedFile.size,
           privacy_level: privacyLevel,
-          caption: caption.trim() || null
-        });
+          caption: caption.trim() || null,
+          photo_name: photoName.trim() || null
+        } as any);
 
       if (dbError) throw dbError;
 
@@ -131,6 +138,7 @@ export function PhotoUpload({
       // Reset form
       setSelectedFile(null);
       setPreviewUrl(null);
+      setPhotoName('');
       setCaption('');
       setPrivacyLevel('project_partner');
       setOpen(false);
@@ -149,6 +157,7 @@ export function PhotoUpload({
   const handleCancel = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
+    setPhotoName('');
     setCaption('');
     setPrivacyLevel('project_partner');
     setOpen(false);
@@ -193,6 +202,7 @@ export function PhotoUpload({
                       onClick={() => {
                         setSelectedFile(null);
                         setPreviewUrl(null);
+                        setPhotoName('');
                       }}
                       className="absolute top-2 right-2"
                     >
@@ -226,6 +236,23 @@ export function PhotoUpload({
                 )}
               </div>
             </div>
+
+            {/* Photo Name */}
+            {selectedFile && (
+              <div>
+                <Label htmlFor="photoName">Photo Name</Label>
+                <Input
+                  id="photoName"
+                  value={photoName}
+                  onChange={(e) => setPhotoName(e.target.value)}
+                  placeholder="Enter photo name"
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Defaults to the filename without extension
+                </p>
+              </div>
+            )}
 
             {/* Caption */}
             <div>

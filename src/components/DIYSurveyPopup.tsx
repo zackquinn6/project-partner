@@ -77,6 +77,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   });
   const [showProjectSkillsWindow, setShowProjectSkillsWindow] = useState(false);
   const [projectSkills, setProjectSkills] = useState<Record<string, number>>({});
+  const [quickAddTools, setQuickAddTools] = useState<Record<string, boolean>>({});
 
   const totalSteps = mode === 'verify' ? 6 : (mode === 'personality' ? 12 : 4);
   const progress = mode === 'personality' && currentStep >= 0 ? 
@@ -403,6 +404,100 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     } else {
       setIsSubmitting(true);
       try {
+        // Process quick add tools and add to ownedTools
+        let finalOwnedTools = [...answers.ownedTools];
+        
+        if (Object.keys(quickAddTools).length > 0) {
+          // Map quick add tool names to tools library
+          const quickAddToolMap: Record<string, { name: string; variant: string }> = {
+            "Hammer|Standard": { name: "Hammer", variant: "Standard" },
+            "Power drill|": { name: "Power drill", variant: "" },
+            "Tape measure|25ft": { name: "Tape measure", variant: "25ft" },
+            "Adjustable wrench|": { name: "Adjustable wrench", variant: "" },
+            "Stud Finder|": { name: "Stud Finder", variant: "" },
+            "Circular saw|plug-in": { name: "Circular saw", variant: "plug-in" },
+            "Utility knife|": { name: "Utility knife", variant: "" },
+            "2ft level|2ft": { name: "2ft level", variant: "2ft" },
+            "Safety glasses|": { name: "Safety glasses", variant: "" },
+            "Pliers|": { name: "Pliers", variant: "" },
+            "Needlenose pliers|": { name: "Needlenose pliers", variant: "" },
+            "Caulking gun|10oz manual": { name: "Caulking gun", variant: "10oz manual" }
+          };
+
+          // Fetch tools from database to find matches
+          const { data: allTools } = await supabase
+            .from('tools')
+            .select('id, name, description, photo_url');
+
+          // Process each checked quick add tool
+          for (const [toolKey, isChecked] of Object.entries(quickAddTools)) {
+            if (!isChecked) continue;
+            
+            const toolInfo = quickAddToolMap[toolKey];
+            if (!toolInfo) continue;
+
+            // Find matching tool in library (case-insensitive, partial match)
+            const matchingTool = allTools?.find(tool => 
+              tool.name.toLowerCase().includes(toolInfo.name.toLowerCase()) ||
+              toolInfo.name.toLowerCase().includes(tool.name.toLowerCase())
+            );
+
+            if (matchingTool) {
+              // If variant is specified, try to find matching variation
+              let toolToAdd: any = null;
+              
+              if (toolInfo.variant) {
+                const { data: variations } = await supabase
+                  .from('variation_instances')
+                  .select('*')
+                  .eq('core_item_id', matchingTool.id)
+                  .eq('item_type', 'tools');
+
+                // Find matching variant (case-insensitive, partial match)
+                const matchingVariant = variations?.find(v => 
+                  v.name.toLowerCase().includes(toolInfo.variant.toLowerCase()) ||
+                  toolInfo.variant.toLowerCase().includes(v.name.toLowerCase())
+                );
+
+                if (matchingVariant) {
+                  toolToAdd = {
+                    id: matchingVariant.id,
+                    name: matchingVariant.name,
+                    description: matchingVariant.description || matchingTool.description,
+                    photo_url: matchingVariant.photo_url || matchingTool.photo_url,
+                    quantity: 1,
+                    model_name: matchingVariant.sku || ''
+                  };
+                } else {
+                  // Use core tool if variant not found
+                  toolToAdd = {
+                    id: matchingTool.id,
+                    name: matchingTool.name,
+                    description: matchingTool.description,
+                    photo_url: matchingTool.photo_url,
+                    quantity: 1,
+                    model_name: toolInfo.variant
+                  };
+                }
+              } else {
+                // No variant specified, use core tool
+                toolToAdd = {
+                  id: matchingTool.id,
+                  name: matchingTool.name,
+                  description: matchingTool.description,
+                  photo_url: matchingTool.photo_url,
+                  quantity: 1
+                };
+              }
+
+              // Add tool if not already in ownedTools
+              if (toolToAdd && !finalOwnedTools.some(t => t.id === toolToAdd.id)) {
+                finalOwnedTools.push(toolToAdd);
+              }
+            }
+          }
+        }
+
         if (user) {
           // User is signed in - save to database
           const { error } = await supabase
@@ -417,7 +512,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               home_build_year: answers.homeBuildYear,
               home_state: answers.homeState,
               preferred_learning_methods: answers.preferredLearningMethods,
-              owned_tools: answers.ownedTools,
+              owned_tools: finalOwnedTools,
               project_skills: Object.keys(projectSkills).length > 0 ? projectSkills : null,
               survey_completed_at: new Date().toISOString()
             })
@@ -435,7 +530,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
 
         } else {
           // User is not signed in - save temporarily
-          saveTempProfileAnswers(answers);
+          saveTempProfileAnswers({ ...answers, ownedTools: finalOwnedTools });
           // Removed toast notification during kickoff to prevent distraction
         }
         onOpenChange(false);
@@ -751,7 +846,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">Skill Level</Label>
                       <span className="text-sm font-semibold">
-                        {answers.skillLevel === "newbie" ? "🔰 Newbie" : 
+                        {answers.skillLevel === "newbie" ? "🔰 Beginner" : 
                          answers.skillLevel === "confident" ? "🧰 Confident-ish" : 
                          answers.skillLevel === "hero" ? "🛠️ Hands-on Hero" : 
                          "Select your level"}
@@ -764,17 +859,19 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                         answers.skillLevel === "hero" ? 2 : 0
                       ]}
                       onValueChange={(value) => {
+                        // Round to nearest of 3 marks (0, 1, or 2)
+                        const roundedValue = Math.round(value[0]);
                         const levelMap = ["newbie", "confident", "hero"];
-                        setAnswers(prev => ({ ...prev, skillLevel: levelMap[value[0]] }));
+                        setAnswers(prev => ({ ...prev, skillLevel: levelMap[roundedValue] }));
                       }}
                       min={0}
                       max={2}
-                      step={1}
+                      step={0.01}
                       className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <div className="text-center">
-                        <div className="font-medium">🔰 Newbie</div>
+                        <div className="font-medium">🔰 Beginner</div>
                         <div className="text-[10px]">Just getting started</div>
                       </div>
                       <div className="text-center">
@@ -823,12 +920,14 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                         answers.physicalCapability === "heavy" ? 2 : 0
                       ]}
                       onValueChange={(value) => {
+                        // Round to nearest of 3 marks (0, 1, or 2)
+                        const roundedValue = Math.round(value[0]);
                         const levelMap = ["light", "medium", "heavy"];
-                        setAnswers(prev => ({ ...prev, physicalCapability: levelMap[value[0]] }));
+                        setAnswers(prev => ({ ...prev, physicalCapability: levelMap[roundedValue] }));
                       }}
                       min={0}
                       max={2}
-                      step={1}
+                      step={0.01}
                       className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
@@ -863,7 +962,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               {[
                 "Videos",
                 "Written guides & photos", 
-                "Realtime guidance via phone or video calls"
+                "Training workshops",
+                "Having human guidance alongside me"
               ].map((method) => (
                 <Card key={method} className="hover:border-primary/50 transition-colors">
                   <CardContent className="p-2.5 md:p-4">
@@ -894,6 +994,49 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
             </div>
             
             <div className="space-y-4">
+              {/* Quick Add Section */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Quick Add Common Tools</Label>
+                <Card className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      { name: "Hammer", variant: "Standard" },
+                      { name: "Power drill", variant: "" },
+                      { name: "Tape measure", variant: "25ft" },
+                      { name: "Adjustable wrench", variant: "" },
+                      { name: "Stud Finder", variant: "" },
+                      { name: "Circular saw", variant: "plug-in" },
+                      { name: "Utility knife", variant: "" },
+                      { name: "2ft level", variant: "2ft" },
+                      { name: "Safety glasses", variant: "" },
+                      { name: "Pliers", variant: "" },
+                      { name: "Needlenose pliers", variant: "" },
+                      { name: "Caulking gun", variant: "10oz manual" }
+                    ].map((tool) => {
+                      const toolKey = `${tool.name}|${tool.variant}`;
+                      const displayName = tool.variant ? `${tool.name} | ${tool.variant}` : tool.name;
+                      return (
+                        <div key={toolKey} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`quick-add-${toolKey}`}
+                            checked={quickAddTools[toolKey] || false}
+                            onCheckedChange={(checked) => {
+                              setQuickAddTools(prev => ({
+                                ...prev,
+                                [toolKey]: checked as boolean
+                              }));
+                            }}
+                          />
+                          <Label htmlFor={`quick-add-${toolKey}`} className="cursor-pointer text-sm">
+                            {displayName}
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              </div>
+
               <div className="flex items-center justify-between mb-3">
                 <Label className="text-base font-semibold">Tool Library</Label>
                 <Button 
@@ -917,7 +1060,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                   <div className="mt-2 flex flex-wrap gap-1">
                     {answers.ownedTools.slice(0, 5).map((tool: any) => (
                       <span key={tool.id} className="text-xs bg-muted px-2 py-1 rounded">
-                        {tool.item}
+                        {tool.name || tool.item}
                       </span>
                     ))}
                     {answers.ownedTools.length > 5 && (

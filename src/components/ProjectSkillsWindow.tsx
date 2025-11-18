@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -94,7 +94,9 @@ export function ProjectSkillsWindow({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogPortal>
+        <DialogOverlay className="z-[102]" />
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-[103]">
         <DialogHeader>
           <DialogTitle>Optional: Define Project Skills</DialogTitle>
         </DialogHeader>

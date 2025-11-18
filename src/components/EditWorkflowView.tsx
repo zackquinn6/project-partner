@@ -442,7 +442,7 @@ export default function EditWorkflowView({
     // Update only custom phases (standard phases are generated dynamically)
     const updatedProject = {
       ...currentProject,
-      phases: phases.map(phase => ({
+      phases: displayPhases.map(phase => ({
         ...phase,
         operations: phase.operations.map(operation => ({
           ...operation,
@@ -548,7 +548,7 @@ export default function EditWorkflowView({
     if (!currentProject) return;
     const updatedProject = {
       ...currentProject,
-      phases: [...phases, ...importedPhases],
+      phases: [...displayPhases, ...importedPhases],
       updatedAt: new Date()
     };
     updateProject(updatedProject);

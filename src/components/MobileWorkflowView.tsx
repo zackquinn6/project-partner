@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { MultiContentRenderer } from '@/components/MultiContentRenderer';
 import { useStepInstructions } from '@/hooks/useStepInstructions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 
 interface MobileWorkflowViewProps {
   projectName: string;
@@ -125,18 +126,21 @@ export function MobileWorkflowView({
               <h1 className="font-semibold text-sm sm:text-base text-card-foreground truncate text-center max-w-[140px] sm:max-w-none">
                 {projectName}
               </h1>
-              {onInstructionLevelChange && (
-                <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
-                  <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs w-[70px] sm:w-[90px] flex-shrink-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="quick" className="text-xs">Quick</SelectItem>
-                    <SelectItem value="detailed" className="text-xs">Detailed</SelectItem>
-                    <SelectItem value="new_user" className="text-xs">New DIY</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+              <div className="flex items-center gap-1 sm:gap-2">
+                {onInstructionLevelChange && (
+                  <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
+                    <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs w-[70px] sm:w-[90px] flex-shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="quick" className="text-xs">Quick</SelectItem>
+                      <SelectItem value="detailed" className="text-xs">Detailed</SelectItem>
+                      <SelectItem value="new_user" className="text-xs">New DIY</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                <WorkflowThemeSelector />
+              </div>
             </div>
             <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-0.5">
               Step {currentStepIndex + 1} of {totalSteps}

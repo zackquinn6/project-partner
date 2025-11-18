@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -11,6 +11,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -1994,6 +2019,7 @@ export type Database = {
           owned_tools: Json | null
           physical_capability: string | null
           preferred_learning_methods: string[] | null
+          project_skills: Json | null
           signed_agreement: Json | null
           skill_level: string | null
           space_type: string | null
@@ -2019,6 +2045,7 @@ export type Database = {
           owned_tools?: Json | null
           physical_capability?: string | null
           preferred_learning_methods?: string[] | null
+          project_skills?: Json | null
           signed_agreement?: Json | null
           skill_level?: string | null
           space_type?: string | null
@@ -2044,6 +2071,7 @@ export type Database = {
           owned_tools?: Json | null
           physical_capability?: string | null
           preferred_learning_methods?: string[] | null
+          project_skills?: Json | null
           signed_agreement?: Json | null
           skill_level?: string | null
           space_type?: string | null
@@ -2092,6 +2120,76 @@ export type Database = {
             columns: ["project_run_id"]
             isOneToOne: false
             referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note_text: string
+          operation_id: string | null
+          operation_name: string | null
+          phase_id: string | null
+          phase_name: string | null
+          project_run_id: string
+          step_id: string
+          step_name: string | null
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note_text: string
+          operation_id?: string | null
+          operation_name?: string | null
+          phase_id?: string | null
+          phase_name?: string | null
+          project_run_id: string
+          step_id: string
+          step_name?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note_text?: string
+          operation_id?: string | null
+          operation_name?: string | null
+          phase_id?: string | null
+          phase_name?: string | null
+          project_run_id?: string
+          step_id?: string
+          step_name?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_notes_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_notes_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "project_templates_live"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_notes_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2404,6 +2502,129 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "home_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_risks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          impact: string
+          likelihood: string
+          mitigation: string | null
+          notes: string | null
+          project_id: string
+          risk: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          impact: string
+          likelihood: string
+          mitigation?: string | null
+          notes?: string | null
+          project_id: string
+          risk: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          impact?: string
+          likelihood?: string
+          mitigation?: string | null
+          notes?: string | null
+          project_id?: string
+          risk?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_risks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_templates_live"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_risks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_run_risks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          impact: string
+          is_template_risk: boolean
+          likelihood: string
+          mitigation: string | null
+          notes: string | null
+          project_run_id: string
+          risk: string
+          status: string
+          template_risk_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          impact: string
+          is_template_risk?: boolean
+          likelihood: string
+          mitigation?: string | null
+          notes?: string | null
+          project_run_id: string
+          risk: string
+          status?: string
+          template_risk_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          impact?: string
+          is_template_risk?: boolean
+          likelihood?: string
+          mitigation?: string | null
+          notes?: string | null
+          project_run_id?: string
+          risk?: string
+          status?: string
+          template_risk_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_risks_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_run_risks_template_risk_id_fkey"
+            columns: ["template_risk_id"]
+            isOneToOne: false
+            referencedRelation: "project_risks"
             referencedColumns: ["id"]
           },
         ]
@@ -4580,6 +4801,10 @@ export type Database = {
         Args: { target_project_id: string }
         Returns: undefined
       }
+      copy_template_risks_to_project_run: {
+        Args: { p_project_run_id: string; p_template_id: string }
+        Returns: undefined
+      }
       create_project_revision: {
         Args: { revision_notes_text?: string; source_project_id: string }
         Returns: string
@@ -4651,24 +4876,15 @@ export type Database = {
             }
             Returns: string
           }
-      create_project_with_standard_foundation_v2:
-        | {
-            Args: {
-              p_category?: string
-              p_created_by?: string
-              p_project_description: string
-              p_project_name: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              project_category: string[]
-              project_description: string
-              project_name: string
-            }
-            Returns: string
-          }
+      create_project_with_standard_foundation_v2: {
+        Args: {
+          p_category?: string
+          p_created_by?: string
+          p_project_description: string
+          p_project_name: string
+        }
+        Returns: string
+      }
       delete_user_data: { Args: { user_uuid: string }; Returns: string }
       detect_suspicious_activity: {
         Args: never
@@ -5122,6 +5338,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       output_type: [
