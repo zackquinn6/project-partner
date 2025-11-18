@@ -8,13 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Edit, Save, X, Plus, Trash2, ExternalLink, Globe } from 'lucide-react';
+import { Edit, Save, X, Plus, Trash2, ExternalLink, Globe, RefreshCw } from 'lucide-react';
 import { AppReference } from '@/interfaces/Project';
 import { getAllNativeApps, NATIVE_APPS } from '@/utils/appsRegistry';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import * as Icons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
+import { AdminDataRefresh } from './AdminDataRefresh';
 interface AppManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -74,6 +75,7 @@ export function AppManager({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAddExternal, setShowAddExternal] = useState(false);
+  const [dataRefreshOpen, setDataRefreshOpen] = useState(false);
   const [newExternalApp, setNewExternalApp] = useState({
     appName: '',
     description: '',
@@ -491,6 +493,19 @@ export function AppManager({
           </div>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4 space-y-4">
+          {/* Data Refresh Button at Top */}
+          <div className="flex justify-end">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setDataRefreshOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Data Refresh
+            </Button>
+          </div>
+
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h3 className="text-base font-semibold">Apps Overview</h3>
@@ -768,6 +783,28 @@ export function AppManager({
               <Plus className="w-4 h-4 mr-2" />
               Add External App
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Data Refresh Dialog */}
+      <Dialog open={dataRefreshOpen} onOpenChange={setDataRefreshOpen}>
+        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-lg md:text-xl font-bold">Data Refresh Management</DialogTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setDataRefreshOpen(false)} 
+                className="h-7 px-2 text-[9px] md:text-xs"
+              >
+                Close
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+            <AdminDataRefresh />
           </div>
         </DialogContent>
       </Dialog>

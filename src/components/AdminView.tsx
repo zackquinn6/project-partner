@@ -15,12 +15,9 @@ import { toast } from 'sonner';
 import { StructureManager } from './StructureManager';
 import { AdminRoadmapManager } from './AdminRoadmapManager';
 import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
-import { AdminDataRefresh } from './AdminDataRefresh';
 import { AdminGuideWindow } from './AdminGuideWindow';
-import { PFMEAManagement } from './PFMEAManagement';
 import { BetaModeToggle } from './BetaModeToggle';
 import { AppManager } from './AppManager';
-import { AIProjectGenerator } from './AIProjectGenerator';
 export const AdminView: React.FC = () => {
   const [enhancedProjectManagementOpen, setEnhancedProjectManagementOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
@@ -29,14 +26,11 @@ export const AdminView: React.FC = () => {
   const [homeRiskManagerOpen, setHomeRiskManagerOpen] = useState(false);
   const [editWorkflowOpen, setEditWorkflowOpen] = useState(false);
   const [structureManagerOpen, setStructureManagerOpen] = useState(false);
-  const [processDesignOpen, setProcessDesignOpen] = useState(false);
   const [roadmapManagerOpen, setRoadmapManagerOpen] = useState(false);
   const [featureRequestManagerOpen, setFeatureRequestManagerOpen] = useState(false);
   const [adminGuideOpen, setAdminGuideOpen] = useState(false);
-  const [dataRefreshOpen, setDataRefreshOpen] = useState(false);
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [appManagerOpen, setAppManagerOpen] = useState(false);
-  const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'admin' | 'structure-manager'>('admin');
 
   if (currentView === 'structure-manager') {
@@ -179,40 +173,6 @@ export const AdminView: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setProcessDesignOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Cog className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Process FMEA</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Process Failure Mode & Effects Analysis - identify and mitigate potential process failures
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setProcessDesignOpen(true)}>
-                Process FMEA
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setDataRefreshOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <RefreshCw className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Data Refresh</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Manage internet data refresh for tool rentals and community posts
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setDataRefreshOpen(true)}>
-                Data Management
-              </Button>
-            </CardContent>
-          </Card>
-
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setAppManagerOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -226,23 +186,6 @@ export const AdminView: React.FC = () => {
             <CardContent className="mt-auto">
               <Button className="w-full" onClick={() => setAppManagerOpen(true)}>
                 App Manager
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setAiProjectGeneratorOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Sparkles className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>AI Project Generator</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Generate complete project structures using AI with web scraping and content population
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setAiProjectGeneratorOpen(true)}>
-                Generate Project
               </Button>
             </CardContent>
           </Card>
@@ -312,60 +255,9 @@ export const AdminView: React.FC = () => {
 
         <AdminGuideWindow open={adminGuideOpen} onOpenChange={setAdminGuideOpen} />
 
-        <Dialog open={processDesignOpen} onOpenChange={setProcessDesignOpen}>
-          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-            <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <div className="flex items-center justify-between gap-2">
-                <DialogTitle className="text-lg md:text-xl font-bold">Process FMEA</DialogTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setProcessDesignOpen(false)} 
-                  className="h-7 px-2 text-[9px] md:text-xs"
-                >
-                  Close
-                </Button>
-              </div>
-            </DialogHeader>
-            <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
-              <PFMEAManagement />
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={dataRefreshOpen} onOpenChange={setDataRefreshOpen}>
-          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-            <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <div className="flex items-center justify-between gap-2">
-                <DialogTitle className="text-lg md:text-xl font-bold">Data Refresh Management</DialogTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setDataRefreshOpen(false)} 
-                  className="h-7 px-2 text-[9px] md:text-xs"
-                >
-                  Close
-                </Button>
-              </div>
-            </DialogHeader>
-            <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
-              <AdminDataRefresh />
-            </div>
-          </DialogContent>
-        </Dialog>
-
         <AdminActionCenter open={actionCenterOpen} onOpenChange={setActionCenterOpen} />
 
         <AppManager open={appManagerOpen} onOpenChange={setAppManagerOpen} />
-
-        <AIProjectGenerator 
-          open={aiProjectGeneratorOpen} 
-          onOpenChange={setAiProjectGeneratorOpen}
-          onProjectCreated={(projectId) => {
-            toast.success('Project created successfully!');
-            setEnhancedProjectManagementOpen(true);
-          }}
-        />
 
         <Dialog open={editWorkflowOpen} onOpenChange={setEditWorkflowOpen}>
           <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">

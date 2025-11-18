@@ -12,13 +12,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown } from 'lucide-react';
+import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
 import { ProjectOwnershipSelector } from '@/components/ProjectOwnershipSelector';
 import { ProjectImageManager } from '@/components/ProjectImageManager';
+import { AIProjectGenerator } from '@/components/AIProjectGenerator';
+import { PFMEAManagement } from '@/components/PFMEAManagement';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = ['Appliances', 'Bathroom', 'Ceilings', 'Decks & Patios', 'Doors & Windows', 'Electrical', 'Exterior Carpentry', 'Flooring', 'General Repairs & Maintenance', 'HVAC & Ventilation', 'Insulation & Weatherproofing', 'Interior Carpentry', 'Kitchen', 'Landscaping & Outdoor Projects', 'Lighting & Electrical', 'Masonry & Concrete', 'Painting & Finishing', 'Plumbing', 'Roofing', 'Safety & Security', 'Smart Home & Technology', 'Storage & Organization', 'Tile', 'Walls & Drywall'];
@@ -96,6 +98,8 @@ export function UnifiedProjectManagement({
     estimated_time: '',
     scaling_unit: ''
   });
+  const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
+  const [pfmeaOpen, setPfmeaOpen] = useState(false);
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -550,6 +554,14 @@ export function UnifiedProjectManagement({
                 <Button onClick={handleEditStandardProject} variant="outline" className="flex items-center gap-2">
                   <Lock className="w-4 h-4" />
                   Edit Standard
+                </Button>
+                <Button onClick={() => setAiProjectGeneratorOpen(true)} variant="outline" className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  AI Generator
+                </Button>
+                <Button onClick={() => setPfmeaOpen(true)} variant="outline" className="flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  PFMEA
                 </Button>
                 <Button onClick={fetchProjects} variant="outline" className="flex items-center gap-2">
                   <RefreshCw className="w-4 h-4" />
@@ -1174,6 +1186,38 @@ export function UnifiedProjectManagement({
                 Create Project
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Project Generator Dialog */}
+      <AIProjectGenerator
+        open={aiProjectGeneratorOpen}
+        onOpenChange={setAiProjectGeneratorOpen}
+        onProjectCreated={(projectId) => {
+          toast.success('Project created successfully!');
+          fetchProjects();
+        }}
+      />
+
+      {/* PFMEA Dialog */}
+      <Dialog open={pfmeaOpen} onOpenChange={setPfmeaOpen}>
+        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-lg md:text-xl font-bold">Process FMEA</DialogTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setPfmeaOpen(false)} 
+                className="h-7 px-2 text-[9px] md:text-xs"
+              >
+                Close
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+            <PFMEAManagement />
           </div>
         </DialogContent>
       </Dialog>
