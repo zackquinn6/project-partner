@@ -91,6 +91,22 @@ Generate a complete project structure with the following requirements:
    - Mitigation: Specific mitigation measure
    - Mitigation cost: Optional cost estimate (e.g., "$25 for drop cloths")
 
+${includeDecisionTrees ? `8. DECISION TREES AND ALTERNATIVE OPERATIONS:
+   - IF-NECESSARY OPERATIONS: Create operations that are conditional based on project state
+     Example: "Wall Spackling (If Necessary)" - only needed if walls have holes/cracks
+     - Set flowType: "if-necessary"
+     - Include decisionCriteria: Clear criteria for when this operation is needed
+     - Set dependentOn: Reference to the operation that determines if this is needed
+   
+   - ALTERNATIVE OPERATIONS: Create separate operations when the process/methodology is fundamentally different
+     Example: "Paint with Roller" vs "Paint with Sprayer" - different techniques, different steps
+     - Set flowType: "alternate"
+     - Set alternateGroup: Same group ID for all operations that are alternatives to each other
+     - Each alternative operation should have complete, independent steps
+   
+   - STANDARD OPERATIONS: Normal operations in the workflow
+     - Set flowType: "standard" or omit` : ''}
+
 Return ONLY valid JSON in this exact structure:
 {
   "phases": [
@@ -101,12 +117,19 @@ Return ONLY valid JSON in this exact structure:
         {
           "name": "Operation Name",
           "description": "Operation description",
+          ${includeDecisionTrees ? `"flowType": "standard|if-necessary|alternate",
+          "alternateGroup": "group-id-if-alternate",
+          "decisionCriteria": "Criteria for if-necessary operations",
+          "dependentOn": "operation-id-if-dependent",` : ''}
           "steps": [
             {
               "stepTitle": "Step Title",
               "description": "Step description",
               "materials": ["Material 1", "Material 2"],
-              "tools": ["Tool 1", "Tool 2"],
+              ${includeAlternateTools ? `"tools": [
+                {"name": "Tool 1", "alternates": ["Alternate Tool 1", "Alternate Tool 2"]},
+                {"name": "Tool 2"}
+              ],` : `"tools": ["Tool 1", "Tool 2"],`}
               "outputs": [
                 {
                   "name": "Output Name",
