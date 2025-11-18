@@ -312,7 +312,7 @@ export function AIProjectGenerator({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">Create New Project</SelectItem>
-                      {projects && projects.filter(p => p.is_current_version !== false).map((project) => (
+                      {projects && projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
                         </SelectItem>
