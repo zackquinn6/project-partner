@@ -75,6 +75,8 @@ export function AIProjectGenerator({
     outputs: true,
     processVariables: true,
     timeEstimation: true,
+    decisionTrees: true,
+    alternateTools: true,
   });
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -206,6 +208,8 @@ export function AIProjectGenerator({
       outputs: true,
       processVariables: true,
       timeEstimation: true,
+      decisionTrees: true,
+      alternateTools: true,
     });
   };
 
@@ -267,6 +271,8 @@ export function AIProjectGenerator({
                   <p>• Tools and materials will be matched against your existing library</p>
                   <p>• Instructions will be generated at the skill levels you select</p>
                   <p>• Process variables, outputs, and time estimates will be included based on your selections</p>
+                  <p>• Decision trees can create "if necessary" operations and alternative operation paths</p>
+                  <p>• Alternate tools allow multiple tool options for the same operation (e.g., standard vs automated paint roller)</p>
                 </CardContent>
               </Card>
 
@@ -407,9 +413,75 @@ export function AIProjectGenerator({
                         Time Estimation
                       </Label>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-decision-trees"
+                        checked={contentSelection.decisionTrees}
+                        onChange={() => toggleContentSelection('decisionTrees')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-decision-trees" className="cursor-pointer font-normal">
+                        Decision Trees (Alternative Operations & If-Necessary Steps)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-alternate-tools"
+                        checked={contentSelection.alternateTools}
+                        onChange={() => toggleContentSelection('alternateTools')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-alternate-tools" className="cursor-pointer font-normal">
+                        Alternate Tools
+                      </Label>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Decision Tree Rules Section */}
+              {(contentSelection.decisionTrees || contentSelection.alternateTools) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Alternate Tools vs Alternate Operations Rule</CardTitle>
+                    <CardDescription>
+                      Understanding when to use alternate tools versus creating separate alternative operations
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="font-semibold mb-2">Use Alternate Tools when:</p>
+                      <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                        <li>The same operation/process can be completed with different tool options</li>
+                        <li>Tools perform the same function but with different features or automation levels</li>
+                        <li>Example: Standard paint roller vs Automated paint roller (both roll paint, same process)</li>
+                        <li>Example: Manual screwdriver vs Electric screwdriver (both drive screws, same process)</li>
+                      </ul>
+                    </div>
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="font-semibold mb-2">Use Alternate Operations when:</p>
+                      <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                        <li>The process/methodology is fundamentally different, not just the tool</li>
+                        <li>Different techniques require different steps, safety considerations, or workflows</li>
+                        <li>Example: Painting with roller vs Painting with sprayer (different techniques, different steps)</li>
+                        <li>Example: Hand sanding vs Machine sanding (different processes, different time/effort)</li>
+                        <li>Example: "If necessary" operations like wall spackling (conditional step based on wall condition)</li>
+                      </ul>
+                    </div>
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="font-semibold mb-1 text-blue-900 dark:text-blue-100">Key Differentiator:</p>
+                      <p className="text-blue-800 dark:text-blue-200">
+                        <strong>Same process, different tools = Alternate Tools</strong> | 
+                        <strong> Different process/methodology = Alternate Operations</strong>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               <div className="space-y-2">
                 <Label>Categories *</Label>

@@ -9,17 +9,31 @@ export interface PromptContext {
   category: string[];
   existingTools?: string[];
   existingMaterials?: string[];
+  contentSelection?: {
+    structure?: boolean;
+    tools?: boolean;
+    materials?: boolean;
+    instructions3Level?: boolean;
+    instructions1Level?: boolean;
+    outputs?: boolean;
+    processVariables?: boolean;
+    timeEstimation?: boolean;
+    decisionTrees?: boolean;
+    alternateTools?: boolean;
+  };
 }
 
 /**
  * Main prompt for generating complete project structure
  */
 export function getProjectGenerationPrompt(context: PromptContext): string {
-  const { projectName, projectDescription, category, existingTools = [], existingMaterials = [] } = context;
+  const { projectName, projectDescription, category, existingTools = [], existingMaterials = [], contentSelection } = context;
+  const includeDecisionTrees = contentSelection?.decisionTrees ?? true;
+  const includeAlternateTools = contentSelection?.alternateTools ?? true;
 
   return `You are an expert DIY project planner specializing in ${category.join(', ')} projects.
 
-Create a comprehensive interior painting project with complete structure and content.
+Create a comprehensive ${projectName} project with complete structure and content.
 
 PROJECT: ${projectName}
 ${projectDescription ? `DESCRIPTION: ${projectDescription}` : ''}
@@ -49,6 +63,9 @@ Generate a complete project structure with the following requirements:
    - Match suggested items to library items (use exact names from library)
    - If an item isn't in library, suggest it but note it needs to be added
    - Include quantities where applicable
+   ${includeAlternateTools ? `- ALTERNATE TOOLS: When the same operation can use different tool options (same process, different tools), include alternates array for each tool
+     Example: For "Paint with roller" operation, tools could be [{"name": "Paint Roller", "alternates": ["Automated Paint Roller"]}]
+     Rule: Same process + different tools = Alternate Tools` : ''}
 
 5. PROCESS VARIABLES: Dynamic variables for each step
    - For prep steps: e.g., "cleaner_application_coverage" (percentage)
@@ -65,6 +82,29 @@ Generate a complete project structure with the following requirements:
    - Mitigation: Specific mitigation measure
    - Mitigation cost: Optional cost estimate (e.g., "$25 for drop cloths")
 
+${includeDecisionTrees ? `8. DECISION TREES AND ALTERNATIVE OPERATIONS:
+   - IF-NECESSARY OPERATIONS: Create operations that are conditional based on project state
+     Example: "Wall Spackling (If Necessary)" - only needed if walls have holes/cracks
+     - Set flowType: "if-necessary"
+     - Include decisionCriteria: Clear criteria for when this operation is needed (e.g., "If walls have holes, cracks, or imperfections")
+     - Set dependentOn: Reference to the operation that determines if this is needed
+   
+   - ALTERNATIVE OPERATIONS: Create separate operations when the process/methodology is fundamentally different
+     Example: "Paint with Roller" vs "Paint with Sprayer" - different techniques, different steps
+     - Set flowType: "alternate"
+     - Set alternateGroup: Same group ID for all operations that are alternatives to each other
+     - Each alternative operation should have complete, independent steps
+     - Rule: Different process/methodology = Alternate Operations (NOT alternate tools)
+   
+   - STANDARD OPERATIONS: Normal operations in the workflow
+     - Set flowType: "standard" or omit
+   
+   CRITICAL RULE - Alternate Tools vs Alternate Operations:
+   - ALTERNATE TOOLS: Same operation/process, different tool options (e.g., Standard Paint Roller vs Automated Paint Roller)
+     → Use alternate tools array in the tools field
+   - ALTERNATE OPERATIONS: Different process/methodology requiring different steps (e.g., Roller Painting vs Sprayer Painting)
+     → Create separate operations with alternateGroup` : ''}
+
 Return the response as a JSON object with this exact structure:
 {
   "phases": [
@@ -75,12 +115,19 @@ Return the response as a JSON object with this exact structure:
         {
           "name": "Operation Name",
           "description": "Operation description",
+          ${includeDecisionTrees ? `"flowType": "standard|if-necessary|alternate",
+          "alternateGroup": "group-id-if-alternate",
+          "decisionCriteria": "Criteria for if-necessary operations",
+          "dependentOn": "operation-id-if-dependent",` : ''}
           "steps": [
             {
               "stepTitle": "Step Title",
               "description": "Step description",
               "materials": ["Material 1", "Material 2"],
-              "tools": ["Tool 1", "Tool 2"],
+              ${includeAlternateTools ? `"tools": [
+                {"name": "Tool 1", "alternates": ["Alternate Tool 1", "Alternate Tool 2"]},
+                {"name": "Tool 2"}
+              ],` : `"tools": ["Tool 1", "Tool 2"],`}
               "outputs": [
                 {
                   "name": "Output Name",

@@ -12,6 +12,18 @@ export interface ProjectGenerationRequest {
   aiModel?: 'gpt-4o-mini' | 'gpt-4-turbo' | 'gpt-4o';
   includeWebScraping?: boolean;
   webSources?: string[];
+  contentSelection?: {
+    structure?: boolean;
+    tools?: boolean;
+    materials?: boolean;
+    instructions3Level?: boolean;
+    instructions1Level?: boolean;
+    outputs?: boolean;
+    processVariables?: boolean;
+    timeEstimation?: boolean;
+    decisionTrees?: boolean;
+    alternateTools?: boolean;
+  };
 }
 
 export interface GeneratedProjectStructure {
@@ -21,11 +33,18 @@ export interface GeneratedProjectStructure {
     operations: Array<{
       name: string;
       description: string;
+      flowType?: 'if-necessary' | 'alternate' | 'standard';
+      alternateGroup?: string; // Group ID for alternative operations
+      decisionCriteria?: string; // Criteria for if-necessary operations
+      dependentOn?: string; // Operation ID this depends on
       steps: Array<{
         stepTitle: string;
         description: string;
         materials: string[];
-        tools: string[];
+        tools: Array<{
+          name: string;
+          alternates?: string[]; // Alternate tool names
+        }>;
         outputs: Array<{
           name: string;
           description: string;
@@ -157,6 +176,7 @@ export async function generateProjectWithAI(
         aiModel: request.aiModel || 'gpt-4o-mini',
         includeWebScraping: request.includeWebScraping ?? true,
         webSources: request.webSources || [],
+        contentSelection: request.contentSelection,
       },
     });
 

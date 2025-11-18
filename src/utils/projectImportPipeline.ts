@@ -72,53 +72,124 @@ export async function importGeneratedProject(
     const projectId = project.id;
 
     // Step 2: Process each phase
-    for (const phase of generatedStructure.phases) {
-      // Check if phase exists in standard_phases or create custom phase
-      let phaseId: string;
-
-      // Try to find existing standard phase
-      const { data: existingPhase } = await supabase
+    for (let phaseIndex = 0; phaseIndex < generatedStructure.phases.length; phaseIndex++) {
+      const phase = generatedStructure.phases[phaseIndex];
+      
+      // Check if phase exists in standard_phases
+      const { data: existingStandardPhase } = await supabase
         .from('standard_phases')
         .select('id')
         .eq('name', phase.name)
-        .single();
+        .maybeSingle();
 
-      if (existingPhase) {
-        phaseId = existingPhase.id;
+      let phaseId: string;
+      
+      if (existingStandardPhase) {
+        // Use existing standard phase - find or create project_phases entry
+        const { data: existingProjectPhase } = await supabase
+          .from('project_phases')
+          .select('id')
+          .eq('project_id', projectId)
+          .eq('standard_phase_id', existingStandardPhase.id)
+          .maybeSingle();
+          
+        if (existingProjectPhase) {
+          phaseId = existingProjectPhase.id;
+        } else {
+          // Create project_phases entry for standard phase
+          const { data: newProjectPhase, error: phaseError } = await supabase
+            .from('project_phases')
+            .insert({
+              project_id: projectId,
+              name: phase.name,
+              description: phase.description,
+              display_order: phaseIndex,
+              is_standard: true,
+              standard_phase_id: existingStandardPhase.id,
+            })
+            .select('id')
+            .single();
+
+          if (phaseError || !newProjectPhase) {
+            result.warnings.push(`Failed to create project phase "${phase.name}": ${phaseError?.message}`);
+            continue;
+          }
+          phaseId = newProjectPhase.id;
+        }
       } else {
-        // Create custom standard phase
-        const { data: newPhase, error: phaseError } = await supabase
+        // Create custom phase - first create standard_phase, then project_phases
+        const { data: newStandardPhase, error: standardPhaseError } = await supabase
           .from('standard_phases')
           .insert({
             name: phase.name,
             description: phase.description,
-            is_locked: false,
-            position_rule: 'nth',
-            position_value: 999, // Will be adjusted
+            display_order: 999,
           })
           .select('id')
           .single();
 
-        if (phaseError || !newPhase) {
-          result.warnings.push(`Failed to create phase "${phase.name}": ${phaseError?.message}`);
+        if (standardPhaseError || !newStandardPhase) {
+          result.warnings.push(`Failed to create standard phase "${phase.name}": ${standardPhaseError?.message}`);
           continue;
         }
 
-        phaseId = newPhase.id;
+        // Create project_phases entry
+        const { data: newProjectPhase, error: phaseError } = await supabase
+          .from('project_phases')
+          .insert({
+            project_id: projectId,
+            name: phase.name,
+            description: phase.description,
+            display_order: phaseIndex,
+            is_standard: false,
+            standard_phase_id: newStandardPhase.id,
+          })
+          .select('id')
+          .single();
+
+        if (phaseError || !newProjectPhase) {
+          result.warnings.push(`Failed to create project phase "${phase.name}": ${phaseError?.message}`);
+          continue;
+        }
+        phaseId = newProjectPhase.id;
       }
 
       // Step 3: Process operations
+      // First pass: Create all operations to get IDs for alternate groups and dependencies
+      const operationIdMap = new Map<string, string>(); // Map operation name/index to DB ID
+      const alternateGroups = new Map<string, string[]>(); // Map group ID to operation DB IDs
+      
       for (let opIndex = 0; opIndex < phase.operations.length; opIndex++) {
         const operation = phase.operations[opIndex];
+        
+        // Determine flow_type and alternate_group
+        let flowType: string | null = null;
+        let alternateGroup: string | null = null;
+        let userPrompt: string | null = null;
+        let dependentOn: string | null = null;
+        
+        if (operation.flowType === 'if-necessary') {
+          flowType = 'if-necessary';
+          userPrompt = operation.decisionCriteria || null;
+          // dependentOn will be set after all operations are created
+        } else if (operation.flowType === 'alternate') {
+          flowType = 'alternate';
+          alternateGroup = operation.alternateGroup || `alt-group-${phase.name}-${opIndex}`;
+        } else {
+          flowType = 'prime'; // Standard flow
+        }
 
         const { data: createdOperation, error: opError } = await supabase
           .from('template_operations')
           .insert({
             project_id: projectId,
-            standard_phase_id: phaseId,
+            phase_id: phaseId,
             name: operation.name,
             description: operation.description,
             display_order: opIndex,
+            flow_type: flowType,
+            alternate_group: alternateGroup,
+            user_prompt: userPrompt,
           })
           .select('id')
           .single();
@@ -128,14 +199,50 @@ export async function importGeneratedProject(
           continue;
         }
 
+        // Store operation ID mapping
+        const operationKey = `${phase.name}-${operation.name}-${opIndex}`;
+        operationIdMap.set(operationKey, createdOperation.id);
+        
+        // Track alternate groups
+        if (alternateGroup) {
+          const existing = alternateGroups.get(alternateGroup) || [];
+          alternateGroups.set(alternateGroup, [...existing, createdOperation.id]);
+        }
+
         result.stats.operationsCreated++;
 
         // Step 4: Process steps
         for (let stepIndex = 0; stepIndex < operation.steps.length; stepIndex++) {
           const step = operation.steps[stepIndex];
 
+          // Handle tools - support both string array and object array with alternates
+          let toolNames: string[] = [];
+          const toolAlternatesMap = new Map<string, string[]>();
+          
+          if (Array.isArray(step.tools)) {
+            step.tools.forEach(tool => {
+              if (typeof tool === 'string') {
+                toolNames.push(tool);
+              } else if (tool && typeof tool === 'object' && 'name' in tool) {
+                toolNames.push(tool.name);
+                if (tool.alternates && Array.isArray(tool.alternates)) {
+                  toolAlternatesMap.set(tool.name, tool.alternates);
+                }
+              }
+            });
+          }
+
           // Match tools and materials
-          const matchedTools = await matchToolsToLibrary(step.tools);
+          const matchedTools = await matchToolsToLibrary(toolNames);
+          
+          // Add alternate tools to matched tools
+          const toolsWithAlternates = matchedTools.map(tool => {
+            const alternates = toolAlternatesMap.get(tool.name) || [];
+            return {
+              ...tool,
+              alternates: alternates.length > 0 ? alternates : undefined,
+            };
+          });
           const matchedMaterials = await matchMaterialsToLibrary(step.materials);
 
           result.stats.toolsMatched += matchedTools.filter(t => t.matched).length;
@@ -161,10 +268,11 @@ export async function importGeneratedProject(
                 description: '',
                 category: '',
               })),
-              tools: matchedTools.map(t => ({
+              tools: toolsWithAlternates.map(t => ({
                 name: t.matched ? t.matchedName : t.name,
                 description: '',
                 category: '',
+                alternates: t.alternates,
               })),
               outputs: step.outputs.map(o => ({
                 name: o.name,
