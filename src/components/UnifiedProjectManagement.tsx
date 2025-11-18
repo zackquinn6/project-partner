@@ -175,7 +175,9 @@ export function UnifiedProjectManagement({
         skill_level: editedProject.skill_level !== undefined ? editedProject.skill_level : selectedProject.skill_level,
         estimated_time: editedProject.estimated_time !== undefined ? editedProject.estimated_time : selectedProject.estimated_time,
         scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        // Always include project_challenges - determine value below
+        project_challenges: null
       };
 
       // Include images and cover_image - preserve existing values if not explicitly changed
@@ -191,24 +193,20 @@ export function UnifiedProjectManagement({
         updateData.cover_image = selectedProject.cover_image;
       }
 
-      // Include project_challenges - ALWAYS include it in the update
+      // Set project_challenges - ALWAYS include it in the update
       // If user edited it, use that value (even if empty string)
       // Otherwise preserve existing value
       if (editedProject.hasOwnProperty('project_challenges')) {
         // User has edited the field - preserve the exact value (even if empty string)
-        // Only convert to null if it's actually undefined
-        updateData.project_challenges = editedProject.project_challenges !== undefined 
-          ? editedProject.project_challenges 
-          : null;
-        console.log('📝 Including project_challenges from editedProject:', editedProject.project_challenges, '→', updateData.project_challenges);
+        updateData.project_challenges = editedProject.project_challenges ?? null;
+        console.log('📝 Using project_challenges from editedProject:', editedProject.project_challenges, '→', updateData.project_challenges);
       } else if (selectedProject.project_challenges !== undefined && selectedProject.project_challenges !== null) {
         // Preserve existing value if not being edited
         updateData.project_challenges = selectedProject.project_challenges;
-        console.log('📝 Including project_challenges from selectedProject:', selectedProject.project_challenges);
+        console.log('📝 Using project_challenges from selectedProject:', selectedProject.project_challenges);
       } else {
-        // Explicitly set to null to ensure field is updated
-        updateData.project_challenges = null;
-        console.log('📝 Setting project_challenges to null (no existing value)');
+        // Keep as null (already set above)
+        console.log('📝 Keeping project_challenges as null (no existing value)');
       }
 
       console.log('💾 Saving project edit:', {
