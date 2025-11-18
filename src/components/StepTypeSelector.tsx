@@ -43,7 +43,7 @@ export const StepTypeSelector: React.FC<StepTypeSelectorProps> = ({
   return (
     <div className="space-y-2">
       <Label htmlFor="step-type">Step Type</Label>
-      <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+      <Select value={value || undefined} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger className="bg-background">
           <SelectValue placeholder="Select step type">
             {selectedType && (
