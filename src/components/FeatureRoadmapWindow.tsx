@@ -84,7 +84,25 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
       if (roadmapResponse.error) throw roadmapResponse.error;
       if (requestsResponse.error) throw requestsResponse.error;
       if (userVotesResponse.error) throw userVotesResponse.error;
-      setRoadmapItems((roadmapResponse.data || []) as RoadmapItem[]);
+      const allRoadmapItems = (roadmapResponse.data || []) as RoadmapItem[];
+      
+      // Filter out completed items for user-facing view
+      const filteredItems = allRoadmapItems.filter(item => item.status !== 'completed');
+      
+      // Sort by target_date (ETA) soonest to latest, items without dates go last
+      const sortedItems = filteredItems.sort((a, b) => {
+        // Items with dates come first
+        if (a.target_date && !b.target_date) return -1;
+        if (!a.target_date && b.target_date) return 1;
+        // Both have dates - sort by date
+        if (a.target_date && b.target_date) {
+          return new Date(a.target_date).getTime() - new Date(b.target_date).getTime();
+        }
+        // Neither has date - maintain original order
+        return 0;
+      });
+      
+      setRoadmapItems(sortedItems);
       setFeatureRequests((requestsResponse.data || []) as FeatureRequest[]);
 
       // Set user votes

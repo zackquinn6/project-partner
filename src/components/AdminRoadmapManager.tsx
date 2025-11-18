@@ -65,7 +65,23 @@ export const AdminRoadmapManager: React.FC<AdminRoadmapManagerProps> = ({
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      setRoadmapItems((data || []) as RoadmapItem[]);
+      
+      const allItems = (data || []) as RoadmapItem[];
+      
+      // Sort by target_date (ETA) soonest to latest, items without dates go last
+      const sortedItems = allItems.sort((a, b) => {
+        // Items with dates come first
+        if (a.target_date && !b.target_date) return -1;
+        if (!a.target_date && b.target_date) return 1;
+        // Both have dates - sort by date
+        if (a.target_date && b.target_date) {
+          return new Date(a.target_date).getTime() - new Date(b.target_date).getTime();
+        }
+        // Neither has date - maintain original order (display_order)
+        return a.display_order - b.display_order;
+      });
+      
+      setRoadmapItems(sortedItems);
     } catch (error) {
       console.error('Error fetching roadmap items:', error);
     } finally {
