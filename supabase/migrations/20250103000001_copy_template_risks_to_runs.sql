@@ -27,6 +27,7 @@ BEGIN
       likelihood,
       impact,
       mitigation,
+      notes,
       status,
       is_template_risk,
       display_order
@@ -37,6 +38,7 @@ BEGIN
       template_risk.likelihood,
       template_risk.impact,
       template_risk.mitigation,
+      template_risk.notes,
       'open', -- Default status for new risks
       true, -- Mark as template risk
       risk_order

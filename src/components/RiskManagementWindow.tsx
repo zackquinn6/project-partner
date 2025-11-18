@@ -19,6 +19,7 @@ interface Risk {
   likelihood: 'low' | 'medium' | 'high' | 'critical';
   impact: 'low' | 'medium' | 'high' | 'critical';
   mitigation: string | null;
+  notes?: string | null;
   status?: 'open' | 'mitigated' | 'closed' | 'monitoring';
   is_template_risk?: boolean;
   template_risk_id?: string | null;
@@ -51,6 +52,7 @@ export function RiskManagementWindow({
     likelihood: 'medium' as 'low' | 'medium' | 'high' | 'critical',
     impact: 'medium' as 'low' | 'medium' | 'high' | 'critical',
     mitigation: '',
+    notes: '',
     status: 'open' as 'open' | 'mitigated' | 'closed' | 'monitoring'
   });
 
@@ -115,7 +117,8 @@ export function RiskManagementWindow({
               risk: formData.risk.trim(),
               likelihood: formData.likelihood,
               impact: formData.impact,
-              mitigation: formData.mitigation.trim() || null
+              mitigation: formData.mitigation.trim() || null,
+              notes: formData.notes.trim() || null
             })
             .eq('id', editingRisk.id);
 
@@ -141,6 +144,7 @@ export function RiskManagementWindow({
               likelihood: formData.likelihood,
               impact: formData.impact,
               mitigation: formData.mitigation.trim() || null,
+              notes: formData.notes.trim() || null,
               created_by: user.id,
               display_order: nextOrder
             });
@@ -158,6 +162,7 @@ export function RiskManagementWindow({
               likelihood: formData.likelihood,
               impact: formData.impact,
               mitigation: formData.mitigation.trim() || null,
+              notes: formData.notes.trim() || null,
               status: formData.status
             })
             .eq('id', editingRisk.id);
@@ -184,6 +189,7 @@ export function RiskManagementWindow({
               likelihood: formData.likelihood,
               impact: formData.impact,
               mitigation: formData.mitigation.trim() || null,
+              notes: formData.notes.trim() || null,
               status: formData.status,
               is_template_risk: false, // User-added risk
               created_by: user.id,
@@ -202,6 +208,7 @@ export function RiskManagementWindow({
         likelihood: 'medium',
         impact: 'medium',
         mitigation: '',
+        notes: '',
         status: 'open'
       });
       fetchRisks();
@@ -218,6 +225,7 @@ export function RiskManagementWindow({
       likelihood: risk.likelihood,
       impact: risk.impact,
       mitigation: risk.mitigation || '',
+      notes: risk.notes || '',
       status: risk.status || 'open'
     });
     setShowAddForm(true);
@@ -339,6 +347,7 @@ export function RiskManagementWindow({
                         likelihood: 'medium',
                         impact: 'medium',
                         mitigation: '',
+                        notes: '',
                         status: 'open'
                       });
                       setShowAddForm(true);
@@ -369,6 +378,7 @@ export function RiskManagementWindow({
                         <TableHead className="w-[100px]">Likelihood</TableHead>
                         <TableHead className="w-[100px]">Impact</TableHead>
                         <TableHead className="w-[200px]">Mitigation</TableHead>
+                        <TableHead className="w-[200px]">Notes</TableHead>
                         {mode === 'run' && <TableHead className="w-[120px]">Status</TableHead>}
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
@@ -378,11 +388,6 @@ export function RiskManagementWindow({
                         <TableRow key={risk.id}>
                           <TableCell className="font-medium">
                             {risk.risk}
-                            {risk.is_template_risk && (
-                              <Badge variant="outline" className="ml-2 text-xs">
-                                Template
-                              </Badge>
-                            )}
                           </TableCell>
                           <TableCell>
                             <Badge className={getRiskLevelColor(risk.likelihood, 'low')}>
@@ -396,6 +401,9 @@ export function RiskManagementWindow({
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {risk.mitigation || '-'}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground break-words max-w-[200px]">
+                            {risk.notes || '-'}
                           </TableCell>
                           {mode === 'run' && (
                             <TableCell>
@@ -514,6 +522,17 @@ export function RiskManagementWindow({
                 />
               </div>
 
+              <div>
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Additional notes about this risk..."
+                  rows={3}
+                />
+              </div>
+
               {mode === 'run' && (
                 <div>
                   <Label htmlFor="status">Status</Label>
@@ -543,6 +562,7 @@ export function RiskManagementWindow({
                     likelihood: 'medium',
                     impact: 'medium',
                     mitigation: '',
+                    notes: '',
                     status: 'open'
                   });
                 }}>
