@@ -191,9 +191,11 @@ export function UnifiedProjectManagement({
         updateData.cover_image = selectedProject.cover_image;
       }
 
-      // Include project_challenges - always include it if it's in editedProject (even if empty string)
-      // This ensures we save empty strings when user clears the field
-      if (editedProject.project_challenges !== undefined) {
+      // Include project_challenges - ALWAYS include it in the update
+      // If user edited it, use that value (even if empty string)
+      // Otherwise preserve existing value
+      if (editedProject.hasOwnProperty('project_challenges')) {
+        // User has edited the field (even if they cleared it to empty string)
         updateData.project_challenges = editedProject.project_challenges || null;
         console.log('📝 Including project_challenges from editedProject:', editedProject.project_challenges);
       } else if (selectedProject.project_challenges !== undefined && selectedProject.project_challenges !== null) {
@@ -201,9 +203,9 @@ export function UnifiedProjectManagement({
         updateData.project_challenges = selectedProject.project_challenges;
         console.log('📝 Including project_challenges from selectedProject:', selectedProject.project_challenges);
       } else {
-        // Explicitly set to null if field exists but is null/undefined
+        // Explicitly set to null to ensure field is updated
         updateData.project_challenges = null;
-        console.log('📝 Setting project_challenges to null');
+        console.log('📝 Setting project_challenges to null (no existing value)');
       }
 
       console.log('💾 Saving project edit:', {
