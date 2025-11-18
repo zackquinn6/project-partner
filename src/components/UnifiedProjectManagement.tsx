@@ -250,7 +250,8 @@ export function UnifiedProjectManagement({
           }
           
           console.log('✅ Project saved successfully (with fallback):', retryData);
-          toast.success("Project updated successfully!");
+          
+          // Clear edited state BEFORE refreshing to prevent showing unsaved data
           setEditingProject(false);
           setEditedProject({});
           
@@ -273,6 +274,7 @@ export function UnifiedProjectManagement({
             };
             console.log('🔄 Fresh project data (fallback):', mappedData);
             setSelectedProject(mappedData as Project);
+            toast.success("Project updated successfully!");
           } else if (retryData && retryData[0]) {
             // Fallback: map the retry data
             const mappedRetryData = {
@@ -280,6 +282,9 @@ export function UnifiedProjectManagement({
               project_challenges: retryData[0].project_challenges ?? retryData[0].diy_length_challenges ?? null
             };
             setSelectedProject(mappedRetryData as Project);
+            toast.success("Project updated successfully!");
+          } else {
+            toast.error("Project saved but failed to refresh. Please reload the page.");
           }
           return;
         }
@@ -290,7 +295,8 @@ export function UnifiedProjectManagement({
       
       console.log('✅ Project saved successfully:', data);
       console.log('📋 Saved project_challenges value:', data?.[0]?.project_challenges);
-      toast.success("Project updated successfully!");
+      
+      // Clear edited state BEFORE refreshing to prevent showing unsaved data
       setEditingProject(false);
       setEditedProject({});
 
@@ -314,6 +320,7 @@ export function UnifiedProjectManagement({
         console.log('🔄 Fresh project data after save:', mappedData);
         console.log('🔄 Fresh project_challenges:', mappedData.project_challenges);
         setSelectedProject(mappedData as Project);
+        toast.success("Project updated successfully!");
       } else if (data && data[0]) {
         // Fallback to data from update response - map columns
         const mappedData = {
@@ -322,15 +329,36 @@ export function UnifiedProjectManagement({
         };
         console.log('⚠️ Using update response data as fallback:', mappedData);
         setSelectedProject(mappedData as Project);
+        toast.success("Project updated successfully!");
+      } else {
+        toast.error("Project saved but failed to refresh. Please reload the page.");
       }
     } catch (error) {
       console.error('Error updating project:', error);
       toast.error("Failed to update project");
     }
   };
-  const cancelProjectEdit = () => {
+  const cancelProjectEdit = async () => {
     setEditingProject(false);
     setEditedProject({});
+    
+    // Re-fetch the project from database to ensure UI shows actual database state
+    if (selectedProject) {
+      const { data: freshData, error: fetchError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', selectedProject.id)
+        .single();
+      
+      if (!fetchError && freshData) {
+        // Map diy_length_challenges to project_challenges for consistency
+        const mappedData = {
+          ...freshData,
+          project_challenges: freshData.project_challenges ?? freshData.diy_length_challenges ?? null
+        };
+        setSelectedProject(mappedData as Project);
+      }
+    }
   };
   const handleStatusChange = (revision: Project, status: 'beta-testing' | 'published') => {
     console.log('🎯 handleStatusChange called:', {
