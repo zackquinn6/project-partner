@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Calendar, Trash2, Edit2 } from 'lucide-react';
+import { FileText, Calendar, Trash2, Edit2, Plus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -53,6 +53,9 @@ export function NotesGallery({
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [availableProjects, setAvailableProjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [newNoteText, setNewNoteText] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -214,11 +217,57 @@ export function NotesGallery({
   };
 
   const getStepDisplayName = (note: Note) => {
+    // If step_name is "-", it means the note was added from the gallery (not from a specific step)
+    if (note.step_name === '-') {
+      return '-';
+    }
     const parts = [];
     if (note.phase_name) parts.push(note.phase_name);
     if (note.operation_name) parts.push(note.operation_name);
     if (note.step_name) parts.push(note.step_name);
     return parts.length > 0 ? parts.join(' > ') : note.step_id;
+  };
+
+  const handleAddNote = async () => {
+    if (!newNoteText.trim() || !user) {
+      toast.error('Please enter a note');
+      return;
+    }
+
+    if (!projectRunId) {
+      toast.error('Project run ID is required');
+      return;
+    }
+
+    setAddingNote(true);
+    try {
+      const { error } = await supabase
+        .from('project_notes')
+        .insert({
+          user_id: user.id,
+          project_run_id: projectRunId,
+          template_id: templateId || null,
+          step_id: '-', // Use "-" to indicate not from a specific step
+          step_name: '-', // Use "-" to indicate not from a specific step
+          phase_id: null,
+          phase_name: null,
+          operation_id: null,
+          operation_name: null,
+          note_text: newNoteText.trim()
+        });
+
+      if (error) throw error;
+
+      toast.success('Note added successfully');
+      setNewNoteText('');
+      setShowAddNote(false);
+      fetchNotes();
+    } catch (error) {
+      console.error('Error adding note:', error);
+      toast.error('Failed to add note');
+    } finally {
+      setAddingNote(false);
+    }
   };
 
   return (
@@ -230,14 +279,27 @@ export function NotesGallery({
               <FileText className="w-5 h-5" />
               {title}
             </DialogTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onOpenChange(false)} 
-              className="h-7 px-2 text-[9px] md:text-xs"
-            >
-              Close
-            </Button>
+            <div className="flex items-center gap-2">
+              {projectRunId && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowAddNote(true)}
+                  className="h-7 px-2 text-[9px] md:text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add
+                </Button>
+              )}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onOpenChange(false)} 
+                className="h-7 px-2 text-[9px] md:text-xs"
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </DialogHeader>
         
@@ -369,6 +431,61 @@ export function NotesGallery({
             </div>
           )}
         </div>
+
+        {/* Add Note Dialog */}
+        <Dialog open={showAddNote} onOpenChange={setShowAddNote}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Add Note
+              </DialogTitle>
+              <DialogDescription>
+                Add a general note to your project. This note will not be associated with a specific step.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-note-text">Note</Label>
+                <Textarea
+                  id="new-note-text"
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  placeholder="Enter your note here..."
+                  rows={6}
+                  className="resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowAddNote(false);
+                  setNewNoteText('');
+                }} 
+                disabled={addingNote}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddNote} 
+                disabled={addingNote || !newNoteText.trim()}
+              >
+                {addingNote ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  'Add Note'
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
