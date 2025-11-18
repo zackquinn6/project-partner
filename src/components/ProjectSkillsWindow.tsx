@@ -162,6 +162,7 @@ export function ProjectSkillsWindow({
           </div>
         </div>
       </DialogContent>
+      </DialogPortal>
     </Dialog>
   );
 }
