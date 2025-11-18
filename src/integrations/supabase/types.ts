@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -11,31 +11,6 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
   }
   public: {
     Tables: {
@@ -2382,6 +2357,7 @@ export type Database = {
           operation_name: string | null
           phase_id: string | null
           phase_name: string | null
+          photo_name: string | null
           privacy_level: string
           project_run_id: string
           step_id: string
@@ -2401,6 +2377,7 @@ export type Database = {
           operation_name?: string | null
           phase_id?: string | null
           phase_name?: string | null
+          photo_name?: string | null
           privacy_level?: string
           project_run_id: string
           step_id: string
@@ -2420,6 +2397,7 @@ export type Database = {
           operation_name?: string | null
           phase_id?: string | null
           phase_name?: string | null
+          photo_name?: string | null
           privacy_level?: string
           project_run_id?: string
           step_id?: string
@@ -4795,6 +4773,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_rate_limit_with_ip: {
+        Args: {
+          identifier: string
+          ip_address: string
+          max_attempts?: number
+          window_minutes?: number
+        }
+        Returns: boolean
+      }
       cleanup_old_sessions: { Args: never; Returns: number }
       cleanup_security_logs: { Args: never; Returns: number }
       copy_standard_operations_to_project: {
@@ -4894,6 +4881,10 @@ export type Database = {
           user_email: string
           user_id: string
         }[]
+      }
+      detect_suspicious_session: {
+        Args: { p_ip_address: string; p_user_agent: string; p_user_id: string }
+        Returns: boolean
       }
       enhanced_rate_limit_check: {
         Args: {
@@ -5139,6 +5130,7 @@ export type Database = {
         }
         Returns: string
       }
+      sanitize_file_path: { Args: { file_path: string }; Returns: string }
       sanitize_input: { Args: { input_text: string }; Returns: string }
       start_admin_session: { Args: never; Returns: string }
       sync_custom_phases_to_tables: {
@@ -5191,6 +5183,14 @@ export type Database = {
       validate_admin_security_access: {
         Args: { action_description: string }
         Returns: boolean
+      }
+      validate_file_extension: {
+        Args: { allowed_extensions: string[]; filename: string }
+        Returns: boolean
+      }
+      validate_input_length: {
+        Args: { input_text: string; max_length?: number }
+        Returns: string
       }
     }
     Enums: {
@@ -5338,9 +5338,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       output_type: [
