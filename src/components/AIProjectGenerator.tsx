@@ -20,7 +20,8 @@ import {
   Clock, 
   FileText,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,6 +64,18 @@ export function AIProjectGenerator({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [aiModel, setAiModel] = useState<'gpt-4o-mini' | 'gpt-4-turbo' | 'gpt-4o'>('gpt-4o-mini');
   const [includeWebScraping, setIncludeWebScraping] = useState(true);
+  
+  // Content selection checkboxes
+  const [contentSelection, setContentSelection] = useState({
+    structure: true,
+    tools: true,
+    materials: true,
+    instructions3Level: true,
+    instructions1Level: false,
+    outputs: true,
+    processVariables: true,
+    timeEstimation: true,
+  });
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -184,6 +197,23 @@ export function AIProjectGenerator({
     setGeneratedProject(null);
     setImportResult(null);
     setActiveTab('configure');
+    setContentSelection({
+      structure: true,
+      tools: true,
+      materials: true,
+      instructions3Level: true,
+      instructions1Level: false,
+      outputs: true,
+      processVariables: true,
+      timeEstimation: true,
+    });
+  };
+
+  const toggleContentSelection = (key: keyof typeof contentSelection) => {
+    setContentSelection(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
   };
 
   const toggleCategory = (category: string) => {
@@ -196,12 +226,22 @@ export function AIProjectGenerator({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5" />
-            AI Project Generator
-          </DialogTitle>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              AI Project Generator
+            </DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onOpenChange(false)} 
+              className="h-7 px-2 text-[9px] md:text-xs"
+            >
+              Close
+            </Button>
+          </div>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 overflow-hidden flex flex-col">
@@ -211,8 +251,25 @@ export function AIProjectGenerator({
             <TabsTrigger value="cost">Cost Estimate</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="configure" className="flex-1 overflow-y-auto">
-            <div className="space-y-6 py-4">
+          <TabsContent value="configure" className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
+            <div className="space-y-6">
+              {/* Project Generator Instructions Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Project Generator Instructions</CardTitle>
+                  <CardDescription>
+                    The AI will generate a complete project structure based on your specifications. 
+                    Use the content selection options below to control what gets populated.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                  <p>• The generator will create phases, operations, and steps based on best practices for your project type</p>
+                  <p>• Tools and materials will be matched against your existing library</p>
+                  <p>• Instructions will be generated at the skill levels you select</p>
+                  <p>• Process variables, outputs, and time estimates will be included based on your selections</p>
+                </CardContent>
+              </Card>
+
               <div className="space-y-2">
                 <Label htmlFor="projectName">Project Name *</Label>
                 <Input
@@ -235,6 +292,124 @@ export function AIProjectGenerator({
                   rows={3}
                 />
               </div>
+
+              {/* Content Selection Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Content to Populate</CardTitle>
+                  <CardDescription>
+                    Select which content elements should be generated for this project
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-structure"
+                        checked={contentSelection.structure}
+                        onChange={() => toggleContentSelection('structure')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-structure" className="cursor-pointer font-normal">
+                        Structure (Phases, Operations, Steps)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-tools"
+                        checked={contentSelection.tools}
+                        onChange={() => toggleContentSelection('tools')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-tools" className="cursor-pointer font-normal">
+                        Tools
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-materials"
+                        checked={contentSelection.materials}
+                        onChange={() => toggleContentSelection('materials')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-materials" className="cursor-pointer font-normal">
+                        Materials
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-instructions3"
+                        checked={contentSelection.instructions3Level}
+                        onChange={() => toggleContentSelection('instructions3Level')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-instructions3" className="cursor-pointer font-normal">
+                        3-Level Instructions (Quick, Detailed, Contractor)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-instructions1"
+                        checked={contentSelection.instructions1Level}
+                        onChange={() => toggleContentSelection('instructions1Level')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-instructions1" className="cursor-pointer font-normal">
+                        1-Level Instructions (Detailed Only)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-outputs"
+                        checked={contentSelection.outputs}
+                        onChange={() => toggleContentSelection('outputs')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-outputs" className="cursor-pointer font-normal">
+                        Outputs
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-process-variables"
+                        checked={contentSelection.processVariables}
+                        onChange={() => toggleContentSelection('processVariables')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-process-variables" className="cursor-pointer font-normal">
+                        Process Variables
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-time-estimation"
+                        checked={contentSelection.timeEstimation}
+                        onChange={() => toggleContentSelection('timeEstimation')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-time-estimation" className="cursor-pointer font-normal">
+                        Time Estimation
+                      </Label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               <div className="space-y-2">
                 <Label>Categories *</Label>
@@ -314,9 +489,9 @@ export function AIProjectGenerator({
             </div>
           </TabsContent>
 
-          <TabsContent value="preview" className="flex-1 overflow-y-auto">
+          <TabsContent value="preview" className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
             {generatedProject ? (
-              <div className="space-y-4 py-4">
+              <div className="space-y-4">
                 <Alert>
                   <CheckCircle2 className="w-4 h-4" />
                   <AlertDescription>
@@ -437,9 +612,9 @@ export function AIProjectGenerator({
             )}
           </TabsContent>
 
-          <TabsContent value="cost" className="flex-1 overflow-y-auto">
+          <TabsContent value="cost" className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
             {costEstimate ? (
-              <div className="space-y-4 py-4">
+              <div className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
