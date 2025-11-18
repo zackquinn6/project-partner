@@ -89,29 +89,62 @@ export function AIProjectGenerator({
   const [importResult, setImportResult] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'configure' | 'preview' | 'cost'>('configure');
 
-  // Fetch project templates (not runs) when dialog opens
+  // Fetch project templates (only draft revisions) when dialog opens
   useEffect(() => {
     if (open) {
       const fetchTemplates = async () => {
         try {
-          const { data, error } = await supabase
+          // Fetch all projects to find latest draft revisions
+          const { data: allProjects, error: fetchError } = await supabase
             .from('projects')
-            .select('id, name, description, category, publish_status')
-            .in('publish_status', ['published', 'beta-testing'])
+            .select('id, name, description, category, publish_status, parent_project_id, revision_number')
             .neq('id', '00000000-0000-0000-0000-000000000000') // Exclude Manual Project Template
             .neq('id', '00000000-0000-0000-0000-000000000001') // Exclude Standard Project Foundation
             .order('name', { ascending: true });
 
-          if (error) {
-            console.error('Error fetching project templates:', error);
+          if (fetchError) {
+            console.error('Error fetching project templates:', fetchError);
             toast.error('Failed to load project templates');
             return;
           }
 
-          if (data) {
-            setProjectTemplates(data);
-            console.log('✅ Loaded project templates:', data.map(p => p.name));
+          if (!allProjects) {
+            setProjectTemplates([]);
+            return;
           }
+
+          // Group projects by parent (or own id if no parent)
+          const projectGroups = new Map<string, any[]>();
+          
+          allProjects.forEach(project => {
+            const parentId = project.parent_project_id || project.id;
+            if (!projectGroups.has(parentId)) {
+              projectGroups.set(parentId, []);
+            }
+            projectGroups.get(parentId)!.push(project);
+          });
+
+          // For each group, find the latest draft revision
+          const draftRevisions: any[] = [];
+          
+          projectGroups.forEach((projects, parentId) => {
+            // Filter to only draft revisions
+            const drafts = projects.filter(p => p.publish_status === 'draft');
+            
+            if (drafts.length > 0) {
+              // Get the latest draft revision (highest revision_number)
+              const latestDraft = drafts.reduce((latest, current) => {
+                const latestRev = latest.revision_number ?? 0;
+                const currentRev = current.revision_number ?? 0;
+                return currentRev > latestRev ? current : latest;
+              });
+              
+              draftRevisions.push(latestDraft);
+            }
+          });
+
+          setProjectTemplates(draftRevisions);
+          console.log('✅ Loaded draft project revisions:', draftRevisions.map(p => `${p.name} (rev ${p.revision_number ?? 0})`));
         } catch (error) {
           console.error('Error fetching project templates:', error);
           toast.error('Failed to load project templates');
@@ -347,27 +380,36 @@ export function AIProjectGenerator({
                 <CardHeader>
                   <CardTitle className="text-base">Select Existing Project (Optional)</CardTitle>
                   <CardDescription>
-                    Choose an existing project to review and update with new AI-generated content
+                    Choose an existing draft revision to update with new AI-generated content
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <Select 
                     value={selectedExistingProject || 'new'} 
                     onValueChange={(value) => setSelectedExistingProject(value === 'new' ? null : value)}
                     disabled={isGenerating}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a project to update (or leave blank for new project)" />
+                      <SelectValue placeholder="Select a draft revision to update (or leave blank for new project)" />
                     </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="new">Create New Project</SelectItem>
                     {projectTemplates.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
-                        {project.name}
+                        {project.name} {project.revision_number ? `(Rev ${project.revision_number})` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Note:</strong> Only draft revisions are shown. If a project is published and has no draft revision, 
+                    you'll need to create a new revision in Project Management before using the AI generator.
+                  </p>
+                  {projectTemplates.length === 0 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      No draft revisions available. Create a new project or create a draft revision of an existing project.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
