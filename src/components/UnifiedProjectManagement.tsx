@@ -263,21 +263,21 @@ export function UnifiedProjectManagement({
       await fetchProjects();
 
       // Update selectedProject with new data - ensure we get the latest from database
-      if (data && data[0]) {
-        // Re-fetch the specific project to ensure we have all fields
-        const { data: freshData, error: fetchError } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('id', selectedProject.id)
-          .single();
-        
-        if (!fetchError && freshData) {
-          console.log('🔄 Fresh project data:', freshData);
-          setSelectedProject(freshData as Project);
-        } else {
-          // Fallback to data from update response
-          setSelectedProject(data[0] as Project);
-        }
+      // Re-fetch the specific project to ensure we have all fields including project_challenges
+      const { data: freshData, error: fetchError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', selectedProject.id)
+        .single();
+      
+      if (!fetchError && freshData) {
+        console.log('🔄 Fresh project data after save:', freshData);
+        console.log('🔄 Fresh project_challenges:', freshData.project_challenges);
+        setSelectedProject(freshData as Project);
+      } else if (data && data[0]) {
+        // Fallback to data from update response
+        console.log('⚠️ Using update response data as fallback');
+        setSelectedProject(data[0] as Project);
       }
     } catch (error) {
       console.error('Error updating project:', error);
