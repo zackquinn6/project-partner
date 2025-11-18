@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -26,7 +26,6 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
   const [schedule, setSchedule] = useState<any>(null);
   // Initialize start date to today to avoid generating schedules in the past
   const [startDate, setStartDate] = useState<Date>(() => getToday());
-  const hasInitializedRef = useRef(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEmailing, setIsEmailing] = useState(false);
   const [currentScheduleId, setCurrentScheduleId] = useState<string | null>(null);
