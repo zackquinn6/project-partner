@@ -122,7 +122,15 @@ export function UnifiedProjectManagement({
         ascending: false
       });
       if (error) throw error;
-      setProjects((data || []) as Project[]);
+      
+      // Map diy_length_challenges to project_challenges for consistency
+      // This handles the case where the migration hasn't been applied yet
+      const mappedData = (data || []).map((project: any) => ({
+        ...project,
+        project_challenges: project.project_challenges ?? project.diy_length_challenges ?? null
+      }));
+      
+      setProjects(mappedData as Project[]);
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast.error("Failed to load projects");
