@@ -156,12 +156,12 @@ export async function importToolsToDatabase(
       const { data: coreToolData, error: coreToolError } = await supabase
         .from('tools')
         .insert({
-          item: tool.name,
+          name: tool.name,
           description: tool.description,
           example_models: tool.variations.length > 0 
             ? tool.variations.slice(0, 3).map(v => `${v.brand} ${v.model}`).join(', ')
             : undefined
-        })
+        } as any)
         .select()
         .single();
 

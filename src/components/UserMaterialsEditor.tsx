@@ -17,6 +17,8 @@ interface Material {
   description?: string;
   unit?: string;
   photo_url?: string;
+  item?: string;
+  unit_size?: string;
 }
 
 interface UserOwnedMaterial {
@@ -30,6 +32,8 @@ interface UserOwnedMaterial {
   brand?: string;
   user_photo_url?: string;
   purchase_location?: string;
+  item?: string;
+  unit_size?: string;
 }
 
 interface UserMaterialsEditorProps {
@@ -465,6 +469,7 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
             // Create a new material based on the selected variation
             const newUserMaterial: UserOwnedMaterial = {
               id: variation.id,
+              name: variation.name,
               item: variation.name,
               description: variation.description,
               photo_url: variation.photo_url,

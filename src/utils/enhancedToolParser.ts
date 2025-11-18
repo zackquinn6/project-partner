@@ -432,10 +432,10 @@ export async function importEnhancedToolsToDatabase(
         const { data: newCoreTool, error: insertError } = await supabase
           .from('tools')
           .insert({
-            item: tool.coreToolName,
+            name: tool.coreToolName,
             description: `${tool.category} - ${tool.name}`,
             example_models: tool.variants.map(v => v.models.map(m => m.modelName).join(', ')).join('; ')
-          })
+          } as any)
           .select('id')
           .single();
         

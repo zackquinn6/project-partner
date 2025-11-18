@@ -19,6 +19,7 @@ interface Tool {
   description?: string;
   example_models?: string;
   photo_url?: string;
+  item?: string;
 }
 
 interface UserOwnedTool {
@@ -31,6 +32,7 @@ interface UserOwnedTool {
   quantity: number;
   model_name?: string;
   user_photo_url?: string;
+  item?: string;
 }
 
 interface UserToolsEditorProps {
@@ -487,6 +489,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                 // Create a new tool based on the selected variation
                 const newUserTool: UserOwnedTool = {
                   id: variation.id,
+                  name: variation.name,
                   item: variation.name,
                   description: variation.description,
                   photo_url: variation.photo_url,

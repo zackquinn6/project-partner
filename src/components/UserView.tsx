@@ -298,7 +298,7 @@ export default function UserView({
       firstOperation: Array.isArray(p?.operations) ? p.operations[0] : p?.operations,
       firstOperationSteps: Array.isArray(p?.operations) 
         ? (p.operations[0]?.steps ? (Array.isArray(p.operations[0].steps) ? p.operations[0].steps : [p.operations[0].steps]) : [])
-        : (p?.operations?.steps ? (Array.isArray(p.operations.steps) ? p.operations.steps : [p.operations.steps]) : [])
+        : ((p?.operations as any)?.steps ? (Array.isArray((p.operations as any).steps) ? (p.operations as any).steps : [(p.operations as any).steps]) : [])
     }))
   });
   
