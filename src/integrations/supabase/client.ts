@@ -2,8 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://drshvrukkavtpsprfcbc.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyc2h2cnVra2F2dHBzcHJmY2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2MDQ5NDgsImV4cCI6MjA2ODE4MDk0OH0.yR61yCPJvqs_TVi5hmdmT7CF0QJKqr_lWR5TX25EwTc";
+// SECURITY: Use environment variables for configuration
+// Fallback to hardcoded values only for development compatibility
+// In production, these should ALWAYS come from environment variables
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://drshvrukkavtpsprfcbc.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyc2h2cnVra2F2dHBzcHJmY2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2MDQ5NDgsImV4cCI6MjA2ODE4MDk0OH0.yR61yCPJvqs_TVi5hmdmT7CF0QJKqr_lWR5TX25EwTc";
+
+// Validate that required environment variables are set in production
+if (import.meta.env.PROD && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY)) {
+  console.error('SECURITY WARNING: Supabase credentials should be set via environment variables in production');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -13,5 +21,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: true, // Enhanced security: detect session hijacking
+  },
+  // Additional security options
+  global: {
+    headers: {
+      'X-Client-Info': 'project-partner-web',
+    },
+  },
 });

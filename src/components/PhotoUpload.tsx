@@ -9,6 +9,7 @@ import { Camera, Upload, X, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { sanitizeInput } from '@/utils/inputSanitization';
 
 /**
  * PhotoUpload Component
@@ -95,10 +96,25 @@ export function PhotoUpload({
 
     setUploading(true);
     try {
-      // Generate unique filename
-      const fileExt = selectedFile.name.split('.').pop();
+      // SECURITY: Validate file extension against allowed types
+      const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
+      const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+      if (!fileExt || !allowedExtensions.includes(fileExt)) {
+        toast.error('Invalid file type. Only image files are allowed.');
+        setUploading(false);
+        return;
+      }
+
+      // SECURITY: Sanitize filename to prevent path traversal attacks
+      const sanitizedOriginalName = sanitizeInput(selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_'));
+      
+      // Generate unique filename with sanitized extension
       const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `${user.id}/${projectRunId}/${fileName}`;
+      
+      // SECURITY: Validate path components to prevent directory traversal
+      const sanitizedUserId = user.id.replace(/[^a-zA-Z0-9-]/g, '');
+      const sanitizedProjectRunId = projectRunId.replace(/[^a-zA-Z0-9-]/g, '');
+      const filePath = `${sanitizedUserId}/${sanitizedProjectRunId}/${fileName}`;
 
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -110,6 +126,13 @@ export function PhotoUpload({
 
       if (uploadError) throw uploadError;
 
+      // SECURITY: Sanitize all user inputs before database insertion
+      const sanitizedCaption = caption ? sanitizeInput(caption.trim()) : null;
+      const sanitizedPhotoName = photoName ? sanitizeInput(photoName.trim()) : null;
+      const sanitizedStepName = sanitizeInput(stepName);
+      const sanitizedPhaseName = phaseName ? sanitizeInput(phaseName) : null;
+      const sanitizedOperationName = operationName ? sanitizeInput(operationName) : null;
+
       // Save metadata to database
       const { error: dbError } = await supabase
         .from('project_photos')
@@ -118,17 +141,17 @@ export function PhotoUpload({
           project_run_id: projectRunId,
           template_id: templateId,
           step_id: stepId,
-          step_name: stepName,
+          step_name: sanitizedStepName,
           phase_id: phaseId || null,
-          phase_name: phaseName || null,
+          phase_name: sanitizedPhaseName,
           operation_id: operationId || null,
-          operation_name: operationName || null,
+          operation_name: sanitizedOperationName,
           storage_path: filePath,
-          file_name: selectedFile.name,
+          file_name: sanitizedOriginalName,
           file_size: selectedFile.size,
           privacy_level: privacyLevel,
-          caption: caption.trim() || null,
-          photo_name: photoName.trim() || null
+          caption: sanitizedCaption,
+          photo_name: sanitizedPhotoName
         } as any);
 
       if (dbError) throw dbError;
