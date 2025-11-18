@@ -2069,7 +2069,7 @@ export default function UserView({
             <CardContent className="p-8">
               {instructionLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="text-muted-foreground">Loading {instructionLevel === 'new_user' ? 'New DIY' : instructionLevel === 'detailed' ? 'Mid-level DIY' : 'Advanced DIY'} content...</div>
+                  <div className="text-muted-foreground">Loading {instructionLevel === 'new_user' ? 'Beginner' : instructionLevel === 'detailed' ? 'Intermediate' : 'Advanced'} content...</div>
                 </div>
               ) : (
                 renderContent(currentStep)

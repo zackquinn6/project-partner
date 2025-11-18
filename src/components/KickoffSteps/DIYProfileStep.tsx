@@ -124,14 +124,14 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
   const renderProfileView = () => {
     if (!existingProfile) {
       return (
-        <div className="text-center space-y-4">
-          <User className="w-16 h-16 mx-auto text-muted-foreground" />
+        <div className="text-center space-y-3">
+          <User className="w-12 h-12 mx-auto text-muted-foreground" />
           <div>
-            <h3 className="text-lg font-semibold mb-2">Complete Your DIY Profile</h3>
-            <p className="text-muted-foreground mb-4">
+            <h3 className="text-base font-semibold mb-1.5">Complete Your DIY Profile</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-3">
               Help us personalize your project experience by completing your DIY profile.
             </p>
-            <Button onClick={handleStartEdit}>
+            <Button onClick={handleStartEdit} size="sm" className="h-8 sm:h-9">
               Complete Profile
             </Button>
           </div>
@@ -140,9 +140,9 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
     }
 
     return (
-      <div className="space-y-4">
-        <div className="text-center space-y-2">
-          <p className="text-muted-foreground">
+      <div className="space-y-3">
+        <div className="text-center">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Your profile helps us match you with the right tools, guidance, and partners—
             so every project starts with an advantage.
           </p>
@@ -150,57 +150,57 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
 
         <Card>
           <CardContent className="p-3 sm:p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Column 1 */}
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2 sm:space-y-3">
                 <div>
-                  <h4 className="font-semibold text-sm sm:text-base">Full Name</h4>
-                  <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
+                  <h4 className="font-semibold text-xs sm:text-sm">Full Name</h4>
+                  <p className="text-xs text-muted-foreground break-words mt-0.5">
                     {existingProfile.full_name || "Not specified"}
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-sm sm:text-base">Nickname</h4>
-                  <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
+                  <h4 className="font-semibold text-xs sm:text-sm">Nickname</h4>
+                  <p className="text-xs text-muted-foreground break-words mt-0.5">
                     {existingProfile.nickname || "Not specified"}
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-sm sm:text-base">Skill Level</h4>
-                  <p className="text-xs sm:text-sm text-muted-foreground capitalize mt-1">
+                  <h4 className="font-semibold text-xs sm:text-sm">Skill Level</h4>
+                  <p className="text-xs text-muted-foreground capitalize mt-0.5">
                     {existingProfile.skill_level || "Not specified"}
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-sm sm:text-base">Physical Capability</h4>
-                  <p className="text-xs sm:text-sm text-muted-foreground capitalize mt-1">
+                  <h4 className="font-semibold text-xs sm:text-sm">Physical Capability</h4>
+                  <p className="text-xs text-muted-foreground capitalize mt-0.5">
                     {existingProfile.physical_capability || "Not specified"}
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-sm sm:text-base">Primary Home</h4>
-                  <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
+                  <h4 className="font-semibold text-xs sm:text-sm">Primary Home</h4>
+                  <p className="text-xs text-muted-foreground break-words mt-0.5">
                     {existingProfile.primary_home ? `${existingProfile.primary_home.name}${existingProfile.primary_home.city && existingProfile.primary_home.state ? ` • ${existingProfile.primary_home.city}, ${existingProfile.primary_home.state}` : ''}` : "No primary home set"}
                   </p>
                 </div>
               </div>
 
               {/* Column 2 */}
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2 sm:space-y-3">
                 <div>
-                  <h4 className="font-semibold text-sm sm:text-base">Learning Preferences</h4>
-                  <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
+                  <h4 className="font-semibold text-xs sm:text-sm">Learning Preferences</h4>
+                  <p className="text-xs text-muted-foreground break-words mt-0.5">
                     {existingProfile.preferred_learning_methods?.length ? existingProfile.preferred_learning_methods.join(", ") : "Not specified"}
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-sm sm:text-base">Owned Tools</h4>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  <h4 className="font-semibold text-xs sm:text-sm">Owned Tools</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {existingProfile.owned_tools?.length ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library` : "No tools specified"}
                   </p>
                 </div>
@@ -208,13 +208,6 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
             </div>
           </CardContent>
         </Card>
-
-        <div className="flex justify-center gap-2 sm:gap-3">
-          <Button onClick={handleStartEdit} variant="outline" className="flex items-center gap-2 text-xs sm:text-sm h-9 sm:h-10">
-            <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            Edit Profile
-          </Button>
-        </div>
       </div>
     );
   };
@@ -245,21 +238,37 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
     <>
       <Card>
         <CardHeader className="p-3 sm:p-4 md:p-6">
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl">
-            <User className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-            <span className="truncate">DIY Profile</span>
-            {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
-          </CardTitle>
-          <CardDescription className="text-xs sm:text-sm">
-            Set up your DIY profile for personalized project guidance
-          </CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl">
+                <User className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="truncate">DIY Profile</span>
+                {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-1">
+                Set up your DIY profile for personalized project guidance
+              </CardDescription>
+            </div>
+            {existingProfile && (
+              <Button 
+                onClick={handleStartEdit} 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2 text-xs sm:text-sm h-8 sm:h-9 flex-shrink-0"
+              >
+                <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Edit Profile</span>
+                <span className="sm:hidden">Edit</span>
+              </Button>
+            )}
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
+        <CardContent className="space-y-3 p-3 sm:p-4">
           {renderProfileView()}
           
           {!isCompleted && !existingProfile && (
-            <div className="text-center p-4 bg-muted/50 rounded-lg border border-muted">
-              <p className="text-sm text-muted-foreground">
+            <div className="text-center p-3 bg-muted/50 rounded-lg border border-muted">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Complete your profile above to continue
               </p>
             </div>

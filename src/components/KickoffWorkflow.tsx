@@ -325,11 +325,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       variant="outline" 
                       className="w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm h-9 sm:h-10"
                     >
-                      <span className="hidden sm:inline">Not a match</span>
-                      <span className="sm:hidden">Cancel</span>
+                      <span className="hidden sm:inline">Not a match - take me back to catalog</span>
+                      <span className="sm:hidden">Not a match</span>
                     </Button>
                   )}
-                  <div className={currentKickoffStep === 0 ? "flex-1" : "w-full"} />
                   <Button 
                     onClick={async () => {
                       console.log('🎯 KickoffWorkflow: Step complete button clicked for step:', currentKickoffStep);
@@ -346,7 +345,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       }
                       handleStepComplete(currentKickoffStep);
                     }} 
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-9 sm:h-10"
+                    className={`${currentKickoffStep === 0 ? "w-3/4" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-9 sm:h-10`}
                   >
                     <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                     <span className="hidden sm:inline">Complete & Continue</span>

@@ -130,12 +130,16 @@ export function MobileWorkflowView({
                 {onInstructionLevelChange && (
                   <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
                     <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs w-[70px] sm:w-[90px] flex-shrink-0">
-                      <SelectValue />
+                      <SelectValue>
+                        {instructionLevel === 'new_user' && 'Beginner'}
+                        {instructionLevel === 'detailed' && 'Intermediate'}
+                        {instructionLevel === 'quick' && 'Advanced'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="quick" className="text-xs">Quick</SelectItem>
-                      <SelectItem value="detailed" className="text-xs">Detailed</SelectItem>
-                      <SelectItem value="new_user" className="text-xs">New DIY</SelectItem>
+                      <SelectItem value="new_user" className="text-xs">Beginner: Extra guidance</SelectItem>
+                      <SelectItem value="detailed" className="text-xs">Intermediate: Short step-by-step</SelectItem>
+                      <SelectItem value="quick" className="text-xs">Advanced: Key points only</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

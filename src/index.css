@@ -250,33 +250,33 @@ All colors MUST be HSL.
   --workflow-accent: 210 40% 98%;
 }
 
-/* Apply color scheme to primary elements */
-[data-color-scheme] .text-primary,
-[data-color-scheme] [class*="text-primary"] {
+/* Apply color scheme to primary elements - only within workflow container */
+main.flex-1.overflow-auto[data-color-scheme] .text-primary,
+main.flex-1.overflow-auto[data-color-scheme] [class*="text-primary"] {
   color: hsl(var(--workflow-primary));
 }
 
-[data-color-scheme] .bg-primary,
-[data-color-scheme] [class*="bg-primary"] {
+main.flex-1.overflow-auto[data-color-scheme] .bg-primary,
+main.flex-1.overflow-auto[data-color-scheme] [class*="bg-primary"] {
   background-color: hsl(var(--workflow-primary));
 }
 
-[data-color-scheme] .border-primary,
-[data-color-scheme] [class*="border-primary"] {
+main.flex-1.overflow-auto[data-color-scheme] .border-primary,
+main.flex-1.overflow-auto[data-color-scheme] [class*="border-primary"] {
   border-color: hsl(var(--workflow-primary));
 }
 
-/* Dark theme text color fix */
-.dark-theme,
-.dark-theme * {
+/* Dark theme text color fix - only within workflow container */
+main.flex-1.overflow-auto.dark-theme,
+main.flex-1.overflow-auto.dark-theme * {
   color: hsl(0 0% 100%) !important;
 }
 
-.dark-theme .text-muted-foreground {
+main.flex-1.overflow-auto.dark-theme .text-muted-foreground {
   color: hsl(220 15% 70%) !important;
 }
 
-.dark-theme .text-primary {
+main.flex-1.overflow-auto.dark-theme .text-primary {
   color: hsl(var(--workflow-primary)) !important;
 }
 

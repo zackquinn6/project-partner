@@ -145,12 +145,22 @@ export const AppsLibraryDialog = ({
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          selected ? 'bg-primary/20' : 'bg-primary/10'
-                        }`}>
-                          <IconComponent className={`w-6 h-6 ${
-                            selected ? 'text-primary' : 'text-primary/70'
-                          }`} />
+                        <div 
+                          className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ 
+                            backgroundColor: selected 
+                              ? 'hsl(var(--primary) / 0.2)' 
+                              : 'hsl(var(--primary) / 0.1)' 
+                          }}
+                        >
+                          <IconComponent 
+                            className="w-6 h-6"
+                            style={{ 
+                              color: selected 
+                                ? 'hsl(var(--primary))' 
+                                : 'hsl(var(--primary) / 0.7)' 
+                            }} 
+                          />
                         </div>
                         
                         <div className="flex-1 min-w-0">
