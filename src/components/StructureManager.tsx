@@ -1181,9 +1181,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                   <ClipboardCheck className="w-3 h-3" />
                   {clipboard.type} copied
                 </Badge>}
-                <Button variant="outline" size="sm" onClick={() => setShowDecisionTreeManager(true)} className="flex items-center gap-2">
-                  <GitBranch className="w-4 h-4" />
-                  Decision Tree Manager
+                <Button variant="outline" size="sm" onClick={() => setShowDecisionTreeManager(true)} className="flex items-center gap-1.5 text-xs px-2.5">
+                  <GitBranch className="w-3.5 h-3.5" />
+                  Decision Tree
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setShowIncorporationDialog(true)} className="flex items-center gap-2">
                   <Link className="w-4 h-4" />

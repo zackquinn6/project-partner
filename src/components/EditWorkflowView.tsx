@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MultiContentEditor } from '@/components/MultiContentEditor';
 import { MultiContentRenderer } from '@/components/MultiContentRenderer';
 import { StepTypeSelector } from '@/components/StepTypeSelector';
@@ -20,7 +21,6 @@ import { MultiSelectLibraryDialog } from '@/components/MultiSelectLibraryDialog'
 import { StructureManager } from '@/components/StructureManager';
 import { OutputEditForm } from '@/components/OutputEditForm';
 import { ProjectContentImport } from '@/components/ProjectContentImport';
-import { ProcessImprovementEngine } from '@/components/ProcessImprovementEngine';
 import { CompactToolsTable } from '@/components/CompactToolsTable';
 import { CompactMaterialsTable } from '@/components/CompactMaterialsTable';
 import { CompactProcessVariablesTable } from '@/components/CompactProcessVariablesTable';
@@ -615,12 +615,6 @@ export default function EditWorkflowView({
             </Button>
             <div className="flex items-center gap-4">
               <div className="flex gap-2">
-                {!isEditingStandardProject && (
-                  <Button onClick={() => setViewMode('steps')} variant={'outline'} size="sm" className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    Step Editor
-                  </Button>
-                )}
                 <Button onClick={() => setViewMode('structure')} variant="default" size="sm" className="flex items-center gap-2">
                   <List className="w-4 h-4" />
                   Structure Manager
@@ -651,12 +645,6 @@ export default function EditWorkflowView({
             </Button>
             <div className="flex items-center gap-4">
               <div className="flex gap-2">
-                {!isEditingStandardProject && (
-                  <Button onClick={() => setViewMode('steps')} variant={'outline'} size="sm" className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    Step Editor
-                  </Button>
-                )}
                 <Button onClick={() => setViewMode('structure')} variant={'default'} size="sm" className="flex items-center gap-2">
                   <List className="w-4 h-4" />
                   Structure Manager
@@ -735,13 +723,7 @@ export default function EditWorkflowView({
                       <X className="w-4 h-4" />
                     </Button>
                   </> : <>
-                    {!isEditingStandardProject && (
-                      <Button onClick={() => setViewMode('steps')} variant="default" size="sm" className="flex items-center gap-2">
-                        <FileText className="w-4 h-4" />
-                        Step Editor
-                      </Button>
-                    )}
-                    <Button onClick={() => setViewMode('structure')} variant={isEditingStandardProject ? "default" : "outline"} size="sm" className="flex items-center gap-2">
+                    <Button onClick={() => setViewMode('structure')} variant="outline" size="sm" className="flex items-center gap-2">
                       <List className="w-4 h-4" />
                       Structure Manager
                     </Button>
@@ -1159,8 +1141,27 @@ export default function EditWorkflowView({
       {/* Import Dialog */}
       <ProjectContentImport open={importOpen} onOpenChange={setImportOpen} onImport={handleImport} />
       
-      {/* Process Improvement Engine Dialog */}
-      {processImprovementOpen && currentProject && <ProcessImprovementEngine project={currentProject} onProjectUpdate={updateProject} onClose={() => setProcessImprovementOpen(false)} />}
+      {/* Process Improvement Coming Soon Dialog */}
+      <Dialog open={processImprovementOpen} onOpenChange={setProcessImprovementOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5" />
+              Process Improvement
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-muted-foreground text-center">
+              Feature coming soon. This will streamline creation of process content.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setProcessImprovementOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Tools & Materials Library */}
       <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
       

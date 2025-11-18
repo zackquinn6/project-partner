@@ -309,37 +309,14 @@ export function RiskManagementWindow({
               <Shield className="w-5 h-5" />
               Risk Management
             </DialogTitle>
-            <div className="flex items-center gap-2">
-              {(mode === 'template' || (mode === 'run' && projectRunId)) && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    setEditingRisk(null);
-                    setFormData({
-                      risk: '',
-                      likelihood: 'medium',
-                      impact: 'medium',
-                      mitigation: '',
-                      status: 'open'
-                    });
-                    setShowAddForm(true);
-                  }}
-                  className="h-7 px-2 text-[9px] md:text-xs"
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  Add Risk
-                </Button>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => onOpenChange(false)} 
-                className="h-7 px-2 text-[9px] md:text-xs"
-              >
-                Close
-              </Button>
-            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onOpenChange(false)} 
+              className="h-7 px-2 text-[9px] md:text-xs"
+            >
+              Close
+            </Button>
           </div>
         </DialogHeader>
 
@@ -350,6 +327,29 @@ export function RiskManagementWindow({
             </div>
           ) : (
             <div className="space-y-4">
+              {(mode === 'template' || (mode === 'run' && projectRunId)) && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      setEditingRisk(null);
+                      setFormData({
+                        risk: '',
+                        likelihood: 'medium',
+                        impact: 'medium',
+                        mitigation: '',
+                        status: 'open'
+                      });
+                      setShowAddForm(true);
+                    }}
+                    className="h-8 px-4 text-sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Risk
+                  </Button>
+                </div>
+              )}
               {risks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <AlertTriangle className="w-12 h-12 text-muted-foreground mb-4" />
