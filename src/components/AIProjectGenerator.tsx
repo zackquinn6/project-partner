@@ -128,6 +128,7 @@ export function AIProjectGenerator({
         category: selectedCategories,
         aiModel,
         includeWebScraping,
+        contentSelection,
       };
 
       const result = await generateProjectWithAI(request);
