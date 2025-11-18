@@ -62,6 +62,12 @@ export default function EditWorkflowView({
   // Use the same data source as StructureManager to ensure consistency
   // StructureManager uses currentProject?.phases directly, so we should too
   // This ensures both views show the exact same phases in the same order
+  // When phases are reordered in StructureManager:
+  //   1. display_order is updated in database
+  //   2. rebuild_phases_json_from_project_phases is called (orders by display_order)
+  //   3. currentProject.phases is updated via updateProject()
+  //   4. This component re-renders with new currentProject.phases
+  //   5. Both components apply the same enforceStandardPhaseOrdering logic
   // Note: We still fetch dynamic phases for potential future use, but prioritize stored phases for consistency
   let rawPhases: Phase[] = [];
   if (currentProject?.id === '00000000-0000-0000-0000-000000000001') {
@@ -81,6 +87,26 @@ export default function EditWorkflowView({
     return ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(phaseName);
   };
 
+  // Apply standard phase ordering to match Structure Manager
+  // This ensures the workflow editor shows phases in the same order as structure manager
+  // Also deduplicate phases like StructureManager does
+  const deduplicatePhases = (phases: Phase[]): Phase[] => {
+    const seen = new Set<string>();
+    const result: Phase[] = [];
+    for (const phase of phases) {
+      // Use ID for deduplication, with special handling for linked phases
+      const key = phase.isLinked ? `${phase.id}-${phase.sourceProjectId}` : phase.id;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(phase);
+      }
+    }
+    return result;
+  };
+  
+  const deduplicatedPhases = deduplicatePhases(rawPhases);
+  const displayPhases = enforceStandardPhaseOrdering(deduplicatedPhases);
+
   // Helper to check if current step is from a standard or incorporated phase
   const isStepFromStandardOrIncorporatedPhase = () => {
     if (!currentStep || isEditingStandardProject) return false;
@@ -92,7 +118,7 @@ export default function EditWorkflowView({
     const phaseName = currentStep.phaseName;
     if (!phaseName) return false;
     
-    const phase = phases.find(p => p.name === phaseName);
+    const phase = displayPhases.find(p => p.name === phaseName);
     if (!phase) return false;
     
     // Check if phase is standard or incorporated (linked)
@@ -102,8 +128,8 @@ export default function EditWorkflowView({
   // Debug log to check phases and show helpful message if empty
   useEffect(() => {
     if (currentProject) {
-      const hasPhases = phases && phases.length > 0;
-      const hasOperations = hasPhases && phases.some(p => p.operations && p.operations.length > 0);
+      const hasPhases = displayPhases && displayPhases.length > 0;
+      const hasOperations = hasPhases && displayPhases.some(p => p.operations && p.operations.length > 0);
       
       console.log('🔍 EditWorkflowView - Project loaded:', {
         projectId: currentProject.id,
@@ -112,8 +138,8 @@ export default function EditWorkflowView({
         usingDynamicPhases: currentProject.id !== '00000000-0000-0000-0000-000000000001' && dynamicPhases.length > 0,
         hasPhases,
         hasOperations,
-        phaseCount: phases?.length || 0,
-        phases: phases?.map(p => ({
+        phaseCount: displayPhases?.length || 0,
+        phases: displayPhases?.map(p => ({
           name: p.name,
           isStandard: p.isStandard,
           operationCount: p.operations?.length || 0
@@ -127,7 +153,7 @@ export default function EditWorkflowView({
         toast.error('This project has phases but no operations. The project structure may be incomplete.');
       }
     }
-  }, [currentProject?.id, isEditingStandardProject, phases, dynamicPhases.length, dynamicPhasesLoading]);
+  }, [currentProject?.id, isEditingStandardProject, displayPhases, dynamicPhases.length, dynamicPhasesLoading]);
   const [viewMode, setViewMode] = useState<'steps' | 'structure'>('steps');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
@@ -165,35 +191,14 @@ export default function EditWorkflowView({
     parentId?: string;
   } | null>(null);
 
-  
-  // Apply standard phase ordering to match Structure Manager
-  // This ensures the workflow editor shows phases in the same order as structure manager
-  // Also deduplicate phases like StructureManager does
-  const deduplicatePhases = (phases: Phase[]): Phase[] => {
-    const seen = new Set<string>();
-    const result: Phase[] = [];
-    for (const phase of phases) {
-      // Use ID for deduplication, with special handling for linked phases
-      const key = phase.isLinked ? `${phase.id}-${phase.sourceProjectId}` : phase.id;
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push(phase);
-      }
-    }
-    return result;
-  };
-  
-  const deduplicatedPhases = deduplicatePhases(rawPhases);
-  const displayPhases = enforceStandardPhaseOrdering(deduplicatedPhases);
-
   // Debug logging
   useEffect(() => {
     if (currentProject) {
       console.log('🔍 EditWorkflowView - currentProject loaded:', {
         projectId: currentProject.id,
         projectName: currentProject.name,
-        phaseCount: phases?.length,
-        phases: phases?.map(p => ({
+        phaseCount: displayPhases?.length,
+        phases: displayPhases?.map(p => ({
           name: p.name,
           operationCount: p.operations?.length,
           operations: p.operations?.map(op => ({
@@ -204,7 +209,7 @@ export default function EditWorkflowView({
         }))
       });
     }
-  }, [currentProject?.id, phases]);
+  }, [currentProject?.id, displayPhases]);
 
   // Flatten all steps from all phases and operations for navigation
   const allSteps = displayPhases.flatMap(phase => phase.operations.flatMap(operation => operation.steps.map(step => ({
