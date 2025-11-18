@@ -53,6 +53,14 @@ const WORKSPACE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     description: 'Schedule and track home maintenance tasks',
     actionKey: 'home-maintenance',
     displayOrder: 13
+  },
+  'risk-management': {
+    appName: 'Risk Management',
+    appType: 'native',
+    icon: 'Shield',
+    description: 'Identify, assess, and mitigate project risks',
+    actionKey: 'risk-management',
+    displayOrder: 14
   }
 };
 export function AppManager({

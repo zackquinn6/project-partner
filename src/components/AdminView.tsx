@@ -251,8 +251,8 @@ export const AdminView: React.FC = () => {
             <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
               <UnifiedProjectManagement 
                 onEditWorkflow={() => {
-                  setEnhancedProjectManagementOpen(false);
-                  setStructureManagerOpen(true);
+                  // Keep project management open, just open workflow editor
+                  setEditWorkflowOpen(true);
                 }}
               />
             </div>

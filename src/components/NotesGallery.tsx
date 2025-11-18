@@ -280,17 +280,6 @@ export function NotesGallery({
               {title}
             </DialogTitle>
             <div className="flex items-center gap-2">
-              {projectRunId && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => setShowAddNote(true)}
-                  className="h-7 px-2 text-[9px] md:text-xs"
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  Add
-                </Button>
-              )}
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -347,17 +336,31 @@ export function NotesGallery({
               <p className="text-sm text-muted-foreground mt-2">Add notes to your project steps to track your progress</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Step</TableHead>
-                    <TableHead>Note</TableHead>
-                    {!projectRunId && <TableHead className="w-[150px]">Project</TableHead>}
-                    <TableHead className="w-[150px]">Date</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <div className="space-y-3">
+              {projectRunId && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setShowAddNote(true)}
+                    className="h-8 px-4 text-sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Note
+                  </Button>
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px]">Step</TableHead>
+                      <TableHead>Note</TableHead>
+                      {!projectRunId && <TableHead className="w-[150px]">Project</TableHead>}
+                      <TableHead className="w-[150px]">Date</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {notes.map((note) => (
                     <TableRow key={note.id}>
@@ -369,7 +372,7 @@ export function NotesGallery({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="max-w-[400px]">
                         {editingNote?.id === note.id ? (
                           <div className="space-y-2">
                             <Textarea
@@ -388,7 +391,7 @@ export function NotesGallery({
                             </div>
                           </div>
                         ) : (
-                          <p className="text-sm whitespace-pre-wrap">{note.note_text}</p>
+                          <p className="text-sm whitespace-pre-wrap break-words">{note.note_text}</p>
                         )}
                       </TableCell>
                       {!projectRunId && (
@@ -428,6 +431,7 @@ export function NotesGallery({
                   ))}
                 </TableBody>
               </Table>
+            </div>
             </div>
           )}
         </div>

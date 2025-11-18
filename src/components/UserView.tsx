@@ -59,6 +59,7 @@ import { MobileDIYDropdown } from './MobileDIYDropdown';
 import { ProjectCompletionHandler } from './ProjectCompletionHandler';
 import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
+import { RiskManagementWindow } from './RiskManagementWindow';
 import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
 import { useDynamicPhases } from '@/hooks/useDynamicPhases';
 interface UserViewProps {
@@ -147,6 +148,7 @@ export default function UserView({
   const [toolRentalsOpen, setToolRentalsOpen] = useState(false);
   const [homeManagerOpen, setHomeManagerOpen] = useState(false);
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
+  const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
   const [notesGalleryOpen, setNotesGalleryOpen] = useState(false);
@@ -1295,6 +1297,10 @@ export default function UserView({
       case 'project-performance':
         console.log('📊 Launching Project Performance app');
         setProjectPerformanceOpen(true);
+        break;
+      case 'risk-management':
+        console.log('🛡️ Launching Risk Management app');
+        setRiskManagementOpen(true);
         break;
       default:
         console.warn('Unknown app action:', app.actionKey);
@@ -2769,6 +2775,16 @@ export default function UserView({
         open={projectPerformanceOpen}
         onOpenChange={setProjectPerformanceOpen}
       />
+
+      {/* Risk Management Window */}
+      {currentProjectRun && (
+        <RiskManagementWindow
+          open={riskManagementOpen}
+          onOpenChange={setRiskManagementOpen}
+          projectRunId={currentProjectRun.id}
+          mode="run"
+        />
+      )}
 
       {/* Photo Gallery */}
       {currentProjectRun && (

@@ -14,6 +14,7 @@ import { MultiContentEditor } from '@/components/MultiContentEditor';
 import { MultiContentRenderer } from '@/components/MultiContentRenderer';
 import { StepTypeSelector } from '@/components/StepTypeSelector';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
+import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { DecisionTreeManager } from '@/components/DecisionTreeManager';
 import { MultiSelectLibraryDialog } from '@/components/MultiSelectLibraryDialog';
 import { StructureManager } from '@/components/StructureManager';
@@ -27,7 +28,7 @@ import { CompactOutputsTable } from '@/components/CompactOutputsTable';
 import { CompactTimeEstimation } from '@/components/CompactTimeEstimation';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
-import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock } from 'lucide-react';
+import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useDynamicPhases } from '@/hooks/useDynamicPhases';
@@ -107,6 +108,7 @@ export default function EditWorkflowView({
   const [outputEditOpen, setOutputEditOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
+  const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [toolsLibraryOpen, setToolsLibraryOpen] = useState(false);
   const [materialsLibraryOpen, setMaterialsLibraryOpen] = useState(false);
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
@@ -613,10 +615,12 @@ export default function EditWorkflowView({
             </Button>
             <div className="flex items-center gap-4">
               <div className="flex gap-2">
-                <Button onClick={() => setViewMode('steps')} variant={'outline'} size="sm" className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Step Editor
-                </Button>
+                {!isEditingStandardProject && (
+                  <Button onClick={() => setViewMode('steps')} variant={'outline'} size="sm" className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Step Editor
+                  </Button>
+                )}
                 <Button onClick={() => setViewMode('structure')} variant="default" size="sm" className="flex items-center gap-2">
                   <List className="w-4 h-4" />
                   Structure Manager
@@ -647,10 +651,12 @@ export default function EditWorkflowView({
             </Button>
             <div className="flex items-center gap-4">
               <div className="flex gap-2">
-                <Button onClick={() => setViewMode('steps')} variant={'outline'} size="sm" className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Step Editor
-                </Button>
+                {!isEditingStandardProject && (
+                  <Button onClick={() => setViewMode('steps')} variant={'outline'} size="sm" className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Step Editor
+                  </Button>
+                )}
                 <Button onClick={() => setViewMode('structure')} variant={'default'} size="sm" className="flex items-center gap-2">
                   <List className="w-4 h-4" />
                   Structure Manager
@@ -707,11 +713,6 @@ export default function EditWorkflowView({
               <h1 className="text-xl font-bold">
                 {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name || 'Untitled Project'}`}
               </h1>
-              {isEditingStandardProject && (
-                <p className="text-sm text-orange-600 dark:text-orange-400 font-medium mt-1">
-                  ⚠️ Editing Standard Foundation - Changes will be reflected in all project templates via dynamic referencing
-                </p>
-              )}
               {!isEditingStandardProject && dynamicPhasesLoading && (
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -734,11 +735,13 @@ export default function EditWorkflowView({
                       <X className="w-4 h-4" />
                     </Button>
                   </> : <>
-                    <Button onClick={() => setViewMode('steps')} variant="default" size="sm" className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      Step Editor
-                    </Button>
-                    <Button onClick={() => setViewMode('structure')} variant="outline" size="sm" className="flex items-center gap-2">
+                    {!isEditingStandardProject && (
+                      <Button onClick={() => setViewMode('steps')} variant="default" size="sm" className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Step Editor
+                      </Button>
+                    )}
+                    <Button onClick={() => setViewMode('structure')} variant={isEditingStandardProject ? "default" : "outline"} size="sm" className="flex items-center gap-2">
                       <List className="w-4 h-4" />
                       Structure Manager
                     </Button>
@@ -749,6 +752,10 @@ export default function EditWorkflowView({
                      <Button onClick={() => setProcessImprovementOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
                        <Brain className="w-4 h-4" />
                        Process Improvement
+                     </Button>
+                     <Button onClick={() => setRiskManagementOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
+                       <Shield className="w-4 h-4" />
+                       Risk Management
                      </Button>
                       <Button 
                         onClick={() => {
@@ -1156,6 +1163,16 @@ export default function EditWorkflowView({
       {processImprovementOpen && currentProject && <ProcessImprovementEngine project={currentProject} onProjectUpdate={updateProject} onClose={() => setProcessImprovementOpen(false)} />}
       {/* Tools & Materials Library */}
       <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
+      
+      {/* Risk Management */}
+      {currentProject && (
+        <RiskManagementWindow
+          open={riskManagementOpen}
+          onOpenChange={setRiskManagementOpen}
+          projectId={currentProject.id}
+          mode="template"
+        />
+      )}
       
       {/* Apps Library Dialog */}
       <AppsLibraryDialog open={appsLibraryOpen} onOpenChange={setAppsLibraryOpen} selectedApps={editingStep?.apps || []} onAppsSelected={apps => updateEditingStep('apps', apps)} />

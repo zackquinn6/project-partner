@@ -73,6 +73,14 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     description: 'View project performance dashboard',
     actionKey: 'project-performance',
     displayOrder: 9
+  },
+  'risk-management': {
+    appName: 'Risk Management',
+    appType: 'native',
+    icon: 'Shield',
+    description: 'Identify, assess, and mitigate project risks',
+    actionKey: 'risk-management',
+    displayOrder: 10
   }
 };
 
