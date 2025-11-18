@@ -191,14 +191,13 @@ export function UnifiedProjectManagement({
         updateData.cover_image = selectedProject.cover_image;
       }
 
-      // Try to include project_challenges, but fall back to diy_length_challenges if column doesn't exist
-      const challengesValue = editedProject.project_challenges !== undefined 
-        ? editedProject.project_challenges 
-        : (selectedProject.project_challenges || null);
-      
-      // First try with new column name
-      if (challengesValue !== undefined && challengesValue !== null) {
-        updateData.project_challenges = challengesValue;
+      // Include project_challenges - always include it if it's in editedProject (even if empty string)
+      // This ensures we save empty strings when user clears the field
+      if (editedProject.project_challenges !== undefined) {
+        updateData.project_challenges = editedProject.project_challenges || null;
+      } else if (selectedProject.project_challenges !== undefined) {
+        // Preserve existing value if not being edited
+        updateData.project_challenges = selectedProject.project_challenges || null;
       }
 
       console.log('💾 Saving project edit:', {
