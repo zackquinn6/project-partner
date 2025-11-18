@@ -336,6 +336,28 @@ export function UnifiedProjectManagement({
     } catch (error) {
       console.error('Error updating project:', error);
       toast.error("Failed to update project");
+      
+      // On error, clear edited state and refresh from database to show actual state
+      setEditingProject(false);
+      setEditedProject({});
+      
+      // Re-fetch the project from database to ensure UI shows actual database state
+      if (selectedProject) {
+        const { data: freshData, error: fetchError } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', selectedProject.id)
+          .single();
+        
+        if (!fetchError && freshData) {
+          // Map diy_length_challenges to project_challenges for consistency
+          const mappedData = {
+            ...freshData,
+            project_challenges: freshData.project_challenges ?? freshData.diy_length_challenges ?? null
+          };
+          setSelectedProject(mappedData as Project);
+        }
+      }
     }
   };
   const cancelProjectEdit = async () => {
