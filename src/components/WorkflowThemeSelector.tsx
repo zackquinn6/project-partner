@@ -55,9 +55,8 @@ export function WorkflowThemeSelector({ projectRunId }: WorkflowThemeSelectorPro
     };
 
     const scheme = colorSchemes[colorScheme];
-    container.style.setProperty('--workflow-primary', scheme.primary);
-    container.style.setProperty('--workflow-secondary', scheme.secondary);
-    container.style.setProperty('--workflow-accent', scheme.accent);
+    // Apply color scheme via data attribute (CSS will handle it)
+    container.setAttribute('data-color-scheme', colorScheme);
     
     // Also apply to root for global dark mode if needed
     const root = document.documentElement;
@@ -71,7 +70,7 @@ export function WorkflowThemeSelector({ projectRunId }: WorkflowThemeSelectorPro
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className="w-full gap-2">
           <Palette className="w-4 h-4" />
           Theme
         </Button>
@@ -113,7 +112,7 @@ export function WorkflowThemeSelector({ projectRunId }: WorkflowThemeSelectorPro
               >
                 <Moon className="w-5 h-5" />
                 <div className="text-left">
-                  <div className="font-medium">Dark</div>
+                  <div className="font-medium text-white">Dark</div>
                   <div className="text-xs text-muted-foreground">Easy on the eyes</div>
                 </div>
               </button>
@@ -169,21 +168,6 @@ export function WorkflowThemeSelector({ projectRunId }: WorkflowThemeSelectorPro
             <p className="text-xs text-muted-foreground">
               Choose a color scheme that matches your preference
             </p>
-          </div>
-
-          {/* Preview */}
-          <div className="space-y-2">
-            <Label>Preview</Label>
-            <div className={`p-4 rounded-lg border ${
-              themeMode === 'dark' ? 'bg-slate-900 text-slate-50' : 'bg-slate-50 text-slate-900'
-            }`}>
-              <div className="text-sm font-medium mb-2">Sample Workflow Step</div>
-              <div className={`text-xs p-2 rounded ${
-                themeMode === 'dark' ? 'bg-slate-800' : 'bg-white'
-              }`}>
-                This is how your workflow will look with the selected theme.
-              </div>
-            </div>
           </div>
         </div>
       </DialogContent>

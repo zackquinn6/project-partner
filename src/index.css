@@ -194,6 +194,92 @@ All colors MUST be HSL.
   }
 }
 
+/* Workflow Theme Styles */
+.dark-theme {
+  --workflow-text: 0 0% 100%;
+  --workflow-bg: 220 40% 8%;
+  --workflow-card-bg: 220 35% 10%;
+  --workflow-border: 220 30% 18%;
+  color: hsl(var(--workflow-text));
+  background-color: hsl(var(--workflow-bg));
+}
+
+.light-theme {
+  --workflow-text: 220 30% 15%;
+  --workflow-bg: 250 100% 99%;
+  --workflow-card-bg: 0 0% 100%;
+  --workflow-border: 220 25% 88%;
+  color: hsl(var(--workflow-text));
+  background-color: hsl(var(--workflow-bg));
+}
+
+/* Color Scheme Overrides */
+[data-color-scheme="blue"] {
+  --workflow-primary: 217 91% 60%;
+  --workflow-secondary: 217 91% 95%;
+  --workflow-accent: 217 91% 98%;
+}
+
+[data-color-scheme="green"] {
+  --workflow-primary: 142 76% 36%;
+  --workflow-secondary: 142 76% 95%;
+  --workflow-accent: 142 76% 98%;
+}
+
+[data-color-scheme="purple"] {
+  --workflow-primary: 262 83% 58%;
+  --workflow-secondary: 262 83% 95%;
+  --workflow-accent: 262 83% 98%;
+}
+
+[data-color-scheme="orange"] {
+  --workflow-primary: 25 95% 53%;
+  --workflow-secondary: 25 95% 95%;
+  --workflow-accent: 25 95% 98%;
+}
+
+[data-color-scheme="red"] {
+  --workflow-primary: 0 84% 60%;
+  --workflow-secondary: 0 84% 95%;
+  --workflow-accent: 0 84% 98%;
+}
+
+[data-color-scheme="default"] {
+  --workflow-primary: 222.2 47.4% 11.2%;
+  --workflow-secondary: 210 40% 96.1%;
+  --workflow-accent: 210 40% 98%;
+}
+
+/* Apply color scheme to primary elements */
+[data-color-scheme] .text-primary,
+[data-color-scheme] [class*="text-primary"] {
+  color: hsl(var(--workflow-primary));
+}
+
+[data-color-scheme] .bg-primary,
+[data-color-scheme] [class*="bg-primary"] {
+  background-color: hsl(var(--workflow-primary));
+}
+
+[data-color-scheme] .border-primary,
+[data-color-scheme] [class*="border-primary"] {
+  border-color: hsl(var(--workflow-primary));
+}
+
+/* Dark theme text color fix */
+.dark-theme,
+.dark-theme * {
+  color: hsl(0 0% 100%) !important;
+}
+
+.dark-theme .text-muted-foreground {
+  color: hsl(220 15% 70%) !important;
+}
+
+.dark-theme .text-primary {
+  color: hsl(var(--workflow-primary)) !important;
+}
+
 /* Gradient text */
   .gradient-text {
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);

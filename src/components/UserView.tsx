@@ -2041,10 +2041,6 @@ export default function UserView({
                     {currentStep.description}
                   </CardDescription>}
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  <WorkflowThemeSelector projectRunId={currentProjectRun?.id} />
-                </div>
 
               </div>
             </CardHeader>

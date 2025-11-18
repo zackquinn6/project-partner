@@ -21,6 +21,7 @@ import { ProjectOwnershipSelector } from '@/components/ProjectOwnershipSelector'
 import { ProjectImageManager } from '@/components/ProjectImageManager';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
+import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = ['Appliances', 'Bathroom', 'Ceilings', 'Decks & Patios', 'Doors & Windows', 'Electrical', 'Exterior Carpentry', 'Flooring', 'General Repairs & Maintenance', 'HVAC & Ventilation', 'Insulation & Weatherproofing', 'Interior Carpentry', 'Kitchen', 'Landscaping & Outdoor Projects', 'Lighting & Electrical', 'Masonry & Concrete', 'Painting & Finishing', 'Plumbing', 'Roofing', 'Safety & Security', 'Smart Home & Technology', 'Storage & Organization', 'Tile', 'Walls & Drywall'];
@@ -100,6 +101,9 @@ export function UnifiedProjectManagement({
   });
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [pfmeaOpen, setPfmeaOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -339,15 +343,20 @@ export function UnifiedProjectManagement({
       toast.error(`Failed to create revision: ${error.message || 'Unknown error'}`);
     }
   };
-  const handleDeleteProject = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project? This will delete all revisions and cannot be undone.')) {
-      return;
-    }
+  const handleDeleteProjectClick = (projectId: string, projectName: string) => {
+    setProjectToDelete({ id: projectId, name: projectName });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+
+    setIsDeleting(true);
     try {
       // Get all project IDs (parent and all revisions) to delete
       const {
         data: allProjects
-      } = await supabase.from('projects').select('id').or(`id.eq.${projectId},parent_project_id.eq.${projectId}`);
+      } = await supabase.from('projects').select('id').or(`id.eq.${projectToDelete.id},parent_project_id.eq.${projectToDelete.id}`);
       if (!allProjects || allProjects.length === 0) {
         toast.error("Project not found");
         return;
@@ -382,10 +391,14 @@ export function UnifiedProjectManagement({
       if (deleteError) throw deleteError;
       toast.success("Project deleted successfully");
       setSelectedProject(null);
+      setDeleteDialogOpen(false);
+      setProjectToDelete(null);
       fetchProjects();
     } catch (error) {
       console.error('Error deleting project:', error);
       toast.error("Failed to delete project");
+    } finally {
+      setIsDeleting(false);
     }
   };
   const deleteDraftRevision = async (revisionId: string, revisionNumber: number) => {
@@ -469,6 +482,15 @@ export function UnifiedProjectManagement({
       toast.error("Project name is required");
       return;
     }
+
+    // Check for unique project name
+    const normalizedName = newProject.name.toLowerCase().trim();
+    const existingProject = projects.find(p => p.name.toLowerCase().trim() === normalizedName);
+    if (existingProject) {
+      toast.error("A project with this name already exists. Please choose a unique name.");
+      return;
+    }
+
     try {
       console.log('🔨 Creating project:', newProject);
 
@@ -485,6 +507,21 @@ export function UnifiedProjectManagement({
         console.error('❌ Create project error:', error);
         throw error;
       }
+
+      // Update project with additional fields
+      if (data) {
+        await supabase
+          .from('projects')
+          .update({
+            category: newProject.categories,
+            effort_level: newProject.effort_level,
+            skill_level: newProject.skill_level,
+            estimated_time: newProject.estimated_time || null,
+            scaling_unit: newProject.scaling_unit || null,
+          })
+          .eq('id', data);
+      }
+
       console.log('✅ Project created:', data);
       toast.success("New project created with standard phases!");
       setCreateProjectDialogOpen(false);
@@ -625,7 +662,7 @@ export function UnifiedProjectManagement({
                                   <Edit className="w-4 h-4" />
                                   Edit Project
                                 </Button>
-                                <Button onClick={() => handleDeleteProject(selectedProject.id)} variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Button onClick={() => handleDeleteProjectClick(selectedProject.id, selectedProject.name)} variant="ghost" size="sm" className="text-destructive hover:text-destructive">
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
                               </>}
@@ -1221,5 +1258,15 @@ export function UnifiedProjectManagement({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Project Dialog */}
+      <DeleteProjectDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        projectName={projectToDelete?.name || ''}
+        onConfirm={handleDeleteProject}
+        isDeleting={isDeleting}
+        includeRevisions={true}
+      />
     </>;
 }

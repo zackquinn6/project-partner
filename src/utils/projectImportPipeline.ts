@@ -31,7 +31,13 @@ export async function importGeneratedProject(
   projectDescription: string,
   category: string[],
   generatedStructure: GeneratedProjectStructure,
-  userId: string
+  userId: string,
+  projectInfo?: {
+    effortLevel?: 'Low' | 'Medium' | 'High';
+    skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
+    diyChallenges?: string;
+  },
+  existingProjectId?: string
 ): Promise<ImportResult> {
   const result: ImportResult = {
     success: false,
@@ -50,28 +56,124 @@ export async function importGeneratedProject(
   };
 
   try {
-    // Step 1: Create project template
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .insert({
-        name: projectName,
-        description: projectDescription,
-        category,
-        publish_status: 'draft',
-        created_by: userId,
-        phases: [], // Will be populated by trigger
-      })
-      .select('id')
-      .single();
+    let projectId: string;
 
-    if (projectError || !project) {
-      result.errors.push(`Failed to create project: ${projectError?.message}`);
-      return result;
+    if (existingProjectId) {
+      // Update existing project
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({
+          name: projectName,
+          description: projectDescription,
+          category,
+          effort_level: projectInfo?.effortLevel || null,
+          skill_level: projectInfo?.skillLevel || null,
+          diy_length_challenges: projectInfo?.diyChallenges || null,
+        })
+        .eq('id', existingProjectId);
+
+      if (updateError) {
+        result.errors.push(`Failed to update project: ${updateError.message}`);
+        return result;
+      }
+
+      projectId = existingProjectId;
+
+      // Delete existing phases, operations, and steps for this project
+      // (We'll recreate them from the generated structure)
+      const { data: existingPhases } = await supabase
+        .from('project_phases')
+        .select('id')
+        .eq('project_id', projectId);
+
+      if (existingPhases && existingPhases.length > 0) {
+        const phaseIds = existingPhases.map(p => p.id);
+        
+        // Get operations for these phases
+        const { data: existingOperations } = await supabase
+          .from('template_operations')
+          .select('id')
+          .in('phase_id', phaseIds);
+
+        if (existingOperations && existingOperations.length > 0) {
+          const operationIds = existingOperations.map(op => op.id);
+          
+          // Delete steps
+          await supabase
+            .from('template_steps')
+            .delete()
+            .in('operation_id', operationIds);
+
+          // Delete step instructions
+          await supabase
+            .from('step_instructions')
+            .delete()
+            .in('template_step_id', 
+              (await supabase.from('template_steps').select('id').in('operation_id', operationIds)).data?.map(s => s.id) || []
+            );
+        }
+
+        // Delete operations
+        await supabase
+          .from('template_operations')
+          .delete()
+          .in('phase_id', phaseIds);
+
+        // Delete phases
+        await supabase
+          .from('project_phases')
+          .delete()
+          .eq('project_id', projectId);
+      }
+    } else {
+      // Create new project using standard methodology
+      const { data: newProjectId, error: createError } = await supabase
+        .rpc('create_project_with_standard_foundation_v2', {
+          p_project_name: projectName,
+          p_project_description: projectDescription,
+          p_category: category.length > 0 ? category[0] : 'general',
+          p_created_by: userId,
+        });
+
+      if (createError || !newProjectId) {
+        result.errors.push(`Failed to create project: ${createError?.message}`);
+        return result;
+      }
+
+      projectId = newProjectId;
+
+      // Update project with additional fields
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({
+          category,
+          effort_level: projectInfo?.effortLevel || null,
+          skill_level: projectInfo?.skillLevel || null,
+          diy_length_challenges: projectInfo?.diyChallenges || null,
+        })
+        .eq('id', projectId);
+
+      if (updateError) {
+        result.warnings.push(`Failed to update project metadata: ${updateError.message}`);
+      }
+
+      // Note: Standard phases (Kickoff, Planning, Ordering, Close Project) are preserved
+      // We only add the generated phases as custom phases
     }
 
-    const projectId = project.id;
-
     // Step 2: Process each phase
+    // Get current max display_order to place generated phases after standard phases
+    const { data: existingPhases } = await supabase
+      .from('project_phases')
+      .select('display_order')
+      .eq('project_id', projectId)
+      .order('display_order', { ascending: false })
+      .limit(1);
+
+    const baseDisplayOrder = existingPhases && existingPhases.length > 0 
+      ? existingPhases[0].display_order + 1 
+      : 0;
+
     for (let phaseIndex = 0; phaseIndex < generatedStructure.phases.length; phaseIndex++) {
       const phase = generatedStructure.phases[phaseIndex];
       
@@ -103,7 +205,7 @@ export async function importGeneratedProject(
               project_id: projectId,
               name: phase.name,
               description: phase.description,
-              display_order: phaseIndex,
+              display_order: baseDisplayOrder + phaseIndex,
               is_standard: true,
               standard_phase_id: existingStandardPhase.id,
             })
@@ -140,7 +242,7 @@ export async function importGeneratedProject(
             project_id: projectId,
             name: phase.name,
             description: phase.description,
-            display_order: phaseIndex,
+            display_order: baseDisplayOrder + phaseIndex,
             is_standard: false,
             standard_phase_id: newStandardPhase.id,
           })

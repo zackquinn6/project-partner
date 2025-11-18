@@ -58,10 +58,14 @@ export function AIProjectGenerator({
   onProjectCreated 
 }: AIProjectGeneratorProps) {
   const { user } = useAuth();
-  const { fetchProjects } = useProject();
+  const { fetchProjects, projects } = useProject();
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [effortLevel, setEffortLevel] = useState<'Low' | 'Medium' | 'High'>('Medium');
+  const [skillLevel, setSkillLevel] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Intermediate');
+  const [diyChallenges, setDiyChallenges] = useState('');
+  const [selectedExistingProject, setSelectedExistingProject] = useState<string | null>(null);
   const [aiModel, setAiModel] = useState<'gpt-4o-mini' | 'gpt-4-turbo' | 'gpt-4o'>('gpt-4o-mini');
   const [includeWebScraping, setIncludeWebScraping] = useState(true);
   
@@ -154,6 +158,12 @@ export function AIProjectGenerator({
       return;
     }
 
+    // Check for unique project name
+    if (projects && projects.some(p => p.name.toLowerCase().trim() === projectName.toLowerCase().trim() && p.id !== selectedExistingProject)) {
+      toast.error('A project with this name already exists. Please choose a unique name.');
+      return;
+    }
+
     setIsImporting(true);
     setImportResult(null);
 
@@ -163,13 +173,19 @@ export function AIProjectGenerator({
         projectDescription || projectName,
         selectedCategories,
         generatedProject,
-        user.id
+        user.id,
+        {
+          effortLevel,
+          skillLevel,
+          diyChallenges: diyChallenges || undefined,
+        },
+        selectedExistingProject || undefined
       );
 
       setImportResult(result);
 
       if (result.success && result.projectId) {
-        toast.success('Project imported successfully!');
+        toast.success(selectedExistingProject ? 'Project updated successfully!' : 'Project imported successfully!');
         // Refresh projects list
         await fetchProjects();
         if (onProjectCreated) {
@@ -191,10 +207,29 @@ export function AIProjectGenerator({
     }
   };
 
+  // Load existing project data when selected
+  useEffect(() => {
+    if (selectedExistingProject && projects) {
+      const project = projects.find(p => p.id === selectedExistingProject);
+      if (project) {
+        setProjectName(project.name);
+        setProjectDescription(project.description || '');
+        setSelectedCategories(project.category || []);
+        setEffortLevel((project.effortLevel as 'Low' | 'Medium' | 'High') || 'Medium');
+        setSkillLevel((project.skillLevel as 'Beginner' | 'Intermediate' | 'Advanced') || 'Intermediate');
+        setDiyChallenges(project.diyLengthChallenges || '');
+      }
+    }
+  }, [selectedExistingProject, projects]);
+
   const handleReset = () => {
     setProjectName('');
     setProjectDescription('');
     setSelectedCategories([]);
+    setEffortLevel('Medium');
+    setSkillLevel('Intermediate');
+    setDiyChallenges('');
+    setSelectedExistingProject(null);
     setAiModel('gpt-4o-mini');
     setIncludeWebScraping(true);
     setGeneratedProject(null);
@@ -258,6 +293,35 @@ export function AIProjectGenerator({
 
           <TabsContent value="configure" className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
             <div className="space-y-6">
+              {/* Select Existing Project Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Select Existing Project (Optional)</CardTitle>
+                  <CardDescription>
+                    Choose an existing project to review and update with new AI-generated content
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Select 
+                    value={selectedExistingProject || ''} 
+                    onValueChange={(value) => setSelectedExistingProject(value || null)}
+                    disabled={isGenerating}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a project to update (or leave blank for new project)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Create New Project</SelectItem>
+                      {projects && projects.filter(p => p.is_current_version !== false).map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+
               {/* Project Generator Instructions Section */}
               <Card>
                 <CardHeader>
@@ -299,6 +363,67 @@ export function AIProjectGenerator({
                   rows={3}
                 />
               </div>
+
+              {/* Project Info Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Project Info Settings</CardTitle>
+                  <CardDescription>
+                    Configure project metadata and characteristics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="effort-level">Effort Level</Label>
+                      <Select 
+                        value={effortLevel} 
+                        onValueChange={(v) => setEffortLevel(v as 'Low' | 'Medium' | 'High')}
+                        disabled={isGenerating}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low">Low</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="skill-level">Skill Level</Label>
+                      <Select 
+                        value={skillLevel} 
+                        onValueChange={(v) => setSkillLevel(v as 'Beginner' | 'Intermediate' | 'Advanced')}
+                        disabled={isGenerating}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Beginner">Beginner</SelectItem>
+                          <SelectItem value="Intermediate">Intermediate</SelectItem>
+                          <SelectItem value="Advanced">Advanced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="diy-challenges">DIY Challenges</Label>
+                    <Textarea
+                      id="diy-challenges"
+                      placeholder="Describe the most difficult aspects of this project..."
+                      value={diyChallenges}
+                      onChange={(e) => setDiyChallenges(e.target.value)}
+                      disabled={isGenerating}
+                      rows={3}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Content Selection Section */}
               <Card>

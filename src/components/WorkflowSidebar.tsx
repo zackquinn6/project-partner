@@ -8,6 +8,7 @@ import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 interface WorkflowSidebarProps {
   allSteps: any[];
   currentStep: any;
@@ -18,6 +19,7 @@ interface WorkflowSidebarProps {
   isKickoffComplete: boolean;
   instructionLevel: 'quick' | 'detailed' | 'new_user';
   projectName: string;
+  projectRunId?: string;
   onInstructionLevelChange: (level: 'quick' | 'detailed' | 'new_user') => void;
   onStepClick: (stepIndex: number, step: any) => void;
   onHelpClick: () => void;
@@ -36,6 +38,7 @@ export function WorkflowSidebar({
   isKickoffComplete,
   instructionLevel,
   projectName,
+  projectRunId,
   onInstructionLevelChange,
   onStepClick,
   onHelpClick,
@@ -320,11 +323,16 @@ export function WorkflowSidebar({
                   )}
                 </div>
 
-                {/* Step Types Button - Moved to Bottom */}
+                {/* Step Types Button */}
                 <div className="mt-4 pt-4 border-t border-border">
                   <Button variant="outline" onClick={() => setShowStepTypesInfo(true)} className="w-full py-1.5 px-4 text-xs ">
                     Step Types
                   </Button>
+                </div>
+
+                {/* Theme Button - Under Step Types */}
+                <div className="mt-2">
+                  <WorkflowThemeSelector projectRunId={projectRunId} />
                 </div>
               </div>}
           </SidebarGroupContent>
