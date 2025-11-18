@@ -9,7 +9,7 @@ import EditWorkflowView from '@/components/EditWorkflowView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Settings, BarChart3, Shield, Wrench, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog, RefreshCcw, Edit, Grid3x3 } from 'lucide-react';
+import { Settings, BarChart3, Shield, Wrench, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog, RefreshCcw, Edit, Grid3x3, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { StructureManager } from './StructureManager';
@@ -20,6 +20,7 @@ import { AdminGuideWindow } from './AdminGuideWindow';
 import { PFMEAManagement } from './PFMEAManagement';
 import { BetaModeToggle } from './BetaModeToggle';
 import { AppManager } from './AppManager';
+import { AIProjectGenerator } from './AIProjectGenerator';
 export const AdminView: React.FC = () => {
   const [enhancedProjectManagementOpen, setEnhancedProjectManagementOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
@@ -35,6 +36,7 @@ export const AdminView: React.FC = () => {
   const [dataRefreshOpen, setDataRefreshOpen] = useState(false);
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [appManagerOpen, setAppManagerOpen] = useState(false);
+  const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'admin' | 'structure-manager'>('admin');
 
   if (currentView === 'structure-manager') {
@@ -228,6 +230,23 @@ export const AdminView: React.FC = () => {
             </CardContent>
           </Card>
 
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setAiProjectGeneratorOpen(true)}>
+            <CardHeader className="text-center flex-1">
+              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <Sparkles className="w-6 h-6 text-primary" />
+              </div>
+              <CardTitle>AI Project Generator</CardTitle>
+              <CardDescription className="min-h-[3rem] flex items-center justify-center">
+                Generate complete project structures using AI with web scraping and content population
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-auto">
+              <Button className="w-full" onClick={() => setAiProjectGeneratorOpen(true)}>
+                Generate Project
+              </Button>
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Beta Mode Toggle */}
@@ -338,6 +357,15 @@ export const AdminView: React.FC = () => {
         <AdminActionCenter open={actionCenterOpen} onOpenChange={setActionCenterOpen} />
 
         <AppManager open={appManagerOpen} onOpenChange={setAppManagerOpen} />
+
+        <AIProjectGenerator 
+          open={aiProjectGeneratorOpen} 
+          onOpenChange={setAiProjectGeneratorOpen}
+          onProjectCreated={(projectId) => {
+            toast.success('Project created successfully!');
+            setEnhancedProjectManagementOpen(true);
+          }}
+        />
 
         <Dialog open={editWorkflowOpen} onOpenChange={setEditWorkflowOpen}>
           <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">

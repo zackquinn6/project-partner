@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Material, Tool, Output, Phase, Operation } from '@/interfaces/Project';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Copy, Trash2, Edit, Check, X, GripVertical, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight, Link, ExternalLink, ArrowLeft, GitBranch, MoreVertical, Loader2 } from 'lucide-react';
+import { Plus, Copy, Trash2, Edit, Check, X, FileOutput, Wrench, Package, Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight, Link, ExternalLink, ArrowLeft, GitBranch, MoreVertical, Loader2, ChevronUp } from 'lucide-react';
 import { FlowTypeSelector, getFlowTypeBadge } from './FlowTypeSelector';
 import { StepTypeSelector, getStepTypeIcon } from './StepTypeSelector';
 import { Label } from '@/components/ui/label';
@@ -196,323 +195,241 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Initialize all phases and operations as collapsed by default
   // No useEffect needed - they start collapsed with empty Sets
 
-  const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination || !currentProject) return;
-    const {
-      source,
-      destination,
-      type
-    } = result;
-    if (source.index === destination.index && source.droppableId === destination.droppableId) {
+  // Move phase up/down
+  const movePhase = async (phaseId: string, direction: 'up' | 'down') => {
+    if (!currentProject) return;
+    
+    const phaseIndex = displayPhases.findIndex(p => p.id === phaseId);
+    if (phaseIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? phaseIndex - 1 : phaseIndex + 1;
+    if (newIndex < 0 || newIndex >= displayPhases.length) return;
+    
+    const phase = displayPhases[phaseIndex];
+    const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+    const isStandardPhase = !phase.isLinked && standardPhaseNames.includes(phase.name);
+    
+    // Validate constraints for standard phases
+    if (isStandardPhase) {
+      if (phase.name === 'Kickoff' && newIndex !== 0) {
+        toast.error('Kickoff phase must be the first phase');
+        return;
+      }
+      if (phase.name === 'Planning' && newIndex !== 1) {
+        toast.error('Planning phase must be the second phase');
+        return;
+      }
+      if (phase.name === 'Ordering' && newIndex !== 2) {
+        toast.error('Order phase must be the third phase');
+        return;
+      }
+      if (phase.name === 'Close Project' && newIndex !== displayPhases.length - 1) {
+        toast.error('Close Project phase must be the last phase');
+        return;
+      }
+    }
+    
+    // Validate custom phase constraints
+    if (!isStandardPhase) {
+      if (newIndex < 3) {
+        toast.error('Custom and incorporated phases must come after the first 3 standard phases');
+        return;
+      }
+      const closeProjectIndex = displayPhases.findIndex(p => p.name === 'Close Project' && !p.isLinked);
+      if (closeProjectIndex !== -1 && newIndex >= closeProjectIndex) {
+        toast.error('Custom and incorporated phases must come before Close Project');
+        return;
+      }
+    }
+    
+    // Reorder phases
+    const reorderedPhases = Array.from(displayPhases);
+    const [removed] = reorderedPhases.splice(phaseIndex, 1);
+    reorderedPhases.splice(newIndex, 0, removed);
+    
+    await updatePhaseOrder(reorderedPhases);
+  };
+  
+  // Move operation up/down
+  const moveOperation = async (phaseId: string, operationId: string, direction: 'up' | 'down') => {
+    if (!currentProject) return;
+    
+    const phase = displayPhases.find(p => p.id === phaseId);
+    if (!phase || phase.isLinked) {
+      toast.error('Operations within incorporated phases cannot be reordered');
       return;
     }
+    
+    const operationIndex = phase.operations.findIndex(o => o.id === operationId);
+    if (operationIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? operationIndex - 1 : operationIndex + 1;
+    if (newIndex < 0 || newIndex >= phase.operations.length) return;
+    
+    const updatedProject = { ...currentProject };
+    const phaseIndex = updatedProject.phases.findIndex(p => p.id === phaseId);
+    if (phaseIndex === -1) return;
+    
+    const operations = Array.from(updatedProject.phases[phaseIndex].operations);
+    const [removed] = operations.splice(operationIndex, 1);
+    operations.splice(newIndex, 0, removed);
+    updatedProject.phases[phaseIndex].operations = operations;
+    updatedProject.updatedAt = new Date();
+    
+    await updateProject(updatedProject);
+    
+    // Rebuild phases JSON from relational data
+    const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+      p_project_id: currentProject.id
+    });
 
-    console.log('🎯 handleDragEnd called:', { type, source: source.index, destination: destination.index });
+    if (!rebuildError && rebuiltPhases) {
+      await supabase
+        .from('projects')
+        .update({ phases: rebuiltPhases as any })
+        .eq('id', currentProject.id);
+      
+      updateProject({
+        ...currentProject,
+        phases: rebuiltPhases as any,
+        updatedAt: new Date()
+      });
+    }
+    
+    toast.success('Operation reordered successfully');
+  };
+  
+  // Move step up/down
+  const moveStep = async (phaseId: string, operationId: string, stepId: string, direction: 'up' | 'down') => {
+    if (!currentProject) return;
+    
+    const phase = displayPhases.find(p => p.id === phaseId);
+    if (!phase || phase.isLinked) {
+      toast.error('Steps within incorporated phases cannot be reordered');
+      return;
+    }
+    
+    const operation = phase.operations.find(o => o.id === operationId);
+    if (!operation) return;
+    
+    const stepIndex = operation.steps.findIndex(s => s.id === stepId);
+    if (stepIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? stepIndex - 1 : stepIndex + 1;
+    if (newIndex < 0 || newIndex >= operation.steps.length) return;
+    
+    const updatedProject = { ...currentProject };
+    const phaseIndex = updatedProject.phases.findIndex(p => p.id === phaseId);
+    if (phaseIndex === -1) return;
+    
+    const operationIndex = updatedProject.phases[phaseIndex].operations.findIndex(o => o.id === operationId);
+    if (operationIndex === -1) return;
+    
+    const steps = Array.from(updatedProject.phases[phaseIndex].operations[operationIndex].steps);
+    const [removed] = steps.splice(stepIndex, 1);
+    steps.splice(newIndex, 0, removed);
+    updatedProject.phases[phaseIndex].operations[operationIndex].steps = steps;
+    updatedProject.updatedAt = new Date();
+    
+    await updateProject(updatedProject);
+    
+    // Rebuild phases JSON from relational data
+    const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+      p_project_id: currentProject.id
+    });
 
-    if (type === 'phases') {
-      try {
-        // Get the phase being dragged
-        const draggedPhase = displayPhases[source.index];
-        const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-        const isStandardPhase = !draggedPhase.isLinked && standardPhaseNames.includes(draggedPhase.name);
+    if (!rebuildError && rebuiltPhases) {
+      await supabase
+        .from('projects')
+        .update({ phases: rebuiltPhases as any })
+        .eq('id', currentProject.id);
+      
+      updateProject({
+        ...currentProject,
+        phases: rebuiltPhases as any,
+        updatedAt: new Date()
+      });
+    }
+    
+    toast.success('Step reordered successfully');
+  };
+  
+  // Update phase order in database
+  const updatePhaseOrder = async (reorderedPhases: Phase[]) => {
+    if (!currentProject) return;
+    
+    try {
+      const updatePromises: Promise<void>[] = [];
+      
+      for (let i = 0; i < reorderedPhases.length; i++) {
+        const phase = reorderedPhases[i];
         
-        // Validate drag constraints for standard phases
-        if (isStandardPhase) {
-          if (draggedPhase.name === 'Kickoff' && destination.index !== 0) {
-            toast.error('Kickoff phase must be the first phase');
-            return;
-          }
-          if (draggedPhase.name === 'Planning' && destination.index !== 1) {
-            toast.error('Planning phase must be the second phase');
-            return;
-          }
-          if (draggedPhase.name === 'Ordering' && destination.index !== 2) {
-            toast.error('Order phase must be the third phase');
-            return;
-          }
-          if (draggedPhase.name === 'Close Project' && destination.index !== displayPhases.length - 1) {
-            toast.error('Close Project phase must be the last phase');
-            return;
-          }
-        }
-        
-        // Validate that we're not moving a custom/incorporated phase to an invalid position
-        // Custom and incorporated phases can only be between Order (index 2) and Close Project (last)
-        if (!isStandardPhase) {
-          // Calculate the actual Close Project index after the drag operation
-          // If dragging from before Close Project to after, the index shifts
-          let closeProjectIndex = displayPhases.findIndex(p => p.name === 'Close Project' && !p.isLinked);
-          
-          // Adjust for the drag operation: if dragging from before Close Project, its index decreases by 1
-          if (source.index < closeProjectIndex && destination.index >= closeProjectIndex) {
-            closeProjectIndex = closeProjectIndex - 1;
-          } else if (source.index > closeProjectIndex && destination.index <= closeProjectIndex) {
-            closeProjectIndex = closeProjectIndex + 1;
-          }
-          
-          const lastValidIndex = closeProjectIndex > -1 ? closeProjectIndex - 1 : displayPhases.length - 2;
-          
-          if (destination.index < 3) {
-            toast.error('Custom and incorporated phases must come after the first 3 standard phases');
-            return;
-          }
-          if (destination.index > lastValidIndex) {
-            toast.error('Custom and incorporated phases must come before Close Project');
-            return;
-          }
-        }
-        
-        // Use displayPhases for the correct order, but update currentProject.phases
-        const reorderedDisplayPhases = Array.from(displayPhases);
-        const [removed] = reorderedDisplayPhases.splice(source.index, 1);
-        reorderedDisplayPhases.splice(destination.index, 0, removed);
-        
-        // Re-enforce ordering to ensure constraints are met (handles edge cases)
-        const finalOrderedPhases = enforceStandardPhaseOrdering(reorderedDisplayPhases);
-
-        // Update the project phases array to match the new order
-        const updatedProject = {
-          ...currentProject,
-          phases: finalOrderedPhases,
-          updatedAt: new Date()
-        };
-        
-        console.log('🎯 Updating project with reordered phases');
-        
-        // Update display_order in project_phases table
-        // For standard phases in Standard Project, update standard_phases table
-        // For custom phases, update project_phases table
-        const updatePromises: Promise<void>[] = [];
-        
-        for (let i = 0; i < finalOrderedPhases.length; i++) {
-          const phase = finalOrderedPhases[i];
-          
-          // Update display_order for all phases (including incorporated)
-          // Incorporated phases can now be reordered along with custom phases
-          if (isEditingStandardProject && phase.isStandard) {
-            // When editing Standard Project, update standard_phases table
-            const updatePromise = (async () => {
-              const { data: standardPhase, error: fetchError } = await supabase
-                .from('standard_phases')
-                .select('id')
-                .eq('name', phase.name)
-                .single();
-              
-              if (standardPhase && !fetchError) {
-                const { error: updateError } = await supabase
-                  .from('standard_phases')
-                  .update({ 
-                    display_order: i,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', standardPhase.id);
-                
-                if (updateError) {
-                  console.error('❌ Error updating standard phase display_order:', updateError);
-                  throw updateError;
-                }
-              }
-            })();
-            updatePromises.push(updatePromise);
-          } else {
-            // Update all phases (custom, standard in templates, and incorporated) in project_phases table
-            const updatePromise = (async () => {
-              // First, try to find by phase.id
-              let projectPhase = null;
-              let fetchError = null;
-              
-              const { data: phaseData, error: phaseError } = await supabase
-                .from('project_phases')
-                .select('id')
-                .eq('id', phase.id)
-                .eq('project_id', currentProject.id)
-                .maybeSingle();
-              
-              if (phaseData) {
-                projectPhase = phaseData;
-              } else {
-                // If not found by ID, try to find by name (for standard phases that might not have matching IDs)
-                const { data: phaseByName, error: nameError } = await supabase
-                  .from('project_phases')
-                  .select('id')
-                  .eq('name', phase.name)
-                  .eq('project_id', currentProject.id)
-                  .maybeSingle();
-                
-                if (phaseByName) {
-                  projectPhase = phaseByName;
-                } else {
-                  fetchError = nameError;
-                }
-              }
-              
-              if (projectPhase) {
-                const { error: updateError } = await supabase
-                  .from('project_phases')
-                  .update({ 
-                    display_order: i,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', projectPhase.id);
-                
-                if (updateError) {
-                  console.error('❌ Error updating phase display_order:', updateError);
-                  throw updateError;
-                }
-              } else {
-                console.warn('⚠️ Phase not found in project_phases:', phase.id, phase.name, fetchError);
-              }
-            })();
-            updatePromises.push(updatePromise);
-          }
-        }
-        
-        // Wait for all display_order updates to complete
-        await Promise.all(updatePromises);
-        console.log('✅ All display_order updates completed');
-        
-        // Rebuild phases JSON from relational data to ensure consistency
-        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-          p_project_id: currentProject.id
-        });
-
-        if (rebuildError) {
-          console.error('❌ Error rebuilding phases:', rebuildError);
-          throw rebuildError;
-        }
-
-        // Update project with rebuilt phases
-        const { error: updateError } = await supabase
-          .from('projects')
-          .update({ phases: rebuiltPhases as any })
-          .eq('id', currentProject.id);
-          
-        if (updateError) {
-          console.error('❌ Error updating project:', updateError);
-          throw updateError;
-        }
-
-        // Update local context
-        updateProject({
-          ...currentProject,
-          phases: rebuiltPhases as any,
-          updatedAt: new Date()
-        });
-        
-        toast.success('Phase reordered successfully');
-      } catch (error) {
-        console.error('❌ Error reordering phases:', error);
-        toast.error('Failed to reorder phases');
-      }
-    } else if (type === 'operations') {
-      const phaseId = source.droppableId.split('-')[1];
-      const phase = displayPhases.find(p => p.id === phaseId);
-
-      // Prevent reordering operations within incorporated phases (modules)
-      if (phase?.isLinked) {
-        toast.error('Operations within incorporated phases cannot be reordered');
-        return;
-      }
-
-      // Allow reordering operations in regular phases
-      const updatedProject = {
-        ...currentProject
-      };
-      const phaseIndex = currentProject.phases.findIndex(p => p.id === phaseId);
-      if (phaseIndex !== -1) {
-        const operations = Array.from(currentProject.phases[phaseIndex].operations);
-        const [removed] = operations.splice(source.index, 1);
-        operations.splice(destination.index, 0, removed);
-        updatedProject.phases[phaseIndex].operations = operations;
-        updatedProject.updatedAt = new Date();
-        
-        console.log('🎯 Updating project with reordered operations');
-        
-        // Update display_order in database
-        await updateProject(updatedProject);
-        
-        // Rebuild phases JSON from relational data to ensure consistency
-        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-          p_project_id: currentProject.id
-        });
-
-        if (rebuildError) {
-          console.error('❌ Error rebuilding phases:', rebuildError);
-        } else {
-          // Update project with rebuilt phases
-          const { error: updateError } = await supabase
-            .from('projects')
-            .update({ phases: rebuiltPhases as any })
-            .eq('id', currentProject.id);
+        if (isEditingStandardProject && phase.isStandard) {
+          const updatePromise = (async () => {
+            const { data: standardPhase } = await supabase
+              .from('standard_phases')
+              .select('id')
+              .eq('name', phase.name)
+              .single();
             
-          if (!updateError) {
-            // Update local context with rebuilt phases
-            updateProject({
-              ...currentProject,
-              phases: rebuiltPhases as any,
-              updatedAt: new Date()
-            });
-          }
-        }
-        
-        toast.success('Operation reordered successfully');
-      }
-    } else if (type === 'steps') {
-      const [phaseId, operationId] = source.droppableId.split('-').slice(1);
-      const phase = displayPhases.find(p => p.id === phaseId);
-
-      // Prevent reordering steps within incorporated phases (modules)
-      if (phase?.isLinked) {
-        toast.error('Steps within incorporated phases cannot be reordered');
-        return;
-      }
-
-      // Allow reordering steps in regular phases
-      const updatedProject = {
-        ...currentProject
-      };
-      const phaseIndex = currentProject.phases.findIndex(p => p.id === phaseId);
-      if (phaseIndex !== -1) {
-        const operationIndex = currentProject.phases[phaseIndex].operations.findIndex(o => o.id === operationId);
-        if (operationIndex !== -1) {
-          const steps = Array.from(currentProject.phases[phaseIndex].operations[operationIndex].steps);
-          const [removed] = steps.splice(source.index, 1);
-          steps.splice(destination.index, 0, removed);
-          updatedProject.phases[phaseIndex].operations[operationIndex].steps = steps;
-          updatedProject.updatedAt = new Date();
-          
-          console.log('🎯 Updating project with reordered steps');
-          
-          // Update display_order in database
-          await updateProject(updatedProject);
-          
-          // Rebuild phases JSON from relational data to ensure consistency
-          const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-            p_project_id: currentProject.id
-          });
-
-          if (rebuildError) {
-            console.error('❌ Error rebuilding phases:', rebuildError);
-          } else {
-            // Update project with rebuilt phases
-            const { error: updateError } = await supabase
-              .from('projects')
-              .update({ phases: rebuiltPhases as any })
-              .eq('id', currentProject.id);
-              
-            if (!updateError) {
-              // Update local context with rebuilt phases
-              updateProject({
-                ...currentProject,
-                phases: rebuiltPhases as any,
-                updatedAt: new Date()
-              });
+            if (standardPhase) {
+              await supabase
+                .from('standard_phases')
+                .update({ 
+                  display_order: i,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', standardPhase.id);
             }
-          }
-          
-          toast.success('Step reordered successfully');
+          })();
+          updatePromises.push(updatePromise);
+        } else {
+          const updatePromise = (async () => {
+            const { data: phaseData } = await supabase
+              .from('project_phases')
+              .select('id')
+              .eq('id', phase.id)
+              .eq('project_id', currentProject.id)
+              .maybeSingle();
+            
+            if (phaseData) {
+              await supabase
+                .from('project_phases')
+                .update({ 
+                  display_order: i,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', phaseData.id);
+            }
+          })();
+          updatePromises.push(updatePromise);
         }
       }
+      
+      await Promise.all(updatePromises);
+      
+      // Rebuild phases JSON
+      const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+        p_project_id: currentProject.id
+      });
+
+      if (rebuildError) throw rebuildError;
+
+      await supabase
+        .from('projects')
+        .update({ phases: rebuiltPhases as any })
+        .eq('id', currentProject.id);
+      
+      updateProject({
+        ...currentProject,
+        phases: rebuiltPhases as any,
+        updatedAt: new Date()
+      });
+      
+      toast.success('Phase reordered successfully');
+    } catch (error) {
+      console.error('Error reordering phases:', error);
+      toast.error('Failed to reorder phases');
     }
   };
 
@@ -1375,7 +1292,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold">Structure Manager</h2>
-              <p className="text-muted-foreground">Drag and drop to reorder phases, operations, and steps (incorporated phases are read-only modules)</p>
+              <p className="text-muted-foreground">Use up/down arrows to reorder phases, operations, and steps (incorporated phases are read-only modules)</p>
             </div>
             <div className="flex items-center gap-2">
               {clipboard && <Badge variant="outline" className="flex items-center gap-1">
@@ -1390,33 +1307,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                   <Link className="w-4 h-4" />
                   Incorporate Phase
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setExpandedPhases(expandedPhases.size === displayPhases.length ? new Set() : new Set(displayPhases.map(p => p.id)))} className="flex items-center gap-2">
-                 {expandedPhases.size === displayPhases.length ? <>
-                     <ChevronRight className="w-4 h-4" />
-                     Collapse All
-                   </> : <>
-                     <ChevronDown className="w-4 h-4" />
-                     Expand All
-                   </>}
-               </Button>
-              <Button 
-                size="sm" 
-                onClick={addPhase} 
-                className="flex items-center gap-2"
-                disabled={isAddingPhase}
-              >
-                {isAddingPhase ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4" />
-                    Add Phase
-                  </>
-                )}
-              </Button>
               <Button size="sm" onClick={onBack} className="flex items-center gap-2">
                 <Save className="w-4 h-4" />
                 Done Editing
@@ -1427,27 +1317,86 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       </div>
 
       {/* Main Content */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="container mx-auto px-6 py-8">
-          <Droppable droppableId="phases" type="phases" isDropDisabled={false}>
-            {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                {displayPhases.map((phase, phaseIndex) => {
-                const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-                // Check if editing Standard Project Foundation OR if this is a standard phase in any project
-                const isStandardPhase = standardPhaseNames.includes(phase.name) && !phase.isLinked || isEditingStandardProject && standardPhaseNames.includes(phase.name);
-                const isLinkedPhase = phase.isLinked;
-                const isEditing = editingItem?.type === 'phase' && editingItem.id === phase.id;
-
-                // Prevent dragging of standard phases (unless in Edit Standard mode)
-                const isDragDisabled = isStandardPhase && !isEditingStandardProject;
-                return <Draggable key={phase.id} draggableId={phase.id} index={phaseIndex} isDragDisabled={isDragDisabled}>
-                      {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`border-2 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-blue-50 border-blue-200' : isLinkedPhase ? 'bg-purple-50 border-purple-200' : ''}`}>
+      <div className="container mx-auto px-6 py-8">
+        {/* Action buttons above structure table */}
+        <div className="flex items-center gap-2 mb-4">
+          <Button 
+            size="sm" 
+            onClick={addPhase} 
+            className="flex items-center gap-2"
+            disabled={isAddingPhase}
+          >
+            {isAddingPhase ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                Add Phase
+              </>
+            )}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setExpandedPhases(expandedPhases.size === displayPhases.length ? new Set() : new Set(displayPhases.map(p => p.id)))} 
+            className="flex items-center gap-2"
+          >
+            {expandedPhases.size === displayPhases.length ? (
+              <>
+                <ChevronRight className="w-4 h-4" />
+                Collapse All
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                Expand All
+              </>
+            )}
+          </Button>
+        </div>
+        
+        <div className="space-y-4">
+          {displayPhases.map((phase, phaseIndex) => {
+            const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+            // Check if editing Standard Project Foundation OR if this is a standard phase in any project
+            const isStandardPhase = standardPhaseNames.includes(phase.name) && !phase.isLinked || isEditingStandardProject && standardPhaseNames.includes(phase.name);
+            const isLinkedPhase = phase.isLinked;
+            const isEditing = editingItem?.type === 'phase' && editingItem.id === phase.id;
+            const canMoveUp = phaseIndex > 0 && (!isStandardPhase || isEditingStandardProject);
+            const canMoveDown = phaseIndex < displayPhases.length - 1 && (!isStandardPhase || isEditingStandardProject);
+            
+            return <Card 
+              key={phase.id}
+              className={`border-2 ${isStandardPhase ? 'bg-blue-50 border-blue-200' : isLinkedPhase ? 'bg-purple-50 border-purple-200' : ''}`}>
                           <CardHeader className="py-1 px-2">
-                            <div className="flex items-center justify-between" {...(!isStandardPhase || isEditingStandardProject ? provided.dragHandleProps : {})}>
+                            <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1 flex-1">
-                                {!isStandardPhase || isEditingStandardProject ? <div className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1">
-                                    <GripVertical className="w-4 h-4 text-muted-foreground" />
-                                  </div> : <div className="w-4" />}
+                                {(!isStandardPhase || isEditingStandardProject) && !isLinkedPhase && (
+                                  <div className="flex flex-col gap-0.5">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-4 w-4 p-0"
+                                      onClick={() => movePhase(phase.id, 'up')}
+                                      disabled={!canMoveUp}
+                                    >
+                                      <ChevronUp className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-4 w-4 p-0"
+                                      onClick={() => movePhase(phase.id, 'down')}
+                                      disabled={!canMoveDown}
+                                    >
+                                      <ChevronDown className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                                {((isStandardPhase && !isEditingStandardProject) || isLinkedPhase) && <div className="w-4" />}
                                 
                                 {isEditing ? <div className="flex-1 space-y-1">
                                     <Input value={editingItem.data.name} onChange={e => setEditingItem({
@@ -1487,7 +1436,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                  <div className="flex items-center gap-2">
                                   <Badge variant="outline">{phase.operations.length} operations</Badge>
                                   
-                                  {(!isStandardPhase || isEditingStandardProject) && !isLinkedPhase && <>
+                                  {(!isStandardPhase || isEditingStandardProject) && !isLinkedPhase && (
+                                    <>
                                       {!isStandardPhase && <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
                                         <Copy className="w-4 h-4" />
                                       </Button>}
@@ -1512,7 +1462,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                             <Trash2 className="w-4 h-4" />
                                           </Button>
                                         </>}
-                                    </>}
+                                    </>
+                                  )}
                                 </div>
                             </div>
                            </CardHeader>
@@ -1527,20 +1478,41 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                   </Button>
                               </div>
                             
-                            <Droppable droppableId={`operations-${phase.id}`} type="operations" isDropDisabled={phase.isLinked || false}>
-                              {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                                  {phase.operations.map((operation, operationIndex) => {
+                            <div className="space-y-3">
+                              {phase.operations.map((operation, operationIndex) => {
                                 const isOperationEditing = editingItem?.type === 'operation' && editingItem.id === operation.id;
-                                // Disable dragging for operations within incorporated phases (modules)
-                                const isOperationDragDisabled = phase.isLinked;
-                                return <Draggable key={operation.id} draggableId={operation.id} index={operationIndex} isDragDisabled={isOperationDragDisabled}>
-                                        {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`ml-6 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/20' : ''}`}>
+                                const canMoveOpUp = operationIndex > 0 && !phase.isLinked;
+                                const canMoveOpDown = operationIndex < phase.operations.length - 1 && !phase.isLinked;
+                                
+                                return <Card 
+                                  key={operation.id}
+                                  className={`ml-6 ${isStandardPhase ? 'bg-muted/20' : ''}`}>
                                             <CardHeader className="pb-3">
-                                              <div className="flex items-center justify-between" {...(!phase.isLinked ? provided.dragHandleProps : {})}>
+                                              <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3 flex-1">
-                                                  {!phase.isLinked ? <div className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1">
-                                                      <GripVertical className="w-4 h-4 text-muted-foreground" />
-                                                    </div> : <div className="w-4" />}
+                                                  {!phase.isLinked && (
+                                                    <div className="flex flex-col gap-0.5">
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-4 w-4 p-0"
+                                                        onClick={() => moveOperation(phase.id, operation.id, 'up')}
+                                                        disabled={!canMoveOpUp}
+                                                      >
+                                                        <ChevronUp className="w-3 h-3" />
+                                                      </Button>
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-4 w-4 p-0"
+                                                        onClick={() => moveOperation(phase.id, operation.id, 'down')}
+                                                        disabled={!canMoveOpDown}
+                                                      >
+                                                        <ChevronDown className="w-3 h-3" />
+                                                      </Button>
+                                                    </div>
+                                                  )}
+                                                  {phase.isLinked && <div className="w-4" />}
                                                   
                                                   {isOperationEditing ? <div className="flex-1 space-y-2">
                                                       <Input value={editingItem.data.name} onChange={e => setEditingItem({
@@ -1614,20 +1586,41 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                  </Button>
                                                </div>
                                               
-                                              <Droppable droppableId={`steps-${phase.id}-${operation.id}`} type="steps" isDropDisabled={phase.isLinked || false}>
-                                                {provided => <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                                                    {operation.steps.map((step, stepIndex) => {
-                                                const isStepEditing = editingItem?.type === 'step' && editingItem.id === step.id;
-                                                // Disable dragging for steps within incorporated phases (modules)
-                                                const isStepDragDisabled = phase.isLinked || ((isStandardPhase && !isEditingStandardProject) || phase.name === 'Close Project');
-                                                return <Draggable key={step.id} draggableId={step.id} index={stepIndex} isDragDisabled={isStepDragDisabled}>
-                                                          {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`ml-4 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/10' : ''}`}>
+                                              <div className="space-y-2">
+                                                {operation.steps.map((step, stepIndex) => {
+                                                  const isStepEditing = editingItem?.type === 'step' && editingItem.id === step.id;
+                                                  const canMoveStepUp = stepIndex > 0 && !phase.isLinked && ((!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project');
+                                                  const canMoveStepDown = stepIndex < operation.steps.length - 1 && !phase.isLinked && ((!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project');
+                                                  
+                                                  return <Card 
+                                                    key={step.id}
+                                                    className={`ml-4 ${isStandardPhase ? 'bg-muted/10' : ''}`}>
                                                               <CardContent className="p-3">
-                                                                <div className="flex items-center justify-between" {...(!phase.isLinked && (!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' ? provided.dragHandleProps : {})}>
+                                                                <div className="flex items-center justify-between">
                                                                   <div className="flex items-center gap-2 flex-1">
-                                                                    {!phase.isLinked && (!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' ? <div className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1">
-                                                                        <GripVertical className="w-4 h-4 text-muted-foreground" />
-                                                                      </div> : <div className="w-4" />}
+                                                                    {!phase.isLinked && (!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' && (
+                                                                      <div className="flex flex-col gap-0.5">
+                                                                        <Button
+                                                                          variant="ghost"
+                                                                          size="sm"
+                                                                          className="h-4 w-4 p-0"
+                                                                          onClick={() => moveStep(phase.id, operation.id, step.id, 'up')}
+                                                                          disabled={!canMoveStepUp}
+                                                                        >
+                                                                          <ChevronUp className="w-3 h-3" />
+                                                                        </Button>
+                                                                        <Button
+                                                                          variant="ghost"
+                                                                          size="sm"
+                                                                          className="h-4 w-4 p-0"
+                                                                          onClick={() => moveStep(phase.id, operation.id, step.id, 'down')}
+                                                                          disabled={!canMoveStepDown}
+                                                                        >
+                                                                          <ChevronDown className="w-3 h-3" />
+                                                                        </Button>
+                                                                      </div>
+                                                                    )}
+                                                                    {(phase.isLinked || (isStandardPhase && !isEditingStandardProject) || phase.name === 'Close Project') && <div className="w-4" />}
                                                                     
                                                                      {isStepEditing ? <div className="flex-1 space-y-2">
                                                                          <Input value={editingItem.data.step} onChange={e => setEditingItem({
@@ -1729,32 +1722,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                                   </div>
                                                                 </div>
                                                               </CardContent>
-                                                            </Card>}
-                                                        </Draggable>;
-                                              })}
-                                                    {provided.placeholder}
-                                                  </div>}
-                                               </Droppable>
+                                                            </Card>;
+                                                })}
+                                              </div>
                                                  </CardContent>
                                                </CollapsibleContent>
                                              </Collapsible>
-                                          </Card>}
-                                      </Draggable>;
+                                          </Card>;
                               })}
-                                  {provided.placeholder}
-                                </div>}
-                             </Droppable>
+                            </div>
                                </CardContent>
                              </CollapsibleContent>
                            </Collapsible>
-                        </Card>}
-                    </Draggable>;
-              })}
-                {provided.placeholder}
-              </div>}
-          </Droppable>
+                        </Card>;
+          })}
         </div>
-      </DragDropContext>
+      </div>
 
       {/* Step Content Edit Dialog */}
       {showStepContentEdit && <Dialog open={!!showStepContentEdit} onOpenChange={() => setShowStepContentEdit(null)}>
