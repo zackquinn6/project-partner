@@ -6,6 +6,8 @@ export interface Material {
   category: 'Hardware' | 'Software' | 'Consumable' | 'Other';
   alternates: string[];
   unit?: string;
+  item?: string;
+  unit_size?: string;
 }
 
 export interface Tool {
@@ -14,6 +16,7 @@ export interface Tool {
   description: string;
   category: 'Hardware' | 'Software' | 'Hand Tool' | 'Power Tool' | 'Other';
   alternates: string[];
+  item?: string;
 }
 
 // New library interfaces matching database schema
@@ -27,6 +30,7 @@ export interface LibraryTool {
   category: string | null;
   created_at: string;
   updated_at: string;
+  item?: string | null;
 }
 
 export interface LibraryMaterial {
@@ -39,6 +43,8 @@ export interface LibraryMaterial {
   category: string | null;
   created_at: string;
   updated_at: string;
+  item?: string | null;
+  unit_size?: string | null;
 }
 
 // Workflow step references for library items
