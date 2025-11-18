@@ -58,7 +58,8 @@ export function AIProjectGenerator({
   onProjectCreated 
 }: AIProjectGeneratorProps) {
   const { user } = useAuth();
-  const { fetchProjects, projects } = useProject();
+  const { fetchProjects } = useProject();
+  const [projectTemplates, setProjectTemplates] = useState<any[]>([]);
   const [projectName, setProjectName] = useState('');
   const [aiInstructions, setAiInstructions] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -87,6 +88,39 @@ export function AIProjectGenerator({
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'configure' | 'preview' | 'cost'>('configure');
+
+  // Fetch project templates (not runs) when dialog opens
+  useEffect(() => {
+    if (open) {
+      const fetchTemplates = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('projects')
+            .select('id, name, description, category, publish_status')
+            .in('publish_status', ['published', 'beta-testing'])
+            .neq('id', '00000000-0000-0000-0000-000000000000') // Exclude Manual Project Template
+            .neq('id', '00000000-0000-0000-0000-000000000001') // Exclude Standard Project Foundation
+            .order('name', { ascending: true });
+
+          if (error) {
+            console.error('Error fetching project templates:', error);
+            toast.error('Failed to load project templates');
+            return;
+          }
+
+          if (data) {
+            setProjectTemplates(data);
+            console.log('✅ Loaded project templates:', data.map(p => p.name));
+          }
+        } catch (error) {
+          console.error('Error fetching project templates:', error);
+          toast.error('Failed to load project templates');
+        }
+      };
+
+      fetchTemplates();
+    }
+  }, [open]);
 
   // Calculate cost estimate when inputs change
   useEffect(() => {
@@ -157,7 +191,7 @@ export function AIProjectGenerator({
     }
 
     // Check for unique project name
-    if (projects && projects.some(p => p.name.toLowerCase().trim() === projectName.toLowerCase().trim() && p.id !== selectedExistingProject)) {
+    if (projectTemplates && projectTemplates.some(p => p.name.toLowerCase().trim() === projectName.toLowerCase().trim() && p.id !== selectedExistingProject)) {
       toast.error('A project with this name already exists. Please choose a unique name.');
       return;
     }
@@ -214,15 +248,15 @@ export function AIProjectGenerator({
 
   // Load existing project data when selected
   useEffect(() => {
-    if (selectedExistingProject && projects) {
-      const project = projects.find(p => p.id === selectedExistingProject);
+    if (selectedExistingProject && projectTemplates) {
+      const project = projectTemplates.find(p => p.id === selectedExistingProject);
       if (project) {
         setProjectName(project.name);
         setSelectedCategories(project.category || []);
         // Don't load description, effort level, skill level, or DIY challenges - AI will generate these
       }
     }
-  }, [selectedExistingProject, projects]);
+  }, [selectedExistingProject, projectTemplates]);
 
   const handleReset = () => {
     setProjectName('');
@@ -311,20 +345,11 @@ export function AIProjectGenerator({
                     </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="new">Create New Project</SelectItem>
-                    {projects && projects
-                      .filter(project => {
-                        // Only show published/beta-testing projects (templates)
-                        const isPublished = project.publishStatus === 'published' || project.publishStatus === 'beta-testing';
-                        // Exclude manual template and standard project foundation
-                        const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
-                        const isNotStandardProject = project.id !== '00000000-0000-0000-0000-000000000001';
-                        return isPublished && isNotManualTemplate && isNotStandardProject;
-                      })
-                      .map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
+                    {projectTemplates.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                   </Select>
                 </CardContent>
