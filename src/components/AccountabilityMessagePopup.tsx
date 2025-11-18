@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 
@@ -10,27 +10,41 @@ interface AccountabilityMessagePopupProps {
   projectName?: string;
 }
 
+// Multiple congratulatory message variations for user-facing phase completion
+const CONGRATULATORY_MESSAGES = [
+  (progress: number) => `You've now completed ${Math.round(progress)}% of the project. Congrats!`,
+  (progress: number) => `Awesome work! You're ${Math.round(progress)}% done with your project. Keep it up!`,
+  (progress: number) => `Way to go! You've completed ${Math.round(progress)}% of the project. You're making great progress!`,
+  (progress: number) => `Fantastic! You're ${Math.round(progress)}% through the project. You've got this!`,
+  (progress: number) => `Excellent progress! You've finished ${Math.round(progress)}% of the project. Keep pushing forward!`,
+  (progress: number) => `You're crushing it! ${Math.round(progress)}% complete. Great job staying on track!`,
+  (progress: number) => `Outstanding! You've reached ${Math.round(progress)}% completion. Your hard work is paying off!`,
+  (progress: number) => `Nice work! You're ${Math.round(progress)}% done. Every step counts!`,
+];
+
 export function AccountabilityMessagePopup({ 
   isOpen, 
   onClose, 
   messageType, 
   progress = 0,
-  projectName = "their project"
+  projectName = "your project"
 }: AccountabilityMessagePopupProps) {
-  const getMessage = () => {
+  // Select a random message variation each time the popup opens
+  const message = useMemo(() => {
     if (messageType === 'phase-complete') {
-      return `Your friend has now completed ${Math.round(progress)}% of their project. Send them a congrats!`;
+      const randomIndex = Math.floor(Math.random() * CONGRATULATORY_MESSAGES.length);
+      return CONGRATULATORY_MESSAGES[randomIndex](progress);
     } else {
-      return "Your friend might be having a tough time on their project - how about a check-in?";
+      return "You might be having a tough time on your project - how about taking a break or reaching out for help?";
     }
-  };
+  }, [messageType, progress, isOpen]); // Re-select when popup opens
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogTitle>Phase Complete!</DialogTitle>
         <DialogDescription>
-          {messageType === 'phase-complete' ? 'Phase completion notification' : 'Issue reporting notification'}
+          {messageType === 'phase-complete' ? 'Great progress on your project!' : 'Project support'}
         </DialogDescription>
         
         <div className="py-6 space-y-4">
@@ -39,7 +53,7 @@ export function AccountabilityMessagePopup({
               <span className="text-4xl">✓</span>
             </div>
             <p className="text-lg font-medium mb-2">
-              {getMessage()}
+              {message}
             </p>
           </div>
         </div>

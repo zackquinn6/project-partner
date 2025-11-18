@@ -1033,7 +1033,13 @@ export default function UserView({
             
             // End time tracking for phase
             endTimeTracking('phase', currentPhase.id);
+            
+            // Automatically mark phase as complete - open PhaseCompletionPopup to verify outputs
+            // Phase is considered complete when all steps are done, popup just checks outputs
             setPhaseCompletionOpen(true);
+            
+            // Note: Phase completion is automatically determined by completed steps
+            // No need to store separately - it's inferred from all steps being complete
           } else {
             console.log("🔍 Phase not yet complete:", {
               phaseName: currentPhase.name,
