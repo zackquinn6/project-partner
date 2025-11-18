@@ -190,10 +190,26 @@ export function AIProjectGenerator({
       return;
     }
 
-    // Check for unique project name
-    if (projectTemplates && projectTemplates.some(p => p.name.toLowerCase().trim() === projectName.toLowerCase().trim() && p.id !== selectedExistingProject)) {
-      toast.error('A project with this name already exists. Please choose a unique name.');
-      return;
+    // Check for duplicate project name (query database directly to ensure accuracy)
+    if (!selectedExistingProject) {
+      const normalizedName = projectName.trim().toLowerCase();
+      const { data: existingProjects, error: checkError } = await supabase
+        .from('projects')
+        .select('id, name')
+        .ilike('name', projectName.trim());
+
+      if (checkError) {
+        toast.error('Failed to validate project name. Please try again.');
+        return;
+      }
+
+      if (existingProjects && existingProjects.length > 0) {
+        const exactMatch = existingProjects.find(p => p.name.trim().toLowerCase() === normalizedName);
+        if (exactMatch) {
+          toast.error('A project with this name already exists. Please choose a unique name.');
+          return;
+        }
+      }
     }
 
     setIsImporting(true);

@@ -126,6 +126,26 @@ export async function importGeneratedProject(
           .eq('project_id', projectId);
       }
     } else {
+      // Check for duplicate project name before creating
+      const normalizedName = projectName.trim().toLowerCase();
+      const { data: existingProjects, error: checkError } = await supabase
+        .from('projects')
+        .select('id, name')
+        .ilike('name', projectName.trim());
+
+      if (checkError) {
+        result.errors.push(`Failed to validate project name: ${checkError.message}`);
+        return result;
+      }
+
+      if (existingProjects && existingProjects.length > 0) {
+        const exactMatch = existingProjects.find(p => p.name.trim().toLowerCase() === normalizedName);
+        if (exactMatch) {
+          result.errors.push(`A project with the name "${projectName}" already exists. Please choose a unique name.`);
+          return result;
+        }
+      }
+
       // Create new project using standard methodology
       const { data: newProjectId, error: createError } = await supabase
         .rpc('create_project_with_standard_foundation_v2', {

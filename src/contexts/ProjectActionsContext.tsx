@@ -71,6 +71,35 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       return;
     }
 
+    // Check for duplicate project name
+    const normalizedName = projectData.name.trim().toLowerCase();
+    const { data: existingProjects, error: checkError } = await supabase
+      .from('projects')
+      .select('id, name')
+      .ilike('name', projectData.name.trim());
+
+    if (checkError) {
+      console.error('Error checking for duplicate project name:', checkError);
+      toast({
+        title: "Error",
+        description: "Failed to validate project name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (existingProjects && existingProjects.length > 0) {
+      const exactMatch = existingProjects.find(p => p.name.trim().toLowerCase() === normalizedName);
+      if (exactMatch) {
+        toast({
+          title: "Error",
+          description: "A project with this name already exists. Please choose a unique name.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
       // Use database function for proper project_phases architecture
       const { data: projectId, error } = await supabase
