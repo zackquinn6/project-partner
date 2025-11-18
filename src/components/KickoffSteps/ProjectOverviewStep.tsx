@@ -219,22 +219,22 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     : null;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold flex items-center gap-2">
           Project Overview
-          {isCompleted && <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" />}
+          {isCompleted && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-500 flex-shrink-0" />}
         </h2>
-        <Badge variant={isCompleted ? "default" : "secondary"} className="self-start sm:self-auto">
+        <Badge variant={isCompleted ? "default" : "secondary"} className="self-start sm:self-auto text-xs">
           {isCompleted ? "Completed" : "In Progress"}
         </Badge>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Make sure this project is right for you</CardTitle>
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="text-base sm:text-lg md:text-xl">Make sure this project is right for you</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
           <div>
             <Label>Project Name</Label>
             <p className="text-lg font-medium mt-1">{currentProjectRun.name}</p>
@@ -250,7 +250,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-4 border-t">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
             <div>
               <Label className="text-sm">Category</Label>
               <div className="mt-2 flex flex-wrap gap-2">

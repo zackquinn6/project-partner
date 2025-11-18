@@ -240,15 +240,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         return null;
     }
   };
-  return <div className="max-w-6xl mx-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+  return <div className="max-w-6xl mx-auto p-2 sm:p-4 md:p-6 space-y-2 sm:space-y-4 md:space-y-6 pb-20 sm:pb-6">
       {/* Progress Header */}
       <Card>
         <CardHeader className="p-3 sm:p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
+              <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
                 Project Kickoff
-                {allKickoffStepsComplete && <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" />}
+                {allKickoffStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-500 flex-shrink-0" />}
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm mt-1">Three quick steps check that this project is a good fit - then personalizes the project to you</CardDescription>
             </div>
@@ -257,7 +257,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                 <div className="text-xs sm:text-sm text-muted-foreground mb-1">
                   Step {currentKickoffStep + 1} of {kickoffSteps.length}
                 </div>
-                <Progress value={progress} className="w-24 sm:w-32" />
+                <Progress value={progress} className="w-20 sm:w-24 md:w-32 h-1.5 sm:h-2" />
               </div>
             </div>
           </div>
@@ -266,35 +266,35 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
       {/* Step Navigation */}
       <Card>
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 -mx-3 sm:mx-0 px-3 sm:px-0">
+        <CardContent className="p-2 sm:p-3 md:p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide">
               {kickoffSteps.map((step, index) => <div key={step.id} className="flex items-center flex-shrink-0">
                   <div className={`
-                    flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 transition-colors
+                    flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full border-2 transition-colors flex-shrink-0
                     ${index === currentKickoffStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
                   `}>
-                    {isStepCompleted(index) ? <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <span className="text-xs sm:text-sm font-medium">{index + 1}</span>}
+                    {isStepCompleted(index) ? <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" /> : <span className="text-[10px] sm:text-xs md:text-sm font-medium">{index + 1}</span>}
                   </div>
-                  <div className="ml-1.5 sm:ml-2 hidden md:block">
-                    <p className={`text-xs sm:text-sm font-medium ${index === currentKickoffStep ? 'text-primary' : isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'}`}>
+                  <div className="ml-1 sm:ml-1.5 md:ml-2 hidden lg:block">
+                    <p className={`text-xs sm:text-sm font-medium whitespace-nowrap ${index === currentKickoffStep ? 'text-primary' : isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'}`}>
                       {step.title}
                     </p>
                   </div>
-                  {index < kickoffSteps.length - 1 && <div className="mx-2 sm:mx-4 w-4 sm:w-8 h-0.5 bg-muted-foreground/20 flex-shrink-0" />}
+                  {index < kickoffSteps.length - 1 && <div className="mx-1 sm:mx-2 md:mx-4 w-3 sm:w-4 md:w-8 h-0.5 bg-muted-foreground/20 flex-shrink-0" />}
                 </div>)}
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentKickoffStep === 0} className="flex-1 sm:flex-initial text-xs sm:text-sm">
-                <ChevronLeft className="w-4 h-4 mr-1 sm:mr-2" />
+              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentKickoffStep === 0} className="flex-1 sm:flex-initial text-xs h-8 sm:h-9">
+                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                 <span className="hidden sm:inline">Previous</span>
                 <span className="sm:hidden">Prev</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentKickoffStep === kickoffSteps.length - 1} className="flex-1 sm:flex-initial text-xs sm:text-sm">
+              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentKickoffStep === kickoffSteps.length - 1} className="flex-1 sm:flex-initial text-xs h-8 sm:h-9">
                 <span className="hidden sm:inline">Next</span>
                 <span className="sm:hidden">Next</span>
-                <ChevronRight className="w-4 h-4 ml-1 sm:ml-2" />
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />
               </Button>
             </div>
           </div>
@@ -302,8 +302,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       </Card>
 
       {/* Current Step Content - Scrollable with Fixed Button */}
-      <div className="flex flex-col min-h-0" style={{ maxHeight: 'calc(100vh - 18rem)' }}>
-        <div className="flex-1 overflow-y-auto min-h-0 -mx-3 sm:mx-0 px-3 sm:px-0">
+      <div className="flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 -mx-2 sm:mx-0 px-2 sm:px-0">
           {renderCurrentStep()}
         </div>
       </div>

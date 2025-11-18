@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image } from "lucide-react";
+import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image, FileText } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
@@ -24,6 +24,7 @@ interface WorkflowSidebarProps {
   onUnplannedWorkClick: () => void;
   onKeysToSuccessClick: () => void;
   onPhotosClick: () => void;
+  onNotesClick: () => void;
 }
 export function WorkflowSidebar({
   allSteps,
@@ -40,7 +41,8 @@ export function WorkflowSidebar({
   onHelpClick,
   onUnplannedWorkClick,
   onKeysToSuccessClick,
-  onPhotosClick
+  onPhotosClick,
+  onNotesClick
 }: WorkflowSidebarProps) {
   const {
     state
@@ -154,9 +156,9 @@ export function WorkflowSidebar({
                   </Select>
                 </div>
 
-                {/* DIY Tools Section */}
+                {/* Project Tools Section */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-primary">DIY Tools</h3>
+                  <h3 className="text-sm font-semibold text-primary">Project Tools</h3>
                   <div className="flex gap-2">
                     <Button onClick={() => setShowComingSoon(true)} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900 rounded-lg">
                       <MessageCircle className="w-4 h-4" />
@@ -175,16 +177,25 @@ export function WorkflowSidebar({
                   </div>
                 </div>
 
-                {/* Photos Button */}
-                <div>
+                {/* Photos and Notes Buttons */}
+                <div className="flex gap-2">
                   <Button
                     onClick={onPhotosClick}
                     variant="outline"
                     size="sm"
-                    className="w-full h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
+                    className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
                   >
                     <Image className="w-4 h-4" />
                     <span className="text-[10px] font-semibold">Photos</span>
+                  </Button>
+                  <Button
+                    onClick={onNotesClick}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-150 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 rounded-lg shadow-sm hover:shadow-md transition-all"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span className="text-[10px] font-semibold">Notes</span>
                   </Button>
                 </div>
 

@@ -35,6 +35,8 @@ import { KickoffWorkflow } from './KickoffWorkflow';
 import { UnplannedWorkWindow } from './UnplannedWorkWindow';
 import { ProjectSurvey } from './ProjectSurvey';
 import { PhotoUpload } from './PhotoUpload';
+import { NoteUpload } from './NoteUpload';
+import { NotesGallery } from './NotesGallery';
 import { PhotoGallery } from './PhotoGallery';
 import { ProjectCompletionPopup } from './ProjectCompletionPopup';
 import { ToolsMaterialsSection } from './ToolsMaterialsSection';
@@ -147,6 +149,7 @@ export default function UserView({
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
+  const [notesGalleryOpen, setNotesGalleryOpen] = useState(false);
   const [scaledProgressDialogOpen, setScaledProgressDialogOpen] = useState(false);
   const [currentScaledStep, setCurrentScaledStep] = useState<{ id: string; title: string } | null>(null);
   const [selectedMaterialsForShopping, setSelectedMaterialsForShopping] = useState<{
@@ -2007,6 +2010,7 @@ export default function UserView({
             }}
             onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
             onPhotosClick={() => setPhotoGalleryOpen(true)}
+            onNotesClick={() => setNotesGalleryOpen(true)}
           />
 
           <main className="flex-1 overflow-auto">
@@ -2198,18 +2202,36 @@ export default function UserView({
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {/* Photo Upload Button - Always visible for current step */}
+                  {/* Photo Upload and Note Upload Buttons - Always visible for current step */}
                   {currentStep && currentProjectRun && (
-                    <PhotoUpload
-                      projectRunId={currentProjectRun.id}
-                      templateId={currentProjectRun.templateId || null}
-                      stepId={currentStep.id}
-                      stepName={currentStep.step}
-                      phaseId={currentStep.phaseId}
-                      phaseName={currentStep.phaseName}
-                      operationId={currentStep.operationId}
-                      operationName={currentStep.operationName}
-                    />
+                    <>
+                      <PhotoUpload
+                        projectRunId={currentProjectRun.id}
+                        templateId={currentProjectRun.templateId || null}
+                        stepId={currentStep.id}
+                        stepName={currentStep.step}
+                        phaseId={currentStep.phaseId}
+                        phaseName={currentStep.phaseName}
+                        operationId={currentStep.operationId}
+                        operationName={currentStep.operationName}
+                      />
+                      <NoteUpload
+                        projectRunId={currentProjectRun.id}
+                        templateId={currentProjectRun.templateId || null}
+                        stepId={currentStep.id}
+                        stepName={currentStep.step}
+                        phaseId={currentStep.phaseId}
+                        phaseName={currentStep.phaseName}
+                        operationId={currentStep.operationId}
+                        operationName={currentStep.operationName}
+                        onNoteAdded={() => {
+                          // Optionally refresh notes gallery if open
+                          if (notesGalleryOpen) {
+                            // NotesGallery will refetch on its own
+                          }
+                        }}
+                      />
+                    </>
                   )}
 
                   {currentStep && !completedSteps.has(currentStep.id) && (
@@ -2751,6 +2773,18 @@ export default function UserView({
           templateId={currentProjectRun.templateId || undefined}
           mode="user"
           title="My Project Photos"
+        />
+      )}
+
+      {/* Notes Gallery */}
+      {currentProjectRun && (
+        <NotesGallery
+          open={notesGalleryOpen}
+          onOpenChange={setNotesGalleryOpen}
+          projectRunId={currentProjectRun.id}
+          templateId={currentProjectRun.templateId || undefined}
+          mode="user"
+          title="Project Notes"
         />
       )}
 

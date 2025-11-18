@@ -110,46 +110,46 @@ export function MobileWorkflowView({
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="flex-shrink-0 bg-card/95 backdrop-blur-sm border-b border-border sticky top-0 z-40">
-        <div className="flex items-center justify-between p-4">
+        <div className="flex items-center justify-between p-2 sm:p-3 md:p-4 gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="flex-shrink-0 p-2"
+            className="flex-shrink-0 p-1.5 sm:p-2 h-8 w-8 sm:h-9 sm:w-9"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
           
-          <div className="flex-1 flex flex-col items-center justify-center mx-4 min-w-0">
-            <div className="flex items-center gap-2 w-full justify-center">
-              <h1 className="font-semibold text-base text-card-foreground truncate text-center">
+          <div className="flex-1 flex flex-col items-center justify-center min-w-0 px-1 sm:px-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 w-full justify-center">
+              <h1 className="font-semibold text-sm sm:text-base text-card-foreground truncate text-center max-w-[140px] sm:max-w-none">
                 {projectName}
               </h1>
               {onInstructionLevelChange && (
                 <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
-                  <SelectTrigger className="h-7 text-xs w-[90px]">
+                  <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs w-[70px] sm:w-[90px] flex-shrink-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="quick">Quick</SelectItem>
-                    <SelectItem value="detailed">Detailed</SelectItem>
-                    <SelectItem value="contractor">Pro</SelectItem>
+                    <SelectItem value="quick" className="text-xs">Quick</SelectItem>
+                    <SelectItem value="detailed" className="text-xs">Detailed</SelectItem>
+                    <SelectItem value="new_user" className="text-xs">New DIY</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             </div>
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-0.5">
               Step {currentStepIndex + 1} of {totalSteps}
             </p>
           </div>
           
           <Sheet open={isStepListOpen} onOpenChange={setIsStepListOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex-shrink-0 p-2">
-                <Menu className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="flex-shrink-0 p-1.5 sm:p-2 h-8 w-8 sm:h-9 sm:w-9">
+                <Menu className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-80 p-0">
+            <SheetContent side="right" className="w-[85vw] sm:w-80 p-0">
               <StepsList 
                 allSteps={allSteps}
                 currentStepIndex={currentStepIndex}
@@ -164,32 +164,32 @@ export function MobileWorkflowView({
         </div>
         
         {/* Progress Bar */}
-        <div className="px-4 pb-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+        <div className="px-2 sm:px-3 md:px-4 pb-2 sm:pb-3 md:pb-4">
+          <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground mb-1 sm:mb-2">
             <span>Progress</span>
             <span>{Math.round(progress)}%</span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-1.5 sm:h-2" />
         </div>
       </div>
 
       {/* Content */}
       <ScrollArea className="flex-1" ref={stepRef}>
-        <div className="p-4 space-y-6 pb-20">
+        <div className="p-3 sm:p-4 space-y-4 sm:space-y-6 pb-20">
           {/* Step Content */}
           <Card 
             key={instructionLevel}
             className="gradient-card"
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+            <CardHeader className="pb-2 sm:pb-3 p-3 sm:p-4 md:p-6">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                   {isStepCompleted ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
                   ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground" />
+                    <Circle className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0" />
                   )}
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-[10px] sm:text-xs truncate">
                     {currentStep.phaseName}
                   </Badge>
                 </div>
@@ -197,16 +197,16 @@ export function MobileWorkflowView({
                   variant={isStepCompleted ? "outline" : "default"}
                   size="sm"
                   onClick={handleStepToggle}
-                  className="text-xs"
+                  className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0"
                 >
                   {isStepCompleted ? "Undo" : "Complete"}
                 </Button>
               </div>
-              <CardTitle className="text-lg leading-tight">
+              <CardTitle className="text-base sm:text-lg leading-tight mt-2">
                 {currentStep.step}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6 pt-0 sm:pt-0">
               <div className="space-y-4">
                   {/* Render instruction content based on level if available */}
                   {instructionLoading ? (
@@ -343,11 +343,11 @@ export function MobileWorkflowView({
             >
               <Card className="gradient-card">
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/5 transition-fast pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-base">Materials</CardTitle>
-                        <Badge variant="secondary" className="text-xs">
+                  <CardHeader className="cursor-pointer hover:bg-muted/5 transition-fast pb-2 sm:pb-3 p-3 sm:p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                        <CardTitle className="text-sm sm:text-base">Materials</CardTitle>
+                        <Badge variant="secondary" className="text-[10px] sm:text-xs flex-shrink-0">
                           {currentStep.materials.length}
                         </Badge>
                       </div>
@@ -358,36 +358,36 @@ export function MobileWorkflowView({
                           e.stopPropagation();
                           setShowMaterials(!showMaterials);
                         }}
-                        className="p-1"
+                        className="p-1 h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
                       >
-                        {showMaterials ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showMaterials ? <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                       </Button>
                     </div>
                   </CardHeader>
                 </CollapsibleTrigger>
                 {showMaterials && (
                   <CollapsibleContent>
-                    <CardContent className="space-y-3 pt-0">
+                    <CardContent className="space-y-2 sm:space-y-3 pt-0 p-3 sm:p-4">
                       {currentStep.materials.map((material: any) => {
                         const isChecked = checkedMaterials[currentStep.id]?.has(material.id) || false;
                         return (
-                          <div key={material.id} className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
+                          <div key={material.id} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-background/50 rounded-lg">
                             <Checkbox
                               checked={isChecked}
                               onCheckedChange={() => onToggleMaterial(currentStep.id, material.id)}
-                              className="mt-0.5"
+                              className="mt-0.5 flex-shrink-0"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className={`font-medium text-sm ${isChecked ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}>
+                              <p className={`font-medium text-xs sm:text-sm break-words ${isChecked ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}>
                                 {material.name}
                               </p>
                               {material.description && (
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 break-words">
                                   {material.description}
                                 </p>
                               )}
               {material.alternates && material.alternates.length > 0 && (
-                <Badge variant="outline" className="text-xs mt-1">+{material.alternates.length} alternatives</Badge>
+                <Badge variant="outline" className="text-[10px] sm:text-xs mt-1">+{material.alternates.length} alternatives</Badge>
               )}
                             </div>
                           </div>
@@ -411,11 +411,11 @@ export function MobileWorkflowView({
             >
               <Card className="gradient-card">
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/5 transition-fast pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-base">Tools</CardTitle>
-                        <Badge variant="secondary" className="text-xs">
+                  <CardHeader className="cursor-pointer hover:bg-muted/5 transition-fast pb-2 sm:pb-3 p-3 sm:p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                        <CardTitle className="text-sm sm:text-base">Tools</CardTitle>
+                        <Badge variant="secondary" className="text-[10px] sm:text-xs flex-shrink-0">
                           {currentStep.tools.length}
                         </Badge>
                       </div>
@@ -426,36 +426,36 @@ export function MobileWorkflowView({
                           e.stopPropagation();
                           setShowTools(!showTools);
                         }}
-                        className="p-1"
+                        className="p-1 h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
                       >
-                        {showTools ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showTools ? <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                       </Button>
                     </div>
                   </CardHeader>
                 </CollapsibleTrigger>
                 {showTools && (
                   <CollapsibleContent>
-                    <CardContent className="space-y-3 pt-0">
+                    <CardContent className="space-y-2 sm:space-y-3 pt-0 p-3 sm:p-4">
                       {currentStep.tools.map((tool: any) => {
                         const isChecked = checkedTools[currentStep.id]?.has(tool.id) || false;
                         return (
-                          <div key={tool.id} className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
+                          <div key={tool.id} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-background/50 rounded-lg">
                             <Checkbox
                               checked={isChecked}
                               onCheckedChange={() => onToggleTool(currentStep.id, tool.id)}
-                              className="mt-0.5"
+                              className="mt-0.5 flex-shrink-0"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className={`font-medium text-sm ${isChecked ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}>
+                              <p className={`font-medium text-xs sm:text-sm break-words ${isChecked ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}>
                                 {tool.name}
                               </p>
                               {tool.description && (
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 break-words">
                                   {tool.description}
                                 </p>
                               )}
               {tool.alternates && tool.alternates.length > 0 && (
-                <Badge variant="outline" className="text-xs mt-1">+{tool.alternates.length} alternatives</Badge>
+                <Badge variant="outline" className="text-[10px] sm:text-xs mt-1">+{tool.alternates.length} alternatives</Badge>
               )}
                             </div>
                           </div>
@@ -471,20 +471,21 @@ export function MobileWorkflowView({
       </ScrollArea>
 
       {/* Navigation */}
-      <div className="flex-shrink-0 bg-card/95 backdrop-blur-sm border-t border-border p-4">
-        <div className="flex items-center justify-between gap-4">
+      <div className="flex-shrink-0 bg-card/95 backdrop-blur-sm border-t border-border p-2 sm:p-3 md:p-4">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
           <Button
             variant="outline"
             onClick={onPrevious}
             disabled={!canMovePrevious}
-            className="flex-1"
+            className="flex-1 text-xs sm:text-sm h-9 sm:h-10"
           >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Previous
+            <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Previous</span>
+            <span className="sm:hidden">Prev</span>
           </Button>
           
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">
+          <div className="text-center flex-shrink-0 px-1 sm:px-2">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               {currentStepIndex + 1} / {totalSteps}
             </p>
           </div>
@@ -493,10 +494,11 @@ export function MobileWorkflowView({
             variant="default"
             onClick={onNext}
             disabled={!canMoveNext}
-            className="flex-1"
+            className="flex-1 text-xs sm:text-sm h-9 sm:h-10"
           >
-            Next
-            <ChevronRight className="h-4 w-4 ml-2" />
+            <span className="hidden sm:inline">Next</span>
+            <span className="sm:hidden">Next</span>
+            <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
           </Button>
         </div>
       </div>
@@ -523,14 +525,14 @@ function StepsList({ allSteps, currentStepIndex, completedSteps, onNavigateToSte
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-border">
-        <h2 className="font-semibold text-lg">Project Steps</h2>
+      <div className="p-3 sm:p-4 border-b border-border">
+        <h2 className="font-semibold text-base sm:text-lg">Project Steps</h2>
       </div>
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4">
+        <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
           {Object.entries(phases).map(([phaseName, phaseSteps]: [string, any[]]) => (
             <div key={phaseName}>
-              <h3 className="font-medium text-sm text-muted-foreground mb-2 uppercase tracking-wide">
+              <h3 className="font-medium text-xs sm:text-sm text-muted-foreground mb-1.5 sm:mb-2 uppercase tracking-wide">
                 {phaseName}
               </h3>
               <div className="space-y-1">
@@ -543,25 +545,25 @@ function StepsList({ allSteps, currentStepIndex, completedSteps, onNavigateToSte
                       key={step.id}
                       variant={isCurrent ? "secondary" : "ghost"}
                       onClick={() => onNavigateToStep(step.originalIndex)}
-                      className={`w-full justify-start h-auto p-3 text-left ${
+                      className={`w-full justify-start h-auto p-2 sm:p-3 text-left ${
                         isCurrent ? 'bg-primary/10 text-primary' : ''
                       }`}
                     >
-                      <div className="flex items-start gap-2 w-full">
+                      <div className="flex items-start gap-1.5 sm:gap-2 w-full">
                         {isCompleted ? (
-                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 mt-0.5 flex-shrink-0" />
                         ) : isCurrent ? (
-                          <Clock className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                          <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary mt-0.5 flex-shrink-0" />
                         ) : (
-                          <Circle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <Circle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium leading-tight ${
+                          <p className={`text-xs sm:text-sm font-medium leading-tight break-words ${
                             isCompleted ? 'line-through text-muted-foreground' : ''
                           }`}>
                             {step.step}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                             Step {step.originalIndex + 1}
                           </p>
                         </div>

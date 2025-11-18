@@ -142,54 +142,54 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         </div>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="space-y-3">
+          <CardContent className="p-3 sm:p-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <h4 className="font-semibold">Personal Info</h4>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p><strong>Full Name:</strong> {existingProfile.full_name || "Not specified"}</p>
-                  <p><strong>Nickname:</strong> {existingProfile.nickname || "Not specified"}</p>
+                <h4 className="font-semibold text-sm sm:text-base">Personal Info</h4>
+                <div className="text-xs sm:text-sm text-muted-foreground space-y-1 mt-1">
+                  <p className="break-words"><strong>Full Name:</strong> {existingProfile.full_name || "Not specified"}</p>
+                  <p className="break-words"><strong>Nickname:</strong> {existingProfile.nickname || "Not specified"}</p>
                 </div>
               </div>
               
               <div>
-                <h4 className="font-semibold">Skill Level</h4>
-                <p className="text-sm text-muted-foreground capitalize">
+                <h4 className="font-semibold text-sm sm:text-base">Skill Level</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground capitalize mt-1">
                   {existingProfile.skill_level || "Not specified"}
                 </p>
               </div>
               
               <div>
-                <h4 className="font-semibold">Projects to Avoid</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className="font-semibold text-sm sm:text-base">Projects to Avoid</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
                   {existingProfile.avoid_projects?.length ? existingProfile.avoid_projects.join(", ") : "Open to anything!"}
                 </p>
               </div>
               
               <div>
-                <h4 className="font-semibold">Physical Capability</h4>
-                <p className="text-sm text-muted-foreground capitalize">
+                <h4 className="font-semibold text-sm sm:text-base">Physical Capability</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground capitalize mt-1">
                   {existingProfile.physical_capability || "Not specified"}
                 </p>
               </div>
               
               <div>
-                <h4 className="font-semibold">Primary Home</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className="font-semibold text-sm sm:text-base">Primary Home</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
                   {existingProfile.primary_home ? `${existingProfile.primary_home.name}${existingProfile.primary_home.city && existingProfile.primary_home.state ? ` • ${existingProfile.primary_home.city}, ${existingProfile.primary_home.state}` : ''}` : "No primary home set"}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-semibold">Learning Preferences</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className="font-semibold text-sm sm:text-base">Learning Preferences</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
                   {existingProfile.preferred_learning_methods?.length ? existingProfile.preferred_learning_methods.join(", ") : "Not specified"}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-semibold">Owned Tools</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className="font-semibold text-sm sm:text-base">Owned Tools</h4>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   {existingProfile.owned_tools?.length ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library` : "No tools specified"}
                 </p>
               </div>
@@ -197,9 +197,9 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
           </CardContent>
         </Card>
 
-        <div className="flex justify-center gap-3">
-          <Button onClick={handleStartEdit} variant="outline" className="flex items-center gap-2">
-            <Edit3 className="w-4 h-4" />
+        <div className="flex justify-center gap-2 sm:gap-3">
+          <Button onClick={handleStartEdit} variant="outline" className="flex items-center gap-2 text-xs sm:text-sm h-9 sm:h-10">
+            <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Edit Profile
           </Button>
         </div>
@@ -232,17 +232,17 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            DIY Profile
-            {isCompleted && <Badge variant="secondary">Complete</Badge>}
+        <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl">
+            <User className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            <span className="truncate">DIY Profile</span>
+            {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             Set up your DIY profile for personalized project guidance
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
           {renderProfileView()}
           
           <div className="sticky bottom-0 bg-background pt-4 border-t mt-4">
