@@ -236,7 +236,6 @@ export default function ProfileManager({
       }
     }} mode="new" initialData={{
       skillLevel: existingProfile?.skill_level || "",
-      avoidProjects: existingProfile?.avoid_projects || [],
       physicalCapability: existingProfile?.physical_capability || "",
       homeOwnership: existingProfile?.home_ownership || "",
       homeBuildYear: existingProfile?.home_build_year || "",
