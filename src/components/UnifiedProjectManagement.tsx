@@ -195,9 +195,12 @@ export function UnifiedProjectManagement({
       // If user edited it, use that value (even if empty string)
       // Otherwise preserve existing value
       if (editedProject.hasOwnProperty('project_challenges')) {
-        // User has edited the field (even if they cleared it to empty string)
-        updateData.project_challenges = editedProject.project_challenges || null;
-        console.log('📝 Including project_challenges from editedProject:', editedProject.project_challenges);
+        // User has edited the field - preserve the exact value (even if empty string)
+        // Only convert to null if it's actually undefined
+        updateData.project_challenges = editedProject.project_challenges !== undefined 
+          ? editedProject.project_challenges 
+          : null;
+        console.log('📝 Including project_challenges from editedProject:', editedProject.project_challenges, '→', updateData.project_challenges);
       } else if (selectedProject.project_challenges !== undefined && selectedProject.project_challenges !== null) {
         // Preserve existing value if not being edited
         updateData.project_challenges = selectedProject.project_challenges;
