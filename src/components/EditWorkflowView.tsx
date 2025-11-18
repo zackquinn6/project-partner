@@ -32,6 +32,7 @@ import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, S
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useDynamicPhases } from '@/hooks/useDynamicPhases';
+import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 
 // Extended interfaces for step-level usage
 interface StepMaterial extends Material {
@@ -58,10 +59,19 @@ export default function EditWorkflowView({
     currentProject?.id !== '00000000-0000-0000-0000-000000000001' ? currentProject?.id : undefined
   );
 
-  // Use dynamic phases for non-standard projects, otherwise use stored phases
-  const phases = currentProject?.id !== '00000000-0000-0000-0000-000000000001' && dynamicPhases.length > 0
-    ? dynamicPhases
-    : currentProject?.phases || [];
+  // Use the same data source as StructureManager to ensure consistency
+  // StructureManager uses currentProject?.phases directly, so we should too
+  // This ensures both views show the exact same phases in the same order
+  // Note: We still fetch dynamic phases for potential future use, but prioritize stored phases for consistency
+  let rawPhases: Phase[] = [];
+  if (currentProject?.id === '00000000-0000-0000-0000-000000000001') {
+    // Standard Project Foundation: use stored phases
+    rawPhases = currentProject?.phases || [];
+  } else {
+    // Template project: use stored phases from currentProject to match StructureManager
+    // This ensures both views show the same phases
+    rawPhases = currentProject?.phases || [];
+  }
 
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
@@ -156,8 +166,25 @@ export default function EditWorkflowView({
   } | null>(null);
 
   
-  // Get phases directly from project - use dynamic phases for templates
-  const displayPhases = phases;
+  // Apply standard phase ordering to match Structure Manager
+  // This ensures the workflow editor shows phases in the same order as structure manager
+  // Also deduplicate phases like StructureManager does
+  const deduplicatePhases = (phases: Phase[]): Phase[] => {
+    const seen = new Set<string>();
+    const result: Phase[] = [];
+    for (const phase of phases) {
+      // Use ID for deduplication, with special handling for linked phases
+      const key = phase.isLinked ? `${phase.id}-${phase.sourceProjectId}` : phase.id;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(phase);
+      }
+    }
+    return result;
+  };
+  
+  const deduplicatedPhases = deduplicatePhases(rawPhases);
+  const displayPhases = enforceStandardPhaseOrdering(deduplicatedPhases);
 
   // Debug logging
   useEffect(() => {

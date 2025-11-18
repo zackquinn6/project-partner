@@ -282,6 +282,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Update display_order in project_phases table
         // For standard phases in Standard Project, update standard_phases table
         // For custom phases, update project_phases table
+        const updatePromises: Promise<void>[] = [];
+        
         for (let i = 0; i < finalOrderedPhases.length; i++) {
           const phase = finalOrderedPhases[i];
           
@@ -289,53 +291,85 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           // Incorporated phases can now be reordered along with custom phases
           if (isEditingStandardProject && phase.isStandard) {
             // When editing Standard Project, update standard_phases table
-            const { data: standardPhase, error: fetchError } = await supabase
-              .from('standard_phases')
-              .select('id')
-              .eq('name', phase.name)
-              .single();
-            
-            if (standardPhase && !fetchError) {
-              const { error: updateError } = await supabase
+            const updatePromise = (async () => {
+              const { data: standardPhase, error: fetchError } = await supabase
                 .from('standard_phases')
-                .update({ 
-                  display_order: i,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', standardPhase.id);
+                .select('id')
+                .eq('name', phase.name)
+                .single();
               
-              if (updateError) {
-                console.error('❌ Error updating standard phase display_order:', updateError);
+              if (standardPhase && !fetchError) {
+                const { error: updateError } = await supabase
+                  .from('standard_phases')
+                  .update({ 
+                    display_order: i,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', standardPhase.id);
+                
+                if (updateError) {
+                  console.error('❌ Error updating standard phase display_order:', updateError);
+                  throw updateError;
+                }
               }
-            }
-          } else if (!phase.isStandard || phase.isLinked) {
-            // Update custom phases and incorporated phases in project_phases table
-            const { data: projectPhase, error: fetchError } = await supabase
-              .from('project_phases')
-              .select('id')
-              .eq('id', phase.id)
-              .eq('project_id', currentProject.id)
-              .single();
-            
-            if (projectPhase && !fetchError) {
-              const { error: updateError } = await supabase
+            })();
+            updatePromises.push(updatePromise);
+          } else {
+            // Update all phases (custom, standard in templates, and incorporated) in project_phases table
+            const updatePromise = (async () => {
+              // First, try to find by phase.id
+              let projectPhase = null;
+              let fetchError = null;
+              
+              const { data: phaseData, error: phaseError } = await supabase
                 .from('project_phases')
-                .update({ 
-                  display_order: i,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', projectPhase.id);
+                .select('id')
+                .eq('id', phase.id)
+                .eq('project_id', currentProject.id)
+                .maybeSingle();
               
-              if (updateError) {
-                console.error('❌ Error updating phase display_order:', updateError);
+              if (phaseData) {
+                projectPhase = phaseData;
+              } else {
+                // If not found by ID, try to find by name (for standard phases that might not have matching IDs)
+                const { data: phaseByName, error: nameError } = await supabase
+                  .from('project_phases')
+                  .select('id')
+                  .eq('name', phase.name)
+                  .eq('project_id', currentProject.id)
+                  .maybeSingle();
+                
+                if (phaseByName) {
+                  projectPhase = phaseByName;
+                } else {
+                  fetchError = nameError;
+                }
               }
-            } else if (phase.isLinked) {
-              // For incorporated phases without project_phases record, 
-              // they might be stored differently - log for debugging
-              console.log('⚠️ Incorporated phase without project_phases record:', phase.id, phase.name);
-            }
+              
+              if (projectPhase) {
+                const { error: updateError } = await supabase
+                  .from('project_phases')
+                  .update({ 
+                    display_order: i,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', projectPhase.id);
+                
+                if (updateError) {
+                  console.error('❌ Error updating phase display_order:', updateError);
+                  throw updateError;
+                }
+              } else {
+                console.warn('⚠️ Phase not found in project_phases:', phase.id, phase.name, fetchError);
+              }
+            })();
+            updatePromises.push(updatePromise);
           }
         }
+        
+        // Wait for all display_order updates to complete
+        await Promise.all(updatePromises);
+        console.log('✅ All display_order updates completed');
         
         // Rebuild phases JSON from relational data to ensure consistency
         const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
@@ -534,6 +568,91 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     toast.success('Item pasted successfully');
   };
 
+  // Validation functions for duplicate names
+  const validatePhaseNames = (phases: Phase[]): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    const phaseNames = new Map<string, number>();
+    
+    phases.forEach((phase, index) => {
+      const name = phase.name?.trim();
+      if (!name) return;
+      
+      if (phaseNames.has(name)) {
+        errors.push(`Duplicate phase name: "${name}"`);
+      } else {
+        phaseNames.set(name, index);
+      }
+    });
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  const validateOperationNames = (phases: Phase[]): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    phases.forEach(phase => {
+      const operationNames = new Map<string, number>();
+      
+      phase.operations?.forEach((operation, index) => {
+        const name = operation.name?.trim();
+        if (!name) return;
+        
+        if (operationNames.has(name)) {
+          errors.push(`Duplicate operation name "${name}" in phase "${phase.name}"`);
+        } else {
+          operationNames.set(name, index);
+        }
+      });
+    });
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  const validateStepNames = (phases: Phase[]): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    phases.forEach(phase => {
+      phase.operations?.forEach(operation => {
+        const stepNames = new Map<string, number>();
+        
+        operation.steps?.forEach((step, index) => {
+          const name = step.step?.trim();
+          if (!name) return;
+          
+          if (stepNames.has(name)) {
+            errors.push(`Duplicate step name "${name}" in operation "${operation.name}" (phase "${phase.name}")`);
+          } else {
+            stepNames.set(name, index);
+          }
+        });
+      });
+    });
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  const getUniquePhaseName = (baseName: string, existingPhases: Phase[]): string => {
+    const existingNames = new Set(existingPhases.map(p => p.name?.trim().toLowerCase()));
+    let candidateName = baseName;
+    let counter = 1;
+    
+    while (existingNames.has(candidateName.toLowerCase())) {
+      counter++;
+      candidateName = `${baseName} ${counter}`;
+    }
+    
+    return candidateName;
+  };
+
   // CRUD operations
   const addPhase = async () => {
     if (!currentProject) {
@@ -546,13 +665,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     setIsAddingPhase(true);
     
     try {
-      const phaseName = 'New Phase';
+      // Get unique phase name by checking existing phases
+      const uniquePhaseName = getUniquePhaseName('New Phase', displayPhases);
       const phaseDescription = 'Phase description';
 
       // Use RPC to safely insert a custom phase with a unique display order
       const { data: newPhase, error: addPhaseError } = await supabase.rpc('add_custom_project_phase', {
         p_project_id: currentProject.id,
-        p_phase_name: phaseName,
+        p_phase_name: uniquePhaseName,
         p_phase_description: phaseDescription
       });
 
@@ -650,6 +770,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return;
     }
 
+    // Check for duplicate operation names within this phase
+    const existingOperationNames = new Set(
+      phase.operations?.map(op => op.name?.trim().toLowerCase()).filter(Boolean) || []
+    );
+    let operationName = 'New Operation';
+    let counter = 1;
+    while (existingOperationNames.has(operationName.toLowerCase())) {
+      counter++;
+      operationName = `New Operation ${counter}`;
+    }
+
     try {
       const phaseIndex = currentProject.phases.findIndex(p => p.id === phaseId);
       if (phaseIndex === -1) return;
@@ -673,7 +804,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const operationPayload: Record<string, any> = {
         project_id: currentProject.id,
         phase_id: projectPhase.id,
-        name: 'New Operation',
+        name: operationName,
         description: 'Operation description',
         display_order: operationCount,
         flow_type: 'prime'
@@ -758,6 +889,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return;
     }
 
+    // Check for duplicate step names within this operation
+    const existingStepNames = new Set(
+      operation.steps?.map(step => step.step?.trim().toLowerCase()).filter(Boolean) || []
+    );
+    let stepName = 'New Step';
+    let counter = 1;
+    while (existingStepNames.has(stepName.toLowerCase())) {
+      counter++;
+      stepName = `New Step ${counter}`;
+    }
+
     try {
       // The operationId from the UI IS the database ID after rebuild
       // Use it directly
@@ -777,7 +919,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         .insert({
           operation_id: actualOperationId,
           step_number: stepCount + 1,
-          step_title: 'New Step',
+          step_title: stepName,
           description: 'Step description',
           content_sections: [],
           materials: [],
@@ -1050,6 +1192,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           ...editingItem.data
         };
         
+        // Validate phase names for duplicates
+        const phaseValidation = validatePhaseNames(updatedProject.phases);
+        if (!phaseValidation.isValid) {
+          toast.error(phaseValidation.errors[0] || 'Duplicate phase names found');
+          return;
+        }
+        
         // Update phase name/description in project_phases table
         const phase = updatedProject.phases[phaseIndex];
         if (!phase.isStandard || isEditingStandardProject) {
@@ -1087,6 +1236,32 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             ...phase.operations[operationIndex],
             ...editingItem.data
           };
+          
+          // Validate operation names for duplicates within this phase
+          const operationValidation = validateOperationNames([phase]);
+          if (!operationValidation.isValid) {
+            toast.error(operationValidation.errors[0] || 'Duplicate operation names found');
+            return;
+          }
+          
+          // Update operation name/description in template_operations table
+          const operation = phase.operations[operationIndex];
+          if (!operation.isStandard || isEditingStandardProject) {
+            const { error: updateError } = await supabase
+              .from('template_operations')
+              .update({ 
+                name: editingItem.data.name,
+                description: editingItem.data.description || null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', operation.id);
+            
+            if (updateError) {
+              console.error('❌ Error updating operation name:', updateError);
+              toast.error('Failed to save operation name');
+              return;
+            }
+          }
           break;
         }
       }
@@ -1099,6 +1274,32 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               ...operation.steps[stepIndex],
               ...editingItem.data
             };
+            
+            // Validate step names for duplicates within this operation
+            const stepValidation = validateStepNames([{ ...phase, operations: [operation] }]);
+            if (!stepValidation.isValid) {
+              toast.error(stepValidation.errors[0] || 'Duplicate step names found');
+              return;
+            }
+            
+            // Update step name/description in template_steps table
+            const step = operation.steps[stepIndex];
+            if (!step.isStandard || isEditingStandardProject) {
+              const { error: updateError } = await supabase
+                .from('template_steps')
+                .update({ 
+                  step_title: editingItem.data.step || editingItem.data.step_title,
+                  description: editingItem.data.description || null,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', step.id);
+              
+              if (updateError) {
+                console.error('❌ Error updating step name:', updateError);
+                toast.error('Failed to save step name');
+                return;
+              }
+            }
             break;
           }
         }
@@ -1242,11 +1443,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 return <Draggable key={phase.id} draggableId={phase.id} index={phaseIndex} isDragDisabled={isDragDisabled}>
                       {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`border-2 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-blue-50 border-blue-200' : isLinkedPhase ? 'bg-purple-50 border-purple-200' : ''}`}>
                           <CardHeader className="py-1 px-2">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between" {...(!isStandardPhase || isEditingStandardProject ? provided.dragHandleProps : {})}>
                               <div className="flex items-center gap-1 flex-1">
-                                {!isStandardPhase || isEditingStandardProject ? <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                                    <GripVertical className="w-3 h-3 text-muted-foreground" />
-                                  </div> : <div className="w-3" />}
+                                {!isStandardPhase || isEditingStandardProject ? <div className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1">
+                                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                                  </div> : <div className="w-4" />}
                                 
                                 {isEditing ? <div className="flex-1 space-y-1">
                                     <Input value={editingItem.data.name} onChange={e => setEditingItem({
@@ -1335,9 +1536,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                 return <Draggable key={operation.id} draggableId={operation.id} index={operationIndex} isDragDisabled={isOperationDragDisabled}>
                                         {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`ml-6 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/20' : ''}`}>
                                             <CardHeader className="pb-3">
-                                              <div className="flex items-center justify-between">
+                                              <div className="flex items-center justify-between" {...(!phase.isLinked ? provided.dragHandleProps : {})}>
                                                 <div className="flex items-center gap-3 flex-1">
-                                                  {!phase.isLinked ? <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                                  {!phase.isLinked ? <div className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1">
                                                       <GripVertical className="w-4 h-4 text-muted-foreground" />
                                                     </div> : <div className="w-4" />}
                                                   
@@ -1422,11 +1623,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                 return <Draggable key={step.id} draggableId={step.id} index={stepIndex} isDragDisabled={isStepDragDisabled}>
                                                           {(provided, snapshot) => <Card ref={provided.innerRef} {...provided.draggableProps} className={`ml-4 ${snapshot.isDragging ? 'shadow-lg' : ''} ${isStandardPhase ? 'bg-muted/10' : ''}`}>
                                                               <CardContent className="p-3">
-                                                                <div className="flex items-center justify-between">
+                                                                <div className="flex items-center justify-between" {...(!phase.isLinked && (!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' ? provided.dragHandleProps : {})}>
                                                                   <div className="flex items-center gap-2 flex-1">
-                                                                    {!phase.isLinked && (!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' ? <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                                                                        <GripVertical className="w-3 h-3 text-muted-foreground" />
-                                                                      </div> : <div className="w-3" />}
+                                                                    {!phase.isLinked && (!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' ? <div className="cursor-grab active:cursor-grabbing flex items-center justify-center p-1">
+                                                                        <GripVertical className="w-4 h-4 text-muted-foreground" />
+                                                                      </div> : <div className="w-4" />}
                                                                     
                                                                      {isStepEditing ? <div className="flex-1 space-y-2">
                                                                          <Input value={editingItem.data.step} onChange={e => setEditingItem({
