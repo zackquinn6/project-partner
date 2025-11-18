@@ -19,6 +19,7 @@ interface Tool {
   description?: string;
   example_models?: string;
   photo_url?: string;
+  item?: string;
 }
 
 interface UserOwnedTool {
@@ -31,6 +32,7 @@ interface UserOwnedTool {
   quantity: number;
   model_name?: string;
   user_photo_url?: string;
+  item?: string;
 }
 
 interface Material {
@@ -39,6 +41,8 @@ interface Material {
   description?: string;
   unit?: string;
   photo_url?: string;
+  item?: string;
+  unit_size?: string;
 }
 
 interface UserOwnedMaterial {
@@ -48,6 +52,8 @@ interface UserOwnedMaterial {
   custom_description?: string;
   unit?: string;
   photo_url?: string;
+  item?: string;
+  unit_size?: string;
   quantity: number;
   brand?: string;
   user_photo_url?: string;
