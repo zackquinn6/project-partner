@@ -22,7 +22,6 @@ interface DIYSurveyPopupProps {
   mode?: 'new' | 'verify' | 'personality';
   initialData?: {
     skillLevel?: string;
-    avoidProjects?: string[];
     physicalCapability?: string;
     homeOwnership?: string;
     homeBuildYear?: string;
@@ -65,7 +64,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   const { saveTempPersonalityProfile, saveTempProfileAnswers } = useTempQuiz();
   const [answers, setAnswers] = useState({
     skillLevel: initialData?.skillLevel || "",
-    avoidProjects: initialData?.avoidProjects || [] as string[],
     physicalCapability: initialData?.physicalCapability || "",
     homeOwnership: initialData?.homeOwnership || "",
     homeBuildYear: initialData?.homeBuildYear || "",
@@ -506,7 +504,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               full_name: answers.fullName,
               nickname: answers.nickname,
               skill_level: answers.skillLevel,
-              avoid_projects: answers.avoidProjects,
               physical_capability: answers.physicalCapability,
               home_ownership: answers.homeOwnership,
               home_build_year: answers.homeBuildYear,
@@ -565,19 +562,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     }
   };
 
-  const handleAvoidProjectChange = (project: string, checked: boolean) => {
-    if (checked) {
-      setAnswers(prev => ({
-        ...prev,
-        avoidProjects: [...prev.avoidProjects, project]
-      }));
-    } else {
-      setAnswers(prev => ({
-        ...prev,
-        avoidProjects: prev.avoidProjects.filter(p => p !== project)
-      }));
-    }
-  };
 
   const handleLearningMethodChange = (method: string, checked: boolean) => {
     if (checked) {
@@ -771,7 +755,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               <Card className="p-4">
                 <div className="space-y-3">
                   <div><strong>Skill Level:</strong> {answers.skillLevel || 'Not specified'}</div>
-                  <div><strong>Projects to Avoid:</strong> {answers.avoidProjects.length > 0 ? answers.avoidProjects.join(', ') : 'None specified'}</div>
                   <div><strong>Physical Capability:</strong> {answers.physicalCapability || 'Not specified'}</div>
                   <div><strong>Learning Methods:</strong> {answers.preferredLearningMethods.length > 0 ? answers.preferredLearningMethods.join(', ') : 'None specified'}</div>
                   <div><strong>Owned Tools:</strong> {answers.ownedTools.length} tools</div>
@@ -1081,11 +1064,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   };
 
   const handleProjectSkillsSave = (avoidProjects: string[], projectSkillsData?: Record<string, number>) => {
-    setAnswers(prev => ({
-      ...prev,
-      avoidProjects
-    }));
-    // Store project skills for saving to database
+    // Store project skills for saving to database (avoidProjects is ignored)
     if (projectSkillsData) {
       setProjectSkills(projectSkillsData);
     }
@@ -1096,7 +1075,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       <ProjectSkillsWindow
         open={showProjectSkillsWindow}
         onOpenChange={setShowProjectSkillsWindow}
-        initialAvoidProjects={answers.avoidProjects}
+        initialAvoidProjects={[]}
         onSave={handleProjectSkillsSave}
       />
       <Dialog open={open} onOpenChange={onOpenChange}>

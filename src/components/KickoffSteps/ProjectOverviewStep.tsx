@@ -378,23 +378,23 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
           </div>
 
-          <div className="bg-background pt-4 border-t mt-4 pb-2">
+          <div className="bg-background pt-3 sm:pt-4 border-t mt-3 sm:mt-4 pb-2 sticky bottom-0">
             {!isCompleted && (
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex gap-2">
                 <Button 
                   onClick={handleCancelProject} 
                   variant="outline"
-                  className="w-full sm:w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm"
+                  className="w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm h-9 sm:h-10"
                 >
-                  <XCircle className="w-4 h-4 mr-2" />
+                  <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                   <span className="hidden sm:inline">This isn't a good match</span>
                   <span className="sm:hidden">Not a match</span>
                 </Button>
                 <Button onClick={() => {
                   console.log('🎯 ProjectOverviewStep: onComplete called');
                   onComplete();
-                }} className="flex-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm">
-                  <CheckCircle className="w-4 h-4 mr-2" />
+                }} className="flex-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-9 sm:h-10">
+                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                   <span className="hidden sm:inline">Let's Go - Continue</span>
                   <span className="sm:hidden">Continue</span>
                 </Button>

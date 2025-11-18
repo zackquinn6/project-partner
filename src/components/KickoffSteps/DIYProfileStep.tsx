@@ -45,6 +45,13 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
     }
   }, [user]);
 
+  // Auto-open profile editor for new users when navigating to step 2
+  useEffect(() => {
+    if (!isLoading && !existingProfile && user) {
+      setShowSurveyEditor(true);
+    }
+  }, [isLoading, existingProfile, user]);
+
   const loadExistingProfile = async () => {
     setIsLoading(true);
     try {
@@ -143,55 +150,60 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
 
         <Card>
           <CardContent className="p-3 sm:p-4">
-            <div className="space-y-3 sm:space-y-4">
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base">Personal Info</h4>
-                <div className="text-xs sm:text-sm text-muted-foreground space-y-1 mt-1">
-                  <p className="break-words"><strong>Full Name:</strong> {existingProfile.full_name || "Not specified"}</p>
-                  <p className="break-words"><strong>Nickname:</strong> {existingProfile.nickname || "Not specified"}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {/* Column 1 */}
+              <div className="space-y-3 sm:space-y-4">
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base">Full Name</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
+                    {existingProfile.full_name || "Not specified"}
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base">Nickname</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
+                    {existingProfile.nickname || "Not specified"}
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base">Skill Level</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground capitalize mt-1">
+                    {existingProfile.skill_level || "Not specified"}
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base">Physical Capability</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground capitalize mt-1">
+                    {existingProfile.physical_capability || "Not specified"}
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base">Primary Home</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
+                    {existingProfile.primary_home ? `${existingProfile.primary_home.name}${existingProfile.primary_home.city && existingProfile.primary_home.state ? ` • ${existingProfile.primary_home.city}, ${existingProfile.primary_home.state}` : ''}` : "No primary home set"}
+                  </p>
                 </div>
               </div>
-              
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base">Skill Level</h4>
-                <p className="text-xs sm:text-sm text-muted-foreground capitalize mt-1">
-                  {existingProfile.skill_level || "Not specified"}
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base">Projects to Avoid</h4>
-                <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
-                  {existingProfile.avoid_projects?.length ? existingProfile.avoid_projects.join(", ") : "Open to anything!"}
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base">Physical Capability</h4>
-                <p className="text-xs sm:text-sm text-muted-foreground capitalize mt-1">
-                  {existingProfile.physical_capability || "Not specified"}
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base">Primary Home</h4>
-                <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
-                  {existingProfile.primary_home ? `${existingProfile.primary_home.name}${existingProfile.primary_home.city && existingProfile.primary_home.state ? ` • ${existingProfile.primary_home.city}, ${existingProfile.primary_home.state}` : ''}` : "No primary home set"}
-                </p>
-              </div>
 
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base">Learning Preferences</h4>
-                <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
-                  {existingProfile.preferred_learning_methods?.length ? existingProfile.preferred_learning_methods.join(", ") : "Not specified"}
-                </p>
-              </div>
+              {/* Column 2 */}
+              <div className="space-y-3 sm:space-y-4">
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base">Learning Preferences</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground break-words mt-1">
+                    {existingProfile.preferred_learning_methods?.length ? existingProfile.preferred_learning_methods.join(", ") : "Not specified"}
+                  </p>
+                </div>
 
-              <div>
-                <h4 className="font-semibold text-sm sm:text-base">Owned Tools</h4>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  {existingProfile.owned_tools?.length ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library` : "No tools specified"}
-                </p>
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base">Owned Tools</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                    {existingProfile.owned_tools?.length ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library` : "No tools specified"}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -245,16 +257,17 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
           {renderProfileView()}
           
-          <div className="sticky bottom-0 bg-background pt-4 border-t mt-4">
+          <div className="bg-background pt-3 sm:pt-4 border-t mt-3 sm:mt-4 pb-2 sticky bottom-0">
             {!isCompleted && existingProfile && (
               <div className="flex gap-2">
-                <div className="w-1/4" />
+                <div className="hidden sm:block w-1/4" />
                 <Button onClick={() => {
                   console.log('🎯 DIYProfileStep: onComplete called');
                   onComplete();
-                }} className="flex-1 bg-green-600 hover:bg-green-700">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  DIY Profile Complete - Continue
+                }} className="flex-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-9 sm:h-10">
+                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                  <span className="hidden sm:inline">DIY Profile Complete - Continue</span>
+                  <span className="sm:hidden">Complete - Continue</span>
                 </Button>
               </div>
             )}
@@ -268,11 +281,13 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
             )}
 
             {isCompleted && (
-              <div className="text-center">
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Profile Setup Complete
-                </Badge>
+              <div className="flex gap-2">
+                <div className="hidden sm:block w-1/4" />
+                <Button className="flex-1 bg-green-100 text-green-800 hover:bg-green-200 text-xs sm:text-sm h-9 sm:h-10" disabled>
+                  <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                  <span className="hidden sm:inline">Profile Complete - Continue</span>
+                  <span className="sm:hidden">Complete</span>
+                </Button>
               </div>
             )}
           </div>
@@ -290,7 +305,6 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         mode="new" 
         initialData={{
           skillLevel: existingProfile?.skill_level || "",
-          avoidProjects: existingProfile?.avoid_projects || [],
           physicalCapability: existingProfile?.physical_capability || "",
           homeOwnership: existingProfile?.home_ownership || "",
           homeBuildYear: existingProfile?.home_build_year || "",

@@ -57,7 +57,6 @@ export default function ProfileManager({
         error: profileError
       } = await supabase.from('profiles').select(`
           skill_level, 
-          avoid_projects, 
           physical_capability, 
           home_ownership, 
           home_build_year, 
@@ -134,13 +133,6 @@ export default function ProfileManager({
                   <h4 className="font-semibold">Skill Level</h4>
                   <p className="text-sm text-muted-foreground capitalize">
                     {existingProfile.skill_level || "Not specified"}
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold">Projects to Avoid</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {existingProfile.avoid_projects?.length ? existingProfile.avoid_projects.join(", ") : "Open to anything!"}
                   </p>
                 </div>
                 
