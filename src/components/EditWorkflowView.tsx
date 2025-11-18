@@ -71,6 +71,24 @@ export default function EditWorkflowView({
     return ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(phaseName);
   };
 
+  // Helper to check if current step is from a standard or incorporated phase
+  const isStepFromStandardOrIncorporatedPhase = () => {
+    if (!currentStep || isEditingStandardProject) return false;
+    
+    // Check if step itself is marked as standard
+    if (currentStep.isStandard) return true;
+    
+    // Check if the phase containing this step is standard or incorporated
+    const phaseName = currentStep.phaseName;
+    if (!phaseName) return false;
+    
+    const phase = phases.find(p => p.name === phaseName);
+    if (!phase) return false;
+    
+    // Check if phase is standard or incorporated (linked)
+    return phase.isStandard === true || phase.isLinked === true || isStandardPhase(phaseName);
+  };
+
   // Debug log to check phases and show helpful message if empty
   useEffect(() => {
     if (currentProject) {
@@ -709,6 +727,11 @@ export default function EditWorkflowView({
                   </div>
                 </div>
               )}
+              {!isEditingStandardProject && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Standard and incorporated phases must be edited outside this template.
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-4">
               {editMode && <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
@@ -1004,10 +1027,12 @@ export default function EditWorkflowView({
                       </>
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={handleStartEdit} variant="outline" size="sm">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Step
-                      </Button>
+                      {!isStepFromStandardOrIncorporatedPhase() && (
+                        <Button onClick={handleStartEdit} variant="outline" size="sm">
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Step
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
