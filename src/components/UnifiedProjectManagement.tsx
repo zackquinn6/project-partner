@@ -215,9 +215,10 @@ export function UnifiedProjectManagement({
         // If error is about project_challenges column not existing, try with old column name
         if (error.message && error.message.includes('project_challenges')) {
           console.log('⚠️ project_challenges column not found, trying with diy_length_challenges');
+          const fallbackValue = updateData.project_challenges;
           delete updateData.project_challenges;
-          if (challengesValue !== undefined && challengesValue !== null) {
-            updateData.diy_length_challenges = challengesValue;
+          if (fallbackValue !== undefined) {
+            updateData.diy_length_challenges = fallbackValue;
           }
           
           const { error: retryError, data: retryData } = await supabase
