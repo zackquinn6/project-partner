@@ -245,9 +245,33 @@ export function UnifiedProjectManagement({
           toast.success("Project updated successfully!");
           setEditingProject(false);
           setEditedProject({});
+          
+          // Refresh projects to show updated data
           await fetchProjects();
-          if (retryData && retryData[0]) {
-            setSelectedProject(retryData[0] as Project);
+          
+          // Re-fetch the specific project to ensure we have all fields
+          // Map diy_length_challenges to project_challenges for consistency
+          const { data: freshData, error: fetchError } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', selectedProject.id)
+            .single();
+          
+          if (!fetchError && freshData) {
+            // Map diy_length_challenges to project_challenges if needed
+            const mappedData = {
+              ...freshData,
+              project_challenges: freshData.project_challenges ?? freshData.diy_length_challenges ?? null
+            };
+            console.log('🔄 Fresh project data (fallback):', mappedData);
+            setSelectedProject(mappedData as Project);
+          } else if (retryData && retryData[0]) {
+            // Fallback: map the retry data
+            const mappedRetryData = {
+              ...retryData[0],
+              project_challenges: retryData[0].project_challenges ?? retryData[0].diy_length_challenges ?? null
+            };
+            setSelectedProject(mappedRetryData as Project);
           }
           return;
         }
@@ -274,13 +298,22 @@ export function UnifiedProjectManagement({
         .single();
       
       if (!fetchError && freshData) {
-        console.log('🔄 Fresh project data after save:', freshData);
-        console.log('🔄 Fresh project_challenges:', freshData.project_challenges);
-        setSelectedProject(freshData as Project);
+        // Map diy_length_challenges to project_challenges for consistency
+        const mappedData = {
+          ...freshData,
+          project_challenges: freshData.project_challenges ?? freshData.diy_length_challenges ?? null
+        };
+        console.log('🔄 Fresh project data after save:', mappedData);
+        console.log('🔄 Fresh project_challenges:', mappedData.project_challenges);
+        setSelectedProject(mappedData as Project);
       } else if (data && data[0]) {
-        // Fallback to data from update response
-        console.log('⚠️ Using update response data as fallback');
-        setSelectedProject(data[0] as Project);
+        // Fallback to data from update response - map columns
+        const mappedData = {
+          ...data[0],
+          project_challenges: data[0].project_challenges ?? data[0].diy_length_challenges ?? null
+        };
+        console.log('⚠️ Using update response data as fallback:', mappedData);
+        setSelectedProject(mappedData as Project);
       }
     } catch (error) {
       console.error('Error updating project:', error);
