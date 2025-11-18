@@ -213,36 +213,34 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const effortComparison = getEffortLevelComparison();
   const categories = parseCategories(currentProjectRun?.category || templateProject?.category);
   const formattedScalingUnit = displayScalingUnit ? displayScalingUnit.toLowerCase().startsWith('per ') ? displayScalingUnit : `per ${displayScalingUnit}` : null;
-  return <div className="space-y-3 sm:space-y-4 md:space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold flex items-center gap-2">
-          Project Overview
-          {isCompleted && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-500 flex-shrink-0" />}
-        </h2>
-        
-      </div>
-
+  return <div className="space-y-3">
       <Card>
-        <CardHeader className="p-3 sm:p-4 md:p-6">
-          <CardTitle className="text-base sm:text-lg md:text-xl">Make sure this project is right for you</CardTitle>
+        <CardHeader className="p-3 sm:p-4">
+          <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
+            Project Overview
+            {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm mt-0.5">
+            Make sure this project is right for you
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
+        <CardContent className="space-y-3 p-3 sm:p-4">
           <div>
-            <Label>Project Name</Label>
-            <p className="text-lg font-medium mt-1">{currentProjectRun.name}</p>
+            <Label className="text-xs sm:text-sm">Project Name</Label>
+            <p className="text-sm font-medium mt-0.5">{currentProjectRun.name}</p>
           </div>
           <div>
-            <Label>Description</Label>
-            <p className="mt-1 text-muted-foreground">{currentProjectRun.description}</p>
+            <Label className="text-xs sm:text-sm">Description</Label>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{currentProjectRun.description}</p>
           </div>
           <div>
-            <Label>Project Challenges</Label>
-            <p className="mt-1 text-muted-foreground whitespace-pre-line">
+            <Label className="text-xs sm:text-sm">Project Challenges</Label>
+            <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-line mt-0.5">
               {displayProjectChallenges || 'None specified'}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-3 pt-3 border-t">
             <div>
               <Label className="text-sm">Category</Label>
               <div className="mt-2 flex flex-wrap gap-2">

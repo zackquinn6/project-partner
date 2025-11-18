@@ -157,22 +157,20 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   return (
     <>
       <Card>
-        <CardHeader className="p-3 sm:p-4 md:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <Home className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-              <div className="min-w-0">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl">
-                  <span className="truncate">Project Profile</span>
-                  {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
-                </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">
-                  Set up your project details and team
-                </CardDescription>
-              </div>
+        <CardHeader className="p-3 sm:p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl">
+                <Home className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="truncate">Project Profile</span>
+                {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm mt-0.5">
+                Set up your project details and team
+              </CardDescription>
             </div>
-            <div className="bg-muted/50 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg flex-shrink-0 self-start sm:self-auto">
-              <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">
+            <div className="bg-muted/50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg flex-shrink-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">
                 <strong>Template:</strong>
               </p>
               <p className="text-[10px] sm:text-xs font-medium truncate max-w-[120px] sm:max-w-none">
@@ -181,8 +179,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
-          <div className="space-y-3 sm:space-y-4">
+        <CardContent className="space-y-3 p-3 sm:p-4">
+          <div className="space-y-3">
             <div>
               <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
                 <span className="text-[10px] sm:text-xs text-muted-foreground">1 of 3</span>

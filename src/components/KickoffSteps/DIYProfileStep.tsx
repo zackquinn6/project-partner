@@ -140,9 +140,9 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
     }
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="text-center">
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Your profile helps us match you with the right tools, guidance, and partners—
             so every project starts with an advantage.
           </p>
@@ -245,7 +245,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                 <span className="truncate">DIY Profile</span>
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm mt-1">
+              <CardDescription className="text-xs sm:text-sm mt-0.5">
                 Set up your DIY profile for personalized project guidance
               </CardDescription>
             </div>
@@ -263,7 +263,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-3 p-3 sm:p-4">
+        <CardContent className="space-y-2 p-3 sm:p-4">
           {renderProfileView()}
           
           {!isCompleted && !existingProfile && (
