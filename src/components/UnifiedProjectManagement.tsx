@@ -178,12 +178,17 @@ export function UnifiedProjectManagement({
         updated_at: new Date().toISOString()
       };
 
-      // Include images and cover_image if they exist in editedProject or selectedProject
-      if (editedProject.images !== undefined || selectedProject.images) {
-        updateData.images = editedProject.images !== undefined ? editedProject.images : selectedProject.images;
+      // Include images and cover_image - preserve existing values if not explicitly changed
+      // ProjectImageManager updates these directly, but we should preserve them on save
+      if (editedProject.images !== undefined) {
+        updateData.images = editedProject.images;
+      } else if (selectedProject.images) {
+        updateData.images = selectedProject.images;
       }
-      if (editedProject.cover_image !== undefined || selectedProject.cover_image) {
-        updateData.cover_image = editedProject.cover_image !== undefined ? editedProject.cover_image : selectedProject.cover_image;
+      if (editedProject.cover_image !== undefined) {
+        updateData.cover_image = editedProject.cover_image;
+      } else if (selectedProject.cover_image) {
+        updateData.cover_image = selectedProject.cover_image;
       }
 
       // Try to include project_challenges, but fall back to diy_length_challenges if column doesn't exist
