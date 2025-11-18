@@ -195,9 +195,15 @@ export function UnifiedProjectManagement({
       // This ensures we save empty strings when user clears the field
       if (editedProject.project_challenges !== undefined) {
         updateData.project_challenges = editedProject.project_challenges || null;
-      } else if (selectedProject.project_challenges !== undefined) {
+        console.log('📝 Including project_challenges from editedProject:', editedProject.project_challenges);
+      } else if (selectedProject.project_challenges !== undefined && selectedProject.project_challenges !== null) {
         // Preserve existing value if not being edited
-        updateData.project_challenges = selectedProject.project_challenges || null;
+        updateData.project_challenges = selectedProject.project_challenges;
+        console.log('📝 Including project_challenges from selectedProject:', selectedProject.project_challenges);
+      } else {
+        // Explicitly set to null if field exists but is null/undefined
+        updateData.project_challenges = null;
+        console.log('📝 Setting project_challenges to null');
       }
 
       console.log('💾 Saving project edit:', {
