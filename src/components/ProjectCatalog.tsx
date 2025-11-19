@@ -1215,6 +1215,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             filteredProjects.map(project => {
               const projectCategories = Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []);
               const IconComponent = getIconForCategory(projectCategories[0] || '');
+              const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
+              
               return (
                 <div key={project.id}>
                   {/* Mobile: Row layout - Reduced size by 50% */}
@@ -1278,7 +1280,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     }}
                   >
                     {/* Project Name Header - Fixed at top */}
-                    <div className="flex-shrink-0 px-4 pt-3 pb-2 z-10 relative bg-card">
+                    <div className="flex-shrink-0 px-4 pt-3 pb-2 bg-card z-20 relative">
                       <h3 className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2 text-center">
                         {project.name}
                       </h3>
@@ -1286,31 +1288,57 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
                     {/* Cover Image or Gradient - Takes remaining space */}
                     <div className="flex-1 relative overflow-hidden bg-muted min-h-0">
-                      {/* Gradient background - always present, shows when no image */}
-                      <div className={`gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500 z-0 ${((project as any).cover_image || project.image || (project as any).images?.[0]) ? 'opacity-0' : 'opacity-100'}`}>
+                      {/* Gradient background - always present, shows when no image or image fails */}
+                      <div 
+                        className="gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500 z-0"
+                        style={{
+                          opacity: ((project as any).cover_image || project.image || (project as any).images?.[0]) ? 0 : 1
+                        }}
+                      >
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <IconComponent className="w-8 h-8 text-white/80" />
                         </div>
                       </div>
+                      
                       {/* Image - if available */}
-                      {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
-                        <img 
-                          src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
-                          alt={project.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 absolute inset-0 z-10"
-                          onError={(e) => {
-                            // If image fails to load, hide it and show gradient background
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            // Show the gradient background
-                            const gradientDiv = (e.target as HTMLImageElement).parentElement?.querySelector('.gradient-background') as HTMLElement;
-                            if (gradientDiv) {
-                              gradientDiv.style.opacity = '1';
-                            }
-                          }}
-                        />
-                      ) : null}
+                      {(() => {
+                        const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
+                        if (!imageUrl) return null;
+                        
+                        return (
+                          <img 
+                            src={imageUrl} 
+                            alt={project.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 absolute inset-0 z-10"
+                            onError={(e) => {
+                              // If image fails to load, hide it and show gradient background
+                              console.log('❌ Image failed to load:', imageUrl);
+                              const img = e.target as HTMLImageElement;
+                              img.style.display = 'none';
+                              // Show the gradient background
+                              const gradientDiv = img.parentElement?.querySelector('.gradient-background') as HTMLElement;
+                              if (gradientDiv) {
+                                gradientDiv.style.opacity = '1';
+                              }
+                            }}
+                            onLoad={(e) => {
+                              // Hide gradient when image loads successfully
+                              console.log('✅ Image loaded successfully:', imageUrl);
+                              const img = e.target as HTMLImageElement;
+                              const gradientDiv = img.parentElement?.querySelector('.gradient-background') as HTMLElement;
+                              if (gradientDiv) {
+                                gradientDiv.style.opacity = '0';
+                              }
+                            }}
+                          />
+                        );
+                      })()}
+                      
+                      {/* Overlay gradient for text readability */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
+                      
+                      {/* Badges */}
                       <div className="absolute top-2 right-2 flex gap-1 z-30">
                         {project.publishStatus === 'beta-testing' && (
                           <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
@@ -1327,7 +1355,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </div>
                     
                     {/* Button - Fixed at bottom */}
-                    <div className="flex-shrink-0 px-4 pb-3 pt-2 z-10 relative bg-card">
+                    <div className="flex-shrink-0 px-4 pb-3 pt-2 bg-card z-20 relative">
                       <Button 
                         size="sm" 
                         className="w-full text-xs h-7" 
