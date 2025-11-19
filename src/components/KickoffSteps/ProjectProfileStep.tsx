@@ -53,7 +53,31 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     ? projects.find(p => p.id === currentProjectRun.templateId)
     : null;
   const scalingUnit = templateProject?.scalingUnit || currentProjectRun?.scalingUnit || 'per item';
-  const itemType = templateProject?.item_type || (templateProject as any)?.itemType || null;
+  
+  // Fetch item_type directly from database since it's not in the transformed Project interface
+  const [itemType, setItemType] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const fetchItemType = async () => {
+      if (templateProject?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('projects')
+            .select('item_type')
+            .eq('id', templateProject.id)
+            .single();
+          
+          if (!error && data) {
+            setItemType(data.item_type);
+          }
+        } catch (error) {
+          console.error('Error fetching item_type:', error);
+        }
+      }
+    };
+    
+    fetchItemType();
+  }, [templateProject?.id]);
 
   useEffect(() => {
     if (user) {
