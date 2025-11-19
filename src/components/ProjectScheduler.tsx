@@ -679,7 +679,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             <div>
               <h2 className="text-lg font-semibold text-foreground">Project Scheduler</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Schedules give a target and our approach showing a range of estimates means it's imperfect - but we use it to get the best results moving forward
+                Schedules give the best opportunity to execute the project as intended
               </p>
             </div>
           </div>

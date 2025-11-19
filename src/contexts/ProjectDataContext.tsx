@@ -215,6 +215,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         projectLeader: run.project_leader,
         accountabilityPartner: run.accountability_partner,
         customProjectName: run.custom_project_name,
+        home_id: run.home_id,
         currentPhaseId: run.current_phase_id,
         currentOperationId: run.current_operation_id,
         currentStepId: run.current_step_id,
@@ -227,8 +228,12 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         estimatedTime: run.estimated_time,
         scalingUnit: run.scaling_unit as Project['scalingUnit'],
         customization_decisions: customizationDecisions,
-        instruction_level_preference: (run.instruction_level_preference as 'quick' | 'detailed' | 'new_user') || 'detailed'
-      };
+        instruction_level_preference: (run.instruction_level_preference as 'quick' | 'detailed' | 'new_user') || 'detailed',
+        // Initial project goals from kickoff step 3
+        initial_budget: run.initial_budget,
+        initial_timeline: run.initial_timeline,
+        initial_sizing: run.initial_sizing
+      } as ProjectRun;
     });
   }, []);
 
