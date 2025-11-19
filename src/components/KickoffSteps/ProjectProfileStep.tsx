@@ -242,7 +242,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       ...prev,
                       initialSizing: e.target.value
                     }))}
-                    placeholder="Enter size"
+                    placeholder="0"
                     className="text-xs sm:text-sm h-9 sm:h-10 w-[80px]"
                   />
                   <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
