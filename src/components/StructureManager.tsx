@@ -81,6 +81,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [deletePhaseDialogOpen, setDeletePhaseDialogOpen] = useState(false);
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
   const [isDeletingPhase, setIsDeletingPhase] = useState(false);
+  const [reorderingPhaseId, setReorderingPhaseId] = useState<string | null>(null);
 
   // Collapsible state
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -212,6 +213,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const phase = displayPhases[phaseIndex];
     const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
     const isStandardPhase = !phase.isLinked && standardPhaseNames.includes(phase.name);
+    const isLinkedPhase = phase.isLinked;
     
     // Validate constraints for standard phases
     if (isStandardPhase) {
@@ -233,7 +235,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
     }
     
-    // Validate custom phase constraints
+    // Validate custom and linked phase constraints
     if (!isStandardPhase) {
       if (newIndex < 3) {
         toast.error('Custom and incorporated phases must come after the first 3 standard phases');
@@ -246,12 +248,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
     }
     
-    // Reorder phases
-    const reorderedPhases = Array.from(displayPhases);
-    const [removed] = reorderedPhases.splice(phaseIndex, 1);
-    reorderedPhases.splice(newIndex, 0, removed);
+    // Set loading state
+    setReorderingPhaseId(phaseId);
     
-    await updatePhaseOrder(reorderedPhases);
+    try {
+      // Reorder phases
+      const reorderedPhases = Array.from(displayPhases);
+      const [removed] = reorderedPhases.splice(phaseIndex, 1);
+      reorderedPhases.splice(newIndex, 0, removed);
+      
+      await updatePhaseOrder(reorderedPhases);
+    } finally {
+      setReorderingPhaseId(null);
+    }
   };
   
   // Move operation up/down
@@ -1448,8 +1457,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             const isStandardPhase = standardPhaseNames.includes(phase.name) && !phase.isLinked || isEditingStandardProject && standardPhaseNames.includes(phase.name);
             const isLinkedPhase = phase.isLinked;
             const isEditing = editingItem?.type === 'phase' && editingItem.id === phase.id;
-            const canMoveUp = phaseIndex > 0 && (!isStandardPhase || isEditingStandardProject);
-            const canMoveDown = phaseIndex < displayPhases.length - 1 && (!isStandardPhase || isEditingStandardProject);
+            
+            // For linked phases, can move between Ordering (index 2) and Close Project (last)
+            // For custom phases, same constraint
+            // For standard phases, only if editing Standard Project
+            const orderingIndex = displayPhases.findIndex(p => p.name === 'Ordering' && !p.isLinked);
+            const closeProjectIndex = displayPhases.findIndex(p => p.name === 'Close Project' && !p.isLinked);
+            
+            let canMoveUp = false;
+            let canMoveDown = false;
+            
+            if (isStandardPhase && isEditingStandardProject) {
+              // Standard phases can move when editing Standard Project
+              canMoveUp = phaseIndex > 0;
+              canMoveDown = phaseIndex < displayPhases.length - 1;
+            } else if (!isStandardPhase) {
+              // Custom and linked phases: must be after Ordering and before Close Project
+              canMoveUp = phaseIndex > orderingIndex + 1; // Can move up if not immediately after Ordering
+              canMoveDown = closeProjectIndex !== -1 && phaseIndex < closeProjectIndex - 1; // Can move down if not immediately before Close Project
+            }
             
             return <Card 
               key={phase.id}
@@ -1457,29 +1483,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                           <CardHeader className="py-1 px-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1 flex-1">
-                                {(!isStandardPhase || isEditingStandardProject) && !isLinkedPhase && (
+                                {((!isStandardPhase || isEditingStandardProject) && !isLinkedPhase) || isLinkedPhase ? (
                                   <div className="flex flex-col gap-0.5">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-4 w-4 p-0"
-                                      onClick={() => movePhase(phase.id, 'up')}
-                                      disabled={!canMoveUp}
-                                    >
-                                      <ChevronUp className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-4 w-4 p-0"
-                                      onClick={() => movePhase(phase.id, 'down')}
-                                      disabled={!canMoveDown}
-                                    >
-                                      <ChevronDown className="w-3 h-3" />
-                                    </Button>
+                                    {reorderingPhaseId === phase.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                                    ) : (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-4 w-4 p-0"
+                                          onClick={() => movePhase(phase.id, 'up')}
+                                          disabled={!canMoveUp || reorderingPhaseId !== null}
+                                        >
+                                          <ChevronUp className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-4 w-4 p-0"
+                                          onClick={() => movePhase(phase.id, 'down')}
+                                          disabled={!canMoveDown || reorderingPhaseId !== null}
+                                        >
+                                          <ChevronDown className="w-3 h-3" />
+                                        </Button>
+                                      </>
+                                    )}
                                   </div>
+                                ) : (
+                                  <div className="w-4" />
                                 )}
-                                {((isStandardPhase && !isEditingStandardProject) || isLinkedPhase) && <div className="w-4" />}
                                 
                                 {isEditing ? <div className="flex-1 space-y-1">
                                     <Input value={editingItem.data.name} onChange={e => setEditingItem({
@@ -1504,15 +1537,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                         {isStandardPhase && <span className="mr-1">🔒</span>}
                                         {phase.name}
                                         {isStandardPhase && <span className="text-xs text-blue-600 ml-1">(Standard - Locked)</span>}
-                                        {isLinkedPhase && <div className="flex items-center gap-1 ml-1">
-                                            <Link className="w-3 h-3 text-purple-600" />
-                                            <span className="text-xs text-purple-600">Linked</span>
-                                          </div>}
+                                        {isLinkedPhase && (
+                                          <span className="text-xs text-purple-600 ml-1 flex items-center gap-1">
+                                            <Link className="w-3 h-3" />
+                                            Linked From {phase.sourceProjectName}
+                                          </span>
+                                        )}
                                       </CardTitle>
                                      <p className="text-muted-foreground text-xs">{phase.description}</p>
-                                     {isLinkedPhase && <p className="text-xs text-purple-600">
-                                         From: {phase.sourceProjectName} (Rev {phase.incorporatedRevision})
-                                       </p>}
                                    </div>}
                               </div>
                               
