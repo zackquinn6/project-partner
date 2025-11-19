@@ -236,4 +236,9 @@ export interface ProjectRun {
 
   // Instruction detail level preference
   instruction_level_preference?: 'quick' | 'detailed' | 'new_user';
+
+  // Initial project data from kickoff step 3
+  initial_budget?: string;
+  initial_timeline?: string; // ISO date string
+  initial_sizing?: string;
 }
