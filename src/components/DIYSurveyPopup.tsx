@@ -68,7 +68,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     homeOwnership: initialData?.homeOwnership || "",
     homeBuildYear: initialData?.homeBuildYear || "",
     homeState: initialData?.homeState || "",
-    preferredLearningMethods: initialData?.preferredLearningMethods || [] as string[],
+    preferredLearningMethods: initialData?.preferredLearningMethods ? [...initialData.preferredLearningMethods] : [] as string[],
     ownedTools: initialData?.ownedTools || [] as any[],
     fullName: initialData?.fullName || "",
     nickname: initialData?.nickname || ""
