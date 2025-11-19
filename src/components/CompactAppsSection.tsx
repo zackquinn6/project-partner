@@ -72,8 +72,8 @@ export const CompactAppsSection = ({
               )}
               
               <div className="flex flex-col items-center justify-center p-2 space-y-1">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--primary) / 0.1)' }}>
-                  <IconComponent className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <IconComponent className="w-4 h-4 text-primary" />
                 </div>
                 
                 <div className="text-center">

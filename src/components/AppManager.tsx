@@ -585,8 +585,8 @@ export function AppManager({
                                   </SelectContent>
                                 </Select>
                               ) : (
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--primary) / 0.1)' }}>
-                                  <IconComponent className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
+                                  <IconComponent className="w-4 h-4 text-primary" />
                                 </div>
                               )}
                             </TableCell>
