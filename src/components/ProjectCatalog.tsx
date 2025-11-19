@@ -505,7 +505,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       progress: 0,
       // Copy template data
       phases: selectedTemplate.phases,
-      category: selectedTemplate.category,
+      category: Array.isArray(selectedTemplate.category) ? selectedTemplate.category : (selectedTemplate.category ? [selectedTemplate.category] : []),
       effortLevel: selectedTemplate.effortLevel,
       skillLevel: selectedTemplate.skillLevel,
       estimatedTime: selectedTemplate.estimatedTime,
@@ -718,7 +718,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       progress: 0,
       // Copy template data
       phases: selectedTemplate.phases,
-      category: selectedTemplate.category,
+      category: Array.isArray(selectedTemplate.category) ? selectedTemplate.category : (selectedTemplate.category ? [selectedTemplate.category] : []),
       effortLevel: selectedTemplate.effortLevel,
       skillLevel: selectedTemplate.skillLevel,
       estimatedTime: selectedTemplate.estimatedTime,

@@ -275,7 +275,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         .update({
           name: project.name,
           description: project.description,
-          category: project.category,
+          category: Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []),
           scaling_unit: project.scalingUnit,
           estimated_time_per_unit: project.estimatedTimePerUnit,
           skill_level: project.skillLevel,
