@@ -405,7 +405,7 @@ export function AIProjectGenerator({
                     <SelectItem value="new">Create New Project</SelectItem>
                     {projectTemplates.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
-                        {project.name} {project.revision_number ? `(Rev ${project.revision_number})` : ''}
+                        {project.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
