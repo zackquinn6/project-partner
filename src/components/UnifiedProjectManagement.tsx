@@ -1601,17 +1601,23 @@ export function UnifiedProjectManagement({
               <p className="text-xs text-muted-foreground">
                 Project Name: Item + Action. e.g. "Tile Flooring Installation"
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 items-end">
                 <div className="space-y-2">
-                  <Label htmlFor="project-item">Item *</Label>
-                  <Input id="project-item" placeholder="e.g., Tile Flooring" value={newProject.item || ''} onChange={e => setNewProject(prev => ({
-                    ...prev,
-                    item: e.target.value
-                  }))} />
+                  <Label htmlFor="project-item" className="h-5 flex items-center">Item *</Label>
+                  <Input 
+                    id="project-item" 
+                    placeholder="e.g., Tile Flooring" 
+                    value={newProject.item || ''} 
+                    onChange={e => setNewProject(prev => ({
+                      ...prev,
+                      item: e.target.value
+                    }))} 
+                    className="h-10"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="project-action">Action *</Label>
+                  <div className="flex items-center gap-2 h-5">
+                    <Label htmlFor="project-action" className="flex items-center">Action *</Label>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -1640,7 +1646,7 @@ export function UnifiedProjectManagement({
                       ...prev,
                       action: value
                     }))}>
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className="flex-1 h-10">
                         <SelectValue placeholder="Select action..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -1663,7 +1669,7 @@ export function UnifiedProjectManagement({
                           ...prev,
                           actionCustom: e.target.value
                         }))}
-                        className="flex-1"
+                        className="flex-1 h-10"
                       />
                     )}
                   </div>
