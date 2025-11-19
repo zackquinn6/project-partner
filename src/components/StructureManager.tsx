@@ -1257,11 +1257,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Ensure unique and consecutive order numbers
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       
+      // Log phases with order numbers before saving
+      console.log('🔍 Phases with order numbers before save:', phasesWithUniqueOrder.map(p => ({ 
+        id: p.id, 
+        name: p.name, 
+        isLinked: p.isLinked, 
+        phaseOrderNumber: p.phaseOrderNumber 
+      })));
+      
       // Save to database - incorporated phases are stored in JSON only
+      // Make sure phaseOrderNumber is included in the JSON
+      const phasesToSave = phasesWithUniqueOrder.map(phase => ({
+        ...phase,
+        phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
+      }));
+      
       const { error: updateError } = await supabase
         .from('projects')
         .update({ 
-          phases: phasesWithUniqueOrder as any,
+          phases: phasesToSave as any,
           updated_at: new Date().toISOString()
         })
         .eq('id', currentProject.id);
@@ -1288,9 +1302,38 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Use the phases from the database to ensure consistency
       const savedPhases = Array.isArray(savedProject?.phases) ? savedProject.phases : phasesWithUniqueOrder;
       
-      // Apply ordering to saved phases
+      // Check if order numbers are preserved in saved phases
+      console.log('🔍 Saved phases from database:', savedPhases.map(p => ({ 
+        id: p.id, 
+        name: p.name, 
+        isLinked: p.isLinked, 
+        phaseOrderNumber: p.phaseOrderNumber 
+      })));
+      
+      // Apply ordering to saved phases, but preserve existing order numbers for incorporated phases
       const orderedSavedPhases = enforceStandardPhaseOrdering(savedPhases);
+      
+      // For incorporated phases, preserve their order numbers from the saved data
+      const savedPhasesMap = new Map(savedPhases.map(p => [p.id, p]));
+      orderedSavedPhases.forEach(phase => {
+        if (phase.isLinked && savedPhasesMap.has(phase.id)) {
+          const savedPhase = savedPhasesMap.get(phase.id);
+          if (savedPhase?.phaseOrderNumber !== undefined) {
+            phase.phaseOrderNumber = savedPhase.phaseOrderNumber;
+          }
+        }
+      });
+      
+      // Ensure unique order numbers (this will assign numbers to phases that don't have them)
       const finalPhases = ensureUniqueOrderNumbers(orderedSavedPhases);
+      
+      // Log final phases with order numbers
+      console.log('🔍 Final phases with order numbers:', finalPhases.map(p => ({ 
+        id: p.id, 
+        name: p.name, 
+        isLinked: p.isLinked, 
+        phaseOrderNumber: p.phaseOrderNumber 
+      })));
 
       // Update local context immediately with verified data
       const updatedProject = {
