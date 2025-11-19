@@ -1235,9 +1235,24 @@ export function UnifiedProjectManagement({
                           {/* Image Management Section */}
                           <div className="space-y-3">
                             <Label className="text-sm font-semibold">Project Images</Label>
-                            {editingProject ? <ProjectImageManager projectId={selectedProject.id} onImageUpdated={() => {
+                            {editingProject ? <ProjectImageManager projectId={selectedProject.id} onImageUpdated={async () => {
                         // Refresh project data
-                        fetchProjects();
+                        await fetchProjects();
+                        // Also refresh the selected project to show updated images
+                        if (selectedProject) {
+                          const { data, error } = await supabase
+                            .from('projects')
+                            .select('*')
+                            .eq('id', selectedProject.id)
+                            .single();
+                          if (!error && data) {
+                            setSelectedProject({
+                              ...data,
+                              project_challenges: data.project_challenges ?? data.diy_length_challenges ?? null,
+                              project_type: data.project_type || 'primary'
+                            } as Project);
+                          }
+                        }
                       }} /> : <div>
                                 {selectedProject.images && selectedProject.images.length > 0 ? <div className="space-y-2">
                                     <div className="text-xs text-muted-foreground">
