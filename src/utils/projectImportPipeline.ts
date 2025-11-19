@@ -581,6 +581,27 @@ export async function importGeneratedProject(
       console.error('❌ Error rebuilding phases JSON:', rebuildError);
     } else {
       console.log('✅ Phases JSON rebuilt successfully');
+      
+      // Verify the rebuild worked by fetching the updated project
+      const { data: updatedProject, error: fetchError } = await supabase
+        .from('projects')
+        .select('id, phases')
+        .eq('id', projectId)
+        .single();
+      
+      if (!fetchError && updatedProject) {
+        const phasesArray = Array.isArray(updatedProject.phases) ? updatedProject.phases : 
+                           (typeof updatedProject.phases === 'string' ? JSON.parse(updatedProject.phases) : []);
+        console.log(`✅ Verified phases JSON: ${phasesArray.length} phases found`);
+        
+        if (phasesArray.length === 0) {
+          result.warnings.push('Warning: Phases JSON rebuild completed but no phases found. This may indicate an issue with the import.');
+          console.warn('⚠️ Phases JSON is empty after rebuild');
+        }
+      } else {
+        console.error('❌ Error verifying rebuilt phases:', fetchError);
+        result.warnings.push(`Failed to verify rebuilt phases: ${fetchError?.message}`);
+      }
     }
 
     result.success = true;
