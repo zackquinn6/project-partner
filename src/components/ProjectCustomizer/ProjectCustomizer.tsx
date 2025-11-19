@@ -75,6 +75,55 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [showSpacesWindow, setShowSpacesWindow] = useState(false);
   const [homeName, setHomeName] = useState<string>('');
   const [showKickoffEdit, setShowKickoffEdit] = useState(false);
+  const [itemType, setItemType] = useState<string | null>(null);
+
+  // Get template project to access scaling unit and item type
+  const templateProject = currentProjectRun?.templateId 
+    ? projects.find(p => p.id === currentProjectRun.templateId)
+    : null;
+  const scalingUnit = templateProject?.scalingUnit || currentProjectRun?.scalingUnit || 'per item';
+
+  // Fetch item_type directly from database since it's not in the transformed Project interface
+  useEffect(() => {
+    const fetchItemType = async () => {
+      if (templateProject?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('projects')
+            .select('item_type')
+            .eq('id', templateProject.id)
+            .maybeSingle();
+
+          if (error) throw error;
+          setItemType(data?.item_type || null);
+        } catch (error) {
+          console.error('Error fetching item_type:', error);
+        }
+      }
+    };
+
+    if (open && templateProject?.id) {
+      fetchItemType();
+    }
+  }, [open, templateProject?.id]);
+
+  // Helper function to format scaling unit for display
+  const getScalingUnitDisplay = () => {
+    // Standard scaling units
+    if (scalingUnit === 'per square foot') return 'sq ft';
+    if (scalingUnit === 'per 10x10 room') return 'rooms';
+    if (scalingUnit === 'per linear foot') return 'linear ft';
+    if (scalingUnit === 'per cubic yard') return 'cu yd';
+    
+    // For "per item", check if there's a custom item_type
+    if (scalingUnit === 'per item') {
+      if (itemType) return itemType.toLowerCase();
+      return 'items';
+    }
+    
+    // If scalingUnit is a custom value (not one of the standard ones), use it directly
+    return scalingUnit;
+  };
 
   // Helper function to create default "Space 1" placeholder
   const createDefaultSpace = (): ProjectSpace => ({
@@ -403,6 +452,20 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         size={isMobile ? "content-full" : "large"}
       >
         <div className="flex flex-col h-full px-4 pb-4">
+          {/* Project Sizing Estimate Header */}
+          {currentProjectRun?.initial_sizing && (
+            <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Project Size Estimate</div>
+                  <div className="text-xl font-bold text-primary">
+                    {currentProjectRun.initial_sizing} {getScalingUnitDisplay()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Home Selection Display */}
           {homeName && currentProjectRun?.home_id && (
             <div className="mb-3 py-2 px-3 bg-muted/50 rounded-lg border flex items-center justify-between">
