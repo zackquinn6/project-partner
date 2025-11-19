@@ -168,72 +168,54 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     return result;
   };
 
-  // Ensure no duplicate order numbers across phases
+  // Ensure no duplicate order numbers across phases and make them consecutive
   const ensureUniqueOrderNumbers = (phases: Phase[]): Phase[] => {
-    const usedNumbers = new Set<string | number>();
     const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
     
-    return phases.map((phase, index) => {
-      // Standard phases get special handling
+    // Separate phases into standard and custom/linked
+    const standardPhases: Phase[] = [];
+    const customPhases: Phase[] = [];
+    
+    phases.forEach(phase => {
       const isStandard = !phase.isLinked && standardPhaseNames.includes(phase.name);
-      
       if (isStandard) {
-        // Standard phases keep their special order numbers
-        if (phase.name === 'Kickoff' && phase.phaseOrderNumber !== 'first') {
-          phase.phaseOrderNumber = 'first';
-        } else if (phase.name === 'Close Project' && phase.phaseOrderNumber !== 'last') {
-          phase.phaseOrderNumber = 'last';
-        } else if (phase.name === 'Planning' && (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === 'first' || phase.phaseOrderNumber === 'last')) {
-          phase.phaseOrderNumber = 2;
-        } else if (phase.name === 'Ordering' && (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === 'first' || phase.phaseOrderNumber === 'last')) {
-          phase.phaseOrderNumber = 3;
-        }
-        
-        // Track used numbers
-        if (phase.phaseOrderNumber === 'first') usedNumbers.add('first');
-        else if (phase.phaseOrderNumber === 'last') usedNumbers.add('last');
-        else if (typeof phase.phaseOrderNumber === 'number') usedNumbers.add(phase.phaseOrderNumber);
-        
-        return phase;
-      }
-      
-      // For custom and linked phases, ensure unique order numbers
-      if (phase.phaseOrderNumber !== undefined) {
-        const currentOrder = phase.phaseOrderNumber;
-        
-        // Check if this order number is already used
-        if (usedNumbers.has(currentOrder)) {
-          // Find next available number
-          let candidateNumber = index + 1;
-          while (usedNumbers.has(candidateNumber) && candidateNumber <= phases.length) {
-            candidateNumber++;
-          }
-          // If we've exhausted forward, go backwards
-          if (candidateNumber > phases.length) {
-            candidateNumber = index;
-            while (usedNumbers.has(candidateNumber) && candidateNumber >= 1) {
-              candidateNumber--;
-            }
-          }
-          phase.phaseOrderNumber = candidateNumber;
-        }
-        
-        // Track used numbers
-        if (phase.phaseOrderNumber === 'first') usedNumbers.add('first');
-        else if (phase.phaseOrderNumber === 'last') usedNumbers.add('last');
-        else if (typeof phase.phaseOrderNumber === 'number') usedNumbers.add(phase.phaseOrderNumber);
+        standardPhases.push(phase);
       } else {
-        // No order number assigned, assign one
-        let candidateNumber = index + 1;
-        while (usedNumbers.has(candidateNumber) && candidateNumber <= phases.length) {
-          candidateNumber++;
-        }
-        phase.phaseOrderNumber = candidateNumber;
-        usedNumbers.add(candidateNumber);
+        customPhases.push(phase);
       }
-      
-      return phase;
     });
+    
+    // Sort standard phases by their expected order
+    standardPhases.sort((a, b) => {
+      const order = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+      return order.indexOf(a.name) - order.indexOf(b.name);
+    });
+    
+    // Assign order numbers to standard phases
+    standardPhases.forEach((phase, index) => {
+      if (phase.name === 'Kickoff') {
+        phase.phaseOrderNumber = 'first';
+      } else if (phase.name === 'Close Project') {
+        phase.phaseOrderNumber = 'last';
+      } else if (phase.name === 'Planning') {
+        phase.phaseOrderNumber = 2;
+      } else if (phase.name === 'Ordering') {
+        phase.phaseOrderNumber = 3;
+      }
+    });
+    
+    // Assign consecutive order numbers to custom/linked phases
+    // They should be numbered starting from 4 (after Kickoff=first, Planning=2, Ordering=3)
+    let nextOrderNumber = 4;
+    customPhases.forEach(phase => {
+      phase.phaseOrderNumber = nextOrderNumber;
+      nextOrderNumber++;
+    });
+    
+    // Combine back: standard phases first, then custom phases
+    const result = [...standardPhases, ...customPhases];
+    
+    return result;
   };
   
   // State to track if we've loaded fresh phases from database
@@ -1251,11 +1233,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const phasesWithLinked = [...currentProject.phases, linkedPhase];
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithLinked);
       
+      // Ensure unique and consecutive order numbers
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+      
       // Save to database - incorporated phases are stored in JSON only
       const { error: updateError } = await supabase
         .from('projects')
         .update({ 
-          phases: orderedPhases as any,
+          phases: phasesWithUniqueOrder as any,
           updated_at: new Date().toISOString()
         })
         .eq('id', currentProject.id);
@@ -1269,7 +1254,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Update local context
       const updatedProject = {
         ...currentProject,
-        phases: orderedPhases,
+        phases: phasesWithUniqueOrder,
         updatedAt: new Date()
       };
       console.log('🔍 Updated project phases count:', updatedProject.phases.length);
@@ -1525,14 +1510,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // For incorporated phases, just remove from JSON
         const updatedPhases = currentProject.phases.filter(p => p.id !== phaseToDelete);
         const orderedPhases = enforceStandardPhaseOrdering(updatedPhases);
+        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
 
         // Update project JSON
         const { error: updateError } = await supabase
           .from('projects')
-          .update({ phases: orderedPhases as any })
+          .update({ phases: phasesWithUniqueOrder as any })
           .eq('id', currentProject.id);
 
         if (updateError) throw updateError;
+
+        // Update local context
+        updateProject({
+          ...currentProject,
+          phases: phasesWithUniqueOrder,
+          updatedAt: new Date()
+        });
 
         // Refresh display
         await loadFreshPhases();
@@ -1587,11 +1580,27 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
         if (rebuildError) throw rebuildError;
 
+        // Merge with any incorporated phases from current project
+        const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+        const currentPhases = currentProject.phases || [];
+        const incorporatedPhases = currentPhases.filter(p => p.isLinked && p.id !== phaseToDelete);
+        const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
+        const rawPhases = deduplicatePhases(allPhases);
+        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
+        const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
+
         // Update project
         await supabase
           .from('projects')
-          .update({ phases: rebuiltPhases as any })
+          .update({ phases: orderedPhases as any })
           .eq('id', currentProject.id);
+
+        // Update local context
+        updateProject({
+          ...currentProject,
+          phases: orderedPhases,
+          updatedAt: new Date()
+        });
 
         // Refresh display
         await loadFreshPhases();
