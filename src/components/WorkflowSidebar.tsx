@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image, FileText, Info } from "lucide-react";
+import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image, FileText, Info, HelpCircle } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
+import { WorkflowTutorial } from './WorkflowTutorial';
 interface WorkflowSidebarProps {
   allSteps: any[];
   currentStep: any;
@@ -67,6 +68,28 @@ export function WorkflowSidebar({
   });
   const [showStepTypesInfo, setShowStepTypesInfo] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Check if user is new and should see tutorial
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const tutorialCompleted = localStorage.getItem('workflow-tutorial-completed');
+      const isFirstProjectRun = !tutorialCompleted && projectRunId;
+      if (isFirstProjectRun && !showTutorial) {
+        // Small delay to ensure UI is rendered
+        const timer = setTimeout(() => {
+          setShowTutorial(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [projectRunId]);
+
+  const handleTutorialComplete = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('workflow-tutorial-completed', 'true');
+    }
+  };
   
   // Track which phases and operations are open
   const [openPhases, setOpenPhases] = useState<Set<string>>(new Set());
@@ -420,7 +443,7 @@ export function WorkflowSidebar({
                   )}
                 </div>
 
-                {/* Theme and Step Types Buttons - Fixed at bottom, outside scrollable section */}
+                {/* Theme, Step Types, and Tutorial Buttons - Fixed at bottom, outside scrollable section */}
                 <div className="flex-shrink-0 pt-2 pb-2 border-t border-border mt-2 flex items-center justify-center gap-2">
                   <WorkflowThemeSelector projectRunId={projectRunId} />
                   <TooltipProvider delayDuration={100}>
@@ -437,6 +460,23 @@ export function WorkflowSidebar({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="text-xs">Step Types</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowTutorial(true)}
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        >
+                          <HelpCircle className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Workflow Tutorial</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -480,5 +520,12 @@ Call or text (617) 545-3367
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Workflow Tutorial */}
+      <WorkflowTutorial 
+        open={showTutorial} 
+        onOpenChange={setShowTutorial}
+        onComplete={handleTutorialComplete}
+      />
     </Sidebar>;
 }

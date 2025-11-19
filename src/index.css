@@ -624,4 +624,24 @@ main.flex-1.overflow-auto [role="checkbox"][data-state="checked"] {
   .enhanced-scroll::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--muted-foreground));
   }
+
+  /* Tutorial highlight effect */
+  .tutorial-highlight {
+    position: relative;
+    z-index: 9999;
+    outline: 3px solid hsl(var(--primary));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2), 0 0 20px hsl(var(--primary) / 0.4);
+    border-radius: 4px;
+    animation: tutorial-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes tutorial-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2), 0 0 20px hsl(var(--primary) / 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 6px hsl(var(--primary) / 0.3), 0 0 30px hsl(var(--primary) / 0.6);
+    }
+  }
 }
