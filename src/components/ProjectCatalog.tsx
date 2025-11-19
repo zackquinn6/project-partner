@@ -1279,26 +1279,32 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                   >
                     {/* Cover Image or Gradient Header - Takes ~60% of card height */}
                     <div className="flex-[0_0_60%] relative overflow-hidden bg-muted">
-                      {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
-                        <img 
-                          src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
-                          alt={project.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          onError={(e) => {
-                            // If image fails to load, hide it and show gradient background
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      ) : null}
-                      {/* Gradient background - shows when no image or image fails to load */}
-                      <div className={`absolute inset-0 bg-gradient-to-br from-primary to-orange-500 ${((project as any).cover_image || project.image || (project as any).images?.[0]) ? 'opacity-0 group-hover:opacity-20' : 'opacity-100'} transition-opacity`}>
+                      {/* Gradient background - always present, shows when no image */}
+                      <div className={`absolute inset-0 bg-gradient-to-br from-primary to-orange-500 ${((project as any).cover_image || project.image || (project as any).images?.[0]) ? 'opacity-0' : 'opacity-100'}`}>
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <IconComponent className="w-8 h-8 text-white/80" />
                         </div>
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute top-2 right-2 flex gap-1">
+                      {/* Image - if available */}
+                      {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
+                        <img 
+                          src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
+                          alt={project.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 relative z-10"
+                          onError={(e) => {
+                            // If image fails to load, hide it and show gradient background
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            // Show the gradient background
+                            const gradientDiv = (e.target as HTMLImageElement).parentElement?.querySelector('.gradient-background') as HTMLElement;
+                            if (gradientDiv) {
+                              gradientDiv.style.opacity = '1';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20" />
+                      <div className="absolute top-2 right-2 flex gap-1 z-30">
                         {project.publishStatus === 'beta-testing' && (
                           <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
                             <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
@@ -1314,14 +1320,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </div>
                     
                     {/* Content area - flex-1 to take remaining space, flex-col to stack items */}
-                    <div className="flex-1 flex flex-col">
+                    <div className="flex-1 flex flex-col min-h-0">
                       <CardHeader className="pb-1 pt-2 flex-shrink-0">
                         <CardTitle className="text-sm group-hover:text-primary transition-colors line-clamp-2 text-center">
                           {project.name}
                         </CardTitle>
                       </CardHeader>
 
-                      <CardContent className="pt-0 pb-2 flex-shrink-0 mt-auto">
+                      <div className="flex-1 min-h-0" /> {/* Spacer to push button down */}
+                      
+                      <CardContent className="pt-0 pb-2 flex-shrink-0">
                         <Button 
                           size="sm" 
                           className="w-full text-xs h-7" 
