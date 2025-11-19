@@ -242,62 +242,64 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                    <Plus className="w-4 h-4" />
                  </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-[625px]">
+              <DialogContent className="max-w-[720px] space-y-5 text-sm">
                 <DialogHeader>
-                  <DialogTitle>Create New Project</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="text-xl">Create New Project</DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
                     Add a new project to organize your workflows
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="project-name">Project Name</Label>
+                    <Label htmlFor="project-name" className="text-xs font-medium text-muted-foreground">Project Name</Label>
                     <Input
                       id="project-name"
+                      className="text-sm"
                       placeholder="Enter project name"
                       value={newProjectForm.name}
                       onChange={(e) => setNewProjectForm(prev => ({ ...prev, name: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="project-category">Category</Label>
+                    <Label htmlFor="project-category" className="text-xs font-medium text-muted-foreground">Category</Label>
                     <Select
                       value={newProjectForm.category}
                       onValueChange={(value) => setNewProjectForm(prev => ({ ...prev, category: value }))}
                     >
-                      <SelectTrigger id="project-category">
+                      <SelectTrigger id="project-category" className="text-sm">
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Electrical">Electrical</SelectItem>
-                        <SelectItem value="Plumbing">Plumbing</SelectItem>
-                        <SelectItem value="Drywall / Plaster">Drywall / Plaster</SelectItem>
-                        <SelectItem value="Interior Carpentry">Interior Carpentry</SelectItem>
-                        <SelectItem value="Exterior Carpentry">Exterior Carpentry</SelectItem>
-                        <SelectItem value="Painting">Painting</SelectItem>
-                        <SelectItem value="Decor">Decor</SelectItem>
-                        <SelectItem value="Landscaping">Landscaping</SelectItem>
-                        <SelectItem value="Concrete">Concrete</SelectItem>
-                        <SelectItem value="Tile">Tile</SelectItem>
-                        <SelectItem value="Flooring">Flooring</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
+                      <SelectContent className="text-sm">
+                        <SelectItem className="text-sm" value="Electrical">Electrical</SelectItem>
+                        <SelectItem className="text-sm" value="Plumbing">Plumbing</SelectItem>
+                        <SelectItem className="text-sm" value="Drywall / Plaster">Drywall / Plaster</SelectItem>
+                        <SelectItem className="text-sm" value="Interior Carpentry">Interior Carpentry</SelectItem>
+                        <SelectItem className="text-sm" value="Exterior Carpentry">Exterior Carpentry</SelectItem>
+                        <SelectItem className="text-sm" value="Painting">Painting</SelectItem>
+                        <SelectItem className="text-sm" value="Decor">Decor</SelectItem>
+                        <SelectItem className="text-sm" value="Landscaping">Landscaping</SelectItem>
+                        <SelectItem className="text-sm" value="Concrete">Concrete</SelectItem>
+                        <SelectItem className="text-sm" value="Tile">Tile</SelectItem>
+                        <SelectItem className="text-sm" value="Flooring">Flooring</SelectItem>
+                        <SelectItem className="text-sm" value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="project-description">Description</Label>
+                    <Label htmlFor="project-description" className="text-xs font-medium text-muted-foreground">Description</Label>
                     <Textarea
                       id="project-description"
+                      className="text-sm"
                       placeholder="Enter project description"
                       value={newProjectForm.description}
                       onChange={(e) => setNewProjectForm(prev => ({ ...prev, description: e.target.value }))}
                     />
                   </div>
                   <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={() => setIsNewProjectOpen(false)}>
+                    <Button size="sm" variant="outline" onClick={() => setIsNewProjectOpen(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleCreateProject} disabled={!newProjectForm.name.trim()}>
+                    <Button size="sm" onClick={handleCreateProject} disabled={!newProjectForm.name.trim()}>
                       Create Project
                     </Button>
                   </div>
