@@ -707,25 +707,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         {projectRun?.initial_timeline && (
           <div className="px-4 pt-4 pb-2">
             <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">Project Goal Completion Date</div>
-                  <div className="text-lg font-bold text-primary">
-                    {format(new Date(projectRun.initial_timeline), 'MMMM dd, yyyy')}
-                  </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Project Goal Completion Date</div>
+                <div className="text-lg font-bold text-primary">
+                  {format(new Date(projectRun.initial_timeline), 'MMMM dd, yyyy')}
                 </div>
-                {targetDate && (
-                  <div className="text-right">
-                    <div className="text-xs text-muted-foreground mb-1">Target Completion</div>
-                    <div className={`text-base font-semibold ${
-                      new Date(targetDate) <= new Date(projectRun.initial_timeline) 
-                        ? 'text-green-600' 
-                        : 'text-orange-600'
-                    }`}>
-                      {format(new Date(targetDate), 'MMMM dd, yyyy')}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
