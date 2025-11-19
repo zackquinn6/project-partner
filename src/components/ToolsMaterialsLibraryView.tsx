@@ -146,15 +146,19 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     }
   };
 
-  const filteredTools = userTools.filter(tool => 
-    tool.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredTools = userTools.filter(tool => {
+    const itemMatch = tool.item?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+    const descriptionMatch = tool.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+    const nameMatch = tool.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+    return itemMatch || descriptionMatch || nameMatch;
+  });
 
-  const filteredMaterials = userMaterials.filter(material => 
-    material.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (material.description && material.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredMaterials = userMaterials.filter(material => {
+    const itemMatch = material.item?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+    const descriptionMatch = material.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+    const nameMatch = material.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
+    return itemMatch || descriptionMatch || nameMatch;
+  });
 
   const handlePhotoUpload = async (itemId: string, file: File, type: 'tool' | 'material') => {
     if (!user) return;
