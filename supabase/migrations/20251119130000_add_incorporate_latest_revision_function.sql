@@ -48,8 +48,8 @@ BEGIN
     END IF;
 
     -- Rebuild phases from source project to get latest structure
-    SELECT phases INTO rebuilt_source_phases
-    FROM public.rebuild_phases_json_from_project_phases(p_source_project_id);
+    -- Use RPC function to get fresh phase data
+    SELECT public.rebuild_phases_json_from_project_phases(p_source_project_id) INTO rebuilt_source_phases;
     
     IF rebuilt_source_phases IS NULL THEN
         -- Fallback to stored phases
