@@ -44,8 +44,8 @@ export function ProjectContentImport({ open, onOpenChange, onImport }: ProjectCo
 Planning,Project Setup,Define Requirements,Gather all project requirements,Budget*Project Type*Timeline,Budget Amount*Project Type*Timeline Preference,Requirements Document,Complete project requirements,none,Pen,Writing instrument,Paper,Note-taking paper
 Planning,Project Setup,Create Timeline,Establish project milestones,Start Date*End Date,Start Date*End Date,Project Timeline,Detailed project schedule,none,Computer,For scheduling software,,,
 Preparation,Site Prep,Clear Area,Remove debris and obstacles,Area Size*Debris Type,Area Size*Debris Type,Clean Work Area,Area ready for work,safety,Shovel,For moving debris,Trash Bags,For debris collection
-Preparation,Site Prep,Mark Utilities,Identify underground utilities,,Utility Markings,All utilities clearly marked,safety,Spray Paint,For marking locations,,,
-Execution,Installation,Measure Space,Take accurate measurements,Length*Width*Height,Measurements,Precise dimensions recorded,performance-durability,Tape Measure,25ft measuring tape,,,
+Preparation,Site Prep,Mark Utilities,Identify underground utilities,,,Utility Markings,All utilities clearly marked,safety,Spray Paint,For marking locations,,,
+Execution,Installation,Measure Space,Take accurate measurements,Length*Width*Height,Length*Width*Height,Measurements,Precise dimensions recorded,performance-durability,Tape Measure,25ft measuring tape,,,
 Execution,Installation,Cut Materials,Cut materials to size,Cut Length*Angle,Cut Length*Angle,Cut Materials,Materials ready for installation,major-aesthetics,Saw,Hand saw for cutting,Wood,Construction lumber
 
 IMPORTANT FORMAT NOTES:
