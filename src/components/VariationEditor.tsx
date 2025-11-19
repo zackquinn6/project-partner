@@ -74,9 +74,14 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
   const [activeTab, setActiveTab] = useState('details');
 
   useEffect(() => {
-    setEditedVariation(variation);
-    fetchModelsAndPricing();
-    fetchWarningFlags();
+    if (variation) {
+      setEditedVariation({
+        ...variation,
+        name: variation.name || '', // Ensure name is always a string
+      });
+      fetchModelsAndPricing();
+      fetchWarningFlags();
+    }
   }, [variation]);
 
   const fetchModelsAndPricing = async () => {
@@ -123,26 +128,41 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
   };
 
   const saveVariation = async () => {
+    if (!editedVariation.name || !editedVariation.name.trim()) {
+      toast.error('Variation name is required');
+      return;
+    }
+
     setLoading(true);
     try {
-       const { error } = await supabase
-         .from('variation_instances')
-         .update({
-           name: editedVariation.name,
-           description: editedVariation.description,
-           sku: editedVariation.sku,
-           photo_url: editedVariation.photo_url,
-           weight_lbs: editedVariation.weight_lbs,
-           estimated_weight_lbs: editedVariation.estimated_weight_lbs,
-           estimated_rental_lifespan_days: editedVariation.estimated_rental_lifespan_days,
-           warning_flags: editedVariation.warning_flags,
-           quick_add: editedVariation.quick_add || false,
-           updated_at: new Date().toISOString()
-         })
-         .eq('id', variation.id);
+      console.log('💾 Saving variation:', {
+        id: variation.id,
+        name: editedVariation.name,
+        description: editedVariation.description
+      });
 
-      if (error) throw error;
+      const { error } = await supabase
+        .from('variation_instances')
+        .update({
+          name: editedVariation.name.trim(),
+          description: editedVariation.description || null,
+          sku: editedVariation.sku || null,
+          photo_url: editedVariation.photo_url || null,
+          weight_lbs: editedVariation.weight_lbs || null,
+          estimated_weight_lbs: editedVariation.estimated_weight_lbs || null,
+          estimated_rental_lifespan_days: editedVariation.estimated_rental_lifespan_days || null,
+          warning_flags: editedVariation.warning_flags || null,
+          quick_add: editedVariation.quick_add || false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', variation.id);
 
+      if (error) {
+        console.error('❌ Error saving variation:', error);
+        throw error;
+      }
+
+      console.log('✅ Variation saved successfully');
       toast.success('Variation updated successfully');
       onSave();
     } catch (error) {

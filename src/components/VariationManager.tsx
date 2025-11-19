@@ -701,16 +701,27 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                       <Label htmlFor="select-attr">Attribute</Label>
                       <Select value={selectedAttributeId} onValueChange={setSelectedAttributeId}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select attribute" />
+                          <SelectValue placeholder={attributes.length === 0 ? "No attributes available. Create an attribute first." : "Select attribute"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {attributes.map(attr => (
-                            <SelectItem key={attr.id} value={attr.id}>
-                              {attr.display_name}
-                            </SelectItem>
-                          ))}
+                          {attributes.length === 0 ? (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              No attributes available. Create an attribute first.
+                            </div>
+                          ) : (
+                            attributes.map(attr => (
+                              <SelectItem key={attr.id} value={attr.id}>
+                                {attr.display_name}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
+                      {attributes.length === 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          You need to create an attribute before adding values. Use the "Add Attribute" button above.
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="value-text">Value</Label>
@@ -722,10 +733,14 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                       />
                     </div>
                     <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => setShowValueDialog(false)}>
+                      <Button variant="outline" onClick={() => {
+                        setShowValueDialog(false);
+                        setSelectedAttributeId('');
+                        setNewValueText('');
+                      }}>
                         Cancel
                       </Button>
-                      <Button onClick={handleCreateAttributeValue} disabled={loading}>
+                      <Button onClick={handleCreateAttributeValue} disabled={loading || !selectedAttributeId || attributes.length === 0}>
                         Add Value
                       </Button>
                     </div>
