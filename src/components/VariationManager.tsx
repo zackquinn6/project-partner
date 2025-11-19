@@ -171,22 +171,6 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
     }
   };
 
-  const fetchAllAttributes = async () => {
-    try {
-      // Fetch ALL attributes in the system for the dropdown
-      const { data, error } = await supabase
-        .from('variation_attributes')
-        .select('id, name, display_name')
-        .order('display_name');
-
-      if (error) throw error;
-      setAllAttributes(data || []);
-    } catch (error) {
-      console.error('Error fetching all attributes:', error);
-      toast.error('Failed to fetch attributes');
-    }
-  };
-
   const fetchVariations = async () => {
     try {
       const { data, error } = await supabase
