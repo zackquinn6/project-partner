@@ -198,27 +198,27 @@ export function WorkflowSidebar({
                 {/* Fixed Upper Section - No scrolling */}
                 <div className="flex-shrink-0 space-y-4 pb-4">
                   {/* Progress Header */}
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">
-                      Step {currentStepIndex + 1} of {allSteps.length}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span>Progress</span>
+                      <span className="text-muted-foreground text-[10px]">
+                        Step {currentStepIndex + 1} of {allSteps.length}
+                      </span>
+                      <span>{Math.round(progress)}%</span>
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>Progress</span>
-                        <span>{Math.round(progress)}%</span>
-                      </div>
-                      <Progress value={progress} className="h-2" />
-                    </div>
+                    <Progress value={progress} className="h-2" />
                   </div>
 
                   {/* Instruction Detail Level */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-primary" />
-                      <h3 className="font-semibold text-primary text-xs">Detail Level</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-shrink-0">
+                      <div className="font-semibold text-primary text-xs leading-tight">
+                        <div>Detail</div>
+                        <div>Level</div>
+                      </div>
                     </div>
                     <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
-                      <SelectTrigger className="w-full text-xs">
+                      <SelectTrigger className="flex-1 text-xs">
                         <SelectValue>
                           {instructionLevel === 'new_user' && 'Beginner'}
                           {instructionLevel === 'detailed' && 'Intermediate'}
@@ -260,18 +260,18 @@ export function WorkflowSidebar({
                       onClick={onPhotosClick}
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
+                      className="flex-1 h-8 flex items-center justify-center gap-1.5 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
                     >
-                      <Image className="w-4 h-4" />
+                      <Image className="w-3.5 h-3.5" />
                       <span className="text-[10px] font-semibold">Photos</span>
                     </Button>
                     <Button
                       onClick={onNotesClick}
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-150 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 rounded-lg shadow-sm hover:shadow-md transition-all"
+                      className="flex-1 h-8 flex items-center justify-center gap-1.5 bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-150 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 rounded-lg shadow-sm hover:shadow-md transition-all"
                     >
-                      <FileText className="w-4 h-4" />
+                      <FileText className="w-3.5 h-3.5" />
                       <span className="text-[10px] font-semibold">Notes</span>
                     </Button>
                   </div>
@@ -421,7 +421,7 @@ export function WorkflowSidebar({
                 </div>
 
                 {/* Theme and Step Types Buttons - Fixed at bottom, outside scrollable section */}
-                <div className="flex-shrink-0 pt-4 border-t border-border mt-2 flex items-center justify-center gap-2">
+                <div className="flex-shrink-0 pt-2 pb-2 border-t border-border mt-2 flex items-center justify-center gap-2">
                   <WorkflowThemeSelector projectRunId={projectRunId} />
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
