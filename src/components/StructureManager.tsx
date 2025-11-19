@@ -177,14 +177,37 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Ensure no duplicate order numbers across phases and make them consecutive
   // IMPORTANT: This function assumes phases are already in the correct order (enforced by enforceStandardPhaseOrdering)
-  // It only assigns order numbers based on position, ensuring Close Project is always "last"
+  // It preserves existing order numbers and only assigns new ones to phases that don't have them
   const ensureUniqueOrderNumbers = (phases: Phase[]): Phase[] => {
     const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
     const usedNumbers = new Set<string | number>();
     
-    // Assign order numbers based on actual position in the array
+    // First pass: collect all existing order numbers
+    phases.forEach(phase => {
+      if (phase.phaseOrderNumber !== undefined) {
+        usedNumbers.add(phase.phaseOrderNumber);
+      }
+    });
+    
+    // Second pass: assign order numbers based on actual position in the array
     // This ensures Close Project (which should be last) gets "last" and stays last
     return phases.map((phase, index) => {
+      // If phase already has an order number, preserve it (unless it's a duplicate)
+      if (phase.phaseOrderNumber !== undefined) {
+        // Check if this order number is already used by another phase
+        const isDuplicate = Array.from(usedNumbers).some((num, idx) => {
+          if (idx === index) return false; // Don't check against self
+          const otherPhase = phases.find((p, i) => i !== index && p.phaseOrderNumber === num);
+          return otherPhase?.phaseOrderNumber === phase.phaseOrderNumber;
+        });
+        
+        if (!isDuplicate) {
+          // Order number is valid, keep it
+          return phase;
+        }
+        // If duplicate, we'll reassign below
+      }
+      
       const isStandard = !phase.isLinked && standardPhaseNames.includes(phase.name);
       
       if (isStandard) {
