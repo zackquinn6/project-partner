@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image, FileText } from "lucide-react";
+import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image, FileText, Info } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 interface WorkflowSidebarProps {
   allSteps: any[];
@@ -113,6 +114,77 @@ export function WorkflowSidebar({
       setOpenOperations(new Set());
     }
   }, [currentStepPhaseAndOperation, currentStepIndex, currentStep?.id]); // Trigger on step change
+
+  // Calculate completed operations and phases
+  const completedOperations = useMemo(() => {
+    const completed = new Set<string>();
+    if (!groupedSteps) return completed;
+
+    Object.entries(groupedSteps).forEach(([phase, operations]) => {
+      Object.entries(operations as any).forEach(([operation, opSteps]) => {
+        if (Array.isArray(opSteps) && opSteps.length > 0) {
+          const allStepsCompleted = opSteps.every((step: any) => completedSteps.has(step.id));
+          if (allStepsCompleted) {
+            completed.add(`${phase}-${operation}`);
+          }
+        }
+      });
+    });
+
+    return completed;
+  }, [groupedSteps, completedSteps]);
+
+  const completedPhases = useMemo(() => {
+    const completed = new Set<string>();
+    if (!groupedSteps) return completed;
+
+    Object.entries(groupedSteps).forEach(([phase, operations]) => {
+      const phaseOperations = Object.entries(operations as any);
+      const allOperationsCompleted = phaseOperations.every(([operation, opSteps]) => {
+        if (!Array.isArray(opSteps) || opSteps.length === 0) return true;
+        return opSteps.every((step: any) => completedSteps.has(step.id));
+      });
+      if (allOperationsCompleted && phaseOperations.length > 0) {
+        completed.add(phase);
+      }
+    });
+
+    return completed;
+  }, [groupedSteps, completedSteps]);
+
+  // Find the earliest uncompleted step (in-progress)
+  const inProgressStep = useMemo(() => {
+    if (!allSteps || allSteps.length === 0) return null;
+    
+    for (const step of allSteps) {
+      if (!completedSteps.has(step.id)) {
+        return step.id;
+      }
+    }
+    return null;
+  }, [allSteps, completedSteps]);
+
+  // Find the in-progress operation and phase
+  const inProgressOperation = useMemo(() => {
+    if (!inProgressStep || !groupedSteps) return null;
+
+    for (const [phase, operations] of Object.entries(groupedSteps)) {
+      for (const [operation, opSteps] of Object.entries(operations as any)) {
+        if (Array.isArray(opSteps)) {
+          const hasInProgressStep = opSteps.some((step: any) => step.id === inProgressStep);
+          if (hasInProgressStep) {
+            return `${phase}-${operation}`;
+          }
+        }
+      }
+    }
+    return null;
+  }, [inProgressStep, groupedSteps]);
+
+  const inProgressPhase = useMemo(() => {
+    if (!inProgressOperation) return null;
+    return inProgressOperation.split('-')[0];
+  }, [inProgressOperation]);
   
   
   return <Sidebar collapsible="icon">
@@ -205,6 +277,27 @@ export function WorkflowSidebar({
                 {/* Separator */}
                 <div className="border-t border-border my-4"></div>
 
+                {/* Step Types Tooltip Button - Above first phase */}
+                <div className="mb-2 flex justify-start">
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowStepTypesInfo(true)}
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                        >
+                          <Info className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Step Types</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
                 {/* Step Navigation with Accordion */}
                 <div className="space-y-2 max-h-[50vh] overflow-y-auto">
                   {!groupedSteps || Object.keys(groupedSteps).length === 0 ? (
@@ -230,10 +323,19 @@ export function WorkflowSidebar({
                         
                         if (!hasSteps) return null;
                         
+                        const isPhaseCompleted = completedPhases.has(phase);
+                        const isPhaseInProgress = inProgressPhase === phase;
+                        
                         return (
                           <AccordionItem key={phase} value={phase} className="border-none">
                             <AccordionTrigger 
-                              className="py-2 px-0 hover:no-underline text-sm font-semibold text-primary"
+                              className={`py-2 px-0 hover:no-underline text-sm font-semibold ${
+                                isPhaseCompleted
+                                  ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                  : isPhaseInProgress
+                                  ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
+                                  : 'text-primary'
+                              }`}
                             >
                               <span>{phase}</span>
                             </AccordionTrigger>
@@ -269,6 +371,8 @@ export function WorkflowSidebar({
                                     return null;
                                   }
                                   const operationKey = `${phase}-${operation}`;
+                                  const isOperationCompleted = completedOperations.has(operationKey);
+                                  const isOperationInProgress = inProgressOperation === operationKey;
                                   
                                   return (
                                     <AccordionItem 
@@ -277,7 +381,13 @@ export function WorkflowSidebar({
                                       className="border-none ml-2"
                                     >
                                       <AccordionTrigger 
-                                        className="py-1.5 px-0 hover:no-underline text-xs font-medium text-muted-foreground"
+                                        className={`py-1.5 px-0 hover:no-underline text-xs font-medium ${
+                                          isOperationCompleted
+                                            ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                            : isOperationInProgress
+                                            ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
+                                            : 'text-muted-foreground'
+                                        }`}
                                       >
                                         <span>{operation}</span>
                                       </AccordionTrigger>
@@ -285,14 +395,19 @@ export function WorkflowSidebar({
                                         <div className="space-y-1 ml-2">
                                           {opSteps.map((step: any) => {
                                             const stepIndex = allSteps.findIndex(s => s.id === step.id);
+                                            const isStepCompleted = completedSteps.has(step.id);
+                                            const isStepInProgress = inProgressStep === step.id;
+                                            
                                             return (
                                               <div 
                                                 key={step.id} 
                                                 className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
                                                   step.id === currentStep?.id 
                                                     ? 'bg-primary/10 text-primary border-primary/20' 
-                                                    : completedSteps.has(step.id) 
+                                                    : isStepCompleted
                                                     ? 'bg-green-50 text-green-700 border-green-200' 
+                                                    : isStepInProgress
+                                                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
                                                     : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
                                                 }`} 
                                                 onClick={() => {
@@ -303,7 +418,7 @@ export function WorkflowSidebar({
                                               >
                                                 <div className="flex items-center gap-2">
                                                   {getStepIndicator(step.stepType || 'prime')}
-                                                  {completedSteps.has(step.id) && <CheckCircle className="w-3 h-3" />}
+                                                  {isStepCompleted && <CheckCircle className="w-3 h-3" />}
                                                   <span className="truncate">{step.step}</span>
                                                 </div>
                                               </div>
@@ -323,15 +438,8 @@ export function WorkflowSidebar({
                   )}
                 </div>
 
-                {/* Step Types Button */}
-                <div className="mt-4 pt-4 border-t border-border">
-                  <Button variant="outline" onClick={() => setShowStepTypesInfo(true)} className="w-full py-1.5 px-4 text-xs ">
-                    Step Types
-                  </Button>
-                </div>
-
-                {/* Theme Button - Under Step Types */}
-                <div className="mt-2">
+                {/* Theme Button */}
+                <div className="mt-4">
                   <WorkflowThemeSelector projectRunId={projectRunId} />
                 </div>
               </div>}
