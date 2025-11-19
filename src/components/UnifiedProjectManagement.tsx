@@ -1589,7 +1589,7 @@ export function UnifiedProjectManagement({
 
       {/* Create Project Dialog */}
       <Dialog open={createProjectDialogOpen} onOpenChange={setCreateProjectDialogOpen}>
-        <DialogContent className="w-[75vw] max-w-[75vw]">
+        <DialogContent className="w-[85vw] max-w-[85vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="w-5 h-5" />
