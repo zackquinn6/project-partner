@@ -1278,7 +1278,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     }}
                   >
                     {/* Project Name Header - Fixed at top */}
-                    <div className="flex-shrink-0 px-4 pt-3 pb-2">
+                    <div className="flex-shrink-0 px-4 pt-3 pb-2 z-10 relative bg-card">
                       <h3 className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2 text-center">
                         {project.name}
                       </h3>
@@ -1287,7 +1287,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     {/* Cover Image or Gradient - Takes remaining space */}
                     <div className="flex-1 relative overflow-hidden bg-muted min-h-0">
                       {/* Gradient background - always present, shows when no image */}
-                      <div className={`gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500 ${((project as any).cover_image || project.image || (project as any).images?.[0]) ? 'opacity-0' : 'opacity-100'}`}>
+                      <div className={`gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500 z-0 ${((project as any).cover_image || project.image || (project as any).images?.[0]) ? 'opacity-0' : 'opacity-100'}`}>
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <IconComponent className="w-8 h-8 text-white/80" />
@@ -1298,7 +1298,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                         <img 
                           src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
                           alt={project.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 relative z-10"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 absolute inset-0 z-10"
                           onError={(e) => {
                             // If image fails to load, hide it and show gradient background
                             (e.target as HTMLImageElement).style.display = 'none';
@@ -1310,7 +1310,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                           }}
                         />
                       ) : null}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
                       <div className="absolute top-2 right-2 flex gap-1 z-30">
                         {project.publishStatus === 'beta-testing' && (
                           <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
@@ -1327,7 +1327,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </div>
                     
                     {/* Button - Fixed at bottom */}
-                    <div className="flex-shrink-0 px-4 pb-3 pt-2">
+                    <div className="flex-shrink-0 px-4 pb-3 pt-2 z-10 relative bg-card">
                       <Button 
                         size="sm" 
                         className="w-full text-xs h-7" 
