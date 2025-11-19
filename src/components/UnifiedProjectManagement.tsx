@@ -85,7 +85,9 @@ export function UnifiedProjectManagement({
   const [releaseNotes, setReleaseNotes] = useState('');
   const [revisionNotes, setRevisionNotes] = useState('');
   const [newProject, setNewProject] = useState<{
-    name: string;
+    item: string;
+    action: string;
+    actionCustom: string;
     description: string;
     categories: string[];
     effort_level: string;
@@ -94,7 +96,9 @@ export function UnifiedProjectManagement({
     scaling_unit: string;
     project_type: 'primary' | 'secondary';
   }>({
-    name: '',
+    item: '',
+    action: '',
+    actionCustom: '',
     description: '',
     categories: [],
     effort_level: 'Medium',
@@ -671,13 +675,22 @@ export function UnifiedProjectManagement({
     }
   };
   const createProject = async () => {
-    if (!newProject.name.trim()) {
-      toast.error("Project name is required");
+    if (!newProject.item.trim()) {
+      toast.error("Item is required");
       return;
     }
 
+    if (!newProject.action && !newProject.actionCustom.trim()) {
+      toast.error("Action is required");
+      return;
+    }
+
+    // Combine item and action into project name
+    const actionValue = newProject.action === 'custom' ? newProject.actionCustom.trim() : newProject.action;
+    const projectName = `${newProject.item.trim()} ${actionValue}`.trim();
+
     // Check for unique project name
-    const normalizedName = newProject.name.toLowerCase().trim();
+    const normalizedName = projectName.toLowerCase().trim();
     const existingProject = projects.find(p => p.name.toLowerCase().trim() === normalizedName);
     if (existingProject) {
       toast.error("A project with this name already exists. Please choose a unique name.");
@@ -685,14 +698,14 @@ export function UnifiedProjectManagement({
     }
 
     try {
-      console.log('🔨 Creating project:', newProject);
+      console.log('🔨 Creating project:', { ...newProject, name: projectName });
 
       // Use backend function to create project with standard foundation
       const {
         data,
         error
       } = await supabase.rpc('create_project_with_standard_foundation_v2', {
-        p_project_name: newProject.name,
+        p_project_name: projectName,
         p_project_description: newProject.description || '',
         p_category: newProject.categories.length > 0 ? newProject.categories[0] : 'general'
       });
@@ -720,7 +733,9 @@ export function UnifiedProjectManagement({
       toast.success("New project created with standard phases!");
       setCreateProjectDialogOpen(false);
       setNewProject({
-        name: '',
+        item: '',
+        action: '',
+        actionCustom: '',
         description: '',
         categories: [],
         effort_level: 'Medium',
@@ -1329,11 +1344,71 @@ export function UnifiedProjectManagement({
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="project-name">Project Name *</Label>
-              <Input id="project-name" placeholder="Enter project name..." value={newProject.name || ''} onChange={e => setNewProject(prev => ({
+              <Label htmlFor="project-item">Item *</Label>
+              <Input id="project-item" placeholder="e.g., Tile Flooring" value={newProject.item || ''} onChange={e => setNewProject(prev => ({
               ...prev,
-              name: e.target.value
+              item: e.target.value
             }))} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="project-action">Action *</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="w-4 h-4 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full"
+                        aria-label="Action selection guide"
+                      >
+                        <Info className="w-3 h-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>If removal + installation: use "Replacement"</li>
+                        <li>If new install only: use "Installation"</li>
+                        <li>If maintenance or fix: use "Repair"</li>
+                        <li>If liquid/slurry, non-cosmetic: use "Application"</li>
+                        <li>If cosmetic: use "Painting", "Refinishing", "Finishing", "Staining", etc.</li>
+                      </ul>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex gap-2">
+                <Select value={newProject.action || ''} onValueChange={value => setNewProject(prev => ({
+                  ...prev,
+                  action: value
+                }))}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select action..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Application">Application</SelectItem>
+                    <SelectItem value="Repair">Repair</SelectItem>
+                    <SelectItem value="Installation">Installation</SelectItem>
+                    <SelectItem value="Painting">Painting</SelectItem>
+                    <SelectItem value="Finishing">Finishing</SelectItem>
+                    <SelectItem value="Refinishing">Refinishing</SelectItem>
+                    <SelectItem value="Staining">Staining</SelectItem>
+                    <SelectItem value="Replacement">Replacement</SelectItem>
+                    <SelectItem value="custom">Custom...</SelectItem>
+                  </SelectContent>
+                </Select>
+                {newProject.action === 'custom' && (
+                  <Input
+                    placeholder="Enter custom action"
+                    value={newProject.actionCustom || ''}
+                    onChange={e => setNewProject(prev => ({
+                      ...prev,
+                      actionCustom: e.target.value
+                    }))}
+                    className="flex-1"
+                  />
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -1350,8 +1425,12 @@ export function UnifiedProjectManagement({
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-between h-auto min-h-[40px] py-2">
-                      <span className="text-left text-sm">
-                        {newProject.categories.length > 0 ? newProject.categories.join(', ') : 'Select categories...'}
+                      <span className="text-left text-sm truncate flex-1 mr-2">
+                        {newProject.categories.length > 0 
+                          ? (newProject.categories.length <= 2 
+                              ? newProject.categories.join(', ')
+                              : `${newProject.categories.slice(0, 2).join(', ')} +${newProject.categories.length - 2} more`)
+                          : 'Select categories...'}
                       </span>
                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
