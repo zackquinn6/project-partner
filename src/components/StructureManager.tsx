@@ -168,10 +168,75 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     return result;
   };
   
-  // Enforce standard phase ordering
-  const rawPhases = deduplicatePhases(currentProject?.phases || []);
-  const displayPhases = enforceStandardPhaseOrdering(rawPhases);
-  console.log('🔍 Display phases count after ordering:', displayPhases.length);
+  // State to track if we've loaded fresh phases from database
+  const [phasesLoaded, setPhasesLoaded] = useState(false);
+  const [displayPhases, setDisplayPhases] = useState<Phase[]>([]);
+
+  // Load fresh phases from database on mount
+  useEffect(() => {
+    if (!currentProject) return;
+    
+    const loadFreshPhases = async () => {
+      try {
+        // Rebuild phases from database to get fresh data (not stale JSON)
+        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+          p_project_id: currentProject.id
+        });
+
+        if (rebuildError) {
+          console.error('Error rebuilding phases:', rebuildError);
+          // Fallback to current project phases
+          const rawPhases = deduplicatePhases(currentProject?.phases || []);
+          const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+          setDisplayPhases(orderedPhases);
+          setPhasesLoaded(true);
+          return;
+        }
+
+        // Merge incorporated phases from current project (they're not in project_phases table)
+        const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+        const currentPhases = currentProject.phases || [];
+        const incorporatedPhases = currentPhases.filter(p => p.isLinked);
+        
+        // Combine rebuilt phases with incorporated phases
+        const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
+        const rawPhases = deduplicatePhases(allPhases);
+        const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+        
+        setDisplayPhases(orderedPhases);
+        setPhasesLoaded(true);
+        
+        // Update local context with fresh phases
+        updateProject({
+          ...currentProject,
+          phases: orderedPhases,
+          updatedAt: new Date()
+        });
+      } catch (error) {
+        console.error('Error loading fresh phases:', error);
+        // Fallback to current project phases
+        const rawPhases = deduplicatePhases(currentProject?.phases || []);
+        const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+        setDisplayPhases(orderedPhases);
+        setPhasesLoaded(true);
+      }
+    };
+
+    if (!phasesLoaded) {
+      loadFreshPhases();
+    }
+  }, [currentProject?.id]);
+
+  // Initialize displayPhases with current project phases if not loaded yet
+  useEffect(() => {
+    if (!phasesLoaded && currentProject) {
+      const rawPhases = deduplicatePhases(currentProject?.phases || []);
+      const fallbackPhases = enforceStandardPhaseOrdering(rawPhases);
+      if (fallbackPhases.length > 0 && displayPhases.length === 0) {
+        setDisplayPhases(fallbackPhases);
+      }
+    }
+  }, [currentProject, phasesLoaded, displayPhases.length]);
 
   // Toggle functions for collapsible sections
   const togglePhaseExpansion = (phaseId: string) => {
@@ -248,7 +313,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
     }
     
-    // Set loading state
+    // Set loading state and track start time for minimum display duration
+    const startTime = Date.now();
+    const minDisplayTime = 2000; // Minimum 2 seconds
     setReorderingPhaseId(phaseId);
     
     try {
@@ -258,6 +325,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       reorderedPhases.splice(newIndex, 0, removed);
       
       await updatePhaseOrder(reorderedPhases);
+      
+      // Ensure minimum display time
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+    } catch (error) {
+      console.error('Error reordering phase:', error);
+      // Ensure minimum display time even on error
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
     } finally {
       setReorderingPhaseId(null);
     }
@@ -1367,6 +1449,33 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
     }
+    // Rebuild phases from database to ensure JSON is updated with correct names
+    const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+      p_project_id: currentProject.id
+    });
+
+    if (!rebuildError && rebuiltPhases) {
+      // Merge incorporated phases back in (they're not in project_phases table)
+      const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+      const incorporatedPhases = updatedProject.phases.filter(p => p.isLinked);
+      const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
+      const rawPhases = deduplicatePhases(allPhases);
+      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      
+      // Update JSON column in database
+      await supabase
+        .from('projects')
+        .update({ 
+          phases: orderedPhases as any,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentProject.id);
+      
+      // Update local state with fresh data
+      updatedProject.phases = orderedPhases;
+      setDisplayPhases(orderedPhases);
+    }
+    
     updatedProject.updatedAt = new Date();
     updateProject(updatedProject);
     setEditingItem(null);
