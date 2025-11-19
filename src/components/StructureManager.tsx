@@ -176,53 +176,50 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   };
 
   // Ensure no duplicate order numbers across phases and make them consecutive
+  // IMPORTANT: This function assumes phases are already in the correct order (enforced by enforceStandardPhaseOrdering)
+  // It only assigns order numbers based on position, ensuring Close Project is always "last"
   const ensureUniqueOrderNumbers = (phases: Phase[]): Phase[] => {
     const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
     
-    // Separate phases into standard and custom/linked
-    const standardPhases: Phase[] = [];
-    const customPhases: Phase[] = [];
-    
-    phases.forEach(phase => {
+    // Assign order numbers based on actual position in the array
+    // This ensures Close Project (which should be last) gets "last" and stays last
+    return phases.map((phase, index) => {
       const isStandard = !phase.isLinked && standardPhaseNames.includes(phase.name);
+      
       if (isStandard) {
-        standardPhases.push(phase);
+        // Standard phases get special order numbers
+        if (phase.name === 'Kickoff') {
+          phase.phaseOrderNumber = 'first';
+        } else if (phase.name === 'Close Project') {
+          // Close Project should always be last - verify it's at the end
+          if (index !== phases.length - 1) {
+            console.warn('⚠️ Close Project phase is not at the end! Index:', index, 'Total:', phases.length);
+          }
+          phase.phaseOrderNumber = 'last';
+        } else if (phase.name === 'Planning') {
+          phase.phaseOrderNumber = 2;
+        } else if (phase.name === 'Ordering') {
+          phase.phaseOrderNumber = 3;
+        }
       } else {
-        customPhases.push(phase);
+        // Custom and linked phases get consecutive numbers starting from 4
+        // (after Kickoff=first, Planning=2, Ordering=3)
+        // But we need to account for the actual position
+        // Count how many standard phases come before this one
+        let standardPhaseCount = 0;
+        for (let i = 0; i < index; i++) {
+          const prevPhase = phases[i];
+          if (!prevPhase.isLinked && standardPhaseNames.includes(prevPhase.name)) {
+            standardPhaseCount++;
+          }
+        }
+        // Assign number based on position, but skip 'first', 2, 3, and 'last'
+        const baseNumber = standardPhaseCount + 1; // Start from position after standard phases
+        phase.phaseOrderNumber = baseNumber >= 4 ? baseNumber : 4;
       }
+      
+      return phase;
     });
-    
-    // Sort standard phases by their expected order
-    standardPhases.sort((a, b) => {
-      const order = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-      return order.indexOf(a.name) - order.indexOf(b.name);
-    });
-    
-    // Assign order numbers to standard phases
-    standardPhases.forEach((phase, index) => {
-      if (phase.name === 'Kickoff') {
-        phase.phaseOrderNumber = 'first';
-      } else if (phase.name === 'Close Project') {
-        phase.phaseOrderNumber = 'last';
-      } else if (phase.name === 'Planning') {
-        phase.phaseOrderNumber = 2;
-      } else if (phase.name === 'Ordering') {
-        phase.phaseOrderNumber = 3;
-      }
-    });
-    
-    // Assign consecutive order numbers to custom/linked phases
-    // They should be numbered starting from 4 (after Kickoff=first, Planning=2, Ordering=3)
-    let nextOrderNumber = 4;
-    customPhases.forEach(phase => {
-      phase.phaseOrderNumber = nextOrderNumber;
-      nextOrderNumber++;
-    });
-    
-    // Combine back: standard phases first, then custom phases
-    const result = [...standardPhases, ...customPhases];
-    
-    return result;
   };
   
   // State to track if we've loaded fresh phases from database
@@ -274,9 +271,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       console.error('Error loading fresh phases:', error);
       // Fallback to current project phases
       const rawPhases = deduplicatePhases(currentProject?.phases || []);
-      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
-      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
-      setDisplayPhases(orderedPhases);
+      // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST to ensure Close Project is last
+      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      // THEN assign order numbers based on the correct order
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+      setDisplayPhases(phasesWithUniqueOrder);
       setPhasesLoaded(true);
     }
   };
@@ -1527,14 +1526,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
         if (updateError) throw updateError;
 
-        // Update local context
-        updateProject({
+        // Update local context immediately
+        const updatedProject = {
           ...currentProject,
           phases: phasesWithUniqueOrder,
           updatedAt: new Date()
-        });
+        };
+        updateProject(updatedProject);
 
-        // Refresh display
+        // Update display state immediately
+        setDisplayPhases(phasesWithUniqueOrder);
+
+        // Also refresh from database to ensure consistency
         await loadFreshPhases();
       } else {
         // For regular phases, delete from database tables
@@ -1593,8 +1596,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const incorporatedPhases = currentPhases.filter(p => p.isLinked && p.id !== phaseToDelete);
         const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
         const rawPhases = deduplicatePhases(allPhases);
-        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
-        const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
+        // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST to ensure Close Project is last
+        const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+        // THEN assign order numbers based on the correct order
+        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
 
         // Update project
         await supabase
