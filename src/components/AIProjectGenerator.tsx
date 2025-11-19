@@ -187,10 +187,16 @@ export function AIProjectGenerator({
     setImportResult(null);
 
     try {
-      // Simulate progress
+      // Simulate progress more realistically
+      // Start at 5%, then slowly increment to 85% during generation
+      setGenerationProgress(5);
       const progressInterval = setInterval(() => {
-        setGenerationProgress(prev => Math.min(prev + 10, 90));
-      }, 500);
+        setGenerationProgress(prev => {
+          // Increment by 2% every 800ms, cap at 85%
+          const next = prev + 2;
+          return Math.min(next, 85);
+        });
+      }, 800);
 
       const request: ProjectGenerationRequest = {
         projectName: projectName.trim(),
@@ -212,7 +218,9 @@ export function AIProjectGenerator({
       const result = await generateProjectWithAI(request);
       
       clearInterval(progressInterval);
-      setGenerationProgress(100);
+      // Smoothly animate to 100%
+      setGenerationProgress(90);
+      setTimeout(() => setGenerationProgress(100), 200);
       setGeneratedProject(result);
       setActiveTab('preview');
       

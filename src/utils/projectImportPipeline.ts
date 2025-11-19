@@ -551,6 +551,21 @@ export async function importGeneratedProject(
     // Step 8: Store project risks (if you have a risks table, otherwise store in project metadata)
     // For now, we'll store risks in a JSON field or create a risks table entry
 
+    // Step 9: Rebuild phases JSON from relational tables
+    // This ensures the projects.phases JSONB column is in sync with the relational data
+    console.log('🔄 Rebuilding phases JSON for project:', projectId);
+    const { error: rebuildError } = await supabase.rpc(
+      'rebuild_phases_json_from_project_phases',
+      { p_project_id: projectId }
+    );
+
+    if (rebuildError) {
+      result.warnings.push(`Failed to rebuild phases JSON: ${rebuildError.message}`);
+      console.error('❌ Error rebuilding phases JSON:', rebuildError);
+    } else {
+      console.log('✅ Phases JSON rebuilt successfully');
+    }
+
     result.success = true;
     result.projectId = projectId;
 
