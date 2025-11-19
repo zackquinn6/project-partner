@@ -829,9 +829,9 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">Skill Level</Label>
                       <span className="text-sm font-semibold">
-                        {answers.skillLevel === "newbie" ? "🔰 Beginner" : 
-                         answers.skillLevel === "confident" ? "🧰 Intermediate" : 
-                         answers.skillLevel === "hero" ? "🛠️ Advanced" : 
+                        {answers.skillLevel === "newbie" ? "Beginner" : 
+                         answers.skillLevel === "confident" ? "Intermediate" : 
+                         answers.skillLevel === "hero" ? "Advanced" : 
                          "Select your level"}
                       </span>
                     </div>
@@ -898,9 +898,9 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">Effort Level</Label>
                       <span className="text-sm font-semibold">
-                        {answers.physicalCapability === "light" ? "Light-duty only" : 
-                         answers.physicalCapability === "medium" ? "Medium-duty" : 
-                         answers.physicalCapability === "heavy" ? "Heavy-duty" : 
+                        {answers.physicalCapability === "light" ? "Light" : 
+                         answers.physicalCapability === "medium" ? "Medium" : 
+                         answers.physicalCapability === "heavy" ? "High" : 
                          "Select your level"}
                       </span>
                     </div>
