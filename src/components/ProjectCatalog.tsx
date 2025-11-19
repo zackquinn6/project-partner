@@ -55,25 +55,28 @@ const FILTER_DESCRIPTIONS = {
   projectType: "Primary projects can stand on their own (e.g., install tile flooring). Secondary projects usually support a main effort (e.g., demo flooring or install baseboard)."
 } as const;
 
-const FilterInfoIcon: React.FC<{ text: string; positionClass?: string }> = ({ text, positionClass = '-top-1 -right-1' }) => (
-  <TooltipProvider delayDuration={100}>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          className={`absolute ${positionClass} z-10 w-4 h-4 flex items-center justify-center text-muted-foreground hover:text-foreground bg-background/90 rounded-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1`}
-          aria-label="Filter info"
-        >
-          <Info className="w-3 h-3" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs text-xs">
-        <p>{text}</p>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
+const FilterMenuHeader: React.FC<{ label: string; description: string }> = ({ label, description }) => (
+  <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
+    <span>{label}</span>
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-full p-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            aria-label={`${label} info`}
+          >
+            <Info className="w-3 h-3" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs text-xs">
+          <p>{description}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  </div>
 );
 
 const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
@@ -841,90 +844,91 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             {/* Compact filter row */}
             <div className="flex gap-2">
               {/* Category Filter */}
-              <div className="relative flex-1">
+              <div className="flex-1">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs">
+                    <Button variant="outline" size="sm" className="w-full text-xs relative">
                       <Filter className="w-3 h-3 mr-1" />
                       Category {selectedCategories.length > 0 && `(${selectedCategories.length})`}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-48">
+                  <DropdownMenuContent className="w-52">
+                    <FilterMenuHeader label="Category" description={FILTER_DESCRIPTIONS.category} />
                     {availableCategories.map((category) => (
                       <DropdownMenuCheckboxItem
                         key={category}
                         checked={selectedCategories.includes(category)}
                         onCheckedChange={() => handleCategoryToggle(category)}
+                        onSelect={(event) => event.preventDefault()}
                       >
                         {category}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <FilterInfoIcon text={FILTER_DESCRIPTIONS.category} />
               </div>
 
               {/* Skill Level Filter */}
-              <div className="relative flex-1">
+              <div className="flex-1">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs">
+                    <Button variant="outline" size="sm" className="w-full text-xs relative">
                       <Filter className="w-3 h-3 mr-1" />
                       Skill {selectedDifficulties.length > 0 && `(${selectedDifficulties.length})`}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-48">
+                  <DropdownMenuContent className="w-52">
+                    <FilterMenuHeader label="Skill Level" description={FILTER_DESCRIPTIONS.skill} />
                     {availableDifficulties.map((difficulty) => (
                       <DropdownMenuCheckboxItem
                         key={difficulty}
                         checked={selectedDifficulties.includes(difficulty)}
                         onCheckedChange={() => handleDifficultyToggle(difficulty)}
+                        onSelect={(event) => event.preventDefault()}
                       >
                         {difficulty}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <FilterInfoIcon text={FILTER_DESCRIPTIONS.skill} />
               </div>
 
               {/* Effort Level Filter */}
-              <div className="relative flex-1">
+              <div className="flex-1">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs">
+                    <Button variant="outline" size="sm" className="w-full text-xs relative">
                       <Filter className="w-3 h-3 mr-1" />
                       Effort {selectedEffortLevels.length > 0 && `(${selectedEffortLevels.length})`}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-48">
+                  <DropdownMenuContent className="w-52">
+                    <FilterMenuHeader label="Effort Level" description={FILTER_DESCRIPTIONS.effort} />
                     {availableEffortLevels.map((effortLevel) => (
                       <DropdownMenuCheckboxItem
                         key={effortLevel}
                         checked={selectedEffortLevels.includes(effortLevel)}
                         onCheckedChange={() => handleEffortLevelToggle(effortLevel)}
+                        onSelect={(event) => event.preventDefault()}
                       >
                         {effortLevel}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <FilterInfoIcon text={FILTER_DESCRIPTIONS.effort} />
               </div>
 
               {/* Project Type Filter */}
-              <div className="relative flex-1">
+              <div className="flex-1">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs">
+                    <Button variant="outline" size="sm" className="w-full text-xs relative">
                       <Filter className="w-3 h-3 mr-1" />
                       Project Type {projectTypeLabel && `(${projectTypeLabel})`}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-48 space-y-1">
-                    <div className="px-2 py-1 text-[11px] font-medium text-muted-foreground">
-                      Project Type
-                    </div>
+                  <DropdownMenuContent className="w-52 space-y-1">
+                    <FilterMenuHeader label="Project Type" description={FILTER_DESCRIPTIONS.projectType} />
                     <DropdownMenuRadioGroup value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
                       <DropdownMenuRadioItem value="all">All project types</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="primary">Primary</DropdownMenuRadioItem>
@@ -932,7 +936,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <FilterInfoIcon text={FILTER_DESCRIPTIONS.projectType} />
               </div>
             </div>
 
@@ -962,10 +965,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
 
               {/* Category Filter */}
-              <div className="relative w-full lg:w-auto">
+              <div className="w-full lg:w-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full lg:w-auto justify-between">
+                    <Button variant="outline" className="w-full lg:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
                         Category {selectedCategories.length > 0 && `(${selectedCategories.length})`}
@@ -973,25 +976,26 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
+                    <FilterMenuHeader label="Category" description={FILTER_DESCRIPTIONS.category} />
                     {availableCategories.map((category) => (
                       <DropdownMenuCheckboxItem
                         key={category}
                         checked={selectedCategories.includes(category)}
                         onCheckedChange={() => handleCategoryToggle(category)}
+                        onSelect={(event) => event.preventDefault()}
                       >
                         {category}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <FilterInfoIcon text={FILTER_DESCRIPTIONS.category} positionClass="-top-1 -right-1" />
               </div>
 
               {/* Skill Level Filter */}
-              <div className="relative w-full lg:w-auto">
+              <div className="w-full lg:w-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full lg:w-auto justify-between">
+                    <Button variant="outline" className="w-full lg:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
                         Skill Level {selectedDifficulties.length > 0 && `(${selectedDifficulties.length})`}
@@ -999,25 +1003,26 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
+                    <FilterMenuHeader label="Skill Level" description={FILTER_DESCRIPTIONS.skill} />
                     {availableDifficulties.map((difficulty) => (
                       <DropdownMenuCheckboxItem
                         key={difficulty}
                         checked={selectedDifficulties.includes(difficulty)}
                         onCheckedChange={() => handleDifficultyToggle(difficulty)}
+                        onSelect={(event) => event.preventDefault()}
                       >
                         {difficulty}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <FilterInfoIcon text={FILTER_DESCRIPTIONS.skill} positionClass="-top-1 -right-1" />
               </div>
 
               {/* Effort Level Filter */}
-              <div className="relative w-full lg:w-auto">
+              <div className="w-full lg:w-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full lg:w-auto justify-between">
+                    <Button variant="outline" className="w-full lg:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
                         Effort Level {selectedEffortLevels.length > 0 && `(${selectedEffortLevels.length})`}
@@ -1025,25 +1030,26 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
+                    <FilterMenuHeader label="Effort Level" description={FILTER_DESCRIPTIONS.effort} />
                     {availableEffortLevels.map((effortLevel) => (
                       <DropdownMenuCheckboxItem
                         key={effortLevel}
                         checked={selectedEffortLevels.includes(effortLevel)}
                         onCheckedChange={() => handleEffortLevelToggle(effortLevel)}
+                        onSelect={(event) => event.preventDefault()}
                       >
                         {effortLevel}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <FilterInfoIcon text={FILTER_DESCRIPTIONS.effort} positionClass="-top-1 -right-1" />
               </div>
 
               {/* Project Type Filter */}
-              <div className="relative w-full lg:w-auto">
+              <div className="w-full lg:w-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full lg:w-auto justify-between">
+                    <Button variant="outline" className="w-full lg:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
                         Project Type {projectTypeLabel && `(${projectTypeLabel})`}
@@ -1051,9 +1057,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56 space-y-1">
-                    <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                      Project Type
-                    </div>
+                    <FilterMenuHeader label="Project Type" description={FILTER_DESCRIPTIONS.projectType} />
                     <DropdownMenuRadioGroup value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
                       <DropdownMenuRadioItem value="all">All project types</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="primary">Primary</DropdownMenuRadioItem>
@@ -1061,7 +1065,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <FilterInfoIcon text={FILTER_DESCRIPTIONS.projectType} positionClass="-top-1 -right-1" />
               </div>
 
               {/* Clear Filters */}
