@@ -470,6 +470,34 @@ export function UnifiedProjectManagement({
       toast.error("No project selected");
       return;
     }
+
+    // Determine the next revision number for validation
+    // Get all revisions for this project family
+    const parentId = selectedProject.parent_project_id || selectedProject.id;
+    const allRevisions = projectRevisions.length > 0 
+      ? projectRevisions 
+      : (selectedProject.revision_number !== null && selectedProject.revision_number !== undefined 
+          ? [selectedProject] 
+          : []);
+    
+    const maxRevisionNumber = allRevisions.length > 0
+      ? Math.max(...allRevisions.map(r => r.revision_number || 0))
+      : 0;
+    const nextRevisionNumber = maxRevisionNumber + 1;
+
+    // For revision 1, automatically use "Initial Release" if notes are empty
+    let notesToUse = revisionNotes.trim();
+    if (nextRevisionNumber === 1 && !notesToUse) {
+      notesToUse = 'Initial Release';
+      setRevisionNotes('Initial Release');
+    }
+
+    // For revision 2+, require notes
+    if (nextRevisionNumber > 1 && !notesToUse) {
+      toast.error("Revision notes are required for all revisions");
+      return;
+    }
+
     const loadingToast = toast.loading("Creating revision...");
     try {
       // Use revision function that properly handles project_phases architecture
@@ -478,7 +506,7 @@ export function UnifiedProjectManagement({
         error
       } = await supabase.rpc('create_project_revision_v2', {
         source_project_id: selectedProject.id,
-        revision_notes_text: revisionNotes || null
+        revision_notes_text: notesToUse || null
       });
       if (error) {
         console.error('Revision creation error:', error);
@@ -1119,13 +1147,41 @@ export function UnifiedProjectManagement({
                         <div className="flex items-center justify-between">
                           <CardTitle>Revision Control</CardTitle>
                           <div className="flex gap-2">
-                            <Button onClick={() => {
+                            <Button onClick={async () => {
                           console.log('🔵 Create Revision button clicked', {
                             hasSelectedProject: !!selectedProject,
                             projectId: selectedProject?.id,
                             projectName: selectedProject?.name
                           });
-                          setCreateRevisionDialogOpen(true);
+                          
+                          if (!selectedProject) {
+                            toast.error("No project selected");
+                            return;
+                          }
+
+                          // Determine the next revision number
+                          // Get all revisions for this project family
+                          const parentId = selectedProject.parent_project_id || selectedProject.id;
+                          const allRevisions = projectRevisions.length > 0 
+                            ? projectRevisions 
+                            : (selectedProject.revision_number !== null && selectedProject.revision_number !== undefined 
+                                ? [selectedProject] 
+                                : []);
+                          
+                          const maxRevisionNumber = allRevisions.length > 0
+                            ? Math.max(...allRevisions.map(r => r.revision_number || 0))
+                            : 0;
+                          const nextRevisionNumber = maxRevisionNumber + 1;
+
+                          // If this will be revision 1, automatically create with "Initial Release"
+                          if (nextRevisionNumber === 1) {
+                            setRevisionNotes('Initial Release');
+                            await createNewRevision();
+                          } else {
+                            // For revision 2+, show dialog and require notes
+                            setRevisionNotes('');
+                            setCreateRevisionDialogOpen(true);
+                          }
                         }} variant="outline" className="flex items-center gap-2">
                               <GitBranch className="w-4 h-4" />
                               Create Revision
@@ -1331,19 +1387,27 @@ export function UnifiedProjectManagement({
             </p>
             
             <div className="space-y-2">
-              <Label htmlFor="revision-notes">Revision Notes (Optional)</Label>
-              <Textarea id="revision-notes" placeholder="Describe the purpose of this revision..." value={revisionNotes} onChange={e => setRevisionNotes(e.target.value)} rows={3} />
+              <Label htmlFor="revision-notes">Revision Notes *</Label>
+              <Textarea id="revision-notes" placeholder="Describe the purpose of this revision..." value={revisionNotes} onChange={e => setRevisionNotes(e.target.value)} rows={3} required />
+              <p className="text-xs text-muted-foreground">Revision notes are required for all revisions.</p>
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setCreateRevisionDialogOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setCreateRevisionDialogOpen(false);
+                setRevisionNotes('');
+              }}>
                 Cancel
               </Button>
               <Button onClick={async () => {
               console.log('🟢 Create Draft Revision button (inside dialog) clicked');
+              if (!revisionNotes.trim()) {
+                toast.error("Revision notes are required");
+                return;
+              }
               await createNewRevision();
               // Dialog will be closed in createNewRevision on success
-            }}>
+            }} disabled={!revisionNotes.trim()}>
                 Create Draft Revision
               </Button>
             </div>
