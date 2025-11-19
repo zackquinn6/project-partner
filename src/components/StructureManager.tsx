@@ -180,6 +180,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // It only assigns order numbers based on position, ensuring Close Project is always "last"
   const ensureUniqueOrderNumbers = (phases: Phase[]): Phase[] => {
     const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+    const usedNumbers = new Set<string | number>();
     
     // Assign order numbers based on actual position in the array
     // This ensures Close Project (which should be last) gets "last" and stays last
@@ -190,32 +191,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Standard phases get special order numbers
         if (phase.name === 'Kickoff') {
           phase.phaseOrderNumber = 'first';
+          usedNumbers.add('first');
         } else if (phase.name === 'Close Project') {
           // Close Project should always be last - verify it's at the end
           if (index !== phases.length - 1) {
             console.warn('⚠️ Close Project phase is not at the end! Index:', index, 'Total:', phases.length);
           }
           phase.phaseOrderNumber = 'last';
+          usedNumbers.add('last');
         } else if (phase.name === 'Planning') {
           phase.phaseOrderNumber = 2;
+          usedNumbers.add(2);
         } else if (phase.name === 'Ordering') {
           phase.phaseOrderNumber = 3;
+          usedNumbers.add(3);
         }
       } else {
         // Custom and linked phases get consecutive numbers starting from 4
         // (after Kickoff=first, Planning=2, Ordering=3)
-        // But we need to account for the actual position
-        // Count how many standard phases come before this one
-        let standardPhaseCount = 0;
-        for (let i = 0; i < index; i++) {
-          const prevPhase = phases[i];
-          if (!prevPhase.isLinked && standardPhaseNames.includes(prevPhase.name)) {
-            standardPhaseCount++;
-          }
+        // Find the next available number that's not already used
+        let candidateNumber = 4;
+        while (usedNumbers.has(candidateNumber) && candidateNumber <= phases.length + 10) {
+          candidateNumber++;
         }
-        // Assign number based on position, but skip 'first', 2, 3, and 'last'
-        const baseNumber = standardPhaseCount + 1; // Start from position after standard phases
-        phase.phaseOrderNumber = baseNumber >= 4 ? baseNumber : 4;
+        phase.phaseOrderNumber = candidateNumber;
+        usedNumbers.add(candidateNumber);
       }
       
       return phase;
@@ -1164,20 +1164,35 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       if (rebuildError) throw rebuildError;
 
+      // Merge with any incorporated phases from current project (they're not in project_phases table)
+      const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+      const currentPhases = currentProject.phases || [];
+      const incorporatedPhases = currentPhases.filter(p => p.isLinked);
+      const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
+      const rawPhases = deduplicatePhases(allPhases);
+      // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST to ensure Close Project is last
+      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      // THEN assign order numbers based on the correct order
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+
       // Update project with rebuilt phases
       const { error: updateError } = await supabase
         .from('projects')
-        .update({ phases: rebuiltPhases as any })
+        .update({ phases: phasesWithUniqueOrder as any })
         .eq('id', currentProject.id);
         
       if (updateError) throw updateError;
 
-      // Update local context
-      updateProject({
+      // Update local context immediately
+      const updatedProject = {
         ...currentProject,
-        phases: rebuiltPhases as any,
+        phases: phasesWithUniqueOrder,
         updatedAt: new Date()
-      });
+      };
+      updateProject(updatedProject);
+
+      // Update display state immediately
+      setDisplayPhases(phasesWithUniqueOrder);
       
       // Ensure minimum display time for loading state
       const elapsedTime = Date.now() - startTime;
