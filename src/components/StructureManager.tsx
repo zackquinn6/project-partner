@@ -1604,17 +1604,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Update project
         await supabase
           .from('projects')
-          .update({ phases: orderedPhases as any })
+          .update({ phases: phasesWithUniqueOrder as any })
           .eq('id', currentProject.id);
 
-        // Update local context
-        updateProject({
+        // Update local context immediately
+        const updatedProject = {
           ...currentProject,
-          phases: orderedPhases,
+          phases: phasesWithUniqueOrder,
           updatedAt: new Date()
-        });
+        };
+        updateProject(updatedProject);
 
-        // Refresh display
+        // Update display state immediately
+        setDisplayPhases(phasesWithUniqueOrder);
+
+        // Also refresh from database to ensure consistency
         await loadFreshPhases();
       }
 
