@@ -1280,7 +1280,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     {/* Cover Image or Gradient Header - Takes ~60% of card height */}
                     <div className="flex-[0_0_60%] relative overflow-hidden bg-muted">
                       {/* Gradient background - always present, shows when no image */}
-                      <div className={`absolute inset-0 bg-gradient-to-br from-primary to-orange-500 ${((project as any).cover_image || project.image || (project as any).images?.[0]) ? 'opacity-0' : 'opacity-100'}`}>
+                      <div className={`gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500 ${((project as any).cover_image || project.image || (project as any).images?.[0]) ? 'opacity-0' : 'opacity-100'}`}>
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <IconComponent className="w-8 h-8 text-white/80" />
