@@ -704,36 +704,49 @@ export function UnifiedProjectManagement({
   const resetRevisions = async () => {
     if (!selectedProject) {
       toast.error("No project selected");
+      setResetRevisionsDialogOpen(false);
       return;
     }
 
     const loadingToast = toast.loading("Resetting revisions...");
     try {
+      console.log('🔄 Starting reset revisions for project:', selectedProject.id, selectedProject.name);
+      
       // Get all revisions for this project family
       const parentId = selectedProject.parent_project_id || selectedProject.id;
-      const {
-        data: allRevisions,
-        error: fetchError
-      } = await supabase.from('projects').select('*').or(`parent_project_id.eq.${parentId},id.eq.${parentId}`).order('revision_number', {
-        ascending: false
-      });
+      console.log('🔍 Looking for revisions with parent_id:', parentId);
+      
+      // Query all revisions that match parent or are the parent itself
+      const { data: allRevisions, error: fetchError } = await supabase
+        .from('projects')
+        .select('*')
+        .or(`parent_project_id.eq.${parentId},id.eq.${parentId}`)
+        .order('revision_number', { ascending: false });
 
       if (fetchError) {
-        console.error('Error fetching revisions:', fetchError);
+        console.error('❌ Error fetching revisions:', fetchError);
         throw fetchError;
       }
 
+      console.log('📋 Found revisions:', allRevisions?.length || 0, allRevisions);
+
       if (!allRevisions || allRevisions.length === 0) {
-        toast.error("No revisions found");
+        toast.dismiss(loadingToast);
+        toast.error("No revisions found for this project");
+        setResetRevisionsDialogOpen(false);
         return;
       }
 
       // Find the latest revision (current version or highest revision number)
       const latestRevision = allRevisions.find(r => r.is_current_version) || allRevisions[0];
       if (!latestRevision) {
+        toast.dismiss(loadingToast);
         toast.error("Could not find latest revision");
+        setResetRevisionsDialogOpen(false);
         return;
       }
+
+      console.log('✅ Latest revision found:', latestRevision.id, 'Rev', latestRevision.revision_number);
 
       // Get all other revision IDs to delete
       const otherRevisionIds = allRevisions.filter(r => r.id !== latestRevision.id).map(r => r.id);
@@ -769,26 +782,29 @@ export function UnifiedProjectManagement({
       }
 
       // Update the latest revision to be revision 1, draft, with no parent
-      const {
-        error: updateError
-      } = await supabase.from('projects').update({
-        revision_number: 1,
-        parent_project_id: null,
-        publish_status: 'draft',
-        is_current_version: true,
-        revision_notes: null,
-        release_notes: null,
-        published_at: null,
-        beta_released_at: null,
-        archived_at: null,
-        created_from_revision: null
-      }).eq('id', latestRevision.id);
+      console.log('🔄 Updating latest revision to revision 1:', latestRevision.id);
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({
+          revision_number: 1,
+          parent_project_id: null,
+          publish_status: 'draft',
+          is_current_version: true,
+          revision_notes: null,
+          release_notes: null,
+          published_at: null,
+          beta_released_at: null,
+          archived_at: null,
+          created_from_revision: null
+        })
+        .eq('id', latestRevision.id);
 
       if (updateError) {
-        console.error('Error updating revision:', updateError);
+        console.error('❌ Error updating revision:', updateError);
         throw updateError;
       }
 
+      console.log('✅ Revision reset complete');
       toast.dismiss(loadingToast);
       toast.success("Revisions reset successfully. Latest revision is now revision 1 (draft).");
       setResetRevisionsDialogOpen(false);
