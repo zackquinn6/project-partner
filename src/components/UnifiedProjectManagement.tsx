@@ -23,7 +23,6 @@ import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = ['Appliances', 'Bathroom', 'Ceilings', 'Decks & Patios', 'Doors & Windows', 'Electrical', 'Exterior Carpentry', 'Flooring', 'General Repairs & Maintenance', 'HVAC & Ventilation', 'Insulation & Weatherproofing', 'Interior Carpentry', 'Kitchen', 'Landscaping & Outdoor Projects', 'Lighting & Electrical', 'Masonry & Concrete', 'Painting & Finishing', 'Plumbing', 'Roofing', 'Safety & Security', 'Smart Home & Technology', 'Storage & Organization', 'Tile', 'Walls & Drywall'];
@@ -902,29 +901,27 @@ export function UnifiedProjectManagement({
                                   </Button>
                                 </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 bg-background" align="start">
-                                <ScrollArea className="h-[300px]">
-                                  <div className="p-4 space-y-2">
-                                    {PROJECT_CATEGORIES.map(cat => (
-                                      <div key={cat} className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`edit-cat-${cat}`}
-                                          checked={editedProject.category?.includes(cat) || false}
-                                          onCheckedChange={checked => {
-                                            const currentCategories = editedProject.category || [];
-                                            const newCategories = checked ? [...currentCategories, cat] : currentCategories.filter(c => c !== cat);
-                                            setEditedProject(prev => ({
-                                              ...prev,
-                                              category: newCategories
-                                            }));
-                                          }}
-                                        />
-                                        <label htmlFor={`edit-cat-${cat}`} className="text-sm cursor-pointer">
-                                          {cat}
-                                        </label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </ScrollArea>
+                                <div className="max-h-[300px] overflow-y-auto p-4 space-y-2 pr-2">
+                                  {PROJECT_CATEGORIES.map(cat => (
+                                    <div key={cat} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`edit-cat-${cat}`}
+                                        checked={editedProject.category?.includes(cat) || false}
+                                        onCheckedChange={checked => {
+                                          const currentCategories = editedProject.category || [];
+                                          const newCategories = checked ? [...currentCategories, cat] : currentCategories.filter(c => c !== cat);
+                                          setEditedProject(prev => ({
+                                            ...prev,
+                                            category: newCategories
+                                          }));
+                                        }}
+                                      />
+                                      <label htmlFor={`edit-cat-${cat}`} className="text-sm cursor-pointer">
+                                        {cat}
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
                               </PopoverContent>
                               </Popover> : <div className="p-2 bg-muted rounded text-sm">
                                 {selectedProject.category && selectedProject.category.length > 0 ? selectedProject.category.join(', ') : 'Not specified'}
@@ -1360,28 +1357,26 @@ export function UnifiedProjectManagement({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[400px] p-0 bg-background" align="start">
-                    <ScrollArea className="h-[300px]">
-                      <div className="p-4 space-y-2">
-                        {PROJECT_CATEGORIES.map(cat => (
-                          <div key={cat} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`new-cat-${cat}`}
-                              checked={newProject.categories.includes(cat)}
-                              onCheckedChange={checked => {
-                                const newCategories = checked ? [...newProject.categories, cat] : newProject.categories.filter(c => c !== cat);
-                                setNewProject(prev => ({
-                                  ...prev,
-                                  categories: newCategories
-                                }));
-                              }}
-                            />
-                            <label htmlFor={`new-cat-${cat}`} className="text-sm cursor-pointer">
-                              {cat}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
+                    <div className="max-h-[300px] overflow-y-auto p-4 space-y-2 pr-2">
+                      {PROJECT_CATEGORIES.map(cat => (
+                        <div key={cat} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`new-cat-${cat}`}
+                            checked={newProject.categories.includes(cat)}
+                            onCheckedChange={checked => {
+                              const newCategories = checked ? [...newProject.categories, cat] : newProject.categories.filter(c => c !== cat);
+                              setNewProject(prev => ({
+                                ...prev,
+                                categories: newCategories
+                              }));
+                            }}
+                          />
+                          <label htmlFor={`new-cat-${cat}`} className="text-sm cursor-pointer">
+                            {cat}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </PopoverContent>
                 </Popover>
               </div>
