@@ -119,7 +119,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             skill_level: projectData.skillLevel || null,
             scaling_unit: projectData.scalingUnit || null,
             project_challenges: projectData.projectChallenges || null,
-            estimated_time_per_unit: projectData.estimatedTimePerUnit || null
+            estimated_time_per_unit: projectData.estimatedTimePerUnit || null,
+            project_type: projectData.projectType?.toLowerCase() === 'secondary' ? 'secondary' : 'primary'
           })
           .eq('id', projectId);
 

@@ -208,6 +208,7 @@ export interface Project {
   effortLevel?: 'Low' | 'Medium' | 'High';
   skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
   estimatedTime?: string;
+  projectType?: 'Primary' | 'Secondary';
   estimatedTimePerUnit?: number;
   scalingUnit?: 'per square foot' | 'per 10x10 room' | 'per linear foot' | 'per cubic yard' | 'per item';
   phases: Phase[];

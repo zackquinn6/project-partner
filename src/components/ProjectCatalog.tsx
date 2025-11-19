@@ -22,13 +22,14 @@ import {
   DropdownMenuCheckboxItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle, Plus } from 'lucide-react';
+import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle, Plus, Info } from 'lucide-react';
 import { MemoizedProjectCard } from '@/components/OptimizedComponents/MemoizedProjectCard';
 import { supabase } from '@/integrations/supabase/client';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import ProfileManager from '@/components/ProfileManager';
 import { HomeManager } from '@/components/HomeManager';
 import { BetaProjectWarning } from '@/components/BetaProjectWarning';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 interface ProjectTemplate {
   id: string;
   name: string;
@@ -85,6 +86,29 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [selectedEffortLevels, setSelectedEffortLevels] = useState<string[]>([]);
+  const [projectTypeFilter, setProjectTypeFilter] = useState<'all' | 'primary' | 'secondary'>('all');
+
+  const ProjectTypeTooltip = () => (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span tabIndex={0} className="inline-flex items-center justify-center rounded-full p-1 cursor-help text-muted-foreground hover:text-foreground">
+            <Info className="w-4 h-4" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs text-xs">
+          <p className="font-semibold mb-1">Primary vs Secondary</p>
+          <p>Primary projects can stand alone, like building a deck, painting a room, or installing tile floors.</p>
+          <p className="mt-2">Secondary projects typically support a primary project, like demoing floors, installing baseboard, or applying self-leveling concrete.</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
+  const getProjectTypeValue = useCallback((project: any) => {
+    const rawType = (project.projectType || project.project_type || '').toString().toLowerCase();
+    return rawType === 'secondary' ? 'secondary' : 'primary';
+  }, []);
 
   // Check for search parameter from URL
   useEffect(() => {
@@ -256,9 +280,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       const matchesEffortLevel = selectedEffortLevels.length === 0 || 
         (project.effortLevel && selectedEffortLevels.includes(project.effortLevel));
 
-      return matchesSearch && matchesCategory && matchesDifficulty && matchesEffortLevel;
+      // Project type filter
+      const projectTypeValue = getProjectTypeValue(project);
+      const matchesProjectType = projectTypeFilter === 'all' || projectTypeValue === projectTypeFilter;
+
+      return matchesSearch && matchesCategory && matchesDifficulty && matchesEffortLevel && matchesProjectType;
     });
-  }, [publishedProjects, searchTerm, selectedCategories, selectedDifficulties, selectedEffortLevels]);
+  }, [publishedProjects, searchTerm, selectedCategories, selectedDifficulties, selectedEffortLevels, projectTypeFilter, getProjectTypeValue]);
 
   // Filter handlers
   const handleCategoryToggle = (category: string) => {
@@ -290,6 +318,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     setSelectedCategories([]);
     setSelectedDifficulties([]);
     setSelectedEffortLevels([]);
+    setProjectTypeFilter('all');
   };
   const getDifficultyColor = useCallback((difficulty: string) => {
     switch (difficulty) {
@@ -844,8 +873,26 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </DropdownMenu>
             </div>
 
+            {/* Project Type Filter */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs font-medium">
+                <span>Project Type</span>
+                <ProjectTypeTooltip />
+              </div>
+              <Select value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
+                <SelectTrigger className="text-xs">
+                  <SelectValue placeholder="All types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All project types</SelectItem>
+                  <SelectItem value="primary">Primary</SelectItem>
+                  <SelectItem value="secondary">Secondary</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Clear Filters */}
-            {(searchTerm || selectedCategories.length > 0 || selectedDifficulties.length > 0 || selectedEffortLevels.length > 0) && (
+            {(searchTerm || selectedCategories.length > 0 || selectedDifficulties.length > 0 || selectedEffortLevels.length > 0 || projectTypeFilter !== 'all') && (
               <Button variant="ghost" onClick={clearAllFilters} className="text-muted-foreground text-xs" size="sm">
                 Clear All
               </Button>
@@ -935,8 +982,24 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Project Type Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium whitespace-nowrap">Project Type</span>
+                <Select value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    <SelectItem value="primary">Primary</SelectItem>
+                    <SelectItem value="secondary">Secondary</SelectItem>
+                  </SelectContent>
+                </Select>
+                <ProjectTypeTooltip />
+              </div>
+
               {/* Clear Filters */}
-              {(searchTerm || selectedCategories.length > 0 || selectedDifficulties.length > 0 || selectedEffortLevels.length > 0) && (
+              {(searchTerm || selectedCategories.length > 0 || selectedDifficulties.length > 0 || selectedEffortLevels.length > 0 || projectTypeFilter !== 'all') && (
                 <Button variant="ghost" onClick={clearAllFilters} className="text-muted-foreground">
                   Clear All
                 </Button>
@@ -945,7 +1008,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           </div>
 
           {/* Active filters display */}
-          {(selectedCategories.length > 0 || selectedDifficulties.length > 0 || selectedEffortLevels.length > 0) && (
+          {(selectedCategories.length > 0 || selectedDifficulties.length > 0 || selectedEffortLevels.length > 0 || projectTypeFilter !== 'all') && (
             <div className="flex flex-wrap gap-2">
               {selectedCategories.map((category) => (
                 <Badge key={category} variant="secondary" className="flex items-center gap-1">
@@ -980,6 +1043,17 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                   </button>
                 </Badge>
               ))}
+              {projectTypeFilter !== 'all' && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  {projectTypeFilter === 'primary' ? 'Primary project' : 'Secondary project'}
+                  <button
+                    onClick={() => setProjectTypeFilter('all')}
+                    className="ml-1 text-xs hover:text-destructive"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
             </div>
           )}
         </div>

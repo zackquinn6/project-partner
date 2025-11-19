@@ -70,6 +70,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           name: project.name,
           description: project.description || '',
           projectChallenges: project.project_challenges,
+          projectType: project.project_type?.toLowerCase() === 'secondary' ? 'Secondary' : 'Primary',
           image: project.image,
           images: project.images,
           cover_image: project.cover_image,

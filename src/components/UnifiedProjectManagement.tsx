@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield } from 'lucide-react';
+import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
@@ -22,6 +22,7 @@ import { ProjectImageManager } from '@/components/ProjectImageManager';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = ['Appliances', 'Bathroom', 'Ceilings', 'Decks & Patios', 'Doors & Windows', 'Electrical', 'Exterior Carpentry', 'Flooring', 'General Repairs & Maintenance', 'HVAC & Ventilation', 'Insulation & Weatherproofing', 'Interior Carpentry', 'Kitchen', 'Landscaping & Outdoor Projects', 'Lighting & Electrical', 'Masonry & Concrete', 'Painting & Finishing', 'Plumbing', 'Roofing', 'Safety & Security', 'Smart Home & Technology', 'Storage & Organization', 'Tile', 'Walls & Drywall'];
@@ -46,6 +47,7 @@ interface Project {
   estimated_time: string | null;
   scaling_unit: string | null;
   project_challenges: string | null;
+  project_type?: 'primary' | 'secondary';
   created_by: string;
   owner_id: string | null;
   phases?: any; // JSON field for phases
@@ -90,6 +92,7 @@ export function UnifiedProjectManagement({
     skill_level: string;
     estimated_time: string;
     scaling_unit: string;
+    project_type: 'primary' | 'secondary';
   }>({
     name: '',
     description: '',
@@ -97,13 +100,31 @@ export function UnifiedProjectManagement({
     effort_level: 'Medium',
     skill_level: 'Intermediate',
     estimated_time: '',
-    scaling_unit: ''
+    scaling_unit: '',
+    project_type: 'primary'
   });
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [pfmeaOpen, setPfmeaOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const ProjectTypeTooltip = () => (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span tabIndex={0} className="inline-flex items-center justify-center rounded-full p-1 cursor-help text-muted-foreground hover:text-foreground">
+            <Info className="w-4 h-4" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs text-xs">
+          <p className="font-semibold mb-1">Primary vs Secondary Projects</p>
+          <p>Primary projects can stand on their own (e.g., build a deck, paint a room, install tile flooring).</p>
+          <p className="mt-2">Secondary projects typically support other work (e.g., demo tile floors, install baseboard, apply self-leveling concrete).</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -127,7 +148,8 @@ export function UnifiedProjectManagement({
       // This handles the case where the migration hasn't been applied yet
       const mappedData = (data || []).map((project: any) => ({
         ...project,
-        project_challenges: project.project_challenges ?? project.diy_length_challenges ?? null
+        project_challenges: project.project_challenges ?? project.diy_length_challenges ?? null,
+        project_type: project.project_type || 'primary'
       }));
       
       setProjects(mappedData as Project[]);
@@ -166,7 +188,8 @@ export function UnifiedProjectManagement({
       // Ensure category is an array when starting edit
       setEditedProject({
         ...selectedProject,
-        category: selectedProject.category || []
+        category: selectedProject.category || [],
+        project_type: selectedProject.project_type || 'primary'
       });
       setEditingProject(true);
     }
@@ -183,6 +206,7 @@ export function UnifiedProjectManagement({
         skill_level: editedProject.skill_level !== undefined ? editedProject.skill_level : selectedProject.skill_level,
         estimated_time: editedProject.estimated_time !== undefined ? editedProject.estimated_time : selectedProject.estimated_time,
         scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
+        project_type: editedProject.project_type || selectedProject.project_type || 'primary',
         updated_at: new Date().toISOString(),
         // Always include project_challenges - determine value below
         project_challenges: null
@@ -687,6 +711,7 @@ export function UnifiedProjectManagement({
             skill_level: newProject.skill_level,
             estimated_time: newProject.estimated_time || null,
             scaling_unit: newProject.scaling_unit || null,
+            project_type: newProject.project_type || 'primary'
           })
           .eq('id', data);
       }
@@ -701,7 +726,8 @@ export function UnifiedProjectManagement({
         effort_level: 'Medium',
         skill_level: 'Intermediate',
         estimated_time: '',
-        scaling_unit: ''
+        scaling_unit: '',
+        project_type: 'primary'
       });
       fetchProjects();
     } catch (error) {
@@ -894,6 +920,31 @@ export function UnifiedProjectManagement({
                               </Popover> : <div className="p-2 bg-muted rounded text-sm">
                                 {selectedProject.category && selectedProject.category.length > 0 ? selectedProject.category.join(', ') : 'Not specified'}
                               </div>}
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-sm">Project Type</Label>
+                              <ProjectTypeTooltip />
+                            </div>
+                            {editingProject ? (
+                              <Select value={editedProject.project_type || 'primary'} onValueChange={value => setEditedProject(prev => ({
+                                ...prev,
+                                project_type: value as 'primary' | 'secondary'
+                              }))}>
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue placeholder="Select project type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="primary">Primary</SelectItem>
+                                  <SelectItem value="secondary">Secondary</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="p-2 bg-muted rounded text-sm">
+                                {selectedProject.project_type === 'secondary' ? 'Secondary' : 'Primary'}
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-1">
@@ -1316,6 +1367,24 @@ export function UnifiedProjectManagement({
                     </div>
                   </PopoverContent>
                 </Popover>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label>Project Type</Label>
+                  <ProjectTypeTooltip />
+                </div>
+                <Select value={newProject.project_type} onValueChange={value => setNewProject(prev => ({
+                  ...prev,
+                  project_type: value as 'primary' | 'secondary'
+                }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="primary">Primary</SelectItem>
+                    <SelectItem value="secondary">Secondary</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
             <div className="grid grid-cols-2 gap-4">
