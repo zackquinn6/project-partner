@@ -284,7 +284,8 @@ export function AIProjectGenerator({
           skillLevel: undefined,
           projectChallenges: undefined,
         },
-        selectedExistingProject || undefined
+        selectedExistingProject || undefined,
+        contentSelection // Pass content selection to control what gets imported
       );
 
       setImportResult(result);

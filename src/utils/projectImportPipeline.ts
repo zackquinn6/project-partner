@@ -24,6 +24,294 @@ export interface ImportResult {
 }
 
 /**
+ * Update step content without modifying structure
+ */
+async function updateStepContent(
+  stepId: string,
+  generatedStep: any,
+  contentSelection: any,
+  result: ImportResult
+): Promise<void> {
+  // Update instructions if selected
+  if (contentSelection?.instructions3Level !== false) {
+    for (const level of ['quick', 'detailed', 'contractor'] as const) {
+      const instructionContent = generatedStep.instructions[level];
+      
+      // Check if instruction already exists
+      const { data: existingInstruction } = await supabase
+        .from('step_instructions')
+        .select('id')
+        .eq('template_step_id', stepId)
+        .eq('instruction_level', level)
+        .maybeSingle();
+
+      if (existingInstruction) {
+        // Update existing instruction
+        const { error: updateError } = await supabase
+          .from('step_instructions')
+          .update({
+            content: {
+              text: instructionContent,
+              sections: [],
+              photos: [],
+              videos: [],
+              links: [],
+            },
+          })
+          .eq('id', existingInstruction.id);
+
+        if (updateError) {
+          result.warnings.push(`Failed to update ${level} instruction: ${updateError.message}`);
+        } else {
+          result.stats.instructionsCreated++;
+        }
+      } else {
+        // Create new instruction
+        const { error: insertError } = await supabase
+          .from('step_instructions')
+          .insert({
+            template_step_id: stepId,
+            instruction_level: level,
+            content: {
+              text: instructionContent,
+              sections: [],
+              photos: [],
+              videos: [],
+              links: [],
+            },
+          });
+
+        if (insertError) {
+          result.warnings.push(`Failed to create ${level} instruction: ${insertError.message}`);
+        } else {
+          result.stats.instructionsCreated++;
+        }
+      }
+    }
+  }
+
+  // Update tools if selected
+  if (contentSelection?.tools !== false) {
+    // Handle tools - support both string array and object array with alternates
+    let toolNames: string[] = [];
+    const toolAlternatesMap = new Map<string, string[]>();
+    
+    if (Array.isArray(generatedStep.tools)) {
+      generatedStep.tools.forEach((tool: any) => {
+        if (typeof tool === 'string') {
+          toolNames.push(tool);
+        } else if (tool && typeof tool === 'object' && 'name' in tool) {
+          toolNames.push(tool.name);
+          if (tool.alternates && Array.isArray(tool.alternates)) {
+            toolAlternatesMap.set(tool.name, tool.alternates);
+          }
+        }
+      });
+    }
+
+    // Match tools to library
+    const toolsWithAlternates: any[] = [];
+    for (const toolName of toolNames) {
+      const { data: matchedTool } = await supabase
+        .from('tools')
+        .select('id, item')
+        .ilike('item', toolName)
+        .limit(1)
+        .maybeSingle();
+
+      toolsWithAlternates.push({
+        name: toolName,
+        matched: !!matchedTool,
+        matchedName: matchedTool?.item || toolName,
+        alternates: toolAlternatesMap.get(toolName) || [],
+      });
+
+      if (matchedTool) {
+        result.stats.toolsMatched++;
+      }
+    }
+
+    // Update step with new tools
+    const { error: updateError } = await supabase
+      .from('template_steps')
+      .update({
+        tools: JSON.stringify(toolsWithAlternates.map(t => ({
+          name: t.matched ? t.matchedName : t.name,
+          description: '',
+          category: '',
+          alternates: t.alternates,
+        }))),
+      })
+      .eq('id', stepId);
+
+    if (updateError) {
+      result.warnings.push(`Failed to update tools for step: ${updateError.message}`);
+    }
+  }
+
+  // Update materials if selected
+  if (contentSelection?.materials !== false) {
+    const materialNames = Array.isArray(generatedStep.materials) 
+      ? generatedStep.materials.map((m: any) => typeof m === 'string' ? m : m.name)
+      : [];
+
+    // Match materials to library
+    const matchedMaterials: any[] = [];
+    for (const materialName of materialNames) {
+      const { data: matchedMaterial } = await supabase
+        .from('materials')
+        .select('id, item')
+        .ilike('item', materialName)
+        .limit(1)
+        .maybeSingle();
+
+      matchedMaterials.push({
+        name: materialName,
+        matched: !!matchedMaterial,
+        matchedName: matchedMaterial?.item || materialName,
+      });
+
+      if (matchedMaterial) {
+        result.stats.materialsMatched++;
+      }
+    }
+
+    // Update step with new materials
+    const { error: updateError } = await supabase
+      .from('template_steps')
+      .update({
+        materials: JSON.stringify(matchedMaterials.map(m => ({
+          name: m.matched ? m.matchedName : m.name,
+          description: '',
+          category: '',
+        }))),
+      })
+      .eq('id', stepId);
+
+    if (updateError) {
+      result.warnings.push(`Failed to update materials for step: ${updateError.message}`);
+    }
+  }
+
+  // Update outputs if selected
+  if (contentSelection?.outputs !== false) {
+    // Delete existing outputs for this step
+    await supabase
+      .from('workflow_step_outputs')
+      .delete()
+      .eq('step_id', stepId);
+
+    // Create new outputs
+    for (const output of generatedStep.outputs) {
+      const { data: existingOutput } = await supabase
+        .from('outputs')
+        .select('id')
+        .eq('name', output.name)
+        .maybeSingle();
+
+      let outputId: string;
+      if (existingOutput) {
+        outputId = existingOutput.id;
+      } else {
+        const { data: newOutput, error: outputError } = await supabase
+          .from('outputs')
+          .insert({
+            name: output.name,
+            description: output.description,
+            type: output.type as any,
+            is_required: true,
+          })
+          .select('id')
+          .single();
+
+        if (outputError || !newOutput) {
+          result.warnings.push(`Failed to create output "${output.name}": ${outputError?.message}`);
+          continue;
+        }
+
+        outputId = newOutput.id;
+        result.stats.outputsCreated++;
+      }
+
+      // Link output to step
+      const { error: linkError } = await supabase
+        .from('workflow_step_outputs')
+        .insert({
+          step_id: stepId,
+          name: output.name,
+          description: output.description,
+          output_type: output.type,
+          requirement: output.requirement,
+        });
+
+      if (linkError) {
+        result.warnings.push(`Failed to link output "${output.name}" to step: ${linkError.message}`);
+      }
+    }
+  }
+
+  // Update process variables if selected
+  if (contentSelection?.processVariables !== false) {
+    // Delete existing process variables for this step
+    await supabase
+      .from('workflow_step_process_variables')
+      .delete()
+      .eq('step_id', stepId);
+
+    // Create new process variables
+    for (const pv of generatedStep.processVariables) {
+      const { data: existingVar } = await supabase
+        .from('process_variables')
+        .select('id')
+        .eq('name', pv.name)
+        .maybeSingle();
+
+      let variableId: string;
+      if (existingVar) {
+        variableId = existingVar.id;
+      } else {
+        const { data: newVar, error: varError } = await supabase
+          .from('process_variables')
+          .insert({
+            name: pv.name,
+            display_name: pv.displayName,
+            description: pv.description,
+            variable_type: pv.variableType,
+            unit: pv.unit || null,
+          })
+          .select('id')
+          .single();
+
+        if (varError || !newVar) {
+          result.warnings.push(`Failed to create process variable "${pv.name}": ${varError?.message}`);
+          continue;
+        }
+
+        variableId = newVar.id;
+        result.stats.processVariablesCreated++;
+      }
+
+      // Link variable to step
+      const { error: linkError } = await supabase
+        .from('workflow_step_process_variables')
+        .insert({
+          step_id: stepId,
+          variable_key: pv.name,
+          label: pv.displayName,
+          description: pv.description,
+          variable_type: pv.variableType,
+          required: true,
+          unit: pv.unit || null,
+        });
+
+      if (linkError) {
+        result.warnings.push(`Failed to link process variable "${pv.name}" to step: ${linkError.message}`);
+      }
+    }
+  }
+}
+
+/**
  * Import generated project structure into database
  */
 export async function importGeneratedProject(
@@ -37,7 +325,19 @@ export async function importGeneratedProject(
     skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
     projectChallenges?: string;
   },
-  existingProjectId?: string
+  existingProjectId?: string,
+  contentSelection?: {
+    structure?: boolean;
+    tools?: boolean;
+    materials?: boolean;
+    instructions3Level?: boolean;
+    instructions1Level?: boolean;
+    outputs?: boolean;
+    processVariables?: boolean;
+    timeEstimation?: boolean;
+    decisionTrees?: boolean;
+    alternateTools?: boolean;
+  }
 ): Promise<ImportResult> {
   const result: ImportResult = {
     success: false,
@@ -79,67 +379,74 @@ export async function importGeneratedProject(
 
       projectId = existingProjectId;
 
-      // IMPORTANT: Only delete NON-STANDARD phases, operations, and steps
-      // Standard phases (Kickoff, Planning, Ordering, Close Project) must be preserved
-      console.log('🔄 Importing to existing project - preserving standard phases');
-      const { data: existingPhases } = await supabase
-        .from('project_phases')
-        .select('id, is_standard')
-        .eq('project_id', projectId);
+      // If structure is not selected, skip all phase/operation/step deletion
+      // Only update content within existing steps
+      if (contentSelection?.structure === false) {
+        console.log('📝 Content-only update mode: Skipping structure changes, only updating step content');
+        // Skip to content update section - don't delete anything
+      } else {
+        // IMPORTANT: Only delete NON-STANDARD phases, operations, and steps
+        // Standard phases (Kickoff, Planning, Ordering, Close Project) must be preserved
+        console.log('🔄 Importing to existing project - preserving standard phases');
+        const { data: existingPhases } = await supabase
+          .from('project_phases')
+          .select('id, is_standard')
+          .eq('project_id', projectId);
 
-      if (existingPhases && existingPhases.length > 0) {
-        // Separate standard and custom phases
-        const standardPhaseIds = existingPhases.filter(p => p.is_standard).map(p => p.id);
-        const customPhaseIds = existingPhases.filter(p => !p.is_standard).map(p => p.id);
-        
-        console.log(`📋 Found ${standardPhaseIds.length} standard phases and ${customPhaseIds.length} custom phases`);
-        
-        // Only delete custom (non-standard) phases
-        if (customPhaseIds.length > 0) {
-          // Get operations for custom phases only
-          const { data: existingOperations } = await supabase
-            .from('template_operations')
-            .select('id')
-            .in('phase_id', customPhaseIds);
-
-          if (existingOperations && existingOperations.length > 0) {
-            const operationIds = existingOperations.map(op => op.id);
-            
-            // Delete steps for custom operations
-            await supabase
-              .from('template_steps')
-              .delete()
-              .in('operation_id', operationIds);
-
-            // Delete step instructions for custom steps
-            const { data: stepIds } = await supabase
-              .from('template_steps')
-              .select('id')
-              .in('operation_id', operationIds);
-            
-            if (stepIds && stepIds.length > 0) {
-              await supabase
-                .from('step_instructions')
-                .delete()
-                .in('template_step_id', stepIds.map(s => s.id));
-            }
-          }
-
-          // Delete operations for custom phases
-          await supabase
-            .from('template_operations')
-            .delete()
-            .in('phase_id', customPhaseIds);
-
-          // Delete custom phases only
-          await supabase
-            .from('project_phases')
-            .delete()
-            .in('id', customPhaseIds);
+        if (existingPhases && existingPhases.length > 0) {
+          // Separate standard and custom phases
+          const standardPhaseIds = existingPhases.filter(p => p.is_standard).map(p => p.id);
+          const customPhaseIds = existingPhases.filter(p => !p.is_standard).map(p => p.id);
           
-          console.log(`✅ Deleted ${customPhaseIds.length} custom phases (preserved ${standardPhaseIds.length} standard phases)`);
-        } else {
-          console.log('ℹ️ No custom phases to delete - only standard phases exist');
+          console.log(`📋 Found ${standardPhaseIds.length} standard phases and ${customPhaseIds.length} custom phases`);
+          
+          // Only delete custom (non-standard) phases
+          if (customPhaseIds.length > 0) {
+            // Get operations for custom phases only
+            const { data: existingOperations } = await supabase
+              .from('template_operations')
+              .select('id')
+              .in('phase_id', customPhaseIds);
+
+            if (existingOperations && existingOperations.length > 0) {
+              const operationIds = existingOperations.map(op => op.id);
+              
+              // Delete steps for custom operations
+              await supabase
+                .from('template_steps')
+                .delete()
+                .in('operation_id', operationIds);
+
+              // Delete step instructions for custom steps
+              const { data: stepIds } = await supabase
+                .from('template_steps')
+                .select('id')
+                .in('operation_id', operationIds);
+              
+              if (stepIds && stepIds.length > 0) {
+                await supabase
+                  .from('step_instructions')
+                  .delete()
+                  .in('template_step_id', stepIds.map(s => s.id));
+              }
+            }
+
+            // Delete operations for custom phases
+            await supabase
+              .from('template_operations')
+              .delete()
+              .in('phase_id', customPhaseIds);
+
+            // Delete custom phases only
+            await supabase
+              .from('project_phases')
+              .delete()
+              .in('id', customPhaseIds);
+            
+            console.log(`✅ Deleted ${customPhaseIds.length} custom phases (preserved ${standardPhaseIds.length} standard phases)`);
+          } else {
+            console.log('ℹ️ No custom phases to delete - only standard phases exist');
+          }
         }
       }
     } else {
@@ -199,6 +506,91 @@ export async function importGeneratedProject(
     }
 
     // Step 2: Process each phase
+    // If structure is not selected, skip phase/operation/step creation and only update content
+    if (contentSelection?.structure === false) {
+      console.log('📝 Content-only mode: Updating existing step content without modifying structure');
+      
+      // Fetch all existing steps for this project
+      const { data: allPhases } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          name,
+          template_operations (
+            id,
+            name,
+            template_steps (
+              id,
+              step_title,
+              description
+            )
+          )
+        `)
+        .eq('project_id', projectId);
+
+      if (!allPhases) {
+        result.errors.push('Failed to fetch existing project structure for content update');
+        return result;
+      }
+
+      // Match generated structure to existing structure and update content
+      for (const generatedPhase of generatedStructure.phases) {
+        const existingPhase = allPhases.find(p => 
+          p.name.toLowerCase().trim() === generatedPhase.name.toLowerCase().trim()
+        );
+
+        if (!existingPhase) {
+          result.warnings.push(`Phase "${generatedPhase.name}" not found in existing project - skipping`);
+          continue;
+        }
+
+        for (const generatedOp of generatedPhase.operations) {
+          const existingOp = existingPhase.template_operations?.find((op: any) =>
+            op.name.toLowerCase().trim() === generatedOp.name.toLowerCase().trim()
+          );
+
+          if (!existingOp) {
+            result.warnings.push(`Operation "${generatedOp.name}" not found in phase "${generatedPhase.name}" - skipping`);
+            continue;
+          }
+
+          for (const generatedStep of generatedOp.steps) {
+            const existingStep = existingOp.template_steps?.find((step: any) =>
+              step.step_title.toLowerCase().trim() === generatedStep.stepTitle.toLowerCase().trim()
+            );
+
+            if (!existingStep) {
+              result.warnings.push(`Step "${generatedStep.stepTitle}" not found in operation "${generatedOp.name}" - skipping`);
+              continue;
+            }
+
+            // Update step content based on contentSelection settings
+            await updateStepContent(
+              existingStep.id,
+              generatedStep,
+              contentSelection,
+              result
+            );
+          }
+        }
+      }
+
+      // Rebuild phases JSON after content updates
+      const { error: rebuildError } = await supabase.rpc(
+        'rebuild_phases_json_from_project_phases',
+        { p_project_id: projectId }
+      );
+
+      if (rebuildError) {
+        result.warnings.push(`Failed to rebuild phases JSON: ${rebuildError.message}`);
+      }
+
+      result.success = true;
+      result.projectId = projectId;
+      return result;
+    }
+
+    // Normal structure import mode - create/update phases, operations, and steps
     // Get current max display_order to place generated phases after standard phases
     const { data: existingPhases } = await supabase
       .from('project_phases')
@@ -207,8 +599,8 @@ export async function importGeneratedProject(
       .order('display_order', { ascending: false })
       .limit(1);
 
-    const baseDisplayOrder = existingPhases && existingPhases.length > 0 
-      ? existingPhases[0].display_order + 1 
+    const baseDisplayOrder = existingPhases && existingPhases.length > 0
+      ? existingPhases[0].display_order + 1
       : 0;
 
     for (let phaseIndex = 0; phaseIndex < generatedStructure.phases.length; phaseIndex++) {
@@ -315,7 +707,7 @@ export async function importGeneratedProject(
           flowType = 'alternate';
           alternateGroup = operation.alternateGroup || `alt-group-${phase.name}-${opIndex}`;
         } else {
-          flowType = 'prime'; // Standard flow
+          flowType = 'prime';
         }
 
         const { data: createdOperation, error: opError } = await supabase
@@ -329,6 +721,7 @@ export async function importGeneratedProject(
             flow_type: flowType,
             alternate_group: alternateGroup,
             user_prompt: userPrompt,
+            dependent_on: dependentOn,
           })
           .select('id')
           .single();
@@ -371,23 +764,53 @@ export async function importGeneratedProject(
             });
           }
 
-          // Match tools and materials
-          const matchedTools = await matchToolsToLibrary(toolNames);
-          
-          // Add alternate tools to matched tools
-          const toolsWithAlternates = matchedTools.map(tool => {
-            const alternates = toolAlternatesMap.get(tool.name) || [];
-            return {
-              ...tool,
-              alternates: alternates.length > 0 ? alternates : undefined,
-            };
-          });
-          const matchedMaterials = await matchMaterialsToLibrary(step.materials);
+          // Match tools to library
+          const toolsWithAlternates: any[] = [];
+          for (const toolName of toolNames) {
+            const { data: matchedTool } = await supabase
+              .from('tools')
+              .select('id, item')
+              .ilike('item', toolName)
+              .limit(1)
+              .maybeSingle();
 
-          result.stats.toolsMatched += matchedTools.filter(t => t.matched).length;
-          result.stats.materialsMatched += matchedMaterials.filter(m => m.matched).length;
+            toolsWithAlternates.push({
+              name: toolName,
+              matched: !!matchedTool,
+              matchedName: matchedTool?.item || toolName,
+              alternates: toolAlternatesMap.get(toolName) || [],
+            });
 
-          // Create step
+            if (matchedTool) {
+              result.stats.toolsMatched++;
+            }
+          }
+
+          // Match materials to library
+          const materialNames = Array.isArray(step.materials) 
+            ? step.materials.map(m => typeof m === 'string' ? m : m.name)
+            : [];
+
+          const matchedMaterials: any[] = [];
+          for (const materialName of materialNames) {
+            const { data: matchedMaterial } = await supabase
+              .from('materials')
+              .select('id, item')
+              .ilike('item', materialName)
+              .limit(1)
+              .maybeSingle();
+
+            matchedMaterials.push({
+              name: materialName,
+              matched: !!matchedMaterial,
+              matchedName: matchedMaterial?.item || materialName,
+            });
+
+            if (matchedMaterial) {
+              result.stats.materialsMatched++;
+            }
+          }
+
           const { data: createdStep, error: stepError } = await supabase
             .from('template_steps')
             .insert({
@@ -402,17 +825,17 @@ export async function importGeneratedProject(
                   content: step.description,
                 },
               ],
-              materials: matchedMaterials.map(m => ({
+              materials: (contentSelection?.materials !== false ? matchedMaterials.map(m => ({
                 name: m.matched ? m.matchedName : m.name,
                 description: '',
                 category: '',
-              })),
-              tools: toolsWithAlternates.map(t => ({
+              })) : []),
+              tools: (contentSelection?.tools !== false ? toolsWithAlternates.map(t => ({
                 name: t.matched ? t.matchedName : t.name,
                 description: '',
                 category: '',
                 alternates: t.alternates,
-              })),
+              })) : []),
               outputs: step.outputs.map(o => ({
                 name: o.name,
                 description: o.description,
@@ -432,131 +855,137 @@ export async function importGeneratedProject(
 
           result.stats.stepsCreated++;
 
-          // Step 5: Create step instructions (3 levels)
-          for (const level of ['quick', 'detailed', 'contractor'] as const) {
-            const instructionContent = step.instructions[level];
+          // Step 5: Create step instructions (3 levels) - only if selected
+          if (contentSelection?.instructions3Level !== false) {
+            for (const level of ['quick', 'detailed', 'contractor'] as const) {
+              const instructionContent = step.instructions[level];
 
-            const { error: instructionError } = await supabase
-              .from('step_instructions')
-              .insert({
-                template_step_id: createdStep.id,
-                instruction_level: level,
-                content: {
-                  text: instructionContent,
-                  sections: [],
-                  photos: [],
-                  videos: [],
-                  links: [],
-                },
-              });
+              const { error: instructionError } = await supabase
+                .from('step_instructions')
+                .insert({
+                  template_step_id: createdStep.id,
+                  instruction_level: level,
+                  content: {
+                    text: instructionContent,
+                    sections: [],
+                    photos: [],
+                    videos: [],
+                    links: [],
+                  },
+                });
 
-            if (instructionError) {
-              result.warnings.push(`Failed to create ${level} instruction for "${step.stepTitle}": ${instructionError.message}`);
-            } else {
-              result.stats.instructionsCreated++;
+              if (instructionError) {
+                result.warnings.push(`Failed to create ${level} instruction for "${step.stepTitle}": ${instructionError.message}`);
+              } else {
+                result.stats.instructionsCreated++;
+              }
             }
           }
 
-          // Step 6: Create process variables
-          for (const pv of step.processVariables) {
-            // Check if variable exists
-            const { data: existingVar } = await supabase
-              .from('process_variables')
-              .select('id')
-              .eq('name', pv.name)
-              .single();
-
-            let variableId: string;
-
-            if (existingVar) {
-              variableId = existingVar.id;
-            } else {
-              const { data: newVar, error: varError } = await supabase
+          // Step 6: Create process variables - only if selected
+          if (contentSelection?.processVariables !== false) {
+            for (const pv of step.processVariables) {
+              // Check if variable exists
+              const { data: existingVar } = await supabase
                 .from('process_variables')
+                .select('id')
+                .eq('name', pv.name)
+                .single();
+
+              let variableId: string;
+
+              if (existingVar) {
+                variableId = existingVar.id;
+              } else {
+                const { data: newVar, error: varError } = await supabase
+                  .from('process_variables')
+                  .insert({
+                    name: pv.name,
+                    display_name: pv.displayName,
+                    description: pv.description,
+                    variable_type: pv.variableType,
+                    unit: pv.unit || null,
+                  })
+                  .select('id')
+                  .single();
+
+                if (varError || !newVar) {
+                  result.warnings.push(`Failed to create process variable "${pv.name}": ${varError?.message}`);
+                  continue;
+                }
+
+                variableId = newVar.id;
+                result.stats.processVariablesCreated++;
+              }
+
+              // Link variable to step
+              const { error: linkError } = await supabase
+                .from('workflow_step_process_variables')
                 .insert({
-                  name: pv.name,
-                  display_name: pv.displayName,
+                  step_id: createdStep.id,
+                  variable_key: pv.name,
+                  label: pv.displayName,
                   description: pv.description,
                   variable_type: pv.variableType,
+                  required: true,
                   unit: pv.unit || null,
-                })
-                .select('id')
-                .single();
+                });
 
-              if (varError || !newVar) {
-                result.warnings.push(`Failed to create process variable "${pv.name}": ${varError?.message}`);
-                continue;
+              if (linkError) {
+                result.warnings.push(`Failed to link process variable "${pv.name}" to step: ${linkError.message}`);
               }
-
-              variableId = newVar.id;
-              result.stats.processVariablesCreated++;
-            }
-
-            // Link variable to step
-            const { error: linkError } = await supabase
-              .from('workflow_step_process_variables')
-              .insert({
-                step_id: createdStep.id,
-                variable_key: pv.name,
-                label: pv.displayName,
-                description: pv.description,
-                variable_type: pv.variableType,
-                required: true,
-                unit: pv.unit || null,
-              });
-
-            if (linkError) {
-              result.warnings.push(`Failed to link process variable "${pv.name}" to step: ${linkError.message}`);
             }
           }
 
-          // Step 7: Create outputs
-          for (const output of step.outputs) {
-            // Check if output exists
-            const { data: existingOutput } = await supabase
-              .from('outputs')
-              .select('id')
-              .eq('name', output.name)
-              .single();
-
-            let outputId: string;
-
-            if (existingOutput) {
-              outputId = existingOutput.id;
-            } else {
-              const { data: newOutput, error: outputError } = await supabase
+          // Step 7: Create outputs - only if selected
+          if (contentSelection?.outputs !== false) {
+            for (const output of step.outputs) {
+              // Check if output exists
+              const { data: existingOutput } = await supabase
                 .from('outputs')
-                .insert({
-                  name: output.name,
-                  description: output.description,
-                  type: output.type as any,
-                  is_required: true,
-                })
                 .select('id')
+                .eq('name', output.name)
                 .single();
 
-              if (outputError || !newOutput) {
-                result.warnings.push(`Failed to create output "${output.name}": ${outputError?.message}`);
-                continue;
+              let outputId: string;
+
+              if (existingOutput) {
+                outputId = existingOutput.id;
+              } else {
+                const { data: newOutput, error: outputError } = await supabase
+                  .from('outputs')
+                  .insert({
+                    name: output.name,
+                    description: output.description,
+                    type: output.type as any,
+                    is_required: true,
+                  })
+                  .select('id')
+                  .single();
+
+                if (outputError || !newOutput) {
+                  result.warnings.push(`Failed to create output "${output.name}": ${outputError?.message}`);
+                  continue;
+                }
+
+                outputId = newOutput.id;
+                result.stats.outputsCreated++;
               }
 
-              outputId = newOutput.id;
-              result.stats.outputsCreated++;
-            }
+              // Link output to step via workflow_step_outputs
+              const { error: linkError } = await supabase
+                .from('workflow_step_outputs')
+                .insert({
+                  step_id: createdStep.id,
+                  name: output.name,
+                  description: output.description,
+                  output_type: output.type,
+                  requirement: output.requirement,
+                });
 
-            // Link output to step via workflow_step_outputs
-            const { error: linkError } = await supabase
-              .from('workflow_step_outputs')
-              .insert({
-                step_id: createdStep.id,
-                name: output.name,
-                description: output.description,
-                output_type: output.type,
-                requirement: output.requirement,
-              });
-
-            if (linkError) {
-              result.warnings.push(`Failed to link output "${output.name}" to step: ${linkError.message}`);
+              if (linkError) {
+                result.warnings.push(`Failed to link output "${output.name}" to step: ${linkError.message}`);
+              }
             }
           }
         }
@@ -613,58 +1042,3 @@ export async function importGeneratedProject(
     return result;
   }
 }
-
-/**
- * Match tools to library
- */
-async function matchToolsToLibrary(toolNames: string[]): Promise<Array<{
-  name: string;
-  matched: boolean;
-  matchedId?: string;
-  matchedName?: string;
-}>> {
-  const { data: tools } = await supabase
-    .from('tools')
-    .select('id, name');
-
-  return toolNames.map(toolName => {
-    const normalized = toolName.toLowerCase().trim();
-    const match = tools?.find(t => 
-      t.name.toLowerCase().trim() === normalized ||
-      normalized.includes(t.name.toLowerCase().trim()) ||
-      t.name.toLowerCase().trim().includes(normalized)
-    );
-
-    return match
-      ? { name: toolName, matched: true, matchedId: match.id, matchedName: match.name }
-      : { name: toolName, matched: false };
-  });
-}
-
-/**
- * Match materials to library
- */
-async function matchMaterialsToLibrary(materialNames: string[]): Promise<Array<{
-  name: string;
-  matched: boolean;
-  matchedId?: string;
-  matchedName?: string;
-}>> {
-  const { data: materials } = await supabase
-    .from('materials')
-    .select('id, name');
-
-  return materialNames.map(materialName => {
-    const normalized = materialName.toLowerCase().trim();
-    const match = materials?.find(m => 
-      m.name.toLowerCase().trim() === normalized ||
-      normalized.includes(m.name.toLowerCase().trim()) ||
-      m.name.toLowerCase().trim().includes(normalized)
-    );
-
-    return match
-      ? { name: materialName, matched: true, matchedId: match.id, matchedName: match.name }
-      : { name: materialName, matched: false };
-  });
-}
-
