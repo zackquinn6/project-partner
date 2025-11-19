@@ -265,6 +265,142 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Initialize all phases and operations as collapsed by default
   // No useEffect needed - they start collapsed with empty Sets
 
+  // Get phase order number (First, Last, or integer)
+  const getPhaseOrderNumber = (phase: Phase, phaseIndex: number, totalPhases: number): string | number => {
+    if (phase.phaseOrderNumber !== undefined) {
+      if (phase.phaseOrderNumber === 'first') return 'First';
+      if (phase.phaseOrderNumber === 'last') return 'Last';
+      return phase.phaseOrderNumber;
+    }
+    // Default: use index + 1
+    return phaseIndex + 1;
+  };
+
+  // Get available order numbers for dropdown (excluding standard phase numbers in project templates)
+  const getAvailableOrderNumbers = (currentPhase: Phase, currentIndex: number, totalPhases: number): (string | number)[] => {
+    const options: (string | number)[] = ['First', 'Last'];
+    
+    // Get standard phase order numbers if editing project template (not standard foundation)
+    const standardPhaseOrderNumbers = new Set<string | number>();
+    if (!isEditingStandardProject) {
+      // Get order numbers from standard phases in Standard Project Foundation
+      const standardPhases = displayPhases.filter(p => p.isStandard && !p.isLinked);
+      standardPhases.forEach(phase => {
+        if (phase.phaseOrderNumber !== undefined) {
+          if (phase.phaseOrderNumber === 'first') standardPhaseOrderNumbers.add('First');
+          else if (phase.phaseOrderNumber === 'last') standardPhaseOrderNumbers.add('Last');
+          else standardPhaseOrderNumbers.add(phase.phaseOrderNumber);
+        }
+      });
+    }
+    
+    // Add integer options (1 to totalPhases)
+    for (let i = 1; i <= totalPhases; i++) {
+      // Skip if this number is reserved by a standard phase (in project template mode)
+      if (!isEditingStandardProject && standardPhaseOrderNumbers.has(i)) {
+        continue;
+      }
+      options.push(i);
+    }
+    
+    return options;
+  };
+
+  // Handle phase order number change
+  const handlePhaseOrderChange = async (phaseId: string, newOrder: string | number) => {
+    if (!currentProject) return;
+    
+    const phaseIndex = displayPhases.findIndex(p => p.id === phaseId);
+    if (phaseIndex === -1) return;
+    
+    const phase = displayPhases[phaseIndex];
+    const totalPhases = displayPhases.length;
+    
+    // Convert 'First' and 'Last' to actual positions
+    let targetPosition: number;
+    if (newOrder === 'First') {
+      targetPosition = 0;
+    } else if (newOrder === 'Last') {
+      targetPosition = totalPhases - 1;
+    } else if (typeof newOrder === 'number') {
+      targetPosition = newOrder - 1; // Convert to 0-based index
+    } else {
+      return;
+    }
+    
+    // If moving to same position, do nothing
+    if (targetPosition === phaseIndex) return;
+    
+    // Reorder phases array
+    const reorderedPhases = Array.from(displayPhases);
+    const [removed] = reorderedPhases.splice(phaseIndex, 1);
+    reorderedPhases.splice(targetPosition, 0, removed);
+    
+    // Renumber all phases to avoid duplicates
+    // Set the moved phase's order number
+    const movedPhase = reorderedPhases[targetPosition];
+    if (newOrder === 'First') {
+      movedPhase.phaseOrderNumber = 'first';
+    } else if (newOrder === 'Last') {
+      movedPhase.phaseOrderNumber = 'last';
+    } else {
+      movedPhase.phaseOrderNumber = newOrder;
+    }
+    
+    // Renumber all other phases sequentially
+    // Track which numbers are already used
+    const usedNumbers = new Set<string | number>();
+    usedNumbers.add(movedPhase.phaseOrderNumber);
+    
+    reorderedPhases.forEach((p, index) => {
+      if (p.id === phaseId) {
+        // Already set above
+        return;
+      }
+      
+      // Assign sequential number, avoiding conflicts
+      let assignedNumber: 'first' | 'last' | number;
+      
+      if (index === 0 && !usedNumbers.has('first') && !usedNumbers.has(1)) {
+        // First position available - check if this phase was originally 'first'
+        const originalPhase = displayPhases.find(orig => orig.id === p.id);
+        if (originalPhase?.phaseOrderNumber === 'first') {
+          assignedNumber = 'first';
+        } else {
+          assignedNumber = 1;
+        }
+      } else if (index === totalPhases - 1 && !usedNumbers.has('last') && !usedNumbers.has(totalPhases)) {
+        // Last position available - check if this phase was originally 'last'
+        const originalPhase = displayPhases.find(orig => orig.id === p.id);
+        if (originalPhase?.phaseOrderNumber === 'last') {
+          assignedNumber = 'last';
+        } else {
+          assignedNumber = totalPhases;
+        }
+      } else {
+        // Middle position - find next available number
+        let candidateNumber = index + 1;
+        while (usedNumbers.has(candidateNumber) && candidateNumber <= totalPhases) {
+          candidateNumber++;
+        }
+        // If we've exhausted all numbers, go backwards
+        if (candidateNumber > totalPhases) {
+          candidateNumber = index;
+          while (usedNumbers.has(candidateNumber) && candidateNumber >= 1) {
+            candidateNumber--;
+          }
+        }
+        assignedNumber = candidateNumber;
+      }
+      
+      p.phaseOrderNumber = assignedNumber;
+      usedNumbers.add(assignedNumber);
+    });
+    
+    // Update database
+    await updatePhaseOrder(reorderedPhases);
+  };
+
   // Move phase up/down
   const movePhase = async (phaseId: string, direction: 'up' | 'down') => {
     if (!currentProject) return;
@@ -1696,6 +1832,33 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                         <Button variant="ghost" size="sm" onClick={() => togglePhaseExpansion(phase.id)} className="p-0.5 h-auto">
                                           {expandedPhases.has(phase.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                                         </Button>
+                                        {/* Phase Order Number */}
+                                        <div className="flex items-center gap-1 mr-1">
+                                          {isEditingStandardProject && !isLinkedPhase ? (
+                                            <Select
+                                              value={String(getPhaseOrderNumber(phase, phaseIndex, displayPhases.length))}
+                                              onValueChange={(value) => {
+                                                const newOrder = value === 'First' ? 'First' : value === 'Last' ? 'Last' : parseInt(value, 10);
+                                                handlePhaseOrderChange(phase.id, newOrder);
+                                              }}
+                                            >
+                                              <SelectTrigger className="w-16 h-5 text-xs px-1">
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                {getAvailableOrderNumbers(phase, phaseIndex, displayPhases.length).map((order) => (
+                                                  <SelectItem key={String(order)} value={String(order)}>
+                                                    {String(order)}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                          ) : (
+                                            <span className="text-xs font-medium text-muted-foreground min-w-[2rem]">
+                                              {getPhaseOrderNumber(phase, phaseIndex, displayPhases.length)}
+                                            </span>
+                                          )}
+                                        </div>
                                         {isStandardPhase && <span className="mr-1">🔒</span>}
                                         {phase.name}
                                         {isStandardPhase && <span className="text-xs text-blue-600 ml-1">(Standard - Locked)</span>}

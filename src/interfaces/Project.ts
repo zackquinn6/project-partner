@@ -190,6 +190,8 @@ export interface Phase {
   sourceScalingUnit?: string; // Original project's scaling unit for incorporated phases
   // Standard phase flag - marks phases that shouldn't be edited in non-standard projects
   isStandard?: boolean;
+  // Phase order number: 'first', 'last', or integer (1-based)
+  phaseOrderNumber?: 'first' | 'last' | number;
 }
 
 export interface Project {
