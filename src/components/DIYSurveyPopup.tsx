@@ -812,44 +812,52 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
 
       case 2:
         return (
-          <div className="space-y-8">
+          <div className="space-y-4">
             <div className="text-center space-y-2">
               <h3 className="text-2xl font-bold">🧠 Experience & Capabilities</h3>
               <p className="text-muted-foreground">Help us understand your background</p>
             </div>
             
             {/* Experience Level */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="text-center">
                 <h4 className="text-lg font-semibold">What's your experience level?</h4>
               </div>
               <Card>
-                <CardContent className="p-4 space-y-4">
+                <CardContent className="p-4 space-y-3">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">Skill Level</Label>
                       <span className="text-sm font-semibold">
                         {answers.skillLevel === "newbie" ? "🔰 Beginner" : 
-                         answers.skillLevel === "confident" ? "🧰 Confident-ish" : 
-                         answers.skillLevel === "hero" ? "🛠️ Hands-on Hero" : 
+                         answers.skillLevel === "confident" ? "🧰 Intermediate" : 
+                         answers.skillLevel === "hero" ? "🛠️ Advanced" : 
                          "Select your level"}
                       </span>
                     </div>
                     <Slider
                       value={[
                         answers.skillLevel === "newbie" ? 0 : 
-                        answers.skillLevel === "confident" ? 1 : 
-                        answers.skillLevel === "hero" ? 2 : 0
+                        answers.skillLevel === "confident" ? 50 : 
+                        answers.skillLevel === "hero" ? 100 : 0
                       ]}
                       onValueChange={(value) => {
-                        // Round to nearest of 3 marks (0, 1, or 2)
-                        const roundedValue = Math.round(value[0]);
-                        const levelMap = ["newbie", "confident", "hero"];
+                        // Continuous slider 0-100, round to nearest step (0, 50, or 100)
+                        const sliderValue = value[0];
+                        let roundedValue: number;
+                        if (sliderValue < 25) {
+                          roundedValue = 0; // Beginner
+                        } else if (sliderValue < 75) {
+                          roundedValue = 50; // Intermediate
+                        } else {
+                          roundedValue = 100; // Advanced
+                        }
+                        const levelMap: Record<number, string> = { 0: "newbie", 50: "confident", 100: "hero" };
                         setAnswers(prev => ({ ...prev, skillLevel: levelMap[roundedValue] }));
                       }}
                       min={0}
-                      max={2}
-                      step={0.01}
+                      max={100}
+                      step={1}
                       className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
@@ -858,11 +866,11 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                         <div className="text-[10px]">Just getting started</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-medium">🧰 Confident-ish</div>
+                        <div className="font-medium">🧰 Intermediate</div>
                         <div className="text-[10px]">Done a few projects</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-medium">🛠️ Hands-on Hero</div>
+                        <div className="font-medium">🛠️ Advanced</div>
                         <div className="text-[10px]">Tackled big stuff</div>
                       </div>
                     </div>
@@ -871,7 +879,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                   <Button
                     variant="outline"
                     onClick={() => setShowProjectSkillsWindow(true)}
-                    className="w-full"
+                    className="w-full text-xs bg-muted/50 hover:bg-muted"
                   >
                     Optional: Define Project Skills
                   </Button>
@@ -880,12 +888,12 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
             </div>
 
             {/* Physical Capability / Effort Level */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="text-center">
                 <h4 className="text-lg font-semibold">What's your physical capability / effort level?</h4>
               </div>
               <Card>
-                <CardContent className="p-4 space-y-4">
+                <CardContent className="p-4 space-y-3">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">Effort Level</Label>
@@ -899,18 +907,26 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                     <Slider
                       value={[
                         answers.physicalCapability === "light" ? 0 : 
-                        answers.physicalCapability === "medium" ? 1 : 
-                        answers.physicalCapability === "heavy" ? 2 : 0
+                        answers.physicalCapability === "medium" ? 50 : 
+                        answers.physicalCapability === "heavy" ? 100 : 0
                       ]}
                       onValueChange={(value) => {
-                        // Round to nearest of 3 marks (0, 1, or 2)
-                        const roundedValue = Math.round(value[0]);
-                        const levelMap = ["light", "medium", "heavy"];
+                        // Continuous slider 0-100, round to nearest step (0, 50, or 100)
+                        const sliderValue = value[0];
+                        let roundedValue: number;
+                        if (sliderValue < 25) {
+                          roundedValue = 0; // Light-duty
+                        } else if (sliderValue < 75) {
+                          roundedValue = 50; // Medium-duty
+                        } else {
+                          roundedValue = 100; // Heavy-duty
+                        }
+                        const levelMap: Record<number, string> = { 0: "light", 50: "medium", 100: "heavy" };
                         setAnswers(prev => ({ ...prev, physicalCapability: levelMap[roundedValue] }));
                       }}
                       min={0}
-                      max={2}
-                      step={0.01}
+                      max={100}
+                      step={1}
                       className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
