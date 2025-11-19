@@ -89,6 +89,8 @@ export function AIProjectGenerator({
   const [importResult, setImportResult] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'configure' | 'preview' | 'cost'>('configure');
 
+  const isEditingExistingProject = Boolean(selectedExistingProject);
+
   // Fetch project templates (only draft revisions) when dialog opens
   useEffect(() => {
     if (open) {
@@ -429,26 +431,20 @@ export function AIProjectGenerator({
                     Use the content selection options below to control what gets populated.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm text-muted-foreground">
-                  <p>• The generator will create phases, operations, and steps based on best practices for your project type</p>
-                  <p>• Tools and materials will be matched against your existing library</p>
-                  <p>• Instructions will be generated at the skill levels you select</p>
-                  <p>• Process variables, outputs, and time estimates will be included based on your selections</p>
-                  <p>• Decision trees can create "if necessary" operations and alternative operation paths</p>
-                  <p>• Alternate tools allow multiple tool options for the same operation (e.g., standard vs automated paint roller)</p>
-                </CardContent>
               </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="projectName">Project Name *</Label>
-                <Input
-                  id="projectName"
-                  placeholder="e.g., Interior Painting"
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  disabled={isGenerating}
-                />
-              </div>
+              {!isEditingExistingProject && (
+                <div className="space-y-2">
+                  <Label htmlFor="projectName">Project Name *</Label>
+                  <Input
+                    id="projectName"
+                    placeholder="e.g., Interior Painting"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    disabled={isGenerating}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="aiInstructions">AI Instructions</Label>
@@ -649,21 +645,23 @@ export function AIProjectGenerator({
                 </Card>
               )}
 
-              <div className="space-y-2">
-                <Label>Categories *</Label>
-                <div className="flex flex-wrap gap-2 p-4 border rounded-lg min-h-[100px]">
-                  {PROJECT_CATEGORIES.map(category => (
-                    <Badge
-                      key={category}
-                      variant={selectedCategories.includes(category) ? 'default' : 'outline'}
-                      className="cursor-pointer"
-                      onClick={() => !isGenerating && toggleCategory(category)}
-                    >
-                      {category}
-                    </Badge>
-                  ))}
+              {!isEditingExistingProject && (
+                <div className="space-y-2">
+                  <Label>Categories *</Label>
+                  <div className="flex flex-wrap gap-2 p-4 border rounded-lg min-h-[100px]">
+                    {PROJECT_CATEGORIES.map(category => (
+                      <Badge
+                        key={category}
+                        variant={selectedCategories.includes(category) ? 'default' : 'outline'}
+                        className="cursor-pointer"
+                        onClick={() => !isGenerating && toggleCategory(category)}
+                      >
+                        {category}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
