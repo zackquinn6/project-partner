@@ -780,20 +780,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       });
       
       const orderedPhases = enforceStandardPhaseOrdering(mergedPhases);
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+      const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
       
       await supabase
         .from('projects')
-        .update({ phases: orderedPhases as any })
+        .update({ phases: sortedPhases as any })
         .eq('id', currentProject.id);
       
       updateProject({
         ...currentProject,
-        phases: orderedPhases as any,
+        phases: sortedPhases as any,
         updatedAt: new Date()
       });
       
       // Update display state
-      setDisplayPhases(orderedPhases);
+      setDisplayPhases(sortedPhases);
     }
     
     toast.success('Operation reordered successfully');
