@@ -262,7 +262,7 @@ export const AppsLibraryDialog = ({
                           return (
                             <SelectItem key={icon} value={icon}>
                               <div className="flex items-center gap-2">
-                                <IconComponent className="w-4 h-4" />
+                                <IconComponent className="w-4 h-4" fill="none" stroke="currentColor" />
                                 <span>{icon}</span>
                               </div>
                             </SelectItem>
@@ -296,7 +296,7 @@ export const AppsLibraryDialog = ({
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
                             <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/20">
-                              <IconComponent className="w-6 h-6 text-primary" />
+                              <IconComponent className="w-6 h-6 text-primary" fill="none" stroke="currentColor" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
