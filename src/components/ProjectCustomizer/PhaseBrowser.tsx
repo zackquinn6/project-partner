@@ -7,8 +7,9 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Project, Phase } from '../../interfaces/Project';
-import { Search, Package, Clock, Filter, X, Plus } from 'lucide-react';
+import { Search, Package, Clock, Filter, Plus } from 'lucide-react';
 import { useIsMobile } from '../../hooks/use-mobile';
 
 interface PhaseBrowserProps {
@@ -197,8 +198,8 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                   Select a project to view and add its phases to your workflow.
                 </DialogDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="ml-2">
-                <X className="w-4 h-4" />
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="ml-2">
+                Close
               </Button>
             </div>
           </DialogHeader>
@@ -206,23 +207,6 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
           <div className="flex-1 flex flex-col min-h-0 px-6 pb-6">
             {/* Search and Filter Controls */}
             <div className="flex flex-col gap-3 mb-4 flex-shrink-0">
-              <div className="flex gap-3">
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-48">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
               {/* Search Input */}
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -232,6 +216,30 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
                 />
+              </div>
+
+              {/* Category Filter - Small text labels */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground font-medium">Categories:</span>
+                <Button
+                  variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedCategory('all')}
+                  className="h-7 text-xs px-2"
+                >
+                  All
+                </Button>
+                {categories.map(category => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedCategory(category)}
+                    className="h-7 text-xs px-2"
+                  >
+                    {category}
+                  </Button>
+                ))}
               </div>
 
               {/* Add Custom Work Button */}
@@ -263,57 +271,79 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
               )}
             </div>
 
-            {/* Project List */}
-            <div className="flex-1 min-h-0 mb-4 overflow-hidden">
-              <div className="h-full overflow-y-auto pr-2">
+            {/* Project List - Table Format */}
+            <div className="flex-1 min-h-0 mb-4 overflow-hidden border rounded-lg">
+              <div className="h-full overflow-y-auto">
               {filteredProjects.length === 0 ? (
-                <Card>
-                  <CardContent className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
-                    <Package className={`text-muted-foreground mx-auto mb-4 ${isMobile ? 'w-10 h-10' : 'w-12 h-12'}`} />
-                    <h3 className={`font-semibold mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>No Projects Found</h3>
-                    <p className="text-muted-foreground text-sm">
-                      {searchTerm || selectedCategory !== 'all' 
-                        ? 'Try adjusting your search or filter criteria.'
-                        : 'No compatible projects are available.'
-                      }
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'} gap-4`}>
-                  {filteredProjects.map((project) => (
-                    <Card 
-                      key={project.id} 
-                      className={`cursor-pointer transition-colors hover:bg-accent/50 hover:border-primary ${isMobile ? 'touch-manipulation' : ''}`}
-                      onClick={() => handleProjectClick(project.id)}
-                    >
-                      <CardHeader>
-                        <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'}`}>
-                          {project.name}
-                        </CardTitle>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {project.category || 'Other'}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {project.phases?.filter(p => {
-                              const phaseLower = p.name.toLowerCase();
-                              return !(phaseLower.includes('kickoff') || 
-                                      phaseLower.includes('planning') ||
-                                      phaseLower.includes('ordering') ||
-                                      phaseLower.includes('close'));
-                            }).length || 0} phases
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className={`text-muted-foreground ${isMobile ? 'text-sm line-clamp-2' : 'text-sm line-clamp-3'}`}>
-                          {project.description || 'No description available'}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="text-center py-8">
+                  <Package className="text-muted-foreground mx-auto mb-4 w-12 h-12" />
+                  <h3 className="font-semibold mb-2 text-lg">No Projects Found</h3>
+                  <p className="text-muted-foreground text-sm">
+                    {searchTerm || selectedCategory !== 'all' 
+                      ? 'Try adjusting your search or filter criteria.'
+                      : 'No compatible projects are available.'
+                    }
+                  </p>
                 </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[300px]">Project Name</TableHead>
+                      <TableHead className="w-[200px]">Categories</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="w-[100px] text-center">Phases</TableHead>
+                      <TableHead className="w-[100px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredProjects.map((project) => {
+                      const availablePhases = project.phases?.filter(p => {
+                        const phaseLower = p.name.toLowerCase();
+                        return !(phaseLower.includes('kickoff') || 
+                                phaseLower.includes('planning') ||
+                                phaseLower.includes('ordering') ||
+                                phaseLower.includes('close'));
+                      }).length || 0;
+                      
+                      const projectCategories = Array.isArray(project.category) 
+                        ? project.category 
+                        : (project.category ? [project.category] : ['Other']);
+                      
+                      return (
+                        <TableRow 
+                          key={project.id} 
+                          className="cursor-pointer hover:bg-accent/50"
+                          onClick={() => handleProjectClick(project.id)}
+                        >
+                          <TableCell className="font-medium">{project.name}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {projectCategories.map((cat, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                                  {cat}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {project.description || 'No description available'}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="text-xs">
+                              {availablePhases}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm" className="h-8">
+                              Select
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               )}
               </div>
             </div>
@@ -335,8 +365,8 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                   {selectedProject && `From: ${availableProjects.find(p => p.id === selectedProject)?.name}`}
                 </DialogDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setShowPhaseSelector(false)} className="ml-2">
-                <X className="w-4 h-4" />
+              <Button variant="outline" size="sm" onClick={() => setShowPhaseSelector(false)} className="ml-2">
+                Close
               </Button>
             </div>
           </DialogHeader>
