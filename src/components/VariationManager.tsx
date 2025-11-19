@@ -107,6 +107,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
 
   useEffect(() => {
     fetchAttributes();
+    fetchAllAttributes();
     fetchVariations();
   }, [coreItemId]);
 
@@ -169,6 +170,22 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
     } catch (error) {
       console.error('Error fetching attributes:', error);
       toast.error('Failed to fetch variation attributes');
+    }
+  };
+
+  const fetchAllAttributes = async () => {
+    try {
+      // Fetch ALL attributes in the system for the dropdown
+      const { data, error } = await supabase
+        .from('variation_attributes')
+        .select('id, name, display_name')
+        .order('display_name');
+
+      if (error) throw error;
+      setAllAttributes(data || []);
+    } catch (error) {
+      console.error('Error fetching all attributes:', error);
+      toast.error('Failed to fetch attributes');
     }
   };
 
