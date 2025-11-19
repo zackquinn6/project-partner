@@ -1276,9 +1276,14 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                   </Card>
 
                   {/* Desktop: Card layout - 4:3 aspect ratio */}
-                  <Card 
-                    className="hidden md:block group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden flex flex-col h-full" 
-                    style={{ aspectRatio: '4/3' }}
+                  <div 
+                    className="hidden md:block group hover:shadow-xl transition-all duration-300 cursor-pointer rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
+                    style={{ 
+                      aspectRatio: '4/3',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%'
+                    }}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1298,13 +1303,20 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </div>
 
                     {/* Cover Image or Gradient - Takes remaining space */}
-                    <div className="flex-1 relative overflow-hidden bg-muted" style={{ minHeight: 0 }}>
+                    <div 
+                      className="flex-1 relative overflow-hidden bg-muted"
+                      style={{ 
+                        minHeight: 0,
+                        position: 'relative'
+                      }}
+                    >
                       {/* Gradient background - always present, shows when no image or image fails */}
                       <div 
                         className="gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500"
                         style={{
                           opacity: imageUrl ? 0 : 1,
-                          transition: 'opacity 0.3s ease'
+                          transition: 'opacity 0.3s ease',
+                          zIndex: 1
                         }}
                       >
                         <div className="absolute inset-0 bg-black/20" />
@@ -1319,7 +1331,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                           src={imageUrl} 
                           alt={project.name}
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          style={{ zIndex: 10 }}
+                          style={{ 
+                            zIndex: 2,
+                            display: 'block'
+                          }}
                           onError={(e) => {
                             // If image fails to load, hide it and show gradient background
                             console.log('❌ Image failed to load:', imageUrl, 'for project:', project.name);
@@ -1339,17 +1354,23 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                             if (gradientDiv) {
                               gradientDiv.style.opacity = '0';
                             }
+                            // Ensure image is visible
+                            img.style.display = 'block';
+                            img.style.zIndex = '2';
                           }}
                         />
                       )}
                       
                       {/* Overlay gradient for text readability - only if image exists */}
                       {imageUrl && (
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" style={{ zIndex: 20 }} />
+                        <div 
+                          className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" 
+                          style={{ zIndex: 3 }} 
+                        />
                       )}
                       
                       {/* Badges */}
-                      <div className="absolute top-2 right-2 flex gap-1" style={{ zIndex: 30 }}>
+                      <div className="absolute top-2 right-2 flex gap-1" style={{ zIndex: 4 }}>
                         {project.publishStatus === 'beta-testing' && (
                           <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
                             <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
@@ -1365,7 +1386,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </div>
                     
                     {/* Button - Fixed at bottom */}
-                    <div className="flex-shrink-0 px-4 pb-3 pt-2 bg-card border-t border-border">
+                    <div className="flex-shrink-0 px-4 pb-3 pt-2 bg-card border-t border-border" style={{ marginTop: 'auto' }}>
                       <Button 
                         size="sm" 
                         className="w-full text-xs h-7" 
@@ -1383,7 +1404,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                         {isAdminMode ? 'Edit Template' : 'Start Project'}
                       </Button>
                     </div>
-                  </Card>
+                  </div>
                 </div>
               );
             })
