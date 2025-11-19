@@ -1272,18 +1272,37 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         return;
       }
 
-      // Update local context immediately
+      // Verify the save by reading back from database
+      const { data: savedProject, error: readError } = await supabase
+        .from('projects')
+        .select('phases')
+        .eq('id', currentProject.id)
+        .single();
+
+      if (readError) {
+        console.error('Error reading back saved phases:', readError);
+        toast.error('Failed to verify saved phase');
+        return;
+      }
+
+      // Use the phases from the database to ensure consistency
+      const savedPhases = Array.isArray(savedProject?.phases) ? savedProject.phases : phasesWithUniqueOrder;
+      
+      // Apply ordering to saved phases
+      const orderedSavedPhases = enforceStandardPhaseOrdering(savedPhases);
+      const finalPhases = ensureUniqueOrderNumbers(orderedSavedPhases);
+
+      // Update local context immediately with verified data
       const updatedProject = {
         ...currentProject,
-        phases: phasesWithUniqueOrder,
+        phases: finalPhases,
         updatedAt: new Date()
       };
       console.log('🔍 Updated project phases count:', updatedProject.phases.length);
       updateProject(updatedProject);
       
-      // Update display state immediately - don't call loadFreshPhases() since we already have the updated data
-      // loadFreshPhases() would read from currentProject which might not be updated yet
-      setDisplayPhases(phasesWithUniqueOrder);
+      // Update display state immediately with verified data
+      setDisplayPhases(finalPhases);
       
       toast.success('Phase incorporated successfully');
     } catch (error) {
