@@ -31,6 +31,54 @@ interface ProjectDataProviderProps {
   children: ReactNode;
 }
 
+// Known project categories for splitting malformed category strings
+const KNOWN_CATEGORIES = ['Appliances', 'Bathroom', 'Ceilings', 'Decks & Patios', 'Doors & Windows', 'Electrical', 'Exterior Carpentry', 'Flooring', 'General Repairs & Maintenance', 'HVAC & Ventilation', 'Insulation & Weatherproofing', 'Interior Carpentry', 'Kitchen', 'Landscaping & Outdoor Projects', 'Lighting & Electrical', 'Masonry & Concrete', 'Painting & Finishing', 'Plumbing', 'Roofing', 'Safety & Security', 'Smart Home & Technology', 'Storage & Organization', 'Tile', 'Walls & Drywall'];
+
+// Helper to split malformed category strings like "TileFlooring" into ["Tile", "Flooring"]
+const normalizeCategories = (category: any): string[] => {
+  if (Array.isArray(category)) {
+    return category.filter(Boolean);
+  }
+  
+  if (!category || typeof category !== 'string') {
+    return [];
+  }
+  
+  const trimmed = category.trim();
+  if (!trimmed) {
+    return [];
+  }
+  
+  // Check if it's already a valid single category
+  if (KNOWN_CATEGORIES.includes(trimmed)) {
+    return [trimmed];
+  }
+  
+  // Try to split by finding known category names within the string
+  const found: string[] = [];
+  let remaining = trimmed;
+  
+  // Sort by length (longest first) to match "Decks & Patios" before "Decks"
+  const sortedCategories = [...KNOWN_CATEGORIES].sort((a, b) => b.length - a.length);
+  
+  // Keep trying to find categories until no more matches
+  let changed = true;
+  while (changed && remaining.length > 0) {
+    changed = false;
+    for (const knownCat of sortedCategories) {
+      if (remaining.includes(knownCat)) {
+        found.push(knownCat);
+        remaining = remaining.replace(knownCat, '');
+        changed = true;
+        break; // Restart from longest after each match
+      }
+    }
+  }
+  
+  // If we found categories, return them; otherwise return the original as-is
+  return found.length > 0 ? found : [trimmed];
+};
+
 export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const { isGuest, guestData } = useGuest();
@@ -81,7 +129,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           endDate: project.end_date ? new Date(project.end_date) : undefined,
           status: 'not-started' as const, // Projects don't have status - only project_runs do
           publishStatus: project.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived',
-          category: Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []),
+          category: normalizeCategories(project.category),
           difficulty: project.difficulty,
           effortLevel: project.effort_level as Project['effortLevel'],
           skillLevel: project.skill_level as Project['skillLevel'],
