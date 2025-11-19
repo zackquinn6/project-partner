@@ -1257,7 +1257,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         return;
       }
 
-      // Update local context
+      // Update local context immediately
       const updatedProject = {
         ...currentProject,
         phases: phasesWithUniqueOrder,
@@ -1266,8 +1266,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       console.log('🔍 Updated project phases count:', updatedProject.phases.length);
       updateProject(updatedProject);
       
-      // Refresh display to show the newly incorporated phase immediately
-      await loadFreshPhases();
+      // Update display state immediately - don't call loadFreshPhases() since we already have the updated data
+      // loadFreshPhases() would read from currentProject which might not be updated yet
+      setDisplayPhases(phasesWithUniqueOrder);
       
       toast.success('Phase incorporated successfully');
     } catch (error) {
