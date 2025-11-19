@@ -902,7 +902,7 @@ export function UnifiedProjectManagement({
                                   </Button>
                                 </PopoverTrigger>
                               <PopoverContent className="w-[400px] p-0 bg-background" align="start">
-                                <ScrollArea className="max-h-[300px]">
+                                <ScrollArea className="h-[300px]">
                                   <div className="p-4 space-y-2">
                                     {PROJECT_CATEGORIES.map(cat => (
                                       <div key={cat} className="flex items-center space-x-2">
@@ -1360,7 +1360,7 @@ export function UnifiedProjectManagement({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[400px] p-0 bg-background" align="start">
-                    <ScrollArea className="max-h-[300px]">
+                    <ScrollArea className="h-[300px]">
                       <div className="p-4 space-y-2">
                         {PROJECT_CATEGORIES.map(cat => (
                           <div key={cat} className="flex items-center space-x-2">
