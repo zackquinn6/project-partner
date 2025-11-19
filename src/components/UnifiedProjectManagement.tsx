@@ -750,6 +750,23 @@ export function UnifiedProjectManagement({
 
       // Get all other revision IDs to delete
       const otherRevisionIds = allRevisions.filter(r => r.id !== latestRevision.id).map(r => r.id);
+      console.log('🗑️ Deleting', otherRevisionIds.length, 'other revisions:', otherRevisionIds);
+
+      // IMPORTANT: First, update the latest revision to remove parent_project_id reference
+      // This must be done BEFORE deleting other revisions to avoid foreign key constraint violations
+      if (latestRevision.parent_project_id) {
+        console.log('🔄 Removing parent_project_id from latest revision before deletion');
+        const { error: updateParentError } = await supabase
+          .from('projects')
+          .update({ parent_project_id: null })
+          .eq('id', latestRevision.id);
+        
+        if (updateParentError) {
+          console.error('❌ Error removing parent_project_id:', updateParentError);
+          throw updateParentError;
+        }
+        console.log('✅ Removed parent_project_id from latest revision');
+      }
 
       // Delete all other revisions first (to avoid name conflicts)
       if (otherRevisionIds.length > 0) {
