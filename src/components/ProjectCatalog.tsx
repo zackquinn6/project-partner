@@ -1217,6 +1217,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               const IconComponent = getIconForCategory(projectCategories[0] || '');
               const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
               
+              // Debug image data
+              if (project.name === 'Tile Flooring' || project.name === 'Toilet Replacement') {
+                console.log('🖼️ Image data for', project.name, {
+                  cover_image: (project as any).cover_image,
+                  image: project.image,
+                  images: (project as any).images,
+                  imageUrl
+                });
+              }
+              
               return (
                 <div key={project.id}>
                   {/* Mobile: Row layout - Reduced size by 50% */}
@@ -1267,7 +1277,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
                   {/* Desktop: Card layout - 4:3 aspect ratio */}
                   <Card 
-                    className="hidden md:block group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden flex flex-col aspect-[4/3]" 
+                    className="hidden md:block group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden flex flex-col h-full" 
+                    style={{ aspectRatio: '4/3' }}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1280,19 +1291,20 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     }}
                   >
                     {/* Project Name Header - Fixed at top */}
-                    <div className="flex-shrink-0 px-4 pt-3 pb-2 bg-card z-20 relative">
+                    <div className="flex-shrink-0 px-4 pt-3 pb-2 bg-card border-b border-border">
                       <h3 className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2 text-center">
                         {project.name}
                       </h3>
                     </div>
 
                     {/* Cover Image or Gradient - Takes remaining space */}
-                    <div className="flex-1 relative overflow-hidden bg-muted min-h-0">
+                    <div className="flex-1 relative overflow-hidden bg-muted" style={{ minHeight: 0 }}>
                       {/* Gradient background - always present, shows when no image or image fails */}
                       <div 
-                        className="gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500 z-0 transition-opacity duration-300"
+                        className="gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500"
                         style={{
-                          opacity: imageUrl ? 0 : 1
+                          opacity: imageUrl ? 0 : 1,
+                          transition: 'opacity 0.3s ease'
                         }}
                       >
                         <div className="absolute inset-0 bg-black/20" />
@@ -1306,7 +1318,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                         <img 
                           src={imageUrl} 
                           alt={project.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 absolute inset-0 z-10"
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          style={{ zIndex: 10 }}
                           onError={(e) => {
                             // If image fails to load, hide it and show gradient background
                             console.log('❌ Image failed to load:', imageUrl, 'for project:', project.name);
@@ -1330,11 +1343,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                         />
                       )}
                       
-                      {/* Overlay gradient for text readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
+                      {/* Overlay gradient for text readability - only if image exists */}
+                      {imageUrl && (
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" style={{ zIndex: 20 }} />
+                      )}
                       
                       {/* Badges */}
-                      <div className="absolute top-2 right-2 flex gap-1 z-30">
+                      <div className="absolute top-2 right-2 flex gap-1" style={{ zIndex: 30 }}>
                         {project.publishStatus === 'beta-testing' && (
                           <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
                             <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
@@ -1350,7 +1365,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </div>
                     
                     {/* Button - Fixed at bottom */}
-                    <div className="flex-shrink-0 px-4 pb-3 pt-2 bg-card z-20 relative">
+                    <div className="flex-shrink-0 px-4 pb-3 pt-2 bg-card border-t border-border">
                       <Button 
                         size="sm" 
                         className="w-full text-xs h-7" 
