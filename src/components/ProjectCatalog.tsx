@@ -20,7 +20,9 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuCheckboxItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem
 } from '@/components/ui/dropdown-menu';
 import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle, Plus, Info } from 'lucide-react';
 import { MemoizedProjectCard } from '@/components/OptimizedComponents/MemoizedProjectCard';
@@ -87,6 +89,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [selectedEffortLevels, setSelectedEffortLevels] = useState<string[]>([]);
   const [projectTypeFilter, setProjectTypeFilter] = useState<'all' | 'primary' | 'secondary'>('all');
+  const projectTypeLabel = projectTypeFilter === 'all' ? '' : projectTypeFilter === 'primary' ? 'Primary' : 'Secondary';
 
   const ProjectTypeTooltip = () => (
     <TooltipProvider delayDuration={100}>
@@ -871,25 +874,31 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Project Type Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex-1 text-xs">
+                    <Filter className="w-3 h-3 mr-1" />
+                    Project Type {projectTypeLabel && `(${projectTypeLabel})`}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48 space-y-1">
+                  <div className="flex items-center justify-between px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                    <span>Project Type</span>
+                    <ProjectTypeTooltip />
+                  </div>
+                  <DropdownMenuRadioGroup value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
+                    <DropdownMenuRadioItem value="all">All project types</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="primary">Primary</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="secondary">Secondary</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Project Type Filter */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs font-medium">
-                <span>Project Type</span>
-                <ProjectTypeTooltip />
-              </div>
-              <Select value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
-                <SelectTrigger className="text-xs">
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All project types</SelectItem>
-                  <SelectItem value="primary">Primary</SelectItem>
-                  <SelectItem value="secondary">Secondary</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+           
 
             {/* Clear Filters */}
             {(searchTerm || selectedCategories.length > 0 || selectedDifficulties.length > 0 || selectedEffortLevels.length > 0 || projectTypeFilter !== 'all') && (
@@ -983,20 +992,27 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </DropdownMenu>
 
               {/* Project Type Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium whitespace-nowrap">Project Type</span>
-                <Select value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="All types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All types</SelectItem>
-                    <SelectItem value="primary">Primary</SelectItem>
-                    <SelectItem value="secondary">Secondary</SelectItem>
-                  </SelectContent>
-                </Select>
-                <ProjectTypeTooltip />
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full lg:w-auto justify-between">
+                    <span className="flex items-center gap-2">
+                      <Filter className="w-4 h-4" />
+                      Project Type {projectTypeLabel && `(${projectTypeLabel})`}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 space-y-1">
+                  <div className="flex items-center justify-between px-2 py-1 text-xs font-medium text-muted-foreground">
+                    <span>Project Type</span>
+                    <ProjectTypeTooltip />
+                  </div>
+                  <DropdownMenuRadioGroup value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
+                    <DropdownMenuRadioItem value="all">All project types</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="primary">Primary</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="secondary">Secondary</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {/* Clear Filters */}
               {(searchTerm || selectedCategories.length > 0 || selectedDifficulties.length > 0 || selectedEffortLevels.length > 0 || projectTypeFilter !== 'all') && (
