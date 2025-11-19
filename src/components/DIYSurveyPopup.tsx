@@ -420,92 +420,54 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         let finalOwnedTools = [...answers.ownedTools];
         
         if (Object.keys(quickAddTools).length > 0) {
-          // Map quick add tool names to tools library
-          const quickAddToolMap: Record<string, { name: string; variant: string }> = {
-            "Hammer|Standard": { name: "Hammer", variant: "Standard" },
-            "Power drill|": { name: "Power drill", variant: "" },
-            "Tape measure|25ft": { name: "Tape measure", variant: "25ft" },
-            "Adjustable wrench|": { name: "Adjustable wrench", variant: "" },
-            "Stud Finder|": { name: "Stud Finder", variant: "" },
-            "Circular saw|plug-in": { name: "Circular saw", variant: "plug-in" },
-            "Utility knife|": { name: "Utility knife", variant: "" },
-            "2ft level|2ft": { name: "2ft level", variant: "2ft" },
-            "Safety glasses|": { name: "Safety glasses", variant: "" },
-            "Pliers|": { name: "Pliers", variant: "" },
-            "Needlenose pliers|": { name: "Needlenose pliers", variant: "" },
-            "Caulking gun|10oz manual": { name: "Caulking gun", variant: "10oz manual" }
-          };
-
-          // Fetch tools from database to find matches
-          const { data: allTools } = await supabase
-            .from('tools')
-            .select('id, name, description, photo_url');
-
-          // Process each checked quick add tool
-          for (const [toolKey, isChecked] of Object.entries(quickAddTools)) {
+          // Process each checked quick add tool (toolKey is now the variation ID)
+          for (const [variationId, isChecked] of Object.entries(quickAddTools)) {
             if (!isChecked) continue;
             
-            const toolInfo = quickAddToolMap[toolKey];
-            if (!toolInfo) continue;
+            // Fetch the variation instance with core tool info
+            const { data: variation, error: variationError } = await supabase
+              .from('variation_instances')
+              .select(`
+                id,
+                name,
+                description,
+                photo_url,
+                sku,
+                core_item_id,
+                tools:core_item_id (
+                  id,
+                  name,
+                  description,
+                  photo_url
+                )
+              `)
+              .eq('id', variationId)
+              .eq('item_type', 'tools')
+              .single();
 
-            // Find matching tool in library (case-insensitive, partial match)
-            const matchingTool = allTools?.find(tool => 
-              tool.name.toLowerCase().includes(toolInfo.name.toLowerCase()) ||
-              toolInfo.name.toLowerCase().includes(tool.name.toLowerCase())
-            );
+            if (variationError || !variation) {
+              console.error('Error fetching variation:', variationError);
+              continue;
+            }
 
-            if (matchingTool) {
-              // If variant is specified, try to find matching variation
-              let toolToAdd: any = null;
-              
-              if (toolInfo.variant) {
-                const { data: variations } = await supabase
-                  .from('variation_instances')
-                  .select('*')
-                  .eq('core_item_id', matchingTool.id)
-                  .eq('item_type', 'tools');
+            // Get the core tool info
+            const coreTool = (variation as any).tools;
+            if (!coreTool) continue;
 
-                // Find matching variant (case-insensitive, partial match)
-                const matchingVariant = variations?.find(v => 
-                  v.name.toLowerCase().includes(toolInfo.variant.toLowerCase()) ||
-                  toolInfo.variant.toLowerCase().includes(v.name.toLowerCase())
-                );
+            // Create tool object from variation
+            const toolToAdd: any = {
+              id: variation.id, // Use variation ID as the tool ID
+              name: variation.name,
+              item: coreTool.name,
+              description: variation.description || coreTool.description,
+              photo_url: variation.photo_url || coreTool.photo_url,
+              quantity: 1,
+              model_name: variation.sku || ''
+            };
 
-                if (matchingVariant) {
-                  toolToAdd = {
-                    id: matchingVariant.id,
-                    name: matchingVariant.name,
-                    description: matchingVariant.description || matchingTool.description,
-                    photo_url: matchingVariant.photo_url || matchingTool.photo_url,
-                    quantity: 1,
-                    model_name: matchingVariant.sku || ''
-                  };
-                } else {
-                  // Use core tool if variant not found
-                  toolToAdd = {
-                    id: matchingTool.id,
-                    name: matchingTool.name,
-                    description: matchingTool.description,
-                    photo_url: matchingTool.photo_url,
-                    quantity: 1,
-                    model_name: toolInfo.variant
-                  };
-                }
-              } else {
-                // No variant specified, use core tool
-                toolToAdd = {
-                  id: matchingTool.id,
-                  name: matchingTool.name,
-                  description: matchingTool.description,
-                  photo_url: matchingTool.photo_url,
-                  quantity: 1
-                };
-              }
-
-              // Add tool if not already in ownedTools
-              if (toolToAdd && !finalOwnedTools.some(t => t.id === toolToAdd.id)) {
-                finalOwnedTools.push(toolToAdd);
-              }
+            // Add tool if not already in ownedTools
+            if (!finalOwnedTools.some(t => t.id === toolToAdd.id)) {
+              finalOwnedTools.push(toolToAdd);
             }
           }
         }
