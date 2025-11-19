@@ -372,12 +372,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     if (!currentProject) return;
     
     try {
+      // Separate incorporated phases (linked phases) - they're not in project_phases table
+      const incorporatedPhases = reorderedPhases.filter(p => p.isLinked);
+      const nonIncorporatedPhases = reorderedPhases.filter(p => !p.isLinked);
+      
       // Two-pass update to avoid unique constraint conflicts
       // Pass 1: Set all display_order values to temporary negative values to free up slots
       const tempUpdatePromises: Promise<void>[] = [];
       
-      for (let i = 0; i < reorderedPhases.length; i++) {
-        const phase = reorderedPhases[i];
+      for (let i = 0; i < nonIncorporatedPhases.length; i++) {
+        const phase = nonIncorporatedPhases[i];
         
         if (isEditingStandardProject && phase.isStandard) {
           // Standard phases - update standard_phases table
@@ -401,7 +405,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           })();
           tempUpdatePromises.push(updatePromise);
         } else {
-          // Custom/incorporated phases - update project_phases table
+          // Custom phases - update project_phases table (skip incorporated phases)
           const updatePromise = (async () => {
             const { data: phaseData } = await supabase
               .from('project_phases')
@@ -430,8 +434,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Pass 2: Update to final display_order values (now safe since all slots are free)
       const finalUpdatePromises: Promise<void>[] = [];
       
-      for (let i = 0; i < reorderedPhases.length; i++) {
-        const phase = reorderedPhases[i];
+      for (let i = 0; i < nonIncorporatedPhases.length; i++) {
+        const phase = nonIncorporatedPhases[i];
         
         if (!isEditingStandardProject || !phase.isStandard) {
           // Only update project_phases in second pass (standard_phases already done in first pass)
@@ -459,21 +463,46 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       await Promise.all(finalUpdatePromises);
       
-      // Rebuild phases JSON
+      // Rebuild phases JSON from project_phases table (this only includes non-incorporated phases)
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
         p_project_id: currentProject.id
       });
 
       if (rebuildError) throw rebuildError;
 
+      // Merge incorporated phases back into the rebuilt phases, preserving their order
+      // The rebuilt phases are in the correct order, but we need to insert incorporated phases
+      // at their correct positions based on the reorderedPhases array
+      const finalPhases: Phase[] = [];
+      const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+      const rebuiltPhasesMap = new Map(rebuiltPhasesArray.map((p: Phase) => [p.id, p]));
+      
+      // Build final phases array maintaining the order from reorderedPhases
+      for (const phase of reorderedPhases) {
+        if (phase.isLinked) {
+          // For incorporated phases, use the phase from reorderedPhases directly
+          finalPhases.push(phase);
+        } else {
+          // For non-incorporated phases, use the rebuilt phase (which has updated operations/steps)
+          const rebuiltPhase = rebuiltPhasesMap.get(phase.id);
+          if (rebuiltPhase) {
+            finalPhases.push(rebuiltPhase);
+          } else {
+            // Fallback to original if not found in rebuilt
+            finalPhases.push(phase);
+          }
+        }
+      }
+
+      // Save final phases JSON to database
       await supabase
         .from('projects')
-        .update({ phases: rebuiltPhases as any })
+        .update({ phases: finalPhases as any })
         .eq('id', currentProject.id);
       
       updateProject({
         ...currentProject,
-        phases: rebuiltPhases as any,
+        phases: finalPhases as any,
         updatedAt: new Date()
       });
       
@@ -692,7 +721,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setIsAddingPhase(false);
     }
   };
-  const handleIncorporatePhase = (incorporatedPhase: Phase & {
+  const handleIncorporatePhase = async (incorporatedPhase: Phase & {
     sourceProjectId: string;
     sourceProjectName: string;
     incorporatedRevision: number;
@@ -712,29 +741,53 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       console.warn('⚠️ Warning: Phase with same name already exists:', incorporatedPhase.name);
     }
 
-    // Generate new ID to avoid conflicts
-    const newPhaseId = `linked-phase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const linkedPhase: Phase = {
-      ...incorporatedPhase,
-      id: newPhaseId,
-      // Use new ID to avoid conflicts
-      isLinked: true,
-      sourceProjectId: incorporatedPhase.sourceProjectId,
-      sourceProjectName: incorporatedPhase.sourceProjectName,
-      incorporatedRevision: incorporatedPhase.incorporatedRevision
-    };
-    console.log('🔍 Created linked phase:', linkedPhase);
+    try {
+      // Generate new ID to avoid conflicts
+      const newPhaseId = `linked-phase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const linkedPhase: Phase = {
+        ...incorporatedPhase,
+        id: newPhaseId,
+        // Use new ID to avoid conflicts
+        isLinked: true,
+        sourceProjectId: incorporatedPhase.sourceProjectId,
+        sourceProjectName: incorporatedPhase.sourceProjectName,
+        incorporatedRevision: incorporatedPhase.incorporatedRevision
+      };
+      console.log('🔍 Created linked phase:', linkedPhase);
 
-    // Add linked phase and enforce standard phase ordering
-    const phasesWithLinked = [...currentProject.phases, linkedPhase];
-    const orderedPhases = enforceStandardPhaseOrdering(phasesWithLinked);
-    const updatedProject = {
-      ...currentProject,
-      phases: orderedPhases,
-      updatedAt: new Date()
-    };
-    console.log('🔍 Updated project phases count:', updatedProject.phases.length);
-    updateProject(updatedProject);
+      // Add linked phase and enforce standard phase ordering
+      const phasesWithLinked = [...currentProject.phases, linkedPhase];
+      const orderedPhases = enforceStandardPhaseOrdering(phasesWithLinked);
+      
+      // Save to database - incorporated phases are stored in JSON only
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({ 
+          phases: orderedPhases as any,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentProject.id);
+
+      if (updateError) {
+        console.error('Error saving incorporated phase:', updateError);
+        toast.error('Failed to save incorporated phase');
+        return;
+      }
+
+      // Update local context
+      const updatedProject = {
+        ...currentProject,
+        phases: orderedPhases,
+        updatedAt: new Date()
+      };
+      console.log('🔍 Updated project phases count:', updatedProject.phases.length);
+      updateProject(updatedProject);
+      
+      toast.success('Phase incorporated successfully');
+    } catch (error) {
+      console.error('Error incorporating phase:', error);
+      toast.error('Failed to incorporate phase');
+    }
   };
 
   const addOperation = async (phaseId: string) => {
