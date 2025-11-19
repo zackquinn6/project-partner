@@ -167,6 +167,74 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     console.log('🔍 Deduplicated phases. Output count:', result.length);
     return result;
   };
+
+  // Ensure no duplicate order numbers across phases
+  const ensureUniqueOrderNumbers = (phases: Phase[]): Phase[] => {
+    const usedNumbers = new Set<string | number>();
+    const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+    
+    return phases.map((phase, index) => {
+      // Standard phases get special handling
+      const isStandard = !phase.isLinked && standardPhaseNames.includes(phase.name);
+      
+      if (isStandard) {
+        // Standard phases keep their special order numbers
+        if (phase.name === 'Kickoff' && phase.phaseOrderNumber !== 'first') {
+          phase.phaseOrderNumber = 'first';
+        } else if (phase.name === 'Close Project' && phase.phaseOrderNumber !== 'last') {
+          phase.phaseOrderNumber = 'last';
+        } else if (phase.name === 'Planning' && (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === 'first' || phase.phaseOrderNumber === 'last')) {
+          phase.phaseOrderNumber = 2;
+        } else if (phase.name === 'Ordering' && (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === 'first' || phase.phaseOrderNumber === 'last')) {
+          phase.phaseOrderNumber = 3;
+        }
+        
+        // Track used numbers
+        if (phase.phaseOrderNumber === 'first') usedNumbers.add('first');
+        else if (phase.phaseOrderNumber === 'last') usedNumbers.add('last');
+        else if (typeof phase.phaseOrderNumber === 'number') usedNumbers.add(phase.phaseOrderNumber);
+        
+        return phase;
+      }
+      
+      // For custom and linked phases, ensure unique order numbers
+      if (phase.phaseOrderNumber !== undefined) {
+        const currentOrder = phase.phaseOrderNumber;
+        
+        // Check if this order number is already used
+        if (usedNumbers.has(currentOrder)) {
+          // Find next available number
+          let candidateNumber = index + 1;
+          while (usedNumbers.has(candidateNumber) && candidateNumber <= phases.length) {
+            candidateNumber++;
+          }
+          // If we've exhausted forward, go backwards
+          if (candidateNumber > phases.length) {
+            candidateNumber = index;
+            while (usedNumbers.has(candidateNumber) && candidateNumber >= 1) {
+              candidateNumber--;
+            }
+          }
+          phase.phaseOrderNumber = candidateNumber;
+        }
+        
+        // Track used numbers
+        if (phase.phaseOrderNumber === 'first') usedNumbers.add('first');
+        else if (phase.phaseOrderNumber === 'last') usedNumbers.add('last');
+        else if (typeof phase.phaseOrderNumber === 'number') usedNumbers.add(phase.phaseOrderNumber);
+      } else {
+        // No order number assigned, assign one
+        let candidateNumber = index + 1;
+        while (usedNumbers.has(candidateNumber) && candidateNumber <= phases.length) {
+          candidateNumber++;
+        }
+        phase.phaseOrderNumber = candidateNumber;
+        usedNumbers.add(candidateNumber);
+      }
+      
+      return phase;
+    });
+  };
   
   // State to track if we've loaded fresh phases from database
   const [phasesLoaded, setPhasesLoaded] = useState(false);
@@ -186,7 +254,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         console.error('Error rebuilding phases:', rebuildError);
         // Fallback to current project phases
         const rawPhases = deduplicatePhases(currentProject?.phases || []);
-        const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
+        const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
         setDisplayPhases(orderedPhases);
         setPhasesLoaded(true);
         return;
@@ -200,7 +269,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Combine rebuilt phases with incorporated phases
       const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
       const rawPhases = deduplicatePhases(allPhases);
-      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
+      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
       
       setDisplayPhases(orderedPhases);
       setPhasesLoaded(true);
@@ -215,7 +285,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       console.error('Error loading fresh phases:', error);
       // Fallback to current project phases
       const rawPhases = deduplicatePhases(currentProject?.phases || []);
-      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
+      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
       setDisplayPhases(orderedPhases);
       setPhasesLoaded(true);
     }
@@ -233,7 +304,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   useEffect(() => {
     if (!phasesLoaded && currentProject) {
       const rawPhases = deduplicatePhases(currentProject?.phases || []);
-      const fallbackPhases = enforceStandardPhaseOrdering(rawPhases);
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
+      const fallbackPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
       if (fallbackPhases.length > 0 && displayPhases.length === 0) {
         setDisplayPhases(fallbackPhases);
       }
@@ -896,17 +968,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
 
+      // Ensure no duplicate order numbers before saving
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(finalPhases);
+      
       // Save final phases JSON to database
       await supabase
         .from('projects')
-        .update({ phases: finalPhases as any })
+        .update({ phases: phasesWithUniqueOrder as any })
         .eq('id', currentProject.id);
       
       // Don't apply enforceStandardPhaseOrdering here - it would undo the reordering
       // The finalPhases array already has the correct order from reorderedPhases
       // Only apply it if we need to ensure standard phases are in correct positions
       // But preserve the order of custom/incorporated phases as reordered
-      const orderedFinalPhases = finalPhases; // Use finalPhases directly to preserve reordering
+      const orderedFinalPhases = phasesWithUniqueOrder; // Use phasesWithUniqueOrder to preserve reordering and ensure uniqueness
       
       // Update local context
       updateProject({
@@ -1532,6 +1607,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       toast.success('Phase deleted');
       setDeletePhaseDialogOpen(false);
       setPhaseToDelete(null);
+      
+      // Force refresh to ensure UI updates
+      await loadFreshPhases();
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
