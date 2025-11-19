@@ -81,6 +81,7 @@ export function UnifiedProjectManagement({
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [createRevisionDialogOpen, setCreateRevisionDialogOpen] = useState(false);
   const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(false);
+  const [resetRevisionsDialogOpen, setResetRevisionsDialogOpen] = useState(false);
   const [selectedRevision, setSelectedRevision] = useState<Project | null>(null);
   const [newStatus, setNewStatus] = useState<'beta-testing' | 'published'>('beta-testing');
   const [releaseNotes, setReleaseNotes] = useState('');
@@ -673,6 +674,117 @@ export function UnifiedProjectManagement({
       toast.error("Failed to delete revision");
     }
   };
+  const resetRevisions = async () => {
+    if (!selectedProject) {
+      toast.error("No project selected");
+      return;
+    }
+
+    const loadingToast = toast.loading("Resetting revisions...");
+    try {
+      // Get all revisions for this project family
+      const parentId = selectedProject.parent_project_id || selectedProject.id;
+      const {
+        data: allRevisions,
+        error: fetchError
+      } = await supabase.from('projects').select('*').or(`parent_project_id.eq.${parentId},id.eq.${parentId}`).order('revision_number', {
+        ascending: false
+      });
+
+      if (fetchError) {
+        console.error('Error fetching revisions:', fetchError);
+        throw fetchError;
+      }
+
+      if (!allRevisions || allRevisions.length === 0) {
+        toast.error("No revisions found");
+        return;
+      }
+
+      // Find the latest revision (current version or highest revision number)
+      const latestRevision = allRevisions.find(r => r.is_current_version) || allRevisions[0];
+      if (!latestRevision) {
+        toast.error("Could not find latest revision");
+        return;
+      }
+
+      // Get all other revision IDs to delete
+      const otherRevisionIds = allRevisions.filter(r => r.id !== latestRevision.id).map(r => r.id);
+
+      // Delete all other revisions first (to avoid name conflicts)
+      if (otherRevisionIds.length > 0) {
+        for (const revisionId of otherRevisionIds) {
+          // Delete related template data
+          const {
+            data: operations
+          } = await supabase.from('template_operations').select('id').eq('project_id', revisionId);
+          if (operations && operations.length > 0) {
+            const operationIds = operations.map(op => op.id);
+            // Delete template steps first
+            await supabase.from('template_steps').delete().in('operation_id', operationIds);
+            // Delete template operations
+            await supabase.from('template_operations').delete().eq('project_id', revisionId);
+          }
+          // Delete project_phases
+          await supabase.from('project_phases').delete().eq('project_id', revisionId);
+          // Delete project_runs that reference this template
+          await supabase.from('project_runs').delete().eq('template_id', revisionId);
+        }
+
+        // Delete all other projects
+        const {
+          error: deleteError
+        } = await supabase.from('projects').delete().in('id', otherRevisionIds);
+        if (deleteError) {
+          console.error('Error deleting revisions:', deleteError);
+          throw deleteError;
+        }
+      }
+
+      // Update the latest revision to be revision 1, draft, with no parent
+      const {
+        error: updateError
+      } = await supabase.from('projects').update({
+        revision_number: 1,
+        parent_project_id: null,
+        publish_status: 'draft',
+        is_current_version: true,
+        revision_notes: null,
+        release_notes: null,
+        published_at: null,
+        beta_released_at: null,
+        archived_at: null,
+        created_from_revision: null
+      }).eq('id', latestRevision.id);
+
+      if (updateError) {
+        console.error('Error updating revision:', updateError);
+        throw updateError;
+      }
+
+      toast.dismiss(loadingToast);
+      toast.success("Revisions reset successfully. Latest revision is now revision 1 (draft).");
+      setResetRevisionsDialogOpen(false);
+
+      // Refresh data
+      await Promise.all([fetchProjects(), fetchProjectRevisions()]);
+      
+      // Update selected project if it was the one reset
+      if (selectedProject.id === latestRevision.id) {
+        const {
+          data: updatedProject,
+          error: selectError
+        } = await supabase.from('projects').select('*').eq('id', latestRevision.id).single();
+        if (!selectError && updatedProject) {
+          setSelectedProject(updatedProject as Project);
+        }
+      }
+    } catch (error: any) {
+      console.error('❌ Error resetting revisions:', error);
+      toast.dismiss(loadingToast);
+      toast.error(`Failed to reset revisions: ${error.message || 'Unknown error'}`);
+    }
+  };
   const handleEditStandardProject = async () => {
     try {
       // Fetch standard project using RPC
@@ -1186,6 +1298,10 @@ export function UnifiedProjectManagement({
                               <GitBranch className="w-4 h-4" />
                               Create Revision
                             </Button>
+                            <Button onClick={() => setResetRevisionsDialogOpen(true)} variant="outline" className="flex items-center gap-2">
+                              <RefreshCw className="w-4 h-4" />
+                              Reset Revisions
+                            </Button>
                           </div>
                         </div>
                       </CardHeader>
@@ -1409,6 +1525,47 @@ export function UnifiedProjectManagement({
               // Dialog will be closed in createNewRevision on success
             }} disabled={!revisionNotes.trim()}>
                 Create Draft Revision
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Revisions Warning Dialog */}
+      <Dialog open={resetRevisionsDialogOpen} onOpenChange={setResetRevisionsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Reset Revisions
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Warning: This action cannot be undone!</p>
+              <p className="text-sm text-muted-foreground">
+                This will:
+              </p>
+              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1 ml-2">
+                <li>Delete all archived and old revisions</li>
+                <li>Set the latest version (draft, beta, or published) back to draft</li>
+                <li>Reset the revision number to 1</li>
+                <li>Remove all revision history</li>
+              </ul>
+              <p className="text-sm text-muted-foreground mt-3">
+                <strong>Note:</strong> The content of the latest revision will be preserved. Only the revision history will be cleared.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setResetRevisionsDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={async () => {
+                await resetRevisions();
+                // Dialog will be closed in resetRevisions on success
+              }}>
+                Reset Revisions
               </Button>
             </div>
           </div>
