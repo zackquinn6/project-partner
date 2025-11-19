@@ -78,6 +78,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
   const [showAttributeDialog, setShowAttributeDialog] = useState(false);
   const [showValueDialog, setShowValueDialog] = useState(false);
   const [showVariationDialog, setShowVariationDialog] = useState(false);
+  const [allAttributes, setAllAttributes] = useState<Array<{ id: string; name: string; display_name: string }>>([]);
   
   // Common attributes that can be selected
   const [commonAttributes] = useState([
@@ -704,7 +705,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                           <SelectValue placeholder="Select attribute" />
                         </SelectTrigger>
                         <SelectContent>
-                          {attributes.map(attr => (
+                          {allAttributes.map(attr => (
                             <SelectItem key={attr.id} value={attr.id}>
                               {attr.display_name}
                             </SelectItem>
