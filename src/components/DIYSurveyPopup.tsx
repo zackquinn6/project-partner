@@ -76,6 +76,19 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   const [showProjectSkillsWindow, setShowProjectSkillsWindow] = useState(false);
   const [projectSkills, setProjectSkills] = useState<Record<string, number>>({});
   const [quickAddTools, setQuickAddTools] = useState<Record<string, boolean>>({});
+  // Store continuous slider values separately to allow smooth movement without snapping
+  const [skillLevelSliderValue, setSkillLevelSliderValue] = useState<number>(() => {
+    if (initialData?.skillLevel === "newbie") return 0;
+    if (initialData?.skillLevel === "confident") return 50;
+    if (initialData?.skillLevel === "hero") return 100;
+    return 0;
+  });
+  const [physicalCapabilitySliderValue, setPhysicalCapabilitySliderValue] = useState<number>(() => {
+    if (initialData?.physicalCapability === "light") return 0;
+    if (initialData?.physicalCapability === "medium") return 50;
+    if (initialData?.physicalCapability === "heavy") return 100;
+    return 0;
+  });
 
   const totalSteps = mode === 'verify' ? 6 : (mode === 'personality' ? 12 : 4);
   const progress = mode === 'personality' && currentStep >= 0 ? 
@@ -836,14 +849,13 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                       </span>
                     </div>
                     <Slider
-                      value={[
-                        answers.skillLevel === "newbie" ? 0 : 
-                        answers.skillLevel === "confident" ? 50 : 
-                        answers.skillLevel === "hero" ? 100 : 0
-                      ]}
+                      value={[skillLevelSliderValue]}
                       onValueChange={(value) => {
-                        // Continuous slider 0-100, round to nearest step (0, 50, or 100)
+                        // Store continuous value for smooth slider movement
                         const sliderValue = value[0];
+                        setSkillLevelSliderValue(sliderValue);
+                        
+                        // Round to nearest step (0, 50, or 100) for the answer
                         let roundedValue: number;
                         if (sliderValue < 25) {
                           roundedValue = 0; // Beginner
@@ -905,14 +917,13 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                       </span>
                     </div>
                     <Slider
-                      value={[
-                        answers.physicalCapability === "light" ? 0 : 
-                        answers.physicalCapability === "medium" ? 50 : 
-                        answers.physicalCapability === "heavy" ? 100 : 0
-                      ]}
+                      value={[physicalCapabilitySliderValue]}
                       onValueChange={(value) => {
-                        // Continuous slider 0-100, round to nearest step (0, 50, or 100)
+                        // Store continuous value for smooth slider movement
                         const sliderValue = value[0];
+                        setPhysicalCapabilitySliderValue(sliderValue);
+                        
+                        // Round to nearest step (0, 50, or 100) for the answer
                         let roundedValue: number;
                         if (sliderValue < 25) {
                           roundedValue = 0; // Light-duty
