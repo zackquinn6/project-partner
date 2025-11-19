@@ -415,15 +415,61 @@ export function UnifiedProjectManagement({
       }
     }
   };
-  const handleStatusChange = (revision: Project, status: 'beta-testing' | 'published') => {
+  const handleStatusChange = async (revision: Project, status: 'beta-testing' | 'published') => {
     console.log('🎯 handleStatusChange called:', {
       revision: revision.id,
-      status
+      status,
+      revisionNumber: revision.revision_number
     });
     setSelectedRevision(revision);
     setNewStatus(status);
-    setReleaseNotes('');
-    setPublishDialogOpen(true);
+
+    // For revision 1, automatically set "Initial Release" and bypass dialog
+    if (revision.revision_number === 1) {
+      setReleaseNotes('Initial Release');
+      // Call confirmStatusChange directly without opening dialog
+      await confirmStatusChangeDirect(revision, status, 'Initial Release');
+    } else {
+      // For revision 2+, show dialog and require notes
+      setReleaseNotes('');
+      setPublishDialogOpen(true);
+    }
+  };
+  const confirmStatusChangeDirect = async (revision: Project, status: 'beta-testing' | 'published', notes: string) => {
+    console.log('🎯 confirmStatusChangeDirect called:', {
+      revisionId: revision.id,
+      status,
+      notes
+    });
+    if (!notes.trim()) {
+      console.error('❌ No release notes provided');
+      toast.error("Release notes are required");
+      return;
+    }
+    try {
+      console.log('🚀 Updating project status...');
+      const {
+        error
+      } = await supabase.from('projects').update({
+        publish_status: status,
+        release_notes: notes
+      }).eq('id', revision.id);
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
+      console.log('✅ Project status updated successfully');
+      toast.success(`Project ${status === 'beta-testing' ? 'released to Beta' : 'published'}!`);
+      setPublishDialogOpen(false);
+      setReleaseNotes('');
+      fetchProjects();
+      if (selectedProject) {
+        fetchProjectRevisions();
+      }
+    } catch (error) {
+      console.error('❌ Error updating project status:', error);
+      toast.error("Failed to update project status");
+    }
   };
   const confirmStatusChange = async () => {
     console.log('🎯 confirmStatusChange called:', {
@@ -441,30 +487,8 @@ export function UnifiedProjectManagement({
       toast.error("Release notes are required");
       return;
     }
-    try {
-      console.log('🚀 Updating project status...');
-      const {
-        error
-      } = await supabase.from('projects').update({
-        publish_status: newStatus,
-        release_notes: releaseNotes
-      }).eq('id', selectedRevision.id);
-      if (error) {
-        console.error('❌ Supabase error:', error);
-        throw error;
-      }
-      console.log('✅ Project status updated successfully');
-      toast.success(`Project ${newStatus === 'beta-testing' ? 'released to Beta' : 'published'}!`);
-      setPublishDialogOpen(false);
-      setReleaseNotes('');
-      fetchProjects();
-      if (selectedProject) {
-        fetchProjectRevisions();
-      }
-    } catch (error) {
-      console.error('❌ Error updating project status:', error);
-      toast.error("Failed to update project status");
-    }
+    // Use the direct function
+    await confirmStatusChangeDirect(selectedRevision, newStatus, releaseNotes);
   };
   const createNewRevision = async () => {
     if (!selectedProject) {
