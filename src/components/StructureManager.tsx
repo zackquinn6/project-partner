@@ -757,26 +757,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       console.log('🔄 updatePhaseOrder - reorderedPhases:', reorderedPhases.map(p => ({ id: p.id, name: p.name, isLinked: p.isLinked })));
       console.log('🔄 updatePhaseOrder - nonIncorporatedPhases:', nonIncorporatedPhases.map(p => ({ id: p.id, name: p.name })));
       
+      // Create a map of phase ID to its display_order position in reorderedPhases (excluding incorporated)
+      // This ensures we set display_order based on the actual position in reorderedPhases
+      let nonIncorporatedIndex = 0;
+      const phaseDisplayOrderMap = new Map<string, number>();
+      for (const phase of reorderedPhases) {
+        if (!phase.isLinked) {
+          phaseDisplayOrderMap.set(phase.id, nonIncorporatedIndex);
+          nonIncorporatedIndex++;
+        }
+      }
+      
       // Two-pass update to avoid unique constraint conflicts
       // Pass 1: Set all display_order values to temporary negative values to free up slots
       const tempUpdatePromises: Promise<void>[] = [];
       
-      // Use the order from reorderedPhases, but only process non-incorporated phases
-      // Map each non-incorporated phase to its index in reorderedPhases
-      const phaseIndexMap = new Map(nonIncorporatedPhases.map((p, idx) => {
-        const originalIndex = reorderedPhases.findIndex(rp => rp.id === p.id);
-        return [p.id, originalIndex];
-      }));
-      
-      // Sort nonIncorporatedPhases by their position in reorderedPhases
-      const sortedNonIncorporated = [...nonIncorporatedPhases].sort((a, b) => {
-        const indexA = phaseIndexMap.get(a.id) ?? 0;
-        const indexB = phaseIndexMap.get(b.id) ?? 0;
-        return indexA - indexB;
-      });
-      
-      for (let i = 0; i < sortedNonIncorporated.length; i++) {
-        const phase = sortedNonIncorporated[i];
+      for (let i = 0; i < nonIncorporatedPhases.length; i++) {
+        const phase = nonIncorporatedPhases[i];
+        const displayOrder = phaseDisplayOrderMap.get(phase.id) ?? i;
         
         if (isEditingStandardProject && phase.isStandard) {
           // Standard phases - update standard_phases table
