@@ -23,8 +23,16 @@ export const CompactAppsSection = ({
 }: CompactAppsSectionProps) => {
   
   const getIconComponent = (iconName: string): LucideIcon => {
+    if (!iconName) {
+      console.warn('⚠️ No icon name provided, using Sparkles fallback');
+      return Icons.Sparkles;
+    }
     const Icon = (Icons as any)[iconName];
-    return Icon || Icons.Sparkles;
+    if (!Icon) {
+      console.warn(`⚠️ Icon "${iconName}" not found in lucide-react, using Sparkles fallback`);
+      return Icons.Sparkles;
+    }
+    return Icon;
   };
 
   const handleRemoveApp = (appId: string) => {
