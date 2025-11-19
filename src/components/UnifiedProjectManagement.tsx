@@ -873,23 +873,44 @@ export function UnifiedProjectManagement({
       }
 
       console.log('✅ Revision reset complete');
+      
+      // Refresh projects list first
+      await fetchProjects();
+      
+      // Fetch the updated revision (now revision 1) from database
+      const { data: updatedProject, error: selectError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', latestRevision.id)
+        .single();
+      
+      if (selectError) {
+        console.error('❌ Error fetching updated project:', selectError);
+        throw selectError;
+      }
+      
+      if (!updatedProject) {
+        console.error('❌ Updated project not found');
+        throw new Error('Updated project not found');
+      }
+      
+      // Update selected project with the new revision 1 data
+      const mappedProject = {
+        ...updatedProject,
+        project_challenges: updatedProject.project_challenges ?? updatedProject.diy_length_challenges ?? null,
+        project_type: updatedProject.project_type || 'primary',
+        images: updatedProject.images || [],
+        cover_image: updatedProject.cover_image || null
+      } as Project;
+      
+      setSelectedProject(mappedProject);
+      
+      // Refresh project revisions list (should now only show revision 1)
+      await fetchProjectRevisions();
+      
       toast.dismiss(loadingToast);
       toast.success("Revisions reset successfully. Latest revision is now revision 1 (draft).");
       setResetRevisionsDialogOpen(false);
-
-      // Refresh data
-      await Promise.all([fetchProjects(), fetchProjectRevisions()]);
-      
-      // Update selected project if it was the one reset
-      if (selectedProject.id === latestRevision.id) {
-        const {
-          data: updatedProject,
-          error: selectError
-        } = await supabase.from('projects').select('*').eq('id', latestRevision.id).single();
-        if (!selectError && updatedProject) {
-          setSelectedProject(updatedProject as Project);
-        }
-      }
     } catch (error: any) {
       console.error('❌ Error resetting revisions:', error);
       toast.dismiss(loadingToast);
