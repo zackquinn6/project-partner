@@ -1589,7 +1589,7 @@ export function UnifiedProjectManagement({
 
       {/* Create Project Dialog */}
       <Dialog open={createProjectDialogOpen} onOpenChange={setCreateProjectDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[75vw] max-w-[75vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="w-5 h-5" />
@@ -1598,70 +1598,76 @@ export function UnifiedProjectManagement({
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="project-item">Item *</Label>
-              <Input id="project-item" placeholder="e.g., Tile Flooring" value={newProject.item || ''} onChange={e => setNewProject(prev => ({
-              ...prev,
-              item: e.target.value
-            }))} />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="project-action">Action *</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        className="w-4 h-4 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full"
-                        aria-label="Action selection guide"
-                      >
-                        <Info className="w-3 h-3" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs text-xs">
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>If removal + installation: use "Replacement"</li>
-                        <li>If new install only: use "Installation"</li>
-                        <li>If maintenance or fix: use "Repair"</li>
-                        <li>If liquid/slurry, non-cosmetic: use "Application"</li>
-                        <li>If cosmetic: use "Painting", "Refinishing", "Finishing", "Staining", etc.</li>
-                      </ul>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <div className="flex gap-2">
-                <Select value={newProject.action || ''} onValueChange={value => setNewProject(prev => ({
-                  ...prev,
-                  action: value
-                }))}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select action..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Application">Application</SelectItem>
-                    <SelectItem value="Repair">Repair</SelectItem>
-                    <SelectItem value="Installation">Installation</SelectItem>
-                    <SelectItem value="Painting">Painting</SelectItem>
-                    <SelectItem value="Finishing">Finishing</SelectItem>
-                    <SelectItem value="Refinishing">Refinishing</SelectItem>
-                    <SelectItem value="Staining">Staining</SelectItem>
-                    <SelectItem value="Replacement">Replacement</SelectItem>
-                    <SelectItem value="custom">Custom...</SelectItem>
-                  </SelectContent>
-                </Select>
-                {newProject.action === 'custom' && (
-                  <Input
-                    placeholder="Enter custom action"
-                    value={newProject.actionCustom || ''}
-                    onChange={e => setNewProject(prev => ({
+              <p className="text-xs text-muted-foreground">
+                Project Name: Item + Action. e.g. "Tile Flooring Installation"
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="project-item">Item *</Label>
+                  <Input id="project-item" placeholder="e.g., Tile Flooring" value={newProject.item || ''} onChange={e => setNewProject(prev => ({
+                    ...prev,
+                    item: e.target.value
+                  }))} />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="project-action">Action *</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="w-4 h-4 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full"
+                            aria-label="Action selection guide"
+                          >
+                            <Info className="w-3 h-3" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs text-xs">
+                          <ul className="list-disc list-inside space-y-1">
+                            <li>If removal + installation: use "Replacement"</li>
+                            <li>If new install only: use "Installation"</li>
+                            <li>If maintenance or fix: use "Repair"</li>
+                            <li>If liquid/slurry, non-cosmetic: use "Application"</li>
+                            <li>If cosmetic: use "Painting", "Refinishing", "Finishing", "Staining", etc.</li>
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <div className="flex gap-2">
+                    <Select value={newProject.action || ''} onValueChange={value => setNewProject(prev => ({
                       ...prev,
-                      actionCustom: e.target.value
-                    }))}
-                    className="flex-1"
-                  />
-                )}
+                      action: value
+                    }))}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select action..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Application">Application</SelectItem>
+                        <SelectItem value="Repair">Repair</SelectItem>
+                        <SelectItem value="Installation">Installation</SelectItem>
+                        <SelectItem value="Painting">Painting</SelectItem>
+                        <SelectItem value="Finishing">Finishing</SelectItem>
+                        <SelectItem value="Refinishing">Refinishing</SelectItem>
+                        <SelectItem value="Staining">Staining</SelectItem>
+                        <SelectItem value="Replacement">Replacement</SelectItem>
+                        <SelectItem value="custom">Custom...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {newProject.action === 'custom' && (
+                      <Input
+                        placeholder="Enter custom action"
+                        value={newProject.actionCustom || ''}
+                        onChange={e => setNewProject(prev => ({
+                          ...prev,
+                          actionCustom: e.target.value
+                        }))}
+                        className="flex-1"
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
