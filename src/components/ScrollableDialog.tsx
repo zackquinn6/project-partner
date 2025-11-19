@@ -73,16 +73,7 @@ export function ScrollableDialog({
             "flex flex-col",
             className
           )}
-          style={{ 
-            pointerEvents: 'auto',
-            // Ensure proper centering on desktop
-            ...(window.innerWidth >= 768 && {
-              position: 'fixed',
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-            })
-          }}
+          style={{ pointerEvents: 'auto' }}
         >
           {/* Header with title and close button */}
           <div className={cn(
