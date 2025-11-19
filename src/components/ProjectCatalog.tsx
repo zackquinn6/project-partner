@@ -1263,9 +1263,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </div>
                   </Card>
 
-                  {/* Desktop: Card layout - Reduced size by 50% */}
+                  {/* Desktop: Card layout - 4:3 aspect ratio */}
                   <Card 
-                    className="hidden md:block group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden flex flex-col h-full" 
+                    className="hidden md:block group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden flex flex-col aspect-[4/3]" 
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1277,9 +1277,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       }
                     }}
                   >
-                    {/* Cover Image or Gradient Header - Reduced from h-48 to h-24 */}
+                    {/* Cover Image or Gradient Header - Maintains 4:3 ratio */}
                     {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
-                      <div className="h-24 relative overflow-hidden flex-shrink-0">
+                      <div className="aspect-[4/3] relative overflow-hidden flex-shrink-0">
                         <img 
                           src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
                           alt={project.name}
@@ -1301,7 +1301,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <div className="h-24 bg-gradient-to-br from-primary to-orange-500 relative overflow-hidden flex-shrink-0">
+                      <div className="aspect-[4/3] bg-gradient-to-br from-primary to-orange-500 relative overflow-hidden flex-shrink-0">
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <IconComponent className="w-8 h-8 text-white/80" />
@@ -1323,7 +1323,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     )}
                     
                     <CardHeader className="pb-2 pt-2 flex-shrink-0">
-                      <CardTitle className="text-sm group-hover:text-primary transition-colors line-clamp-2" style={{ maxWidth: '75ch', minHeight: '2.5rem' }}>
+                      <CardTitle className="text-sm group-hover:text-primary transition-colors line-clamp-2 text-center" style={{ maxWidth: '75ch', minHeight: '2.5rem' }}>
                         {project.name}
                       </CardTitle>
                     </CardHeader>
