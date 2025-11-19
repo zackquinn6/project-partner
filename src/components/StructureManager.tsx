@@ -276,23 +276,46 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     return phaseIndex + 1;
   };
 
+  // State to store standard phase order numbers from Standard Project Foundation
+  const [standardPhaseOrderNumbers, setStandardPhaseOrderNumbers] = useState<Set<string | number>>(new Set());
+
+  // Fetch standard phase order numbers from Standard Project Foundation
+  useEffect(() => {
+    if (!isEditingStandardProject && currentProject) {
+      const fetchStandardPhaseOrders = async () => {
+        try {
+          const { data: standardProject, error } = await supabase
+            .from('projects')
+            .select('phases')
+            .eq('id', '00000000-0000-0000-0000-000000000001')
+            .single();
+
+          if (!error && standardProject?.phases) {
+            const phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
+            const orderNumbers = new Set<string | number>();
+            phases.forEach((phase: Phase) => {
+              if (phase.phaseOrderNumber !== undefined) {
+                if (phase.phaseOrderNumber === 'first') orderNumbers.add('First');
+                else if (phase.phaseOrderNumber === 'last') orderNumbers.add('Last');
+                else orderNumbers.add(phase.phaseOrderNumber);
+              }
+            });
+            setStandardPhaseOrderNumbers(orderNumbers);
+          }
+        } catch (error) {
+          console.error('Error fetching standard phase order numbers:', error);
+        }
+      };
+
+      fetchStandardPhaseOrders();
+    } else {
+      setStandardPhaseOrderNumbers(new Set());
+    }
+  }, [isEditingStandardProject, currentProject?.id]);
+
   // Get available order numbers for dropdown (excluding standard phase numbers in project templates)
   const getAvailableOrderNumbers = (currentPhase: Phase, currentIndex: number, totalPhases: number): (string | number)[] => {
     const options: (string | number)[] = ['First', 'Last'];
-    
-    // Get standard phase order numbers if editing project template (not standard foundation)
-    const standardPhaseOrderNumbers = new Set<string | number>();
-    if (!isEditingStandardProject) {
-      // Get order numbers from standard phases in Standard Project Foundation
-      const standardPhases = displayPhases.filter(p => p.isStandard && !p.isLinked);
-      standardPhases.forEach(phase => {
-        if (phase.phaseOrderNumber !== undefined) {
-          if (phase.phaseOrderNumber === 'first') standardPhaseOrderNumbers.add('First');
-          else if (phase.phaseOrderNumber === 'last') standardPhaseOrderNumbers.add('Last');
-          else standardPhaseOrderNumbers.add(phase.phaseOrderNumber);
-        }
-      });
-    }
     
     // Add integer options (1 to totalPhases)
     for (let i = 1; i <= totalPhases; i++) {
