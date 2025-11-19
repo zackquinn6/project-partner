@@ -175,6 +175,67 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     return result;
   };
 
+  // Sort phases by order number while preserving standard phase positions
+  const sortPhasesByOrderNumber = (phases: Phase[]): Phase[] => {
+    const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+    
+    // Separate standard and non-standard phases
+    const standardPhases: Phase[] = [];
+    const nonStandardPhases: Phase[] = [];
+    
+    phases.forEach(phase => {
+      const isStandard = !phase.isLinked && standardPhaseNames.includes(phase.name);
+      if (isStandard) {
+        standardPhases.push(phase);
+      } else {
+        nonStandardPhases.push(phase);
+      }
+    });
+    
+    // Sort non-standard phases by order number
+    nonStandardPhases.sort((a, b) => {
+      const aOrder = a.phaseOrderNumber;
+      const bOrder = b.phaseOrderNumber;
+      
+      // Handle 'first' and 'last' special values
+      if (aOrder === 'first') return -1;
+      if (bOrder === 'first') return 1;
+      if (aOrder === 'last') return 1;
+      if (bOrder === 'last') return -1;
+      
+      // Handle numeric order numbers
+      if (typeof aOrder === 'number' && typeof bOrder === 'number') {
+        return aOrder - bOrder;
+      }
+      if (typeof aOrder === 'number') return -1;
+      if (typeof bOrder === 'number') return 1;
+      
+      // If both are undefined or same type, maintain order
+      return 0;
+    });
+    
+    // Reconstruct array: Kickoff -> Planning -> Ordering -> sorted non-standard -> Close Project
+    const result: Phase[] = [];
+    
+    // Add standard phases in fixed order
+    const kickoff = standardPhases.find(p => p.name === 'Kickoff');
+    const planning = standardPhases.find(p => p.name === 'Planning');
+    const ordering = standardPhases.find(p => p.name === 'Ordering');
+    const closeProject = standardPhases.find(p => p.name === 'Close Project');
+    
+    if (kickoff) result.push(kickoff);
+    if (planning) result.push(planning);
+    if (ordering) result.push(ordering);
+    
+    // Add sorted non-standard phases
+    result.push(...nonStandardPhases);
+    
+    // Add Close Project last
+    if (closeProject) result.push(closeProject);
+    
+    return result;
+  };
+
   // Ensure no duplicate order numbers across phases and make them consecutive
   // IMPORTANT: This function assumes phases are already in the correct order (enforced by enforceStandardPhaseOrdering)
   // It preserves existing order numbers and only assigns new ones to phases that don't have them
@@ -265,7 +326,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const rawPhases = deduplicatePhases(currentProject?.phases || []);
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
         const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
-        setDisplayPhases(orderedPhases);
+        const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
+        setDisplayPhases(sortedPhases);
         setPhasesLoaded(true);
         return;
       }
@@ -280,8 +342,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const rawPhases = deduplicatePhases(allPhases);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
+      const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
       
-      setDisplayPhases(orderedPhases);
+      setDisplayPhases(sortedPhases);
       setPhasesLoaded(true);
       
       // Update local context with fresh phases
@@ -298,7 +361,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
       // THEN assign order numbers based on the correct order
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
-      setDisplayPhases(phasesWithUniqueOrder);
+      const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
+      setDisplayPhases(sortedPhases);
       setPhasesLoaded(true);
     }
   };
@@ -316,9 +380,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     if (!phasesLoaded && currentProject) {
       const rawPhases = deduplicatePhases(currentProject?.phases || []);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
-      const fallbackPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
-      if (fallbackPhases.length > 0 && displayPhases.length === 0) {
-        setDisplayPhases(fallbackPhases);
+      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
+      const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
+      if (sortedPhases.length > 0 && displayPhases.length === 0) {
+        setDisplayPhases(sortedPhases);
       }
     }
   }, [currentProject, phasesLoaded, displayPhases.length]);
@@ -999,8 +1064,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       });
       
+      // Sort phases by order number before saving
+      const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
+      
       // Save final phases JSON to database - explicitly include phaseOrderNumber
-      const phasesToSave = phasesWithUniqueOrder.map(phase => ({
+      const phasesToSave = sortedPhases.map(phase => ({
         ...phase,
         phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
       }));
@@ -1010,22 +1078,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         .update({ phases: phasesToSave as any })
         .eq('id', currentProject.id);
       
-      const orderedFinalPhases = phasesWithUniqueOrder;
-      
-      // Update local context
+      // Update local context with sorted phases
       updateProject({
         ...currentProject,
-        phases: orderedFinalPhases as any,
+        phases: sortedPhases as any,
         updatedAt: new Date()
       });
       
       // Update display state immediately with the reordered phases
       console.log('🔄 Updating displayPhases with reordered phases:', {
-        count: orderedFinalPhases.length,
-        phases: orderedFinalPhases.map(p => ({ id: p.id, name: p.name, order: p.phaseOrderNumber }))
+        count: sortedPhases.length,
+        phases: sortedPhases.map(p => ({ id: p.id, name: p.name, order: p.phaseOrderNumber }))
       });
       
-      setDisplayPhases(orderedFinalPhases);
+      setDisplayPhases(sortedPhases);
       
       toast.success('Phase reordered successfully');
     } catch (error) {
@@ -1401,8 +1467,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         return phase;
       });
       
+      // Sort phases by order number before displaying
+      const sortedFinalPhases = sortPhasesByOrderNumber(finalPhases);
+      
       // Log final phases with order numbers
-      console.log('🔍 Final phases with order numbers:', finalPhases.map(p => ({ 
+      console.log('🔍 Final phases with order numbers:', sortedFinalPhases.map(p => ({ 
         id: p.id, 
         name: p.name, 
         isLinked: p.isLinked, 
@@ -1412,14 +1481,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Update local context immediately with verified data
       const updatedProject = {
         ...currentProject,
-        phases: finalPhases,
+        phases: sortedFinalPhases,
         updatedAt: new Date()
       };
       console.log('🔍 Updated project phases count:', updatedProject.phases.length);
       updateProject(updatedProject);
       
       // Update display state immediately with verified data
-      setDisplayPhases(finalPhases);
+      setDisplayPhases(sortedFinalPhases);
       
       toast.success('Phase incorporated successfully');
     } catch (error) {
@@ -1669,11 +1738,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const updatedPhases = currentProject.phases.filter(p => p.id !== phaseToDelete);
         const orderedPhases = enforceStandardPhaseOrdering(updatedPhases);
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+        const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
 
         // Update project JSON
         const { error: updateError } = await supabase
           .from('projects')
-          .update({ phases: phasesWithUniqueOrder as any })
+          .update({ phases: sortedPhases as any })
           .eq('id', currentProject.id);
 
         if (updateError) throw updateError;
@@ -1681,14 +1751,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Update local context immediately
         const updatedProject = {
           ...currentProject,
-          phases: phasesWithUniqueOrder,
+          phases: sortedPhases,
           updatedAt: new Date()
         };
         updateProject(updatedProject);
 
         // Update display state immediately - don't call loadFreshPhases() for incorporated phases
         // since they're only stored in JSON and we already have the updated data
-        setDisplayPhases(phasesWithUniqueOrder);
+        setDisplayPhases(sortedPhases);
       } else {
         // For regular phases, delete from database tables
         // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
@@ -2091,19 +2161,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
       const rawPhases = deduplicatePhases(allPhases);
       const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+      const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
       
       // Update JSON column in database
       await supabase
         .from('projects')
         .update({ 
-          phases: orderedPhases as any,
+          phases: sortedPhases as any,
           updated_at: new Date().toISOString()
         })
         .eq('id', currentProject.id);
       
       // Update local state with fresh data
-      updatedProject.phases = orderedPhases;
-      setDisplayPhases(orderedPhases);
+      updatedProject.phases = sortedPhases;
+      setDisplayPhases(sortedPhases);
     }
     
     updatedProject.updatedAt = new Date();
