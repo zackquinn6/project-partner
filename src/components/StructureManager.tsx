@@ -960,13 +960,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // This preserves custom/incorporated phase order but ensures standard phases are in correct positions
       const orderedPhases = enforceStandardPhaseOrdering(finalPhases);
       
-      // THEN assign order numbers based on the correct order
+      // Preserve existing order numbers before applying ensureUniqueOrderNumbers
+      const orderNumberMap = new Map(finalPhases.map(p => [p.id, p.phaseOrderNumber]));
+      
+      // THEN assign order numbers based on the correct order, but preserve existing ones
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       
-      // Save final phases JSON to database
+      // Restore preserved order numbers for incorporated phases
+      phasesWithUniqueOrder.forEach(phase => {
+        if (phase.isLinked && orderNumberMap.has(phase.id)) {
+          const preservedOrder = orderNumberMap.get(phase.id);
+          if (preservedOrder !== undefined) {
+            phase.phaseOrderNumber = preservedOrder;
+          }
+        }
+      });
+      
+      // Save final phases JSON to database - explicitly include phaseOrderNumber
+      const phasesToSave = phasesWithUniqueOrder.map(phase => ({
+        ...phase,
+        phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
+      }));
+      
       await supabase
         .from('projects')
-        .update({ phases: phasesWithUniqueOrder as any })
+        .update({ phases: phasesToSave as any })
         .eq('id', currentProject.id);
       
       const orderedFinalPhases = phasesWithUniqueOrder;
@@ -1310,22 +1328,55 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         phaseOrderNumber: p.phaseOrderNumber 
       })));
       
-      // Apply ordering to saved phases, but preserve existing order numbers for incorporated phases
+      // Apply ordering to saved phases, but preserve existing order numbers for ALL phases
       const orderedSavedPhases = enforceStandardPhaseOrdering(savedPhases);
       
-      // For incorporated phases, preserve their order numbers from the saved data
+      // Create a map of saved phases with their order numbers
       const savedPhasesMap = new Map(savedPhases.map(p => [p.id, p]));
+      
+      // Preserve order numbers from saved data for ALL phases (not just incorporated)
       orderedSavedPhases.forEach(phase => {
-        if (phase.isLinked && savedPhasesMap.has(phase.id)) {
+        if (savedPhasesMap.has(phase.id)) {
           const savedPhase = savedPhasesMap.get(phase.id);
           if (savedPhase?.phaseOrderNumber !== undefined) {
+            // Preserve the order number from the database
             phase.phaseOrderNumber = savedPhase.phaseOrderNumber;
           }
         }
       });
       
-      // Ensure unique order numbers (this will assign numbers to phases that don't have them)
-      const finalPhases = ensureUniqueOrderNumbers(orderedSavedPhases);
+      // Only assign order numbers to phases that don't have them
+      // Don't overwrite existing order numbers
+      const finalPhases = orderedSavedPhases.map(phase => {
+        if (phase.phaseOrderNumber === undefined) {
+          // Only assign if missing - use ensureUniqueOrderNumbers logic but preserve existing
+          const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+          const isStandard = !phase.isLinked && standardPhaseNames.includes(phase.name);
+          
+          if (isStandard) {
+            if (phase.name === 'Kickoff') {
+              phase.phaseOrderNumber = 'first';
+            } else if (phase.name === 'Close Project') {
+              phase.phaseOrderNumber = 'last';
+            } else if (phase.name === 'Planning') {
+              phase.phaseOrderNumber = 2;
+            } else if (phase.name === 'Ordering') {
+              phase.phaseOrderNumber = 3;
+            }
+          } else {
+            // Find next available number
+            const usedNumbers = new Set(orderedSavedPhases
+              .filter(p => p.phaseOrderNumber !== undefined)
+              .map(p => p.phaseOrderNumber));
+            let candidateNumber = 4;
+            while (usedNumbers.has(candidateNumber) && candidateNumber <= orderedSavedPhases.length + 10) {
+              candidateNumber++;
+            }
+            phase.phaseOrderNumber = candidateNumber;
+          }
+        }
+        return phase;
+      });
       
       // Log final phases with order numbers
       console.log('🔍 Final phases with order numbers:', finalPhases.map(p => ({ 
