@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2, Eye } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 interface ProjectOverviewStepProps {
   onComplete: () => void;
   isCompleted: boolean;
@@ -44,6 +45,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     skill_level?: string;
     physical_capability?: string;
   } | null>(null);
+  const [riskManagementOpen, setRiskManagementOpen] = useState(false);
 
   // Load user profile for comparison
   useEffect(() => {
@@ -234,7 +236,18 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{currentProjectRun.description}</p>
           </div>
           <div>
-            <Label className="text-xs sm:text-sm">Project Challenges</Label>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <Label className="text-xs sm:text-sm">Project Challenges</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRiskManagementOpen(true)}
+                className="h-7 px-2.5 text-xs bg-muted/50 hover:bg-muted border-muted"
+              >
+                <Eye className="w-3 h-3 mr-1.5" />
+                See All Potential Challenges
+              </Button>
+            </div>
             <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-line mt-0.5">
               {displayProjectChallenges || 'None specified'}
             </p>
@@ -322,5 +335,16 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
         </CardContent>
       </Card>
+
+      {/* Risk Management Window - Read Only */}
+      {templateProject && (
+        <RiskManagementWindow
+          open={riskManagementOpen}
+          onOpenChange={setRiskManagementOpen}
+          projectId={templateProject.id}
+          mode="template"
+          readOnly={true}
+        />
+      )}
     </div>;
 };

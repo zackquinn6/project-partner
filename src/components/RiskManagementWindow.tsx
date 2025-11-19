@@ -32,6 +32,7 @@ interface RiskManagementWindowProps {
   projectId?: string; // Template project ID (for admin editing)
   projectRunId?: string; // Project run ID (for user viewing/editing)
   mode?: 'template' | 'run'; // 'template' for admin editing templates, 'run' for user editing runs
+  readOnly?: boolean; // If true, disable all editing functionality
 }
 
 export function RiskManagementWindow({
@@ -39,7 +40,8 @@ export function RiskManagementWindow({
   onOpenChange,
   projectId,
   projectRunId,
-  mode = 'run'
+  mode = 'run',
+  readOnly = false
 }: RiskManagementWindowProps) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -335,7 +337,7 @@ export function RiskManagementWindow({
             </div>
           ) : (
             <div className="space-y-4">
-              {(mode === 'template' || (mode === 'run' && projectRunId)) && (
+              {!readOnly && (mode === 'template' || (mode === 'run' && projectRunId)) && (
                 <div className="flex justify-end">
                   <Button
                     variant="default"
@@ -407,43 +409,51 @@ export function RiskManagementWindow({
                           </TableCell>
                           {mode === 'run' && (
                             <TableCell>
-                              <Select
-                                value={risk.status || 'open'}
-                                onValueChange={(value) => handleUpdateStatus(risk, value as any)}
-                              >
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="open">Open</SelectItem>
-                                  <SelectItem value="mitigated">Mitigated</SelectItem>
-                                  <SelectItem value="monitoring">Monitoring</SelectItem>
-                                  <SelectItem value="closed">Closed</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              {readOnly ? (
+                                <Badge className={getStatusColor(risk.status || 'open')}>
+                                  {risk.status || 'open'}
+                                </Badge>
+                              ) : (
+                                <Select
+                                  value={risk.status || 'open'}
+                                  onValueChange={(value) => handleUpdateStatus(risk, value as any)}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="open">Open</SelectItem>
+                                    <SelectItem value="mitigated">Mitigated</SelectItem>
+                                    <SelectItem value="monitoring">Monitoring</SelectItem>
+                                    <SelectItem value="closed">Closed</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </TableCell>
                           )}
                           <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditRisk(risk)}
-                                className="h-7 w-7 p-0"
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                              </Button>
-                              {!(mode === 'run' && risk.is_template_risk) && (
+                            {!readOnly && (
+                              <div className="flex gap-1">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleDeleteRisk(risk)}
-                                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                  onClick={() => handleEditRisk(risk)}
+                                  className="h-7 w-7 p-0"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
-                              )}
-                            </div>
+                                {!(mode === 'run' && risk.is_template_risk) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteRisk(risk)}
+                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
