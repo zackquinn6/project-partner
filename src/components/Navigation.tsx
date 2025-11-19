@@ -176,7 +176,11 @@ export default function Navigation({
           ? JSON.parse(freshRun.customization_decisions) 
           : freshRun.customization_decisions)
         : undefined,
-      instruction_level_preference: (freshRun.instruction_level_preference as 'quick' | 'detailed' | 'new_user') || 'detailed'
+      instruction_level_preference: (freshRun.instruction_level_preference as 'quick' | 'detailed' | 'new_user') || 'detailed',
+      // Initial project goals from kickoff step 3
+      initial_budget: freshRun.initial_budget,
+      initial_timeline: freshRun.initial_timeline,
+      initial_sizing: freshRun.initial_sizing
     };
     
     console.log('✅ Navigation: Fresh project data loaded:', {

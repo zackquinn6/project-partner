@@ -119,19 +119,25 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [targetDate, setTargetDate] = useState<string>(getInitialTargetDate());
   const [dropDeadDate, setDropDeadDate] = useState<string>(format(addDays(new Date(), 45), 'yyyy-MM-dd'));
 
-  // Update target date when projectRun changes
+  // Update target date when projectRun changes or dialog opens
   useEffect(() => {
-    if (projectRun?.initial_timeline) {
+    if (open && projectRun?.initial_timeline) {
       try {
         const goalDate = new Date(projectRun.initial_timeline);
         if (!isNaN(goalDate.getTime())) {
-          setTargetDate(format(goalDate, 'yyyy-MM-dd'));
+          const formattedDate = format(goalDate, 'yyyy-MM-dd');
+          console.log('📅 ProjectScheduler: Setting target date from initial_timeline:', {
+            initial_timeline: projectRun.initial_timeline,
+            formattedDate,
+            goalDate: goalDate.toISOString()
+          });
+          setTargetDate(formattedDate);
         }
       } catch (e) {
         console.error('Error parsing initial_timeline:', e);
       }
     }
-  }, [projectRun?.initial_timeline]);
+  }, [open, projectRun?.initial_timeline]);
 
   // Team management
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([{
