@@ -107,7 +107,6 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
 
   useEffect(() => {
     fetchAttributes();
-    fetchAllAttributes();
     fetchVariations();
   }, [coreItemId]);
 
@@ -722,7 +721,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                           <SelectValue placeholder="Select attribute" />
                         </SelectTrigger>
                         <SelectContent>
-                          {allAttributes.map(attr => (
+                          {attributes.map(attr => (
                             <SelectItem key={attr.id} value={attr.id}>
                               {attr.display_name}
                             </SelectItem>
