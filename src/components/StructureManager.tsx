@@ -694,6 +694,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const finalPhases: Phase[] = [];
       const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
       const rebuiltPhasesMap = new Map(rebuiltPhasesArray.map((p: Phase) => [p.id, p]));
+      const phaseOrderMap = new Map(reorderedPhases.map((p: Phase) => [p.id, p.phaseOrderNumber]));
       
       // Build final phases array maintaining the order from reorderedPhases
       for (const phase of reorderedPhases) {
@@ -704,6 +705,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           // For non-incorporated phases, use the rebuilt phase (which has updated operations/steps)
           const rebuiltPhase = rebuiltPhasesMap.get(phase.id);
           if (rebuiltPhase) {
+            // Preserve phase order number from reorderedPhases
+            const orderNumber = phaseOrderMap.get(phase.id);
+            if (orderNumber !== undefined) {
+              rebuiltPhase.phaseOrderNumber = orderNumber;
+            }
             finalPhases.push(rebuiltPhase);
           } else {
             // Fallback to original if not found in rebuilt
