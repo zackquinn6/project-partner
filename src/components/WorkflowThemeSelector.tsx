@@ -61,9 +61,8 @@ export function WorkflowThemeSelector({
   }, [themeMode, colorScheme]);
   return <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full gap-2">
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
           <Palette className="w-4 h-4" />
-          Theme
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">

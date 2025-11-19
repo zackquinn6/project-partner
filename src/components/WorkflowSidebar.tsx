@@ -278,27 +278,6 @@ export function WorkflowSidebar({
 
                   {/* Separator */}
                   <div className="border-t border-border my-4"></div>
-
-                  {/* Step Types Tooltip Button - Above first phase */}
-                  <div className="mb-2 flex justify-start">
-                    <TooltipProvider delayDuration={100}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setShowStepTypesInfo(true)}
-                            className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                          >
-                            <Info className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Step Types</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
                 </div>
 
                 {/* Scrollable Workflow Navigation Section - Only this section scrolls */}
@@ -441,9 +420,26 @@ export function WorkflowSidebar({
                   )}
                 </div>
 
-                {/* Theme Button - Fixed at bottom, outside scrollable section */}
-                <div className="flex-shrink-0 pt-4 border-t border-border mt-2">
+                {/* Theme and Step Types Buttons - Fixed at bottom, outside scrollable section */}
+                <div className="flex-shrink-0 pt-4 border-t border-border mt-2 flex items-center justify-center gap-2">
                   <WorkflowThemeSelector projectRunId={projectRunId} />
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowStepTypesInfo(true)}
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Step Types</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>}
           </SidebarGroupContent>
