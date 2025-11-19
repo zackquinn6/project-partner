@@ -1169,7 +1169,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             </div>
           ) : (
             filteredProjects.map(project => {
-              const IconComponent = getIconForCategory(project.category || '');
+              const projectCategories = Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []);
+              const IconComponent = getIconForCategory(projectCategories[0] || '');
               return (
                 <div key={project.id}>
                   {/* Mobile: Row layout */}
