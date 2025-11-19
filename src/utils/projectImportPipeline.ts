@@ -79,51 +79,68 @@ export async function importGeneratedProject(
 
       projectId = existingProjectId;
 
-      // Delete existing phases, operations, and steps for this project
-      // (We'll recreate them from the generated structure)
+      // IMPORTANT: Only delete NON-STANDARD phases, operations, and steps
+      // Standard phases (Kickoff, Planning, Ordering, Close Project) must be preserved
+      console.log('🔄 Importing to existing project - preserving standard phases');
       const { data: existingPhases } = await supabase
         .from('project_phases')
-        .select('id')
+        .select('id, is_standard')
         .eq('project_id', projectId);
 
       if (existingPhases && existingPhases.length > 0) {
-        const phaseIds = existingPhases.map(p => p.id);
+        // Separate standard and custom phases
+        const standardPhaseIds = existingPhases.filter(p => p.is_standard).map(p => p.id);
+        const customPhaseIds = existingPhases.filter(p => !p.is_standard).map(p => p.id);
         
-        // Get operations for these phases
-        const { data: existingOperations } = await supabase
-          .from('template_operations')
-          .select('id')
-          .in('phase_id', phaseIds);
+        console.log(`📋 Found ${standardPhaseIds.length} standard phases and ${customPhaseIds.length} custom phases`);
+        
+        // Only delete custom (non-standard) phases
+        if (customPhaseIds.length > 0) {
+          // Get operations for custom phases only
+          const { data: existingOperations } = await supabase
+            .from('template_operations')
+            .select('id')
+            .in('phase_id', customPhaseIds);
 
-        if (existingOperations && existingOperations.length > 0) {
-          const operationIds = existingOperations.map(op => op.id);
+          if (existingOperations && existingOperations.length > 0) {
+            const operationIds = existingOperations.map(op => op.id);
+            
+            // Delete steps for custom operations
+            await supabase
+              .from('template_steps')
+              .delete()
+              .in('operation_id', operationIds);
+
+            // Delete step instructions for custom steps
+            const { data: stepIds } = await supabase
+              .from('template_steps')
+              .select('id')
+              .in('operation_id', operationIds);
+            
+            if (stepIds && stepIds.length > 0) {
+              await supabase
+                .from('step_instructions')
+                .delete()
+                .in('template_step_id', stepIds.map(s => s.id));
+            }
+          }
+
+          // Delete operations for custom phases
+          await supabase
+            .from('template_operations')
+            .delete()
+            .in('phase_id', customPhaseIds);
+
+          // Delete custom phases only
+          await supabase
+            .from('project_phases')
+            .delete()
+            .in('id', customPhaseIds);
           
-          // Delete steps
-          await supabase
-            .from('template_steps')
-            .delete()
-            .in('operation_id', operationIds);
-
-          // Delete step instructions
-          await supabase
-            .from('step_instructions')
-            .delete()
-            .in('template_step_id', 
-              (await supabase.from('template_steps').select('id').in('operation_id', operationIds)).data?.map(s => s.id) || []
-            );
+          console.log(`✅ Deleted ${customPhaseIds.length} custom phases (preserved ${standardPhaseIds.length} standard phases)`);
+        } else {
+          console.log('ℹ️ No custom phases to delete - only standard phases exist');
         }
-
-        // Delete operations
-        await supabase
-          .from('template_operations')
-          .delete()
-          .in('phase_id', phaseIds);
-
-        // Delete phases
-        await supabase
-          .from('project_phases')
-          .delete()
-          .eq('project_id', projectId);
       }
     } else {
       // Check for duplicate project name before creating
