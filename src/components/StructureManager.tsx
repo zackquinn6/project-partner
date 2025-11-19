@@ -956,8 +956,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
 
-      // Ensure no duplicate order numbers before saving
-      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(finalPhases);
+      // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST to ensure Close Project is always last
+      // This preserves custom/incorporated phase order but ensures standard phases are in correct positions
+      const orderedPhases = enforceStandardPhaseOrdering(finalPhases);
+      
+      // THEN assign order numbers based on the correct order
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       
       // Save final phases JSON to database
       await supabase
@@ -965,11 +969,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         .update({ phases: phasesWithUniqueOrder as any })
         .eq('id', currentProject.id);
       
-      // Don't apply enforceStandardPhaseOrdering here - it would undo the reordering
-      // The finalPhases array already has the correct order from reorderedPhases
-      // Only apply it if we need to ensure standard phases are in correct positions
-      // But preserve the order of custom/incorporated phases as reordered
-      const orderedFinalPhases = phasesWithUniqueOrder; // Use phasesWithUniqueOrder to preserve reordering and ensure uniqueness
+      const orderedFinalPhases = phasesWithUniqueOrder;
       
       // Update local context
       updateProject({
