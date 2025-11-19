@@ -250,8 +250,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               />
             </div>
 
+            {/* Header for Quick Project Goals */}
+            <div className="mt-4 mb-2">
+              <h3 className="text-sm sm:text-base font-medium text-foreground">
+                Quick project goals - you can edit these later
+              </h3>
+            </div>
+
             {/* Three column layout for Project Size, Timeline, Budget */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
               {/* Project Size */}
               <div className="flex flex-col items-center text-center">
                 <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5 justify-center">
