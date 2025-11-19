@@ -197,11 +197,8 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
       {/* Advanced Settings (Collapsible) */}
       <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
         <Card>
-          <CollapsibleTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-between p-4 h-auto"
-            >
+          <CardContent className="p-4 pb-2">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Advanced Options</span>
@@ -211,11 +208,26 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                   </Badge>
                 )}
               </div>
-              {showAdvanced ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  {showAdvanced ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+            <p className="text-xs text-muted-foreground mb-0">
+              Use this section to define specific team member availability and schedule detail.
+            </p>
+          </CardContent>
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-between px-4 pb-4 pt-0 h-auto"
+            >
+              <span></span>
             </Button>
           </CollapsibleTrigger>
           

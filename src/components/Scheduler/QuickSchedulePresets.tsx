@@ -78,7 +78,7 @@ export const QuickSchedulePresets: React.FC<QuickSchedulePresetsProps> = ({ onPr
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-sm font-medium mb-2">Quick Setup</h3>
+        <h3 className="text-sm font-medium mb-2">Quick Availability</h3>
         <p className="text-xs text-muted-foreground">Choose a schedule that fits your availability</p>
       </div>
       
