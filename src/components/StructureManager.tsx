@@ -1535,11 +1535,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         };
         updateProject(updatedProject);
 
-        // Update display state immediately
+        // Update display state immediately - don't call loadFreshPhases() for incorporated phases
+        // since they're only stored in JSON and we already have the updated data
         setDisplayPhases(phasesWithUniqueOrder);
-
-        // Also refresh from database to ensure consistency
-        await loadFreshPhases();
       } else {
         // For regular phases, delete from database tables
         // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
