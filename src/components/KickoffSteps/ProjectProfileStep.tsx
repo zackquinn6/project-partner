@@ -246,12 +246,23 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                     className="text-xs sm:text-sm h-9 sm:h-10 w-[80px]"
                   />
                   <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                    {scalingUnit === 'per square foot' ? 'sq ft' :
-                     scalingUnit === 'per 10x10 room' ? 'rooms' :
-                     scalingUnit === 'per linear foot' ? 'linear ft' :
-                     scalingUnit === 'per cubic yard' ? 'cu yd' :
-                     scalingUnit === 'per item' && itemType ? itemType.toLowerCase() :
-                     scalingUnit === 'per item' ? 'items' : 'units'}
+                    {(() => {
+                      // Standard scaling units
+                      if (scalingUnit === 'per square foot') return 'sq ft';
+                      if (scalingUnit === 'per 10x10 room') return 'rooms';
+                      if (scalingUnit === 'per linear foot') return 'linear ft';
+                      if (scalingUnit === 'per cubic yard') return 'cu yd';
+                      
+                      // For "per item", check if there's a custom item_type
+                      if (scalingUnit === 'per item') {
+                        if (itemType) return itemType.toLowerCase();
+                        return 'items';
+                      }
+                      
+                      // If scalingUnit is a custom value (not one of the standard ones), use it directly
+                      // This handles cases like "Toilet(s)" as a custom scaling unit
+                      return scalingUnit;
+                    })()}
                   </span>
                 </div>
               </div>
