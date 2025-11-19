@@ -66,14 +66,18 @@ export function ScrollableDialog({
             // Mobile: Full screen
             "fixed inset-0 z-[101]",
             // Desktop: Centered with 90% viewport, ensure it's always visible
-            "md:fixed md:left-1/2 md:top-1/2 md:inset-auto md:-translate-x-1/2 md:-translate-y-1/2",
+            "md:fixed md:left-1/2 md:top-1/2 md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2",
             "md:w-[90vw] md:max-w-[90vw] md:h-[90vh] md:max-h-[90vh]",
             "md:max-w-[calc(100vw-2rem)] md:max-h-[calc(100vh-2rem)]",
             "bg-background md:border md:rounded-lg shadow-lg",
             "flex flex-col",
             className
           )}
-          style={{ pointerEvents: 'auto' }}
+          style={{ 
+            pointerEvents: 'auto',
+            // Ensure proper centering on desktop - override any parent transforms
+            position: 'fixed'
+          }}
         >
           {/* Header with title and close button */}
           <div className={cn(
