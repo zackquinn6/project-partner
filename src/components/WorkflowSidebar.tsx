@@ -190,13 +190,13 @@ export function WorkflowSidebar({
   return <Sidebar collapsible="icon">
       <SidebarTrigger className="m-2 self-end" />
       
-      <SidebarContent className="pt-4">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-sm font-semibold">{projectName || 'Project Progress'}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            {!collapsed && <div className="flex flex-col h-full p-2">
-                {/* Fixed Upper Section */}
-                <div className="flex-shrink-0 space-y-4">
+      <SidebarContent className="pt-4 flex flex-col h-full overflow-hidden">
+        <SidebarGroup className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <SidebarGroupLabel className="px-4 text-sm font-semibold flex-shrink-0">{projectName || 'Project Progress'}</SidebarGroupLabel>
+          <SidebarGroupContent className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {!collapsed && <div className="flex flex-col h-full p-2 min-h-0 overflow-hidden">
+                {/* Fixed Upper Section - No scrolling */}
+                <div className="flex-shrink-0 space-y-4 pb-4">
                   {/* Progress Header */}
                   <div className="space-y-2">
                     <div className="text-xs text-muted-foreground">
@@ -301,8 +301,8 @@ export function WorkflowSidebar({
                   </div>
                 </div>
 
-                {/* Scrollable Workflow Navigation Section */}
-                <div className="flex-1 overflow-y-auto min-h-0 space-y-2">
+                {/* Scrollable Workflow Navigation Section - Only this section scrolls */}
+                <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pb-2">
                   {!groupedSteps || Object.keys(groupedSteps).length === 0 ? (
                     <div className="text-xs text-muted-foreground text-center py-4">
                       No workflow steps available. Please check project structure.
@@ -441,8 +441,8 @@ export function WorkflowSidebar({
                   )}
                 </div>
 
-                {/* Theme Button - Fixed at bottom of scrollable section */}
-                <div className="flex-shrink-0 mt-4 pt-4 border-t border-border">
+                {/* Theme Button - Fixed at bottom, outside scrollable section */}
+                <div className="flex-shrink-0 pt-4 border-t border-border mt-2">
                   <WorkflowThemeSelector projectRunId={projectRunId} />
                 </div>
               </div>}
