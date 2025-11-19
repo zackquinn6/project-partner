@@ -14,12 +14,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical, History } from 'lucide-react';
+import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical, History, Info } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+const FILTER_DESCRIPTIONS = {
+  skill: "Matches your experience level. Beginner: new to projects. Intermediate: comfortable with light/medium DIY work but not advanced trades. Advanced: have delivered high-skill projects like trim, tile, electrical, or plumbing with great results.",
+  effort: "Represents the physical effort required. Painting might be low effort, while demolishing an old kitchen is high effort."
+} as const;
 
 interface EditingState {
   type: 'phase' | 'operation' | 'step' | null;
@@ -734,7 +740,25 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium">Skill Level</label>
+                <div className="flex items-center gap-1 mb-1">
+                  <label className="text-sm font-medium">Skill Level</label>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center rounded-full p-0.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1"
+                          aria-label="Skill Level info"
+                        >
+                          <Info className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-xs">
+                        <p>{FILTER_DESCRIPTIONS.skill}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <select 
                   value={currentProject.skillLevel || ''} 
                   onChange={(e) => updateProjectData({...currentProject, skillLevel: e.target.value as any})}
@@ -747,7 +771,25 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium">Effort Level</label>
+                <div className="flex items-center gap-1 mb-1">
+                  <label className="text-sm font-medium">Effort Level</label>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center rounded-full p-0.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1"
+                          aria-label="Effort Level info"
+                        >
+                          <Info className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-xs">
+                        <p>{FILTER_DESCRIPTIONS.effort}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <select 
                   value={currentProject.effortLevel || ''} 
                   onChange={(e) => updateProjectData({...currentProject, effortLevel: e.target.value as any})}
