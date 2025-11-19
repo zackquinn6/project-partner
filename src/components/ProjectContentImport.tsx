@@ -171,6 +171,8 @@ IMPORTANT FORMAT NOTES:
     }
 
     const phasesMap = new Map<string, Phase>();
+    // Track which steps have had their process variables set (only first row per step)
+    const stepProcessVariablesSet = new Set<string>();
     
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -249,8 +251,13 @@ IMPORTANT FORMAT NOTES:
         phase.operations.push(operation);
       }
 
+      // Create a unique key for this step (phase + operation + step name)
+      const stepKey = `${rowData.phase}::${rowData.operation}::${rowData.step}`;
+      
       // Get or create step
       let step = operation.steps.find(s => s.step === rowData.step);
+      const isFirstRowForStep = !step;
+      
       if (!step) {
         step = {
           id: `step-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -264,6 +271,33 @@ IMPORTANT FORMAT NOTES:
           inputs: []
         };
         operation.steps.push(step);
+      }
+      
+      // Process variables: Only read from the first row of each step
+      if (isFirstRowForStep && rowData.process_variables && rowData.process_variables.trim()) {
+        const processVariableNames = rowData.process_variables
+          .split('*')
+          .map((name: string) => name.trim())
+          .filter(Boolean);
+        
+        console.log(`Row ${i + 1} - Process variables for step "${rowData.step}":`, processVariableNames);
+        
+        // Create StepInput entries for each process variable
+        processVariableNames.forEach((varName: string) => {
+          if (varName && !step!.inputs?.some(input => input.name === varName)) {
+            const input: StepInput = {
+              id: `input-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: varName,
+              type: 'text' as const,
+              required: true,
+              description: `Process variable: ${varName}`
+            };
+            step!.inputs = step!.inputs || [];
+            step!.inputs.push(input);
+          }
+        });
+        
+        stepProcessVariablesSet.add(stepKey);
       }
 
       // Parse and add inputs if provided
@@ -503,7 +537,10 @@ IMPORTANT FORMAT NOTES:
                 <strong>Required Columns:</strong> phase, operation, step
               </div>
               <div>
-                <strong>Optional Columns:</strong> step_description, inputs, output_name, output_description, output_type, tool_name, tool_description, material_name, material_description
+                <strong>Optional Columns:</strong> step_description, process_variables, inputs, output_name, output_description, output_type, tool_name, tool_description, material_name, material_description
+              </div>
+              <div>
+                <strong>Process Variables Format:</strong> Multiple variables separated by asterisks (*), e.g., "Budget*Project Type*Timeline". Process variables are only read from the FIRST row of each step.
               </div>
               <div>
                 <strong>Inputs Format:</strong> Multiple inputs separated by asterisks (*), e.g., "Budget Amount*Project Type*Timeline"
@@ -512,7 +549,7 @@ IMPORTANT FORMAT NOTES:
                 <strong>Output Types:</strong> none, major-aesthetics, performance-durability, safety
               </div>
               <div>
-                <strong>Note:</strong> Multiple rows can have the same phase/operation to add different steps, outputs, tools, or materials
+                <strong>Note:</strong> Multiple rows can have the same phase/operation/step to add different outputs, tools, or materials. Process variables should only be in the first row for each step.
               </div>
             </div>
           </CardContent>
