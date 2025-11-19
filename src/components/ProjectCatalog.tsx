@@ -278,19 +278,26 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   }, [projects, user, isAdminMode, publicProjects]);
 
   // Get unique filter options
-  const availableCategories = useMemo(() => 
-    [...new Set(publishedProjects.map(p => p.category).filter(Boolean))], 
-    [publishedProjects]
-  );
+  const availableCategories = useMemo(() => {
+    const categories = new Set<string>();
+    publishedProjects.forEach(p => {
+      if (Array.isArray(p.category)) {
+        p.category.forEach(cat => cat && categories.add(cat));
+      } else if (typeof p.category === 'string' && p.category.trim()) {
+        categories.add(p.category);
+      }
+    });
+    return Array.from(categories).sort();
+  }, [publishedProjects]);
   
   const availableDifficulties = useMemo(() => 
-    [...new Set(publishedProjects.map(p => p.difficulty).filter(Boolean))], 
-    [publishedProjects]
+    ['Beginner', 'Intermediate', 'Advanced'],
+    []
   );
   
   const availableEffortLevels = useMemo(() => 
-    [...new Set(publishedProjects.map(p => p.effortLevel).filter(Boolean))], 
-    [publishedProjects]
+    ['Low', 'Medium', 'High'],
+    []
   );
 
   // Filtered projects based on search and filters
@@ -300,11 +307,14 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       const matchesSearch = !searchTerm || 
         project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.category?.toLowerCase().includes(searchTerm.toLowerCase());
+        (Array.isArray(project.category)
+          ? project.category.some(cat => cat?.toLowerCase().includes(searchTerm.toLowerCase()))
+          : project.category?.toLowerCase().includes(searchTerm.toLowerCase()));
 
       // Category filter
+      const projectCategories = Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []);
       const matchesCategory = selectedCategories.length === 0 || 
-        (project.category && selectedCategories.includes(project.category));
+        (projectCategories.length > 0 && projectCategories.some(cat => selectedCategories.includes(cat)));
 
       // Difficulty filter
       const matchesDifficulty = selectedDifficulties.length === 0 || 

@@ -204,7 +204,7 @@ export interface Project {
   updatedAt: Date;
   // Note: status, startDate, planEndDate, endDate only apply to ProjectRun, not templates
   publishStatus?: 'draft' | 'published' | 'beta-testing' | 'archived';
-  category?: string[];
+  category?: string | string[];
   effortLevel?: 'Low' | 'Medium' | 'High';
   skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
   estimatedTime?: string;

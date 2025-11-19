@@ -81,7 +81,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           endDate: project.end_date ? new Date(project.end_date) : undefined,
           status: 'not-started' as const, // Projects don't have status - only project_runs do
           publishStatus: project.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived',
-          category: project.category,
+          category: Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []),
           difficulty: project.difficulty,
           effortLevel: project.effort_level as Project['effortLevel'],
           skillLevel: project.skill_level as Project['skillLevel'],
