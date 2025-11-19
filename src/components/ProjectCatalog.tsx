@@ -1320,16 +1320,14 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </div>
                     
                     {/* Content area - flex-1 to take remaining space, flex-col to stack items */}
-                    <div className="flex-1 flex flex-col min-h-0">
-                      <CardHeader className="pb-1 pt-2 flex-shrink-0">
-                        <CardTitle className="text-sm group-hover:text-primary transition-colors line-clamp-2 text-center">
+                    <div className="flex-1 flex flex-col justify-between min-h-0">
+                      <div className="pb-1 pt-2 px-4 flex-shrink-0">
+                        <h3 className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2 text-center">
                           {project.name}
-                        </CardTitle>
-                      </CardHeader>
-
-                      <div className="flex-1 min-h-0" /> {/* Spacer to push button down */}
+                        </h3>
+                      </div>
                       
-                      <CardContent className="pt-0 pb-2 flex-shrink-0">
+                      <div className="px-4 pb-2 flex-shrink-0">
                         <Button 
                           size="sm" 
                           className="w-full text-xs h-7" 
@@ -1346,7 +1344,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                         >
                           {isAdminMode ? 'Edit Template' : 'Start Project'}
                         </Button>
-                      </CardContent>
+                      </div>
                     </div>
                   </Card>
                 </div>
