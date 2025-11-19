@@ -46,6 +46,7 @@ interface Project {
   skill_level: string | null;
   estimated_time: string | null;
   scaling_unit: string | null;
+  item_type: string | null;
   project_challenges: string | null;
   project_type?: 'primary' | 'secondary';
   created_by: string;
@@ -94,6 +95,7 @@ export function UnifiedProjectManagement({
     skill_level: string;
     estimated_time: string;
     scaling_unit: string;
+    item_type: string;
     project_type: 'primary' | 'secondary';
   }>({
     item: '',
@@ -105,6 +107,7 @@ export function UnifiedProjectManagement({
     skill_level: 'Intermediate',
     estimated_time: '',
     scaling_unit: '',
+    item_type: '',
     project_type: 'primary'
   });
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
@@ -210,6 +213,7 @@ export function UnifiedProjectManagement({
         skill_level: editedProject.skill_level !== undefined ? editedProject.skill_level : selectedProject.skill_level,
         estimated_time: editedProject.estimated_time !== undefined ? editedProject.estimated_time : selectedProject.estimated_time,
         scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
+        item_type: editedProject.item_type !== undefined ? editedProject.item_type : selectedProject.item_type,
         project_type: editedProject.project_type || selectedProject.project_type || 'primary',
         updated_at: new Date().toISOString(),
         // Always include project_challenges - determine value below
@@ -725,6 +729,7 @@ export function UnifiedProjectManagement({
             skill_level: newProject.skill_level,
             estimated_time: newProject.estimated_time || null,
             scaling_unit: newProject.scaling_unit || null,
+            item_type: newProject.item_type || null,
             project_type: newProject.project_type || 'primary'
           })
           .eq('id', data);
@@ -743,6 +748,7 @@ export function UnifiedProjectManagement({
         skill_level: 'Intermediate',
         estimated_time: '',
         scaling_unit: '',
+        item_type: '',
         project_type: 'primary'
       });
       fetchProjects();
@@ -1029,6 +1035,16 @@ export function UnifiedProjectManagement({
                                 </SelectContent>
                               </Select> : <div className="p-2 bg-muted rounded text-sm">{selectedProject.scaling_unit || 'Not specified'}</div>}
                           </div>
+
+                          {(editingProject ? editedProject.scaling_unit : selectedProject.scaling_unit) === 'per item' && (
+                            <div className="space-y-1">
+                              <Label className="text-sm">Item Type</Label>
+                              {editingProject ? <Input value={editedProject.item_type || ''} onChange={e => setEditedProject(prev => ({
+                                ...prev,
+                                item_type: e.target.value
+                              }))} className="text-sm" placeholder="e.g., Door, Window, Fixture" /> : <div className="p-2 bg-muted rounded text-sm">{selectedProject.item_type || 'Not specified'}</div>}
+                            </div>
+                          )}
                         </div>
 
                         <div className="space-y-1">
@@ -1546,11 +1562,21 @@ export function UnifiedProjectManagement({
               </div>
             </div>
 
+            {newProject.scaling_unit === 'per item' && (
+              <div className="space-y-2">
+                <Label htmlFor="project-item-type">Item Type</Label>
+                <Input id="project-item-type" placeholder="e.g., Door, Window, Fixture" value={newProject.item_type || ''} onChange={e => setNewProject(prev => ({
+                  ...prev,
+                  item_type: e.target.value
+                }))} />
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setCreateProjectDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={createProject} disabled={!newProject.name?.trim()}>
+              <Button onClick={createProject} disabled={!newProject.item?.trim() || (!newProject.action && !newProject.actionCustom?.trim())}>
                 Create Project
               </Button>
             </div>
