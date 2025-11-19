@@ -59,6 +59,15 @@ export const CompactAppsSection = ({
         {apps.map((app) => {
           const IconComponent = getIconComponent(app.icon);
           
+          // Debug: Log icon lookup
+          if (!app.icon || !(Icons as any)[app.icon]) {
+            console.warn('⚠️ App icon issue:', {
+              appName: app.appName,
+              iconName: app.icon,
+              iconFound: !!(Icons as any)[app.icon]
+            });
+          }
+          
           return (
             <Card
               key={app.id}
