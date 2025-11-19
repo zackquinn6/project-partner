@@ -1290,9 +1290,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     <div className="flex-1 relative overflow-hidden bg-muted min-h-0">
                       {/* Gradient background - always present, shows when no image or image fails */}
                       <div 
-                        className="gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500 z-0"
+                        className="gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500 z-0 transition-opacity duration-300"
                         style={{
-                          opacity: ((project as any).cover_image || project.image || (project as any).images?.[0]) ? 0 : 1
+                          opacity: imageUrl ? 0 : 1
                         }}
                       >
                         <div className="absolute inset-0 bg-black/20" />
@@ -1302,38 +1302,33 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       </div>
                       
                       {/* Image - if available */}
-                      {(() => {
-                        const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
-                        if (!imageUrl) return null;
-                        
-                        return (
-                          <img 
-                            src={imageUrl} 
-                            alt={project.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 absolute inset-0 z-10"
-                            onError={(e) => {
-                              // If image fails to load, hide it and show gradient background
-                              console.log('❌ Image failed to load:', imageUrl);
-                              const img = e.target as HTMLImageElement;
-                              img.style.display = 'none';
-                              // Show the gradient background
-                              const gradientDiv = img.parentElement?.querySelector('.gradient-background') as HTMLElement;
-                              if (gradientDiv) {
-                                gradientDiv.style.opacity = '1';
-                              }
-                            }}
-                            onLoad={(e) => {
-                              // Hide gradient when image loads successfully
-                              console.log('✅ Image loaded successfully:', imageUrl);
-                              const img = e.target as HTMLImageElement;
-                              const gradientDiv = img.parentElement?.querySelector('.gradient-background') as HTMLElement;
-                              if (gradientDiv) {
-                                gradientDiv.style.opacity = '0';
-                              }
-                            }}
-                          />
-                        );
-                      })()}
+                      {imageUrl && (
+                        <img 
+                          src={imageUrl} 
+                          alt={project.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 absolute inset-0 z-10"
+                          onError={(e) => {
+                            // If image fails to load, hide it and show gradient background
+                            console.log('❌ Image failed to load:', imageUrl, 'for project:', project.name);
+                            const img = e.target as HTMLImageElement;
+                            img.style.display = 'none';
+                            // Show the gradient background
+                            const gradientDiv = img.parentElement?.querySelector('.gradient-background') as HTMLElement;
+                            if (gradientDiv) {
+                              gradientDiv.style.opacity = '1';
+                            }
+                          }}
+                          onLoad={(e) => {
+                            // Hide gradient when image loads successfully
+                            console.log('✅ Image loaded successfully:', imageUrl, 'for project:', project.name);
+                            const img = e.target as HTMLImageElement;
+                            const gradientDiv = img.parentElement?.querySelector('.gradient-background') as HTMLElement;
+                            if (gradientDiv) {
+                              gradientDiv.style.opacity = '0';
+                            }
+                          }}
+                        />
+                      )}
                       
                       {/* Overlay gradient for text readability */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
