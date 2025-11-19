@@ -155,8 +155,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const seen = new Set<string>();
     const result: Phase[] = [];
     for (const phase of phases) {
+      if (!phase || !phase.id) {
+        console.warn('🔍 Skipping phase with missing id:', phase);
+        continue;
+      }
       // Use ID for deduplication instead of name to allow multiple phases with same name but different IDs
-      const key = phase.isLinked ? `${phase.id}-${phase.sourceProjectId}` : phase.id;
+      // For linked phases, use a combination of id and sourceProjectId to ensure uniqueness
+      const key = phase.isLinked && phase.sourceProjectId 
+        ? `${phase.id}-${phase.sourceProjectId}` 
+        : phase.id;
       if (!seen.has(key)) {
         seen.add(key);
         result.push(phase);
