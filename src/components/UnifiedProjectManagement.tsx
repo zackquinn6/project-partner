@@ -510,17 +510,12 @@ export function UnifiedProjectManagement({
       : 0;
     const nextRevisionNumber = maxRevisionNumber + 1;
 
-    // For revision 1, automatically use "Initial Release" if notes are empty
+    // Revision notes are optional for draft creation - only required on release
+    // For revision 1, automatically use "Initial Release" if notes are empty (for consistency)
     let notesToUse = revisionNotes.trim();
     if (nextRevisionNumber === 1 && !notesToUse) {
       notesToUse = 'Initial Release';
       setRevisionNotes('Initial Release');
-    }
-
-    // For revision 2+, require notes
-    if (nextRevisionNumber > 1 && !notesToUse) {
-      toast.error("Revision notes are required for all revisions");
-      return;
     }
 
     const loadingToast = toast.loading("Creating revision...");
@@ -1527,9 +1522,9 @@ export function UnifiedProjectManagement({
             </p>
             
             <div className="space-y-2">
-              <Label htmlFor="revision-notes">Revision Notes *</Label>
-              <Textarea id="revision-notes" placeholder="Describe the purpose of this revision..." value={revisionNotes} onChange={e => setRevisionNotes(e.target.value)} rows={3} required />
-              <p className="text-xs text-muted-foreground">Revision notes are required for all revisions.</p>
+              <Label htmlFor="revision-notes">Revision Notes (Optional)</Label>
+              <Textarea id="revision-notes" placeholder="Describe the purpose of this revision (optional - can be added later on release)..." value={revisionNotes} onChange={e => setRevisionNotes(e.target.value)} rows={3} />
+              <p className="text-xs text-muted-foreground">Revision notes are optional for draft creation. They will be required when releasing to beta or production.</p>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -1541,13 +1536,9 @@ export function UnifiedProjectManagement({
               </Button>
               <Button onClick={async () => {
               console.log('🟢 Create Draft Revision button (inside dialog) clicked');
-              if (!revisionNotes.trim()) {
-                toast.error("Revision notes are required");
-                return;
-              }
               await createNewRevision();
               // Dialog will be closed in createNewRevision on success
-            }} disabled={!revisionNotes.trim()}>
+            }}>
                 Create Draft Revision
               </Button>
             </div>
