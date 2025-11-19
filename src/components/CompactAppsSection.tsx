@@ -64,7 +64,8 @@ export const CompactAppsSection = ({
             console.warn('⚠️ App icon issue:', {
               appName: app.appName,
               iconName: app.icon,
-              iconFound: !!(Icons as any)[app.icon]
+              iconFound: !!(Icons as any)[app.icon],
+              availableIcons: Object.keys(Icons).slice(0, 10) // Show first 10 available icons
             });
           }
           
@@ -89,9 +90,10 @@ export const CompactAppsSection = ({
               )}
               
               <div className="flex flex-col items-center justify-center p-2 space-y-1">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
                   <IconComponent 
-                    className="w-4 h-4 text-primary"
+                    className="w-4 h-4 text-primary flex-shrink-0"
+                    style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 2 }}
                   />
                 </div>
                 
