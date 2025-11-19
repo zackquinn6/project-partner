@@ -26,7 +26,6 @@ const PROJECT_LIST = [
   "Electrical",
   "Plumbing",
   "Precision & high patience: tiling, trim",
-  "Permit-required stuff",
   "High heights / ladders"
 ];
 
