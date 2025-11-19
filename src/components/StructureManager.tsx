@@ -526,7 +526,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       });
       
+      console.log('🔄 Reordering phases - before updatePhaseOrder:', {
+        phaseId,
+        direction,
+        oldIndex: phaseIndex,
+        newIndex,
+        reorderedPhases: reorderedPhases.map(p => ({ id: p.id, name: p.name, order: p.phaseOrderNumber }))
+      });
+      
       await updatePhaseOrder(reorderedPhases);
+      
+      console.log('✅ Reordering complete - displayPhases should update');
       
       // Ensure minimum display time
       const elapsedTime = Date.now() - startTime;
@@ -741,14 +751,32 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     try {
       // Separate incorporated phases (linked phases) - they're not in project_phases table
       const incorporatedPhases = reorderedPhases.filter(p => p.isLinked);
+      // Keep non-incorporated phases in the order they appear in reorderedPhases
       const nonIncorporatedPhases = reorderedPhases.filter(p => !p.isLinked);
+      
+      console.log('🔄 updatePhaseOrder - reorderedPhases:', reorderedPhases.map(p => ({ id: p.id, name: p.name, isLinked: p.isLinked })));
+      console.log('🔄 updatePhaseOrder - nonIncorporatedPhases:', nonIncorporatedPhases.map(p => ({ id: p.id, name: p.name })));
       
       // Two-pass update to avoid unique constraint conflicts
       // Pass 1: Set all display_order values to temporary negative values to free up slots
       const tempUpdatePromises: Promise<void>[] = [];
       
-      for (let i = 0; i < nonIncorporatedPhases.length; i++) {
-        const phase = nonIncorporatedPhases[i];
+      // Use the order from reorderedPhases, but only process non-incorporated phases
+      // Map each non-incorporated phase to its index in reorderedPhases
+      const phaseIndexMap = new Map(nonIncorporatedPhases.map((p, idx) => {
+        const originalIndex = reorderedPhases.findIndex(rp => rp.id === p.id);
+        return [p.id, originalIndex];
+      }));
+      
+      // Sort nonIncorporatedPhases by their position in reorderedPhases
+      const sortedNonIncorporated = [...nonIncorporatedPhases].sort((a, b) => {
+        const indexA = phaseIndexMap.get(a.id) ?? 0;
+        const indexB = phaseIndexMap.get(b.id) ?? 0;
+        return indexA - indexB;
+      });
+      
+      for (let i = 0; i < sortedNonIncorporated.length; i++) {
+        const phase = sortedNonIncorporated[i];
         
         if (isEditingStandardProject && phase.isStandard) {
           // Standard phases - update standard_phases table
@@ -764,7 +792,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               await supabase
                 .from('standard_phases')
                 .update({ 
-                  display_order: i,
+                  display_order: displayOrder,
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', standardPhase.id);
@@ -786,7 +814,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               await supabase
                 .from('project_phases')
                 .update({ 
-                  display_order: -(i + 1000), // Use negative values as temporary
+                  display_order: -(displayOrder + 1000), // Use negative values as temporary
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', phaseData.id);
@@ -803,6 +831,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       for (let i = 0; i < nonIncorporatedPhases.length; i++) {
         const phase = nonIncorporatedPhases[i];
+        const displayOrder = phaseDisplayOrderMap.get(phase.id) ?? i;
         
         if (!isEditingStandardProject || !phase.isStandard) {
           // Only update project_phases in second pass (standard_phases already done in first pass)
@@ -818,7 +847,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               await supabase
                 .from('project_phases')
                 .update({ 
-                  display_order: i,
+                  display_order: displayOrder,
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', phaseData.id);
@@ -873,8 +902,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         .update({ phases: finalPhases as any })
         .eq('id', currentProject.id);
       
-      // Apply standard phase ordering to ensure correct order
-      const orderedFinalPhases = enforceStandardPhaseOrdering(finalPhases);
+      // Don't apply enforceStandardPhaseOrdering here - it would undo the reordering
+      // The finalPhases array already has the correct order from reorderedPhases
+      // Only apply it if we need to ensure standard phases are in correct positions
+      // But preserve the order of custom/incorporated phases as reordered
+      const orderedFinalPhases = finalPhases; // Use finalPhases directly to preserve reordering
       
       // Update local context
       updateProject({
@@ -883,7 +915,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         updatedAt: new Date()
       });
       
-      // Update display state
+      // Update display state immediately with the reordered phases
+      console.log('🔄 Updating displayPhases with reordered phases:', {
+        count: orderedFinalPhases.length,
+        phases: orderedFinalPhases.map(p => ({ id: p.id, name: p.name, order: p.phaseOrderNumber }))
+      });
+      
       setDisplayPhases(orderedFinalPhases);
       
       toast.success('Phase reordered successfully');
