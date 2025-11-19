@@ -248,7 +248,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex-1 min-w-0">
               <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
-                Project Kickoff
+                Project Kickoff{currentProjectRun?.name ? `: ${currentProjectRun.name}` : ''}
                 {allKickoffStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-500 flex-shrink-0" />}
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm mt-1">Three quick steps check that this project is a good fit - then personalizes the project to you</CardDescription>

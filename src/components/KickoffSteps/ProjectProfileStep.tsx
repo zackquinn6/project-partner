@@ -227,7 +227,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm mt-0.5">
-                Set up your project details and team
+                Setup your project goals
               </CardDescription>
             </div>
           </div>
