@@ -754,31 +754,82 @@ export function UnifiedProjectManagement({
       // Delete all other revisions first (to avoid name conflicts)
       if (otherRevisionIds.length > 0) {
         for (const revisionId of otherRevisionIds) {
+          console.log('🗑️ Deleting revision:', revisionId);
+          
           // Delete related template data
-          const {
-            data: operations
-          } = await supabase.from('template_operations').select('id').eq('project_id', revisionId);
+          const { data: operations, error: opsError } = await supabase
+            .from('template_operations')
+            .select('id')
+            .eq('project_id', revisionId);
+          
+          if (opsError) {
+            console.error('Error fetching operations for deletion:', opsError);
+            throw opsError;
+          }
+          
           if (operations && operations.length > 0) {
             const operationIds = operations.map(op => op.id);
+            console.log('🗑️ Deleting', operationIds.length, 'operations and their steps');
+            
             // Delete template steps first
-            await supabase.from('template_steps').delete().in('operation_id', operationIds);
+            const { error: stepsError } = await supabase
+              .from('template_steps')
+              .delete()
+              .in('operation_id', operationIds);
+            
+            if (stepsError) {
+              console.error('Error deleting template steps:', stepsError);
+              throw stepsError;
+            }
+            
             // Delete template operations
-            await supabase.from('template_operations').delete().eq('project_id', revisionId);
+            const { error: opsDeleteError } = await supabase
+              .from('template_operations')
+              .delete()
+              .eq('project_id', revisionId);
+            
+            if (opsDeleteError) {
+              console.error('Error deleting template operations:', opsDeleteError);
+              throw opsDeleteError;
+            }
           }
+          
           // Delete project_phases
-          await supabase.from('project_phases').delete().eq('project_id', revisionId);
+          const { error: phasesError } = await supabase
+            .from('project_phases')
+            .delete()
+            .eq('project_id', revisionId);
+          
+          if (phasesError) {
+            console.error('Error deleting project_phases:', phasesError);
+            throw phasesError;
+          }
+          
           // Delete project_runs that reference this template
-          await supabase.from('project_runs').delete().eq('template_id', revisionId);
+          const { error: runsError } = await supabase
+            .from('project_runs')
+            .delete()
+            .eq('template_id', revisionId);
+          
+          if (runsError) {
+            console.error('Error deleting project_runs:', runsError);
+            throw runsError;
+          }
         }
 
         // Delete all other projects
-        const {
-          error: deleteError
-        } = await supabase.from('projects').delete().in('id', otherRevisionIds);
+        console.log('🗑️ Deleting projects:', otherRevisionIds);
+        const { error: deleteError } = await supabase
+          .from('projects')
+          .delete()
+          .in('id', otherRevisionIds);
+        
         if (deleteError) {
-          console.error('Error deleting revisions:', deleteError);
+          console.error('❌ Error deleting revisions:', deleteError);
           throw deleteError;
         }
+        
+        console.log('✅ All other revisions deleted');
       }
 
       // Update the latest revision to be revision 1, draft, with no parent
