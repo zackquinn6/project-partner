@@ -154,11 +154,11 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 className="h-auto flex flex-col items-start justify-start gap-1 p-3"
               >
                 <div className="flex items-center gap-1.5 w-full">
-                  <Zap className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="text-xs font-medium">Fast-track</span>
+                  <Zap className={`w-3.5 h-3.5 flex-shrink-0 ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`} />
+                  <span className={`text-xs font-medium ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`}>Fast-track</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground text-left leading-tight">
-                  Plans for project running at top 10% speed of projects. Works best for skilled teams moving fast.
+                <span className={`text-[10px] text-left leading-tight ${scheduleTempo === 'fast_track' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                  Top 10% speed; best for skilled teams.
                 </span>
               </Button>
               <Button
@@ -168,11 +168,11 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 className="h-auto flex flex-col items-start justify-start gap-1 p-3"
               >
                 <div className="flex items-center gap-1.5 w-full">
-                  <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="text-xs font-medium">Steady</span>
+                  <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${scheduleTempo === 'steady' ? 'text-white' : ''}`} />
+                  <span className={`text-xs font-medium ${scheduleTempo === 'steady' ? 'text-white' : ''}`}>Steady</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground text-left leading-tight">
-                  Plans for standard project speed - not rushed but not taking extra time.
+                <span className={`text-[10px] text-left leading-tight ${scheduleTempo === 'steady' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                  Standard pace; balanced, not rushed.
                 </span>
               </Button>
               <Button
@@ -182,11 +182,11 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 className="h-auto flex flex-col items-start justify-start gap-1 p-3"
               >
                 <div className="flex items-center gap-1.5 w-full">
-                  <Settings className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="text-xs font-medium">Extended</span>
+                  <Settings className={`w-3.5 h-3.5 flex-shrink-0 ${scheduleTempo === 'extended' ? 'text-white' : ''}`} />
+                  <span className={`text-xs font-medium ${scheduleTempo === 'extended' ? 'text-white' : ''}`}>Extended</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground text-left leading-tight">
-                  Plans for longest project durations. Best for beginners and projects not in a rush. Still respects latest acceptable date.
+                <span className={`text-[10px] text-left leading-tight ${scheduleTempo === 'extended' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                  Longest timelines; ideal for beginners or low‑urgency projects.
                 </span>
               </Button>
             </div>
