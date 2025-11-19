@@ -48,11 +48,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const [loading, setLoading] = useState(true);
   const [showHomeManager, setShowHomeManager] = useState(false);
   
-  // Get template project to access scaling unit
+  // Get template project to access scaling unit and item type
   const templateProject = currentProjectRun?.templateId 
     ? projects.find(p => p.id === currentProjectRun.templateId)
     : null;
   const scalingUnit = templateProject?.scalingUnit || currentProjectRun?.scalingUnit || 'per item';
+  const itemType = templateProject?.item_type || (templateProject as any)?.itemType || null;
 
   useEffect(() => {
     if (user) {
@@ -205,14 +206,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 Set up your project details and team
               </CardDescription>
             </div>
-            <div className="bg-muted/50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg flex-shrink-0">
-              <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">
-                <strong>Template:</strong>
-              </p>
-              <p className="text-[10px] sm:text-xs font-medium truncate max-w-[120px] sm:max-w-none">
-                {currentProjectRun.name}
-              </p>
-            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 p-3 sm:p-4">
@@ -234,15 +227,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             {/* Three column layout for Project Size, Timeline, Budget */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mt-4">
               {/* Project Size */}
-              <div>
-                <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5">
+              <div className="flex flex-col items-center text-center">
+                <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5 justify-center">
                   <Ruler className="w-3.5 h-3.5" />
                   Project Size
                 </Label>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5">How much work are you doing?</p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full justify-center">
                   <Input
                     value={projectForm.initialSizing}
                     onChange={(e) => setProjectForm(prev => ({
@@ -250,21 +243,22 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       initialSizing: e.target.value
                     }))}
                     placeholder="Enter size"
-                    className="text-xs sm:text-sm h-9 sm:h-10 flex-1"
+                    className="text-xs sm:text-sm h-9 sm:h-10 w-[80px]"
                   />
                   <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                     {scalingUnit === 'per square foot' ? 'sq ft' :
                      scalingUnit === 'per 10x10 room' ? 'rooms' :
                      scalingUnit === 'per linear foot' ? 'linear ft' :
                      scalingUnit === 'per cubic yard' ? 'cu yd' :
+                     scalingUnit === 'per item' && itemType ? itemType.toLowerCase() :
                      scalingUnit === 'per item' ? 'items' : 'units'}
                   </span>
                 </div>
               </div>
 
               {/* Timeline */}
-              <div>
-                <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5">
+              <div className="flex flex-col items-center text-center">
+                <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5 justify-center">
                   <Calendar className="w-3.5 h-3.5" />
                   Timeline
                 </Label>
@@ -276,13 +270,13 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                     ...prev,
                     initialTimeline: e.target.value
                   }))}
-                  className="text-xs sm:text-sm h-9 sm:h-10"
+                  className="text-xs sm:text-sm h-9 sm:h-10 w-auto"
                 />
               </div>
 
               {/* Budget */}
-              <div>
-                <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5">
+              <div className="flex flex-col items-center text-center">
+                <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5 justify-center">
                   <DollarSign className="w-3.5 h-3.5" />
                   Budget
                 </Label>
@@ -295,11 +289,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       ...prev,
                       initialBudget: e.target.value
                     }))}
-                    placeholder="0.00"
-                    className="text-xs sm:text-sm h-9 sm:h-10 pl-7"
+                    placeholder="0"
+                    className="text-xs sm:text-sm h-9 sm:h-10 pl-7 w-[100px]"
                     type="number"
-                    step="0.01"
+                    step="1"
                     min="0"
+                    max="999999"
                   />
                 </div>
               </div>
