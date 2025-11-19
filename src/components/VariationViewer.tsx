@@ -20,6 +20,7 @@ interface VariationInstance {
   estimated_weight_lbs?: number;
   estimated_rental_lifespan_days?: number;
   warning_flags?: string[];
+  quick_add?: boolean;
 }
 
 interface ToolModel {

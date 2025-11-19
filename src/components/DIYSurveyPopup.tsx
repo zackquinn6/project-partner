@@ -424,23 +424,10 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           for (const [variationId, isChecked] of Object.entries(quickAddTools)) {
             if (!isChecked) continue;
             
-            // Fetch the variation instance with core tool info
+            // Fetch the variation instance
             const { data: variation, error: variationError } = await supabase
               .from('variation_instances')
-              .select(`
-                id,
-                name,
-                description,
-                photo_url,
-                sku,
-                core_item_id,
-                tools:core_item_id (
-                  id,
-                  name,
-                  description,
-                  photo_url
-                )
-              `)
+              .select('id, name, description, photo_url, sku, core_item_id')
               .eq('id', variationId)
               .eq('item_type', 'tools')
               .single();
@@ -450,17 +437,25 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               continue;
             }
 
-            // Get the core tool info
-            const coreTool = (variation as any).tools;
-            if (!coreTool) continue;
+            // Fetch the core tool info
+            const { data: coreTool, error: toolError } = await supabase
+              .from('tools')
+              .select('id, name, description, photo_url')
+              .eq('id', variation.core_item_id)
+              .single();
+
+            if (toolError || !coreTool) {
+              console.error('Error fetching core tool:', toolError);
+              continue;
+            }
 
             // Create tool object from variation
             const toolToAdd: any = {
               id: variation.id, // Use variation ID as the tool ID
               name: variation.name,
               item: coreTool.name,
-              description: variation.description || coreTool.description,
-              photo_url: variation.photo_url || coreTool.photo_url,
+              description: variation.description || coreTool.description || null,
+              photo_url: variation.photo_url || coreTool.photo_url || null,
               quantity: 1,
               model_name: variation.sku || ''
             };
