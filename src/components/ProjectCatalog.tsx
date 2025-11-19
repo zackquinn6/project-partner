@@ -1313,30 +1313,33 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       </div>
                     </div>
                     
-                    <CardHeader className="pb-1 pt-2 flex-shrink-0">
-                      <CardTitle className="text-sm group-hover:text-primary transition-colors line-clamp-2 text-center">
-                        {project.name}
-                      </CardTitle>
-                    </CardHeader>
+                    {/* Content area - flex-1 to take remaining space, flex-col to stack items */}
+                    <div className="flex-1 flex flex-col">
+                      <CardHeader className="pb-1 pt-2 flex-shrink-0">
+                        <CardTitle className="text-sm group-hover:text-primary transition-colors line-clamp-2 text-center">
+                          {project.name}
+                        </CardTitle>
+                      </CardHeader>
 
-                    <CardContent className="pt-0 pb-2 flex-shrink-0 mt-auto">
-                      <Button 
-                        size="sm" 
-                        className="w-full text-xs h-7" 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('🔘 DESKTOP BUTTON CLICK - Project:', project.name);
-                          try {
-                            handleSelectProject(project);
-                          } catch (error) {
-                            console.error('❌ Error in button handleSelectProject:', error);
-                          }
-                        }}
-                      >
-                        {isAdminMode ? 'Edit Template' : 'Start Project'}
-                      </Button>
-                    </CardContent>
+                      <CardContent className="pt-0 pb-2 flex-shrink-0 mt-auto">
+                        <Button 
+                          size="sm" 
+                          className="w-full text-xs h-7" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🔘 DESKTOP BUTTON CLICK - Project:', project.name);
+                            try {
+                              handleSelectProject(project);
+                            } catch (error) {
+                              console.error('❌ Error in button handleSelectProject:', error);
+                            }
+                          }}
+                        >
+                          {isAdminMode ? 'Edit Template' : 'Start Project'}
+                        </Button>
+                      </CardContent>
+                    </div>
                   </Card>
                 </div>
               );
