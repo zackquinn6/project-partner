@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -25,6 +26,7 @@ interface VariationInstance {
   weight_lbs?: number;
   estimated_rental_lifespan_days?: number;
   warning_flags?: string[];
+  quick_add?: boolean;
 }
 
 interface ToolModel {
@@ -134,6 +136,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
            estimated_weight_lbs: editedVariation.estimated_weight_lbs,
            estimated_rental_lifespan_days: editedVariation.estimated_rental_lifespan_days,
            warning_flags: editedVariation.warning_flags,
+           quick_add: editedVariation.quick_add || false,
            updated_at: new Date().toISOString()
          })
          .eq('id', variation.id);
@@ -355,6 +358,20 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                   })}
                 />
               </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="quick-add"
+                checked={editedVariation.quick_add || false}
+                onCheckedChange={(checked) => setEditedVariation({ 
+                  ...editedVariation, 
+                  quick_add: checked as boolean 
+                })}
+              />
+              <Label htmlFor="quick-add" className="cursor-pointer">
+                Quick Add (Show in Build Your Profile)
+              </Label>
             </div>
 
             <div>

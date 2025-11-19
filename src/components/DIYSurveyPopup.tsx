@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -76,6 +76,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   const [showProjectSkillsWindow, setShowProjectSkillsWindow] = useState(false);
   const [projectSkills, setProjectSkills] = useState<Record<string, number>>({});
   const [quickAddTools, setQuickAddTools] = useState<Record<string, boolean>>({});
+  const [quickAddToolsList, setQuickAddToolsList] = useState<Array<{ id: string; name: string; variant: string; core_item_id: string }>>([]);
   // Store continuous slider values separately to allow smooth movement without snapping
   const [skillLevelSliderValue, setSkillLevelSliderValue] = useState<number>(() => {
     if (initialData?.skillLevel === "newbie") return 0;
@@ -1005,47 +1006,36 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
             
             <div className="space-y-4">
               {/* Quick Add Section */}
-              <div className="space-y-3">
-                <Label className="text-base font-semibold">Quick Add Common Tools</Label>
-                <Card className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      { name: "Hammer", variant: "Standard" },
-                      { name: "Power drill", variant: "" },
-                      { name: "Tape measure", variant: "25ft" },
-                      { name: "Adjustable wrench", variant: "" },
-                      { name: "Stud Finder", variant: "" },
-                      { name: "Circular saw", variant: "plug-in" },
-                      { name: "Utility knife", variant: "" },
-                      { name: "2ft level", variant: "2ft" },
-                      { name: "Safety glasses", variant: "" },
-                      { name: "Pliers", variant: "" },
-                      { name: "Needlenose pliers", variant: "" },
-                      { name: "Caulking gun", variant: "10oz manual" }
-                    ].map((tool) => {
-                      const toolKey = `${tool.name}|${tool.variant}`;
-                      const displayName = tool.variant ? `${tool.name} | ${tool.variant}` : tool.name;
-                      return (
-                        <div key={toolKey} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`quick-add-${toolKey}`}
-                            checked={quickAddTools[toolKey] || false}
-                            onCheckedChange={(checked) => {
-                              setQuickAddTools(prev => ({
-                                ...prev,
-                                [toolKey]: checked as boolean
-                              }));
-                            }}
-                          />
-                          <Label htmlFor={`quick-add-${toolKey}`} className="cursor-pointer text-sm">
-                            {displayName}
-                          </Label>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
-              </div>
+              {quickAddToolsList.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">Quick Add Common Tools</Label>
+                  <Card className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {quickAddToolsList.map((tool) => {
+                        const toolKey = `${tool.id}`;
+                        const displayName = tool.variant ? `${tool.name} | ${tool.variant}` : tool.name;
+                        return (
+                          <div key={toolKey} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`quick-add-${toolKey}`}
+                              checked={quickAddTools[toolKey] || false}
+                              onCheckedChange={(checked) => {
+                                setQuickAddTools(prev => ({
+                                  ...prev,
+                                  [toolKey]: checked as boolean
+                                }));
+                              }}
+                            />
+                            <Label htmlFor={`quick-add-${toolKey}`} className="cursor-pointer text-sm">
+                              {displayName}
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                </div>
+              )}
 
               <div className="flex items-center justify-between mb-3">
                 <Label className="text-base font-semibold">Tool Library</Label>
