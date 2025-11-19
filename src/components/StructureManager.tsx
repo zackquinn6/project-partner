@@ -172,59 +172,61 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [phasesLoaded, setPhasesLoaded] = useState(false);
   const [displayPhases, setDisplayPhases] = useState<Phase[]>([]);
 
-  // Load fresh phases from database on mount
-  useEffect(() => {
+  // Load fresh phases from database - extracted as reusable function
+  const loadFreshPhases = async () => {
     if (!currentProject) return;
     
-    const loadFreshPhases = async () => {
-      try {
-        // Rebuild phases from database to get fresh data (not stale JSON)
-        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-          p_project_id: currentProject.id
-        });
+    try {
+      // Rebuild phases from database to get fresh data (not stale JSON)
+      const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+        p_project_id: currentProject.id
+      });
 
-        if (rebuildError) {
-          console.error('Error rebuilding phases:', rebuildError);
-          // Fallback to current project phases
-          const rawPhases = deduplicatePhases(currentProject?.phases || []);
-          const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
-          setDisplayPhases(orderedPhases);
-          setPhasesLoaded(true);
-          return;
-        }
-
-        // Merge incorporated phases from current project (they're not in project_phases table)
-        const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
-        const currentPhases = currentProject.phases || [];
-        const incorporatedPhases = currentPhases.filter(p => p.isLinked);
-        
-        // Combine rebuilt phases with incorporated phases
-        const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
-        const rawPhases = deduplicatePhases(allPhases);
-        const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
-        
-        setDisplayPhases(orderedPhases);
-        setPhasesLoaded(true);
-        
-        // Update local context with fresh phases
-        updateProject({
-          ...currentProject,
-          phases: orderedPhases,
-          updatedAt: new Date()
-        });
-      } catch (error) {
-        console.error('Error loading fresh phases:', error);
+      if (rebuildError) {
+        console.error('Error rebuilding phases:', rebuildError);
         // Fallback to current project phases
         const rawPhases = deduplicatePhases(currentProject?.phases || []);
         const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
         setDisplayPhases(orderedPhases);
         setPhasesLoaded(true);
+        return;
       }
-    };
 
-    if (!phasesLoaded) {
+      // Merge incorporated phases from current project (they're not in project_phases table)
+      const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+      const currentPhases = currentProject.phases || [];
+      const incorporatedPhases = currentPhases.filter(p => p.isLinked);
+      
+      // Combine rebuilt phases with incorporated phases
+      const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
+      const rawPhases = deduplicatePhases(allPhases);
+      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      
+      setDisplayPhases(orderedPhases);
+      setPhasesLoaded(true);
+      
+      // Update local context with fresh phases
+      updateProject({
+        ...currentProject,
+        phases: orderedPhases,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error loading fresh phases:', error);
+      // Fallback to current project phases
+      const rawPhases = deduplicatePhases(currentProject?.phases || []);
+      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      setDisplayPhases(orderedPhases);
+      setPhasesLoaded(true);
+    }
+  };
+
+  // Load fresh phases from database on mount
+  useEffect(() => {
+    if (!phasesLoaded && currentProject) {
       loadFreshPhases();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProject?.id]);
 
   // Initialize displayPhases with current project phases if not loaded yet
@@ -1198,6 +1200,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       console.log('🔍 Updated project phases count:', updatedProject.phases.length);
       updateProject(updatedProject);
       
+      // Refresh display to show the newly incorporated phase immediately
+      await loadFreshPhases();
+      
       toast.success('Phase incorporated successfully');
     } catch (error) {
       console.error('Error incorporating phase:', error);
@@ -1437,66 +1442,85 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const minDisplayTime = 2000; // Minimum 2 seconds to show loading state
 
     try {
-      // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
-      const { data: projectPhase } = await supabase
-        .from('project_phases')
-        .select('id')
-        .eq('project_id', currentProject.id)
-        .eq('id', phaseToDelete)
-        .single();
+      // Check if this is an incorporated phase (stored only in JSON)
+      const phase = displayPhases.find(p => p.id === phaseToDelete);
+      const isIncorporatedPhase = phase?.isLinked;
 
-      if (!projectPhase) {
-        toast.error('Phase not found in database');
-        return;
-      }
+      if (isIncorporatedPhase) {
+        // For incorporated phases, just remove from JSON
+        const updatedPhases = currentProject.phases.filter(p => p.id !== phaseToDelete);
+        const orderedPhases = enforceStandardPhaseOrdering(updatedPhases);
 
-      // Delete from database - get operations first
-      const { data: operations } = await supabase
-        .from('template_operations')
-        .select('id')
-        .eq('project_id', currentProject.id)
-        .eq('phase_id', projectPhase.id);
+        // Update project JSON
+        const { error: updateError } = await supabase
+          .from('projects')
+          .update({ phases: orderedPhases as any })
+          .eq('id', currentProject.id);
 
-      if (operations && operations.length > 0) {
-        const operationIds = operations.map(op => op.id);
-        
-        // Delete steps first
-        await supabase
-          .from('template_steps')
-          .delete()
-          .in('operation_id', operationIds);
+        if (updateError) throw updateError;
 
-        // Delete operations
-        await supabase
+        // Refresh display
+        await loadFreshPhases();
+      } else {
+        // For regular phases, delete from database tables
+        // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
+        const { data: projectPhase } = await supabase
+          .from('project_phases')
+          .select('id')
+          .eq('project_id', currentProject.id)
+          .eq('id', phaseToDelete)
+          .single();
+
+        if (!projectPhase) {
+          toast.error('Phase not found in database');
+          return;
+        }
+
+        // Delete from database - get operations first
+        const { data: operations } = await supabase
           .from('template_operations')
-          .delete()
+          .select('id')
+          .eq('project_id', currentProject.id)
           .eq('phase_id', projectPhase.id);
+
+        if (operations && operations.length > 0) {
+          const operationIds = operations.map(op => op.id);
+          
+          // Delete steps first
+          await supabase
+            .from('template_steps')
+            .delete()
+            .in('operation_id', operationIds);
+
+          // Delete operations
+          await supabase
+            .from('template_operations')
+            .delete()
+            .eq('phase_id', projectPhase.id);
+        }
+
+        // Delete phase
+        await supabase
+          .from('project_phases')
+          .delete()
+          .eq('id', projectPhase.id);
+
+        // Rebuild phases JSON
+        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+          p_project_id: currentProject.id
+        });
+
+        if (rebuildError) throw rebuildError;
+
+        // Update project
+        await supabase
+          .from('projects')
+          .update({ phases: rebuiltPhases as any })
+          .eq('id', currentProject.id);
+
+        // Refresh display
+        await loadFreshPhases();
       }
-
-      // Delete phase
-      await supabase
-        .from('project_phases')
-        .delete()
-        .eq('id', projectPhase.id);
-
-      // Rebuild phases JSON
-      const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-        p_project_id: currentProject.id
-      });
-
-      if (rebuildError) throw rebuildError;
-
-      // Update project
-      await supabase
-        .from('projects')
-        .update({ phases: rebuiltPhases as any })
-        .eq('id', currentProject.id);
-
-      updateProject({
-        ...currentProject,
-        phases: rebuiltPhases as any,
-        updatedAt: new Date()
-      });
 
       // Ensure minimum display time for loading state
       const elapsedTime = Date.now() - startTime;
@@ -2093,6 +2117,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                  <div className="flex items-center gap-2">
                                   <Badge variant="outline">{phase.operations.length} operations</Badge>
                                   
+                                  {/* Show edit/delete buttons for non-incorporated phases */}
                                   {(!isStandardPhase || isEditingStandardProject) && !isLinkedPhase && (
                                     <>
                                       {!isStandardPhase && <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
@@ -2120,6 +2145,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                           </Button>
                                         </>}
                                     </>
+                                  )}
+                                  
+                                  {/* Show delete button only for incorporated phases (no edit) */}
+                                  {isLinkedPhase && (
+                                    <Button size="sm" variant="ghost" onClick={() => handleDeletePhaseClick(phase.id)}>
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
                                   )}
                                 </div>
                             </div>
