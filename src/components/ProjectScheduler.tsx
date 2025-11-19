@@ -101,8 +101,37 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [scheduleTempo, setScheduleTempo] = useState<ScheduleTempo>('steady');
   const [schedulingResult, setSchedulingResult] = useState<SchedulingResult | null>(null);
   const [isComputing, setIsComputing] = useState(false);
-  const [targetDate, setTargetDate] = useState<string>(format(addDays(new Date(), 30), 'yyyy-MM-dd'));
+  // Initialize target date from project kickoff goal, or default to 30 days
+  const getInitialTargetDate = () => {
+    if (projectRun?.initial_timeline) {
+      try {
+        const goalDate = new Date(projectRun.initial_timeline);
+        if (!isNaN(goalDate.getTime())) {
+          return format(goalDate, 'yyyy-MM-dd');
+        }
+      } catch (e) {
+        console.error('Error parsing initial_timeline:', e);
+      }
+    }
+    return format(addDays(new Date(), 30), 'yyyy-MM-dd');
+  };
+
+  const [targetDate, setTargetDate] = useState<string>(getInitialTargetDate());
   const [dropDeadDate, setDropDeadDate] = useState<string>(format(addDays(new Date(), 45), 'yyyy-MM-dd'));
+
+  // Update target date when projectRun changes
+  useEffect(() => {
+    if (projectRun?.initial_timeline) {
+      try {
+        const goalDate = new Date(projectRun.initial_timeline);
+        if (!isNaN(goalDate.getTime())) {
+          setTargetDate(format(goalDate, 'yyyy-MM-dd'));
+        }
+      } catch (e) {
+        console.error('Error parsing initial_timeline:', e);
+      }
+    }
+  }, [projectRun?.initial_timeline]);
 
   // Team management
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([{
@@ -654,12 +683,38 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </p>
             </div>
           </div>
-          {isMobile ? <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-              Close
-            </Button> : <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-              <X className="w-4 h-4" />
-            </Button>}
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
         </div>
+
+        {/* Project Goal Completion Date Header */}
+        {projectRun?.initial_timeline && (
+          <div className="px-4 pt-4 pb-2">
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Project Goal Completion Date</div>
+                  <div className="text-lg font-bold text-primary">
+                    {format(new Date(projectRun.initial_timeline), 'MMMM dd, yyyy')}
+                  </div>
+                </div>
+                {targetDate && (
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground mb-1">Target Completion</div>
+                    <div className={`text-base font-semibold ${
+                      new Date(targetDate) <= new Date(projectRun.initial_timeline) 
+                        ? 'text-green-600' 
+                        : 'text-orange-600'
+                    }`}>
+                      {format(new Date(targetDate), 'MMMM dd, yyyy')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">

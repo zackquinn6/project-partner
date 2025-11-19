@@ -19,7 +19,8 @@ import {
   Zap,
   Plus,
   Trash2,
-  Users
+  Users,
+  Brain
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { PlanningMode, ScheduleTempo } from '@/interfaces/Scheduling';
@@ -208,31 +209,38 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               <div className="space-y-4 pt-3 border-t">
                 <div>
                   <Label className="text-xs font-medium mb-2">Planning Detail Level</Label>
-                  <Select value={planningMode} onValueChange={(value) => setPlanningMode(value as PlanningMode)}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="quick">
-                        <div className="py-1">
-                          <div className="font-medium">Quick</div>
-                          <div className="text-xs text-muted-foreground">Plan phases / major milestones</div>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="standard">
-                        <div className="py-1">
-                          <div className="font-medium">Standard (Recommended)</div>
-                          <div className="text-xs text-muted-foreground">Plan daily tasks</div>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="detailed">
-                        <div className="py-1">
-                          <div className="font-medium">Detailed</div>
-                          <div className="text-xs text-muted-foreground">Hour-by-hour for each team member</div>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant={planningMode === 'quick' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setPlanningMode('quick')}
+                      className="h-10 flex flex-col items-center justify-center gap-1"
+                    >
+                      <Brain className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">Quick</span>
+                      <span className="text-[10px] text-muted-foreground">Phases / milestones</span>
+                    </Button>
+                    <Button
+                      variant={planningMode === 'standard' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setPlanningMode('standard')}
+                      className="h-10 flex flex-col items-center justify-center gap-1"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">Standard</span>
+                      <span className="text-[10px] text-muted-foreground">Daily tasks</span>
+                    </Button>
+                    <Button
+                      variant={planningMode === 'detailed' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setPlanningMode('detailed')}
+                      className="h-10 flex flex-col items-center justify-center gap-1"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">Detailed</span>
+                      <span className="text-[10px] text-muted-foreground">Hour-by-hour</span>
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Team Members Section */}
