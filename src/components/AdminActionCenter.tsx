@@ -97,23 +97,40 @@ export const AdminActionCenter: React.FC<AdminActionCenterProps> = ({
     }
   };
 
-  const handleAlertAction = async (projectId: string, phaseId: string, action: 'incorporate' | 'dismiss') => {
+  const handleAlertAction = async (projectId: string, phaseId: string, action: 'incorporate' | 'dismiss', sourceProjectId?: string) => {
     try {
-      const { error } = await supabase.rpc('update_phase_revision_alert', {
-        p_project_id: projectId,
-        p_phase_id: phaseId,
-        p_action: action
-      });
+      if (action === 'incorporate' && sourceProjectId) {
+        // Incorporate the latest revision
+        const { error: incorporateError } = await supabase.rpc('incorporate_latest_phase_revision', {
+          p_project_id: projectId,
+          p_phase_id: phaseId,
+          p_source_project_id: sourceProjectId
+        });
 
-      if (error) throw error;
+        if (incorporateError) throw incorporateError;
+
+        toast({
+          title: "Revision Incorporated",
+          description: "The latest revision of this phase has been incorporated successfully."
+        });
+      } else {
+        // Just dismiss the alert
+        const { error } = await supabase.rpc('update_phase_revision_alert', {
+          p_project_id: projectId,
+          p_phase_id: phaseId,
+          p_action: action
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Alert Dismissed",
+          description: "The alert has been dismissed."
+        });
+      }
 
       // Refresh alerts
       await fetchRevisionAlerts();
-
-      toast({
-        title: action === 'incorporate' ? "Alert Incorporated" : "Alert Dismissed",
-        description: `Phase revision alert has been ${action}d successfully.`
-      });
     } catch (error) {
       console.error('Error handling alert action:', error);
       toast({
@@ -361,7 +378,8 @@ export const AdminActionCenter: React.FC<AdminActionCenterProps> = ({
                                 onClick={() => handleAlertAction(
                                   projectAlert.project_id, 
                                   alert.phaseId, 
-                                  'incorporate'
+                                  'incorporate',
+                                  alert.sourceProjectId
                                 )}
                               >
                                 <CheckCircle className="w-3 h-3 mr-1" />

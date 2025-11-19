@@ -1591,6 +1591,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Edit operations - Allow editing in Edit Standard mode
   const startEdit = (type: 'phase' | 'operation' | 'step', id: string, data: any) => {
+    // Block editing of incorporated phases, operations, and steps
+    if (type === 'phase') {
+      const phase = displayPhases.find(p => p.id === id);
+      if (phase?.isLinked) {
+        toast.error('Cannot edit incorporated phases. They are dynamically linked to the source project.');
+        return;
+      }
+    } else if (type === 'operation' || type === 'step') {
+      // Find the parent phase to check if it's incorporated
+      const parentPhase = displayPhases.find(p => 
+        p.operations.some(op => 
+          op.id === id || op.steps.some(s => s.id === id)
+        )
+      );
+      if (parentPhase?.isLinked) {
+        toast.error('Cannot edit operations or steps in incorporated phases. They are dynamically linked to the source project.');
+        return;
+      }
+    }
+    
     // In Edit Standard mode, allow editing all items including standard ones
     if (!isEditingStandardProject) {
       if (type === 'phase') {
@@ -2147,7 +2167,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                  <div className="flex items-center gap-1">
                                                    <Badge variant="outline" className="text-xs">{operation.steps.length} steps</Badge>
                                                    
-                                                   {((!isStandardPhase && !operation.isStandard) || isEditingStandardProject) && phase.name !== 'Close Project' && <>
+                                                   {!phase.isLinked && ((!isStandardPhase && !operation.isStandard) || isEditingStandardProject) && phase.name !== 'Close Project' && <>
                                                        {!operation.isStandard && <Button size="sm" variant="ghost" onClick={() => copyItem('operation', operation)}>
                                                          <Copy className="w-3 h-3" />
                                                        </Button>}
@@ -2181,12 +2201,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                              <Collapsible open={expandedOperations.has(operation.id)}>
                                                <CollapsibleContent>
                                                  <CardContent className="pt-0">
-                                               <div className="flex items-center gap-2 mb-3">
+                                               {!phase.isLinked && <div className="flex items-center gap-2 mb-3">
                                                  <Button size="sm" variant="outline" onClick={() => addStep(phase.id, operation.id)} className="flex items-center gap-1 text-xs">
                                                    <Plus className="w-3 h-3" />
                                                    Add Step
                                                  </Button>
-                                               </div>
+                                               </div>}
                                               
                                               <div className="space-y-2">
                                                 {operation.steps.map((step, stepIndex) => {
@@ -2293,7 +2313,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                                          </Badge>}
                                                                      </div>
                                                      
-                                                        {isStepEditing ? <>
+                                                        {!phase.isLinked && (isStepEditing ? <>
                                                              <Button size="sm" onClick={saveEdit}>
                                                                <Check className="w-3 h-3" />
                                                              </Button>
@@ -2320,7 +2340,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                               <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)}>
                                                                  <Trash2 className="w-3 h-3" />
                                                                </Button>
-                                                           </>}
+                                                           </>)}
                                                                   </div>
                                                                 </div>
                                                               </CardContent>
