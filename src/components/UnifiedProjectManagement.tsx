@@ -221,18 +221,26 @@ export function UnifiedProjectManagement({
         project_challenges: null
       };
 
-      // Include images and cover_image - preserve existing values if not explicitly changed
+      // Include images and cover_image - ALWAYS preserve existing values if not explicitly changed
       // ProjectImageManager updates these directly, but we should preserve them on save
+      // Always include images (even if empty array) to preserve what's in the database
       if (editedProject.images !== undefined) {
         updateData.images = editedProject.images;
-      } else if (selectedProject.images) {
-        updateData.images = selectedProject.images;
+      } else if (selectedProject.images !== undefined) {
+        // Preserve existing images array (even if empty)
+        updateData.images = selectedProject.images || [];
+      } else {
+        // If not set, default to empty array to avoid null
+        updateData.images = [];
       }
+      
+      // Always include cover_image if it exists
       if (editedProject.cover_image !== undefined) {
         updateData.cover_image = editedProject.cover_image;
-      } else if (selectedProject.cover_image) {
+      } else if (selectedProject.cover_image !== undefined && selectedProject.cover_image !== null) {
         updateData.cover_image = selectedProject.cover_image;
       }
+      // If cover_image is null/undefined, don't include it in update (preserve existing)
 
       // Set project_challenges - ALWAYS include it in the update
       // If user edited it, use that value (even if empty string)
@@ -1246,11 +1254,20 @@ export function UnifiedProjectManagement({
                             .eq('id', selectedProject.id)
                             .single();
                           if (!error && data) {
-                            setSelectedProject({
+                            const updatedProject = {
                               ...data,
                               project_challenges: data.project_challenges ?? data.diy_length_challenges ?? null,
-                              project_type: data.project_type || 'primary'
-                            } as Project);
+                              project_type: data.project_type || 'primary',
+                              images: data.images || [],
+                              cover_image: data.cover_image || null
+                            } as Project;
+                            setSelectedProject(updatedProject);
+                            // Also update editedProject to preserve images when saving
+                            setEditedProject(prev => ({
+                              ...prev,
+                              images: updatedProject.images,
+                              cover_image: updatedProject.cover_image
+                            }));
                           }
                         }
                       }} /> : <div>
