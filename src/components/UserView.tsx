@@ -63,6 +63,7 @@ import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { RiskManagementWindow } from './RiskManagementWindow';
 import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
 import { useDynamicPhases } from '@/hooks/useDynamicPhases';
+import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -247,23 +248,23 @@ export default function UserView({
   
   // Determine which phases to use based on context
   // CRITICAL: For project runs, use the snapshot. For templates, prefer dynamic phases from RPC
-  let workflowPhases: Phase[] = [];
+  let rawWorkflowPhases: Phase[] = [];
   if (currentProjectRun) {
     // Project runs: use immutable snapshot from project_runs.phases
-    workflowPhases = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
+    rawWorkflowPhases = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
     console.log('📦 Using project run phases:', {
       runId: currentProjectRun.id,
-      phasesLength: workflowPhases.length,
+      phasesLength: rawWorkflowPhases.length,
       phasesIsArray: Array.isArray(currentProjectRun.phases),
       rawPhases: currentProjectRun.phases
     });
   } else if (currentProject) {
     // Templates: prefer dynamic phases from RPC, fallback to stored phases
     if (dynamicPhases.length > 0) {
-      workflowPhases = dynamicPhases;
+      rawWorkflowPhases = dynamicPhases;
       console.log('🔄 Using dynamic phases from RPC:', { phasesLength: dynamicPhases.length });
     } else if (currentProject.phases && currentProject.phases.length > 0) {
-      workflowPhases = currentProject.phases;
+      rawWorkflowPhases = currentProject.phases;
       console.log('📁 Using stored project phases:', { phasesLength: currentProject.phases.length });
     } else {
       console.warn('⚠️ No phases found for project:', {
@@ -275,6 +276,10 @@ export default function UserView({
       });
     }
   }
+
+  // Apply standard phase ordering to match Structure Manager
+  // This ensures workflow navigation follows the same order as structure manager
+  const workflowPhases = enforceStandardPhaseOrdering(rawWorkflowPhases);
   
   // Debug active project structure - CRITICAL DEBUGGING
   console.log('🔍 WorkflowPhases source (RAW DATA PULL):', {

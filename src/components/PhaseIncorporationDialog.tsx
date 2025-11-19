@@ -72,13 +72,47 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
 
       if (error) throw error;
 
-      // Parse phases as JSON and create proper PublishedProject objects
-      const processedProjects = (data || [])
-        .map(project => ({
-          ...project,
-          phases: typeof project.phases === 'string' ? JSON.parse(project.phases) : project.phases || []
-        }))
-        .filter(project => project.name.toLowerCase() !== 'manual project template');
+      // Rebuild phases for each project to ensure we have correct phase names
+      // This uses the rebuild_phases_json_from_project_phases function to get fresh data
+      const processedProjects = await Promise.all((data || [])
+        .filter(project => project.name.toLowerCase() !== 'manual project template')
+        .map(async (project) => {
+          let phases: Phase[] = [];
+          try {
+            // Try to rebuild phases from database to get correct names
+            const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc(
+              'rebuild_phases_json_from_project_phases',
+              { p_project_id: project.id }
+            );
+
+            if (!rebuildError && rebuiltPhases) {
+              // Use rebuilt phases if available
+              phases = Array.isArray(rebuiltPhases) ? rebuiltPhases : 
+                      (typeof rebuiltPhases === 'string' ? JSON.parse(rebuiltPhases) : []);
+            } else {
+              // Fallback to stored phases JSON
+              phases = typeof project.phases === 'string' ? JSON.parse(project.phases) : project.phases || [];
+            }
+
+            // Ensure phases have proper structure and names
+            phases = Array.isArray(phases) ? phases.filter(phase => {
+              // Filter out invalid phases and ensure they have names
+              if (!phase || typeof phase !== 'object') return false;
+              if (!phase.name || phase.name.trim() === '' || phase.name === 'New Phase') {
+                console.warn('⚠️ Phase missing name or has default name:', phase);
+                return false;
+              }
+              return true;
+            }) : [];
+          } catch (error) {
+            console.error('Error parsing phases for project:', project.id, error);
+            phases = [];
+          }
+          return {
+            ...project,
+            phases
+          };
+        }));
       
       setAllProjects(processedProjects);
       setProjects(processedProjects);
@@ -132,8 +166,12 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
     });
   };
 
-  // Filter out standard phases
-  const availablePhases = selectedProject?.phases.filter(phase => !standardPhaseNames.includes(phase.name)) || [];
+  // Filter out standard phases and ensure phases have valid names
+  const availablePhases = selectedProject?.phases.filter(phase => {
+    if (!phase || !phase.name) return false;
+    if (phase.name === 'New Phase' || phase.name.trim() === '') return false;
+    return !standardPhaseNames.includes(phase.name);
+  }) || [];
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
@@ -196,14 +234,21 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
                     <SelectValue placeholder="Choose a phase to incorporate..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {availablePhases.map(phase => <SelectItem key={phase.id} value={phase.id}>
-                        <div className="flex items-center justify-between w-full">
-                          <span>{phase.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {phase.operations?.length || 0} operations
-                          </span>
-                        </div>
-                      </SelectItem>)}
+                    {availablePhases.map(phase => {
+                      // Ensure phase has a valid name
+                      const phaseName = phase?.name || 'Unnamed Phase';
+                      const phaseId = phase?.id || `phase-${Math.random()}`;
+                      return (
+                        <SelectItem key={phaseId} value={phaseId}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{phaseName}</span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {phase.operations?.length || 0} operations
+                            </span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select> : <p className="text-sm text-muted-foreground py-2">
                   No incorporable phases found in this project. Only non-standard phases can be incorporated.
