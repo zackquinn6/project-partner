@@ -520,10 +520,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{selectedItem.item}</h3>
-                    <Badge variant="secondary" className="mt-1">
-                      Qty: {selectedItem.quantity}
-                    </Badge>
+                    <h3 className="font-semibold text-sm leading-tight break-words">{selectedItem.item}</h3>
                   </div>
                 </div>
 
@@ -534,7 +531,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                       type="number"
                       value={selectedItem.quantity}
                       onChange={(e) => updateItem('quantity', parseInt(e.target.value) || 0)}
-                      className="mt-1"
+                      className="mt-1 w-20"
                     />
                   </div>
 
@@ -628,13 +625,13 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                   </div>
 
                   <Button
-                    variant="destructive"
-                    className="w-full"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive"
                     onClick={deleteItem}
                     title="Delete Item"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Item
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
