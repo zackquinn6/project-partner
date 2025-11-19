@@ -154,6 +154,8 @@ export const AppsLibraryDialog = ({
                             className={`w-6 h-6 ${
                               selected ? 'text-primary' : 'text-primary/70'
                             }`}
+                            fill="none"
+                            stroke="currentColor"
                           />
                         </div>
                         
