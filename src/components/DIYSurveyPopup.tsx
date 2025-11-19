@@ -96,6 +96,59 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     ((currentStep + 1) / 11) * 100 : 
     (currentStep / totalSteps) * 100;
 
+  // Fetch quick-add tools from database
+  useEffect(() => {
+    if (open && currentStep === 4) {
+      const fetchQuickAddTools = async () => {
+        try {
+          // Fetch variation instances marked as quick_add for tools
+          const { data: variations, error } = await supabase
+            .from('variation_instances')
+            .select('id, name, core_item_id')
+            .eq('item_type', 'tools')
+            .eq('quick_add', true)
+            .order('name', { ascending: true });
+
+          if (error) throw error;
+
+          if (variations) {
+            // Fetch core tool names for each variation
+            const coreItemIds = [...new Set(variations.map((v: any) => v.core_item_id))];
+            const { data: tools, error: toolsError } = await supabase
+              .from('tools')
+              .select('id, name')
+              .in('id', coreItemIds);
+
+            if (toolsError) throw toolsError;
+
+            const toolsMap = new Map((tools || []).map((t: any) => [t.id, t.name]));
+
+            const toolsList = variations.map((variation: any) => {
+              // Extract tool name and variant from variation name
+              // Variation name format is typically "Tool Name | Variant" or just "Tool Name"
+              const parts = variation.name.split('|').map((s: string) => s.trim());
+              const toolName = parts[0];
+              const variant = parts.length > 1 ? parts[1] : '';
+              const coreToolName = toolsMap.get(variation.core_item_id) || toolName;
+              
+              return {
+                id: variation.id,
+                name: coreToolName,
+                variant: variant,
+                core_item_id: variation.core_item_id
+              };
+            });
+            setQuickAddToolsList(toolsList);
+          }
+        } catch (error) {
+          console.error('Error fetching quick-add tools:', error);
+        }
+      };
+
+      fetchQuickAddTools();
+    }
+  }, [open, currentStep]);
+
   const usStates = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", 
     "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", 
