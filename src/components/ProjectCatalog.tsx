@@ -1278,57 +1278,48 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     }}
                   >
                     {/* Cover Image or Gradient Header - Takes ~60% of card height */}
-                    {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
-                      <div className="flex-[0_0_60%] relative overflow-hidden">
+                    <div className="flex-[0_0_60%] relative overflow-hidden bg-muted">
+                      {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
                         <img 
                           src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
                           alt={project.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            // If image fails to load, hide it and show gradient background
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <div className="absolute top-2 right-2 flex gap-1">
-                          {project.publishStatus === 'beta-testing' && (
-                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
-                              <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
-                              BETA
-                            </Badge>
-                          )}
-                          {isAdminMode && (
-                            <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'} backdrop-blur-sm text-[10px] px-1.5 py-0`}>
-                              {project.publishStatus}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex-[0_0_60%] bg-gradient-to-br from-primary to-orange-500 relative overflow-hidden">
+                      ) : null}
+                      {/* Gradient background - shows when no image or image fails to load */}
+                      <div className={`absolute inset-0 bg-gradient-to-br from-primary to-orange-500 ${((project as any).cover_image || project.image || (project as any).images?.[0]) ? 'opacity-0 group-hover:opacity-20' : 'opacity-100'} transition-opacity`}>
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <IconComponent className="w-8 h-8 text-white/80" />
                         </div>
-                        <div className="absolute top-2 right-2 flex gap-1">
-                          {project.publishStatus === 'beta-testing' && (
-                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 text-[10px] px-1.5 py-0">
-                              <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
-                              BETA
-                            </Badge>
-                          )}
-                          {isAdminMode && (
-                            <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'} text-[10px] px-1.5 py-0`}>
-                              {project.publishStatus}
-                            </Badge>
-                          )}
-                        </div>
                       </div>
-                    )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        {project.publishStatus === 'beta-testing' && (
+                          <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
+                            <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
+                            BETA
+                          </Badge>
+                        )}
+                        {isAdminMode && (
+                          <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'} backdrop-blur-sm text-[10px] px-1.5 py-0`}>
+                            {project.publishStatus}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                     
-                    <CardHeader className="pb-1 pt-2 flex-shrink-0 flex-1 flex flex-col justify-center">
+                    <CardHeader className="pb-1 pt-2 flex-shrink-0">
                       <CardTitle className="text-sm group-hover:text-primary transition-colors line-clamp-2 text-center">
                         {project.name}
                       </CardTitle>
                     </CardHeader>
 
-                    <CardContent className="pt-0 pb-2 flex-shrink-0">
+                    <CardContent className="pt-0 pb-2 flex-shrink-0 mt-auto">
                       <Button 
                         size="sm" 
                         className="w-full text-xs h-7" 
