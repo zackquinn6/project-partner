@@ -2280,12 +2280,13 @@ export default function UserView({
                     ) : (
                       <Button 
                         disabled 
-                        className="opacity-50 cursor-not-allowed text-xs text-foreground" 
+                        variant="outline"
+                        className="opacity-50 cursor-not-allowed text-xs text-muted-foreground" 
                         size="sm"
                         title={isMobile ? "Complete All Outputs First" : undefined}
                       >
                         <CheckCircle className="w-4 h-4" />
-                        {!isMobile && <span className="ml-2 text-xs text-foreground">Complete All Outputs First</span>}
+                        {!isMobile && <span className="ml-2 text-xs text-muted-foreground">Complete All Outputs First</span>}
                       </Button>
                     )
                   )}
