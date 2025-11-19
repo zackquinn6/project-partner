@@ -1277,8 +1277,15 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       }
                     }}
                   >
-                    {/* Cover Image or Gradient Header - Takes ~60% of card height */}
-                    <div className="flex-[0_0_60%] relative overflow-hidden bg-muted">
+                    {/* Project Name Header - Fixed at top */}
+                    <div className="flex-shrink-0 px-4 pt-3 pb-2">
+                      <h3 className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2 text-center">
+                        {project.name}
+                      </h3>
+                    </div>
+
+                    {/* Cover Image or Gradient - Takes remaining space */}
+                    <div className="flex-1 relative overflow-hidden bg-muted min-h-0">
                       {/* Gradient background - always present, shows when no image */}
                       <div className={`gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500 ${((project as any).cover_image || project.image || (project as any).images?.[0]) ? 'opacity-0' : 'opacity-100'}`}>
                         <div className="absolute inset-0 bg-black/20" />
@@ -1319,32 +1326,24 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       </div>
                     </div>
                     
-                    {/* Content area - flex-1 to take remaining space, flex-col to stack items */}
-                    <div className="flex-1 flex flex-col justify-between min-h-0">
-                      <div className="pb-1 pt-2 px-4 flex-shrink-0">
-                        <h3 className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2 text-center">
-                          {project.name}
-                        </h3>
-                      </div>
-                      
-                      <div className="px-4 pb-2 flex-shrink-0">
-                        <Button 
-                          size="sm" 
-                          className="w-full text-xs h-7" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('🔘 DESKTOP BUTTON CLICK - Project:', project.name);
-                            try {
-                              handleSelectProject(project);
-                            } catch (error) {
-                              console.error('❌ Error in button handleSelectProject:', error);
-                            }
-                          }}
-                        >
-                          {isAdminMode ? 'Edit Template' : 'Start Project'}
-                        </Button>
-                      </div>
+                    {/* Button - Fixed at bottom */}
+                    <div className="flex-shrink-0 px-4 pb-3 pt-2">
+                      <Button 
+                        size="sm" 
+                        className="w-full text-xs h-7" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('🔘 DESKTOP BUTTON CLICK - Project:', project.name);
+                          try {
+                            handleSelectProject(project);
+                          } catch (error) {
+                            console.error('❌ Error in button handleSelectProject:', error);
+                          }
+                        }}
+                      >
+                        {isAdminMode ? 'Edit Template' : 'Start Project'}
+                      </Button>
                     </div>
                   </Card>
                 </div>
