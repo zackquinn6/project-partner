@@ -120,6 +120,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [selectedEffortLevels, setSelectedEffortLevels] = useState<string[]>([]);
   const [projectTypeFilter, setProjectTypeFilter] = useState<'all' | 'primary' | 'secondary'>('all');
+  const [showAllProjects, setShowAllProjects] = useState(false);
   const projectTypeLabel = projectTypeFilter === 'all' ? '' : projectTypeFilter === 'primary' ? 'Primary' : 'Secondary';
 
   const ProjectTypeTooltip = () => (
@@ -150,6 +151,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     const searchParam = urlParams.get('search');
     if (searchParam) {
       setSearchTerm(searchParam);
+      setShowAllProjects(true);
       // Clear the URL parameter to keep it clean
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -363,7 +365,20 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     setSelectedDifficulties([]);
     setSelectedEffortLevels([]);
     setProjectTypeFilter('all');
+    setShowAllProjects(false);
   };
+
+  // Check if there are active filters or search
+  const hasActiveFilters = useMemo(() => {
+    return searchTerm.trim() !== '' || 
+           selectedCategories.length > 0 || 
+           selectedDifficulties.length > 0 || 
+           selectedEffortLevels.length > 0 || 
+           projectTypeFilter !== 'all';
+  }, [searchTerm, selectedCategories, selectedDifficulties, selectedEffortLevels, projectTypeFilter]);
+
+  // Determine if grid should be shown
+  const shouldShowGrid = hasActiveFilters || showAllProjects;
   const getDifficultyColor = useCallback((difficulty: string) => {
     switch (difficulty) {
       case 'Beginner':
@@ -1137,13 +1152,42 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           )}
         </div>
 
-        {/* Results Summary */}
-        <div className="mb-6 text-sm text-muted-foreground">
-          Showing {filteredProjects.length} of {publishedProjects.length} projects
-        </div>
+        {/* Show All Projects Button - Only show when grid is hidden */}
+        {!shouldShowGrid && (
+          <div className="mb-6 flex justify-center">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowAllProjects(true)}
+              className="text-xs"
+            >
+              Show all Projects
+            </Button>
+          </div>
+        )}
 
-        {/* Project Grid - Mobile: Row layout, Desktop: Grid */}
-        <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
+        {/* Results Summary - Only show when grid is visible */}
+        {shouldShowGrid && (
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-xs text-muted-foreground">
+              Showing {filteredProjects.length} of {publishedProjects.length} projects
+            </div>
+            {!hasActiveFilters && showAllProjects && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowAllProjects(false)}
+                className="text-xs h-7"
+              >
+                Hide Projects
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Project Grid - Mobile: Row layout, Desktop: Grid - Only show when shouldShowGrid is true */}
+        {shouldShowGrid && (
+          <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-4">
           {filteredProjects.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <p className="text-muted-foreground mb-4">
@@ -1173,9 +1217,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               const IconComponent = getIconForCategory(projectCategories[0] || '');
               return (
                 <div key={project.id}>
-                  {/* Mobile: Row layout */}
+                  {/* Mobile: Row layout - Reduced size by 50% */}
                   <Card 
-                    className="md:hidden group hover:shadow-lg transition-all duration-300 cursor-pointer border bg-card overflow-hidden" 
+                    className="md:hidden group hover:shadow-lg transition-all duration-300 cursor-pointer border bg-card overflow-hidden h-24" 
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1187,9 +1231,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       }
                     }}
                   >
-                    <div className="flex items-center gap-0">
-                      {/* Cover Image or Icon */}
-                      <div className="flex-shrink-0 w-24 h-24">
+                    <div className="flex items-center gap-0 h-full">
+                      {/* Cover Image or Icon - Reduced from w-24 h-24 to w-12 h-12 */}
+                      <div className="flex-shrink-0 w-12 h-12">
                         {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
                           <img 
                             src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
@@ -1198,19 +1242,19 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center">
-                            <IconComponent className="w-8 h-8 text-white" />
+                            <IconComponent className="w-4 h-4 text-white" />
                           </div>
                         )}
                       </div>
                       
-                      {/* Project info */}
-                      <div className="flex-1 min-w-0 p-4">
+                      {/* Project info - Reduced padding */}
+                      <div className="flex-1 min-w-0 p-2">
                         <div className="flex items-center justify-between gap-2">
-                          <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                          <h3 className="font-semibold text-xs truncate group-hover:text-primary transition-colors line-clamp-2" style={{ maxWidth: '75ch' }}>
                             {project.name}
                           </h3>
                           {project.publishStatus === 'beta-testing' && (
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs flex-shrink-0">
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-[10px] px-1 py-0 flex-shrink-0">
                               BETA
                             </Badge>
                           )}
@@ -1219,9 +1263,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </div>
                   </Card>
 
-                  {/* Desktop: Card layout */}
+                  {/* Desktop: Card layout - Reduced size by 50% */}
                   <Card 
-                    className="hidden md:block group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden" 
+                    className="hidden md:block group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 overflow-hidden flex flex-col h-full" 
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1233,44 +1277,44 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       }
                     }}
                   >
-                    {/* Cover Image or Gradient Header */}
+                    {/* Cover Image or Gradient Header - Reduced from h-48 to h-24 */}
                     {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
-                      <div className="h-48 relative overflow-hidden">
+                      <div className="h-24 relative overflow-hidden flex-shrink-0">
                         <img 
                           src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
                           alt={project.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <div className="absolute top-4 right-4 flex gap-2">
+                        <div className="absolute top-2 right-2 flex gap-1">
                           {project.publishStatus === 'beta-testing' && (
-                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm">
-                              <AlertTriangle className="w-3 h-3 mr-1" />
+                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
+                              <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
                               BETA
                             </Badge>
                           )}
                           {isAdminMode && (
-                            <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'} backdrop-blur-sm`}>
+                            <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'} backdrop-blur-sm text-[10px] px-1.5 py-0`}>
                               {project.publishStatus}
                             </Badge>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <div className="h-48 bg-gradient-to-br from-primary to-orange-500 relative overflow-hidden">
+                      <div className="h-24 bg-gradient-to-br from-primary to-orange-500 relative overflow-hidden flex-shrink-0">
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <IconComponent className="w-16 h-16 text-white/80" />
+                          <IconComponent className="w-8 h-8 text-white/80" />
                         </div>
-                        <div className="absolute top-4 right-4 flex gap-2">
+                        <div className="absolute top-2 right-2 flex gap-1">
                           {project.publishStatus === 'beta-testing' && (
-                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30">
-                              <AlertTriangle className="w-3 h-3 mr-1" />
+                            <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 text-[10px] px-1.5 py-0">
+                              <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
                               BETA
                             </Badge>
                           )}
                           {isAdminMode && (
-                            <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+                            <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'} text-[10px] px-1.5 py-0`}>
                               {project.publishStatus}
                             </Badge>
                           )}
@@ -1278,16 +1322,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       </div>
                     )}
                     
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                    <CardHeader className="pb-2 pt-2 flex-shrink-0">
+                      <CardTitle className="text-sm group-hover:text-primary transition-colors line-clamp-2" style={{ maxWidth: '75ch', minHeight: '2.5rem' }}>
                         {project.name}
                       </CardTitle>
                     </CardHeader>
 
-                    <CardContent>
+                    <CardContent className="pt-0 pb-2 flex-shrink-0">
                       <Button 
                         size="sm" 
-                        className="w-full" 
+                        className="w-full text-xs h-7" 
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -1307,7 +1351,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               );
             })
           )}
-        </div>
+          </div>
+        )}
 
         {/* Categories Filter (Future Enhancement) */}
         <div className="mt-12 text-center">
