@@ -298,7 +298,7 @@ export function UnifiedProjectManagement({
             // Map diy_length_challenges to project_challenges if needed
             const mappedData = {
               ...freshData,
-              project_challenges: freshData.project_challenges ?? freshData.diy_length_challenges ?? null
+              project_challenges: freshData.project_challenges ?? null
             };
             console.log('🔄 Fresh project data (fallback):', mappedData);
             setSelectedProject(mappedData as Project);
@@ -307,7 +307,7 @@ export function UnifiedProjectManagement({
             // Fallback: map the retry data
             const mappedRetryData = {
               ...retryData[0],
-              project_challenges: retryData[0].project_challenges ?? retryData[0].diy_length_challenges ?? null
+              project_challenges: retryData[0].project_challenges ?? null
             };
             setSelectedProject(mappedRetryData as Project);
             toast.success("Project updated successfully!");
@@ -343,7 +343,7 @@ export function UnifiedProjectManagement({
         // Map diy_length_challenges to project_challenges for consistency
         const mappedData = {
           ...freshData,
-          project_challenges: freshData.project_challenges ?? freshData.diy_length_challenges ?? null
+          project_challenges: freshData.project_challenges ?? null
         };
         console.log('🔄 Fresh project data after save:', mappedData);
         console.log('🔄 Fresh project_challenges:', mappedData.project_challenges);
@@ -353,7 +353,7 @@ export function UnifiedProjectManagement({
         // Fallback to data from update response - map columns
         const mappedData = {
           ...data[0],
-          project_challenges: data[0].project_challenges ?? data[0].diy_length_challenges ?? null
+          project_challenges: data[0].project_challenges ?? null
         };
         console.log('⚠️ Using update response data as fallback:', mappedData);
         setSelectedProject(mappedData as Project);
@@ -381,7 +381,7 @@ export function UnifiedProjectManagement({
           // Map diy_length_challenges to project_challenges for consistency
           const mappedData = {
             ...freshData,
-            project_challenges: freshData.project_challenges ?? freshData.diy_length_challenges ?? null
+            project_challenges: freshData.project_challenges ?? null
           };
           setSelectedProject(mappedData as Project);
         }
@@ -404,7 +404,7 @@ export function UnifiedProjectManagement({
         // Map diy_length_challenges to project_challenges for consistency
         const mappedData = {
           ...freshData,
-          project_challenges: freshData.project_challenges ?? freshData.diy_length_challenges ?? null
+          project_challenges: freshData.project_challenges ?? null
         };
         setSelectedProject(mappedData as Project);
       }
@@ -660,7 +660,8 @@ export function UnifiedProjectManagement({
         updatedAt: new Date(),
         publishStatus: 'draft' as const,
         phases: parsedPhases,
-        isStandardTemplate: true
+        isStandardTemplate: true,
+        category: []
       });
 
       // Navigate to edit workflow view using Index.tsx view state management
@@ -1193,7 +1194,8 @@ export function UnifiedProjectManagement({
                                   createdAt: new Date(revision.created_at),
                                   updatedAt: new Date(revision.updated_at),
                                   publishStatus: revision.publish_status as 'draft' | 'published' | 'beta-testing',
-                                  phases: parsedPhases
+                                  phases: parsedPhases,
+                                  category: Array.isArray(revision.category) ? revision.category : (revision.category ? [revision.category] : [])
                                 });
 
                                 // Open workflow editor

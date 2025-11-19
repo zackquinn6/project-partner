@@ -197,7 +197,8 @@ function convertExcelDataToProject(excelRows: ExcelProjectRow[], projectId: stri
     phases,
     createdAt: now,
     updatedAt: now,
-    publishStatus: 'draft' as const
+    publishStatus: 'draft' as const,
+    category: ['Tile', 'Flooring']
   };
 }
 

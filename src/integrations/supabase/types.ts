@@ -2731,7 +2731,6 @@ export type Database = {
           customization_decisions: Json | null
           description: string | null
           difficulty: string | null
-          project_challenges: string | null
           effort_level: string | null
           end_date: string | null
           estimated_time: string | null
@@ -2745,6 +2744,7 @@ export type Database = {
           phases: Json
           plan_end_date: string
           progress: number
+          project_challenges: string | null
           project_leader: string | null
           project_photos: Json | null
           schedule_events: Json | null
@@ -2770,7 +2770,6 @@ export type Database = {
           customization_decisions?: Json | null
           description?: string | null
           difficulty?: string | null
-          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -2784,6 +2783,7 @@ export type Database = {
           phases?: Json
           plan_end_date?: string
           progress?: number
+          project_challenges?: string | null
           project_leader?: string | null
           project_photos?: Json | null
           schedule_events?: Json | null
@@ -2809,7 +2809,6 @@ export type Database = {
           customization_decisions?: Json | null
           description?: string | null
           difficulty?: string | null
-          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -2823,6 +2822,7 @@ export type Database = {
           phases?: Json
           plan_end_date?: string
           progress?: number
+          project_challenges?: string | null
           project_leader?: string | null
           project_photos?: Json | null
           schedule_events?: Json | null
@@ -2870,7 +2870,6 @@ export type Database = {
           created_from_revision: number | null
           description: string | null
           difficulty: string | null
-          project_challenges: string | null
           effort_level: string | null
           end_date: string | null
           estimated_time: string | null
@@ -2886,6 +2885,8 @@ export type Database = {
           phase_revision_alerts: Json | null
           phases: Json
           plan_end_date: string
+          project_challenges: string | null
+          project_type: string
           publish_status: string
           published_at: string | null
           release_notes: string | null
@@ -2906,7 +2907,6 @@ export type Database = {
           created_from_revision?: number | null
           description?: string | null
           difficulty?: string | null
-          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -2922,6 +2922,8 @@ export type Database = {
           phase_revision_alerts?: Json | null
           phases?: Json
           plan_end_date?: string
+          project_challenges?: string | null
+          project_type?: string
           publish_status?: string
           published_at?: string | null
           release_notes?: string | null
@@ -2942,7 +2944,6 @@ export type Database = {
           created_from_revision?: number | null
           description?: string | null
           difficulty?: string | null
-          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -2958,6 +2959,8 @@ export type Database = {
           phase_revision_alerts?: Json | null
           phases?: Json
           plan_end_date?: string
+          project_challenges?: string | null
+          project_type?: string
           publish_status?: string
           published_at?: string | null
           release_notes?: string | null
@@ -4534,7 +4537,6 @@ export type Database = {
           created_from_revision: number | null
           description: string | null
           difficulty: string | null
-          project_challenges: string | null
           effort_level: string | null
           end_date: string | null
           estimated_time: string | null
@@ -4550,6 +4552,8 @@ export type Database = {
           phase_revision_alerts: Json | null
           phases: Json | null
           plan_end_date: string | null
+          project_challenges: string | null
+          project_type: string | null
           publish_status: string | null
           published_at: string | null
           release_notes: string | null
@@ -4570,7 +4574,6 @@ export type Database = {
           created_from_revision?: number | null
           description?: string | null
           difficulty?: string | null
-          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -4586,6 +4589,8 @@ export type Database = {
           phase_revision_alerts?: Json | null
           phases?: never
           plan_end_date?: string | null
+          project_challenges?: string | null
+          project_type?: string | null
           publish_status?: string | null
           published_at?: string | null
           release_notes?: string | null
@@ -4606,7 +4611,6 @@ export type Database = {
           created_from_revision?: number | null
           description?: string | null
           difficulty?: string | null
-          project_challenges?: string | null
           effort_level?: string | null
           end_date?: string | null
           estimated_time?: string | null
@@ -4622,6 +4626,8 @@ export type Database = {
           phase_revision_alerts?: Json | null
           phases?: never
           plan_end_date?: string | null
+          project_challenges?: string | null
+          project_type?: string | null
           publish_status?: string | null
           published_at?: string | null
           release_notes?: string | null
@@ -4832,7 +4838,7 @@ export type Database = {
               p_category?: string
               p_description?: string
               p_difficulty?: string
-              p_project_challenges?: string
+              p_diy_length_challenges?: string
               p_effort_level?: string
               p_estimated_time?: string
               p_image?: string
@@ -4847,7 +4853,7 @@ export type Database = {
               p_categories?: string[]
               p_description?: string
               p_difficulty?: string
-              p_project_challenges?: string
+              p_diy_length_challenges?: string
               p_effort_level?: string
               p_estimated_time?: string
               p_image?: string
