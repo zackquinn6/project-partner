@@ -194,112 +194,115 @@ export function WorkflowSidebar({
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 text-sm font-semibold">{projectName || 'Project Progress'}</SidebarGroupLabel>
           <SidebarGroupContent>
-            {!collapsed && <div className="space-y-4 p-2">
-                {/* Progress Header */}
-                <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground">
-                    Step {currentStepIndex + 1} of {allSteps.length}
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span>Progress</span>
-                      <span>{Math.round(progress)}%</span>
+            {!collapsed && <div className="flex flex-col h-full p-2">
+                {/* Fixed Upper Section */}
+                <div className="flex-shrink-0 space-y-4">
+                  {/* Progress Header */}
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground">
+                      Step {currentStepIndex + 1} of {allSteps.length}
                     </div>
-                    <Progress value={progress} className="h-2" />
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span>Progress</span>
+                        <span>{Math.round(progress)}%</span>
+                      </div>
+                      <Progress value={progress} className="h-2" />
+                    </div>
                   </div>
-                </div>
 
-                {/* Instruction Detail Level */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" />
-                    <h3 className="font-semibold text-primary text-xs">Detail Level</h3>
+                  {/* Instruction Detail Level */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-primary" />
+                      <h3 className="font-semibold text-primary text-xs">Detail Level</h3>
+                    </div>
+                    <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
+                      <SelectTrigger className="w-full text-xs">
+                        <SelectValue>
+                          {instructionLevel === 'new_user' && 'Beginner'}
+                          {instructionLevel === 'detailed' && 'Intermediate'}
+                          {instructionLevel === 'quick' && 'Advanced'}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new_user" className="text-xs">Beginner: Extra guidance</SelectItem>
+                        <SelectItem value="detailed" className="text-xs">Intermediate: Short step-by-step</SelectItem>
+                        <SelectItem value="quick" className="text-xs">Advanced: Key points only</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
-                    <SelectTrigger className="w-full text-xs">
-                      <SelectValue>
-                        {instructionLevel === 'new_user' && 'Beginner'}
-                        {instructionLevel === 'detailed' && 'Intermediate'}
-                        {instructionLevel === 'quick' && 'Advanced'}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new_user" className="text-xs">Beginner: Extra guidance</SelectItem>
-                      <SelectItem value="detailed" className="text-xs">Intermediate: Short step-by-step</SelectItem>
-                      <SelectItem value="quick" className="text-xs">Advanced: Key points only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                {/* Project Tools Section */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-primary">Project Tools</h3>
+                  {/* Project Tools Section */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-primary">Project Tools</h3>
+                    <div className="flex gap-2">
+                      <Button onClick={() => setShowComingSoon(true)} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900 rounded-lg">
+                        <MessageCircle className="w-4 h-4" />
+                        <div className="text-[10px] font-semibold">Chat</div>
+                      </Button>
+                      
+                      <Button onClick={onKeysToSuccessClick} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border-green-200 hover:border-green-300 transition-all shadow-sm hover:shadow-md text-green-800 hover:text-green-900 rounded-lg">
+                        <Key className="w-4 h-4" />
+                        <div className="text-[10px] font-semibold">KeyInfo</div>
+                      </Button>
+                      
+                      {isKickoffComplete && <Button onClick={onUnplannedWorkClick} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-150 border-orange-200 hover:border-orange-300 transition-all shadow-sm hover:shadow-md text-orange-800 hover:text-orange-900 rounded-lg">
+                          <Settings className="w-4 h-4" />
+                          <div className="text-[10px] font-semibold">Re-Plan</div>
+                        </Button>}
+                    </div>
+                  </div>
+
+                  {/* Photos and Notes Buttons */}
                   <div className="flex gap-2">
-                    <Button onClick={() => setShowComingSoon(true)} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900 rounded-lg">
-                      <MessageCircle className="w-4 h-4" />
-                      <div className="text-[10px] font-semibold">Chat</div>
+                    <Button
+                      onClick={onPhotosClick}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
+                    >
+                      <Image className="w-4 h-4" />
+                      <span className="text-[10px] font-semibold">Photos</span>
                     </Button>
-                    
-                    <Button onClick={onKeysToSuccessClick} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border-green-200 hover:border-green-300 transition-all shadow-sm hover:shadow-md text-green-800 hover:text-green-900 rounded-lg">
-                      <Key className="w-4 h-4" />
-                      <div className="text-[10px] font-semibold">KeyInfo</div>
+                    <Button
+                      onClick={onNotesClick}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-150 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 rounded-lg shadow-sm hover:shadow-md transition-all"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span className="text-[10px] font-semibold">Notes</span>
                     </Button>
-                    
-                    {isKickoffComplete && <Button onClick={onUnplannedWorkClick} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-150 border-orange-200 hover:border-orange-300 transition-all shadow-sm hover:shadow-md text-orange-800 hover:text-orange-900 rounded-lg">
-                        <Settings className="w-4 h-4" />
-                        <div className="text-[10px] font-semibold">Re-Plan</div>
-                      </Button>}
+                  </div>
+
+                  {/* Separator */}
+                  <div className="border-t border-border my-4"></div>
+
+                  {/* Step Types Tooltip Button - Above first phase */}
+                  <div className="mb-2 flex justify-start">
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowStepTypesInfo(true)}
+                            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                          >
+                            <Info className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Step Types</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
 
-                {/* Photos and Notes Buttons */}
-                <div className="flex gap-2">
-                  <Button
-                    onClick={onPhotosClick}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
-                  >
-                    <Image className="w-4 h-4" />
-                    <span className="text-[10px] font-semibold">Photos</span>
-                  </Button>
-                  <Button
-                    onClick={onNotesClick}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-150 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 rounded-lg shadow-sm hover:shadow-md transition-all"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span className="text-[10px] font-semibold">Notes</span>
-                  </Button>
-                </div>
-
-                {/* Separator */}
-                <div className="border-t border-border my-4"></div>
-
-                {/* Step Types Tooltip Button - Above first phase */}
-                <div className="mb-2 flex justify-start">
-                  <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowStepTypesInfo(true)}
-                          className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                        >
-                          <Info className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Step Types</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-
-                {/* Step Navigation with Accordion */}
-                <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {/* Scrollable Workflow Navigation Section */}
+                <div className="flex-1 overflow-y-auto min-h-0 space-y-2">
                   {!groupedSteps || Object.keys(groupedSteps).length === 0 ? (
                     <div className="text-xs text-muted-foreground text-center py-4">
                       No workflow steps available. Please check project structure.
@@ -438,8 +441,8 @@ export function WorkflowSidebar({
                   )}
                 </div>
 
-                {/* Theme Button */}
-                <div className="mt-4">
+                {/* Theme Button - Fixed at bottom of scrollable section */}
+                <div className="flex-shrink-0 mt-4 pt-4 border-t border-border">
                   <WorkflowThemeSelector projectRunId={projectRunId} />
                 </div>
               </div>}
