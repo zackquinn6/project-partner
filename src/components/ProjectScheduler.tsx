@@ -366,15 +366,24 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
   // Apply preset
   const applyPreset = (preset: SchedulePreset) => {
-    updateTeamMember(teamMembers[0].id, {
-      weekendsOnly: preset.settings.weekendsOnly,
-      weekdaysAfterFivePm: preset.settings.weekdaysAfterFivePm,
-      workingHours: preset.settings.workingHours
-    });
-    toast({
-      title: "Preset applied",
-      description: `Applied "${preset.name}" schedule settings`
-    });
+    if (teamMembers.length > 0) {
+      const firstMemberId = teamMembers[0].id;
+      updateTeamMember(firstMemberId, {
+        weekendsOnly: preset.settings.weekendsOnly,
+        weekdaysAfterFivePm: preset.settings.weekdaysAfterFivePm,
+        workingHours: preset.settings.workingHours
+      });
+      toast({
+        title: "Preset applied",
+        description: `Applied "${preset.name}" schedule settings`
+      });
+    } else {
+      toast({
+        title: "No team member",
+        description: "Please add a team member first",
+        variant: "destructive"
+      });
+    }
   };
 
   // Apply remediation suggestion

@@ -82,29 +82,29 @@ export const QuickSchedulePresets: React.FC<QuickSchedulePresetsProps> = ({ onPr
         <p className="text-xs text-muted-foreground">Choose a schedule that fits your availability</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-4 gap-2">
         {presets.map((preset) => (
           <Card 
             key={preset.id}
             className="group cursor-pointer hover:border-primary hover:shadow-md transition-all duration-200"
             onClick={() => onPresetSelect(preset)}
           >
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 text-primary group-hover:scale-110 transition-transform">
+            <CardContent className="p-3">
+              <div className="flex flex-col items-center text-center gap-2">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 text-primary group-hover:scale-110 transition-transform">
                   {preset.icon}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-sm group-hover:text-primary transition-colors">
+                <div className="flex-1 min-w-0 w-full">
+                  <h4 className="font-semibold text-xs group-hover:text-primary transition-colors">
                     {preset.name}
                   </h4>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
                     {preset.description}
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary" className="text-xs font-medium">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {preset.settings.hoursPerWeek} hrs/week
+                  <div className="flex items-center justify-center gap-1 mt-2">
+                    <Badge variant="secondary" className="text-[10px] font-medium px-1.5 py-0.5">
+                      <Clock className="w-2.5 h-2.5 mr-1" />
+                      {preset.settings.hoursPerWeek}h
                     </Badge>
                   </div>
                 </div>

@@ -151,28 +151,43 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 variant={scheduleTempo === 'fast_track' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('fast_track')}
-                className="h-10 flex items-center justify-center gap-1.5"
+                className="h-auto flex flex-col items-start justify-start gap-1 p-3"
               >
-                <Zap className="w-3.5 h-3.5" />
-                <span className="text-xs">Fast-Track</span>
+                <div className="flex items-center gap-1.5 w-full">
+                  <Zap className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="text-xs font-medium">Fast-track</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground text-left leading-tight">
+                  Plans for project running at top 10% speed of projects. Works best for skilled teams moving fast.
+                </span>
               </Button>
               <Button
                 variant={scheduleTempo === 'steady' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('steady')}
-                className="h-10 flex items-center justify-center gap-1.5"
+                className="h-auto flex flex-col items-start justify-start gap-1 p-3"
               >
-                <Clock className="w-3.5 h-3.5" />
-                <span className="text-xs">Steady</span>
+                <div className="flex items-center gap-1.5 w-full">
+                  <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="text-xs font-medium">Steady</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground text-left leading-tight">
+                  Plans for standard project speed - not rushed but not taking extra time.
+                </span>
               </Button>
               <Button
                 variant={scheduleTempo === 'extended' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('extended')}
-                className="h-10 flex items-center justify-center gap-1.5"
+                className="h-auto flex flex-col items-start justify-start gap-1 p-3"
               >
-                <Settings className="w-3.5 h-3.5" />
-                <span className="text-xs">Extended</span>
+                <div className="flex items-center gap-1.5 w-full">
+                  <Settings className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="text-xs font-medium">Extended</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground text-left leading-tight">
+                  Plans for longest project durations. Best for beginners and projects not in a rush. Still respects latest acceptable date.
+                </span>
               </Button>
             </div>
           </div>
@@ -214,31 +229,37 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       variant={planningMode === 'quick' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setPlanningMode('quick')}
-                      className="h-10 flex flex-col items-center justify-center gap-1"
+                      className="h-10 flex items-center justify-start gap-2 px-3"
                     >
-                      <Brain className="w-3.5 h-3.5" />
-                      <span className="text-xs font-medium">Quick</span>
-                      <span className="text-[10px] text-muted-foreground">Phases / milestones</span>
+                      <Brain className="w-3.5 h-3.5 flex-shrink-0" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-xs font-medium">Quick</span>
+                        <span className="text-[10px] text-muted-foreground">Phases / milestones</span>
+                      </div>
                     </Button>
                     <Button
                       variant={planningMode === 'standard' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setPlanningMode('standard')}
-                      className="h-10 flex flex-col items-center justify-center gap-1"
+                      className="h-10 flex items-center justify-start gap-2 px-3"
                     >
-                      <Clock className="w-3.5 h-3.5" />
-                      <span className="text-xs font-medium">Standard</span>
-                      <span className="text-[10px] text-muted-foreground">Daily tasks</span>
+                      <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-xs font-medium">Standard</span>
+                        <span className="text-[10px] text-muted-foreground">Daily tasks</span>
+                      </div>
                     </Button>
                     <Button
                       variant={planningMode === 'detailed' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setPlanningMode('detailed')}
-                      className="h-10 flex flex-col items-center justify-center gap-1"
+                      className="h-10 flex items-center justify-start gap-2 px-3"
                     >
-                      <Settings className="w-3.5 h-3.5" />
-                      <span className="text-xs font-medium">Detailed</span>
-                      <span className="text-[10px] text-muted-foreground">Hour-by-hour</span>
+                      <Settings className="w-3.5 h-3.5 flex-shrink-0" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-xs font-medium">Detailed</span>
+                        <span className="text-[10px] text-muted-foreground">Hour-by-hour</span>
+                      </div>
                     </Button>
                   </div>
                 </div>
