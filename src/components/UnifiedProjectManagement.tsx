@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,8 @@ import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { calculateProjectTimeEstimate, formatScalingUnit } from '@/utils/projectTimeEstimation';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = ['Appliances', 'Bathroom', 'Ceilings', 'Decks & Patios', 'Doors & Windows', 'Electrical', 'Exterior Carpentry', 'Flooring', 'General Repairs & Maintenance', 'HVAC & Ventilation', 'Insulation & Weatherproofing', 'Interior Carpentry', 'Kitchen', 'Landscaping & Outdoor Projects', 'Lighting & Electrical', 'Masonry & Concrete', 'Painting & Finishing', 'Plumbing', 'Roofing', 'Safety & Security', 'Smart Home & Technology', 'Storage & Organization', 'Tile', 'Walls & Drywall'];
@@ -76,6 +78,21 @@ export function UnifiedProjectManagement({
   const [editedProject, setEditedProject] = useState<Partial<Project>>({});
   const [activeView, setActiveView] = useState<'details' | 'revisions'>('details');
   const [projectSearch, setProjectSearch] = useState('');
+
+  // Calculate time estimates reactively - recalculates when phases, time estimates, or scaling unit change
+  // Using JSON.stringify for phases to detect deep changes in time estimates within steps
+  const projectTimeEstimate = useMemo(() => {
+    if (!selectedProject || !selectedProject.phases || selectedProject.phases.length === 0) {
+      return null;
+    }
+    return calculateProjectTimeEstimate(selectedProject);
+  }, [
+    selectedProject?.id, // Recalculate when project changes
+    selectedProject?.scaling_unit, // Recalculate when scaling unit changes
+    // Stringify phases to detect changes in nested time estimates
+    // This ensures recalculation when time estimates in steps change
+    selectedProject?.phases ? JSON.stringify(selectedProject.phases) : null
+  ]);
 
   // Dialog states
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
@@ -1337,6 +1354,208 @@ export function UnifiedProjectManagement({
                       }))} rows={3} className="text-sm" placeholder="Describe any project challenges or considerations..." /> : <div className="p-2 bg-muted rounded min-h-[60px] text-sm">
                                {selectedProject.project_challenges || 'No project challenges specified'}
                              </div>}
+                         </div>
+
+                         {/* Time Estimate Section */}
+                         <Separator className="my-4" />
+                         <div className="space-y-4">
+                           <div className="flex items-center gap-2">
+                             <Label className="text-sm font-semibold">Time Estimate</Label>
+                             <TooltipProvider delayDuration={100}>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                                 </TooltipTrigger>
+                                 <TooltipContent className="max-w-xs text-xs">
+                                   <div className="space-y-1">
+                                     <p className="font-semibold">Time Estimate Ranges:</p>
+                                     <p>• <strong>Medium</strong> = Expected / average time</p>
+                                     <p>• <strong>Low</strong> = 10th percentile (best case)</p>
+                                     <p>• <strong>High</strong> = 90th percentile (worst case)</p>
+                                   </div>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </TooltipProvider>
+                           </div>
+
+                           {/* Manual Entry */}
+                           <div className="space-y-2 p-3 border rounded-md bg-muted/30">
+                             <Label className="text-xs font-medium">Manual Entry</Label>
+                             <div className="grid grid-cols-2 gap-2">
+                               <div className="space-y-1">
+                                 <Label className="text-xs">Estimated Time</Label>
+                                 {editingProject ? (
+                                   <Input 
+                                     value={editedProject.estimated_time || ''} 
+                                     onChange={e => setEditedProject(prev => ({
+                                       ...prev,
+                                       estimated_time: e.target.value
+                                     }))} 
+                                     className="text-xs h-8" 
+                                     placeholder="e.g., 2-4 hours"
+                                   />
+                                 ) : (
+                                   <div className="p-2 bg-background rounded text-xs">
+                                     {selectedProject.estimated_time || 'Not specified'}
+                                   </div>
+                                 )}
+                               </div>
+                               <div className="space-y-1">
+                                 <Label className="text-xs">Scaling Unit</Label>
+                                 {editingProject ? (
+                                   <Select 
+                                     value={editedProject.scaling_unit || ''} 
+                                     onValueChange={value => setEditedProject(prev => ({
+                                       ...prev,
+                                       scaling_unit: value
+                                     }))}
+                                   >
+                                     <SelectTrigger className="text-xs h-8">
+                                       <SelectValue placeholder="Select scaling unit" />
+                                     </SelectTrigger>
+                                     <SelectContent>
+                                       <SelectItem value="per square foot">per square foot</SelectItem>
+                                       <SelectItem value="per 10x10 room">per 10x10 room</SelectItem>
+                                       <SelectItem value="per linear foot">per linear foot</SelectItem>
+                                       <SelectItem value="per cubic yard">per cubic yard</SelectItem>
+                                       <SelectItem value="per item">per item</SelectItem>
+                                     </SelectContent>
+                                   </Select>
+                                 ) : (
+                                   <div className="p-2 bg-background rounded text-xs">
+                                     {selectedProject.scaling_unit || 'Not specified'}
+                                   </div>
+                                 )}
+                               </div>
+                             </div>
+                           </div>
+
+                           {/* Calculated Fields */}
+                           {projectTimeEstimate && (() => {
+                             const timeEstimate = projectTimeEstimate;
+                             const scalingUnitDisplay = formatScalingUnit(selectedProject.scaling_unit);
+                             
+                             return (
+                               <div className="space-y-3">
+                                 <Label className="text-xs font-medium">Calculated from Workflow Steps</Label>
+                                 
+                                 {/* Main Project Time Estimates */}
+                                 <div className="p-3 border rounded-md bg-background">
+                                   <div className="space-y-2">
+                                     <div className="text-xs font-medium text-muted-foreground">Main Project</div>
+                                     
+                                     {/* Fixed Time */}
+                                     {(timeEstimate.fixedTime.low > 0 || timeEstimate.fixedTime.medium > 0 || timeEstimate.fixedTime.high > 0) && (
+                                       <div className="space-y-1">
+                                         <Label className="text-xs">Fixed Time (hours)</Label>
+                                         <div className="grid grid-cols-3 gap-2 text-xs">
+                                           <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
+                                             <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
+                                             <div className="text-green-900 dark:text-green-100 font-semibold">{timeEstimate.fixedTime.low.toFixed(1)}</div>
+                                           </div>
+                                           <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                                             <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
+                                             <div className="text-blue-900 dark:text-blue-100 font-semibold">{timeEstimate.fixedTime.medium.toFixed(1)}</div>
+                                           </div>
+                                           <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
+                                             <div className="text-red-700 dark:text-red-300 font-medium">High</div>
+                                             <div className="text-red-900 dark:text-red-100 font-semibold">{timeEstimate.fixedTime.high.toFixed(1)}</div>
+                                           </div>
+                                         </div>
+                                       </div>
+                                     )}
+                                     
+                                     {/* Scaled Time Per Unit */}
+                                     {(timeEstimate.scaledTimePerUnit.low > 0 || timeEstimate.scaledTimePerUnit.medium > 0 || timeEstimate.scaledTimePerUnit.high > 0) && (
+                                       <div className="space-y-1">
+                                         <Label className="text-xs">Time per {scalingUnitDisplay} (hours)</Label>
+                                         <div className="grid grid-cols-3 gap-2 text-xs">
+                                           <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
+                                             <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
+                                             <div className="text-green-900 dark:text-green-100 font-semibold">{timeEstimate.scaledTimePerUnit.low.toFixed(2)}</div>
+                                           </div>
+                                           <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                                             <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
+                                             <div className="text-blue-900 dark:text-blue-100 font-semibold">{timeEstimate.scaledTimePerUnit.medium.toFixed(2)}</div>
+                                           </div>
+                                           <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
+                                             <div className="text-red-700 dark:text-red-300 font-medium">High</div>
+                                             <div className="text-red-900 dark:text-red-100 font-semibold">{timeEstimate.scaledTimePerUnit.high.toFixed(2)}</div>
+                                           </div>
+                                         </div>
+                                       </div>
+                                     )}
+                                   </div>
+                                 </div>
+
+                                 {/* Incorporated Phases */}
+                                 {timeEstimate.incorporatedPhases.length > 0 && (
+                                   <div className="space-y-2">
+                                     <Label className="text-xs font-medium">Incorporated Phases</Label>
+                                     <div className="space-y-2">
+                                       {timeEstimate.incorporatedPhases.map((phase, index) => {
+                                         const phaseScalingUnit = formatScalingUnit(phase.scalingUnit);
+                                         return (
+                                           <div key={index} className="p-3 border rounded-md bg-background">
+                                             <div className="text-xs font-medium mb-2">
+                                               {phase.phaseName}
+                                               {phase.sourceProjectName && (
+                                                 <span className="text-muted-foreground ml-1">
+                                                   (from {phase.sourceProjectName})
+                                                 </span>
+                                               )}
+                                             </div>
+                                             
+                                             {/* Fixed Time for Incorporated Phase */}
+                                             {(phase.fixedTime.low > 0 || phase.fixedTime.medium > 0 || phase.fixedTime.high > 0) && (
+                                               <div className="space-y-1 mb-2">
+                                                 <Label className="text-xs">Fixed Time (hours)</Label>
+                                                 <div className="grid grid-cols-3 gap-2 text-xs">
+                                                   <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
+                                                     <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
+                                                     <div className="text-green-900 dark:text-green-100 font-semibold">{phase.fixedTime.low.toFixed(1)}</div>
+                                                   </div>
+                                                   <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                                                     <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
+                                                     <div className="text-blue-900 dark:text-blue-100 font-semibold">{phase.fixedTime.medium.toFixed(1)}</div>
+                                                   </div>
+                                                   <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
+                                                     <div className="text-red-700 dark:text-red-300 font-medium">High</div>
+                                                     <div className="text-red-900 dark:text-red-100 font-semibold">{phase.fixedTime.high.toFixed(1)}</div>
+                                                   </div>
+                                                 </div>
+                                               </div>
+                                             )}
+                                             
+                                             {/* Scaled Time Per Unit for Incorporated Phase */}
+                                             {(phase.scaledTimePerUnit.low > 0 || phase.scaledTimePerUnit.medium > 0 || phase.scaledTimePerUnit.high > 0) && (
+                                               <div className="space-y-1">
+                                                 <Label className="text-xs">Time per {phaseScalingUnit} (hours)</Label>
+                                                 <div className="grid grid-cols-3 gap-2 text-xs">
+                                                   <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
+                                                     <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
+                                                     <div className="text-green-900 dark:text-green-100 font-semibold">{phase.scaledTimePerUnit.low.toFixed(2)}</div>
+                                                   </div>
+                                                   <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                                                     <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
+                                                     <div className="text-blue-900 dark:text-blue-100 font-semibold">{phase.scaledTimePerUnit.medium.toFixed(2)}</div>
+                                                   </div>
+                                                   <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
+                                                     <div className="text-red-700 dark:text-red-300 font-medium">High</div>
+                                                     <div className="text-red-900 dark:text-red-100 font-semibold">{phase.scaledTimePerUnit.high.toFixed(2)}</div>
+                                                   </div>
+                                                 </div>
+                                               </div>
+                                             )}
+                                           </div>
+                                         );
+                                       })}
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
+                             );
+                           })()}
                          </div>
 
                          {/* Project Ownership Section */}
