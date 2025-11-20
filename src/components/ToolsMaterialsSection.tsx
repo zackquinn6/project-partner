@@ -66,7 +66,7 @@ export function ToolsMaterialsSection({
           <div className="grid md:grid-cols-2 gap-6">
             {/* Materials Column */}
             {currentStep.materials?.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2" data-tutorial="materials">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-semibold">Materials</h4>
                   <Badge variant={allMaterialsChecked ? "default" : "outline"} className={allMaterialsChecked ? "bg-green-500 text-white text-xs" : "text-xs"}>
@@ -97,7 +97,7 @@ export function ToolsMaterialsSection({
 
             {/* Tools Column */}
             {currentStep.tools?.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2" data-tutorial="tools">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-semibold">Tools</h4>
                   <Badge variant={allToolsChecked ? "default" : "outline"} className={allToolsChecked ? "bg-green-500 text-white text-xs" : "text-xs"}>

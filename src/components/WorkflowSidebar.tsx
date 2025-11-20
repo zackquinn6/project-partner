@@ -215,13 +215,13 @@ export function WorkflowSidebar({
       
       <SidebarContent className="pt-4 flex flex-col h-full overflow-hidden">
         <SidebarGroup className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <SidebarGroupLabel className="px-4 text-sm font-semibold flex-shrink-0">{projectName || 'Project Progress'}</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-4 text-sm font-semibold flex-shrink-0" data-tutorial="project-name">{projectName || 'Project Progress'}</SidebarGroupLabel>
           <SidebarGroupContent className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {!collapsed && <div className="flex flex-col h-full p-2 min-h-0 overflow-hidden">
                 {/* Fixed Upper Section - No scrolling */}
                 <div className="flex-shrink-0 space-y-4 pb-4">
                   {/* Progress Header */}
-                  <div className="space-y-1">
+                  <div className="space-y-1" data-tutorial="progress-bar">
                     <div className="flex justify-between items-center text-xs">
                       <span>Progress</span>
                       <span className="text-muted-foreground text-[10px]">
@@ -233,7 +233,7 @@ export function WorkflowSidebar({
                   </div>
 
                   {/* Instruction Detail Level */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" data-tutorial="detail-level">
                     <div className="flex-shrink-0">
                       <div className="font-semibold text-primary text-xs leading-tight">
                         <div>Detail</div>
@@ -257,7 +257,7 @@ export function WorkflowSidebar({
                   </div>
 
                   {/* Project Tools Section */}
-                  <div className="space-y-3">
+                  <div className="space-y-3" data-tutorial="project-tools">
                     <h3 className="text-sm font-semibold text-primary">Project Tools</h3>
                     <div className="flex gap-2">
                       <Button onClick={() => setShowComingSoon(true)} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900 rounded-lg">
@@ -304,7 +304,7 @@ export function WorkflowSidebar({
                 </div>
 
                 {/* Scrollable Workflow Navigation Section - Only this section scrolls */}
-                <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pb-2">
+                <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pb-2" data-tutorial="workflow-navigation">
                   {!groupedSteps || Object.keys(groupedSteps).length === 0 ? (
                     <div className="text-xs text-muted-foreground text-center py-4">
                       No workflow steps available. Please check project structure.
@@ -471,6 +471,7 @@ export function WorkflowSidebar({
                           size="icon"
                           onClick={() => setShowTutorial(true)}
                           className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          data-tutorial="help-button"
                         >
                           <HelpCircle className="h-4 w-4" />
                         </Button>

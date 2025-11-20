@@ -2040,7 +2040,7 @@ export default function UserView({
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-3">
-                    <CardTitle className="text-xl">{currentStep?.step}</CardTitle>
+                    <CardTitle className="text-xl" data-tutorial="step-name">{currentStep?.step}</CardTitle>
                   </div>
                   {currentStep?.description && <CardDescription className="text-sm">
                     {currentStep.description}
@@ -2070,6 +2070,7 @@ export default function UserView({
           <Card 
             key={instructionLevel}
             className="gradient-card border-0 shadow-card"
+            data-tutorial="step-instructions"
           >
             <CardContent className="p-8">
               {instructionLoading ? (
@@ -2130,7 +2131,7 @@ export default function UserView({
 
           {/* Outputs */}
           {currentStep && currentStep.outputs?.length > 0 && (
-            <Card className="gradient-card border-0 shadow-card">
+            <Card className="gradient-card border-0 shadow-card" data-tutorial="outputs">
               <CardContent className="p-6">
                 <Accordion type="multiple" defaultValue={["outputs"]} className="w-full">
                   {(() => {
@@ -2194,7 +2195,7 @@ export default function UserView({
           {/* Navigation */}
           <Card className="gradient-card border-0 shadow-card">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between" data-tutorial="navigation-buttons">
                 <div className="flex items-center gap-3">
                   <Button 
                     onClick={handlePrevious} 
@@ -2217,7 +2218,7 @@ export default function UserView({
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3" data-tutorial="photos-notes">
                   {/* Photo Upload and Note Upload Buttons - Always visible for current step */}
                   {currentStep && currentProjectRun && (
                     <>
@@ -2272,6 +2273,7 @@ export default function UserView({
                           onClick={handleStepComplete} 
                           size="sm"
                           className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth text-xs"
+                          data-tutorial="mark-complete"
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
                           <span className="text-xs">Mark Complete</span>
@@ -2295,7 +2297,8 @@ export default function UserView({
                   <Dialog open={issueReportOpen} onOpenChange={setIssueReportOpen}>
                     <DialogTrigger asChild>
                       <Button 
-                        variant="outline" 
+                        variant="outline"
+                        data-tutorial="report-issue" 
                         size="sm"
                         className="gap-2 text-xs sm:text-sm"
                         title={isMobile ? "Report Issue" : undefined}
