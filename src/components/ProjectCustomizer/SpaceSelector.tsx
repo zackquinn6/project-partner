@@ -47,6 +47,47 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
     }
   }, [projectRunHomeId]);
 
+  // Load spaces from database with priority when component mounts or projectRunId changes
+  useEffect(() => {
+    if (!projectRunId) return;
+
+    const loadSpaces = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('project_run_spaces')
+          .select('*')
+          .eq('project_run_id', projectRunId)
+          .order('priority', { ascending: true, nullsLast: true });
+
+        if (error) throw error;
+
+        const loadedSpaces: ProjectSpace[] = (data || []).map(space => ({
+          id: space.id,
+          name: space.space_name,
+          spaceType: space.space_type,
+          homeSpaceId: space.home_space_id || undefined,
+          scaleValue: space.scale_value || undefined,
+          scaleUnit: space.scale_unit || undefined,
+          isFromHome: space.is_from_home || false,
+          priority: space.priority || undefined
+        }));
+
+        // Only update if we have spaces from database and current selectedSpaces is empty or different
+        if (loadedSpaces.length > 0 && (
+          selectedSpaces.length === 0 || 
+          selectedSpaces.length !== loadedSpaces.length ||
+          !selectedSpaces.every(s => loadedSpaces.some(ls => ls.id === s.id))
+        )) {
+          onSpacesChange(loadedSpaces);
+        }
+      } catch (error) {
+        console.error('Error loading spaces:', error);
+      }
+    };
+
+    loadSpaces();
+  }, [projectRunId]);
+
   const fetchHomeSpaces = async () => {
     if (!projectRunHomeId) return;
 
