@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Plus, Home, X, Edit2 } from 'lucide-react';
+import { Plus, Home, X, Edit2, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -17,6 +17,7 @@ export interface ProjectSpace {
   scaleValue?: number;
   scaleUnit?: string;
   isFromHome: boolean;
+  priority?: number; // Lower number = higher priority (1 is highest)
 }
 
 export interface SpaceSelectorProps {
@@ -84,6 +85,11 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
     }
 
     try {
+      // Get the next priority (highest number + 1, or 1 if no spaces exist)
+      const nextPriority = selectedSpaces.length > 0 
+        ? Math.max(...selectedSpaces.map(s => s.priority || 0)) + 1
+        : 1;
+
       // Save to database
       const { data, error } = await supabase
         .from('project_run_spaces')
@@ -94,12 +100,18 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
           space_type: homeSpace.space_type || 'room',
           scale_value: homeSpace.square_footage,
           scale_unit: projectScaleUnit,
-          is_from_home: true
+          is_from_home: true,
+          priority: nextPriority
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Get the next priority (highest number + 1, or 1 if no spaces exist)
+      const nextPriority = selectedSpaces.length > 0 
+        ? Math.max(...selectedSpaces.map(s => s.priority || 0)) + 1
+        : 1;
 
       const newSpace: ProjectSpace = {
         id: data.id,
@@ -108,7 +120,8 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
         homeSpaceId: homeSpace.id,
         scaleValue: data.scale_value,
         scaleUnit: projectScaleUnit,
-        isFromHome: true
+        isFromHome: true,
+        priority: data.priority || nextPriority
       };
 
       onSpacesChange([...selectedSpaces, newSpace]);
@@ -146,6 +159,11 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
     }
 
     try {
+      // Get the next priority (highest number + 1, or 1 if no spaces exist)
+      const nextPriority = selectedSpaces.length > 0 
+        ? Math.max(...selectedSpaces.map(s => s.priority || 0)) + 1
+        : 1;
+
       // Save to database
       const { data, error } = await supabase
         .from('project_run_spaces')
@@ -155,12 +173,18 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
           space_type: customSpaceType || 'custom',
           scale_value: customScaleValue,
           scale_unit: projectScaleUnit,
-          is_from_home: false
+          is_from_home: false,
+          priority: nextPriority
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Get the next priority (highest number + 1, or 1 if no spaces exist)
+      const nextPriority = selectedSpaces.length > 0 
+        ? Math.max(...selectedSpaces.map(s => s.priority || 0)) + 1
+        : 1;
 
       const newSpace: ProjectSpace = {
         id: data.id,
@@ -168,7 +192,8 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
         spaceType: data.space_type,
         scaleValue: data.scale_value,
         scaleUnit: projectScaleUnit,
-        isFromHome: false
+        isFromHome: false,
+        priority: data.priority || nextPriority
       };
 
       onSpacesChange([...selectedSpaces, newSpace]);
@@ -241,6 +266,62 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
     }
   };
 
+  const handlePriorityChange = async (spaceId: string, direction: 'up' | 'down') => {
+    // Sort spaces by priority (lower number = higher priority)
+    const sortedSpaces = [...selectedSpaces].sort((a, b) => {
+      const priorityA = a.priority || 999;
+      const priorityB = b.priority || 999;
+      return priorityA - priorityB;
+    });
+
+    const currentIndex = sortedSpaces.findIndex(s => s.id === spaceId);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= sortedSpaces.length) return;
+
+    // Swap priorities
+    const currentSpace = sortedSpaces[currentIndex];
+    const targetSpace = sortedSpaces[newIndex];
+    
+    const tempPriority = currentSpace.priority;
+    const newPriority = targetSpace.priority;
+
+    try {
+      // Update both spaces in database
+      const updates = [
+        supabase
+          .from('project_run_spaces')
+          .update({ priority: newPriority })
+          .eq('id', currentSpace.id),
+        supabase
+          .from('project_run_spaces')
+          .update({ priority: tempPriority })
+          .eq('id', targetSpace.id)
+      ];
+
+      await Promise.all(updates.map(u => u.then(({ error }) => {
+        if (error) throw error;
+      })));
+
+      // Update local state
+      const updatedSpaces = selectedSpaces.map(s => {
+        if (s.id === currentSpace.id) return { ...s, priority: newPriority };
+        if (s.id === targetSpace.id) return { ...s, priority: tempPriority };
+        return s;
+      });
+
+      onSpacesChange(updatedSpaces);
+    } catch (error) {
+      console.error('Error updating priority:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update priority order",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -256,39 +337,82 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Selected Spaces ({selectedSpaces.length})</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Set priority order: higher priority spaces (lower numbers) are completed first. Use arrows to reorder.
+            </p>
           </CardHeader>
           <CardContent className="space-y-3">
-            {selectedSpaces.map((space) => (
-              <div key={space.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-sm">{space.name}</h4>
-                    <Badge variant={space.isFromHome ? "default" : "secondary"} className="text-xs">
-                      {space.isFromHome ? "From Home" : "Custom"}
-                    </Badge>
+            {[...selectedSpaces]
+              .sort((a, b) => {
+                const priorityA = a.priority || 999;
+                const priorityB = b.priority || 999;
+                return priorityA - priorityB;
+              })
+              .map((space, index, sortedArray) => {
+                const isFirst = index === 0;
+                const isLast = index === sortedArray.length - 1;
+                const priorityNumber = space.priority || index + 1;
+                
+                return (
+                  <div key={space.id} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    {/* Priority Controls */}
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => handlePriorityChange(space.id, 'up')}
+                        disabled={isFirst}
+                        title="Increase priority (move up)"
+                      >
+                        <ChevronUp className="w-3 h-3" />
+                      </Button>
+                      <div className="text-xs text-center font-semibold text-primary min-w-[20px]">
+                        {priorityNumber}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => handlePriorityChange(space.id, 'down')}
+                        disabled={isLast}
+                        title="Decrease priority (move down)"
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-sm">{space.name}</h4>
+                        <Badge variant={space.isFromHome ? "default" : "secondary"} className="text-xs">
+                          {space.isFromHome ? "From Home" : "Custom"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 mt-2">
+                        <Label className="text-xs text-muted-foreground">
+                          Scale ({projectScaleUnit}):
+                        </Label>
+                        <Input
+                          type="number"
+                          value={space.scaleValue || ''}
+                          onChange={(e) => handleUpdateScaleValue(space.id, parseFloat(e.target.value))}
+                          placeholder={`Enter ${projectScaleUnit}`}
+                          className="w-32 h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveSpace(space.id)}
+                      title="Remove space"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-4 mt-2">
-                    <Label className="text-xs text-muted-foreground">
-                      Scale ({projectScaleUnit}):
-                    </Label>
-                    <Input
-                      type="number"
-                      value={space.scaleValue || ''}
-                      onChange={(e) => handleUpdateScaleValue(space.id, parseFloat(e.target.value))}
-                      placeholder={`Enter ${projectScaleUnit}`}
-                      className="w-32 h-8 text-sm"
-                    />
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveSpace(space.id)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
+                );
+              })}
           </CardContent>
         </Card>
       )}

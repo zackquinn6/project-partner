@@ -35,6 +35,7 @@ interface ProjectSpace {
   scaleValue?: number;
   scaleUnit?: string;
   isFromHome: boolean;
+  priority?: number; // Lower number = higher priority (1 is highest)
 }
 
 interface CustomizationState {
@@ -135,32 +136,84 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
   // Load customization decisions from database on mount
   useEffect(() => {
-    if (!open) return;
+    if (!open || !currentProjectRun?.id) return;
     
-    if (currentProjectRun?.customization_decisions) {
-      const savedData = currentProjectRun.customization_decisions as any;
-      const savedSpaces = savedData.spaces || [];
-      
-      // If no spaces are saved, initialize with default "Space 1"
-      const spaces = savedSpaces.length > 0 ? savedSpaces : [createDefaultSpace()];
-      
-      setCustomizationState({
-        spaces,
-        spaceDecisions: savedData.spaceDecisions || {},
-        standardDecisions: savedData.standardDecisions || {},
-        ifNecessaryWork: savedData.ifNecessaryWork || {},
-        customPlannedWork: savedData.customPlannedWork || [],
-        customUnplannedWork: savedData.customUnplannedWork || [],
-        workflowOrder: savedData.workflowOrder || []
-      });
-    } else {
-      // No saved customization decisions - initialize with default "Space 1"
-      setCustomizationState(prev => ({
-        ...prev,
-        spaces: [createDefaultSpace()]
-      }));
-    }
-  }, [open, currentProjectRun]);
+    const loadSpaces = async () => {
+      try {
+        // Load spaces from project_run_spaces table with priority
+        const { data: dbSpaces, error } = await supabase
+          .from('project_run_spaces')
+          .select('*')
+          .eq('project_run_id', currentProjectRun.id)
+          .order('priority', { ascending: true, nullsLast: true });
+
+        if (error) throw error;
+
+        const loadedSpaces: ProjectSpace[] = (dbSpaces || []).map(space => ({
+          id: space.id,
+          name: space.space_name,
+          spaceType: space.space_type,
+          homeSpaceId: space.home_space_id || undefined,
+          scaleValue: space.scale_value || undefined,
+          scaleUnit: space.scale_unit || undefined,
+          isFromHome: space.is_from_home || false,
+          priority: space.priority || undefined
+        }));
+
+        // If no spaces in database, check customization_decisions
+        let spaces = loadedSpaces;
+        if (spaces.length === 0 && currentProjectRun?.customization_decisions) {
+          const savedData = currentProjectRun.customization_decisions as any;
+          const savedSpaces = savedData.spaces || [];
+          spaces = savedSpaces.length > 0 ? savedSpaces : [createDefaultSpace()];
+        } else if (spaces.length === 0) {
+          spaces = [createDefaultSpace()];
+        }
+
+        if (currentProjectRun?.customization_decisions) {
+          const savedData = currentProjectRun.customization_decisions as any;
+          setCustomizationState({
+            spaces,
+            spaceDecisions: savedData.spaceDecisions || {},
+            standardDecisions: savedData.standardDecisions || {},
+            ifNecessaryWork: savedData.ifNecessaryWork || {},
+            customPlannedWork: savedData.customPlannedWork || [],
+            customUnplannedWork: savedData.customUnplannedWork || [],
+            workflowOrder: savedData.workflowOrder || []
+          });
+        } else {
+          setCustomizationState(prev => ({
+            ...prev,
+            spaces
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading spaces:', error);
+        // Fallback to customization_decisions if database load fails
+        if (currentProjectRun?.customization_decisions) {
+          const savedData = currentProjectRun.customization_decisions as any;
+          const savedSpaces = savedData.spaces || [];
+          const spaces = savedSpaces.length > 0 ? savedSpaces : [createDefaultSpace()];
+          setCustomizationState({
+            spaces,
+            spaceDecisions: savedData.spaceDecisions || {},
+            standardDecisions: savedData.standardDecisions || {},
+            ifNecessaryWork: savedData.ifNecessaryWork || {},
+            customPlannedWork: savedData.customPlannedWork || [],
+            customUnplannedWork: savedData.customUnplannedWork || [],
+            workflowOrder: savedData.workflowOrder || []
+          });
+        } else {
+          setCustomizationState(prev => ({
+            ...prev,
+            spaces: [createDefaultSpace()]
+          }));
+        }
+      }
+    };
+
+    loadSpaces();
+  }, [open, currentProjectRun?.id]);
 
   // Load home name
   useEffect(() => {

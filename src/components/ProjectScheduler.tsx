@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useResponsive } from '@/hooks/useResponsive';
 import { schedulingEngine } from '@/utils/schedulingEngine';
 import { SchedulingInputs, SchedulingResult, Task, Worker, PlanningMode, ScheduleTempo, RemediationSuggestion } from '@/interfaces/Scheduling';
+import { supabase } from '@/integrations/supabase/client';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -95,6 +96,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const {
     isMobile
   } = useResponsive();
+
+  // Space priority state
+  const [spaces, setSpaces] = useState<Array<{ id: string; name: string; priority: number | null }>>([]);
 
   // Enhanced scheduling state
   const [planningMode, setPlanningMode] = useState<PlanningMode>('standard');
@@ -216,7 +220,36 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     }[];
   }>({});
 
+  // Load spaces with priority when scheduler opens
+  useEffect(() => {
+    if (!open || !projectRun?.id) return;
+
+    const loadSpaces = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('project_run_spaces')
+          .select('id, space_name, priority')
+          .eq('project_run_id', projectRun.id)
+          .order('priority', { ascending: true, nullsLast: true });
+
+        if (error) throw error;
+
+        setSpaces((data || []).map(space => ({
+          id: space.id,
+          name: space.space_name,
+          priority: space.priority
+        })));
+      } catch (error) {
+        console.error('Error loading spaces for scheduler:', error);
+        setSpaces([]);
+      }
+    };
+
+    loadSpaces();
+  }, [open, projectRun?.id]);
+
   // Convert project to scheduling tasks and calculate totals
+  // Tasks are sorted by space priority when multiple spaces exist
   const {
     schedulingTasks,
     projectTotals
@@ -229,6 +262,13 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     const scalingFactor = projectRun?.scalingFactor || 1;
     const skillMultiplier = projectRun?.skillLevelMultiplier || 1;
     const completedSteps = projectRun?.completedSteps || [];
+    
+    // Create a map of space priority for quick lookup
+    const spacePriorityMap = new Map<string, number>();
+    spaces.forEach(space => {
+      spacePriorityMap.set(space.id, space.priority || 999);
+    });
+
     project.phases.forEach(phase => {
       phase.operations.forEach(operation => {
         operation.steps.forEach((step, index) => {
@@ -249,29 +289,66 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           if (index > 0) {
             dependencies.push(`${operation.id}-step-${index - 1}`);
           }
-          tasks.push({
-            id: `${operation.id}-step-${index}`,
-            title: step.step,
-            estimatedHours: adjustedMed,
-            minContiguousHours: Math.min(adjustedMed, 2),
-            dependencies,
-            tags: [],
-            confidence: 0.7,
-            phaseId: phase.id,
-            operationId: operation.id
-          });
+          
+          // If there are multiple spaces, create tasks per space and tag with priority
+          if (spaces.length > 1) {
+            spaces.forEach(space => {
+              const spacePriority = space.priority || 999;
+              tasks.push({
+                id: `${operation.id}-step-${index}-space-${space.id}`,
+                title: `${step.step} - ${space.name}`,
+                estimatedHours: adjustedMed,
+                minContiguousHours: Math.min(adjustedMed, 2),
+                dependencies: dependencies.map(dep => `${dep}-space-${space.id}`),
+                tags: [`space:${space.id}`, `priority:${spacePriority}`],
+                confidence: 0.7,
+                phaseId: phase.id,
+                operationId: operation.id,
+                // Add space priority as metadata for sorting
+                metadata: { spaceId: space.id, spacePriority }
+              } as Task & { metadata?: { spaceId: string; spacePriority: number } });
+            });
+          } else {
+            // Single space or no spaces - create task normally
+            tasks.push({
+              id: `${operation.id}-step-${index}`,
+              title: step.step,
+              estimatedHours: adjustedMed,
+              minContiguousHours: Math.min(adjustedMed, 2),
+              dependencies,
+              tags: [],
+              confidence: 0.7,
+              phaseId: phase.id,
+              operationId: operation.id
+            });
+          }
         });
       });
     });
+
+    // Sort tasks by space priority (lower number = higher priority)
+    // Tasks without space metadata come last
+    const sortedTasks = tasks.sort((a, b) => {
+      const aMetadata = (a as any).metadata;
+      const bMetadata = (b as any).metadata;
+      
+      if (aMetadata && bMetadata) {
+        return aMetadata.spacePriority - bMetadata.spacePriority;
+      }
+      if (aMetadata) return -1; // Tasks with space priority come first
+      if (bMetadata) return 1;
+      return 0; // Both without metadata maintain original order
+    });
+
     return {
-      schedulingTasks: tasks,
+      schedulingTasks: sortedTasks,
       projectTotals: {
         low: lowTotal,
         medium: mediumTotal,
         high: highTotal
       }
     };
-  }, [project, projectRun]);
+  }, [project, projectRun, spaces]);
 
   // Update team member
   const updateTeamMember = (id: string, updates: Partial<TeamMember>) => {
@@ -1111,4 +1188,5 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           </DialogContent>
         </Dialog>}
     </Dialog>;
+};
 };
