@@ -285,8 +285,8 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     const circle = document.createElement('div');
     circle.className = 'tutorial-highlight-circle';
     circle.style.position = 'fixed';
-    circle.style.top = `${highlightPosition.top + window.scrollY}px`;
-    circle.style.left = `${highlightPosition.left + window.scrollX}px`;
+    circle.style.top = `${highlightPosition.top}px`;
+    circle.style.left = `${highlightPosition.left}px`;
     circle.style.width = `${highlightPosition.width}px`;
     circle.style.height = `${highlightPosition.height}px`;
     circle.style.borderRadius = '8px';
@@ -297,13 +297,6 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     circle.style.transition = 'all 0.3s ease-in-out';
     circle.style.backgroundColor = 'transparent';
     circle.style.display = 'block';
-    
-    console.log('Creating highlight circle:', {
-      top: circle.style.top,
-      left: circle.style.left,
-      width: circle.style.width,
-      height: circle.style.height
-    });
     
     document.body.appendChild(circle);
 
