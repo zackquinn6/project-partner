@@ -41,7 +41,7 @@ export function ToolsMaterialsSection({
   const allComplete = allMaterialsChecked && allToolsChecked;
 
   return (
-    <Card className="gradient-card border-0 shadow-card">
+    <Card className="gradient-card border-0 shadow-card" data-tutorial="tools-materials">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

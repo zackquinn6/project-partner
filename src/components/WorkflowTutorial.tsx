@@ -72,14 +72,14 @@ const tutorialSteps: TutorialStep[] = [
     id: 'tools',
     title: 'Tools',
     description: 'See all the tools you\'ll need for this step. Make sure you have everything ready before starting.',
-    targetSelector: '[data-tutorial="tools"]',
+    targetSelector: '[data-tutorial="tools-materials"]',
     position: 'bottom'
   },
   {
     id: 'materials',
     title: 'Materials',
     description: 'List of materials required for this step. Check that you have all materials on hand before beginning.',
-    targetSelector: '[data-tutorial="materials"]',
+    targetSelector: '[data-tutorial="tools-materials"]',
     position: 'bottom'
   },
   {
