@@ -33,8 +33,8 @@ export function calculateStepTime(
     return { low: 0, medium: 0, high: 0 };
   }
 
-  // For prime and quality_control steps, time doesn't scale
-  if (step.stepType === 'prime' || step.stepType === 'quality_control' || !step.stepType) {
+  // For prime and quality_control_non_scaled steps, time doesn't scale
+  if (step.stepType === 'prime' || step.stepType === 'quality_control_non_scaled' || !step.stepType) {
     return {
       low: timeEstimation.low || 0,
       medium: timeEstimation.medium || 0,
@@ -42,8 +42,8 @@ export function calculateStepTime(
     };
   }
 
-  // For scaled steps, calculate based on total project size
-  if (step.stepType === 'scaled') {
+  // For scaled and quality_control_scaled steps, calculate based on total project size
+  if (step.stepType === 'scaled' || step.stepType === 'quality_control_scaled') {
     // Use sourceScalingUnit if this is an incorporated phase, otherwise use projectScalingUnit
     const scalingUnit = sourceScalingUnit || projectScalingUnit;
     

@@ -4,13 +4,15 @@ import { ProjectRun } from '@/interfaces/ProjectRun';
  * STEP WEIGHT CONSTANTS
  * These weights are used for progress calculation:
  * - Scaled steps: 1.0 point (main work that scales with project size)
+ * - Quality Control – Scaled: 1.0 point (QC that scales with project size)
  * - Prime steps: 0.1 points (one-time setup/prep steps)
- * - Quality Control steps: 0.1 points (verification/inspection steps)
+ * - Quality Control – Non Scaled: 0.1 points (fixed verification/inspection steps)
  */
 export const STEP_WEIGHTS = {
   scaled: 1.0,
+  quality_control_scaled: 1.0,
   prime: 0.1,
-  quality_control: 0.1
+  quality_control_non_scaled: 0.1
 } as const;
 
 /**
@@ -26,8 +28,8 @@ export function getStepWeight(stepType?: string): number {
  * Single source of truth for calculating project progress
  * 
  * Uses weighted progress where:
- * - Scaled steps are worth 1 point each
- * - Prime and Quality Control steps are worth 0.1 points each
+ * - Scaled and Quality Control – Scaled steps are worth 1 point each
+ * - Prime and Quality Control – Non Scaled steps are worth 0.1 points each
  * 
  * IMPORTANT: Counts ALL steps including standard phases (Kickoff, Planning, Ordering, Close Project)
  * For manual projects (is_manual_entry), uses the stored progress value instead of calculating

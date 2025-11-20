@@ -133,7 +133,10 @@ async function syncStepsForOperation(
       estimated_time_minutes: step.timeEstimation?.variableTime?.low || 0,
       display_order: stepIndex,
       flow_type: step.flowType || 'prime',
-      step_type: step.stepType || 'prime'
+      step_type: step.stepType || 'prime',
+      time_estimate_low: step.timeEstimation?.variableTime?.low || null,
+      time_estimate_medium: step.timeEstimation?.variableTime?.medium || null,
+      time_estimate_high: step.timeEstimation?.variableTime?.high || null
     };
 
     if (step.id) {

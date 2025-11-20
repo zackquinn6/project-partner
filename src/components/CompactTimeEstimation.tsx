@@ -1,7 +1,8 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Clock, Timer, Pause } from 'lucide-react';
+import { Clock, Timer, Pause, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { WorkflowStep } from '@/interfaces/Project';
 
 interface CompactTimeEstimationProps {
@@ -49,6 +50,21 @@ export function CompactTimeEstimation({
         <div className="flex items-center gap-2">
           <Timer className="w-3 h-3 text-primary" />
           <Label className="text-xs font-medium">Work Time (hours {scalingUnit})</Label>
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs">
+                <div className="space-y-1">
+                  <p className="font-semibold">Time Estimate Ranges:</p>
+                  <p>• <strong>Medium</strong> = Expected / average time</p>
+                  <p>• <strong>Low</strong> = 10th percentile (best case)</p>
+                  <p>• <strong>High</strong> = 90th percentile (worst case)</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         
         <div className="grid grid-cols-6 gap-2 items-center text-xs">

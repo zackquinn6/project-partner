@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Clock, Calculator, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Clock, Calculator, TrendingUp, AlertTriangle, Info } from 'lucide-react';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 
@@ -123,6 +124,21 @@ export const ProjectTimeEstimator: React.FC<ProjectTimeEstimatorProps> = ({
           <Badge className={getScenarioColor(scenario)}>
             {getScenarioLabel(scenario)}
           </Badge>
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs">
+                <div className="space-y-1">
+                  <p className="font-semibold">Time Estimate Ranges:</p>
+                  <p>• <strong>Medium</strong> = Expected / average time</p>
+                  <p>• <strong>Low</strong> = 10th percentile (best case)</p>
+                  <p>• <strong>High</strong> = 90th percentile (worst case)</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardTitle>
       </CardHeader>
       

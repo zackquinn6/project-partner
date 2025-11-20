@@ -15,21 +15,28 @@ const stepTypes = [
     label: 'Prime',
     icon: CheckCircle,
     color: 'bg-green-500',
-    description: 'Occurs once and is not scaled'
+    description: 'Fixed time estimates that do not scale with project size'
   },
   {
     value: 'scaled',
     label: 'Scaled', 
     icon: RotateCcw,
     color: 'bg-blue-500',
-    description: 'Time estimates scale with project sizing and intermediate progress can be reported'
+    description: 'Time estimates scale according to the project scaling unit'
   },
   {
-    value: 'quality_control',
-    label: 'Quality Check',
+    value: 'quality_control_non_scaled',
+    label: 'Quality Control – Non Scaled',
     icon: Search,
     color: 'bg-orange-500', 
-    description: 'A non-work step that evaluates previously completed work'
+    description: 'Fixed QC steps that do not scale with project size'
+  },
+  {
+    value: 'quality_control_scaled',
+    label: 'Quality Control – Scaled',
+    icon: Search,
+    color: 'bg-purple-500', 
+    description: 'QC steps that scale according to the project scaling unit (same unit as base project)'
   }
 ];
 

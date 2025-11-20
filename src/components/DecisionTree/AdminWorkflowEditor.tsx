@@ -18,9 +18,10 @@ interface AdminWorkflowEditorProps {
 }
 
 const STEP_TYPES = [
-  { value: 'prime', label: 'Prime', color: 'bg-green-500', description: 'One-time step' },
-  { value: 'scaled', label: 'Scaled', color: 'bg-blue-500', description: 'Scales with project size' },
-  { value: 'quality_control', label: 'Quality Control', color: 'bg-orange-500', description: 'Quality check' }
+  { value: 'prime', label: 'Prime', color: 'bg-green-500', description: 'Fixed time estimates that do not scale' },
+  { value: 'scaled', label: 'Scaled', color: 'bg-blue-500', description: 'Time estimates scale according to project scaling unit' },
+  { value: 'quality_control_non_scaled', label: 'Quality Control – Non Scaled', color: 'bg-orange-500', description: 'Fixed QC steps that do not scale' },
+  { value: 'quality_control_scaled', label: 'Quality Control – Scaled', color: 'bg-purple-500', description: 'QC steps that scale according to project scaling unit' }
 ] as const;
 
 const FLOW_TYPES = [

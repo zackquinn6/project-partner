@@ -1675,7 +1675,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           estimated_time_minutes: 0,
           display_order: stepCount,
           flow_type: 'prime',
-          step_type: 'prime'
+          step_type: 'prime',
+          time_estimate_low: null,
+          time_estimate_medium: null,
+          time_estimate_high: null
         });
 
       if (error) throw error;

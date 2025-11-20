@@ -149,7 +149,7 @@ export interface WorkflowStep {
   contentSections?: ContentSection[];
   apps?: AppReference[]; // Interactive apps for this step
   flowType?: 'prime' | 'alternate' | 'if-necessary'; // Decision tree branching
-  stepType?: 'prime' | 'scaled' | 'quality_control'; // Step execution type
+  stepType?: 'prime' | 'scaled' | 'quality_control_non_scaled' | 'quality_control_scaled'; // Step execution type
   // Decision tree fields
   isDecisionPoint?: boolean;
   decisionPoint?: DecisionPoint;
@@ -157,7 +157,7 @@ export interface WorkflowStep {
   condition?: string; // Condition that must be met for this step to be executed
   timeEstimation?: {
     variableTime?: {
-      low: number; // hours (for prime/quality_control) or hours per unit (for scaled)
+      low: number; // hours (for prime/quality_control_non_scaled) or hours per unit (for scaled/quality_control_scaled)
       medium: number;
       high: number;
     };

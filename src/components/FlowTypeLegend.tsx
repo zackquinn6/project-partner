@@ -6,22 +6,29 @@ const stepTypes = [{
   label: 'Prime',
   icon: CheckCircle,
   color: 'bg-green-500',
-  description: 'Occurs once and is not scaled',
+  description: 'Fixed time estimates that do not scale with project size',
   weight: 0.1
 }, {
   value: 'scaled',
   label: 'Scaled',
   icon: RotateCcw,
   color: 'bg-blue-500',
-  description: 'Time estimates scale with project sizing and intermediate progress can be reported',
+  description: 'Time estimates scale according to the project scaling unit',
   weight: 1.0
 }, {
-  value: 'quality_control',
-  label: 'Quality Check',
+  value: 'quality_control_non_scaled',
+  label: 'Quality Control – Non Scaled',
   icon: Search,
   color: 'bg-orange-500',
-  description: 'A non-work step that evaluates previously completed work',
+  description: 'Fixed QC steps that do not scale with project size',
   weight: 0.1
+}, {
+  value: 'quality_control_scaled',
+  label: 'Quality Control – Scaled',
+  icon: Search,
+  color: 'bg-purple-500',
+  description: 'QC steps that scale according to the project scaling unit (same unit as base project)',
+  weight: 1.0
 }];
 const flowTypes = [{
   value: 'prime',
@@ -106,9 +113,13 @@ export const FlowTypeLegend: React.FC<FlowTypeLegendProps> = ({
         
         {showOnlyStepTypes && <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
             <div className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>💡 Progress Weighting:</strong> Scaled steps contribute more to overall progress (1 point each) 
-              since they represent the bulk of work. Prime and Quality Check steps contribute less (0.1 points each) 
+              <strong>💡 Progress Weighting:</strong> Scaled and Quality Control – Scaled steps contribute more to overall progress (1 point each) 
+              since they represent the bulk of work. Prime and Quality Control – Non Scaled steps contribute less (0.1 points each) 
               as they are quick verification or setup steps.
+            </div>
+            <div className="text-sm text-blue-800 dark:text-blue-200 mt-2">
+              <strong>💡 Time Estimates:</strong> Each step type includes low/medium/high time estimates stored in the database. 
+              Scaled types multiply estimates by project size, while Prime and Non-Scaled QC use fixed estimates.
             </div>
           </div>}
         
@@ -138,7 +149,7 @@ export const getStepIndicator = (stepType?: string) => {
 
 /**
  * Get step weight for progress calculation
- * Scaled steps = 1 point, Prime and Quality Control = 0.1 points
+ * Scaled and Quality Control – Scaled steps = 1 point, Prime and Quality Control – Non Scaled = 0.1 points
  */
 export const getStepWeight = (stepType?: string): number => {
   const type = stepTypes.find(t => t.value === stepType);

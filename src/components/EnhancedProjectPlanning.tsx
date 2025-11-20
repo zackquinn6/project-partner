@@ -9,7 +9,8 @@ import { ProjectTimeEstimator } from './ProjectTimeEstimator';
 import { ProjectCalendarPlanning } from './ProjectCalendarPlanning';
 import { DecisionTreeFlowchart } from './DecisionTreeFlowchart';
 import { useProject } from '@/contexts/ProjectContext';
-import { Calculator, Clock, CalendarIcon, CheckCircle } from 'lucide-react';
+import { Calculator, Clock, CalendarIcon, CheckCircle, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface EnhancedProjectPlanningProps {
   onComplete: () => void;
@@ -94,7 +95,24 @@ export const EnhancedProjectPlanning: React.FC<EnhancedProjectPlanningProps> = (
             <TabsContent value="estimation" className="space-y-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Time Estimation Scenarios</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold">Time Estimation Scenarios</h3>
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs text-xs">
+                          <div className="space-y-1">
+                            <p className="font-semibold">Time Estimate Ranges:</p>
+                            <p>• <strong>Medium</strong> = Expected / average time</p>
+                            <p>• <strong>Low</strong> = 10th percentile (best case)</p>
+                            <p>• <strong>High</strong> = 90th percentile (worst case)</p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <div className="flex gap-2">
                     {(['low', 'medium', 'high'] as const).map((scenario) => (
                       <Button

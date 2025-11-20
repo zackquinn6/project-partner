@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, FileText, Mail, Printer, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays, parseISO, addHours, isSameDay } from 'date-fns';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
@@ -956,6 +957,21 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                     <CardTitle className="text-sm flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-primary" />
                       Project Time Estimates
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs text-xs">
+                            <div className="space-y-1">
+                              <p className="font-semibold">Time Estimate Ranges:</p>
+                              <p>• <strong>Medium</strong> = Expected / average time</p>
+                              <p>• <strong>Low</strong> = 10th percentile (best case)</p>
+                              <p>• <strong>High</strong> = 90th percentile (worst case)</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
