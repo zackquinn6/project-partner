@@ -277,11 +277,12 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     circle.style.width = `${highlightPosition.width}px`;
     circle.style.height = `${highlightPosition.height}px`;
     circle.style.borderRadius = '8px';
-    circle.style.border = '3px solid hsl(var(--primary))';
-    circle.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.5)';
+    circle.style.border = '3px solid #ef4444'; // Red border
+    circle.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.6)';
     circle.style.pointerEvents = 'none';
     circle.style.zIndex = '9998';
     circle.style.transition = 'all 0.3s ease-in-out';
+    circle.style.backgroundColor = 'transparent';
     
     document.body.appendChild(circle);
 
