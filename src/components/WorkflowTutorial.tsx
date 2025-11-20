@@ -231,25 +231,32 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
       const element = document.querySelector(step.targetSelector!) as HTMLElement;
       if (element) {
         setTargetElement(element);
+        
+        // Get initial position
         const rect = element.getBoundingClientRect();
         setHighlightPosition(rect);
         
         // Scroll element into view
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
-        // Calculate tooltip position after scroll
+        // Update highlight and tooltip position after scroll
         setTimeout(() => {
           const updatedRect = element.getBoundingClientRect();
+          // Update highlight position after scroll
+          setHighlightPosition(updatedRect);
+          // Calculate tooltip position
           const position = calculateTooltipPosition(element, step.position);
           setTooltipPosition(position);
-        }, 300);
+        }, 400);
       } else {
+        console.warn('Tutorial element not found:', step.targetSelector);
         // Element not found, use center position
         setTooltipPosition({
           top: window.innerHeight / 2 - 100,
           left: window.innerWidth / 2 - 160,
           arrowPosition: 'bottom'
         });
+        setHighlightPosition(null);
       }
     }, 100);
 
@@ -268,12 +275,18 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     // Remove existing circles
     document.querySelectorAll('.tutorial-highlight-circle').forEach(el => el.remove());
 
+    // Ensure we have valid dimensions
+    if (highlightPosition.width <= 0 || highlightPosition.height <= 0) {
+      console.warn('Invalid highlight dimensions:', highlightPosition);
+      return;
+    }
+
     // Create circle overlay
     const circle = document.createElement('div');
     circle.className = 'tutorial-highlight-circle';
     circle.style.position = 'fixed';
-    circle.style.top = `${highlightPosition.top}px`;
-    circle.style.left = `${highlightPosition.left}px`;
+    circle.style.top = `${highlightPosition.top + window.scrollY}px`;
+    circle.style.left = `${highlightPosition.left + window.scrollX}px`;
     circle.style.width = `${highlightPosition.width}px`;
     circle.style.height = `${highlightPosition.height}px`;
     circle.style.borderRadius = '8px';
@@ -283,6 +296,14 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     circle.style.zIndex = '9998';
     circle.style.transition = 'all 0.3s ease-in-out';
     circle.style.backgroundColor = 'transparent';
+    circle.style.display = 'block';
+    
+    console.log('Creating highlight circle:', {
+      top: circle.style.top,
+      left: circle.style.left,
+      width: circle.style.width,
+      height: circle.style.height
+    });
     
     document.body.appendChild(circle);
 
