@@ -333,20 +333,51 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
       }}
     >
       {/* Arrow */}
-      {tooltipPosition && (
-        <div
-          className="absolute w-0 h-0 border-8 border-transparent"
-          style={{
-            [tooltipPosition.arrowPosition === 'top' ? 'bottom' : tooltipPosition.arrowPosition === 'bottom' ? 'top' : tooltipPosition.arrowPosition === 'left' ? 'right' : 'left']: '-16px',
-            [`border${tooltipPosition.arrowPosition.charAt(0).toUpperCase() + tooltipPosition.arrowPosition.slice(1)}Color`]: 'hsl(var(--border))',
-            left: tooltipPosition.arrowPosition === 'left' || tooltipPosition.arrowPosition === 'right' ? '50%' : '50%',
-            top: tooltipPosition.arrowPosition === 'top' || tooltipPosition.arrowPosition === 'bottom' ? 'auto' : '50%',
-            transform: tooltipPosition.arrowPosition === 'left' || tooltipPosition.arrowPosition === 'right' ? 'translateY(-50%)' : 'translateX(-50%)',
-            marginLeft: tooltipPosition.arrowPosition === 'left' || tooltipPosition.arrowPosition === 'right' ? '-8px' : '0',
-            marginTop: tooltipPosition.arrowPosition === 'top' || tooltipPosition.arrowPosition === 'bottom' ? '0' : '-8px'
-          }}
-        />
-      )}
+      {tooltipPosition && targetElement && (() => {
+        const rect = targetElement.getBoundingClientRect();
+        const arrowStyles: React.CSSProperties = {
+          position: 'absolute',
+          width: 0,
+          height: 0,
+        };
+
+        switch (tooltipPosition.arrowPosition) {
+          case 'top':
+            arrowStyles.bottom = '-16px';
+            arrowStyles.left = '50%';
+            arrowStyles.transform = 'translateX(-50%)';
+            arrowStyles.borderLeft = '8px solid transparent';
+            arrowStyles.borderRight = '8px solid transparent';
+            arrowStyles.borderTop = '8px solid hsl(var(--border))';
+            break;
+          case 'bottom':
+            arrowStyles.top = '-16px';
+            arrowStyles.left = '50%';
+            arrowStyles.transform = 'translateX(-50%)';
+            arrowStyles.borderLeft = '8px solid transparent';
+            arrowStyles.borderRight = '8px solid transparent';
+            arrowStyles.borderBottom = '8px solid hsl(var(--border))';
+            break;
+          case 'left':
+            arrowStyles.right = '-16px';
+            arrowStyles.top = '50%';
+            arrowStyles.transform = 'translateY(-50%)';
+            arrowStyles.borderTop = '8px solid transparent';
+            arrowStyles.borderBottom = '8px solid transparent';
+            arrowStyles.borderLeft = '8px solid hsl(var(--border))';
+            break;
+          case 'right':
+            arrowStyles.left = '-16px';
+            arrowStyles.top = '50%';
+            arrowStyles.transform = 'translateY(-50%)';
+            arrowStyles.borderTop = '8px solid transparent';
+            arrowStyles.borderBottom = '8px solid transparent';
+            arrowStyles.borderRight = '8px solid hsl(var(--border))';
+            break;
+        }
+
+        return <div style={arrowStyles} />;
+      })()}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
