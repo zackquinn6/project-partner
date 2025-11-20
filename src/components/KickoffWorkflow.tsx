@@ -323,7 +323,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                         }
                       }} 
                       variant="outline" 
-                      className="w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm h-9 sm:h-10"
+                      className="w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-[10px] sm:text-sm h-7 sm:h-10"
                     >
                       <span className="hidden sm:inline">Not a match - take me back to catalog</span>
                       <span className="sm:hidden">Not a match</span>

@@ -257,8 +257,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               </h3>
             </div>
 
-            {/* Three column layout for Project Size, Timeline, Budget */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+            {/* Three column layout for Project Size, Timeline, Budget - Single column on mobile, centered */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 max-w-md md:max-w-none mx-auto md:mx-0">
               {/* Project Size */}
               <div className="flex flex-col items-center text-center">
                 <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5 justify-center">
@@ -268,6 +268,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5">How much work are you doing?</p>
                 <div className="flex items-center gap-2 w-full justify-center">
                   <Input
+                    type="number"
                     value={projectForm.initialSizing}
                     onChange={(e) => setProjectForm(prev => ({
                       ...prev,
@@ -275,6 +276,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                     }))}
                     placeholder="0"
                     className="text-xs sm:text-sm h-9 sm:h-10 w-[80px]"
+                    step="1"
+                    min="0"
                   />
                   <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                     {(() => {

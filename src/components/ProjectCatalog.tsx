@@ -836,18 +836,18 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             variant="ghost" 
             size="sm"
             onClick={() => {
-              console.log('📱 ProjectCatalog: Close button clicked');
+              console.log('📱 ProjectCatalog: Go to my workspace button clicked');
               if (onClose) {
                 console.log('📱 ProjectCatalog: Using onClose callback');
                 onClose();
               } else {
-                console.log('📱 ProjectCatalog: Using navigate(-1) fallback');
-                navigate(-1);
+                console.log('📱 ProjectCatalog: Using navigate to workspace');
+                navigate('/');
               }
             }}
             className="text-sm"
           >
-            Close
+            Go to my workspace
           </Button>
         </div>
 
@@ -867,14 +867,14 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             </div>
 
             {/* Compact filter row */}
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 flex-wrap">
               {/* Category Filter */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-[80px]">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs relative">
-                      <Filter className="w-3 h-3 mr-1" />
-                      Category {selectedCategories.length > 0 && `(${selectedCategories.length})`}
+                    <Button variant="outline" size="sm" className="w-full text-[10px] h-7 px-2 relative">
+                      <Filter className="w-2.5 h-2.5 mr-0.5" />
+                      <span className="truncate">Category{selectedCategories.length > 0 && ` (${selectedCategories.length})`}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-52">
@@ -894,12 +894,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
 
               {/* Skill Level Filter */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-[80px]">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs relative">
-                      <Filter className="w-3 h-3 mr-1" />
-                      Skill {selectedDifficulties.length > 0 && `(${selectedDifficulties.length})`}
+                    <Button variant="outline" size="sm" className="w-full text-[10px] h-7 px-2 relative">
+                      <Filter className="w-2.5 h-2.5 mr-0.5" />
+                      <span className="truncate">Skill{selectedDifficulties.length > 0 && ` (${selectedDifficulties.length})`}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-52">
@@ -919,12 +919,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
 
               {/* Effort Level Filter */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-[80px]">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs relative">
-                      <Filter className="w-3 h-3 mr-1" />
-                      Effort {selectedEffortLevels.length > 0 && `(${selectedEffortLevels.length})`}
+                    <Button variant="outline" size="sm" className="w-full text-[10px] h-7 px-2 relative">
+                      <Filter className="w-2.5 h-2.5 mr-0.5" />
+                      <span className="truncate">Effort{selectedEffortLevels.length > 0 && ` (${selectedEffortLevels.length})`}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-52">
@@ -944,12 +944,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
 
               {/* Project Type Filter */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-[100px]">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs relative">
-                      <Filter className="w-3 h-3 mr-1" />
-                      Project Type {projectTypeLabel && `(${projectTypeLabel})`}
+                    <Button variant="outline" size="sm" className="w-full text-[10px] h-7 px-2 relative">
+                      <Filter className="w-2.5 h-2.5 mr-0.5" />
+                      <span className="truncate">Type{projectTypeLabel && ` (${projectTypeLabel})`}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-52 space-y-1">
@@ -1230,8 +1230,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               return (
                 <div key={project.id}>
                   {/* Mobile: Row layout - Reduced size by 50% */}
-                  <Card 
-                    className="md:hidden group hover:shadow-lg transition-all duration-300 cursor-pointer border bg-card overflow-hidden h-24" 
+                  <div 
+                    className="md:hidden group hover:shadow-lg transition-all duration-300 cursor-pointer border rounded-lg bg-card overflow-hidden h-24" 
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1273,7 +1273,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                         </div>
                       </div>
                     </div>
-                  </Card>
+                  </div>
 
                   {/* Desktop: Card layout - 4:3 aspect ratio */}
                   <div 
