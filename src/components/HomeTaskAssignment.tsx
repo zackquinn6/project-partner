@@ -5,9 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Users, Mail, Phone, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import { Users, Mail, Phone, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Loader2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import * as XLSX from 'xlsx';
 
 interface Person {
   id: string;
@@ -528,6 +530,63 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
 
   const totalAssignments = Object.values(assignments).reduce((sum, arr) => sum + arr.length, 0);
 
+  const handleExport = () => {
+    if (totalAssignments === 0) {
+      toast({
+        title: "No assignments",
+        description: "Please assign tasks before exporting.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Prepare data for export
+    const exportData: Array<{
+      'Team Member': string;
+      'Task Title': string;
+      'Subtask Title': string;
+      'Assigned Date': string;
+    }> = [];
+
+    Object.entries(assignments).forEach(([personId, personAssignments]) => {
+      const person = people.find(p => p.id === personId);
+      const personName = person?.name || 'Unknown';
+
+      personAssignments.forEach(assignment => {
+        exportData.push({
+          'Team Member': personName,
+          'Task Title': assignment.taskTitle,
+          'Subtask Title': assignment.subtaskId ? assignment.title : assignment.title,
+          'Assigned Date': new Date().toLocaleDateString()
+        });
+      });
+    });
+
+    // Create workbook and worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Task Assignments');
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 20 }, // Team Member
+      { wch: 30 }, // Task Title
+      { wch: 30 }, // Subtask Title
+      { wch: 15 }  // Assigned Date
+    ];
+
+    // Generate filename with timestamp
+    const filename = `task_assignments_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.xlsx`;
+
+    // Write and download
+    XLSX.writeFile(wb, filename);
+
+    toast({
+      title: "Export successful",
+      description: `Exported ${totalAssignments} assignment(s) to ${filename}`,
+    });
+  };
+
   // Get assigned task and subtask IDs to filter them from available list
   const assignedTaskIds = new Set<string>();
   const assignedSubtaskIds = new Set<string>();
@@ -789,7 +848,16 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t">
+          <div className="flex justify-between gap-2 pt-2 border-t">
+            <Button
+              onClick={handleExport}
+              disabled={totalAssignments === 0}
+              variant="outline"
+              className="h-8 text-xs"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              Export Tasks
+            </Button>
             <Button
               onClick={handleSave}
               disabled={isSaving || totalAssignments === 0}
