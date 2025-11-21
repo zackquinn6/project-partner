@@ -112,14 +112,33 @@ export default function EditWorkflowView({
     if (!currentStep || isEditingStandardProject) return false;
     
     // Check if step itself is marked as standard
-    if (currentStep.isStandard) return true;
+    // Note: Steps are marked as standard if they're in a standard phase OR if the operation is a reference
+    if (currentStep.isStandard === true) {
+      // Double-check: if step is marked standard, verify it's actually in a standard or linked phase
+      const phaseName = currentStep.phaseName;
+      if (phaseName) {
+        const phase = displayPhases.find(p => p.name === phaseName);
+        if (phase && (phase.isStandard === true || phase.isLinked === true)) {
+          return true; // Confirmed: step is in a standard or linked phase
+        }
+        // If step is marked standard but phase is not standard/linked, allow editing
+        // This handles edge cases where isStandard might be incorrectly set
+        return false;
+      }
+      return true; // Step marked standard and no phase found - err on side of caution
+    }
     
     // Check if the phase containing this step is standard or incorporated
     const phaseName = currentStep.phaseName;
     if (!phaseName) return false;
     
     const phase = displayPhases.find(p => p.name === phaseName);
-    if (!phase) return false;
+    if (!phase) {
+      // Phase not found - this shouldn't happen, but if it does, allow editing
+      // AI-generated phases should always be in displayPhases
+      console.warn(`Phase "${phaseName}" not found in displayPhases - allowing edit`);
+      return false;
+    }
     
     // Only block editing if phase is:
     // 1. Explicitly marked as standard in database (isStandard === true), OR
@@ -127,7 +146,13 @@ export default function EditWorkflowView({
     // Note: AI-generated phases have is_standard: false, so they should always be editable
     // We don't check phase name alone because AI might generate phases with standard-sounding names
     // but they should still be editable since they're custom phases
-    return phase.isStandard === true || phase.isLinked === true;
+    const shouldBlock = phase.isStandard === true || phase.isLinked === true;
+    
+    if (shouldBlock) {
+      console.log(`Blocking edit for step in phase "${phaseName}": isStandard=${phase.isStandard}, isLinked=${phase.isLinked}`);
+    }
+    
+    return shouldBlock;
   };
 
   // Debug log to check phases and show helpful message if empty
