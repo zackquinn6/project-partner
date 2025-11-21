@@ -199,12 +199,12 @@ Return ONLY valid JSON in this exact structure:
           "steps": [
             {
               "stepTitle": "Step Title",
-              "description": "Step description",
-              "materials": ["Material 1", "Material 2"],
+              "description": "Step description"${request.contentSelection?.materials !== false ? `,
+              "materials": ["Material 1", "Material 2"]` : ''}${request.contentSelection?.tools !== false ? `,
               ${includeAlternateTools ? `"tools": [
                 {"name": "Tool 1", "alternates": ["Alternate Tool 1", "Alternate Tool 2"]},
                 {"name": "Tool 2"}
-              ],` : `"tools": ["Tool 1", "Tool 2"],`}
+              ]` : `"tools": ["Tool 1", "Tool 2"]`}` : ''}${request.contentSelection?.outputs !== false ? `,
               "outputs": [
                 {
                   "name": "Output Name",
@@ -212,7 +212,7 @@ Return ONLY valid JSON in this exact structure:
                   "type": "inspection|measurement|document|photo|none",
                   "requirement": "Quantified requirement (e.g., 100% coverage)"
                 }
-              ],
+              ]` : ''}${request.contentSelection?.processVariables !== false ? `,
               "processVariables": [
                 {
                   "name": "variable_name_snake_case",
@@ -221,17 +221,17 @@ Return ONLY valid JSON in this exact structure:
                   "variableType": "number|text|boolean|measurement",
                   "unit": "unit if applicable"
                 }
-              ],
+              ]` : ''}${request.contentSelection?.timeEstimation !== false ? `,
               "timeEstimates": {
                 "low": 0.5,
                 "medium": 1.0,
                 "high": 2.0
-              },
+              }` : ''}${request.contentSelection?.instructions3Level !== false ? `,
               "instructions": {
                 "quick": "Brief quick instruction",
                 "detailed": "Detailed standard instruction",
                 "contractor": "Expert-level contractor instruction"
-              }
+              }` : ''}
             }
           ]
         }
