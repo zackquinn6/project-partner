@@ -1540,5 +1540,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         </div>
       </DialogContent>
     </Dialog>
-  </>;
+    </>
+  );
 };
