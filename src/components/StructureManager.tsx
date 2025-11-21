@@ -43,9 +43,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
 
-  // Helper to check if a phase is standard by name
-  const isStandardPhase = (phaseName: string) => {
-    return ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(phaseName);
+  // Helper to check if a phase is standard - use isStandard flag from phase data
+  // No hardcoded names - rely on database flag
+  const isStandardPhase = (phase: Phase) => {
+    return phase.isStandard === true;
   };
 
   // Helper to check if item can be edited/deleted in Edit Standard mode
@@ -177,15 +178,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Sort phases by order number while preserving standard phase positions
   const sortPhasesByOrderNumber = (phases: Phase[]): Phase[] => {
-    const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-    
-    // Separate standard and non-standard phases
+    // Separate standard and non-standard phases using isStandard flag
     const standardPhases: Phase[] = [];
     const nonStandardPhases: Phase[] = [];
     
     phases.forEach(phase => {
-      const isStandard = !phase.isLinked && standardPhaseNames.includes(phase.name);
-      if (isStandard) {
+      if (isStandardPhase(phase)) {
         standardPhases.push(phase);
       } else {
         nonStandardPhases.push(phase);
@@ -269,10 +267,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // If duplicate, we'll reassign below
       }
       
-      const isStandard = !phase.isLinked && standardPhaseNames.includes(phase.name);
-      
-      if (isStandard) {
-        // Standard phases get special order numbers
+      if (isStandardPhase(phase)) {
+        // Standard phases get special order numbers based on position rules
+        // This logic can remain for Standard Project Foundation editing
+        // For downstream projects, standard phases are locked and can't be reordered
         if (phase.name === 'Kickoff') {
           phase.phaseOrderNumber = 'first';
           usedNumbers.add('first');
@@ -585,32 +583,23 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     if (newIndex < 0 || newIndex >= displayPhases.length) return;
     
     const phase = displayPhases[phaseIndex];
-    const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-    const isStandardPhase = !phase.isLinked && standardPhaseNames.includes(phase.name);
+    const phaseIsStandard = isStandardPhase(phase);
     const isLinkedPhase = phase.isLinked;
     
-    // Validate constraints for standard phases
-    if (isStandardPhase) {
-      if (phase.name === 'Kickoff' && newIndex !== 0) {
-        toast.error('Kickoff phase must be the first phase');
-        return;
-      }
-      if (phase.name === 'Planning' && newIndex !== 1) {
-        toast.error('Planning phase must be the second phase');
-        return;
-      }
-      if (phase.name === 'Ordering' && newIndex !== 2) {
-        toast.error('Order phase must be the third phase');
-        return;
-      }
-      if (phase.name === 'Close Project' && newIndex !== displayPhases.length - 1) {
-        toast.error('Close Project phase must be the last phase');
-        return;
-      }
+    // Block reordering of standard phases (unless editing Standard Project Foundation)
+    if (phaseIsStandard && !isEditingStandardProject) {
+      toast.error('Cannot reorder standard phases. Standard phases are locked and must remain in their designated positions.');
+      return;
+    }
+    
+    // Validate constraints for standard phases (only in Standard Project Foundation)
+    if (phaseIsStandard && isEditingStandardProject) {
+      // In Standard Project Foundation, we can reorder but should maintain logical order
+      // This is handled by position rules in the database
     }
     
     // Validate custom and linked phase constraints
-    if (!isStandardPhase) {
+    if (!phaseIsStandard) {
       if (newIndex < 3) {
         toast.error('Custom and incorporated phases must come after the first 3 standard phases');
         return;
@@ -1716,9 +1705,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // Check if this is a standard phase
     const phase = displayPhases.find(p => p.id === phaseId);
 
-    // In Edit Standard mode, allow deleting even standard phases
-    if (!isEditingStandardProject && phase?.isStandard) {
-      toast.error('Cannot delete standard phases. Use Edit Standard to modify standard phases.');
+    // Block deleting standard phases (unless editing Standard Project Foundation)
+    if (!isEditingStandardProject && phase && isStandardPhase(phase)) {
+      toast.error('Cannot delete standard phases. Standard phases are locked and linked to all project templates.');
       return;
     }
 
@@ -2321,9 +2310,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         
         <div className="space-y-4">
           {displayPhases.map((phase, phaseIndex) => {
-            const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-            // Check if editing Standard Project Foundation OR if this is a standard phase in any project
-            const isStandardPhase = standardPhaseNames.includes(phase.name) && !phase.isLinked || isEditingStandardProject && standardPhaseNames.includes(phase.name);
+            // Use isStandard flag from phase data - no hardcoded names
+            const phaseIsStandard = isStandardPhase(phase);
             const isLinkedPhase = phase.isLinked;
             const isEditing = editingItem?.type === 'phase' && editingItem.id === phase.id;
             
@@ -2336,8 +2324,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             let canMoveUp = false;
             let canMoveDown = false;
             
-            if (isStandardPhase && isEditingStandardProject) {
-              // Standard phases can move when editing Standard Project
+            if (phaseIsStandard && isEditingStandardProject) {
+              // Standard phases can move when editing Standard Project Foundation
               canMoveUp = phaseIndex > 0;
               canMoveDown = phaseIndex < displayPhases.length - 1;
             } else if (!isStandardPhase) {
@@ -2352,7 +2340,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                           <CardHeader className="py-1 px-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1 flex-1">
-                                {((!isStandardPhase || isEditingStandardProject) && !isLinkedPhase) || isLinkedPhase ? (
+                                {((!phaseIsStandard || isEditingStandardProject) && !isLinkedPhase) || isLinkedPhase ? (
                                   <div className="flex flex-col gap-0.5">
                                     {reorderingPhaseId === phase.id ? (
                                       <Loader2 className="w-3 h-3 animate-spin text-primary" />
@@ -2448,9 +2436,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                   <Badge variant="outline">{phase.operations.length} operations</Badge>
                                   
                                   {/* Show edit/delete buttons for non-incorporated phases */}
-                                  {(!isStandardPhase || isEditingStandardProject) && !isLinkedPhase && (
+                                  {(!phaseIsStandard || isEditingStandardProject) && !isLinkedPhase && (
                                     <>
-                                      {!isStandardPhase && <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
+                                      {!phaseIsStandard && <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
                                         <Copy className="w-4 h-4" />
                                       </Button>}
                                       
@@ -2564,7 +2552,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                  <div className="flex items-center gap-1">
                                                    <Badge variant="outline" className="text-xs">{operation.steps.length} steps</Badge>
                                                    
-                                                   {!phase.isLinked && ((!isStandardPhase && !operation.isStandard) || isEditingStandardProject) && phase.name !== 'Close Project' && <>
+                                                   {!phase.isLinked && ((!phaseIsStandard && !operation.isStandard) || isEditingStandardProject) && phase.name !== 'Close Project' && <>
                                                        {!operation.isStandard && <Button size="sm" variant="ghost" onClick={() => copyItem('operation', operation)}>
                                                          <Copy className="w-3 h-3" />
                                                        </Button>}
@@ -2608,8 +2596,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                               <div className="space-y-2">
                                                 {operation.steps.map((step, stepIndex) => {
                                                   const isStepEditing = editingItem?.type === 'step' && editingItem.id === step.id;
-                                                  const canMoveStepUp = stepIndex > 0 && !phase.isLinked && ((!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project');
-                                                  const canMoveStepDown = stepIndex < operation.steps.length - 1 && !phase.isLinked && ((!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project');
+                                                  const canMoveStepUp = stepIndex > 0 && !phase.isLinked && ((!phaseIsStandard || isEditingStandardProject) && phase.name !== 'Close Project');
+                                                  const canMoveStepDown = stepIndex < operation.steps.length - 1 && !phase.isLinked && ((!phaseIsStandard || isEditingStandardProject) && phase.name !== 'Close Project');
                                                   
                                                   return <Card 
                                                     key={step.id}
@@ -2617,7 +2605,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                               <CardContent className="p-3">
                                                                 <div className="flex items-center justify-between">
                                                                   <div className="flex items-center gap-2 flex-1">
-                                                                    {!phase.isLinked && (!isStandardPhase || isEditingStandardProject) && phase.name !== 'Close Project' && (
+                                                                    {!phase.isLinked && (!phaseIsStandard || isEditingStandardProject) && phase.name !== 'Close Project' && (
                                                                       <div className="flex flex-col gap-0.5">
                                                                         <Button
                                                                           variant="ghost"
@@ -2639,7 +2627,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                                         </Button>
                                                                       </div>
                                                                     )}
-                                                                    {(phase.isLinked || (isStandardPhase && !isEditingStandardProject) || phase.name === 'Close Project') && <div className="w-4" />}
+                                                                    {(phase.isLinked || (phaseIsStandard && !isEditingStandardProject) || phase.name === 'Close Project') && <div className="w-4" />}
                                                                     
                                                                      {isStepEditing ? <div className="flex-1 space-y-2">
                                                                          <Input value={editingItem.data.step} onChange={e => setEditingItem({

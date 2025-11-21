@@ -640,33 +640,37 @@ export async function importGeneratedProject(
     for (let phaseIndex = 0; phaseIndex < generatedStructure.phases.length; phaseIndex++) {
       const phase = generatedStructure.phases[phaseIndex];
       
-      // Check if phase exists in standard_phases table
-      // Only mark as is_standard: true if the standard_phase has is_locked: true
-      // (which indicates it's a core standard phase, not a custom phase that was added to standard_phases)
+      // Check if phase exists in Standard Project Foundation with is_standard: true
+      // Standard Project Foundation is the source of truth for standard phases
+      const standardProjectId = '00000000-0000-0000-0000-000000000001';
       const { data: existingStandardPhase } = await supabase
-        .from('standard_phases')
-        .select('id, is_locked')
+        .from('project_phases')
+        .select('id, standard_phase_id, is_standard')
+        .eq('project_id', standardProjectId)
         .eq('name', phase.name)
+        .eq('is_standard', true)
         .maybeSingle();
       
-      // Only treat as standard phase if it exists AND is locked (core standard phase)
-      const isCoreStandardPhase = existingStandardPhase?.is_locked === true;
+      // Only treat as standard phase if it exists in Standard Project Foundation with is_standard: true
+      const isCoreStandardPhase = existingStandardPhase !== null;
 
       let phaseId: string;
       
       if (existingStandardPhase && isCoreStandardPhase) {
-        // Use existing standard phase - find or create project_phases entry
+        // Use existing standard phase from Standard Project Foundation
+        // Find or create project_phases entry linked to the same standard_phase_id
         const { data: existingProjectPhase } = await supabase
           .from('project_phases')
           .select('id')
           .eq('project_id', projectId)
-          .eq('standard_phase_id', existingStandardPhase.id)
+          .eq('standard_phase_id', existingStandardPhase.standard_phase_id)
           .maybeSingle();
           
         if (existingProjectPhase) {
           phaseId = existingProjectPhase.id;
         } else {
           // Create project_phases entry for standard phase
+          // Link it to the same standard_phase_id as in Standard Project Foundation
           const { data: newProjectPhase, error: phaseError } = await supabase
             .from('project_phases')
             .insert({
@@ -675,7 +679,7 @@ export async function importGeneratedProject(
               description: phase.description,
               display_order: baseDisplayOrder + phaseIndex,
               is_standard: true,
-              standard_phase_id: existingStandardPhase.id,
+              standard_phase_id: existingStandardPhase.standard_phase_id,
             })
             .select('id')
             .single();
