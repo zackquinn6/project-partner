@@ -145,9 +145,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           .from('project_run_spaces')
           .select('*')
           .eq('project_run_id', currentProjectRun.id)
-          .order('priority', { ascending: true, nullsLast: true });
+          .order('created_at', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+          console.warn('Error loading spaces:', error);
+        }
 
         const loadedSpaces: ProjectSpace[] = (dbSpaces || []).map(space => ({
           id: space.id,
@@ -156,8 +158,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           homeSpaceId: space.home_space_id || undefined,
           scaleValue: space.scale_value || undefined,
           scaleUnit: space.scale_unit || undefined,
-          isFromHome: space.is_from_home || false,
-          priority: space.priority || undefined
+          isFromHome: space.is_from_home || false
         }));
 
         // If no spaces in database, check customization_decisions
