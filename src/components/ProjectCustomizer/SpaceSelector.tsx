@@ -162,7 +162,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
           let primaryValue = primarySizing[primaryUnit] || space.scale_value || 0;
           
           // If this is the first space (index 0) and it has no sizing value, inherit from initial_sizing
-          if (index === 0 && primaryValue === 0 && initialSizing) {
+          if (index === 0 && (primaryValue === 0 || primaryValue === null || primaryValue === undefined) && initialSizing) {
             const parsedInitial = parseFloat(initialSizing);
             if (!isNaN(parsedInitial) && parsedInitial > 0) {
               primaryValue = parsedInitial;
