@@ -15,7 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, FileText, Mail, Printer, Info, Layers } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, FileText, Mail, Printer, Info, Layers, Briefcase } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays, parseISO, addHours, isSameDay } from 'date-fns';
 import { Project } from '@/interfaces/Project';
