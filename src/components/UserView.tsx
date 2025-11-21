@@ -64,6 +64,8 @@ import { RiskManagementWindow } from './RiskManagementWindow';
 import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
 import { useDynamicPhases } from '@/hooks/useDynamicPhases';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
+import { PostKickoffNotification } from './PostKickoffNotification';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -167,6 +169,13 @@ export default function UserView({
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
+
+  // Post-kickoff notification state
+  const [showPostKickoffNotification, setShowPostKickoffNotification] = useState(false);
+  const [dontShowPostKickoffNotification, setDontShowPostKickoffNotification] = useLocalStorage<boolean>(
+    'dontShowPostKickoffNotification',
+    false
+  );
 
   // Sync instruction level with project run preference
   useEffect(() => {
@@ -1909,6 +1918,11 @@ export default function UserView({
             }
             
             console.log("✅ Kickoff completed - proceeding to main workflow");
+            
+            // Show post-kickoff notification if user hasn't disabled it
+            if (!dontShowPostKickoffNotification) {
+              setShowPostKickoffNotification(true);
+            }
           }
         }}
         onExit={() => {
@@ -2817,6 +2831,15 @@ export default function UserView({
           title="Project Notes"
         />
       )}
+
+      {/* Post-Kickoff Notification */}
+      <PostKickoffNotification
+        open={showPostKickoffNotification}
+        onOpenChange={setShowPostKickoffNotification}
+        onDontShowAgain={(dontShow) => {
+          setDontShowPostKickoffNotification(dontShow);
+        }}
+      />
 
       {/* Scaled Step Progress Dialog */}
       {currentScaledStep && currentProjectRun && (
