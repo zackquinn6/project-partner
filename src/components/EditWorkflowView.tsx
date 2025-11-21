@@ -224,7 +224,7 @@ export default function EditWorkflowView({
     parentId?: string;
   } | null>(null);
 
-  // Debug logging
+  // Debug logging for project structure
   useEffect(() => {
     if (currentProject) {
       console.log('🔍 EditWorkflowView - currentProject loaded:', {
@@ -247,23 +247,8 @@ export default function EditWorkflowView({
           }))
         }))
       });
-      
-      // Log current step details for debugging
-      if (currentStep) {
-        const phase = displayPhases.find(p => p.name === currentStep.phaseName);
-        console.log('🔍 Current Step Debug:', {
-          stepId: currentStep.id,
-          stepName: currentStep.step,
-          phaseName: currentStep.phaseName,
-          stepIsStandard: currentStep.isStandard,
-          phaseFound: !!phase,
-          phaseIsStandard: phase?.isStandard,
-          phaseIsLinked: phase?.isLinked,
-          canEdit: !isStepFromStandardOrIncorporatedPhase(currentStep)
-        });
-      }
     }
-  }, [currentProject?.id, displayPhases, currentStep]);
+  }, [currentProject?.id, displayPhases]);
 
   // Flatten all steps from all phases and operations for navigation
   const allSteps = displayPhases.flatMap(phase => phase.operations.flatMap(operation => operation.steps.map(step => ({
@@ -279,6 +264,24 @@ export default function EditWorkflowView({
   });
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
+  
+  // Debug logging for current step (moved here after currentStep is declared)
+  useEffect(() => {
+    if (currentProject && currentStep) {
+      const phase = displayPhases.find(p => p.name === currentStep.phaseName);
+      console.log('🔍 Current Step Debug:', {
+        stepId: currentStep.id,
+        stepName: currentStep.step,
+        phaseName: currentStep.phaseName,
+        stepIsStandard: currentStep.isStandard,
+        phaseFound: !!phase,
+        phaseIsStandard: phase?.isStandard,
+        phaseIsLinked: phase?.isLinked,
+        canEdit: !isStepFromStandardOrIncorporatedPhase(currentStep)
+      });
+    }
+  }, [currentProject?.id, displayPhases, currentStep]);
+  
   useEffect(() => {
     if (currentStep && (!editingStep || editingStep.id !== currentStep.id)) {
       setEditingStep({
