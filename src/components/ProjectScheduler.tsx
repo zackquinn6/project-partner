@@ -27,6 +27,7 @@ import { schedulingEngine } from '@/utils/schedulingEngine';
 import { SchedulingInputs, SchedulingResult, Task, Worker, PlanningMode, ScheduleTempo, RemediationSuggestion } from '@/interfaces/Scheduling';
 import { supabase } from '@/integrations/supabase/client';
 import { PhaseAssignment } from '@/components/PhaseAssignment';
+import { ProjectTeamAvailability } from '@/components/ProjectTeamAvailability';
 import { useAuth } from '@/contexts/AuthContext';
 interface ProjectSchedulerProps {
   open: boolean;
@@ -103,6 +104,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
   // Phase assignment dialog state
   const [showPhaseAssignment, setShowPhaseAssignment] = useState(false);
+  // Team availability dialog state
+  const [showTeamAvailability, setShowTeamAvailability] = useState(false);
 
   // Space priority state with sizing values
   const [spaces, setSpaces] = useState<Array<{ 
@@ -1000,7 +1003,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
-            {/* Assign Phases Button */}
+            {/* Assign Phases and Team Availability Buttons */}
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -1010,6 +1013,15 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               >
                 <Layers className="w-4 h-4 mr-2" />
                 Assign Phases
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTeamAvailability(true)}
+                className="flex-1"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Team Availability
               </Button>
             </div>
 
@@ -1481,6 +1493,31 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               userId={user.id}
             />
           )}
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Team Availability Dialog */}
+    <Dialog open={showTeamAvailability} onOpenChange={setShowTeamAvailability}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="text-lg md:text-xl font-bold">Team Availability</DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowTeamAvailability(false)} 
+              className="h-7 px-2 text-[9px] md:text-xs"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+          <ProjectTeamAvailability
+            teamMembers={teamMembers}
+            onTeamMembersChange={setTeamMembers}
+          />
         </div>
       </DialogContent>
     </Dialog>
