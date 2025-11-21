@@ -53,24 +53,62 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
 
     const loadSpaces = async () => {
       try {
-        const { data, error } = await supabase
+        // Load spaces
+        const { data: spacesData, error: spacesError } = await supabase
           .from('project_run_spaces')
           .select('*')
           .eq('project_run_id', projectRunId)
           .order('priority', { ascending: true, nullsLast: true });
 
-        if (error) throw error;
+        if (spacesError) throw spacesError;
 
-        const loadedSpaces: ProjectSpace[] = (data || []).map(space => ({
-          id: space.id,
-          name: space.space_name,
-          spaceType: space.space_type,
-          homeSpaceId: space.home_space_id || undefined,
-          scaleValue: space.scale_value || undefined,
-          scaleUnit: space.scale_unit || undefined,
-          isFromHome: space.is_from_home || false,
-          priority: space.priority || undefined
-        }));
+        // Load sizing values from relational table
+        const spaceIds = (spacesData || []).map(s => s.id);
+        let sizingData: any[] = [];
+        if (spaceIds.length > 0) {
+          const { data, error: sizingError } = await supabase
+            .from('project_run_space_sizing')
+            .select('space_id, scaling_unit, size_value')
+            .in('space_id', spaceIds);
+
+          if (sizingError) {
+            console.error('Error loading sizing values:', sizingError);
+          } else {
+            sizingData = data || [];
+          }
+        }
+
+        // Build sizing map from relational data
+        const sizingMap = new Map<string, Record<string, number>>();
+        sizingData.forEach(sizing => {
+          if (!sizingMap.has(sizing.space_id)) {
+            sizingMap.set(sizing.space_id, {});
+          }
+          sizingMap.get(sizing.space_id)![sizing.scaling_unit] = sizing.size_value;
+        });
+
+        const loadedSpaces: ProjectSpace[] = (spacesData || []).map(space => {
+          const relationalSizing = sizingMap.get(space.id) || {};
+          // Use relational data if available, otherwise fall back to legacy columns
+          const primarySizing = Object.keys(relationalSizing).length > 0 
+            ? relationalSizing 
+            : (space.scale_value && space.scale_unit ? { [space.scale_unit]: space.scale_value } : {});
+          
+          // Get primary scale value and unit (first entry in relational sizing, or legacy)
+          const primaryUnit = Object.keys(primarySizing)[0] || space.scale_unit;
+          const primaryValue = primarySizing[primaryUnit] || space.scale_value;
+
+          return {
+            id: space.id,
+            name: space.space_name,
+            spaceType: space.space_type,
+            homeSpaceId: space.home_space_id || undefined,
+            scaleValue: primaryValue || undefined,
+            scaleUnit: primaryUnit || undefined,
+            isFromHome: space.is_from_home || false,
+            priority: space.priority || undefined
+          };
+        });
 
         // Only update if we have spaces from database and current selectedSpaces is empty or different
         if (loadedSpaces.length > 0 && (
@@ -212,8 +250,8 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
           project_run_id: projectRunId,
           space_name: customSpaceName,
           space_type: customSpaceType || 'custom',
-          scale_value: customScaleValue,
-          scale_unit: projectScaleUnit,
+          scale_value: customScaleValue, // Legacy column for backward compatibility
+          scale_unit: projectScaleUnit, // Legacy column for backward compatibility
           is_from_home: false,
           priority: nextPriority
         })
@@ -221,6 +259,22 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
         .single();
 
       if (error) throw error;
+
+      // Insert sizing value into relational table
+      if (data.id && customScaleValue !== undefined && customScaleValue !== null && projectScaleUnit) {
+        const { error: sizingError } = await supabase
+          .from('project_run_space_sizing')
+          .insert({
+            space_id: data.id,
+            scaling_unit: projectScaleUnit,
+            size_value: customScaleValue
+          });
+
+        if (sizingError) {
+          console.error('Error inserting sizing value:', sizingError);
+          // Don't throw - space was created successfully, sizing can be added later
+        }
+      }
 
       // Get the next priority (highest number + 1, or 1 if no spaces exist)
       const nextPriority = selectedSpaces.length > 0 
@@ -284,13 +338,35 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
 
   const handleUpdateScaleValue = async (spaceId: string, value: number) => {
     try {
-      // Update in database
-      const { error } = await supabase
+      // Get the space to find its scale_unit
+      const space = selectedSpaces.find(s => s.id === spaceId);
+      const scalingUnit = space?.scaleUnit || projectScaleUnit;
+
+      // Update legacy column for backward compatibility
+      const { error: updateError } = await supabase
         .from('project_run_spaces')
         .update({ scale_value: value })
         .eq('id', spaceId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Update or insert in relational table
+      if (scalingUnit) {
+        const { error: sizingError } = await supabase
+          .from('project_run_space_sizing')
+          .upsert({
+            space_id: spaceId,
+            scaling_unit: scalingUnit,
+            size_value: value
+          }, {
+            onConflict: 'space_id,scaling_unit'
+          });
+
+        if (sizingError) {
+          console.error('Error updating sizing value:', sizingError);
+          // Don't throw - legacy column was updated successfully
+        }
+      }
 
       onSpacesChange(
         selectedSpaces.map(s => 

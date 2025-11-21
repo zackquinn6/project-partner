@@ -243,22 +243,49 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
     const loadSpaces = async () => {
       try {
-        const { data, error } = await supabase
+        // Load spaces
+        const { data: spacesData, error: spacesError } = await supabase
           .from('project_run_spaces')
-          .select('id, space_name, priority, scale_value, scale_unit, sizing_values')
+          .select('id, space_name, priority, scale_value, scale_unit')
           .eq('project_run_id', projectRun.id)
           .order('priority', { ascending: true, nullsLast: true });
 
-        if (error) throw error;
+        if (spacesError) throw spacesError;
 
-        setSpaces((data || []).map(space => ({
-          id: space.id,
-          name: space.space_name,
-          priority: space.priority,
-          scaleValue: space.scale_value,
-          scaleUnit: space.scale_unit,
-          sizingValues: space.sizing_values as Record<string, number> || {}
-        })));
+        // Load sizing values from relational table
+        const spaceIds = (spacesData || []).map(s => s.id);
+        const { data: sizingData, error: sizingError } = await supabase
+          .from('project_run_space_sizing')
+          .select('space_id, scaling_unit, size_value')
+          .in('space_id', spaceIds);
+
+        if (sizingError) throw sizingError;
+
+        // Build sizing map from relational data
+        const sizingMap = new Map<string, Record<string, number>>();
+        (sizingData || []).forEach(sizing => {
+          if (!sizingMap.has(sizing.space_id)) {
+            sizingMap.set(sizing.space_id, {});
+          }
+          sizingMap.get(sizing.space_id)![sizing.scaling_unit] = sizing.size_value;
+        });
+
+        // Also include legacy scale_value/scale_unit for backward compatibility
+        setSpaces((spacesData || []).map(space => {
+          const relationalSizing = sizingMap.get(space.id) || {};
+          // Merge with legacy columns if relational data is empty
+          if (Object.keys(relationalSizing).length === 0 && space.scale_value && space.scale_unit) {
+            relationalSizing[space.scale_unit] = space.scale_value;
+          }
+          return {
+            id: space.id,
+            name: space.space_name,
+            priority: space.priority,
+            scaleValue: space.scale_value,
+            scaleUnit: space.scale_unit,
+            sizingValues: relationalSizing
+          };
+        }));
       } catch (error) {
         console.error('Error loading spaces for scheduler:', error);
         setSpaces([]);
