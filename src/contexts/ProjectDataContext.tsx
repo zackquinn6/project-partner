@@ -134,6 +134,8 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           effortLevel: project.effort_level as Project['effortLevel'],
           skillLevel: project.skill_level as Project['skillLevel'],
           estimatedTime: project.estimated_time,
+          estimatedTotalTime: project.estimated_total_time,
+          typicalProjectSize: project.typical_project_size,
           estimatedTimePerUnit: project.estimated_time_per_unit,
           scalingUnit: project.scaling_unit as Project['scalingUnit'],
           phases: Array.isArray(phases) ? phases : []
