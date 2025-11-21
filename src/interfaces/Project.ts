@@ -211,7 +211,9 @@ export interface Project {
   category: string[];
   effortLevel?: 'Low' | 'Medium' | 'High';
   skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'; // Project overall skill level (4 options)
-  estimatedTime?: string;
+  estimatedTime?: string; // Estimated time per scaling unit (e.g., "0.5-1 hours per sqft")
+  estimatedTotalTime?: string; // Estimated total time for typical project size (e.g., "40-60 hours")
+  typicalProjectSize?: number; // Typical project size used for estimated total time (e.g., 100 for 100 sqft)
   projectType?: 'Primary' | 'Secondary';
   estimatedTimePerUnit?: number;
   scalingUnit?: 'per square foot' | 'per 10x10 room' | 'per linear foot' | 'per cubic yard' | 'per item';

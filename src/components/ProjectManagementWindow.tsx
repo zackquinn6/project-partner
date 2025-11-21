@@ -770,8 +770,33 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   value={currentProject.estimatedTime || ''} 
                   onChange={(e) => updateProjectData({...currentProject, estimatedTime: e.target.value})}
                   className="mt-1"
-                  placeholder="e.g., 2-4 hours"
+                  placeholder="e.g., 0.5-1 hours per sqft"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Time per scaling unit</p>
+              </div>
+            </div>
+            {/* Estimated Total Time and Typical Project Size Section */}
+            <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
+              <div>
+                <label className="text-sm font-medium">Estimated Total Time</label>
+                <Input 
+                  value={currentProject.estimatedTotalTime || ''} 
+                  onChange={(e) => updateProjectData({...currentProject, estimatedTotalTime: e.target.value})}
+                  className="mt-1"
+                  placeholder="e.g., 40-60 hours"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Total time for typical project size</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Typical Project Size</label>
+                <Input 
+                  type="number"
+                  value={currentProject.typicalProjectSize || ''} 
+                  onChange={(e) => updateProjectData({...currentProject, typicalProjectSize: e.target.value ? parseFloat(e.target.value) : undefined})}
+                  className="mt-1"
+                  placeholder="e.g., 100"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Size used for estimated total time</p>
               </div>
             </div>
             {currentProject && (
@@ -781,11 +806,14 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                     if (!currentProject) return;
                     
                     try {
-                      // Step 1: Save phases JSONB to database
+                      // Step 1: Save phases JSONB and project fields to database
                       const { error: updateError } = await supabase
                         .from('projects')
                         .update({ 
                           phases: currentProject.phases as any,
+                          estimated_time: currentProject.estimatedTime || null,
+                          estimated_total_time: currentProject.estimatedTotalTime || null,
+                          typical_project_size: currentProject.typicalProjectSize || null,
                           updated_at: new Date().toISOString()
                         })
                         .eq('id', currentProject.id);
