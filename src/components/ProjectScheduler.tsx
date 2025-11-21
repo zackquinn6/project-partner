@@ -1422,4 +1422,3 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         </Dialog>}
     </Dialog>;
 };
-};

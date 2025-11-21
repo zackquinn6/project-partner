@@ -2736,6 +2736,9 @@ export type Database = {
           estimated_time: string | null
           home_id: string | null
           id: string
+          initial_budget: string | null
+          initial_sizing: string | null
+          initial_timeline: string | null
           instruction_level_preference: string | null
           is_manual_entry: boolean
           issue_reports: Json | null
@@ -2744,6 +2747,7 @@ export type Database = {
           phases: Json
           plan_end_date: string
           progress: number
+          progress_reporting_style: string
           project_challenges: string | null
           project_leader: string | null
           project_photos: Json | null
@@ -2775,6 +2779,9 @@ export type Database = {
           estimated_time?: string | null
           home_id?: string | null
           id?: string
+          initial_budget?: string | null
+          initial_sizing?: string | null
+          initial_timeline?: string | null
           instruction_level_preference?: string | null
           is_manual_entry?: boolean
           issue_reports?: Json | null
@@ -2783,6 +2790,7 @@ export type Database = {
           phases?: Json
           plan_end_date?: string
           progress?: number
+          progress_reporting_style?: string
           project_challenges?: string | null
           project_leader?: string | null
           project_photos?: Json | null
@@ -2814,6 +2822,9 @@ export type Database = {
           estimated_time?: string | null
           home_id?: string | null
           id?: string
+          initial_budget?: string | null
+          initial_sizing?: string | null
+          initial_timeline?: string | null
           instruction_level_preference?: string | null
           is_manual_entry?: boolean
           issue_reports?: Json | null
@@ -2822,6 +2833,7 @@ export type Database = {
           phases?: Json
           plan_end_date?: string
           progress?: number
+          progress_reporting_style?: string
           project_challenges?: string | null
           project_leader?: string | null
           project_photos?: Json | null
@@ -2879,6 +2891,7 @@ export type Database = {
           images: string[] | null
           is_current_version: boolean | null
           is_standard_template: boolean | null
+          item_type: string | null
           name: string
           owner_id: string | null
           parent_project_id: string | null
@@ -2916,6 +2929,7 @@ export type Database = {
           images?: string[] | null
           is_current_version?: boolean | null
           is_standard_template?: boolean | null
+          item_type?: string | null
           name: string
           owner_id?: string | null
           parent_project_id?: string | null
@@ -2953,6 +2967,7 @@ export type Database = {
           images?: string[] | null
           is_current_version?: boolean | null
           is_standard_template?: boolean | null
+          item_type?: string | null
           name?: string
           owner_id?: string | null
           parent_project_id?: string | null
@@ -4546,6 +4561,7 @@ export type Database = {
           images: string[] | null
           is_current_version: boolean | null
           is_standard_template: boolean | null
+          item_type: string | null
           name: string | null
           owner_id: string | null
           parent_project_id: string | null
@@ -4583,6 +4599,7 @@ export type Database = {
           images?: string[] | null
           is_current_version?: boolean | null
           is_standard_template?: boolean | null
+          item_type?: string | null
           name?: string | null
           owner_id?: string | null
           parent_project_id?: string | null
@@ -4620,6 +4637,7 @@ export type Database = {
           images?: string[] | null
           is_current_version?: boolean | null
           is_standard_template?: boolean | null
+          item_type?: string | null
           name?: string | null
           owner_id?: string | null
           parent_project_id?: string | null
@@ -4812,17 +4830,26 @@ export type Database = {
         Args: { revision_notes_text?: string; source_project_id: string }
         Returns: string
       }
-      create_project_run_snapshot: {
-        Args: {
-          p_home_id?: string
-          p_plan_end_date?: string
-          p_run_name: string
-          p_start_date?: string
-          p_template_id: string
-          p_user_id: string
-        }
-        Returns: string
-      }
+      create_project_run_snapshot:
+        | {
+            Args: {
+              home_id: string
+              project_name?: string
+              template_project_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_home_id?: string
+              p_plan_end_date?: string
+              p_run_name: string
+              p_start_date?: string
+              p_template_id: string
+              p_user_id: string
+            }
+            Returns: string
+          }
       create_project_with_standard_foundation:
         | {
             Args: {
@@ -5054,6 +5081,14 @@ export type Database = {
       }
       get_user_role: { Args: { user_id: string }; Returns: string }
       has_project_owner_role: { Args: { _user_id: string }; Returns: boolean }
+      incorporate_latest_phase_revision: {
+        Args: {
+          p_phase_id: string
+          p_project_id: string
+          p_source_project_id: string
+        }
+        Returns: undefined
+      }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       is_beta_mode_active: { Args: never; Returns: boolean }
       is_project_owner: {
