@@ -26,6 +26,8 @@ export interface SpaceSelectorProps {
   selectedSpaces: ProjectSpace[];
   onSpacesChange: (spaces: ProjectSpace[]) => void;
   projectScaleUnit?: string;
+  currentProjectName?: string;
+  phases?: any[]; // Phases from project run to extract incorporated phases
 }
 
 export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
@@ -33,13 +35,70 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
   projectRunHomeId,
   selectedSpaces,
   onSpacesChange,
-  projectScaleUnit = 'square foot'
+  projectScaleUnit = 'square foot',
+  currentProjectName = 'Current Project',
+  phases = []
 }) => {
   const [homeSpaces, setHomeSpaces] = useState<any[]>([]);
   const [showCustomSpaceForm, setShowCustomSpaceForm] = useState(false);
   const [customSpaceName, setCustomSpaceName] = useState('');
   const [customSpaceType, setCustomSpaceType] = useState('');
   const [customScaleValue, setCustomScaleValue] = useState<number | undefined>();
+  const [spaceSizingData, setSpaceSizingData] = useState<Map<string, Record<string, number>>>(new Map());
+
+  // Extract unique incorporated phases with their scaling units
+  const incorporatedPhases = React.useMemo(() => {
+    const uniquePhases = new Map<string, { projectName: string; scalingUnit: string }>();
+    
+    phases.forEach((phase: any) => {
+      if (phase.isLinked && phase.sourceProjectName && phase.sourceScalingUnit) {
+        // Only add if not already in map (unique by project name)
+        if (!uniquePhases.has(phase.sourceProjectName)) {
+          // Normalize scaling unit (remove "per " prefix if present)
+          const normalizedUnit = phase.sourceScalingUnit.startsWith('per ') 
+            ? phase.sourceScalingUnit.replace('per ', '')
+            : phase.sourceScalingUnit;
+          
+          uniquePhases.set(phase.sourceProjectName, {
+            projectName: phase.sourceProjectName,
+            scalingUnit: normalizedUnit
+          });
+        }
+      }
+    });
+    
+    return Array.from(uniquePhases.values());
+  }, [phases]);
+
+  // Load sizing data for all spaces
+  useEffect(() => {
+    const loadSizingData = async () => {
+      if (selectedSpaces.length === 0) return;
+      
+      const spaceIds = selectedSpaces.map(s => s.id);
+      const { data, error } = await supabase
+        .from('project_run_space_sizing')
+        .select('space_id, scaling_unit, size_value')
+        .in('space_id', spaceIds);
+
+      if (error) {
+        console.error('Error loading sizing data:', error);
+        return;
+      }
+
+      const sizingMap = new Map<string, Record<string, number>>();
+      (data || []).forEach(sizing => {
+        if (!sizingMap.has(sizing.space_id)) {
+          sizingMap.set(sizing.space_id, {});
+        }
+        sizingMap.get(sizing.space_id)![sizing.scaling_unit] = sizing.size_value;
+      });
+
+      setSpaceSizingData(sizingMap);
+    };
+
+    loadSizingData();
+  }, [selectedSpaces.map(s => s.id).join(',')]);
 
   useEffect(() => {
     if (projectRunHomeId) {
@@ -328,10 +387,6 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
 
   const handleUpdateScaleValue = async (spaceId: string, value: number) => {
     try {
-      // Get the space to find its scale_unit
-      const space = selectedSpaces.find(s => s.id === spaceId);
-      const scalingUnit = space?.scaleUnit || projectScaleUnit;
-
       // Update legacy column for backward compatibility
       const { error: updateError } = await supabase
         .from('project_run_spaces')
@@ -340,34 +395,84 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
 
       if (updateError) throw updateError;
 
-      // Update or insert in relational table
-      if (scalingUnit) {
-        const { error: sizingError } = await supabase
-          .from('project_run_space_sizing')
-          .upsert({
-            space_id: spaceId,
-            scaling_unit: scalingUnit,
-            size_value: value
-          }, {
-            onConflict: 'space_id,scaling_unit'
-          });
+      // Update or insert in relational table for current project scaling unit
+      const { error: sizingError } = await supabase
+        .from('project_run_space_sizing')
+        .upsert({
+          space_id: spaceId,
+          scaling_unit: projectScaleUnit,
+          size_value: value
+        }, {
+          onConflict: 'space_id,scaling_unit'
+        });
 
-        if (sizingError) {
-          console.error('Error updating sizing value:', sizingError);
-          // Don't throw - legacy column was updated successfully
-        }
+      if (sizingError) {
+        console.error('Error updating sizing value:', sizingError);
+        // Don't throw - legacy column was updated successfully
       }
 
       onSpacesChange(
         selectedSpaces.map(s => 
-          s.id === spaceId ? { ...s, scaleValue: value } : s
+          s.id === spaceId ? { ...s, scaleValue: value, scaleUnit: projectScaleUnit } : s
         )
       );
     } catch (error) {
       console.error('Error updating scale value:', error);
       toast({
         title: "Error",
-        description: "Failed to update scale value",
+        description: "Failed to update sizing value",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUpdateSizingValue = async (spaceId: string, scalingUnit: string, value: number) => {
+    try {
+      // Update or insert in relational table
+      const { error: sizingError } = await supabase
+        .from('project_run_space_sizing')
+        .upsert({
+          space_id: spaceId,
+          scaling_unit: scalingUnit,
+          size_value: value
+        }, {
+          onConflict: 'space_id,scaling_unit'
+        });
+
+      if (sizingError) throw sizingError;
+
+      // Reload sizing data for this space
+      const { data: sizingData } = await supabase
+        .from('project_run_space_sizing')
+        .select('scaling_unit, size_value')
+        .eq('space_id', spaceId);
+
+      if (sizingData) {
+        const newSizingMap = new Map(spaceSizingData);
+        const spaceSizing: Record<string, number> = {};
+        sizingData.forEach(s => {
+          spaceSizing[s.scaling_unit] = s.size_value;
+        });
+        newSizingMap.set(spaceId, spaceSizing);
+        setSpaceSizingData(newSizingMap);
+
+        // Update the primary scale value if it matches the project scale unit
+        const primarySizing = sizingData.find(s => s.scaling_unit === projectScaleUnit);
+        if (primarySizing) {
+          onSpacesChange(
+            selectedSpaces.map(s => 
+              s.id === spaceId 
+                ? { ...s, scaleValue: primarySizing.size_value, scaleUnit: projectScaleUnit }
+                : s
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error updating sizing value:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update sizing value",
         variant: "destructive"
       });
     }
@@ -492,21 +597,60 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium text-sm">{space.name}</h4>
-                        <Badge variant={space.isFromHome ? "default" : "secondary"} className="text-xs">
-                          {space.isFromHome ? "From Home" : "Custom"}
-                        </Badge>
+                        {space.isFromHome && (
+                          <Badge variant="default" className="text-xs">
+                            From Home
+                          </Badge>
+                        )}
                       </div>
-                      <div className="flex items-center gap-4 mt-2">
-                        <Label className="text-xs text-muted-foreground">
-                          Scale ({projectScaleUnit}):
-                        </Label>
-                        <Input
-                          type="number"
-                          value={space.scaleValue || ''}
-                          onChange={(e) => handleUpdateScaleValue(space.id, parseFloat(e.target.value))}
-                          placeholder={`Enter ${projectScaleUnit}`}
-                          className="w-32 h-8 text-sm"
-                        />
+                      <div className="mt-3 space-y-2">
+                        {/* Current Project Sizing */}
+                        <div>
+                          <Label className="text-xs font-medium mb-1 block">
+                            {currentProjectName}
+                          </Label>
+                          <Input
+                            type="number"
+                            value={space.scaleValue || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || (val.length <= 6 && /^\d*\.?\d*$/.test(val))) {
+                                handleUpdateScaleValue(space.id, val === '' ? 0 : parseFloat(val));
+                              }
+                            }}
+                            placeholder="0"
+                            className="w-20 h-8 text-sm text-center"
+                            maxLength={6}
+                          />
+                        </div>
+                        
+                        {/* Incorporated Phases Sizing */}
+                        {incorporatedPhases.map((phase) => {
+                          const sizingKey = phase.scalingUnit;
+                          const spaceSizing = spaceSizingData.get(space.id) || {};
+                          const currentValue = spaceSizing[sizingKey];
+                          
+                          return (
+                            <div key={phase.projectName}>
+                              <Label className="text-xs font-medium mb-1 block">
+                                {phase.projectName}
+                              </Label>
+                              <Input
+                                type="number"
+                                value={currentValue || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === '' || (val.length <= 6 && /^\d*\.?\d*$/.test(val))) {
+                                    handleUpdateSizingValue(space.id, sizingKey, val === '' ? 0 : parseFloat(val));
+                                  }
+                                }}
+                                placeholder="0"
+                                className="w-20 h-8 text-sm text-center"
+                                maxLength={6}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                     <Button
@@ -606,14 +750,20 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="scale-value" className="text-xs">Scale ({projectScaleUnit})</Label>
+                  <Label htmlFor="scale-value" className="text-xs">Sizing ({projectScaleUnit})</Label>
                   <Input
                     id="scale-value"
                     type="number"
                     value={customScaleValue || ''}
-                    onChange={(e) => setCustomScaleValue(parseFloat(e.target.value))}
-                    placeholder="100"
-                    className="h-8 text-sm"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || (val.length <= 6 && /^\d*\.?\d*$/.test(val))) {
+                        setCustomScaleValue(val === '' ? undefined : parseFloat(val));
+                      }
+                    }}
+                    placeholder="0"
+                    className="h-8 text-sm text-center w-20"
+                    maxLength={6}
                   />
                 </div>
               </div>

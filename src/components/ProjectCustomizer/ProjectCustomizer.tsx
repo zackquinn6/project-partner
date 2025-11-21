@@ -765,7 +765,9 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
               projectRunHomeId={currentProjectRun.home_id}
               selectedSpaces={customizationState.spaces}
               onSpacesChange={handleSpacesChange}
-              projectScaleUnit="square foot"
+              projectScaleUnit={scalingUnit?.replace('per ', '') || 'square foot'}
+              currentProjectName={templateProject?.name || currentProjectRun.name || 'Current Project'}
+              phases={currentProjectRun.phases || []}
             />
           </div>
         </DialogContent>
