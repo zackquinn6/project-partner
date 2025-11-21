@@ -8,6 +8,7 @@ import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Project, Phase } from '../../interfaces/Project';
 import { Search, Package, Clock, Filter, Plus } from 'lucide-react';
 import { useIsMobile } from '../../hooks/use-mobile';
@@ -318,13 +319,33 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                         >
                           <TableCell className="font-medium">{project.name}</TableCell>
                           <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {projectCategories.map((cat, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0.5">
-                                  {cat}
-                                </Badge>
-                              ))}
-                            </div>
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex flex-wrap gap-1 max-h-[3.5rem] overflow-hidden relative">
+                                    {projectCategories.map((cat, idx) => (
+                                      <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                                        {cat}
+                                      </Badge>
+                                    ))}
+                                    {projectCategories.length > 4 && (
+                                      <div className="absolute bottom-0 right-0 bg-background/80 backdrop-blur-sm px-1 text-[10px] text-muted-foreground">
+                                        +{projectCategories.length - 4} more
+                                      </div>
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-xs">
+                                  <div className="flex flex-wrap gap-1">
+                                    {projectCategories.map((cat, idx) => (
+                                      <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                                        {cat}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {project.description || 'No description available'}
