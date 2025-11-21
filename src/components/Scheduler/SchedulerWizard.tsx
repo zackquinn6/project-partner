@@ -275,11 +275,11 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                   </div>
                 </div>
 
-                {/* Completion Priority */}
+                {/* Schedule Optimization Method */}
                 <div className="pt-3 border-t">
                   <Label className="text-xs font-medium mb-2 flex items-center gap-1">
                     <Brain className="w-3.5 h-3.5" />
-                    Completion Priority
+                    Schedule Optimization Method
                   </Label>
                   <div className="space-y-2">
                     <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setCompletionPriority('agile')}>
@@ -293,8 +293,8 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                         className="h-4 w-4 mt-0.5"
                       />
                       <Label htmlFor="priority-agile" className="text-xs font-normal cursor-pointer flex-1">
-                        <span className="font-medium">Agile</span> - Complete one space end-to-end before moving to next
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Longer total duration but faster individual space completion</p>
+                        <span className="font-medium">Single-piece flow</span> - Fastest first room ready — you'll see progress right away.
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Complete all phases of a space before moving to the next space</p>
                       </Label>
                     </div>
                     <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setCompletionPriority('waterfall')}>
@@ -308,8 +308,8 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                         className="h-4 w-4 mt-0.5"
                       />
                       <Label htmlFor="priority-waterfall" className="text-xs font-normal cursor-pointer flex-1">
-                        <span className="font-medium">Waterfall</span> - Complete each phase across all spaces before next phase
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Faster overall completion but all spaces remain partially finished until end</p>
+                        <span className="font-medium">Batch flow</span> - Most efficient overall — but you won't see a finished room until the end.
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Complete each phase across all spaces before moving to the next phase</p>
                       </Label>
                     </div>
                   </div>
@@ -454,10 +454,10 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                         </ul>
                         <p className="mt-2"><strong>Team Member Availability:</strong></p>
                         <p className="ml-2">Schedules tasks based on each team member's availability calendar. The algorithm matches tasks to available time slots, respecting working hours, blackout dates, and site constraints.</p>
-                        <p className="mt-2"><strong>Completion Priority:</strong></p>
+                        <p className="mt-2"><strong>Schedule Optimization Method:</strong></p>
                         <ul className="list-disc list-inside space-y-0.5 ml-2">
-                          <li><strong>Agile:</strong> Completes one space end-to-end before moving to next (longer total duration, faster individual space completion)</li>
-                          <li><strong>Waterfall:</strong> Completes each phase across all spaces before moving to next phase (faster overall completion, all spaces partially finished until end)</li>
+                          <li><strong>Single-piece flow:</strong> Fastest first room ready — you'll see progress right away. Completes all phases of a space before moving to the next space.</li>
+                          <li><strong>Batch flow:</strong> Most efficient overall — but you won't see a finished room until the end. Completes each phase across all spaces before moving to the next phase.</li>
                         </ul>
                         <p className="mt-2"><strong>Planning Detail Level:</strong></p>
                         <ul className="list-disc list-inside space-y-0.5 ml-2">

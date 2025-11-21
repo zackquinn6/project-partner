@@ -408,18 +408,33 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               }
               
               const dependencies: string[] = [];
-              if (index > 0) {
-                dependencies.push(`${operation.id}-step-${index - 1}-space-${space.id}`);
-              }
+              const currentSpaceIndex = spaces.findIndex(s => s.id === space.id);
               
-              // For Agile: depend on previous step in same space
-              // For Waterfall: depend on same step in previous space
-              if (completionPriority === 'waterfall' && index === 0) {
-                // First step depends on first step in previous space (if exists)
-                const currentSpaceIndex = spaces.findIndex(s => s.id === space.id);
+              if (completionPriority === 'agile') {
+                // Single-piece flow: Complete all phases of a space before moving to next space
+                // Step N depends on Step N-1 in the same space
+                if (index > 0) {
+                  dependencies.push(`${operation.id}-step-${index - 1}-space-${space.id}`);
+                } else if (index === 0 && currentSpaceIndex > 0) {
+                  // First step of a space depends on the last step of the previous space
+                  // Find the last step in the previous space for this operation
+                  const prevSpace = spaces[currentSpaceIndex - 1];
+                  const prevSpaceSteps = operation.steps || [];
+                  if (prevSpaceSteps.length > 0) {
+                    const lastStepIndex = prevSpaceSteps.length - 1;
+                    dependencies.push(`${operation.id}-step-${lastStepIndex}-space-${prevSpace.id}`);
+                  }
+                }
+              } else {
+                // Batch flow: Complete each phase across all spaces before moving to next phase
+                // Step N of space M depends on Step N of space M-1 (same step in previous space)
                 if (currentSpaceIndex > 0) {
                   const prevSpace = spaces[currentSpaceIndex - 1];
                   dependencies.push(`${operation.id}-step-${index}-space-${prevSpace.id}`);
+                }
+                // Also depend on previous step in same space if not first step
+                if (index > 0) {
+                  dependencies.push(`${operation.id}-step-${index - 1}-space-${space.id}`);
                 }
               }
               
