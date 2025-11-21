@@ -297,6 +297,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
   // Convert project to scheduling tasks and calculate totals
   // Tasks are sorted by space priority when multiple spaces exist
+  // Uses estimated times from customized project workflow (applicable phases only)
   const {
     schedulingTasks,
     projectTotals
@@ -413,10 +414,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 }
               }
               
+              // Select time estimate based on schedule tempo
+              // fast_track uses low (10th percentile), steady uses medium (50th percentile), extended uses high (90th percentile)
+              const selectedTimeEstimate = scheduleTempo === 'fast_track' ? adjustedLow :
+                                          scheduleTempo === 'extended' ? adjustedHigh :
+                                          adjustedMed;
+              
               tasks.push({
                 id: `${operation.id}-step-${index}-space-${space.id}`,
                 title: `${step.step} - ${space.name}`,
-                estimatedHours: adjustedMed,
+                estimatedHours: selectedTimeEstimate,
                 minContiguousHours: Math.min(adjustedMed, 2),
                 dependencies,
                 tags: [`space:${space.id}`, `priority:${spacePriority}`, `phase:${phase.id}`, `workers:${workersNeeded}`],
@@ -478,10 +485,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               dependencies.push(`${operation.id}-step-${index - 1}`);
             }
             
+            // Select time estimate based on schedule tempo
+            // fast_track uses low (10th percentile), steady uses medium (50th percentile), extended uses high (90th percentile)
+            const selectedTimeEstimate = scheduleTempo === 'fast_track' ? adjustedLow :
+                                        scheduleTempo === 'extended' ? adjustedHigh :
+                                        adjustedMed;
+            
             tasks.push({
               id: `${operation.id}-step-${index}`,
               title: step.step,
-              estimatedHours: adjustedMed,
+              estimatedHours: selectedTimeEstimate,
               minContiguousHours: Math.min(adjustedMed, 2),
               dependencies,
               tags: [`phase:${phase.id}`, `workers:${workersNeeded}`],
@@ -531,7 +544,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         high: highTotal
       }
     };
-  }, [project, projectRun, spaces, completionPriority]);
+  }, [project, projectRun, spaces, completionPriority, scheduleTempo]);
 
   // Update team member
   const updateTeamMember = (id: string, updates: Partial<TeamMember>) => {

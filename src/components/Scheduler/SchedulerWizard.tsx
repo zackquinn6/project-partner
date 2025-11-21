@@ -444,12 +444,16 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       <p className="font-semibold">Scheduling Algorithm</p>
                       <p>The scheduler uses your settings to create an optimized schedule:</p>
                       <div className="space-y-1.5 mt-2">
-                        <p><strong>Schedule Tempo:</strong></p>
+                        <p><strong>Estimated Times:</strong></p>
+                        <p className="ml-2">Uses time estimates from your customized project workflow (only applicable phases that you've included). Each step's low/medium/high time estimates are selected based on Schedule Tempo.</p>
+                        <p className="mt-2"><strong>Schedule Tempo:</strong></p>
                         <ul className="list-disc list-inside space-y-0.5 ml-2">
-                          <li><strong>Fast-track:</strong> Uses low end of time estimates (10th percentile)</li>
-                          <li><strong>Steady:</strong> Uses medium time estimates (50th percentile)</li>
-                          <li><strong>Extended:</strong> Uses high end of time estimates (90th percentile)</li>
+                          <li><strong>Fast-track:</strong> Uses low end of time estimates (10th percentile) - best for skilled teams</li>
+                          <li><strong>Steady:</strong> Uses medium time estimates (50th percentile) - balanced, not rushed</li>
+                          <li><strong>Extended:</strong> Uses high end of time estimates (90th percentile) - ideal for beginners or low-urgency projects</li>
                         </ul>
+                        <p className="mt-2"><strong>Team Member Availability:</strong></p>
+                        <p className="ml-2">Schedules tasks based on each team member's availability calendar. The algorithm matches tasks to available time slots, respecting working hours, blackout dates, and site constraints.</p>
                         <p className="mt-2"><strong>Completion Priority:</strong></p>
                         <ul className="list-disc list-inside space-y-0.5 ml-2">
                           <li><strong>Agile:</strong> Completes one space end-to-end before moving to next (longer total duration, faster individual space completion)</li>
