@@ -62,6 +62,8 @@ interface SchedulerWizardProps {
   setPlanningMode: (mode: PlanningMode) => void;
   scheduleTempo: ScheduleTempo;
   setScheduleTempo: (tempo: ScheduleTempo) => void;
+  completionPriority: 'agile' | 'waterfall';
+  setCompletionPriority: (priority: 'agile' | 'waterfall') => void;
   onPresetApply: (preset: SchedulePreset) => void;
   teamMembers: TeamMember[];
   addTeamMember: () => void;
@@ -81,6 +83,8 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   setPlanningMode,
   scheduleTempo,
   setScheduleTempo,
+  completionPriority,
+  setCompletionPriority,
   onPresetApply,
   teamMembers,
   addTeamMember,
@@ -146,7 +150,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               <Clock className="w-3 h-3" />
               Schedule Tempo
             </Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               <Button
                 variant={scheduleTempo === 'fast_track' ? 'default' : 'outline'}
                 size="sm"
@@ -189,6 +193,45 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                   Longest timelines; ideal for beginners or low‑urgency projects.
                 </span>
               </Button>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs font-medium mb-2 flex items-center gap-1">
+              <Brain className="w-3 h-3" />
+              Completion Priority
+            </Label>
+            <div className="space-y-2">
+              <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setCompletionPriority('agile')}>
+                <input
+                  type="radio"
+                  id="priority-agile"
+                  name="completion-priority"
+                  value="agile"
+                  checked={completionPriority === 'agile'}
+                  onChange={(e) => setCompletionPriority(e.target.value as 'agile' | 'waterfall')}
+                  className="h-4 w-4 mt-0.5"
+                />
+                <Label htmlFor="priority-agile" className="text-xs font-normal cursor-pointer flex-1">
+                  <span className="font-medium">Agile</span> - Complete one space end-to-end before moving to next
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Longer total duration but faster individual space completion</p>
+                </Label>
+              </div>
+              <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setCompletionPriority('waterfall')}>
+                <input
+                  type="radio"
+                  id="priority-waterfall"
+                  name="completion-priority"
+                  value="waterfall"
+                  checked={completionPriority === 'waterfall'}
+                  onChange={(e) => setCompletionPriority(e.target.value as 'agile' | 'waterfall')}
+                  className="h-4 w-4 mt-0.5"
+                />
+                <Label htmlFor="priority-waterfall" className="text-xs font-normal cursor-pointer flex-1">
+                  <span className="font-medium">Waterfall</span> - Complete each phase across all spaces before next phase
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Faster overall completion but all spaces remain partially finished until end</p>
+                </Label>
+              </div>
             </div>
           </div>
         </CardContent>

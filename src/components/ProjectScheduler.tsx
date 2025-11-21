@@ -982,7 +982,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
             {/* New Wizard Interface */}
-            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} />
+            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} completionPriority={completionPriority} setCompletionPriority={setCompletionPriority} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} />
 
             {/* Results */}
             {schedulingResult && <>
