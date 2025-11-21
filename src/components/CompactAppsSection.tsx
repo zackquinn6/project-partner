@@ -106,31 +106,17 @@ export const CompactAppsSection = ({
               
               <div className="flex flex-col items-center justify-center p-2 space-y-1">
                 <div className="w-7 h-7 rounded-lg bg-primary/25 dark:bg-primary/35 flex items-center justify-center border-2 border-primary/60 dark:border-primary/70 shadow-md">
-                  {IconComponent && typeof IconComponent === 'function' ? (
-                    <IconComponent 
-                      className="w-4 h-4 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      aria-hidden="true"
-                      style={{ 
-                        color: 'hsl(var(--primary))',
-                        opacity: 1
-                      }}
-                    />
-                  ) : (
-                    <Icons.Sparkles 
-                      className="w-4 h-4 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      aria-hidden="true"
-                      style={{ 
-                        color: 'hsl(var(--primary))',
-                        opacity: 1
-                      }}
-                    />
-                  )}
+                  <IconComponent 
+                    className="w-4 h-4 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    aria-hidden="true"
+                    style={{ 
+                      color: 'hsl(var(--primary))',
+                      opacity: 1
+                    }}
+                  />
                 </div>
                 
                 <div className="text-center">
