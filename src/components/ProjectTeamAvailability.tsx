@@ -28,7 +28,8 @@ interface TeamMember {
   id: string;
   name: string;
   type: 'owner' | 'helper';
-  skillLevel: 'novice' | 'intermediate' | 'expert';
+  skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'; // Project skill levels
+  effortLevel: 'Low' | 'Medium' | 'High'; // Effort level
   maxTotalHours: number;
   weekendsOnly: boolean;
   weekdaysAfterFivePm: boolean;
@@ -50,6 +51,8 @@ interface TeamMember {
     email: boolean;
     sms: boolean;
   };
+  // Database fields
+  dbId?: string; // ID from user_team_members table
 }
 
 interface ProjectTeamAvailabilityProps {
@@ -60,13 +63,68 @@ interface ProjectTeamAvailabilityProps {
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: ProjectTeamAvailabilityProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load team members from database on mount
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('user_team_members')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const loadedMembers: TeamMember[] = data.map(member => ({
+            id: member.id,
+            dbId: member.id,
+            name: member.name,
+            type: member.type as 'owner' | 'helper',
+            skillLevel: member.skill_level as 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional',
+            effortLevel: member.effort_level as 'Low' | 'Medium' | 'High',
+            maxTotalHours: member.max_total_hours,
+            weekendsOnly: member.weekends_only,
+            weekdaysAfterFivePm: member.weekdays_after_five_pm,
+            workingHours: {
+              start: member.working_hours_start || '09:00',
+              end: member.working_hours_end || '17:00'
+            },
+            availability: (member.availability_dates as any) || {},
+            costPerHour: member.cost_per_hour || 0,
+            email: member.email,
+            phone: member.phone,
+            notificationPreferences: (member.notification_preferences as any) || { email: false, sms: false }
+          }));
+
+          // Merge with existing team members (don't overwrite if already loaded)
+          const existingIds = new Set(teamMembers.map(m => m.dbId).filter(Boolean));
+          const newMembers = loadedMembers.filter(m => !existingIds.has(m.dbId));
+          if (newMembers.length > 0) {
+            onTeamMembersChange([...teamMembers, ...newMembers]);
+          }
+        }
+      } catch (error: any) {
+        console.error('Error loading team members:', error);
+      }
+    };
+
+    loadTeamMembers();
+  }, [user]); // Only load once when user is available
   const [newMember, setNewMember] = useState<Partial<TeamMember>>({
     name: '',
     type: 'helper',
-    skillLevel: 'intermediate',
+    skillLevel: 'Intermediate',
+    effortLevel: 'Medium',
     maxTotalHours: 80,
     weekendsOnly: false,
     weekdaysAfterFivePm: false,
@@ -129,7 +187,8 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
     setNewMember({
       name: '',
       type: 'helper',
-      skillLevel: 'intermediate',
+      skillLevel: 'Intermediate',
+      effortLevel: 'Medium',
       maxTotalHours: 80,
       weekendsOnly: false,
       weekdaysAfterFivePm: false,
@@ -146,16 +205,28 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
     setAvailabilityMode('general');
   };
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
     if (!newMember.name || !newMember.name.trim()) {
       return; // Don't add if name is empty
     }
+
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to add team members",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
 
     const memberToAdd: TeamMember = {
       id: Date.now().toString(),
       name: newMember.name.trim(),
       type: newMember.type || 'helper',
-      skillLevel: newMember.skillLevel || 'intermediate',
+      skillLevel: newMember.skillLevel || 'Intermediate',
+      effortLevel: newMember.effortLevel || 'Medium',
       maxTotalHours: newMember.maxTotalHours || 80,
       weekendsOnly: newMember.weekendsOnly || false,
       weekdaysAfterFivePm: newMember.weekdaysAfterFivePm || false,
@@ -203,16 +274,96 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
       memberToAdd.availability = newAvailability;
     }
 
-    onTeamMembersChange([...teamMembers, memberToAdd]);
-    cancelAdding();
+    try {
+      // Save to database
+      const { data, error } = await supabase
+        .from('user_team_members')
+        .insert({
+          user_id: user.id,
+          name: memberToAdd.name,
+          type: memberToAdd.type,
+          skill_level: memberToAdd.skillLevel,
+          effort_level: memberToAdd.effortLevel,
+          max_total_hours: memberToAdd.maxTotalHours,
+          weekends_only: memberToAdd.weekendsOnly,
+          weekdays_after_five_pm: memberToAdd.weekdaysAfterFivePm,
+          working_hours_start: memberToAdd.workingHours.start,
+          working_hours_end: memberToAdd.workingHours.end,
+          cost_per_hour: memberToAdd.costPerHour || 0,
+          email: memberToAdd.email,
+          phone: memberToAdd.phone,
+          availability_mode: availabilityMode,
+          availability_dates: memberToAdd.availability,
+          notification_preferences: memberToAdd.notificationPreferences || { email: false, sms: false }
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add database ID to member
+      memberToAdd.dbId = data.id;
+
+      onTeamMembersChange([...teamMembers, memberToAdd]);
+      cancelAdding();
+      
+      toast({
+        title: "Success",
+        description: "Team member added and saved",
+      });
+    } catch (error: any) {
+      console.error('Error saving team member:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save team member",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDeleteMember = (memberId: string) => {
+  const handleDeleteMember = async (memberId: string) => {
+    const member = teamMembers.find(m => m.id === memberId);
+    if (!member) return;
+
+    // If member has database ID, delete from database
+    if (member.dbId && user) {
+      setIsLoading(true);
+      try {
+        const { error } = await supabase
+          .from('user_team_members')
+          .delete()
+          .eq('id', member.dbId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Team member deleted",
+        });
+      } catch (error: any) {
+        console.error('Error deleting team member:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete team member",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
     onTeamMembersChange(teamMembers.filter(m => m.id !== memberId));
   };
 
-  const saveEditing = () => {
-    if (!editingMember) return;
+  const saveEditing = async () => {
+    if (!editingMember || !user) return;
+
+    setIsLoading(true);
 
     const updatedMember: TeamMember = { ...editingMember };
 
@@ -254,12 +405,55 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
       updatedMember.availability = newAvailability;
     }
 
-    const updatedMembers = teamMembers.map(m => 
-      m.id === editingMember.id ? updatedMember : m
-    );
-    
-    onTeamMembersChange(updatedMembers);
-    cancelEditing();
+    try {
+      // If member has database ID, update in database
+      if (updatedMember.dbId) {
+        const { error } = await supabase
+          .from('user_team_members')
+          .update({
+            name: updatedMember.name,
+            type: updatedMember.type,
+            skill_level: updatedMember.skillLevel,
+            effort_level: updatedMember.effortLevel,
+            max_total_hours: updatedMember.maxTotalHours,
+            weekends_only: updatedMember.weekendsOnly,
+            weekdays_after_five_pm: updatedMember.weekdaysAfterFivePm,
+            working_hours_start: updatedMember.workingHours.start,
+            working_hours_end: updatedMember.workingHours.end,
+            cost_per_hour: updatedMember.costPerHour || 0,
+            email: updatedMember.email,
+            phone: updatedMember.phone,
+            availability_mode: availabilityMode,
+            availability_dates: updatedMember.availability,
+            notification_preferences: updatedMember.notificationPreferences || { email: false, sms: false }
+          })
+          .eq('id', updatedMember.dbId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      }
+
+      const updatedMembers = teamMembers.map(m => 
+        m.id === editingMember.id ? updatedMember : m
+      );
+      
+      onTeamMembersChange(updatedMembers);
+      cancelEditing();
+      
+      toast({
+        title: "Success",
+        description: "Team member updated",
+      });
+    } catch (error: any) {
+      console.error('Error updating team member:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update team member",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleDay = (day: string) => {
@@ -342,9 +536,23 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="z-50 bg-popover">
-                        <SelectItem value="novice">Novice</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                        <SelectItem value="expert">Expert</SelectItem>
+                        <SelectItem value="Beginner">Beginner</SelectItem>
+                        <SelectItem value="Intermediate">Intermediate</SelectItem>
+                        <SelectItem value="Advanced">Advanced</SelectItem>
+                        <SelectItem value="Professional">Professional</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select 
+                      value={editingMember.effortLevel} 
+                      onValueChange={(val) => setEditingMember({ ...editingMember, effortLevel: val as any })}
+                    >
+                      <SelectTrigger className="text-[10px] md:text-xs h-7 w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-50 bg-popover">
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -530,6 +738,9 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
                       <Badge variant="secondary" className="text-[9px]">
                         {member.skillLevel}
                       </Badge>
+                      <Badge variant="outline" className="text-[9px]">
+                        {member.effortLevel} Effort
+                      </Badge>
                     </div>
                     <div className="flex gap-1">
                       <Button
@@ -605,16 +816,30 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
                 </SelectContent>
               </Select>
               <Select 
-                value={newMember.skillLevel || 'intermediate'} 
+                value={newMember.skillLevel || 'Intermediate'} 
                 onValueChange={(val) => setNewMember({ ...newMember, skillLevel: val as any })}
               >
                 <SelectTrigger className="text-[10px] md:text-xs h-7 w-28">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="z-50 bg-popover">
-                  <SelectItem value="novice">Novice</SelectItem>
-                  <SelectItem value="intermediate">Intermediate</SelectItem>
-                  <SelectItem value="expert">Expert</SelectItem>
+                  <SelectItem value="Beginner">Beginner</SelectItem>
+                  <SelectItem value="Intermediate">Intermediate</SelectItem>
+                  <SelectItem value="Advanced">Advanced</SelectItem>
+                  <SelectItem value="Professional">Professional</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select 
+                value={newMember.effortLevel || 'Medium'} 
+                onValueChange={(val) => setNewMember({ ...newMember, effortLevel: val as any })}
+              >
+                <SelectTrigger className="text-[10px] md:text-xs h-7 w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-popover">
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -28,6 +28,7 @@ import { SchedulingInputs, SchedulingResult, Task, Worker, PlanningMode, Schedul
 import { supabase } from '@/integrations/supabase/client';
 import { PhaseAssignment } from '@/components/PhaseAssignment';
 import { ProjectTeamAvailability } from '@/components/ProjectTeamAvailability';
+import { ProjectContractors } from '@/components/ProjectContractors';
 import { useAuth } from '@/contexts/AuthContext';
 interface ProjectSchedulerProps {
   open: boolean;
@@ -39,7 +40,8 @@ interface TeamMember {
   id: string;
   name: string;
   type: 'owner' | 'helper';
-  skillLevel: 'novice' | 'intermediate' | 'expert';
+  skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'; // Project skill levels
+  effortLevel: 'Low' | 'Medium' | 'High'; // Effort level
   maxTotalHours: number;
   weekendsOnly: boolean;
   weekdaysAfterFivePm: boolean;
@@ -61,6 +63,8 @@ interface TeamMember {
     email: boolean;
     sms: boolean;
   };
+  // Database fields
+  dbId?: string; // ID from user_team_members table
 }
 interface GlobalSettings {
   quietHours: {
@@ -170,7 +174,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     id: '1',
     name: 'You',
     type: 'owner',
-    skillLevel: 'intermediate',
+    skillLevel: 'Intermediate',
+    effortLevel: 'Medium',
     maxTotalHours: 120,
     weekendsOnly: false,
     weekdaysAfterFivePm: false,
@@ -187,6 +192,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       sms: false
     }
   }]);
+
+  // Contractors dialog state
+  const [showContractors, setShowContractors] = useState(false);
 
   // Global settings
   const [globalSettings, setGlobalSettings] = useState<GlobalSettings>({
@@ -649,7 +657,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       id: Date.now().toString(),
       name: 'New Team Member',
       type: 'helper',
-      skillLevel: 'intermediate',
+      skillLevel: 'Intermediate',
+      effortLevel: 'Medium',
       maxTotalHours: 80,
       weekendsOnly: false,
       weekdaysAfterFivePm: false,
@@ -1021,8 +1030,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
-            {/* Assign Phases and Team Availability Buttons */}
-            <div className="flex gap-2">
+            {/* Assign Phases, Team Availability, and Contractors Buttons */}
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -1040,6 +1049,15 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               >
                 <Users className="w-4 h-4 mr-2" />
                 Team Availability
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowContractors(true)}
+                className="flex-1"
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                Contractors
               </Button>
             </div>
 
@@ -1537,6 +1555,33 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             teamMembers={teamMembers}
             onTeamMembersChange={setTeamMembers}
           />
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Contractors Dialog */}
+    <Dialog open={showContractors} onOpenChange={setShowContractors}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="text-lg md:text-xl font-bold">Contractors</DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowContractors(false)} 
+              className="h-7 px-2 text-[9px] md:text-xs"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+          {projectRun?.id && (
+            <ProjectContractors
+              projectRunId={projectRun.id}
+              phases={project.phases}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
