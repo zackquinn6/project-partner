@@ -210,7 +210,7 @@ export interface Project {
   publishStatus?: 'draft' | 'published' | 'beta-testing' | 'archived';
   category: string[];
   effortLevel?: 'Low' | 'Medium' | 'High';
-  skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
+  skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'; // Project overall skill level (4 options)
   estimatedTime?: string;
   projectType?: 'Primary' | 'Secondary';
   estimatedTimePerUnit?: number;

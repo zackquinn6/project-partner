@@ -765,9 +765,10 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="">Select skill level</option>
-                  <option value="Beginner">Beginner Skill</option>
-                  <option value="Intermediate">Intermediate Skill</option>
-                  <option value="Advanced">Advanced Skill</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                  <option value="Professional">Professional</option>
                 </select>
               </div>
               <div>
