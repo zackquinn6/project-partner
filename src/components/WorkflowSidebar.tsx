@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 import { WorkflowTutorial } from './WorkflowTutorial';
+import { ProgressReportingStyleDialog } from './ProgressReportingStyleDialog';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
 interface WorkflowSidebarProps {
@@ -76,6 +77,7 @@ export function WorkflowSidebar({
   const [showStepTypesInfo, setShowStepTypesInfo] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showProgressReportingDialog, setShowProgressReportingDialog] = useState(false);
 
   // Check if user is new and should see tutorial
   useEffect(() => {
@@ -231,9 +233,28 @@ export function WorkflowSidebar({
                   <div className="space-y-1" data-tutorial="progress-bar">
                     <div className="flex justify-between items-center text-xs">
                       <span>Progress</span>
-                      <span className="text-muted-foreground text-[10px]">
-                        Step {currentStepIndex + 1} of {allSteps.length}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground text-[10px]">
+                          Step {currentStepIndex + 1} of {allSteps.length}
+                        </span>
+                        <TooltipProvider delayDuration={100}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowProgressReportingDialog(true)}
+                                className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground"
+                              >
+                                <Settings className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Progress Reporting Style</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <span>{Math.round(progress)}%</span>
                     </div>
                     <Progress value={progress} className="h-2" />
@@ -506,61 +527,6 @@ export function WorkflowSidebar({
           <div className="py-4 space-y-6">
             <FlowTypeLegend compact={false} showDescriptions={true} showOnlyStepTypes={true} />
             
-            {/* Progress Reporting Style Section */}
-            {projectRun && (
-              <Card className="border-2">
-                <CardHeader>
-                  <CardTitle className="text-base">Progress Reporting Style</CardTitle>
-                  <CardDescription>
-                    Choose how progress is calculated. Step numbers (e.g., "Step 4 of 15") remain unchanged.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RadioGroup
-                    value={projectRun.progress_reporting_style || 'linear'}
-                    onValueChange={async (value) => {
-                      if (projectRun) {
-                        await updateProjectRun({
-                          ...projectRun,
-                          progress_reporting_style: value as 'linear' | 'exponential' | 'time-based'
-                        });
-                      }
-                    }}
-                    className="space-y-3"
-                  >
-                    <Label htmlFor="linear" className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
-                      <RadioGroupItem value="linear" id="linear" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="font-medium">Linear</div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          Simple step count-based progress. Step 7 of 14 complete = 50%
-                        </div>
-                      </div>
-                    </Label>
-                    
-                    <Label htmlFor="exponential" className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
-                      <RadioGroupItem value="exponential" id="exponential" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="font-medium">Exponential</div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          Weighted toward completion. Work that shows 90% on linear measurement shows ~60% here, reflecting heavier effort to complete the final work.
-                        </div>
-                      </div>
-                    </Label>
-                    
-                    <Label htmlFor="time-based" className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
-                      <RadioGroupItem value="time-based" id="time-based" className="mt-1" />
-                      <div className="flex-1">
-                        <div className="font-medium">Time-Based</div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          Uses step estimated times aligned to your speed setting. Fast-track uses low end of time estimates, steady uses medium, extended uses high.
-                        </div>
-                      </div>
-                    </Label>
-                  </RadioGroup>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -593,6 +559,13 @@ Call or text (617) 545-3367
         open={showTutorial} 
         onOpenChange={setShowTutorial}
         onComplete={handleTutorialComplete}
+      />
+
+      {/* Progress Reporting Style Dialog */}
+      <ProgressReportingStyleDialog
+        open={showProgressReportingDialog}
+        onOpenChange={setShowProgressReportingDialog}
+        projectRun={projectRun}
       />
     </Sidebar>;
 }
