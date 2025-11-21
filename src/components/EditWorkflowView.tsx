@@ -108,8 +108,8 @@ export default function EditWorkflowView({
   const displayPhases = enforceStandardPhaseOrdering(deduplicatedPhases);
 
   // Helper to check if current step is from a standard or incorporated phase
-  const isStepFromStandardOrIncorporatedPhase = () => {
-    if (!currentStep || isEditingStandardProject) {
+  const isStepFromStandardOrIncorporatedPhase = (step: WorkflowStep | undefined) => {
+    if (!step || isEditingStandardProject) {
       if (isEditingStandardProject) {
         console.log('🔍 EditWorkflowView: isEditingStandardProject=true, blocking edit');
       }
@@ -117,7 +117,7 @@ export default function EditWorkflowView({
     }
     
     // Get the phase containing this step
-    const phaseName = currentStep.phaseName;
+    const phaseName = step.phaseName;
     if (!phaseName) {
       // No phase name - allow editing (shouldn't happen, but be permissive)
       console.warn('⚠️ Step has no phaseName - allowing edit');
@@ -140,7 +140,7 @@ export default function EditWorkflowView({
     // AI-generated phases have is_standard: false and isLinked: false/undefined
     // So they should always pass this check and allow editing
     // 
-    // NOTE: We IGNORE currentStep.isStandard because steps can be incorrectly marked
+    // NOTE: We IGNORE step.isStandard because steps can be incorrectly marked
     // as standard if they're in a reference operation, but we only care about the phase level
     
     const isStandardPhase = phase.isStandard === true;
@@ -149,10 +149,10 @@ export default function EditWorkflowView({
     
     // Debug logging for troubleshooting
     if (shouldBlock) {
-      console.log(`🚫 Blocking edit for step "${currentStep.step}" in phase "${phaseName}": isStandard=${isStandardPhase}, isLinked=${isLinkedPhase}`);
+      console.log(`🚫 Blocking edit for step "${step.step}" in phase "${phaseName}": isStandard=${isStandardPhase}, isLinked=${isLinkedPhase}`);
     } else {
       // Always log when allowing editing to help debug AI-generated content
-      console.log(`✅ Allowing edit for step "${currentStep.step}" in phase "${phaseName}": phase.isStandard=${phase.isStandard}, phase.isLinked=${phase.isLinked}, step.isStandard=${currentStep.isStandard}`);
+      console.log(`✅ Allowing edit for step "${step.step}" in phase "${phaseName}": phase.isStandard=${phase.isStandard}, phase.isLinked=${phase.isLinked}, step.isStandard=${step.isStandard}`);
     }
     
     return shouldBlock;
@@ -259,7 +259,7 @@ export default function EditWorkflowView({
           phaseFound: !!phase,
           phaseIsStandard: phase?.isStandard,
           phaseIsLinked: phase?.isLinked,
-          canEdit: !isStepFromStandardOrIncorporatedPhase()
+          canEdit: !isStepFromStandardOrIncorporatedPhase(currentStep)
         });
       }
     }
@@ -1125,7 +1125,7 @@ export default function EditWorkflowView({
                       </>
                     </div>
                     <div className="flex gap-2">
-                      {!isStepFromStandardOrIncorporatedPhase() && (
+                      {!isStepFromStandardOrIncorporatedPhase(currentStep) && (
                         <Button onClick={handleStartEdit} variant="outline" size="sm">
                           <Edit className="w-4 h-4 mr-2" />
                           Edit Step
