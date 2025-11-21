@@ -303,24 +303,26 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
           {/* Budget Goal Header */}
-          {currentProjectRun?.initial_budget && (
-            <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">Project Budget Goal</div>
-                  <div className="text-xl font-bold text-primary">${parseFloat(currentProjectRun.initial_budget || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Project Budget Goal</div>
+                <div className="text-xl font-bold text-primary">
+                  {currentProjectRun?.initial_budget && String(currentProjectRun.initial_budget).trim() !== '' && parseFloat(String(currentProjectRun.initial_budget)) > 0
+                    ? `$${parseFloat(String(currentProjectRun.initial_budget)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : 'Not set'}
                 </div>
-                {totalBudgeted > 0 && (
-                  <div className="text-right">
-                    <div className="text-xs text-muted-foreground mb-1">Budgeted vs Goal</div>
-                    <div className={`text-lg font-semibold ${totalBudgeted > parseFloat(currentProjectRun.initial_budget || '0') ? 'text-red-600' : 'text-green-600'}`}>
-                      ${totalBudgeted.toFixed(2)} / ${parseFloat(currentProjectRun.initial_budget || '0').toFixed(2)}
-                    </div>
-                  </div>
-                )}
               </div>
+              {currentProjectRun?.initial_budget && String(currentProjectRun.initial_budget).trim() !== '' && parseFloat(String(currentProjectRun.initial_budget)) > 0 && totalBudgeted > 0 && (
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground mb-1">Budgeted vs Goal</div>
+                  <div className={`text-lg font-semibold ${totalBudgeted > parseFloat(String(currentProjectRun.initial_budget)) ? 'text-red-600' : 'text-green-600'}`}>
+                    ${totalBudgeted.toFixed(2)} / ${parseFloat(String(currentProjectRun.initial_budget)).toFixed(2)}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           <div className="flex items-center justify-between mb-4">
         <div className="flex gap-4">
