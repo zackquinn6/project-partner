@@ -19,6 +19,9 @@ import { useIsMobile } from '../../hooks/use-mobile';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { KickoffWorkflow } from '../KickoffWorkflow';
+import { HomeManager } from '../HomeManager';
+import { useAuth } from '../../contexts/AuthContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface ProjectCustomizerProps {
   open: boolean;
@@ -59,6 +62,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   mode = 'initial-plan'
 }) => {
   const { projects, updateProjectRun } = useProject();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(mode === 'unplanned-work' ? 'custom-work' : 'decisions');
   const [customizationState, setCustomizationState] = useState<CustomizationState>({
     spaces: [],
@@ -76,6 +80,9 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [showSpacesWindow, setShowSpacesWindow] = useState(false);
   const [homeName, setHomeName] = useState<string>('');
   const [showKickoffEdit, setShowKickoffEdit] = useState(false);
+  const [showHomeManager, setShowHomeManager] = useState(false);
+  const [homes, setHomes] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
   const [itemType, setItemType] = useState<string | null>(null);
 
   // Get template project to access scaling unit and item type
@@ -215,12 +222,39 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     loadSpaces();
   }, [open, currentProjectRun?.id]);
 
-  // Load home name
+  // Load homes list and home name
   useEffect(() => {
-    if (open && currentProjectRun?.home_id) {
-      fetchHomeName();
+    if (open && user) {
+      fetchHomes();
+      if (currentProjectRun?.home_id) {
+        fetchHomeName();
+        setSelectedHomeId(currentProjectRun.home_id);
+      }
     }
-  }, [open, currentProjectRun?.home_id]);
+  }, [open, currentProjectRun?.home_id, user]);
+
+  const fetchHomes = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('homes')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setHomes(data || []);
+    } catch (error) {
+      console.error('Error fetching homes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load homes",
+        variant: "destructive"
+      });
+    }
+  };
 
   const fetchHomeName = async () => {
     if (!currentProjectRun?.home_id) return;
@@ -237,6 +271,35 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     } catch (error) {
       console.error('Error fetching home:', error);
       setHomeName('Unknown Home');
+    }
+  };
+
+  const handleHomeChange = async (homeId: string) => {
+    if (!currentProjectRun || !homeId) return;
+
+    try {
+      // Update project run with new home_id
+      await updateProjectRun({
+        ...currentProjectRun,
+        home_id: homeId
+      });
+
+      // Update local state
+      setSelectedHomeId(homeId);
+      const selectedHome = homes.find(h => h.id === homeId);
+      setHomeName(selectedHome?.name || 'Unknown Home');
+
+      toast({
+        title: "Home updated",
+        description: "Project home has been changed"
+      });
+    } catch (error) {
+      console.error('Error updating home:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update home",
+        variant: "destructive"
+      });
     }
   };
 
@@ -520,22 +583,43 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           )}
 
           {/* Home Selection Display */}
-          {homeName && currentProjectRun?.home_id && (
-            <div className="mb-3 py-2 px-3 bg-muted/50 rounded-lg border flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Home className="w-4 h-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Project Home:</span>
-                <Badge variant="outline" className="text-xs">{homeName}</Badge>
+          {currentProjectRun?.home_id && (
+            <div className="mb-3 py-2 px-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Home className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Project Home:</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowHomeManager(true)}
+                  className="h-6 px-2 text-xs"
+                  title="Manage homes"
+                >
+                  <Edit2 className="w-3 h-3 mr-1" />
+                  Manage
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowKickoffEdit(true)}
-                className="h-6 w-6 p-0"
-                title="Change home"
-              >
-                <Edit2 className="w-3 h-3" />
-              </Button>
+              {homes.length > 0 ? (
+                <Select
+                  value={selectedHomeId || currentProjectRun.home_id}
+                  onValueChange={handleHomeChange}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select a home" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {homes.map((home) => (
+                      <SelectItem key={home.id} value={home.id}>
+                        {home.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant="outline" className="text-xs">{homeName || 'Unknown Home'}</Badge>
+              )}
             </div>
           )}
 
@@ -784,6 +868,17 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           onExit={() => setShowKickoffEdit(false)}
         />
       )}
+
+      {/* Home Manager */}
+      <HomeManager
+        open={showHomeManager}
+        onOpenChange={setShowHomeManager}
+        selectedHomeId={currentProjectRun?.home_id || undefined}
+        onHomeSelected={async (homeId) => {
+          await handleHomeChange(homeId);
+          setShowHomeManager(false);
+        }}
+      />
     </>
   );
 };
