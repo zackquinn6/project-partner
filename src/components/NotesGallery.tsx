@@ -486,7 +486,8 @@ export function NotesGallery({
                   ))}
                 </TableBody>
               </Table>
-            </div>
+              </div>
+              )}
             </div>
           )}
         </div>
