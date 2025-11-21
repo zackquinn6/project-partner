@@ -187,11 +187,6 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
 
       if (error) throw error;
 
-      // Get the next priority (highest number + 1, or 1 if no spaces exist)
-      const nextPriority = selectedSpaces.length > 0 
-        ? Math.max(...selectedSpaces.map(s => s.priority || 0)) + 1
-        : 1;
-
       const newSpace: ProjectSpace = {
         id: data.id,
         name: data.space_name,
@@ -275,11 +270,6 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
           // Don't throw - space was created successfully, sizing can be added later
         }
       }
-
-      // Get the next priority (highest number + 1, or 1 if no spaces exist)
-      const nextPriority = selectedSpaces.length > 0 
-        ? Math.max(...selectedSpaces.map(s => s.priority || 0)) + 1
-        : 1;
 
       const newSpace: ProjectSpace = {
         id: data.id,
