@@ -789,21 +789,24 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="scale-value" className="text-xs">Sizing ({projectScaleUnit})</Label>
-                  <Input
-                    id="scale-value"
-                    type="number"
-                    value={customScaleValue || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === '' || (val.length <= 6 && /^\d*\.?\d*$/.test(val))) {
-                        setCustomScaleValue(val === '' ? undefined : parseFloat(val));
-                      }
-                    }}
-                    placeholder="0"
-                    className="h-8 text-sm text-center w-20"
-                    maxLength={6}
-                  />
+                  <Label htmlFor="scale-value" className="text-xs">Sizing</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="scale-value"
+                      type="number"
+                      value={customScaleValue || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || (val.length <= 6 && /^\d*\.?\d*$/.test(val))) {
+                          setCustomScaleValue(val === '' ? undefined : parseFloat(val));
+                        }
+                      }}
+                      placeholder="0"
+                      className="h-8 text-sm text-center w-20"
+                      maxLength={6}
+                    />
+                    <span className="text-xs text-muted-foreground">{projectScaleUnit}</span>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2">
