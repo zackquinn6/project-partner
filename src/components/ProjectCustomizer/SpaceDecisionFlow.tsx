@@ -189,8 +189,8 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
                   <Label className="text-xs font-medium mb-1 block text-muted-foreground">
                     {currentProjectName}
                   </Label>
-                  <div className="text-sm font-medium text-center w-20">
-                    {space.scaleValue || spaceSizingData.get(space.id)?.[projectScaleUnit] || 0}
+                  <div className="text-sm font-medium text-center">
+                    {space.scaleValue || spaceSizingData.get(space.id)?.[projectScaleUnit] || 0} {projectScaleUnit}
                   </div>
                 </div>
                 
@@ -207,8 +207,8 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
                       <Label className="text-xs font-medium mb-1 block text-muted-foreground">
                         {phase.projectName}
                       </Label>
-                      <div className="text-sm font-medium text-center w-20">
-                        {currentValue}
+                      <div className="text-sm font-medium text-center">
+                        {currentValue} {phase.scalingUnit}
                       </div>
                     </div>
                   );
