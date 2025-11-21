@@ -127,8 +127,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [scheduleTempo, setScheduleTempo] = useState<ScheduleTempo>('steady');
   const [schedulingResult, setSchedulingResult] = useState<SchedulingResult | null>(null);
   const [isComputing, setIsComputing] = useState(false);
+  
   // Initialize target date from project kickoff goal, or default to 30 days
-  const getInitialTargetDate = () => {
+  // Use lazy initializer to avoid "Cannot access before initialization" error
+  const [targetDate, setTargetDate] = useState<string>(() => {
     if (projectRun?.initial_timeline) {
       try {
         const goalDate = new Date(projectRun.initial_timeline);
@@ -140,10 +142,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       }
     }
     return format(addDays(new Date(), 30), 'yyyy-MM-dd');
-  };
-
-  const [targetDate, setTargetDate] = useState<string>(getInitialTargetDate());
-  const [dropDeadDate, setDropDeadDate] = useState<string>(format(addDays(new Date(), 45), 'yyyy-MM-dd'));
+  });
+  const [dropDeadDate, setDropDeadDate] = useState<string>(() => format(addDays(new Date(), 45), 'yyyy-MM-dd'));
 
   // Update target date when projectRun changes or dialog opens
   useEffect(() => {
