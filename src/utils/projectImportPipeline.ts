@@ -686,12 +686,47 @@ export async function importGeneratedProject(
       }
 
       // Step 3: Process operations
+      // Validate that phase has operations - if not, create a default operation
+      if (!phase.operations || !Array.isArray(phase.operations) || phase.operations.length === 0) {
+        console.warn(`⚠️ Phase "${phase.name}" has no operations. Creating default operation.`);
+        result.warnings.push(`Phase "${phase.name}" had no operations - created default operation`);
+        phase.operations = [{
+          name: `${phase.name} - Main Operation`,
+          description: `Main operation for ${phase.name}`,
+          steps: []
+        }];
+      }
+      
       // First pass: Create all operations to get IDs for alternate groups and dependencies
       const operationIdMap = new Map<string, string>(); // Map operation name/index to DB ID
       const alternateGroups = new Map<string, string[]>(); // Map group ID to operation DB IDs
       
       for (let opIndex = 0; opIndex < phase.operations.length; opIndex++) {
         const operation = phase.operations[opIndex];
+        
+        // Validate that operation has steps - if not, create a default step
+        if (!operation.steps || !Array.isArray(operation.steps) || operation.steps.length === 0) {
+          console.warn(`⚠️ Operation "${operation.name}" in phase "${phase.name}" has no steps. Creating default step.`);
+          result.warnings.push(`Operation "${operation.name}" had no steps - created default step`);
+          operation.steps = [{
+            stepTitle: `${operation.name} - Main Step`,
+            description: `Main step for ${operation.name}`,
+            materials: [],
+            tools: [],
+            outputs: [],
+            processVariables: [],
+            timeEstimates: {
+              low: 0.5,
+              medium: 1.0,
+              high: 2.0
+            },
+            instructions: {
+              quick: `Complete ${operation.name}`,
+              detailed: `Follow the standard process for ${operation.name}`,
+              contractor: `Professional approach to ${operation.name}`
+            }
+          }];
+        }
         
         // Determine flow_type and alternate_group
         let flowType: string | null = null;
@@ -727,7 +762,8 @@ export async function importGeneratedProject(
           .single();
 
         if (opError || !createdOperation) {
-          result.warnings.push(`Failed to create operation "${operation.name}": ${opError?.message}`);
+          result.errors.push(`Failed to create operation "${operation.name}": ${opError?.message}`);
+          console.error(`❌ Failed to create operation "${operation.name}":`, opError);
           continue;
         }
 
@@ -742,10 +778,18 @@ export async function importGeneratedProject(
         }
 
         result.stats.operationsCreated++;
+        console.log(`✅ Created operation "${operation.name}" with ${operation.steps?.length || 0} steps`);
 
-        // Step 4: Process steps
+          // Step 4: Process steps
         for (let stepIndex = 0; stepIndex < operation.steps.length; stepIndex++) {
           const step = operation.steps[stepIndex];
+          
+          // Validate step has required fields
+          if (!step.stepTitle || !step.description) {
+            console.warn(`⚠️ Step at index ${stepIndex} in operation "${operation.name}" is missing required fields. Skipping.`);
+            result.warnings.push(`Step at index ${stepIndex} in operation "${operation.name}" is missing required fields`);
+            continue;
+          }
 
           // Handle tools - support both string array and object array with alternates
           let toolNames: string[] = [];
@@ -762,6 +806,31 @@ export async function importGeneratedProject(
                 }
               }
             });
+          }
+          
+          // Ensure step has default values for optional fields
+          if (!step.materials || !Array.isArray(step.materials)) {
+            step.materials = [];
+          }
+          if (!step.outputs || !Array.isArray(step.outputs)) {
+            step.outputs = [];
+          }
+          if (!step.processVariables || !Array.isArray(step.processVariables)) {
+            step.processVariables = [];
+          }
+          if (!step.timeEstimates) {
+            step.timeEstimates = {
+              low: 0.5,
+              medium: 1.0,
+              high: 2.0
+            };
+          }
+          if (!step.instructions) {
+            step.instructions = {
+              quick: step.description || `Complete ${step.stepTitle}`,
+              detailed: step.description || `Follow the standard process for ${step.stepTitle}`,
+              contractor: step.description || `Professional approach to ${step.stepTitle}`
+            };
           }
 
           // Match tools to library
@@ -836,11 +905,11 @@ export async function importGeneratedProject(
                 category: '',
                 alternates: t.alternates,
               })) : []),
-              outputs: step.outputs.map(o => ({
-                name: o.name,
-                description: o.description,
-                type: o.type,
-              })),
+              outputs: (Array.isArray(step.outputs) ? step.outputs.map(o => ({
+                name: o.name || 'Output',
+                description: o.description || '',
+                type: o.type || 'none',
+              })) : []),
               apps: [],
               estimated_time_minutes: Math.round(step.timeEstimates.medium * 60),
               display_order: stepIndex,
@@ -849,11 +918,13 @@ export async function importGeneratedProject(
             .single();
 
           if (stepError || !createdStep) {
-            result.warnings.push(`Failed to create step "${step.stepTitle}": ${stepError?.message}`);
+            result.errors.push(`Failed to create step "${step.stepTitle}" in operation "${operation.name}": ${stepError?.message}`);
+            console.error(`❌ Failed to create step "${step.stepTitle}":`, stepError);
             continue;
           }
 
           result.stats.stepsCreated++;
+          console.log(`✅ Created step "${step.stepTitle}" (ID: ${createdStep.id})`);
 
           // Step 5: Create step instructions (3 levels) - only if selected
           if (contentSelection?.instructions3Level !== false) {
@@ -883,8 +954,11 @@ export async function importGeneratedProject(
           }
 
           // Step 6: Create process variables - only if selected
-          if (contentSelection?.processVariables !== false) {
+          if (contentSelection?.processVariables !== false && Array.isArray(step.processVariables) && step.processVariables.length > 0) {
             for (const pv of step.processVariables) {
+              if (!pv || !pv.name) {
+                continue; // Skip invalid process variables
+              }
               // Check if variable exists
               const { data: existingVar } = await supabase
                 .from('process_variables')
@@ -938,8 +1012,11 @@ export async function importGeneratedProject(
           }
 
           // Step 7: Create outputs - only if selected
-          if (contentSelection?.outputs !== false) {
+          if (contentSelection?.outputs !== false && Array.isArray(step.outputs) && step.outputs.length > 0) {
             for (const output of step.outputs) {
+              if (!output || !output.name) {
+                continue; // Skip invalid outputs
+              }
               // Check if output exists
               const { data: existingOutput } = await supabase
                 .from('outputs')
@@ -987,6 +1064,115 @@ export async function importGeneratedProject(
                 result.warnings.push(`Failed to link output "${output.name}" to step: ${linkError.message}`);
               }
             }
+          }
+        }
+        
+        // Final validation: Ensure operation has at least one step
+        // If no steps were created (all failed), create a default step
+        const { data: operationSteps, error: stepsCheckError } = await supabase
+          .from('template_steps')
+          .select('id')
+          .eq('operation_id', createdOperation.id)
+          .limit(1);
+        
+        if (stepsCheckError) {
+          result.warnings.push(`Failed to verify steps for operation "${operation.name}": ${stepsCheckError.message}`);
+        } else if (!operationSteps || operationSteps.length === 0) {
+          // No steps were created - create a default step
+          console.warn(`⚠️ Operation "${operation.name}" has no steps after import. Creating default step.`);
+          result.warnings.push(`Operation "${operation.name}" had no steps after import - created default step`);
+          
+          const { data: defaultStep, error: defaultStepError } = await supabase
+            .from('template_steps')
+            .insert({
+              operation_id: createdOperation.id,
+              step_number: 1,
+              step_title: `${operation.name} - Main Step`,
+              description: `Main step for ${operation.name}`,
+              content_sections: [{
+                id: `content-${Date.now()}`,
+                type: 'text',
+                content: `Complete ${operation.name}`,
+              }],
+              materials: [],
+              tools: [],
+              outputs: [],
+              apps: [],
+              estimated_time_minutes: 60,
+              display_order: 0,
+            })
+            .select('id')
+            .single();
+          
+          if (defaultStepError || !defaultStep) {
+            result.errors.push(`Failed to create default step for operation "${operation.name}": ${defaultStepError?.message}`);
+          } else {
+            result.stats.stepsCreated++;
+            console.log(`✅ Created default step for operation "${operation.name}"`);
+          }
+        }
+      }
+      
+      // Final validation: Ensure phase has at least one operation
+      const { data: phaseOperations, error: opsCheckError } = await supabase
+        .from('template_operations')
+        .select('id')
+        .eq('phase_id', phaseId)
+        .limit(1);
+      
+      if (opsCheckError) {
+        result.warnings.push(`Failed to verify operations for phase "${phase.name}": ${opsCheckError.message}`);
+      } else if (!phaseOperations || phaseOperations.length === 0) {
+        // No operations were created - create a default operation with a step
+        console.warn(`⚠️ Phase "${phase.name}" has no operations after import. Creating default operation and step.`);
+        result.warnings.push(`Phase "${phase.name}" had no operations after import - created default operation and step`);
+        
+        const { data: defaultOp, error: defaultOpError } = await supabase
+          .from('template_operations')
+          .insert({
+            project_id: projectId,
+            phase_id: phaseId,
+            name: `${phase.name} - Main Operation`,
+            description: `Main operation for ${phase.name}`,
+            display_order: 0,
+            flow_type: 'prime',
+          })
+          .select('id')
+          .single();
+        
+        if (defaultOpError || !defaultOp) {
+          result.errors.push(`Failed to create default operation for phase "${phase.name}": ${defaultOpError?.message}`);
+        } else {
+          result.stats.operationsCreated++;
+          
+          // Create default step for the default operation
+          const { data: defaultStep, error: defaultStepError } = await supabase
+            .from('template_steps')
+            .insert({
+              operation_id: defaultOp.id,
+              step_number: 1,
+              step_title: `${phase.name} - Main Step`,
+              description: `Main step for ${phase.name}`,
+              content_sections: [{
+                id: `content-${Date.now()}`,
+                type: 'text',
+                content: `Complete ${phase.name}`,
+              }],
+              materials: [],
+              tools: [],
+              outputs: [],
+              apps: [],
+              estimated_time_minutes: 60,
+              display_order: 0,
+            })
+            .select('id')
+            .single();
+          
+          if (defaultStepError || !defaultStep) {
+            result.errors.push(`Failed to create default step for phase "${phase.name}": ${defaultStepError?.message}`);
+          } else {
+            result.stats.stepsCreated++;
+            console.log(`✅ Created default operation and step for phase "${phase.name}"`);
           }
         }
       }
