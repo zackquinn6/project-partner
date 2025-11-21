@@ -652,9 +652,8 @@ export default function UserView({
   const { total: totalSteps, completed: completedStepsCount } = currentProjectRun 
     ? getWorkflowStepsCount(currentProjectRun) 
     : { total: 0, completed: 0 };
-  const progressStyle = currentProjectRun?.progress_reporting_style || 'linear';
   const progress = currentProjectRun 
-    ? calculateProjectProgress(currentProjectRun, progressStyle)
+    ? calculateProjectProgress(currentProjectRun)
     : 0;
   
   console.log('📊 Progress Calculation (DETAILED):', {

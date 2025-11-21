@@ -86,8 +86,10 @@ function applyExponentialTransform(linearProgress: number): number {
  */
 export function calculateProjectProgress(
   projectRun: ProjectRun,
-  progressStyle: ProgressReportingStyle = 'linear'
+  progressStyle?: ProgressReportingStyle
 ): number {
+  // Default to linear if not specified, or use projectRun's setting
+  const style = progressStyle || projectRun.progress_reporting_style || 'linear';
   // For manual projects, use the stored progress value
   if (projectRun.isManualEntry) {
     return projectRun.progress ?? 0;
@@ -100,7 +102,7 @@ export function calculateProjectProgress(
   const completedStepIds = new Set(projectRun.completedSteps || []);
   
   // LINEAR: Simple step count-based progress
-  if (progressStyle === 'linear') {
+  if (style === 'linear') {
     let totalSteps = 0;
     let completedSteps = 0;
     
@@ -120,7 +122,7 @@ export function calculateProjectProgress(
   }
   
   // TIME-BASED: Uses time estimates with speed setting
-  if (progressStyle === 'time-based') {
+  if (style === 'time-based') {
     // Get speed setting from schedule_events or default to 'steady'
     const scheduleEvents = projectRun.schedule_events as any;
     const scheduleTempo = scheduleEvents?.scheduleTempo || 'steady';
