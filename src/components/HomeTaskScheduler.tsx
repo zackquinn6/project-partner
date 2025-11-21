@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, AlertTriangle, CheckCircle2, Loader2, CalendarIcon, Save, Mail, Info, Users } from "lucide-react";
+import { Calendar, AlertTriangle, CheckCircle2, Loader2, CalendarIcon, Save, Mail, Info, Users, Crown } from "lucide-react";
 import { scheduleHomeTasksOptimized } from "@/utils/homeTaskScheduler";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { format, startOfToday, isBefore } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useMembership } from "@/contexts/MembershipContext";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface HomeTaskSchedulerProps {
   userId: string;
@@ -22,6 +24,8 @@ interface HomeTaskSchedulerProps {
 const getToday = () => startOfToday();
 
 export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedulerProps) {
+  const { canAccessPaidFeatures, createCheckout } = useMembership();
+  const [showMembershipDialog, setShowMembershipDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [schedule, setSchedule] = useState<any>(null);
   // Initialize start date to today to avoid generating schedules in the past
@@ -135,6 +139,11 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
   };
 
   const handleGenerateSchedule = async () => {
+    if (!canAccessPaidFeatures) {
+      setShowMembershipDialog(true);
+      return;
+    }
+
     setIsGenerating(true);
 
     try {
@@ -581,6 +590,40 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
           Click "Generate Schedule" to create an optimized work schedule
         </p>
       )}
+
+      {/* Membership Dialog */}
+      <Dialog open={showMembershipDialog} onOpenChange={setShowMembershipDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-primary" />
+              <DialogTitle>Member Feature - Sign up Today!</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2">
+              Schedule generation is a premium feature available to members. Unlock powerful scheduling tools to optimize your team's workflow and maximize productivity.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowMembershipDialog(false)}
+              className="w-full sm:w-auto"
+            >
+              Maybe Later
+            </Button>
+            <Button
+              onClick={async () => {
+                setShowMembershipDialog(false);
+                await createCheckout();
+              }}
+              className="w-full sm:w-auto"
+            >
+              <Crown className="h-4 w-4 mr-2" />
+              Sign Up for Membership
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
