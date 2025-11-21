@@ -476,7 +476,7 @@ export default function EditWorkflowView({
             time_estimate_low: editingStep.timeEstimation?.variableTime?.low || null,
             time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || null,
             time_estimate_high: editingStep.timeEstimation?.variableTime?.high || null,
-            workers_needed: editingStep.workersNeeded ?? 0,
+            workers_needed: editingStep.workersNeeded ?? 1,
             skill_level: editingStep.skillLevel || null,
             updated_at: new Date().toISOString()
           })

@@ -137,7 +137,7 @@ async function syncStepsForOperation(
       time_estimate_low: step.timeEstimation?.variableTime?.low || null,
       time_estimate_medium: step.timeEstimation?.variableTime?.medium || null,
       time_estimate_high: step.timeEstimation?.variableTime?.high || null,
-      workers_needed: step.workersNeeded ?? 0,
+      workers_needed: step.workersNeeded ?? 1,
       skill_level: step.skillLevel || null
     };
 

@@ -20,8 +20,10 @@ import {
   Plus,
   Trash2,
   Users,
-  Brain
+  Brain,
+  Info
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays } from 'date-fns';
 import { PlanningMode, ScheduleTempo } from '@/interfaces/Scheduling';
 
@@ -422,7 +424,52 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
 
       {/* Generate Schedule Button */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-medium">Generate Schedule</h3>
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center rounded-full p-0.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1"
+                      aria-label="Scheduling algorithm info"
+                    >
+                      <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-md text-xs">
+                    <div className="space-y-2">
+                      <p className="font-semibold">Scheduling Algorithm</p>
+                      <p>The scheduler uses your settings to create an optimized schedule:</p>
+                      <div className="space-y-1.5 mt-2">
+                        <p><strong>Schedule Tempo:</strong></p>
+                        <ul className="list-disc list-inside space-y-0.5 ml-2">
+                          <li><strong>Fast-track:</strong> Uses low end of time estimates (10th percentile)</li>
+                          <li><strong>Steady:</strong> Uses medium time estimates (50th percentile)</li>
+                          <li><strong>Extended:</strong> Uses high end of time estimates (90th percentile)</li>
+                        </ul>
+                        <p className="mt-2"><strong>Completion Priority:</strong></p>
+                        <ul className="list-disc list-inside space-y-0.5 ml-2">
+                          <li><strong>Agile:</strong> Completes one space end-to-end before moving to next (longer total duration, faster individual space completion)</li>
+                          <li><strong>Waterfall:</strong> Completes each phase across all spaces before moving to next phase (faster overall completion, all spaces partially finished until end)</li>
+                        </ul>
+                        <p className="mt-2"><strong>Planning Detail Level:</strong></p>
+                        <ul className="list-disc list-inside space-y-0.5 ml-2">
+                          <li><strong>Quick:</strong> Plans phases and major milestones</li>
+                          <li><strong>Standard:</strong> Plans daily tasks (recommended)</li>
+                          <li><strong>Detailed:</strong> Plans hour-by-hour tasks for each team member</li>
+                        </ul>
+                        <p className="mt-2"><strong>Resource Allocation:</strong></p>
+                        <p className="ml-2">Allocates workers based on step requirements (workers needed per step). Steps with 0 workers still require duration but workers can be assigned elsewhere.</p>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
           <Button 
             onClick={onGenerateSchedule} 
             className="w-full h-9 text-sm"

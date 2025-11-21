@@ -135,7 +135,7 @@ export function CompactTimeEstimation({
         </div>
         
         <Select
-          value={String(step.workersNeeded ?? 0)}
+          value={String(step.workersNeeded ?? 1)}
           onValueChange={(value) => {
             const workersNeeded = parseInt(value, 10);
             if (onWorkersChange) {
