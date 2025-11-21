@@ -1153,7 +1153,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   </CardContent>
                 </Card>
 
-                {/* Step 4: Completion Priority */}
+                {/* Step 4: Schedule Optimization Method */}
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
@@ -1161,7 +1161,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                         4
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium mb-2">Completion Priority</p>
+                        <p className="text-sm font-medium mb-2">Schedule Optimization Method</p>
                         <div className="space-y-3">
                           <div className="flex items-start space-x-2">
                             <input
@@ -1174,8 +1174,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                               className="h-4 w-4 mt-0.5"
                             />
                             <Label htmlFor="priority-agile" className="text-sm font-normal cursor-pointer">
-                              <span className="font-medium">Agile</span> - Complete one space end-to-end before moving to next
-                              <p className="text-xs text-muted-foreground mt-1">Longer total duration but faster individual space completion</p>
+                              <span className="font-medium">Single-piece flow</span> - Fastest first room ready — you'll see progress right away.
+                              <p className="text-xs text-muted-foreground mt-1">Complete all phases of a space before moving to the next space</p>
                             </Label>
                           </div>
                           <div className="flex items-start space-x-2">
@@ -1189,8 +1189,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                               className="h-4 w-4 mt-0.5"
                             />
                             <Label htmlFor="priority-waterfall" className="text-sm font-normal cursor-pointer">
-                              <span className="font-medium">Waterfall</span> - Complete each phase across all spaces before next phase
-                              <p className="text-xs text-muted-foreground mt-1">Faster overall completion but all spaces remain partially finished until end</p>
+                              <span className="font-medium">Batch flow</span> - Most efficient overall — but you won't see a finished room until the end.
+                              <p className="text-xs text-muted-foreground mt-1">Complete each phase across all spaces before moving to the next phase</p>
                             </Label>
                           </div>
                         </div>
