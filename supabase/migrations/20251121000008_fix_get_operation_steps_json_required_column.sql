@@ -1,5 +1,4 @@
--- Update get_operation_steps_json to include time estimates from database columns
--- This ensures time estimates are loaded from time_estimate_low/medium/high columns
+-- Fix get_operation_steps_json to remove reference to non-existent 'required' column in workflow_step_outputs
 
 CREATE OR REPLACE FUNCTION public.get_operation_steps_json(
   p_operation_id UUID,
@@ -61,6 +60,7 @@ BEGIN
     WHERE wst.step_id = step_record.id;
 
     -- Get outputs from workflow_step_outputs (new relational table)
+    -- FIXED: Removed reference to non-existent 'required' column
     SELECT COALESCE(jsonb_agg(
       jsonb_build_object(
         'id', wso.id,
