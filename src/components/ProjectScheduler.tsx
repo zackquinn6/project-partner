@@ -431,10 +431,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 if (currentSpaceIndex > 0) {
                   const prevSpace = spaces[currentSpaceIndex - 1];
                   dependencies.push(`${operation.id}-step-${index}-space-${prevSpace.id}`);
-                }
-                // Also depend on previous step in same space if not first step
-                if (index > 0) {
-                  dependencies.push(`${operation.id}-step-${index - 1}-space-${space.id}`);
+                } else if (currentSpaceIndex === 0 && index > 0) {
+                  // Step N of first space depends on Step N-1 of the LAST space
+                  // This ensures all spaces have completed step N-1 before starting step N in space 1
+                  const lastSpace = spaces[spaces.length - 1];
+                  dependencies.push(`${operation.id}-step-${index - 1}-space-${lastSpace.id}`);
                 }
               }
               
