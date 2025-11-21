@@ -640,16 +640,26 @@ export async function importGeneratedProject(
     for (let phaseIndex = 0; phaseIndex < generatedStructure.phases.length; phaseIndex++) {
       const phase = generatedStructure.phases[phaseIndex];
       
-      // Check if phase exists in standard_phases
-      const { data: existingStandardPhase } = await supabase
-        .from('standard_phases')
-        .select('id')
-        .eq('name', phase.name)
-        .maybeSingle();
+      // CRITICAL: Only the 4 core standard phases should be marked as standard
+      // AI-generated phases should NEVER be marked as standard, even if a standard_phase
+      // entry exists with the same name
+      const coreStandardPhases = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+      const isCoreStandardPhase = coreStandardPhases.includes(phase.name);
+      
+      // Check if phase exists in standard_phases (only for core standard phases)
+      let existingStandardPhase = null;
+      if (isCoreStandardPhase) {
+        const { data } = await supabase
+          .from('standard_phases')
+          .select('id')
+          .eq('name', phase.name)
+          .maybeSingle();
+        existingStandardPhase = data;
+      }
 
       let phaseId: string;
       
-      if (existingStandardPhase) {
+      if (existingStandardPhase && isCoreStandardPhase) {
         // Use existing standard phase - find or create project_phases entry
         const { data: existingProjectPhase } = await supabase
           .from('project_phases')
