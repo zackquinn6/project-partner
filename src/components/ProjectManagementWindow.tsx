@@ -668,44 +668,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               />
               <p className="text-xs text-muted-foreground mt-1">Admin field: Explain the most challenging parts of this project</p>
             </div>
-            
-            {/* Time & Scale Settings - Moved higher for better visibility */}
-            <div className="border rounded-lg p-4 bg-primary/5 border-primary/20">
-              <div className="flex items-center gap-2 mb-4">
-                <h3 className="text-lg font-semibold text-primary">⏱️ Time & Scale Settings</h3>
-                <Badge variant="secondary" className="text-xs">Important</Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium block mb-2">Estimated Time Per Unit (hours)</label>
-                  <Input 
-                    type="number"
-                    step="0.1"
-                    value={currentProject.estimatedTimePerUnit || ''} 
-                    onChange={(e) => updateProjectData({...currentProject, estimatedTimePerUnit: e.target.value ? parseFloat(e.target.value) : undefined})}
-                    className="w-full"
-                    placeholder="e.g., 2.5"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">How long each scaling unit takes</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-2">Scaling Unit</label>
-                  <select 
-                    value={currentProject.scalingUnit || ''} 
-                    onChange={(e) => updateProjectData({...currentProject, scalingUnit: e.target.value as any || undefined})}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">No scaling unit</option>
-                    <option value="per square foot">per square foot</option>
-                    <option value="per 10x10 room">per 10x10 room</option>
-                    <option value="per linear foot">per linear foot</option>
-                    <option value="per cubic yard">per cubic yard</option>
-                    <option value="per item">per item</option>
-                  </select>
-                  <p className="text-xs text-muted-foreground mt-1">Unit of measurement for scaling</p>
-                </div>
-              </div>
-            </div>
 
             <div className="grid grid-cols-4 gap-4">
               <div>
