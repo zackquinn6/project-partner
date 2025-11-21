@@ -111,45 +111,41 @@ export default function EditWorkflowView({
   const isStepFromStandardOrIncorporatedPhase = () => {
     if (!currentStep || isEditingStandardProject) return false;
     
-    // Check if step itself is marked as standard
-    // Note: Steps are marked as standard if they're in a standard phase OR if the operation is a reference
-    if (currentStep.isStandard === true) {
-      // Double-check: if step is marked standard, verify it's actually in a standard or linked phase
-      const phaseName = currentStep.phaseName;
-      if (phaseName) {
-        const phase = displayPhases.find(p => p.name === phaseName);
-        if (phase && (phase.isStandard === true || phase.isLinked === true)) {
-          return true; // Confirmed: step is in a standard or linked phase
-        }
-        // If step is marked standard but phase is not standard/linked, allow editing
-        // This handles edge cases where isStandard might be incorrectly set
-        return false;
-      }
-      return true; // Step marked standard and no phase found - err on side of caution
-    }
-    
-    // Check if the phase containing this step is standard or incorporated
+    // Get the phase containing this step
     const phaseName = currentStep.phaseName;
-    if (!phaseName) return false;
-    
-    const phase = displayPhases.find(p => p.name === phaseName);
-    if (!phase) {
-      // Phase not found - this shouldn't happen, but if it does, allow editing
-      // AI-generated phases should always be in displayPhases
-      console.warn(`Phase "${phaseName}" not found in displayPhases - allowing edit`);
+    if (!phaseName) {
+      // No phase name - allow editing (shouldn't happen, but be permissive)
       return false;
     }
     
-    // Only block editing if phase is:
+    const phase = displayPhases.find(p => p.name === phaseName);
+    if (!phase) {
+      // Phase not found in displayPhases - allow editing
+      // This can happen with AI-generated phases that haven't been properly loaded
+      // We want to allow editing in this case
+      console.warn(`Phase "${phaseName}" not found in displayPhases - allowing edit (AI-generated content should be editable)`);
+      return false;
+    }
+    
+    // CRITICAL: Only block editing if phase is:
     // 1. Explicitly marked as standard in database (isStandard === true), OR
     // 2. Incorporated from another project (isLinked === true)
-    // Note: AI-generated phases have is_standard: false, so they should always be editable
-    // We don't check phase name alone because AI might generate phases with standard-sounding names
-    // but they should still be editable since they're custom phases
-    const shouldBlock = phase.isStandard === true || phase.isLinked === true;
+    // 
+    // AI-generated phases have is_standard: false and isLinked: false/undefined
+    // So they should always pass this check and allow editing
     
+    const isStandardPhase = phase.isStandard === true;
+    const isLinkedPhase = phase.isLinked === true;
+    const shouldBlock = isStandardPhase || isLinkedPhase;
+    
+    // Debug logging for troubleshooting
     if (shouldBlock) {
-      console.log(`Blocking edit for step in phase "${phaseName}": isStandard=${phase.isStandard}, isLinked=${phase.isLinked}`);
+      console.log(`🚫 Blocking edit for step "${currentStep.step}" in phase "${phaseName}": isStandard=${isStandardPhase}, isLinked=${isLinkedPhase}`);
+    } else {
+      // Log when we allow editing for AI-generated content
+      if (currentStep.isStandard === true) {
+        console.warn(`⚠️ Step "${currentStep.step}" has isStandard=true but phase "${phaseName}" is not standard/linked - allowing edit anyway`);
+      }
     }
     
     return shouldBlock;
