@@ -16,11 +16,7 @@ import {
   Loader2, 
   CheckCircle2, 
   AlertCircle, 
-  DollarSign, 
-  Clock, 
   FileText,
-  TrendingUp,
-  AlertTriangle,
   X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,10 +25,8 @@ import { toast } from 'sonner';
 import { useProject } from '@/contexts/ProjectContext';
 import { 
   generateProjectWithAI, 
-  calculateCostEstimate, 
   type ProjectGenerationRequest,
-  type GeneratedProjectStructure,
-  type CostEstimate 
+  type GeneratedProjectStructure
 } from '@/utils/aiProjectGenerator';
 import { importGeneratedProject } from '@/utils/projectImportPipeline';
 
@@ -84,10 +78,9 @@ export function AIProjectGenerator({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generatedProject, setGeneratedProject] = useState<GeneratedProjectStructure | null>(null);
-  const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'configure' | 'preview' | 'cost'>('configure');
+  const [activeTab, setActiveTab] = useState<'configure' | 'preview'>('configure');
 
   const isEditingExistingProject = Boolean(selectedExistingProject);
 
@@ -157,13 +150,6 @@ export function AIProjectGenerator({
     }
   }, [open]);
 
-  // Calculate cost estimate when inputs change
-  useEffect(() => {
-    if (projectName && selectedCategories.length > 0) {
-      const estimate = calculateCostEstimate(projectName, 50, aiModel, includeWebScraping);
-      setCostEstimate(estimate);
-    }
-  }, [projectName, selectedCategories, aiModel, includeWebScraping]);
 
   const handleGenerate = async () => {
     if (!projectName.trim()) {
@@ -291,7 +277,16 @@ export function AIProjectGenerator({
       setImportResult(result);
 
       if (result.success && result.projectId) {
-        toast.success(selectedExistingProject ? 'Project updated successfully!' : 'Project imported successfully!');
+        // Show success notification with import statistics
+        const statsMessage = `Phases: ${result.stats?.phasesCreated || 0}, Operations: ${result.stats?.operationsCreated || 0}, Steps: ${result.stats?.stepsCreated || 0}`;
+        toast.success(
+          selectedExistingProject 
+            ? `Project updated successfully! ${statsMessage}` 
+            : `Project imported successfully! ${statsMessage}`,
+          {
+            duration: 5000,
+          }
+        );
         // Refresh projects list
         await fetchProjects();
         if (onProjectCreated) {
@@ -385,10 +380,9 @@ export function AIProjectGenerator({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="configure">Configure</TabsTrigger>
             <TabsTrigger value="preview" disabled={!generatedProject}>Preview</TabsTrigger>
-            <TabsTrigger value="cost">Cost Estimate</TabsTrigger>
           </TabsList>
 
           <TabsContent value="configure" className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
@@ -857,60 +851,6 @@ export function AIProjectGenerator({
             )}
           </TabsContent>
 
-          <TabsContent value="cost" className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
-            {costEstimate ? (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="w-5 h-5" />
-                      Cost Estimate
-                    </CardTitle>
-                    <CardDescription>
-                      Estimated costs for generating this project
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>Web Scraping</span>
-                        <span className="font-medium">
-                          ${costEstimate.scraping.estimated.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>AI Processing ({costEstimate.aiProcessing.model})</span>
-                        <span className="font-medium">
-                          ${costEstimate.aiProcessing.estimated.toFixed(2)}
-                        </span>
-                      </div>
-                      {costEstimate.aiProcessing.tokensUsed && (
-                        <div className="text-sm text-muted-foreground ml-4">
-                          <div>Input tokens: {costEstimate.aiProcessing.tokensUsed.input.toLocaleString()}</div>
-                          <div>Output tokens: {costEstimate.aiProcessing.tokensUsed.output.toLocaleString()}</div>
-                        </div>
-                      )}
-                      <div className="border-t pt-2 flex justify-between font-semibold">
-                        <span>Total Estimated Cost</span>
-                        <span>${costEstimate.total.estimated.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    <Alert>
-                      <AlertTriangle className="w-4 h-4" />
-                      <AlertDescription>
-                        Actual costs may vary based on project complexity and AI model response length.
-                      </AlertDescription>
-                    </Alert>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                Enter project details to see cost estimate
-              </div>
-            )}
-          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
