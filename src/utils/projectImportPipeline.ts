@@ -385,6 +385,7 @@ export async function importGeneratedProject(
       materialsMatched: 0,
       processVariablesCreated: 0,
       outputsCreated: 0,
+      risksCreated: 0,
     },
   };
 
@@ -1256,14 +1257,30 @@ export async function importGeneratedProject(
     }
 
     // Step 8: Store project risks - only if selected
+    console.log('🔍 Risk import check:', {
+      risksSelected: contentSelection?.risks !== false,
+      hasRisks: !!generatedStructure.risks,
+      risksIsArray: Array.isArray(generatedStructure.risks),
+      risksCount: generatedStructure.risks?.length || 0,
+      risks: generatedStructure.risks
+    });
+
     if (contentSelection?.risks !== false && generatedStructure.risks && Array.isArray(generatedStructure.risks) && generatedStructure.risks.length > 0) {
+      console.log(`📋 Importing ${generatedStructure.risks.length} risks for project ${projectId}`);
+      
       // Fetch existing risks from relational table
-      const { data: existingRisks } = await supabase
+      const { data: existingRisks, error: fetchError } = await supabase
         .from('project_risks')
         .select('risk, mitigation')
         .eq('project_id', projectId);
 
+      if (fetchError) {
+        console.error('Error fetching existing risks:', fetchError);
+        result.warnings.push(`Failed to fetch existing risks: ${fetchError.message}`);
+      }
+
       const existingRisksList = existingRisks || [];
+      console.log(`📋 Found ${existingRisksList.length} existing risks`);
       
       // Get current max display_order
       const { data: maxOrderData } = await supabase
@@ -1277,7 +1294,10 @@ export async function importGeneratedProject(
       
       // Filter out duplicate risks (check if risk description is similar)
       const newRisks = generatedStructure.risks.filter(newRisk => {
-        if (!newRisk || !newRisk.risk) return false;
+        if (!newRisk || !newRisk.risk) {
+          console.warn('⚠️ Skipping invalid risk:', newRisk);
+          return false;
+        }
         
         // Check if a similar risk already exists
         const isDuplicate = existingRisksList.some(existingRisk => {
@@ -1294,11 +1314,14 @@ export async function importGeneratedProject(
         });
         
         if (isDuplicate) {
+          console.log(`⚠️ Skipping duplicate risk: "${newRisk.risk}"`);
           result.warnings.push(`Skipping duplicate risk: "${newRisk.risk}"`);
         }
         
         return !isDuplicate;
       });
+
+      console.log(`📋 After deduplication: ${newRisks.length} new risks to insert`);
 
       // Insert new non-duplicate risks into relational table
       if (newRisks.length > 0) {
@@ -1311,16 +1334,29 @@ export async function importGeneratedProject(
           display_order: nextDisplayOrder++,
         }));
 
+        console.log('📋 Inserting risks:', risksToInsert);
+
         const { error: risksError } = await supabase
           .from('project_risks')
           .insert(risksToInsert);
 
         if (risksError) {
+          console.error('❌ Error inserting risks:', risksError);
           result.warnings.push(`Failed to insert project risks: ${risksError.message}`);
         } else {
-          console.log(`✅ Inserted ${newRisks.length} new risks (${generatedStructure.risks.length - newRisks.length} duplicates skipped)`);
+          console.log(`✅ Successfully inserted ${newRisks.length} new risks (${generatedStructure.risks.length - newRisks.length} duplicates skipped)`);
+          result.stats.risksCreated = newRisks.length;
         }
+      } else {
+        console.log('⚠️ No new risks to insert (all were duplicates)');
       }
+    } else {
+      console.log('⚠️ Risks not imported:', {
+        risksSelected: contentSelection?.risks !== false,
+        hasRisks: !!generatedStructure.risks,
+        risksIsArray: Array.isArray(generatedStructure.risks),
+        risksCount: generatedStructure.risks?.length || 0
+      });
     }
 
     // Step 9: Rebuild phases JSON from relational tables

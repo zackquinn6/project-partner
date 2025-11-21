@@ -317,6 +317,15 @@ export function AIProjectGenerator({
         return;
       }
 
+      // Log risks before import for debugging
+      console.log('📋 Importing project with risks:', {
+        hasRisks: !!generatedProject.risks,
+        risksCount: generatedProject.risks?.length || 0,
+        risks: generatedProject.risks,
+        risksSelected: contentSelection.risks,
+        contentSelection
+      });
+
       const result = await importGeneratedProject(
         projectName,
         projectName, // AI will generate description
