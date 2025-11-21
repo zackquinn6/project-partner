@@ -369,6 +369,7 @@ export async function importGeneratedProject(
     timeEstimation?: boolean;
     decisionTrees?: boolean;
     alternateTools?: boolean;
+    risks?: boolean;
   }
 ): Promise<ImportResult> {
   const result: ImportResult = {
@@ -1254,8 +1255,73 @@ export async function importGeneratedProject(
       result.stats.phasesCreated++;
     }
 
-    // Step 8: Store project risks (if you have a risks table, otherwise store in project metadata)
-    // For now, we'll store risks in a JSON field or create a risks table entry
+    // Step 8: Store project risks - only if selected
+    if (contentSelection?.risks !== false && generatedStructure.risks && Array.isArray(generatedStructure.risks) && generatedStructure.risks.length > 0) {
+      // Fetch existing risks from relational table
+      const { data: existingRisks } = await supabase
+        .from('project_risks')
+        .select('risk, mitigation')
+        .eq('project_id', projectId);
+
+      const existingRisksList = existingRisks || [];
+      
+      // Get current max display_order
+      const { data: maxOrderData } = await supabase
+        .from('project_risks')
+        .select('display_order')
+        .eq('project_id', projectId)
+        .order('display_order', { ascending: false })
+        .limit(1);
+      
+      let nextDisplayOrder = (maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].display_order : -1) + 1;
+      
+      // Filter out duplicate risks (check if risk description is similar)
+      const newRisks = generatedStructure.risks.filter(newRisk => {
+        if (!newRisk || !newRisk.risk) return false;
+        
+        // Check if a similar risk already exists
+        const isDuplicate = existingRisksList.some(existingRisk => {
+          const existingRiskText = (existingRisk?.risk || '').toLowerCase().trim();
+          const newRiskText = (newRisk.risk || '').toLowerCase().trim();
+          
+          // Simple similarity check - if risk descriptions are very similar, consider it a duplicate
+          if (existingRiskText === newRiskText) return true;
+          if (existingRiskText.includes(newRiskText) || newRiskText.includes(existingRiskText)) {
+            // If one contains the other, they're likely duplicates
+            return true;
+          }
+          return false;
+        });
+        
+        if (isDuplicate) {
+          result.warnings.push(`Skipping duplicate risk: "${newRisk.risk}"`);
+        }
+        
+        return !isDuplicate;
+      });
+
+      // Insert new non-duplicate risks into relational table
+      if (newRisks.length > 0) {
+        const risksToInsert = newRisks.map(risk => ({
+          project_id: projectId,
+          risk: risk.risk,
+          likelihood: (risk.likelihood || 'medium') as any,
+          impact: (risk.impact || 'medium') as any,
+          mitigation: risk.mitigation || null,
+          display_order: nextDisplayOrder++,
+        }));
+
+        const { error: risksError } = await supabase
+          .from('project_risks')
+          .insert(risksToInsert);
+
+        if (risksError) {
+          result.warnings.push(`Failed to insert project risks: ${risksError.message}`);
+        } else {
+          console.log(`✅ Inserted ${newRisks.length} new risks (${generatedStructure.risks.length - newRisks.length} duplicates skipped)`);
+        }
+      }
+    }
 
     // Step 9: Rebuild phases JSON from relational tables
     // This ensures the projects.phases JSONB column is in sync with the relational data

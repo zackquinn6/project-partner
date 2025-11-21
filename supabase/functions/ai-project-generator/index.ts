@@ -15,6 +15,25 @@ interface ProjectGenerationRequest {
   aiModel?: 'gpt-4o-mini' | 'gpt-4-turbo' | 'gpt-4o';
   includeWebScraping?: boolean;
   webSources?: string[];
+  aiInstructions?: string;
+  contentSelection?: {
+    structure?: boolean;
+    tools?: boolean;
+    materials?: boolean;
+    instructions3Level?: boolean;
+    instructions1Level?: boolean;
+    outputs?: boolean;
+    processVariables?: boolean;
+    timeEstimation?: boolean;
+    decisionTrees?: boolean;
+    alternateTools?: boolean;
+    risks?: boolean;
+  };
+  existingProjectId?: string;
+  existingContent?: {
+    phases?: Array<{ name: string; operations?: Array<{ name: string; steps?: Array<{ stepTitle: string }> }> }>;
+    risks?: Array<{ risk: string; mitigation: string }>;
+  };
 }
 
 serve(async (req) => {
@@ -44,22 +63,65 @@ Generate comprehensive, detailed project structures with phases, operations, ste
     // Build comprehensive prompt based on project name and category
     const includeDecisionTrees = request.contentSelection?.decisionTrees ?? true;
     const includeAlternateTools = request.contentSelection?.alternateTools ?? true;
+    const includeStructure = request.contentSelection?.structure !== false;
+    const includeRisks = request.contentSelection?.risks !== false;
+    const isUpdatingExisting = !!request.existingProjectId;
+    
+    // Build existing content context
+    let existingContentContext = '';
+    if (isUpdatingExisting && request.existingContent) {
+      if (request.existingContent.phases && request.existingContent.phases.length > 0) {
+        existingContentContext += `\n\nEXISTING PROJECT STRUCTURE (DO NOT DUPLICATE - only update content for these):\n`;
+        request.existingContent.phases.forEach(phase => {
+          existingContentContext += `- Phase: ${phase.name}\n`;
+          if (phase.operations) {
+            phase.operations.forEach(op => {
+              existingContentContext += `  - Operation: ${op.name}\n`;
+              if (op.steps) {
+                op.steps.forEach(step => {
+                  existingContentContext += `    - Step: ${step.stepTitle}\n`;
+                });
+              }
+            });
+          }
+        });
+        existingContentContext += `\nIMPORTANT: If structure is not selected, ONLY generate content for the existing phases/operations/steps listed above. DO NOT create new phases, operations, or steps.\n`;
+      }
+      
+      if (request.existingContent.risks && request.existingContent.risks.length > 0) {
+        existingContentContext += `\n\nEXISTING PROJECT RISKS (DO NOT DUPLICATE - review these carefully and only add NEW risks that are meaningfully different):\n`;
+        request.existingContent.risks.forEach((risk, idx) => {
+          existingContentContext += `${idx + 1}. Risk: "${risk.risk}"\n   Mitigation: "${risk.mitigation}"\n`;
+        });
+        existingContentContext += `\nIMPORTANT: Review the existing risks above. Only generate NEW risks that are:\n`;
+        existingContentContext += `- Substantially different from existing risks\n`;
+        existingContentContext += `- Not just a rephrasing of an existing risk\n`;
+        existingContentContext += `- Add unique value to the project risk assessment\n`;
+        existingContentContext += `If a risk is already covered (even with slightly different wording), DO NOT include it.\n`;
+      }
+    }
     
     const userPrompt = `You are an expert DIY project planner specializing in ${request.category.join(', ')} projects.
 
-Create a comprehensive ${sanitizeInput(request.projectName)} project with complete structure and content.
+${isUpdatingExisting ? 'UPDATE' : 'CREATE'} a comprehensive ${sanitizeInput(request.projectName)} project${isUpdatingExisting ? ' by updating existing content' : ' with complete structure and content'}.
 
 PROJECT: ${sanitizeInput(request.projectName)}
 ${request.projectDescription ? `DESCRIPTION: ${sanitizeInput(request.projectDescription)}` : ''}
 CATEGORY: ${request.category.join(', ')}
 ${request.aiInstructions ? `\nSPECIFIC INSTRUCTIONS: ${sanitizeInput(request.aiInstructions)}\n` : ''}
+${existingContentContext}
 
 Generate a complete project structure with the following requirements:
 
-1. STRUCTURE: Create phases, operations, and steps
+${includeStructure ? `1. STRUCTURE: Create phases, operations, and steps
    - Phases should represent major project stages (e.g., Preparation, Execution, Finishing)
    - Operations should group related tasks within each phase
    - Steps should be specific, actionable tasks
+   ${isUpdatingExisting && request.existingContent?.phases ? '   - You may create new phases/operations/steps if needed, but review existing structure first' : ''}` : `1. STRUCTURE: CRITICAL - DO NOT CREATE NEW PHASES, OPERATIONS, OR STEPS
+   - Structure generation is DISABLED
+   - ONLY generate content (instructions, tools, materials, outputs, etc.) for the existing phases/operations/steps listed above
+   - DO NOT include any new phases, operations, or steps in your response
+   - If the existing structure above is empty, return an empty phases array: "phases": []`}
 
 2. STEP INSTRUCTIONS: Provide 3 skill levels for each step
    - QUICK: Brief overview (2-3 sentences) for experienced DIYers
@@ -86,10 +148,14 @@ Generate a complete project structure with the following requirements:
    - Medium: Average time for intermediate skill level
    - High: Time for beginner or complex scenarios
 
-7. RISK MANAGEMENT: Key risks for the whole project
+${includeRisks ? `7. RISK MANAGEMENT: Key risks for the whole project
    - For each risk: risk description, likelihood (low/medium/high), impact (low/medium/high)
    - Mitigation: Specific mitigation measure
    - Mitigation cost: Optional cost estimate (e.g., "$25 for drop cloths")
+   ${isUpdatingExisting && request.existingContent?.risks ? '   - CRITICAL: Review existing risks above and DO NOT duplicate them' : ''}
+   ${isUpdatingExisting && request.existingContent?.risks ? '   - Only add risks that are substantially different from existing ones' : ''}` : `7. RISK MANAGEMENT: DO NOT GENERATE RISKS
+   - Risks are not selected for generation
+   - Skip the risks section entirely`}
 
 ${includeDecisionTrees ? `8. DECISION TREES AND ALTERNATIVE OPERATIONS:
    - IF-NECESSARY OPERATIONS: Create operations that are conditional based on project state
@@ -162,7 +228,7 @@ Return ONLY valid JSON in this exact structure:
         }
       ]
     }
-  ],
+  ]${includeRisks ? `,
   "risks": [
     {
       "risk": "Risk description",
@@ -171,7 +237,7 @@ Return ONLY valid JSON in this exact structure:
       "mitigation": "Specific mitigation measure",
       "mitigationCost": "Optional cost estimate"
     }
-  ]
+  ]` : ''}
 }
 
 IMPORTANT:
@@ -180,9 +246,23 @@ IMPORTANT:
 - Ensure all outputs are quantified
 - Match tools/materials to library when possible
 - Include realistic time estimates
-- Cover all major risks with practical mitigations
+${includeRisks ? '- Cover all major risks with practical mitigations' : '- DO NOT generate risks section'}
 - Make instructions appropriate for each skill level
-- Focus specifically on ${sanitizeInput(request.projectName)} - do NOT generate content for other project types`;
+- Focus specifically on ${sanitizeInput(request.projectName)} - do NOT generate content for other project types
+${!includeStructure ? `
+CRITICAL STRUCTURE RESTRICTION:
+- Structure generation is DISABLED (structure checkbox is unchecked)
+- You MUST use the EXACT existing structure provided above in "EXISTING PROJECT STRUCTURE"
+- For each existing phase/operation/step, ONLY update the content fields (instructions, tools, materials, outputs, processVariables, timeEstimates)
+- DO NOT create any new phases, operations, or steps
+- If no existing structure is provided, return an empty phases array: "phases": []
+- The structure names (phase names, operation names, step titles) MUST match exactly what is provided above` : ''}
+${isUpdatingExisting && request.existingContent?.risks ? `
+CRITICAL RISK RESTRICTION:
+- Review the existing risks listed above carefully
+- DO NOT create duplicate risks (even if worded slightly differently)
+- Only add risks that are substantially different and add unique value
+- If a risk is already covered, skip it entirely` : ''}`;
 
     const model = request.aiModel || 'gpt-4o-mini';
     const modelName = model === 'gpt-4o-mini' ? 'gpt-4o-mini' : 

@@ -13,6 +13,7 @@ export interface ProjectGenerationRequest {
   includeWebScraping?: boolean;
   webSources?: string[];
   aiInstructions?: string; // User-provided instructions for AI
+  existingProjectId?: string; // ID of existing project to update
   contentSelection?: {
     structure?: boolean;
     tools?: boolean;
@@ -24,6 +25,11 @@ export interface ProjectGenerationRequest {
     timeEstimation?: boolean;
     decisionTrees?: boolean;
     alternateTools?: boolean;
+    risks?: boolean;
+  };
+  existingContent?: {
+    phases?: Array<{ name: string; operations?: Array<{ name: string; steps?: Array<{ stepTitle: string }> }> }>;
+    risks?: Array<{ risk: string; mitigation: string }>;
   };
 }
 
@@ -179,6 +185,8 @@ export async function generateProjectWithAI(
         webSources: request.webSources || [],
         aiInstructions: request.aiInstructions,
         contentSelection: request.contentSelection,
+        existingProjectId: request.existingProjectId,
+        existingContent: request.existingContent,
       },
     });
 

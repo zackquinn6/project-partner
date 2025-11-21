@@ -73,6 +73,7 @@ export function AIProjectGenerator({
     timeEstimation: true,
     decisionTrees: true,
     alternateTools: true,
+    risks: true,
   });
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -184,6 +185,61 @@ export function AIProjectGenerator({
         });
       }, 800);
 
+      // Fetch existing project content if editing existing project
+      let existingContent: any = undefined;
+      if (selectedExistingProject) {
+        setGenerationProgress(10);
+        try {
+          // Fetch existing phases, operations, steps
+          const { data: existingPhases } = await supabase
+            .from('project_phases')
+            .select(`
+              id,
+              name,
+              template_operations (
+                id,
+                name,
+                template_steps (
+                  id,
+                  step_title
+                )
+              )
+            `)
+            .eq('project_id', selectedExistingProject)
+            .order('display_order', { ascending: true });
+
+          // Fetch existing risks from relational table
+          const { data: existingRisksData } = await supabase
+            .from('project_risks')
+            .select('risk, mitigation')
+            .eq('project_id', selectedExistingProject);
+
+          existingContent = {
+            phases: existingPhases?.map(phase => ({
+              name: phase.name,
+              operations: phase.template_operations?.map((op: any) => ({
+                name: op.name,
+                steps: op.template_steps?.map((step: any) => ({
+                  stepTitle: step.step_title
+                })) || []
+              })) || []
+            })) || [],
+            risks: existingRisksData?.map(risk => ({
+              risk: risk.risk,
+              mitigation: risk.mitigation || ''
+            })) || []
+          };
+
+          console.log('📋 Fetched existing project content:', {
+            phases: existingContent.phases.length,
+            risks: existingContent.risks.length
+          });
+        } catch (error) {
+          console.error('Error fetching existing content:', error);
+          // Continue without existing content if fetch fails
+        }
+      }
+
       const request: ProjectGenerationRequest = {
         projectName: projectName.trim(),
         projectDescription: undefined, // AI will generate this
@@ -192,13 +248,16 @@ export function AIProjectGenerator({
         includeWebScraping,
         contentSelection,
         aiInstructions: aiInstructions || undefined,
+        existingProjectId: selectedExistingProject || undefined,
+        existingContent: existingContent,
       };
 
       console.log('🚀 Generating project with request:', {
         projectName: request.projectName,
         category: request.category,
         aiInstructions: request.aiInstructions,
-        contentSelection: request.contentSelection
+        contentSelection: request.contentSelection,
+        hasExistingContent: !!existingContent
       });
 
       const result = await generateProjectWithAI(request);
@@ -341,6 +400,7 @@ export function AIProjectGenerator({
       timeEstimation: true,
       decisionTrees: true,
       alternateTools: true,
+      risks: true,
     });
   };
 
@@ -602,6 +662,19 @@ export function AIProjectGenerator({
                       />
                       <Label htmlFor="content-alternate-tools" className="cursor-pointer font-normal">
                         Alternate Tools
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="content-risks"
+                        checked={contentSelection.risks}
+                        onChange={() => toggleContentSelection('risks')}
+                        disabled={isGenerating}
+                        className="rounded"
+                      />
+                      <Label htmlFor="content-risks" className="cursor-pointer font-normal">
+                        Project Risks
                       </Label>
                     </div>
                   </div>
