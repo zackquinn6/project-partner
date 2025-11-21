@@ -90,12 +90,13 @@ export const CompactAppsSection = ({
               )}
               
               <div className="flex flex-col items-center justify-center p-2 space-y-1">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center border border-primary/20 dark:border-primary/30 shadow-sm">
+                <div className="w-7 h-7 rounded-lg bg-primary/15 dark:bg-primary/25 flex items-center justify-center border border-primary/30 dark:border-primary/40 shadow-sm">
                   <IconComponent 
                     className="w-4 h-4 text-primary flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth={2.5}
+                    aria-hidden="true"
                   />
                 </div>
                 

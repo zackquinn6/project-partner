@@ -240,7 +240,7 @@ export function WorkflowSidebar({
                   </div>
 
                   {/* Instruction Detail Level */}
-                  <div className="flex items-center gap-2" data-tutorial="detail-level">
+                  <div className="flex items-center gap-3" data-tutorial="detail-level">
                     <div className="flex-shrink-0">
                       <div className="font-semibold text-primary text-xs leading-tight">
                         <div>Detail</div>
@@ -248,7 +248,7 @@ export function WorkflowSidebar({
                       </div>
                     </div>
                     <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
-                      <SelectTrigger className="flex-1 text-xs">
+                      <SelectTrigger className="w-[140px] text-xs">
                         <SelectValue>
                           {instructionLevel === 'new_user' && 'Beginner'}
                           {instructionLevel === 'detailed' && 'Intermediate'}
@@ -528,35 +528,35 @@ export function WorkflowSidebar({
                     }}
                     className="space-y-3"
                   >
-                    <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <Label htmlFor="linear" className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
                       <RadioGroupItem value="linear" id="linear" className="mt-1" />
-                      <Label htmlFor="linear" className="flex-1 cursor-pointer">
+                      <div className="flex-1">
                         <div className="font-medium">Linear</div>
                         <div className="text-sm text-muted-foreground mt-1">
                           Simple step count-based progress. Step 7 of 14 complete = 50%
                         </div>
-                      </Label>
-                    </div>
+                      </div>
+                    </Label>
                     
-                    <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <Label htmlFor="exponential" className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
                       <RadioGroupItem value="exponential" id="exponential" className="mt-1" />
-                      <Label htmlFor="exponential" className="flex-1 cursor-pointer">
+                      <div className="flex-1">
                         <div className="font-medium">Exponential</div>
                         <div className="text-sm text-muted-foreground mt-1">
                           Weighted toward completion. Work that shows 90% on linear measurement shows ~60% here, reflecting heavier effort to complete the final work.
                         </div>
-                      </Label>
-                    </div>
+                      </div>
+                    </Label>
                     
-                    <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                    <Label htmlFor="time-based" className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
                       <RadioGroupItem value="time-based" id="time-based" className="mt-1" />
-                      <Label htmlFor="time-based" className="flex-1 cursor-pointer">
+                      <div className="flex-1">
                         <div className="font-medium">Time-Based</div>
                         <div className="text-sm text-muted-foreground mt-1">
                           Uses step estimated times aligned to your speed setting. Fast-track uses low end of time estimates, steady uses medium, extended uses high.
                         </div>
-                      </Label>
-                    </div>
+                      </div>
+                    </Label>
                   </RadioGroup>
                 </CardContent>
               </Card>

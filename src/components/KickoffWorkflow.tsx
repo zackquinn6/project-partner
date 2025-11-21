@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
@@ -325,6 +325,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       variant="outline" 
                       className="w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-[10px] sm:text-sm h-7 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight"
                     >
+                      <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
                       <span className="hidden sm:inline sm:block">Not a match -<br />take me back to catalog</span>
                       <span className="sm:hidden">Not a match</span>
                     </Button>
@@ -345,7 +346,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       }
                       handleStepComplete(currentKickoffStep);
                     }} 
-                    className={`${currentKickoffStep === 0 ? "w-3/4" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-9 sm:h-10`}
+                    className={`${currentKickoffStep === 0 ? "w-3/4" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-7 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight`}
                   >
                     <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                     <span className="hidden sm:inline">Complete & Continue</span>

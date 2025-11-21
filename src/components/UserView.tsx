@@ -2318,11 +2318,11 @@ export default function UserView({
                         variant="outline"
                         data-tutorial="report-issue" 
                         size="sm"
-                        className="gap-2 text-xs sm:text-sm"
+                        className="gap-2 text-xs"
                         title={isMobile ? "Report Issue" : undefined}
                       >
                         <AlertTriangle className="w-4 h-4" />
-                        {!isMobile && <span className="ml-2 text-xs sm:text-sm">Report Issue</span>}
+                        {!isMobile && <span className="ml-2 text-xs">Report Issue</span>}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">

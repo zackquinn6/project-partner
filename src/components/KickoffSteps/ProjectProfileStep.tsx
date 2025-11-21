@@ -251,7 +251,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             {/* Header for Quick Project Goals */}
-            <div className="mt-4 mb-2">
+            <div className="mt-6 mb-2">
               <h3 className="text-sm sm:text-base font-medium text-foreground">
                 Quick project goals - you can edit these later
               </h3>
