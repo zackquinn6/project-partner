@@ -983,7 +983,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     const remainingHours = hours % 8;
     return remainingHours > 0 ? `${days}d ${Math.round(remainingHours * 10) / 10}h` : `${days}d`;
   };
-  return <Dialog open={open} onOpenChange={onOpenChange}>
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-none h-[85vh] p-0 gap-0 [&>button]:hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-gradient-subtle">
@@ -1329,6 +1331,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           </div>
         </ScrollArea>
       </DialogContent>
+    </Dialog>
       
       {/* Enhanced Calendar Dialog for Team Member Availability */}
       {calendarOpen && <Dialog open={!!calendarOpen} onOpenChange={cancelCalendarChanges}>
