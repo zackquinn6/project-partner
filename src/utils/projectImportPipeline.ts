@@ -1256,16 +1256,26 @@ export async function importGeneratedProject(
       result.stats.phasesCreated++;
     }
 
-    // Step 8: Store project risks - only if selected
+    // Step 8: Store project risks - import if risks exist in generated structure
+    // Note: If risks are shown in preview, they should be imported regardless of checkbox
+    // The checkbox controls whether AI generates NEW risks, but existing risks in the structure should be imported
     console.log('🔍 Risk import check:', {
       risksSelected: contentSelection?.risks !== false,
       hasRisks: !!generatedStructure.risks,
       risksIsArray: Array.isArray(generatedStructure.risks),
       risksCount: generatedStructure.risks?.length || 0,
-      risks: generatedStructure.risks
+      risks: generatedStructure.risks,
+      contentSelectionRisks: contentSelection?.risks
     });
 
-    if (contentSelection?.risks !== false && generatedStructure.risks && Array.isArray(generatedStructure.risks) && generatedStructure.risks.length > 0) {
+    // Import risks if they exist in the generated structure
+    // Only skip if explicitly disabled AND we're updating existing project (to avoid overwriting)
+    const shouldImportRisks = generatedStructure.risks && 
+                              Array.isArray(generatedStructure.risks) && 
+                              generatedStructure.risks.length > 0 &&
+                              (contentSelection?.risks !== false || !existingProjectId);
+
+    if (shouldImportRisks) {
       console.log(`📋 Importing ${generatedStructure.risks.length} risks for project ${projectId}`);
       
       // Fetch existing risks from relational table
