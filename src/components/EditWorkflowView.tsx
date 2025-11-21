@@ -143,7 +143,13 @@ export default function EditWorkflowView({
     // NOTE: We IGNORE step.isStandard because steps can be incorrectly marked
     // as standard if they're in a reference operation, but we only care about the phase level
     
-    const isStandardPhase = phase.isStandard === true;
+    // SPECIAL CASE: If this is NOT the Standard Project Foundation project,
+    // and the phase is marked as standard but is NOT one of the 4 core standard phases,
+    // it's likely an AI-generated phase that was incorrectly marked. Allow editing.
+    const coreStandardPhases = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+    const isCoreStandardPhase = coreStandardPhases.includes(phaseName);
+    const isStandardPhase = phase.isStandard === true && isCoreStandardPhase;
+    
     // isLinked can be undefined, null, or false - only block if explicitly true
     // AI-generated phases don't have isLinked set, so undefined/null should allow editing
     const isLinkedPhase = phase.isLinked === true;
