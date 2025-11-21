@@ -640,22 +640,17 @@ export async function importGeneratedProject(
     for (let phaseIndex = 0; phaseIndex < generatedStructure.phases.length; phaseIndex++) {
       const phase = generatedStructure.phases[phaseIndex];
       
-      // CRITICAL: Only the 4 core standard phases should be marked as standard
-      // AI-generated phases should NEVER be marked as standard, even if a standard_phase
-      // entry exists with the same name
-      const coreStandardPhases = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-      const isCoreStandardPhase = coreStandardPhases.includes(phase.name);
+      // Check if phase exists in standard_phases table
+      // Only mark as is_standard: true if the standard_phase has is_locked: true
+      // (which indicates it's a core standard phase, not a custom phase that was added to standard_phases)
+      const { data: existingStandardPhase } = await supabase
+        .from('standard_phases')
+        .select('id, is_locked')
+        .eq('name', phase.name)
+        .maybeSingle();
       
-      // Check if phase exists in standard_phases (only for core standard phases)
-      let existingStandardPhase = null;
-      if (isCoreStandardPhase) {
-        const { data } = await supabase
-          .from('standard_phases')
-          .select('id')
-          .eq('name', phase.name)
-          .maybeSingle();
-        existingStandardPhase = data;
-      }
+      // Only treat as standard phase if it exists AND is locked (core standard phase)
+      const isCoreStandardPhase = existingStandardPhase?.is_locked === true;
 
       let phaseId: string;
       
