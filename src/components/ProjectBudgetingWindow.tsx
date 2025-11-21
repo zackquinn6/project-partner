@@ -357,7 +357,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           <TabsTrigger value="actual">Actual Spend</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="budget" className="space-y-4">
+        <TabsContent value="budget" className="space-y-4 mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Add Budget Line Item</CardTitle>
@@ -479,7 +479,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           </div>
         </TabsContent>
 
-        <TabsContent value="actual" className="space-y-4">
+        <TabsContent value="actual" className="space-y-4 mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Record Actual Spend</CardTitle>
