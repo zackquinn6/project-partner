@@ -127,7 +127,7 @@ BEGIN
             'description', standard_phase_record.description,
             'operations', COALESCE(operations_json, '[]'::jsonb),
             'isStandard', true,
-            'isLinked', false
+            'isLinked', COALESCE(phase_record.is_linked, false)
           )
         );
       END IF;
@@ -209,7 +209,7 @@ BEGIN
         'description', phase_record.description,
         'operations', COALESCE(operations_json, '[]'::jsonb),
         'isStandard', phase_record.is_standard,
-        'isLinked', phase_record.is_linked
+        'isLinked', COALESCE(phase_record.is_linked, false)
       )
     );
   END LOOP;
