@@ -775,8 +775,11 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                 <p className="text-xs text-muted-foreground mt-1">Time per scaling unit</p>
               </div>
             </div>
-            {/* Estimated Total Time and Typical Project Size Section */}
-            <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
+            
+            {/* Estimated Time and Scaling Unit Section */}
+            <div className="mt-4 pt-4 border-t">
+              <h3 className="text-sm font-semibold mb-3">Estimated Time & Scaling Unit</h3>
+              <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Estimated Total Time</label>
                 <Input 
@@ -797,6 +800,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                   placeholder="e.g., 100"
                 />
                 <p className="text-xs text-muted-foreground mt-1">Size used for estimated total time</p>
+              </div>
               </div>
             </div>
             {currentProject && (
