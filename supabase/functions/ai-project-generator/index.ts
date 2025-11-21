@@ -123,30 +123,39 @@ ${includeStructure ? `1. STRUCTURE: Create phases, operations, and steps
    - DO NOT include any new phases, operations, or steps in your response
    - If the existing structure above is empty, return an empty phases array: "phases": []`}
 
-2. STEP INSTRUCTIONS: Provide 3 skill levels for each step
+${request.contentSelection?.instructions3Level !== false ? `2. STEP INSTRUCTIONS: Provide 3 skill levels for each step
    - QUICK: Brief overview (2-3 sentences) for experienced DIYers
    - DETAILED: Standard instructions (5-7 sentences) with key details
-   - CONTRACTOR: Expert-level (8-12 sentences) with technical specifications and best practices
+   - CONTRACTOR: Expert-level (8-12 sentences) with technical specifications and best practices` : `2. STEP INSTRUCTIONS: DO NOT GENERATE INSTRUCTIONS
+   - Instructions are not selected for generation
+   - Skip the instructions section entirely`}
 
-3. OUTPUTS: Quantified deliverables for each step
+${request.contentSelection?.outputs !== false ? `3. OUTPUTS: Quantified deliverables for each step
    - Each output must have a measurable requirement (e.g., "100% coverage", "No visible brush marks", "Primer dry to touch")
-   - Include output name, description, type, and specific requirement
+   - Include output name, description, type, and specific requirement` : `3. OUTPUTS: DO NOT GENERATE OUTPUTS
+   - Outputs are not selected for generation
+   - Skip the outputs section entirely`}
 
-4. TOOLS AND MATERIALS: 
-   - Use only tools and materials that have been added to tools library
-   - Match suggested items to library items (use exact names from library)
-   - If an item isn't in library, suggest it but note it needs to be added
-   - Include quantities where applicable
+${request.contentSelection?.tools !== false || request.contentSelection?.materials !== false ? `4. TOOLS AND MATERIALS: 
+   ${request.contentSelection?.tools !== false ? '- TOOLS: Use only tools that have been added to tools library. Match suggested items to library items (use exact names from library). If an item isn't in library, suggest it but note it needs to be added.' : '- TOOLS: DO NOT generate tools'}
+   ${request.contentSelection?.materials !== false ? '- MATERIALS: Use only materials that have been added to materials library. Match suggested items to library items (use exact names from library). If an item isn't in library, suggest it but note it needs to be added.' : '- MATERIALS: DO NOT generate materials'}
+   - Include quantities where applicable` : `4. TOOLS AND MATERIALS: DO NOT GENERATE
+   - Tools and materials are not selected for generation
+   - Skip the tools and materials sections entirely`}
 
-5. PROCESS VARIABLES: Dynamic variables for each step
+${request.contentSelection?.processVariables !== false ? `5. PROCESS VARIABLES: Dynamic variables for each step
    - For prep steps: e.g., "cleaner_application_coverage" (percentage)
    - For execution steps: e.g., "material_coverage_rate" (square feet per unit)
-   - Include: name (snake_case), displayName, description, variableType, unit (if applicable)
+   - Include: name (snake_case), displayName, description, variableType, unit (if applicable)` : `5. PROCESS VARIABLES: DO NOT GENERATE
+   - Process variables are not selected for generation
+   - Skip the process variables section entirely`}
 
-6. TIME ESTIMATES: High, medium, low time ranges in hours
+${request.contentSelection?.timeEstimation !== false ? `6. TIME ESTIMATES: High, medium, low time ranges in hours
    - Low: Fastest possible time for experienced person
    - Medium: Average time for intermediate skill level
-   - High: Time for beginner or complex scenarios
+   - High: Time for beginner or complex scenarios` : `6. TIME ESTIMATES: DO NOT GENERATE
+   - Time estimation is not selected for generation
+   - Skip the time estimates section entirely`}
 
 ${includeRisks ? `7. RISK MANAGEMENT: Key risks for the whole project
    - For each risk: risk description, likelihood (low/medium/high), impact (low/medium/high)
