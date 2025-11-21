@@ -1378,58 +1378,6 @@ export function UnifiedProjectManagement({
                              </TooltipProvider>
                            </div>
 
-                           {/* Manual Entry */}
-                           <div className="space-y-2 p-3 border rounded-md bg-muted/30">
-                             <Label className="text-xs font-medium">Manual Entry</Label>
-                             <div className="grid grid-cols-2 gap-2">
-                               <div className="space-y-1">
-                                 <Label className="text-xs">Estimated Time</Label>
-                                 {editingProject ? (
-                                   <Input 
-                                     value={editedProject.estimated_time || ''} 
-                                     onChange={e => setEditedProject(prev => ({
-                                       ...prev,
-                                       estimated_time: e.target.value
-                                     }))} 
-                                     className="text-xs h-8" 
-                                     placeholder="e.g., 2-4 hours"
-                                   />
-                                 ) : (
-                                   <div className="p-2 bg-background rounded text-xs">
-                                     {selectedProject.estimated_time || 'Not specified'}
-                                   </div>
-                                 )}
-                               </div>
-                               <div className="space-y-1">
-                                 <Label className="text-xs">Scaling Unit</Label>
-                                 {editingProject ? (
-                                   <Select 
-                                     value={editedProject.scaling_unit || ''} 
-                                     onValueChange={value => setEditedProject(prev => ({
-                                       ...prev,
-                                       scaling_unit: value
-                                     }))}
-                                   >
-                                     <SelectTrigger className="text-xs h-8">
-                                       <SelectValue placeholder="Select scaling unit" />
-                                     </SelectTrigger>
-                                     <SelectContent>
-                                       <SelectItem value="per square foot">per square foot</SelectItem>
-                                       <SelectItem value="per 10x10 room">per 10x10 room</SelectItem>
-                                       <SelectItem value="per linear foot">per linear foot</SelectItem>
-                                       <SelectItem value="per cubic yard">per cubic yard</SelectItem>
-                                       <SelectItem value="per item">per item</SelectItem>
-                                     </SelectContent>
-                                   </Select>
-                                 ) : (
-                                   <div className="p-2 bg-background rounded text-xs">
-                                     {selectedProject.scaling_unit || 'Not specified'}
-                                   </div>
-                                 )}
-                               </div>
-                             </div>
-                           </div>
-
                            {/* Calculated Fields */}
                            {projectTimeEstimate && (() => {
                              const timeEstimate = projectTimeEstimate;
