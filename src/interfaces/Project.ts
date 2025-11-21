@@ -163,6 +163,7 @@ export interface WorkflowStep {
     };
   };
   workersNeeded?: number; // Number of workers needed for this step (0-10)
+  skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'; // Skill level required for this step
   // Standard content flag - marks steps from Standard Project Foundation
   isStandard?: boolean;
 }

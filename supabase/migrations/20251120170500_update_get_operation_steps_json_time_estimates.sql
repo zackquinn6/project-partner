@@ -160,6 +160,7 @@ BEGIN
       'stepType', COALESCE(step_record.step_type, 'prime'),
       'timeEstimation', time_estimation_json,
       'workersNeeded', COALESCE(step_record.workers_needed, 0),
+      'skillLevel', step_record.skill_level,
       'isStandard', p_is_standard
     );
   END LOOP;

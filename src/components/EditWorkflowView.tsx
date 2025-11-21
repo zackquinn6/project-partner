@@ -477,6 +477,7 @@ export default function EditWorkflowView({
             time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || null,
             time_estimate_high: editingStep.timeEstimation?.variableTime?.high || null,
             workers_needed: editingStep.workersNeeded ?? 0,
+            skill_level: editingStep.skillLevel || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingStep.id);
@@ -996,6 +997,7 @@ export default function EditWorkflowView({
                   scalingUnit={currentProject?.scalingUnit} 
                   onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)}
                   onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
+                  onSkillLevelChange={skillLevel => updateEditingStep('skillLevel', skillLevel)}
                 />
 
                 {/* Navigation */}

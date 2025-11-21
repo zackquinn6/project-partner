@@ -29,7 +29,8 @@ BEGIN
     RAISE EXCEPTION 'Template project not found';
   END IF;
 
-  complete_phases := public.rebuild_phases_json_from_project_phases(p_template_id);
+  -- Build phases JSON with project skill_level as default for steps
+  complete_phases := public.rebuild_phases_json_from_project_phases(p_template_id, template_project.skill_level);
 
   INSERT INTO public.project_runs (
     template_id,

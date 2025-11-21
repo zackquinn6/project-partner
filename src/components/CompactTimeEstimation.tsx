@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Timer, Pause, Info, Users } from 'lucide-react';
+import { Clock, Timer, Pause, Info, Users, GraduationCap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { WorkflowStep } from '@/interfaces/Project';
 
@@ -11,13 +11,15 @@ interface CompactTimeEstimationProps {
   scalingUnit?: string;
   onChange: (timeEstimation: WorkflowStep['timeEstimation']) => void;
   onWorkersChange?: (workersNeeded: number) => void;
+  onSkillLevelChange?: (skillLevel: WorkflowStep['skillLevel']) => void;
 }
 
 export function CompactTimeEstimation({
   step,
   scalingUnit = 'per item',
   onChange,
-  onWorkersChange
+  onWorkersChange,
+  onSkillLevelChange
 }: CompactTimeEstimationProps) {
   const getScalingUnitDisplay = () => {
     switch (scalingUnit) {
@@ -153,6 +155,51 @@ export function CompactTimeEstimation({
           </SelectContent>
         </Select>
       </div>
+
+      {/* Skill Level Section */}
+      {onSkillLevelChange && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="w-3 h-3 text-primary" />
+            <Label className="text-xs font-medium">Skill Level</Label>
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs">
+                  <div className="space-y-1">
+                    <p className="font-semibold">Skill Level Required:</p>
+                    <p>• <strong>Beginner</strong> - Basic DIY skills</p>
+                    <p>• <strong>Intermediate</strong> - Some experience</p>
+                    <p>• <strong>Advanced</strong> - Experienced DIYer</p>
+                    <p>• <strong>Professional</strong> - Professional contractor</p>
+                    <p className="mt-2 text-muted-foreground">Defaults to project skill level if not set</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          
+          <Select
+            value={step.skillLevel || ''}
+            onValueChange={(value) => {
+              onSkillLevelChange(value as WorkflowStep['skillLevel']);
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Select skill level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Use project default</SelectItem>
+              <SelectItem value="Beginner">Beginner</SelectItem>
+              <SelectItem value="Intermediate">Intermediate</SelectItem>
+              <SelectItem value="Advanced">Advanced</SelectItem>
+              <SelectItem value="Professional">Professional</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   );
 }
