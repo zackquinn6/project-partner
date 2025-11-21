@@ -244,9 +244,8 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       return;
     }
 
-    const spaceId = `home-space-${homeSpace.id}`;
-    
-    if (selectedSpaces.find(s => s.id === spaceId)) {
+    // Check if this home space is already added to the project
+    if (selectedSpaces.find(s => s.homeSpaceId === homeSpace.id)) {
       toast({
         title: "Space already added",
         description: `${homeSpace.space_name} is already in this project`,
@@ -261,17 +260,18 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
         ? Math.max(...selectedSpaces.map(s => s.priority || 0)) + 1
         : 1;
 
-      // Save to database
+      // Save to database - this creates a reference to the home space, not a copy
+      // The home_space_id links to the home_spaces table, but we don't modify home_spaces
       const { data, error } = await supabase
         .from('project_run_spaces')
         .insert({
           project_run_id: projectRunId,
-          home_space_id: homeSpace.id,
+          home_space_id: homeSpace.id, // Reference to home space, not a copy
           space_name: homeSpace.space_name,
           space_type: homeSpace.space_type || 'room',
-          scale_value: homeSpace.square_footage,
-          scale_unit: projectScaleUnit,
-          is_from_home: true,
+          scale_value: homeSpace.square_footage, // Legacy column
+          scale_unit: projectScaleUnit, // Legacy column
+          is_from_home: true, // Mark as imported from home
           priority: nextPriority
         })
         .select()
@@ -279,12 +279,28 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
 
       if (error) throw error;
 
+      // Insert sizing value into relational table if square_footage exists
+      if (data.id && homeSpace.square_footage !== null && homeSpace.square_footage !== undefined && projectScaleUnit) {
+        const { error: sizingError } = await supabase
+          .from('project_run_space_sizing')
+          .insert({
+            space_id: data.id,
+            scaling_unit: projectScaleUnit,
+            size_value: homeSpace.square_footage
+          });
+
+        if (sizingError) {
+          console.error('Error inserting sizing value for home space:', sizingError);
+          // Don't throw - space was created successfully, sizing can be added later
+        }
+      }
+
       const newSpace: ProjectSpace = {
         id: data.id,
         name: data.space_name,
         spaceType: data.space_type,
-        homeSpaceId: homeSpace.id,
-        scaleValue: data.scale_value,
+        homeSpaceId: homeSpace.id, // Keep reference to original home space
+        scaleValue: data.scale_value || homeSpace.square_footage,
         scaleUnit: projectScaleUnit,
         isFromHome: true,
         priority: data.priority || nextPriority
@@ -293,13 +309,13 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       onSpacesChange([...selectedSpaces, newSpace]);
       toast({
         title: "Space added",
-        description: `${homeSpace.space_name} added to project`
+        description: `${homeSpace.space_name} imported from home spaces`
       });
     } catch (error) {
       console.error('Error adding home space:', error);
       toast({
         title: "Error",
-        description: "Failed to add space to project",
+        description: "Failed to import space from home",
         variant: "destructive"
       });
     }
@@ -707,39 +723,48 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
         </Card>
       )}
 
-      {/* Home Spaces */}
-      {projectRunHomeId && homeSpaces.length > 0 && (
+      {/* Home Spaces - Show if home is selected, even if no spaces exist yet */}
+      {projectRunHomeId && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Home className="w-4 h-4" />
-              Available Home Spaces
+              Import from Home Spaces
             </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Import spaces defined for your home. These will be linked to your home spaces but saved separately for this project.
+            </p>
           </CardHeader>
           <CardContent className="space-y-2">
-            {homeSpaces.map((homeSpace) => {
-              const isAdded = selectedSpaces.some(s => s.homeSpaceId === homeSpace.id);
-              return (
-                <div key={homeSpace.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium text-sm">{homeSpace.space_name}</p>
-                    {homeSpace.square_footage && (
-                      <p className="text-xs text-muted-foreground">
-                        {homeSpace.square_footage} {projectScaleUnit}
-                      </p>
-                    )}
+            {homeSpaces.length > 0 ? (
+              homeSpaces.map((homeSpace) => {
+                const isAdded = selectedSpaces.some(s => s.homeSpaceId === homeSpace.id);
+                return (
+                  <div key={homeSpace.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">{homeSpace.space_name}</p>
+                      {homeSpace.square_footage && (
+                        <p className="text-xs text-muted-foreground">
+                          {homeSpace.square_footage} {projectScaleUnit}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddHomeSpace(homeSpace)}
+                      disabled={isAdded}
+                    >
+                      {isAdded ? "Added" : "Import"}
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddHomeSpace(homeSpace)}
-                    disabled={isAdded}
-                  >
-                    {isAdded ? "Added" : "Add"}
-                  </Button>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No spaces defined for this home yet. You can add project-specific spaces below.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
