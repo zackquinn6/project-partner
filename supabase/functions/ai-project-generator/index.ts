@@ -111,60 +111,86 @@ CATEGORY: ${request.category.join(', ')}
 ${request.aiInstructions ? `\nSPECIFIC INSTRUCTIONS: ${sanitizeInput(request.aiInstructions)}\n` : ''}
 ${existingContentContext}
 
+CRITICAL CONTENT SELECTION RULES:
+${includeStructure ? '✓ STRUCTURE: Selected - You may create/modify phases, operations, and steps' : '✗ STRUCTURE: NOT Selected - DO NOT create, modify, or delete any phases, operations, or steps. Only update content fields that are selected below.'}
+${request.contentSelection?.tools !== false ? '✓ TOOLS: Selected - Review and improve tool recommendations for each step' : '✗ TOOLS: NOT Selected - DO NOT search for, suggest, or modify any tools'}
+${request.contentSelection?.materials !== false ? '✓ MATERIALS: Selected - Review and improve material recommendations for each step' : '✗ MATERIALS: NOT Selected - DO NOT search for, suggest, or modify any materials'}
+${request.contentSelection?.instructions3Level !== false ? '✓ INSTRUCTIONS (3-Level): Selected - Review and improve quick/detailed/contractor instructions' : '✗ INSTRUCTIONS (3-Level): NOT Selected - DO NOT create or modify instructions'}
+${request.contentSelection?.outputs !== false ? '✓ OUTPUTS: Selected - Review and improve output definitions for each step' : '✗ OUTPUTS: NOT Selected - DO NOT create or modify outputs'}
+${request.contentSelection?.processVariables !== false ? '✓ PROCESS VARIABLES: Selected - Review and improve process variables for each step' : '✗ PROCESS VARIABLES: NOT Selected - DO NOT create or modify process variables'}
+${request.contentSelection?.timeEstimation !== false ? '✓ TIME ESTIMATION: Selected - Review and improve time estimates for each step' : '✗ TIME ESTIMATION: NOT Selected - DO NOT create or modify time estimates'}
+${includeRisks ? '✓ RISKS: Selected - Review and improve project risk assessment' : '✗ RISKS: NOT Selected - DO NOT create or modify risks'}
+
+IMPORTANT: Even when content types are NOT selected, you MUST still review the project information (name, description, existing structure) to understand the project's intent and context. This understanding helps you make better improvements to the selected content types.
+
 Generate a complete project structure with the following requirements:
 
 ${includeStructure ? `1. STRUCTURE: Create phases, operations, and steps
    - Phases should represent major project stages (e.g., Preparation, Execution, Finishing)
    - Operations should group related tasks within each phase
    - Steps should be specific, actionable tasks
-   ${isUpdatingExisting && request.existingContent?.phases ? '   - You may create new phases/operations/steps if needed, but review existing structure first' : ''}` : `1. STRUCTURE: CRITICAL - DO NOT CREATE NEW PHASES, OPERATIONS, OR STEPS
-   - Structure generation is DISABLED
-   - ONLY generate content (instructions, tools, materials, outputs, etc.) for the existing phases/operations/steps listed above
-   - DO NOT include any new phases, operations, or steps in your response
+   ${isUpdatingExisting && request.existingContent?.phases ? '   - You may create new phases/operations/steps if needed, but review existing structure first' : ''}` : `1. STRUCTURE: CRITICAL - DO NOT CREATE, MODIFY, OR DELETE PHASES, OPERATIONS, OR STEPS
+   - Structure generation is DISABLED (checkbox unchecked)
+   - You MUST use the EXACT existing structure provided above
+   - DO NOT add, remove, or rename any phases, operations, or steps
+   - DO NOT change phase/operation/step names, descriptions, or order
+   - ONLY update content fields that are selected (tools, materials, instructions, etc.)
+   - Review the existing structure to understand the project context, but do not modify it
    - If the existing structure above is empty, return an empty phases array: "phases": []`}
 
-${request.contentSelection?.instructions3Level !== false ? `2. STEP INSTRUCTIONS: Provide 3 skill levels for each step
+${request.contentSelection?.instructions3Level !== false ? `2. STEP INSTRUCTIONS: Review and improve 3 skill levels for each step
    - QUICK: Brief overview (2-3 sentences) for experienced DIYers
    - DETAILED: Standard instructions (5-7 sentences) with key details
-   - CONTRACTOR: Expert-level (8-12 sentences) with technical specifications and best practices` : `2. STEP INSTRUCTIONS: DO NOT GENERATE INSTRUCTIONS
-   - Instructions are not selected for generation
-   - Skip the instructions section entirely`}
+   - CONTRACTOR: Expert-level (8-12 sentences) with technical specifications and best practices
+   - Review existing instructions and enhance them based on project context` : `2. STEP INSTRUCTIONS: DO NOT MODIFY
+   - Instructions are NOT selected (checkbox unchecked)
+   - DO NOT search for, create, or modify any instructions
+   - Leave instructions field empty or unchanged`}
 
-${request.contentSelection?.outputs !== false ? `3. OUTPUTS: Quantified deliverables for each step
+${request.contentSelection?.outputs !== false ? `3. OUTPUTS: Review and improve quantified deliverables for each step
    - Each output must have a measurable requirement (e.g., "100% coverage", "No visible brush marks", "Primer dry to touch")
-   - Include output name, description, type, and specific requirement` : `3. OUTPUTS: DO NOT GENERATE OUTPUTS
-   - Outputs are not selected for generation
-   - Skip the outputs section entirely`}
+   - Include output name, description, type, and specific requirement
+   - Review existing outputs and enhance them based on project context` : `3. OUTPUTS: DO NOT MODIFY
+   - Outputs are NOT selected (checkbox unchecked)
+   - DO NOT search for, create, or modify any outputs
+   - Leave outputs field empty or unchanged`}
 
 ${request.contentSelection?.tools !== false || request.contentSelection?.materials !== false ? `4. TOOLS AND MATERIALS: 
-   ${request.contentSelection?.tools !== false ? '- TOOLS: Use only tools that have been added to tools library. Match suggested items to library items (use exact names from library). If an item isn't in library, suggest it but note it needs to be added.' : '- TOOLS: DO NOT generate tools'}
-   ${request.contentSelection?.materials !== false ? '- MATERIALS: Use only materials that have been added to materials library. Match suggested items to library items (use exact names from library). If an item isn't in library, suggest it but note it needs to be added.' : '- MATERIALS: DO NOT generate materials'}
-   - Include quantities where applicable` : `4. TOOLS AND MATERIALS: DO NOT GENERATE
-   - Tools and materials are not selected for generation
-   - Skip the tools and materials sections entirely`}
+   ${request.contentSelection?.tools !== false ? '- TOOLS: Selected - Review existing tools and improve recommendations. Use only tools from the tools library when possible. Match suggested items to library items (use exact names from library). If an item isn't in library, suggest it but note it needs to be added. Consider project context when selecting tools.' : '- TOOLS: NOT Selected - DO NOT search for, suggest, or modify any tools. Leave tools field empty or unchanged.'}
+   ${request.contentSelection?.materials !== false ? '- MATERIALS: Selected - Review existing materials and improve recommendations. Use only materials from the materials library when possible. Match suggested items to library items (use exact names from library). If an item isn't in library, suggest it but note it needs to be added. Consider project context when selecting materials.' : '- MATERIALS: NOT Selected - DO NOT search for, suggest, or modify any materials. Leave materials field empty or unchanged.'}
+   ${request.contentSelection?.tools !== false || request.contentSelection?.materials !== false ? '- Include quantities where applicable' : ''}` : `4. TOOLS AND MATERIALS: DO NOT MODIFY
+   - Tools and materials are NOT selected (checkboxes unchecked)
+   - DO NOT search for, create, or modify any tools or materials
+   - Leave tools and materials fields empty or unchanged`}
 
-${request.contentSelection?.processVariables !== false ? `5. PROCESS VARIABLES: Dynamic variables for each step
+${request.contentSelection?.processVariables !== false ? `5. PROCESS VARIABLES: Review and improve dynamic variables for each step
    - For prep steps: e.g., "cleaner_application_coverage" (percentage)
    - For execution steps: e.g., "material_coverage_rate" (square feet per unit)
-   - Include: name (snake_case), displayName, description, variableType, unit (if applicable)` : `5. PROCESS VARIABLES: DO NOT GENERATE
-   - Process variables are not selected for generation
-   - Skip the process variables section entirely`}
+   - Include: name (snake_case), displayName, description, variableType, unit (if applicable)
+   - Review existing process variables and enhance them based on project context` : `5. PROCESS VARIABLES: DO NOT MODIFY
+   - Process variables are NOT selected (checkbox unchecked)
+   - DO NOT search for, create, or modify any process variables
+   - Leave process variables field empty or unchanged`}
 
-${request.contentSelection?.timeEstimation !== false ? `6. TIME ESTIMATES: High, medium, low time ranges in hours
+${request.contentSelection?.timeEstimation !== false ? `6. TIME ESTIMATES: Review and improve high, medium, low time ranges in hours
    - Low: Fastest possible time for experienced person
    - Medium: Average time for intermediate skill level
-   - High: Time for beginner or complex scenarios` : `6. TIME ESTIMATES: DO NOT GENERATE
-   - Time estimation is not selected for generation
-   - Skip the time estimates section entirely`}
+   - High: Time for beginner or complex scenarios
+   - Review existing time estimates and refine them based on project context and step complexity` : `6. TIME ESTIMATES: DO NOT MODIFY
+   - Time estimation is NOT selected (checkbox unchecked)
+   - DO NOT create or modify any time estimates
+   - Leave time estimates field empty or unchanged`}
 
-${includeRisks ? `7. RISK MANAGEMENT: Key risks for the whole project
+${includeRisks ? `7. RISK MANAGEMENT: Review and improve key risks for the whole project
    - For each risk: risk description, likelihood (low/medium/high), impact (low/medium/high)
    - Mitigation: Specific mitigation measure
    - Mitigation cost: Optional cost estimate (e.g., "$25 for drop cloths")
    ${isUpdatingExisting && request.existingContent?.risks ? '   - CRITICAL: Review existing risks above and DO NOT duplicate them' : ''}
-   ${isUpdatingExisting && request.existingContent?.risks ? '   - Only add risks that are substantially different from existing ones' : ''}` : `7. RISK MANAGEMENT: DO NOT GENERATE RISKS
-   - Risks are not selected for generation
-   - Skip the risks section entirely`}
+   ${isUpdatingExisting && request.existingContent?.risks ? '   - Only add risks that are substantially different from existing ones' : ''}
+   - Consider project context (name, description, structure) when identifying risks` : `7. RISK MANAGEMENT: DO NOT MODIFY
+   - Risks are NOT selected (checkbox unchecked)
+   - DO NOT search for, create, or modify any risks
+   - Leave risks section empty or unchanged`}
 
 ${includeDecisionTrees ? `8. DECISION TREES AND ALTERNATIVE OPERATIONS:
    - IF-NECESSARY OPERATIONS: Create operations that are conditional based on project state
@@ -249,24 +275,32 @@ Return ONLY valid JSON in this exact structure:
   ]` : ''}
 }
 
-IMPORTANT:
-- Be comprehensive and detailed
+IMPORTANT CONTEXT UNDERSTANDING:
+- ALWAYS review the project name, description, and existing structure to understand the project's intent
+- This context helps you make better improvements to the selected content types
+- Even if you're not generating certain content types, understanding the project helps you improve what you ARE generating
+
+CONTENT GENERATION RULES:
+- Be comprehensive and detailed for selected content types
 - Use professional terminology appropriate for ${request.category.join(', ')} projects
-- Ensure all outputs are quantified
-- Match tools/materials to library when possible
-- Include realistic time estimates
-${includeRisks ? '- Cover all major risks with practical mitigations' : '- DO NOT generate risks section'}
-- Make instructions appropriate for each skill level
+${request.contentSelection?.outputs !== false ? '- Ensure all outputs are quantified' : ''}
+${request.contentSelection?.tools !== false || request.contentSelection?.materials !== false ? '- Match tools/materials to library when possible' : ''}
+${request.contentSelection?.timeEstimation !== false ? '- Include realistic time estimates' : ''}
+${includeRisks ? '- Cover all major risks with practical mitigations' : ''}
+${request.contentSelection?.instructions3Level !== false ? '- Make instructions appropriate for each skill level' : ''}
 - Focus specifically on ${sanitizeInput(request.projectName)} - do NOT generate content for other project types
+
 ${!includeStructure ? `
 CRITICAL STRUCTURE RESTRICTION:
 - Structure generation is DISABLED (structure checkbox is unchecked)
 - You MUST use the EXACT existing structure provided above in "EXISTING PROJECT STRUCTURE"
-- For each existing phase/operation/step, ONLY update the content fields (instructions, tools, materials, outputs, processVariables, timeEstimates)
-- DO NOT create any new phases, operations, or steps
+- DO NOT create, modify, rename, or delete any phases, operations, or steps
+- For each existing phase/operation/step, ONLY update the content fields that are SELECTED (checked)
+- For content fields that are NOT selected, leave them empty or unchanged
 - If no existing structure is provided, return an empty phases array: "phases": []
-- The structure names (phase names, operation names, step titles) MUST match exactly what is provided above` : ''}
-${isUpdatingExisting && request.existingContent?.risks ? `
+- The structure names (phase names, operation names, step titles) MUST match exactly what is provided above
+- Review the structure to understand project context, but do not modify it` : ''}
+${isUpdatingExisting && request.existingContent?.risks && includeRisks ? `
 CRITICAL RISK RESTRICTION:
 - Review the existing risks listed above carefully
 - DO NOT create duplicate risks (even if worded slightly differently)
