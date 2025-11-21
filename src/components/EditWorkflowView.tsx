@@ -109,12 +109,18 @@ export default function EditWorkflowView({
 
   // Helper to check if current step is from a standard or incorporated phase
   const isStepFromStandardOrIncorporatedPhase = () => {
-    if (!currentStep || isEditingStandardProject) return false;
+    if (!currentStep || isEditingStandardProject) {
+      if (isEditingStandardProject) {
+        console.log('🔍 EditWorkflowView: isEditingStandardProject=true, blocking edit');
+      }
+      return false;
+    }
     
     // Get the phase containing this step
     const phaseName = currentStep.phaseName;
     if (!phaseName) {
       // No phase name - allow editing (shouldn't happen, but be permissive)
+      console.warn('⚠️ Step has no phaseName - allowing edit');
       return false;
     }
     
@@ -123,7 +129,7 @@ export default function EditWorkflowView({
       // Phase not found in displayPhases - allow editing
       // This can happen with AI-generated phases that haven't been properly loaded
       // We want to allow editing in this case
-      console.warn(`Phase "${phaseName}" not found in displayPhases - allowing edit (AI-generated content should be editable)`);
+      console.warn(`⚠️ Phase "${phaseName}" not found in displayPhases - allowing edit (AI-generated content should be editable)`);
       return false;
     }
     
@@ -133,6 +139,9 @@ export default function EditWorkflowView({
     // 
     // AI-generated phases have is_standard: false and isLinked: false/undefined
     // So they should always pass this check and allow editing
+    // 
+    // NOTE: We IGNORE currentStep.isStandard because steps can be incorrectly marked
+    // as standard if they're in a reference operation, but we only care about the phase level
     
     const isStandardPhase = phase.isStandard === true;
     const isLinkedPhase = phase.isLinked === true;
@@ -142,10 +151,8 @@ export default function EditWorkflowView({
     if (shouldBlock) {
       console.log(`🚫 Blocking edit for step "${currentStep.step}" in phase "${phaseName}": isStandard=${isStandardPhase}, isLinked=${isLinkedPhase}`);
     } else {
-      // Log when we allow editing for AI-generated content
-      if (currentStep.isStandard === true) {
-        console.warn(`⚠️ Step "${currentStep.step}" has isStandard=true but phase "${phaseName}" is not standard/linked - allowing edit anyway`);
-      }
+      // Always log when allowing editing to help debug AI-generated content
+      console.log(`✅ Allowing edit for step "${currentStep.step}" in phase "${phaseName}": phase.isStandard=${phase.isStandard}, phase.isLinked=${phase.isLinked}, step.isStandard=${currentStep.isStandard}`);
     }
     
     return shouldBlock;
