@@ -318,6 +318,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       // Merge sizing_values JSONB with scale_value/scale_unit for backward compatibility
       const sizingMap: Record<string, number> = { ...(space.sizingValues || {}) };
       if (space.scaleValue !== null && space.scaleValue !== undefined && space.scaleUnit) {
+        // Normalize scaleUnit to include "per " prefix if not present (to match database format)
+        const normalizedUnit = space.scaleUnit.startsWith('per ') ? space.scaleUnit : `per ${space.scaleUnit}`;
+        sizingMap[normalizedUnit] = space.scaleValue;
+        // Also store without "per " for backward compatibility
         sizingMap[space.scaleUnit] = space.scaleValue;
       }
       spaceSizingMap.set(space.id, sizingMap);
@@ -367,7 +371,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               
               if (!isFixedStep) {
                 // For scaled steps, multiply by space size for the phase's scaling unit
-                const spaceSize = spaceSizing[phaseScalingUnit] || 0;
+                // Try both "per square foot" and "square foot" formats for compatibility
+                const spaceSize = spaceSizing[phaseScalingUnit] || 
+                                 spaceSizing[`per ${phaseScalingUnit}`] || 
+                                 spaceSizing[phaseScalingUnit.replace(/^per /, '')] || 0;
                 adjustedLow = baseTimeLow * spaceSize * scalingFactor * skillMultiplier;
                 adjustedMed = baseTimeMed * spaceSize * scalingFactor * skillMultiplier;
                 adjustedHigh = baseTimeHigh * spaceSize * scalingFactor * skillMultiplier;
@@ -440,7 +447,13 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             });
           } else {
             // Single space or no spaces - use total project size or default
-            const defaultSize = spaces.length === 1 ? (spaceSizingMap.get(spaces[0].id)?.[phaseScalingUnit] || projectSize) : projectSize;
+            // Try both "per square foot" and "square foot" formats for compatibility
+            const spaceSizing = spaces.length === 1 ? (spaceSizingMap.get(spaces[0].id) || {}) : {};
+            const defaultSize = spaces.length === 1 ? 
+              (spaceSizing[phaseScalingUnit] || 
+               spaceSizing[`per ${phaseScalingUnit}`] || 
+               spaceSizing[phaseScalingUnit.replace(/^per /, '')] || 
+               projectSize) : projectSize;
             
             let adjustedLow = baseTimeLow;
             let adjustedMed = baseTimeMed;
