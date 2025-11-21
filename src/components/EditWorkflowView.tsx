@@ -233,16 +233,37 @@ export default function EditWorkflowView({
         phaseCount: displayPhases?.length,
         phases: displayPhases?.map(p => ({
           name: p.name,
+          isStandard: p.isStandard,
+          isLinked: p.isLinked,
           operationCount: p.operations?.length,
           operations: p.operations?.map(op => ({
             name: op.name,
+            isStandard: op.isStandard,
             stepCount: op.steps?.length,
-            steps: op.steps?.map(s => s.step)
+            steps: op.steps?.map(s => ({
+              step: s.step,
+              isStandard: s.isStandard
+            }))
           }))
         }))
       });
+      
+      // Log current step details for debugging
+      if (currentStep) {
+        const phase = displayPhases.find(p => p.name === currentStep.phaseName);
+        console.log('🔍 Current Step Debug:', {
+          stepId: currentStep.id,
+          stepName: currentStep.step,
+          phaseName: currentStep.phaseName,
+          stepIsStandard: currentStep.isStandard,
+          phaseFound: !!phase,
+          phaseIsStandard: phase?.isStandard,
+          phaseIsLinked: phase?.isLinked,
+          canEdit: !isStepFromStandardOrIncorporatedPhase()
+        });
+      }
     }
-  }, [currentProject?.id, displayPhases]);
+  }, [currentProject?.id, displayPhases, currentStep]);
 
   // Flatten all steps from all phases and operations for navigation
   const allSteps = displayPhases.flatMap(phase => phase.operations.flatMap(operation => operation.steps.map(step => ({
