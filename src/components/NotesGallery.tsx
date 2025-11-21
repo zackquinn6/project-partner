@@ -56,13 +56,57 @@ export function NotesGallery({
   const [showAddNote, setShowAddNote] = useState(false);
   const [newNoteText, setNewNoteText] = useState('');
   const [addingNote, setAddingNote] = useState(false);
+  const [availableSteps, setAvailableSteps] = useState<Array<{ id: string; step: string; phaseName?: string; operationName?: string }>>([]);
+  const [selectedStepId, setSelectedStepId] = useState<string>('');
 
   useEffect(() => {
     if (open) {
       fetchAvailableProjects();
       fetchNotes();
+      if (projectRunId) {
+        fetchAvailableSteps();
+      }
     }
   }, [open, projectRunId, templateId, projectFilter, dateFilter]);
+  
+  const fetchAvailableSteps = async () => {
+    if (!projectRunId) return;
+    
+    try {
+      const { data: projectRun, error } = await supabase
+        .from('project_runs')
+        .select('phases')
+        .eq('id', projectRunId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (projectRun?.phases && Array.isArray(projectRun.phases)) {
+        const steps: Array<{ id: string; step: string; phaseName?: string; operationName?: string }> = [];
+        
+        projectRun.phases.forEach((phase: any) => {
+          if (phase.operations && Array.isArray(phase.operations)) {
+            phase.operations.forEach((operation: any) => {
+              if (operation.steps && Array.isArray(operation.steps)) {
+                operation.steps.forEach((step: any) => {
+                  steps.push({
+                    id: step.id,
+                    step: step.step || '',
+                    phaseName: phase.name,
+                    operationName: operation.name
+                  });
+                });
+              }
+            });
+          }
+        });
+        
+        setAvailableSteps(steps);
+      }
+    } catch (error) {
+      console.error('Error fetching available steps:', error);
+    }
+  };
 
   const fetchAvailableProjects = async () => {
     if (!user || projectRunId) return;
@@ -241,18 +285,25 @@ export function NotesGallery({
 
     setAddingNote(true);
     try {
+      // Use selected step or fall back to "-" if blank
+      const finalStepId = selectedStepId || '-';
+      const selectedStep = availableSteps.find(s => s.id === selectedStepId);
+      const finalStepName = selectedStep ? selectedStep.step : '-';
+      const finalPhaseName = selectedStep?.phaseName || null;
+      const finalOperationName = selectedStep?.operationName || null;
+      
       const { error } = await supabase
         .from('project_notes')
         .insert({
           user_id: user.id,
           project_run_id: projectRunId,
           template_id: templateId || null,
-          step_id: '-', // Use "-" to indicate not from a specific step
-          step_name: '-', // Use "-" to indicate not from a specific step
+          step_id: finalStepId,
+          step_name: finalStepId === '-' ? '-' : finalStepName,
           phase_id: null,
-          phase_name: null,
+          phase_name: finalPhaseName,
           operation_id: null,
-          operation_name: null,
+          operation_name: finalOperationName,
           note_text: newNoteText.trim()
         });
 
@@ -260,6 +311,7 @@ export function NotesGallery({
 
       toast.success('Note added successfully');
       setNewNoteText('');
+      setSelectedStepId('');
       setShowAddNote(false);
       fetchNotes();
     } catch (error) {
@@ -329,14 +381,9 @@ export function NotesGallery({
             <div className="flex items-center justify-center py-12">
               <div className="text-muted-foreground">Loading notes...</div>
             </div>
-          ) : notes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No notes yet</p>
-              <p className="text-sm text-muted-foreground mt-2">Add notes to your project steps to track your progress</p>
-            </div>
           ) : (
             <div className="space-y-3">
+              {/* Add Note Button - Always visible */}
               {projectRunId && (
                 <div className="flex justify-end">
                   <Button
@@ -350,6 +397,14 @@ export function NotesGallery({
                   </Button>
                 </div>
               )}
+              
+              {notes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <FileText className="w-12 h-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No notes yet</p>
+                  <p className="text-sm text-muted-foreground mt-2">Add notes to your project steps to track your progress</p>
+                </div>
+              ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -445,11 +500,36 @@ export function NotesGallery({
                 Add Note
               </DialogTitle>
               <DialogDescription>
-                Add a general note to your project. This note will not be associated with a specific step.
+                Add a note to your project. You can optionally tag it to a specific step.
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
+              {/* Step Selection - Only show if availableSteps provided */}
+              {availableSteps.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="step-select">Tag to Step (Optional)</Label>
+                  <Select value={selectedStepId} onValueChange={setSelectedStepId}>
+                    <SelectTrigger id="step-select">
+                      <SelectValue placeholder="No step tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No step tag</SelectItem>
+                      {availableSteps.map((step) => {
+                        const displayName = [step.phaseName, step.operationName, step.step]
+                          .filter(Boolean)
+                          .join(' > ');
+                        return (
+                          <SelectItem key={step.id} value={step.id}>
+                            {displayName}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="new-note-text">Note</Label>
                 <Textarea
@@ -469,6 +549,7 @@ export function NotesGallery({
                 onClick={() => {
                   setShowAddNote(false);
                   setNewNoteText('');
+                  setSelectedStepId('');
                 }} 
                 disabled={addingNote}
               >

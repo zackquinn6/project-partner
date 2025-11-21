@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, Download, Trash2, Image as ImageIcon, Calendar, Loader2 } from 'lucide-react';
+import { Camera, Download, Trash2, Image as ImageIcon, Calendar, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { PhotoUpload } from './PhotoUpload';
 
 /**
  * PhotoGallery Component
@@ -67,13 +68,57 @@ export function PhotoGallery({
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [availableProjects, setAvailableProjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [availableSteps, setAvailableSteps] = useState<Array<{ id: string; step: string; phaseName?: string; operationName?: string }>>([]);
 
   useEffect(() => {
     if (open) {
       fetchAvailableProjects();
       fetchPhotos();
+      if (projectRunId) {
+        fetchAvailableSteps();
+      }
     }
   }, [open, projectRunId, templateId, projectFilter, dateFilter]);
+  
+  const fetchAvailableSteps = async () => {
+    if (!projectRunId) return;
+    
+    try {
+      const { data: projectRun, error } = await supabase
+        .from('project_runs')
+        .select('phases')
+        .eq('id', projectRunId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (projectRun?.phases && Array.isArray(projectRun.phases)) {
+        const steps: Array<{ id: string; step: string; phaseName?: string; operationName?: string }> = [];
+        
+        projectRun.phases.forEach((phase: any) => {
+          if (phase.operations && Array.isArray(phase.operations)) {
+            phase.operations.forEach((operation: any) => {
+              if (operation.steps && Array.isArray(operation.steps)) {
+                operation.steps.forEach((step: any) => {
+                  steps.push({
+                    id: step.id,
+                    step: step.step || '',
+                    phaseName: phase.name,
+                    operationName: operation.name
+                  });
+                });
+              }
+            });
+          }
+        });
+        
+        setAvailableSteps(steps);
+      }
+    } catch (error) {
+      console.error('Error fetching available steps:', error);
+    }
+  };
 
   const fetchAvailableProjects = async () => {
     if (!user || projectRunId) return; // Don't fetch if filtering by specific project
@@ -334,6 +379,21 @@ export function PhotoGallery({
               </div>
             )}
 
+            {/* Add Photo Button - Always visible */}
+            {projectRunId && (
+              <div className="mb-4 flex justify-end">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowPhotoUpload(true)}
+                  className="h-8 px-4 text-sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Photo
+                </Button>
+              </div>
+            )}
+
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -480,6 +540,22 @@ export function PhotoGallery({
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Photo Upload Dialog */}
+      {projectRunId && templateId && (
+        <PhotoUpload
+          projectRunId={projectRunId}
+          templateId={templateId}
+          availableSteps={availableSteps}
+          showButton={false}
+          open={showPhotoUpload}
+          onOpenChange={setShowPhotoUpload}
+          onPhotoUploaded={() => {
+            fetchPhotos();
+            setShowPhotoUpload(false);
+          }}
+        />
       )}
     </>
   );

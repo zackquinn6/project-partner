@@ -25,15 +25,26 @@ import { sanitizeInput } from '@/utils/inputSanitization';
  * - Only image formats allowed (JPEG, PNG, WEBP, GIF)
  */
 
+interface StepOption {
+  id: string;
+  step: string;
+  phaseName?: string;
+  operationName?: string;
+}
+
 interface PhotoUploadProps {
   projectRunId: string;
   templateId: string | null;
-  stepId: string;
-  stepName: string;
+  stepId?: string;
+  stepName?: string;
   phaseId?: string;
   phaseName?: string;
   operationId?: string;
   operationName?: string;
+  availableSteps?: StepOption[];
+  showButton?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onPhotoUploaded?: () => void;
 }
 
@@ -42,23 +53,33 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 export function PhotoUpload({ 
   projectRunId, 
   templateId, 
-  stepId, 
-  stepName,
-  phaseId,
-  phaseName,
-  operationId,
-  operationName,
+  stepId: initialStepId = '', 
+  stepName: initialStepName = '',
+  phaseId: initialPhaseId,
+  phaseName: initialPhaseName,
+  operationId: initialOperationId,
+  operationName: initialOperationName,
+  availableSteps = [],
+  showButton = true,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
   onPhotoUploaded 
 }: PhotoUploadProps) {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState('');
   const [caption, setCaption] = useState('');
   const [privacyLevel, setPrivacyLevel] = useState<'personal' | 'project_partner' | 'public'>('project_partner');
+  const [selectedStepId, setSelectedStepId] = useState<string>(initialStepId || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get selected step details
+  const selectedStep = availableSteps.find(s => s.id === selectedStepId);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,9 +150,16 @@ export function PhotoUpload({
       // SECURITY: Sanitize all user inputs before database insertion
       const sanitizedCaption = caption ? sanitizeInput(caption.trim()) : null;
       const sanitizedPhotoName = photoName ? sanitizeInput(photoName.trim()) : null;
-      const sanitizedStepName = sanitizeInput(stepName);
-      const sanitizedPhaseName = phaseName ? sanitizeInput(phaseName) : null;
-      const sanitizedOperationName = operationName ? sanitizeInput(operationName) : null;
+      
+      // Use selected step or fall back to initial values, or use "-" if blank
+      const finalStepId = selectedStepId || initialStepId || '-';
+      const finalStepName = selectedStep?.step || initialStepName || '-';
+      const finalPhaseName = selectedStep?.phaseName || initialPhaseName || null;
+      const finalOperationName = selectedStep?.operationName || initialOperationName || null;
+      
+      const sanitizedStepName = finalStepId === '-' ? '-' : sanitizeInput(finalStepName);
+      const sanitizedPhaseName = finalPhaseName ? sanitizeInput(finalPhaseName) : null;
+      const sanitizedOperationName = finalOperationName ? sanitizeInput(finalOperationName) : null;
 
       // Save metadata to database
       const { error: dbError } = await supabase
@@ -140,11 +168,11 @@ export function PhotoUpload({
           user_id: user.id,
           project_run_id: projectRunId,
           template_id: templateId,
-          step_id: stepId,
+          step_id: finalStepId,
           step_name: sanitizedStepName,
-          phase_id: phaseId || null,
+          phase_id: initialPhaseId || null,
           phase_name: sanitizedPhaseName,
-          operation_id: operationId || null,
+          operation_id: initialOperationId || null,
           operation_name: sanitizedOperationName,
           storage_path: filePath,
           file_name: sanitizedOriginalName,
@@ -164,6 +192,7 @@ export function PhotoUpload({
       setPhotoName('');
       setCaption('');
       setPrivacyLevel('project_partner');
+      setSelectedStepId(initialStepId || '');
       setOpen(false);
       
       if (onPhotoUploaded) {
@@ -183,31 +212,58 @@ export function PhotoUpload({
     setPhotoName('');
     setCaption('');
     setPrivacyLevel('project_partner');
+    setSelectedStepId(initialStepId || '');
     setOpen(false);
   };
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen(true)}
-        className="gap-2"
-      >
-        <Camera className="w-4 h-4" />
-        Add Photo
-      </Button>
+      {showButton && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="gap-2"
+        >
+          <Camera className="w-4 h-4" />
+          Add Photo
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Upload Progress Photo</DialogTitle>
             <DialogDescription>
-              Add a photo for: {stepName}
+              {initialStepName ? `Add a photo for: ${initialStepName}` : 'Add a photo to your project'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Step Selection - Only show if availableSteps provided */}
+            {availableSteps.length > 0 && (
+              <div>
+                <Label htmlFor="step-select">Tag to Step (Optional)</Label>
+                <Select value={selectedStepId} onValueChange={setSelectedStepId}>
+                  <SelectTrigger id="step-select">
+                    <SelectValue placeholder="No step tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No step tag</SelectItem>
+                    {availableSteps.map((step) => {
+                      const displayName = [step.phaseName, step.operationName, step.step]
+                        .filter(Boolean)
+                        .join(' > ');
+                      return (
+                        <SelectItem key={step.id} value={step.id}>
+                          {displayName}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {/* File Upload Area */}
             <div>
               <Label>Photo (Max 5MB)</Label>
