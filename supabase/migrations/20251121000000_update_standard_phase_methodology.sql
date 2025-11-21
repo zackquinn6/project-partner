@@ -221,6 +221,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
-COMMENT ON FUNCTION public.rebuild_phases_json_from_project_phases IS 
+COMMENT ON FUNCTION public.rebuild_phases_json_from_project_phases(UUID, TEXT) IS 
 'Rebuilds phases JSON from project_phases table. For non-standard projects, dynamically includes ALL phases from Standard Project Foundation with is_standard: true. Standard phases are locked and cannot be edited or reordered in downstream projects.';
 

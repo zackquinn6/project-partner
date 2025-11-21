@@ -205,6 +205,6 @@ CREATE TRIGGER trigger_update_default_space_on_initial_sizing
   WHEN (NEW.initial_sizing IS NOT NULL)
   EXECUTE FUNCTION public.update_default_space_on_initial_sizing();
 
-COMMENT ON FUNCTION public.create_project_run_snapshot IS 'Creates a new project run snapshot and automatically creates a default space with priority 1';
+COMMENT ON FUNCTION public.create_project_run_snapshot(UUID, UUID, TEXT, UUID, TIMESTAMPTZ, TIMESTAMPTZ) IS 'Creates a new project run snapshot and automatically creates a default space with priority 1';
 COMMENT ON FUNCTION public.update_default_space_on_initial_sizing IS 'Automatically updates the default space scale_value when initial_sizing is set on a project run';
 
