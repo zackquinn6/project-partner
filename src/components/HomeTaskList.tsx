@@ -692,38 +692,40 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                   <ShoppingListManager />
                 </TabsContent>
 
-                <TabsContent value="schedule" className="mt-0 h-full space-y-4">
-                  {/* Top buttons for Team and Assign windows */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowAssignWindow(true)}
-                      className="flex-1"
-                    >
-                      <Users className="w-4 h-4 mr-2" />
-                      Assign Tasks
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowTeamWindow(true)}
-                      className="flex-1"
-                    >
-                      <Users className="w-4 h-4 mr-2" />
-                      Team Availability
-                    </Button>
-                  </div>
+                {canAccessPaidFeatures && (
+                  <TabsContent value="schedule" className="mt-0 h-full space-y-4">
+                    {/* Top buttons for Team and Assign windows */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAssignWindow(true)}
+                        className="flex-1"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Assign Tasks
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowTeamWindow(true)}
+                        className="flex-1"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Team Availability
+                      </Button>
+                    </div>
 
-                  {/* Schedule content */}
-                  {user && (
-                    <HomeTaskScheduler
-                      userId={user.id}
-                      homeId={selectedHomeId === 'all' ? null : selectedHomeId}
-                      activeTab={activeTab}
-                    />
-                  )}
-                </TabsContent>
+                    {/* Schedule content */}
+                    {user && (
+                      <HomeTaskScheduler
+                        userId={user.id}
+                        homeId={selectedHomeId === 'all' ? null : selectedHomeId}
+                        activeTab={activeTab}
+                      />
+                    )}
+                  </TabsContent>
+                )}
               </div>
             </Tabs>
           </div>
