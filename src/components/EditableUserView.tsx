@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Edit, Save, X, Upload, Info, ChevronDown, ChevronUp, FileText, ShoppingCart, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Edit, Save, X, Upload, Info, ChevronDown, ChevronUp, FileText, ShoppingCart, Lock, Users } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Output } from '@/interfaces/Project';
@@ -648,6 +648,12 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                                       <span className="truncate">{step.step}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
+                                      {step.workersNeeded && step.workersNeeded > 0 && (
+                                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-blue-100 text-blue-700 border-blue-300 flex items-center gap-1">
+                                          <Users className="w-2.5 h-2.5" />
+                                          {step.workersNeeded}
+                                        </Badge>
+                                      )}
                                       {hasUnmetPrerequisites && !isCompleted && (
                                         <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-orange-100 text-orange-700 border-orange-300">
                                           Locked

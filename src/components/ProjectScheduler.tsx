@@ -98,8 +98,20 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     isMobile
   } = useResponsive();
 
-  // Space priority state
-  const [spaces, setSpaces] = useState<Array<{ id: string; name: string; priority: number | null }>>([]);
+  // Space priority state with sizing values
+  const [spaces, setSpaces] = useState<Array<{ 
+    id: string; 
+    name: string; 
+    priority: number | null;
+    scaleValue?: number | null;
+    scaleUnit?: string | null;
+    sizingValues?: Record<string, number>;
+  }>>([]);
+  
+  // Completion priority state
+  const [completionPriority, setCompletionPriority] = useState<'agile' | 'waterfall'>(
+    (projectRun?.completion_priority as 'agile' | 'waterfall') || 'agile'
+  );
 
   // Enhanced scheduling state
   const [planningMode, setPlanningMode] = useState<PlanningMode>('standard');
@@ -208,6 +220,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         quietHours: savedData.globalSettings.quietHours
       });
     }
+    // Load completion priority from project run
+    if (projectRun?.completion_priority) {
+      setCompletionPriority(projectRun.completion_priority as 'agile' | 'waterfall');
+    }
   }, [open, projectRun]);
 
   // Calendar popup state
@@ -221,7 +237,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     }[];
   }>({});
 
-  // Load spaces with priority when scheduler opens
+  // Load spaces with priority and sizing values when scheduler opens
   useEffect(() => {
     if (!open || !projectRun?.id) return;
 
@@ -229,7 +245,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       try {
         const { data, error } = await supabase
           .from('project_run_spaces')
-          .select('id, space_name, priority')
+          .select('id, space_name, priority, scale_value, scale_unit, sizing_values')
           .eq('project_run_id', projectRun.id)
           .order('priority', { ascending: true, nullsLast: true });
 
@@ -238,7 +254,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         setSpaces((data || []).map(space => ({
           id: space.id,
           name: space.space_name,
-          priority: space.priority
+          priority: space.priority,
+          scaleValue: space.scale_value,
+          scaleUnit: space.scale_unit,
+          sizingValues: space.sizing_values as Record<string, number> || {}
         })));
       } catch (error) {
         console.error('Error loading spaces for scheduler:', error);
@@ -266,61 +285,184 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     
     // Create a map of space priority for quick lookup
     const spacePriorityMap = new Map<string, number>();
+    const spaceSizingMap = new Map<string, Record<string, number>>();
     spaces.forEach(space => {
       spacePriorityMap.set(space.id, space.priority || 999);
+      // Merge sizing_values JSONB with scale_value/scale_unit for backward compatibility
+      const sizingMap: Record<string, number> = { ...(space.sizingValues || {}) };
+      if (space.scaleValue !== null && space.scaleValue !== undefined && space.scaleUnit) {
+        sizingMap[space.scaleUnit] = space.scaleValue;
+      }
+      spaceSizingMap.set(space.id, sizingMap);
     });
 
+    // Determine scaling unit for phase (incorporates phases may have different scaling units)
+    const getPhaseScalingUnit = (phase: typeof project.phases[0]): string => {
+      if (phase.isLinked && phase.sourceScalingUnit) {
+        // For incorporated phases, use their source scaling unit
+        return phase.sourceScalingUnit.replace('per ', ''); // Convert "per square foot" to "square foot"
+      }
+      // For main project phases, use project scaling unit
+      return project.scalingUnit?.replace('per ', '') || 'square foot';
+    };
+
     project.phases.forEach(phase => {
+      const phaseScalingUnit = getPhaseScalingUnit(phase);
+      const isIncorporatedPhase = phase.isLinked || false;
+
       phase.operations.forEach(operation => {
         operation.steps.forEach((step, index) => {
           // Skip steps that are already completed
           if (completedSteps.includes(step.id)) {
             return;
           }
-          const baseTimeLow = step.timeEstimation?.variableTime?.low || 1;
-          const baseTimeMed = step.timeEstimation?.variableTime?.medium || 1;
-          const baseTimeHigh = step.timeEstimation?.variableTime?.high || 1;
-          const adjustedLow = baseTimeLow * projectSize * scalingFactor * skillMultiplier;
-          const adjustedMed = baseTimeMed * projectSize * scalingFactor * skillMultiplier;
-          const adjustedHigh = baseTimeHigh * projectSize * scalingFactor * skillMultiplier;
-          lowTotal += adjustedLow;
-          mediumTotal += adjustedMed;
-          highTotal += adjustedHigh;
-          const dependencies: string[] = [];
-          if (index > 0) {
-            dependencies.push(`${operation.id}-step-${index - 1}`);
-          }
+
+          const baseTimeLow = step.timeEstimation?.variableTime?.low || 0;
+          const baseTimeMed = step.timeEstimation?.variableTime?.medium || 0;
+          const baseTimeHigh = step.timeEstimation?.variableTime?.high || 0;
           
-          // If there are multiple spaces, create tasks per space and tag with priority
+          // Determine if step scales or is fixed
+          const isFixedStep = step.stepType === 'prime' || step.stepType === 'quality_control_non_scaled' || !step.stepType;
+          
+          // Get worker requirements for this step
+          const workersNeeded = step.workersNeeded ?? 0;
+
+          // If there are multiple spaces, create tasks per space
           if (spaces.length > 1) {
             spaces.forEach(space => {
               const spacePriority = space.priority || 999;
+              const spaceSizing = spaceSizingMap.get(space.id) || {};
+              
+              // Calculate time estimates for this space
+              let adjustedLow = baseTimeLow;
+              let adjustedMed = baseTimeMed;
+              let adjustedHigh = baseTimeHigh;
+              
+              if (!isFixedStep) {
+                // For scaled steps, multiply by space size for the phase's scaling unit
+                const spaceSize = spaceSizing[phaseScalingUnit] || 0;
+                adjustedLow = baseTimeLow * spaceSize * scalingFactor * skillMultiplier;
+                adjustedMed = baseTimeMed * spaceSize * scalingFactor * skillMultiplier;
+                adjustedHigh = baseTimeHigh * spaceSize * scalingFactor * skillMultiplier;
+              } else {
+                // For fixed steps, apply multipliers but don't scale by space size
+                adjustedLow = baseTimeLow * scalingFactor * skillMultiplier;
+                adjustedMed = baseTimeMed * scalingFactor * skillMultiplier;
+                adjustedHigh = baseTimeHigh * scalingFactor * skillMultiplier;
+              }
+              
+              // Only add to totals once per step (not per space) for fixed steps
+              if (isFixedStep && spacePriority === Math.min(...spaces.map(s => s.priority || 999))) {
+                lowTotal += adjustedLow;
+                mediumTotal += adjustedMed;
+                highTotal += adjustedHigh;
+              } else if (!isFixedStep) {
+                // For scaled steps, add time for each space
+                lowTotal += adjustedLow;
+                mediumTotal += adjustedMed;
+                highTotal += adjustedHigh;
+              }
+              
+              const dependencies: string[] = [];
+              if (index > 0) {
+                dependencies.push(`${operation.id}-step-${index - 1}-space-${space.id}`);
+              }
+              
+              // For Agile: depend on previous step in same space
+              // For Waterfall: depend on same step in previous space
+              if (completionPriority === 'waterfall' && index === 0) {
+                // First step depends on first step in previous space (if exists)
+                const currentSpaceIndex = spaces.findIndex(s => s.id === space.id);
+                if (currentSpaceIndex > 0) {
+                  const prevSpace = spaces[currentSpaceIndex - 1];
+                  dependencies.push(`${operation.id}-step-${index}-space-${prevSpace.id}`);
+                }
+              }
+              
               tasks.push({
                 id: `${operation.id}-step-${index}-space-${space.id}`,
                 title: `${step.step} - ${space.name}`,
                 estimatedHours: adjustedMed,
                 minContiguousHours: Math.min(adjustedMed, 2),
-                dependencies: dependencies.map(dep => `${dep}-space-${space.id}`),
-                tags: [`space:${space.id}`, `priority:${spacePriority}`],
+                dependencies,
+                tags: [`space:${space.id}`, `priority:${spacePriority}`, `phase:${phase.id}`, `workers:${workersNeeded}`],
                 confidence: 0.7,
                 phaseId: phase.id,
                 operationId: operation.id,
-                // Add space priority as metadata for sorting
-                metadata: { spaceId: space.id, spacePriority }
-              } as Task & { metadata?: { spaceId: string; spacePriority: number } });
+                stepId: step.id,
+                // Add metadata for scheduling algorithm
+                metadata: { 
+                  spaceId: space.id, 
+                  spacePriority,
+                  workersNeeded,
+                  isFixedStep,
+                  phaseScalingUnit,
+                  isIncorporatedPhase
+                }
+              } as Task & { 
+                metadata?: { 
+                  spaceId: string; 
+                  spacePriority: number;
+                  workersNeeded: number;
+                  isFixedStep: boolean;
+                  phaseScalingUnit: string;
+                  isIncorporatedPhase: boolean;
+                };
+                stepId?: string;
+              });
             });
           } else {
-            // Single space or no spaces - create task normally
+            // Single space or no spaces - use total project size or default
+            const defaultSize = spaces.length === 1 ? (spaceSizingMap.get(spaces[0].id)?.[phaseScalingUnit] || projectSize) : projectSize;
+            
+            let adjustedLow = baseTimeLow;
+            let adjustedMed = baseTimeMed;
+            let adjustedHigh = baseTimeHigh;
+            
+            if (!isFixedStep) {
+              adjustedLow = baseTimeLow * defaultSize * scalingFactor * skillMultiplier;
+              adjustedMed = baseTimeMed * defaultSize * scalingFactor * skillMultiplier;
+              adjustedHigh = baseTimeHigh * defaultSize * scalingFactor * skillMultiplier;
+            } else {
+              adjustedLow = baseTimeLow * scalingFactor * skillMultiplier;
+              adjustedMed = baseTimeMed * scalingFactor * skillMultiplier;
+              adjustedHigh = baseTimeHigh * scalingFactor * skillMultiplier;
+            }
+            
+            lowTotal += adjustedLow;
+            mediumTotal += adjustedMed;
+            highTotal += adjustedHigh;
+            
+            const dependencies: string[] = [];
+            if (index > 0) {
+              dependencies.push(`${operation.id}-step-${index - 1}`);
+            }
+            
             tasks.push({
               id: `${operation.id}-step-${index}`,
               title: step.step,
               estimatedHours: adjustedMed,
               minContiguousHours: Math.min(adjustedMed, 2),
               dependencies,
-              tags: [],
+              tags: [`phase:${phase.id}`, `workers:${workersNeeded}`],
               confidence: 0.7,
               phaseId: phase.id,
-              operationId: operation.id
+              operationId: operation.id,
+              stepId: step.id,
+              metadata: {
+                workersNeeded,
+                isFixedStep,
+                phaseScalingUnit,
+                isIncorporatedPhase
+              }
+            } as Task & {
+              metadata?: {
+                workersNeeded: number;
+                isFixedStep: boolean;
+                phaseScalingUnit: string;
+                isIncorporatedPhase: boolean;
+              };
+              stepId?: string;
             });
           }
         });
@@ -349,7 +491,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         high: highTotal
       }
     };
-  }, [project, projectRun, spaces]);
+  }, [project, projectRun, spaces, completionPriority]);
 
   // Update team member
   const updateTeamMember = (id: string, updates: Partial<TeamMember>) => {
@@ -368,7 +510,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const computeAdvancedSchedule = async () => {
     setIsComputing(true);
     try {
-      // Prepare scheduling inputs
+      // Prepare scheduling inputs with completion priority
       const schedulingInputs: SchedulingInputs = {
         targetCompletionDate: new Date(targetDate),
         dropDeadDate: new Date(dropDeadDate),
@@ -401,7 +543,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         blackoutDates: [],
         scheduleTempo,
         preferHelpers: teamMembers.some(tm => tm.type === 'helper'),
-        mode: planningMode
+        mode: planningMode,
+        completionPriority: completionPriority as 'agile' | 'waterfall'
       };
 
       // Compute schedule
@@ -551,6 +694,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     try {
       const updatedProjectRun = {
         ...projectRun,
+        completion_priority: completionPriority,
         schedule_events: {
           events: schedulingResult.scheduledTasks.map(task => ({
             id: task.taskId,
@@ -910,12 +1054,58 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   </CardContent>
                 </Card>
 
-                {/* Step 4: Quiet Hours */}
+                {/* Step 4: Completion Priority */}
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
                         4
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium mb-2">Completion Priority</p>
+                        <div className="space-y-3">
+                          <div className="flex items-start space-x-2">
+                            <input
+                              type="radio"
+                              id="priority-agile"
+                              name="completion-priority"
+                              value="agile"
+                              checked={completionPriority === 'agile'}
+                              onChange={(e) => setCompletionPriority(e.target.value as 'agile' | 'waterfall')}
+                              className="h-4 w-4 mt-0.5"
+                            />
+                            <Label htmlFor="priority-agile" className="text-sm font-normal cursor-pointer">
+                              <span className="font-medium">Agile</span> - Complete one space end-to-end before moving to next
+                              <p className="text-xs text-muted-foreground mt-1">Longer total duration but faster individual space completion</p>
+                            </Label>
+                          </div>
+                          <div className="flex items-start space-x-2">
+                            <input
+                              type="radio"
+                              id="priority-waterfall"
+                              name="completion-priority"
+                              value="waterfall"
+                              checked={completionPriority === 'waterfall'}
+                              onChange={(e) => setCompletionPriority(e.target.value as 'agile' | 'waterfall')}
+                              className="h-4 w-4 mt-0.5"
+                            />
+                            <Label htmlFor="priority-waterfall" className="text-sm font-normal cursor-pointer">
+                              <span className="font-medium">Waterfall</span> - Complete each phase across all spaces before next phase
+                              <p className="text-xs text-muted-foreground mt-1">Faster overall completion but all spaces remain partially finished until end</p>
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Step 5: Quiet Hours */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold">
+                        5
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium mb-2">Quiet Hours (Global)</p>

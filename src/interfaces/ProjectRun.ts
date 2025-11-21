@@ -240,5 +240,6 @@ export interface ProjectRun {
   // Initial project data from kickoff step 3
   initial_budget?: string;
   initial_timeline?: string; // ISO date string
-  initial_sizing?: string;
+  initial_sizing?: string; // Initial project size entered at kickoff
+  completion_priority?: 'agile' | 'waterfall'; // Scheduling algorithm: agile (complete space end-to-end) or waterfall (complete phase across all spaces)
 }

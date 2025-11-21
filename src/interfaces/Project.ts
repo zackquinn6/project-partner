@@ -162,6 +162,7 @@ export interface WorkflowStep {
       high: number;
     };
   };
+  workersNeeded?: number; // Number of workers needed for this step (0-10)
   // Standard content flag - marks steps from Standard Project Foundation
   isStandard?: boolean;
 }

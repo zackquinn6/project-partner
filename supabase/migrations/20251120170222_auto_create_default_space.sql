@@ -160,9 +160,11 @@ BEGIN
     -- Otherwise, create it (for older project runs created before this migration)
     IF FOUND THEN
       -- Update the existing default space
+      -- Also update sizing_values JSONB column for multiple sizing units support
       UPDATE public.project_run_spaces
       SET scale_value = parsed_size,
           scale_unit = project_scaling_unit,
+          sizing_values = COALESCE(sizing_values, '{}'::jsonb) || jsonb_build_object(project_scaling_unit, parsed_size),
           updated_at = now()
       WHERE id = default_space.id;
     ELSE
@@ -173,6 +175,7 @@ BEGIN
         space_type,
         scale_value,
         scale_unit,
+        sizing_values,
         is_from_home,
         priority
       ) VALUES (
@@ -181,6 +184,7 @@ BEGIN
         'custom',
         parsed_size,
         project_scaling_unit,
+        jsonb_build_object(project_scaling_unit, parsed_size),
         false,
         1
       )

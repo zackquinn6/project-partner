@@ -136,7 +136,8 @@ async function syncStepsForOperation(
       step_type: step.stepType || 'prime',
       time_estimate_low: step.timeEstimation?.variableTime?.low || null,
       time_estimate_medium: step.timeEstimation?.variableTime?.medium || null,
-      time_estimate_high: step.timeEstimation?.variableTime?.high || null
+      time_estimate_high: step.timeEstimation?.variableTime?.high || null,
+      workers_needed: step.workersNeeded ?? 0
     };
 
     if (step.id) {

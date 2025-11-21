@@ -159,6 +159,7 @@ BEGIN
       'flowType', COALESCE(step_record.flow_type, 'prime'),
       'stepType', COALESCE(step_record.step_type, 'prime'),
       'timeEstimation', time_estimation_json,
+      'workersNeeded', COALESCE(step_record.workers_needed, 0),
       'isStandard', p_is_standard
     );
   END LOOP;

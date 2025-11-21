@@ -472,6 +472,11 @@ export default function EditWorkflowView({
             apps: editingStep.apps || [] as any,
             estimated_time_minutes: (editingStep as any).estimated_time || 0,
             flow_type: (editingStep as any).flowType || null,
+            step_type: editingStep.stepType || 'prime',
+            time_estimate_low: editingStep.timeEstimation?.variableTime?.low || null,
+            time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || null,
+            time_estimate_high: editingStep.timeEstimation?.variableTime?.high || null,
+            workers_needed: editingStep.workersNeeded ?? 0,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingStep.id);
@@ -986,7 +991,12 @@ export default function EditWorkflowView({
                 </div>
 
                 {/* Time Estimation */}
-                <CompactTimeEstimation step={editingStep} scalingUnit={currentProject?.scalingUnit} onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)} />
+                <CompactTimeEstimation 
+                  step={editingStep} 
+                  scalingUnit={currentProject?.scalingUnit} 
+                  onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)}
+                  onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
+                />
 
                 {/* Navigation */}
                 <div className="flex justify-between">
