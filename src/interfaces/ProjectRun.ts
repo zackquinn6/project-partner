@@ -242,4 +242,5 @@ export interface ProjectRun {
   initial_timeline?: string; // ISO date string
   initial_sizing?: string; // Initial project size entered at kickoff
   completion_priority?: 'agile' | 'waterfall'; // Scheduling algorithm: agile (complete space end-to-end) or waterfall (complete phase across all spaces)
+  progress_reporting_style?: 'linear' | 'exponential' | 'time-based'; // Progress calculation method: linear (step count), exponential (weighted), or time-based (uses time estimates)
 }

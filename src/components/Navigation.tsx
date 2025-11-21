@@ -180,7 +180,8 @@ export default function Navigation({
       // Initial project goals from kickoff step 3
       initial_budget: freshRun.initial_budget,
       initial_timeline: freshRun.initial_timeline,
-      initial_sizing: freshRun.initial_sizing
+      initial_sizing: freshRun.initial_sizing,
+      progress_reporting_style: (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
     };
     
     console.log('✅ Navigation: Fresh project data loaded:', {

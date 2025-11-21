@@ -2,15 +2,19 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image, FileText, Info, HelpCircle } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 import { WorkflowTutorial } from './WorkflowTutorial';
+import { ProjectRun } from '@/interfaces/ProjectRun';
+import { useProject } from '@/contexts/ProjectContext';
 interface WorkflowSidebarProps {
   allSteps: any[];
   currentStep: any;
@@ -22,6 +26,7 @@ interface WorkflowSidebarProps {
   instructionLevel: 'quick' | 'detailed' | 'new_user';
   projectName: string;
   projectRunId?: string;
+  projectRun?: ProjectRun;
   onInstructionLevelChange: (level: 'quick' | 'detailed' | 'new_user') => void;
   onStepClick: (stepIndex: number, step: any) => void;
   onHelpClick: () => void;
@@ -41,6 +46,7 @@ export function WorkflowSidebar({
   instructionLevel,
   projectName,
   projectRunId,
+  projectRun,
   onInstructionLevelChange,
   onStepClick,
   onHelpClick,
@@ -49,6 +55,7 @@ export function WorkflowSidebar({
   onPhotosClick,
   onNotesClick
 }: WorkflowSidebarProps) {
+  const { updateProjectRun } = useProject();
   const {
     state
   } = useSidebar();
@@ -489,12 +496,71 @@ export function WorkflowSidebar({
 
       {/* Step Types Info Dialog */}
       <Dialog open={showStepTypesInfo} onOpenChange={setShowStepTypesInfo}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Step Types</DialogTitle>
+            <DialogDescription>
+              Configure step types and progress reporting style
+            </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-6">
             <FlowTypeLegend compact={false} showDescriptions={true} showOnlyStepTypes={true} />
+            
+            {/* Progress Reporting Style Section */}
+            {projectRun && (
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle className="text-base">Progress Reporting Style</CardTitle>
+                  <CardDescription>
+                    Choose how progress is calculated. Step numbers (e.g., "Step 4 of 15") remain unchanged.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup
+                    value={projectRun.progress_reporting_style || 'linear'}
+                    onValueChange={async (value) => {
+                      if (projectRun) {
+                        await updateProjectRun({
+                          ...projectRun,
+                          progress_reporting_style: value as 'linear' | 'exponential' | 'time-based'
+                        });
+                      }
+                    }}
+                    className="space-y-3"
+                  >
+                    <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value="linear" id="linear" className="mt-1" />
+                      <Label htmlFor="linear" className="flex-1 cursor-pointer">
+                        <div className="font-medium">Linear</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          Simple step count-based progress. Step 7 of 14 complete = 50%
+                        </div>
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value="exponential" id="exponential" className="mt-1" />
+                      <Label htmlFor="exponential" className="flex-1 cursor-pointer">
+                        <div className="font-medium">Exponential</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          Weighted toward completion. Work that shows 90% on linear measurement shows ~60% here, reflecting heavier effort to complete the final work.
+                        </div>
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value="time-based" id="time-based" className="mt-1" />
+                      <Label htmlFor="time-based" className="flex-1 cursor-pointer">
+                        <div className="font-medium">Time-Based</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          Uses step estimated times aligned to your speed setting. Fast-track uses low end of time estimates, steady uses medium, extended uses high.
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </DialogContent>
       </Dialog>

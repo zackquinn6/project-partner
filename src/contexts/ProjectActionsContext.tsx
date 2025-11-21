@@ -447,7 +447,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             instruction_level_preference: projectRun.instruction_level_preference || 'detailed',
             budget_data: projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : null,
             issue_reports: projectRun.issue_reports ? JSON.stringify(projectRun.issue_reports) : null,
-            time_tracking: projectRun.time_tracking ? JSON.stringify(projectRun.time_tracking) : null
+            time_tracking: projectRun.time_tracking ? JSON.stringify(projectRun.time_tracking) : null,
+            progress_reporting_style: projectRun.progress_reporting_style || 'linear'
           })
           .eq('id', projectRun.id)
           .eq('user_id', user.id);
@@ -613,7 +614,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           shopping_checklist_data: typeof freshRun.shopping_checklist_data === 'string' ? JSON.parse(freshRun.shopping_checklist_data) : freshRun.shopping_checklist_data,
           schedule_events: typeof freshRun.schedule_events === 'string' ? JSON.parse(freshRun.schedule_events) : freshRun.schedule_events,
           customization_decisions: typeof freshRun.customization_decisions === 'string' ? JSON.parse(freshRun.customization_decisions) : freshRun.customization_decisions,
-          instruction_level_preference: freshRun.instruction_level_preference as 'quick' | 'detailed' | 'new_user'
+          instruction_level_preference: freshRun.instruction_level_preference as 'quick' | 'detailed' | 'new_user',
+          progress_reporting_style: (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
         };
 
         // Update cache and current project run

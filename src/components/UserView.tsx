@@ -648,10 +648,14 @@ export default function UserView({
   
   // CRITICAL FIX: Calculate progress from actual workflow steps using unified utility
   // This ensures consistent progress calculation everywhere
+  // Use progress reporting style from project run (defaults to 'linear')
   const { total: totalSteps, completed: completedStepsCount } = currentProjectRun 
     ? getWorkflowStepsCount(currentProjectRun) 
     : { total: 0, completed: 0 };
-  const progress = totalSteps > 0 ? (completedStepsCount / totalSteps) * 100 : 0;
+  const progressStyle = currentProjectRun?.progress_reporting_style || 'linear';
+  const progress = currentProjectRun 
+    ? calculateProjectProgress(currentProjectRun, progressStyle)
+    : 0;
   
   console.log('📊 Progress Calculation (DETAILED):', {
     totalPhases: activeProject?.phases?.length || 0,
@@ -2008,6 +2012,7 @@ export default function UserView({
             isKickoffComplete={isKickoffComplete}
             instructionLevel={instructionLevel}
             projectName={currentProjectRun?.customProjectName || currentProjectRun?.name || 'Project'}
+            projectRun={currentProjectRun}
             onInstructionLevelChange={handleInstructionLevelChange}
             onStepClick={(stepIndex, step) => {
               console.log('🎯 Step clicked:', {
