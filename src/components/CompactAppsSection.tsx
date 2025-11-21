@@ -2,8 +2,8 @@ import { AppReference } from '@/interfaces/Project';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, ExternalLink, X } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import { Plus, ExternalLink, X, Sparkles } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 interface CompactAppsSectionProps {
@@ -25,26 +25,35 @@ export const CompactAppsSection = ({
   const getIconComponent = (iconName: string): LucideIcon => {
     if (!iconName) {
       console.warn('⚠️ No icon name provided, using Sparkles fallback');
-      return Icons.Sparkles;
+      return Sparkles;
     }
     
     // Try exact match first
-    let Icon = (Icons as any)[iconName];
+    let Icon = (LucideIcons as any)[iconName];
     
     // If not found, try with first letter capitalized (common lucide pattern)
     if (!Icon && iconName.length > 0) {
       const capitalized = iconName.charAt(0).toUpperCase() + iconName.slice(1);
-      Icon = (Icons as any)[capitalized];
+      Icon = (LucideIcons as any)[capitalized];
     }
     
     // If still not found, try all lowercase
     if (!Icon) {
-      Icon = (Icons as any)[iconName.toLowerCase()];
+      Icon = (LucideIcons as any)[iconName.toLowerCase()];
+    }
+    
+    // Try matching case-insensitive
+    if (!Icon) {
+      const iconKeys = Object.keys(LucideIcons);
+      const matchedKey = iconKeys.find(key => key.toLowerCase() === iconName.toLowerCase());
+      if (matchedKey) {
+        Icon = (LucideIcons as any)[matchedKey];
+      }
     }
     
     if (!Icon) {
-      console.error(`❌ Icon "${iconName}" not found in lucide-react. Available icons:`, Object.keys(Icons).filter(k => k.toLowerCase().includes(iconName.toLowerCase())).slice(0, 5));
-      return Icons.Sparkles;
+      console.error(`❌ Icon "${iconName}" not found in lucide-react. Available icons:`, Object.keys(LucideIcons).filter(k => k.toLowerCase().includes(iconName.toLowerCase())).slice(0, 5));
+      return Sparkles;
     }
     
     return Icon;
