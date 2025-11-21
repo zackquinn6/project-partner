@@ -145,13 +145,21 @@ export default function EditWorkflowView({
     
     const isStandardPhase = phase.isStandard === true;
     // isLinked can be undefined, null, or false - only block if explicitly true
+    // AI-generated phases don't have isLinked set, so undefined/null should allow editing
     const isLinkedPhase = phase.isLinked === true;
     const shouldBlock = isStandardPhase || isLinkedPhase;
     
-    // Additional check: if phase.isLinked is undefined/null, treat as false (allow editing)
-    // This ensures AI-generated phases (which don't have isLinked set) are editable
+    // Debug logging for troubleshooting - always log for AI-generated content debugging
+    console.log(`🔍 Edit Step Check for "${step.step}" in phase "${phaseName}":`, {
+      isStandardPhase,
+      isLinkedPhase,
+      phaseIsStandard: phase.isStandard,
+      phaseIsLinked: phase.isLinked,
+      phaseIsLinkedType: typeof phase.isLinked,
+      shouldBlock,
+      willShowEditButton: !shouldBlock
+    });
     
-    // Debug logging for troubleshooting
     if (shouldBlock) {
       console.log(`🚫 Blocking edit for step "${step.step}" in phase "${phaseName}": isStandard=${isStandardPhase}, isLinked=${isLinkedPhase}`);
     } else {
