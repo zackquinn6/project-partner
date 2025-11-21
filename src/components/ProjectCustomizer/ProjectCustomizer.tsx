@@ -768,6 +768,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
               projectScaleUnit={scalingUnit?.replace('per ', '') || 'square foot'}
               currentProjectName={templateProject?.name || currentProjectRun.name || 'Current Project'}
               phases={currentProjectRun.phases || []}
+              initialSizing={currentProjectRun.initial_sizing}
             />
           </div>
         </DialogContent>

@@ -28,6 +28,7 @@ export interface SpaceSelectorProps {
   projectScaleUnit?: string;
   currentProjectName?: string;
   phases?: any[]; // Phases from project run to extract incorporated phases
+  initialSizing?: string; // Initial sizing from project kickoff
 }
 
 export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
@@ -37,7 +38,8 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
   onSpacesChange,
   projectScaleUnit = 'square foot',
   currentProjectName = 'Current Project',
-  phases = []
+  phases = [],
+  initialSizing
 }) => {
   const [homeSpaces, setHomeSpaces] = useState<any[]>([]);
   const [showCustomSpaceForm, setShowCustomSpaceForm] = useState(false);
@@ -146,16 +148,47 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
           sizingMap.get(sizing.space_id)![sizing.scaling_unit] = sizing.size_value;
         });
 
-        const loadedSpaces: ProjectSpace[] = (spacesData || []).map(space => {
+        const loadedSpaces: ProjectSpace[] = (spacesData || []).map((space, index) => {
           const relationalSizing = sizingMap.get(space.id) || {};
           // Use relational data if available, otherwise fall back to legacy columns
           const primarySizing = Object.keys(relationalSizing).length > 0 
             ? relationalSizing 
             : (space.scale_value && space.scale_unit ? { [space.scale_unit]: space.scale_value } : {});
           
-          // Get primary scale value and unit (first entry in relational sizing, or legacy)
-          const primaryUnit = Object.keys(primarySizing)[0] || space.scale_unit;
-          const primaryValue = primarySizing[primaryUnit] || space.scale_value;
+          // Get primary scale value and unit (prefer project scale unit, then first entry, then legacy)
+          const primaryUnit = primarySizing[projectScaleUnit] !== undefined 
+            ? projectScaleUnit 
+            : (Object.keys(primarySizing)[0] || space.scale_unit || projectScaleUnit);
+          let primaryValue = primarySizing[primaryUnit] || space.scale_value || 0;
+          
+          // If this is the first space (index 0) and it has no sizing value, inherit from initial_sizing
+          if (index === 0 && primaryValue === 0 && initialSizing) {
+            const parsedInitial = parseFloat(initialSizing);
+            if (!isNaN(parsedInitial) && parsedInitial > 0) {
+              primaryValue = parsedInitial;
+              // Update the space in database with initial sizing (async, don't await)
+              (async () => {
+                try {
+                  await supabase
+                    .from('project_run_spaces')
+                    .update({ scale_value: parsedInitial })
+                    .eq('id', space.id);
+                  
+                  await supabase
+                    .from('project_run_space_sizing')
+                    .upsert({
+                      space_id: space.id,
+                      scaling_unit: projectScaleUnit,
+                      size_value: parsedInitial
+                    }, {
+                      onConflict: 'space_id,scaling_unit'
+                    });
+                } catch (error) {
+                  console.error('Error inheriting initial sizing:', error);
+                }
+              })();
+            }
+          }
 
           return {
             id: space.id,
@@ -609,19 +642,22 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
                           <Label className="text-xs font-medium mb-1 block">
                             {currentProjectName}
                           </Label>
-                          <Input
-                            type="number"
-                            value={space.scaleValue || ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '' || (val.length <= 6 && /^\d*\.?\d*$/.test(val))) {
-                                handleUpdateScaleValue(space.id, val === '' ? 0 : parseFloat(val));
-                              }
-                            }}
-                            placeholder="0"
-                            className="w-20 h-8 text-sm text-center"
-                            maxLength={6}
-                          />
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={space.scaleValue || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '' || (val.length <= 6 && /^\d*\.?\d*$/.test(val))) {
+                                  handleUpdateScaleValue(space.id, val === '' ? 0 : parseFloat(val));
+                                }
+                              }}
+                              placeholder="0"
+                              className="w-20 h-8 text-sm text-center"
+                              maxLength={6}
+                            />
+                            <span className="text-xs text-muted-foreground">{projectScaleUnit}</span>
+                          </div>
                         </div>
                         
                         {/* Incorporated Phases Sizing */}
@@ -635,19 +671,22 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
                               <Label className="text-xs font-medium mb-1 block">
                                 {phase.projectName}
                               </Label>
-                              <Input
-                                type="number"
-                                value={currentValue || ''}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (val === '' || (val.length <= 6 && /^\d*\.?\d*$/.test(val))) {
-                                    handleUpdateSizingValue(space.id, sizingKey, val === '' ? 0 : parseFloat(val));
-                                  }
-                                }}
-                                placeholder="0"
-                                className="w-20 h-8 text-sm text-center"
-                                maxLength={6}
-                              />
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  value={currentValue || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || (val.length <= 6 && /^\d*\.?\d*$/.test(val))) {
+                                      handleUpdateSizingValue(space.id, sizingKey, val === '' ? 0 : parseFloat(val));
+                                    }
+                                  }}
+                                  placeholder="0"
+                                  className="w-20 h-8 text-sm text-center"
+                                  maxLength={6}
+                                />
+                                <span className="text-xs text-muted-foreground">{phase.scalingUnit}</span>
+                              </div>
                             </div>
                           );
                         })}
