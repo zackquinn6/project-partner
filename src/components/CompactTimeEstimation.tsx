@@ -182,16 +182,16 @@ export function CompactTimeEstimation({
           </div>
           
           <Select
-            value={step.skillLevel || ''}
+            value={step.skillLevel || 'none'}
             onValueChange={(value) => {
-              onSkillLevelChange(value as WorkflowStep['skillLevel']);
+              onSkillLevelChange(value === 'none' ? undefined : (value as WorkflowStep['skillLevel']));
             }}
           >
             <SelectTrigger className="h-8 text-xs">
               <SelectValue placeholder="Select skill level" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Use project default</SelectItem>
+              <SelectItem value="none">Use project default</SelectItem>
               <SelectItem value="Beginner">Beginner</SelectItem>
               <SelectItem value="Intermediate">Intermediate</SelectItem>
               <SelectItem value="Advanced">Advanced</SelectItem>

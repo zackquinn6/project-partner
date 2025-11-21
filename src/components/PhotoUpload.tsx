@@ -244,12 +244,12 @@ export function PhotoUpload({
             {availableSteps.length > 0 && (
               <div>
                 <Label htmlFor="step-select">Tag to Step (Optional)</Label>
-                <Select value={selectedStepId} onValueChange={setSelectedStepId}>
+                <Select value={selectedStepId || 'none'} onValueChange={(value) => setSelectedStepId(value === 'none' ? '' : value)}>
                   <SelectTrigger id="step-select">
                     <SelectValue placeholder="No step tag" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No step tag</SelectItem>
+                    <SelectItem value="none">No step tag</SelectItem>
                     {availableSteps.map((step) => {
                       const displayName = [step.phaseName, step.operationName, step.step]
                         .filter(Boolean)
