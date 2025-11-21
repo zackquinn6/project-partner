@@ -111,6 +111,7 @@ async function updateStepContent(
 
     // Match tools to library
     const toolsWithAlternates: any[] = [];
+    const unmatchedTools: string[] = [];
     for (const toolName of toolNames) {
       const { data: matchedTool } = await supabase
         .from('tools')
@@ -119,16 +120,24 @@ async function updateStepContent(
         .limit(1)
         .maybeSingle();
 
+      const isMatched = !!matchedTool;
       toolsWithAlternates.push({
         name: toolName,
-        matched: !!matchedTool,
+        matched: isMatched,
         matchedName: matchedTool?.item || toolName,
         alternates: toolAlternatesMap.get(toolName) || [],
       });
 
       if (matchedTool) {
         result.stats.toolsMatched++;
+      } else {
+        unmatchedTools.push(toolName);
       }
+    }
+    
+    // Flag unmatched tools to user
+    if (unmatchedTools.length > 0) {
+      result.warnings.push(`⚠️ Tools not found in library (${unmatchedTools.length}): ${unmatchedTools.join(', ')}. Please add these to the tools library to ensure proper nomenclature.`);
     }
 
     // Update step with new tools
@@ -157,6 +166,7 @@ async function updateStepContent(
 
     // Match materials to library
     const matchedMaterials: any[] = [];
+    const unmatchedMaterials: string[] = [];
     for (const materialName of materialNames) {
       const { data: matchedMaterial } = await supabase
         .from('materials')
@@ -165,15 +175,23 @@ async function updateStepContent(
         .limit(1)
         .maybeSingle();
 
+      const isMatched = !!matchedMaterial;
       matchedMaterials.push({
         name: materialName,
-        matched: !!matchedMaterial,
+        matched: isMatched,
         matchedName: matchedMaterial?.item || materialName,
       });
 
       if (matchedMaterial) {
         result.stats.materialsMatched++;
+      } else {
+        unmatchedMaterials.push(materialName);
       }
+    }
+    
+    // Flag unmatched materials to user
+    if (unmatchedMaterials.length > 0) {
+      result.warnings.push(`⚠️ Materials not found in library (${unmatchedMaterials.length}): ${unmatchedMaterials.join(', ')}. Please add these to the materials library to ensure proper nomenclature.`);
     }
 
     // Update step with new materials
@@ -194,15 +212,29 @@ async function updateStepContent(
   }
 
   // Update outputs if selected
-  if (contentSelection?.outputs !== false) {
+  if (contentSelection?.outputs !== false && Array.isArray(generatedStep.outputs) && generatedStep.outputs.length > 0) {
     // Delete existing outputs for this step
     await supabase
       .from('workflow_step_outputs')
       .delete()
       .eq('step_id', stepId);
 
+    // Track outputs by name to prevent duplicates
+    const seenOutputNames = new Set<string>();
+    
     // Create new outputs
     for (const output of generatedStep.outputs) {
+      if (!output || !output.name) {
+        continue; // Skip invalid outputs
+      }
+      
+      // Check for duplicate output name
+      if (seenOutputNames.has(output.name.toLowerCase().trim())) {
+        result.warnings.push(`Skipping duplicate output "${output.name}"`);
+        continue;
+      }
+      seenOutputNames.add(output.name.toLowerCase().trim());
+      
       const { data: existingOutput } = await supabase
         .from('outputs')
         .select('id')
@@ -835,6 +867,7 @@ export async function importGeneratedProject(
 
           // Match tools to library
           const toolsWithAlternates: any[] = [];
+          const unmatchedTools: string[] = [];
           for (const toolName of toolNames) {
             const { data: matchedTool } = await supabase
               .from('tools')
@@ -843,16 +876,24 @@ export async function importGeneratedProject(
               .limit(1)
               .maybeSingle();
 
+            const isMatched = !!matchedTool;
             toolsWithAlternates.push({
               name: toolName,
-              matched: !!matchedTool,
+              matched: isMatched,
               matchedName: matchedTool?.item || toolName,
               alternates: toolAlternatesMap.get(toolName) || [],
             });
 
             if (matchedTool) {
               result.stats.toolsMatched++;
+            } else {
+              unmatchedTools.push(toolName);
             }
+          }
+          
+          // Flag unmatched tools to user
+          if (unmatchedTools.length > 0) {
+            result.warnings.push(`⚠️ Tools not found in library (${unmatchedTools.length}): ${unmatchedTools.join(', ')}. Please add these to the tools library to ensure proper nomenclature.`);
           }
 
           // Match materials to library
@@ -861,6 +902,7 @@ export async function importGeneratedProject(
             : [];
 
           const matchedMaterials: any[] = [];
+          const unmatchedMaterials: string[] = [];
           for (const materialName of materialNames) {
             const { data: matchedMaterial } = await supabase
               .from('materials')
@@ -869,15 +911,23 @@ export async function importGeneratedProject(
               .limit(1)
               .maybeSingle();
 
+            const isMatched = !!matchedMaterial;
             matchedMaterials.push({
               name: materialName,
-              matched: !!matchedMaterial,
+              matched: isMatched,
               matchedName: matchedMaterial?.item || materialName,
             });
 
             if (matchedMaterial) {
               result.stats.materialsMatched++;
+            } else {
+              unmatchedMaterials.push(materialName);
             }
+          }
+          
+          // Flag unmatched materials to user
+          if (unmatchedMaterials.length > 0) {
+            result.warnings.push(`⚠️ Materials not found in library (${unmatchedMaterials.length}): ${unmatchedMaterials.join(', ')}. Please add these to the materials library to ensure proper nomenclature.`);
           }
 
           const { data: createdStep, error: stepError } = await supabase
@@ -1013,16 +1063,40 @@ export async function importGeneratedProject(
 
           // Step 7: Create outputs - only if selected
           if (contentSelection?.outputs !== false && Array.isArray(step.outputs) && step.outputs.length > 0) {
+            // Track outputs by name to prevent duplicates
+            const seenOutputNames = new Set<string>();
+            
             for (const output of step.outputs) {
               if (!output || !output.name) {
                 continue; // Skip invalid outputs
               }
+              
+              // Check for duplicate output name within this step
+              if (seenOutputNames.has(output.name.toLowerCase().trim())) {
+                result.warnings.push(`Skipping duplicate output "${output.name}" for step "${step.stepTitle}"`);
+                continue;
+              }
+              seenOutputNames.add(output.name.toLowerCase().trim());
+              
+              // Check if output already linked to this step (prevent duplicate links)
+              const { data: existingLink } = await supabase
+                .from('workflow_step_outputs')
+                .select('id')
+                .eq('step_id', createdStep.id)
+                .eq('name', output.name)
+                .maybeSingle();
+              
+              if (existingLink) {
+                result.warnings.push(`Output "${output.name}" already linked to step "${step.stepTitle}" - skipping duplicate`);
+                continue;
+              }
+              
               // Check if output exists
               const { data: existingOutput } = await supabase
                 .from('outputs')
                 .select('id')
                 .eq('name', output.name)
-                .single();
+                .maybeSingle();
 
               let outputId: string;
 

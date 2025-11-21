@@ -121,8 +121,13 @@ export default function EditWorkflowView({
     const phase = displayPhases.find(p => p.name === phaseName);
     if (!phase) return false;
     
-    // Check if phase is standard or incorporated (linked)
-    return phase.isStandard === true || phase.isLinked === true || isStandardPhase(phaseName);
+    // Only block editing if phase is:
+    // 1. Explicitly marked as standard in database (isStandard === true), OR
+    // 2. Incorporated from another project (isLinked === true)
+    // Note: AI-generated phases have is_standard: false, so they should always be editable
+    // We don't check phase name alone because AI might generate phases with standard-sounding names
+    // but they should still be editable since they're custom phases
+    return phase.isStandard === true || phase.isLinked === true;
   };
 
   // Debug log to check phases and show helpful message if empty
