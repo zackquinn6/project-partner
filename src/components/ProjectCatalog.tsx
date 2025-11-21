@@ -977,7 +977,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
           {/* Desktop: Original layout */}
           <div className="hidden md:block">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
               {/* Search */}
               <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -990,10 +990,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
 
               {/* Category Filter */}
-              <div className="w-full lg:w-auto">
+              <div className="w-full md:w-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full lg:w-auto justify-between relative">
+                    <Button variant="outline" className="w-full md:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
                         Category {selectedCategories.length > 0 && `(${selectedCategories.length})`}
@@ -1017,10 +1017,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
 
               {/* Skill Level Filter */}
-              <div className="w-full lg:w-auto">
+              <div className="w-full md:w-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full lg:w-auto justify-between relative">
+                    <Button variant="outline" className="w-full md:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
                         Skill Level {selectedDifficulties.length > 0 && `(${selectedDifficulties.length})`}
@@ -1044,10 +1044,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
 
               {/* Effort Level Filter */}
-              <div className="w-full lg:w-auto">
+              <div className="w-full md:w-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full lg:w-auto justify-between relative">
+                    <Button variant="outline" className="w-full md:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
                         Effort Level {selectedEffortLevels.length > 0 && `(${selectedEffortLevels.length})`}
@@ -1071,10 +1071,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
 
               {/* Project Type Filter */}
-              <div className="w-full lg:w-auto">
+              <div className="w-full md:w-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full lg:w-auto justify-between relative">
+                    <Button variant="outline" className="w-full md:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
                         Project Type {projectTypeLabel && `(${projectTypeLabel})`}
