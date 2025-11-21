@@ -15,7 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, FileText, Mail, Printer, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, FileText, Mail, Printer, Info, Layers } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays, parseISO, addHours, isSameDay } from 'date-fns';
 import { Project } from '@/interfaces/Project';
@@ -26,6 +26,8 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { schedulingEngine } from '@/utils/schedulingEngine';
 import { SchedulingInputs, SchedulingResult, Task, Worker, PlanningMode, ScheduleTempo, RemediationSuggestion } from '@/interfaces/Scheduling';
 import { supabase } from '@/integrations/supabase/client';
+import { PhaseAssignment } from '@/components/PhaseAssignment';
+import { useAuth } from '@/contexts/AuthContext';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -97,6 +99,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const {
     isMobile
   } = useResponsive();
+  const { user } = useAuth();
+
+  // Phase assignment dialog state
+  const [showPhaseAssignment, setShowPhaseAssignment] = useState(false);
 
   // Space priority state with sizing values
   const [spaces, setSpaces] = useState<Array<{ 
@@ -994,6 +1000,19 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
+            {/* Assign Phases Button */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPhaseAssignment(true)}
+                className="flex-1"
+              >
+                <Layers className="w-4 h-4 mr-2" />
+                Assign Phases
+              </Button>
+            </div>
+
             {/* New Wizard Interface */}
             <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} completionPriority={completionPriority} setCompletionPriority={setCompletionPriority} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} />
 
@@ -1446,5 +1465,24 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
           </DialogContent>
         </Dialog>}
-    </Dialog>;
+
+    {/* Phase Assignment Dialog */}
+    <Dialog open={showPhaseAssignment} onOpenChange={setShowPhaseAssignment}>
+      <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-6xl h-[85vh] p-0 gap-0">
+        <DialogHeader className="p-4 border-b">
+          <DialogTitle>Assign Phases to Team Members</DialogTitle>
+        </DialogHeader>
+        <div className="p-4 flex-1 overflow-auto">
+          {user && projectRun?.id && (
+            <PhaseAssignment
+              projectRunId={projectRun.id}
+              phases={project.phases}
+              teamMembers={teamMembers}
+              userId={user.id}
+            />
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  </Dialog>;
 };
