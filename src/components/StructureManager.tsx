@@ -332,20 +332,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       // Merge incorporated phases and custom phases from current project
       // Incorporated phases (isLinked) are not in project_phases table
-      // Custom phases (is_standard = false, not linked) might not be in project_phases table yet
+      // Use currentProject.phases as the source of truth (like EditWorkflowView does)
+      // This ensures all phases are included, including custom phases that might have different IDs
       const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
       const currentPhases = currentProject.phases || [];
       
-      // Get incorporated phases (isLinked = true) - these are dynamically linked
+      // Get all phases from currentProject.phases, but prefer rebuilt phases when IDs match
+      // This ensures we get the latest data from DB for standard/custom phases that exist in DB
+      // while also including custom phases that might not be in DB yet
+      const rebuiltPhaseIds = new Set(rebuiltPhasesArray.map(p => p.id));
+      const rebuiltPhaseNames = new Set(rebuiltPhasesArray.map(p => p.name));
+      
+      // Get incorporated phases (isLinked = true) from currentProject.phases - these are only in JSON
       const incorporatedPhases = currentPhases.filter(p => p.isLinked);
       
-      // Get custom phases (is_standard = false, not linked) that might not be in database yet
-      // Only include phases that aren't already in rebuiltPhasesArray (by ID)
-      const rebuiltPhaseIds = new Set(rebuiltPhasesArray.map(p => p.id));
+      // Get custom phases from currentProject.phases that aren't in rebuilt phases (by name, not ID)
+      // This handles cases where phases exist in JSON but not in DB, or have different IDs
       const customPhasesFromJson = currentPhases.filter(p => 
         !p.isLinked && 
         p.isStandard !== true && 
-        !rebuiltPhaseIds.has(p.id)
+        !rebuiltPhaseNames.has(p.name) // Match by name instead of ID to catch all custom phases
       );
       
       // Combine: rebuilt phases (from DB) + incorporated phases (from JSON) + custom phases (from JSON)
