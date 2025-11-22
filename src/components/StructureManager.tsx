@@ -330,32 +330,44 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         return;
       }
 
-      // Merge incorporated phases and custom phases from current project
-      // Incorporated phases (isLinked) are not in project_phases table
       // Use currentProject.phases as the source of truth (like EditWorkflowView does)
-      // This ensures all phases are included, including custom phases that might have different IDs
+      // This ensures all phases are included with correct isStandard flags
+      // Merge with rebuilt phases to get fresh data, but preserve isStandard from currentProject.phases
       const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
       const currentPhases = currentProject.phases || [];
       
-      // Get all phases from currentProject.phases, but prefer rebuilt phases when IDs match
-      // This ensures we get the latest data from DB for standard/custom phases that exist in DB
-      // while also including custom phases that might not be in DB yet
-      const rebuiltPhaseIds = new Set(rebuiltPhasesArray.map(p => p.id));
+      // Build a map of phases from currentProject.phases by name to preserve their isStandard flags
+      const currentPhasesByName = new Map<string, Phase>();
+      currentPhases.forEach(phase => {
+        if (phase.name) {
+          currentPhasesByName.set(phase.name, phase);
+        }
+      });
+      
+      // Merge: Use rebuilt phases from DB for fresh data, but update isStandard from currentProject.phases
+      // This ensures custom phases aren't incorrectly tagged as standard
+      const mergedRebuiltPhases = rebuiltPhasesArray.map(rebuiltPhase => {
+        const currentPhase = currentPhasesByName.get(rebuiltPhase.name);
+        if (currentPhase) {
+          // Preserve isStandard flag from currentProject.phases (source of truth)
+          return {
+            ...rebuiltPhase,
+            isStandard: currentPhase.isStandard, // Use isStandard from currentProject.phases
+            isLinked: currentPhase.isLinked || rebuiltPhase.isLinked // Preserve both flags
+          };
+        }
+        return rebuiltPhase;
+      });
+      
+      // Get phases from currentProject.phases that aren't in rebuilt phases (by name)
+      // These are phases that exist in JSON but might not be in DB yet
       const rebuiltPhaseNames = new Set(rebuiltPhasesArray.map(p => p.name));
-      
-      // Get incorporated phases (isLinked = true) from currentProject.phases - these are only in JSON
-      const incorporatedPhases = currentPhases.filter(p => p.isLinked);
-      
-      // Get custom phases from currentProject.phases that aren't in rebuilt phases (by name, not ID)
-      // This handles cases where phases exist in JSON but not in DB, or have different IDs
-      const customPhasesFromJson = currentPhases.filter(p => 
-        !p.isLinked && 
-        p.isStandard !== true && 
-        !rebuiltPhaseNames.has(p.name) // Match by name instead of ID to catch all custom phases
+      const phasesOnlyInJson = currentPhases.filter(p => 
+        p.name && !rebuiltPhaseNames.has(p.name)
       );
       
-      // Combine: rebuilt phases (from DB) + incorporated phases (from JSON) + custom phases (from JSON)
-      const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases, ...customPhasesFromJson];
+      // Combine: merged rebuilt phases (with corrected isStandard) + phases only in JSON
+      const allPhases = [...mergedRebuiltPhases, ...phasesOnlyInJson];
       
       console.log('🔍 StructureManager loadFreshPhases:', {
         projectId: currentProject.id,
