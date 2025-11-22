@@ -957,6 +957,20 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   const renderView = () => {
     return (
       <div className="space-y-6">
+        {/* Action buttons at top - same for Standard Project Foundation and regular templates */}
+        <div className="flex gap-2 justify-end mb-4">
+          <Button onClick={handleEditStandardProject} variant="outline" className="flex items-center gap-2">
+            <Lock className="w-4 h-4" />
+            Edit Standard
+          </Button>
+          {currentProject && (
+            <Button onClick={() => setCurrentView('editWorkflow')} variant="outline" className="flex items-center gap-2">
+              <Edit className="w-4 h-4" />
+              Edit Workflow
+            </Button>
+          )}
+        </div>
+
         {renderProjectSelector()}
         
         <Card>
