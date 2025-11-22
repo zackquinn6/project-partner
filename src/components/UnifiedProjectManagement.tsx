@@ -282,18 +282,8 @@ export function UnifiedProjectManagement({
         console.log('📝 Keeping project_challenges as null (no existing value)');
       }
 
-      // Set estimated_total_time and typical_project_size
-      if (editedProject.hasOwnProperty('estimated_total_time')) {
-        updateData.estimated_total_time = editedProject.estimated_total_time ?? null;
-      } else if (selectedProject.estimated_total_time !== undefined && selectedProject.estimated_total_time !== null) {
-        updateData.estimated_total_time = selectedProject.estimated_total_time;
-      }
-
-      if (editedProject.hasOwnProperty('typical_project_size')) {
-        updateData.typical_project_size = editedProject.typical_project_size ?? null;
-      } else if (selectedProject.typical_project_size !== undefined && selectedProject.typical_project_size !== null) {
-        updateData.typical_project_size = selectedProject.typical_project_size;
-      }
+      // Note: estimated_total_time and typical_project_size are already set in updateData above
+      // This duplicate logic is removed since they're handled in the initial updateData object
 
       console.log('💾 Saving project edit:', {
         projectId: selectedProject.id,
