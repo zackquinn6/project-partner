@@ -54,33 +54,16 @@ export default function EditWorkflowView({
     updateProject
   } = useProject();
 
-  // Fetch dynamic phases for template projects (not Standard Project Foundation)
-  const { phases: dynamicPhases, loading: dynamicPhasesLoading } = useDynamicPhases(
-    currentProject?.id !== '00000000-0000-0000-0000-000000000001' ? currentProject?.id : undefined
-  );
-
-  // Use the same data source as StructureManager to ensure consistency
-  // StructureManager uses currentProject?.phases directly, so we should too
-  // This ensures both views show the exact same phases in the same order
-  // When phases are reordered in StructureManager:
-  //   1. display_order is updated in database
-  //   2. rebuild_phases_json_from_project_phases is called (orders by display_order)
-  //   3. currentProject.phases is updated via updateProject()
-  //   4. This component re-renders with new currentProject.phases
-  //   5. Both components apply the same enforceStandardPhaseOrdering logic
-  // Note: We still fetch dynamic phases for potential future use, but prioritize stored phases for consistency
-  let rawPhases: Phase[] = [];
-  if (currentProject?.id === '00000000-0000-0000-0000-000000000001') {
-    // Standard Project Foundation: use stored phases
-    rawPhases = currentProject?.phases || [];
-  } else {
-    // Template project: use stored phases from currentProject to match StructureManager
-    // This ensures both views show the same phases
-    rawPhases = currentProject?.phases || [];
-  }
-
+  // Use the same data source and detection logic as StructureManager
+  // Both components work identically for Standard Project Foundation and regular project templates
+  // The only difference is isEditingStandardProject flag which controls edit permissions
+  
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
+  
+  // Get phases directly from currentProject (same as StructureManager)
+  // This works for both Standard Project Foundation and regular templates
+  const rawPhases: Phase[] = currentProject?.phases || [];
 
   // Helper to check if a phase is standard - use isStandard flag from phase data
   // No hardcoded names - rely on database flag
@@ -181,7 +164,6 @@ export default function EditWorkflowView({
         projectId: currentProject.id,
         projectName: currentProject.name,
         isEditingStandardProject,
-        usingDynamicPhases: currentProject.id !== '00000000-0000-0000-0000-000000000001' && dynamicPhases.length > 0,
         hasPhases,
         hasOperations,
         phaseCount: displayPhases?.length || 0,
@@ -193,13 +175,13 @@ export default function EditWorkflowView({
       });
 
       // Show warning if no phases
-      if (!hasPhases && !dynamicPhasesLoading) {
+      if (!hasPhases) {
         toast.error('This project has no phases. The project data may be corrupted.');
-      } else if (!hasOperations && !dynamicPhasesLoading) {
+      } else if (!hasOperations) {
         toast.error('This project has phases but no operations. The project structure may be incomplete.');
       }
     }
-  }, [currentProject?.id, isEditingStandardProject, displayPhases, dynamicPhases.length, dynamicPhasesLoading]);
+  }, [currentProject?.id, isEditingStandardProject, displayPhases]);
   const [viewMode, setViewMode] = useState<'steps' | 'structure'>('steps');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);

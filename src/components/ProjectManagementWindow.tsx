@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical, History, Info } from 'lucide-react';
+import { Edit, Trash2, Plus, Check, X, ChevronRight, ChevronDown, Package, Wrench, FileOutput, Import, GripVertical, History, Info, Lock } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -69,6 +69,42 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
   const [showImport, setShowImport] = useState(false);
   const [showRevisionHistory, setShowRevisionHistory] = useState(false);
+
+  // Handle Edit Standard Project Foundation
+  const handleEditStandardProject = async () => {
+    try {
+      // Fetch standard project using RPC
+      const { data: standardData, error: rpcError } = await supabase.rpc('get_standard_project_template');
+      if (rpcError) throw rpcError;
+      if (!standardData || standardData.length === 0) throw new Error('Standard Project not found');
+      
+      const projectData = standardData[0];
+      const parsedPhases = Array.isArray(projectData.phases) 
+        ? projectData.phases 
+        : typeof projectData.phases === 'string' 
+          ? JSON.parse(projectData.phases) 
+          : [];
+      
+      // Set Standard Project Foundation as current project
+      setCurrentProject({
+        id: projectData.project_id,
+        name: projectData.project_name,
+        description: projectData.project_description || '',
+        createdAt: new Date(projectData.created_at || Date.now()),
+        updatedAt: new Date(projectData.updated_at || Date.now()),
+        publishStatus: 'draft' as const,
+        phases: parsedPhases,
+        isStandardTemplate: true,
+        category: projectData.category || []
+      });
+
+      // Open workflow editor for Standard Project Foundation
+      setCurrentView('editWorkflow');
+    } catch (error: any) {
+      console.error('Error loading standard project:', error);
+      toast.error(error.message || 'Failed to load Standard Project Foundation');
+    }
+  };
 
   const updateProjectData = async (updatedProject: typeof currentProject) => {
     if (updatedProject) {
