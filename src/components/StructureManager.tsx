@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Material, Tool, Output, Phase, Operation } from '@/interfaces/Project';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import { PhaseIncorporationDialog } from './PhaseIncorporationDialog';
 import { DecisionTreeManager } from './DecisionTreeManager';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { useDynamicPhases } from '@/hooks/useDynamicPhases';
 interface StructureManagerProps {
   onBack: () => void;
 }
@@ -308,31 +309,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [phasesLoaded, setPhasesLoaded] = useState(false);
   const [displayPhases, setDisplayPhases] = useState<Phase[]>([]);
 
+  // Rebuild phases from database (like EditWorkflowView does)
+  // This ensures we get fresh data, but we'll merge with currentProject.phases to preserve correct isStandard flags
+  const { phases: rebuiltPhases, loading: rebuildingPhases } = useDynamicPhases(currentProject?.id);
+  
   // Load fresh phases from database - extracted as reusable function
-  const loadFreshPhases = async () => {
+  // Use useDynamicPhases hook like EditWorkflowView does for consistency
+  const loadFreshPhases = React.useCallback(() => {
     if (!currentProject) return;
     
     try {
-      // Rebuild phases from database to get fresh data (not stale JSON)
-      const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-        p_project_id: currentProject.id
-      });
-
-      if (rebuildError) {
-        console.error('Error rebuilding phases:', rebuildError);
-        // Fallback to current project phases
-        const rawPhases = deduplicatePhases(currentProject?.phases || []);
-        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
-        const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
-        const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
-        setDisplayPhases(sortedPhases);
-        setPhasesLoaded(true);
-        return;
-      }
-
-      // Use currentProject.phases as the source of truth (like EditWorkflowView does)
-      // This ensures all phases are included with correct isStandard flags
-      // Merge with rebuilt phases to get fresh data, but preserve isStandard from currentProject.phases
+      // Note: rebuiltPhases comes from useDynamicPhases hook (same as EditWorkflowView)
+      // This ensures consistent phase loading across components
       const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
       const currentPhases = currentProject.phases || [];
       
@@ -410,15 +398,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   };
 
   // Load fresh phases from database on mount or when project changes
+  // Also reload when rebuiltPhases from useDynamicPhases changes
   useEffect(() => {
-    if (currentProject) {
+    if (currentProject && !rebuildingPhases) {
       // Reset phasesLoaded when project changes
-      setPhasesLoaded(false);
-      setDisplayPhases([]);
+      if (!displayPhases.length || (displayPhases.length > 0 && displayPhases[0]?.projectId !== currentProject.id)) {
+        setPhasesLoaded(false);
+        setDisplayPhases([]);
+      }
       loadFreshPhases();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentProject?.id]);
+  }, [currentProject?.id, rebuiltPhases, rebuildingPhases, loadFreshPhases]);
 
   // Initialize displayPhases with current project phases if not loaded yet
   // Use currentProject.phases as the primary source (like EditWorkflowView)
