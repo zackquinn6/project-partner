@@ -403,37 +403,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   }, [mergedPhases, currentProject?.phases]);
   
   // Update displayPhases when processedPhases changes
+  // Always update displayPhases to match processedPhases (even if empty)
+  // This ensures displayPhases is always in sync with processedPhases
   useEffect(() => {
-    if (processedPhases.length > 0) {
-      console.log('🔍 StructureManager processed phases:', {
-        projectId: currentProject?.id,
-        projectName: currentProject?.name,
-        mergedPhasesCount: mergedPhases?.length || 0,
-        currentProjectPhasesCount: currentProject?.phases?.length || 0,
-        processedPhasesCount: processedPhases.length,
-        rebuiltPhasesCount: rebuiltPhases?.length || 0,
-        phaseNames: processedPhases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
-        rebuiltPhaseNames: rebuiltPhases?.map(p => p.name) || [],
-        currentPhaseNames: currentProject?.phases?.map(p => p.name) || [],
-        phasesOnlyInJson: mergedPhases ? currentProject?.phases?.filter(p => 
-          p.name && !rebuiltPhases?.some(rp => rp.name === p.name)
-        ).map(p => p.name) || [] : []
+    console.log('🔍 StructureManager processed phases:', {
+      projectId: currentProject?.id,
+      projectName: currentProject?.name,
+      mergedPhasesCount: mergedPhases?.length || 0,
+      currentProjectPhasesCount: currentProject?.phases?.length || 0,
+      processedPhasesCount: processedPhases.length,
+      rebuiltPhasesCount: rebuiltPhases?.length || 0,
+      phaseNames: processedPhases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
+      rebuiltPhaseNames: rebuiltPhases?.map(p => p.name) || [],
+      currentPhaseNames: currentProject?.phases?.map(p => p.name) || [],
+      phasesOnlyInJson: mergedPhases ? currentProject?.phases?.filter(p => 
+        p.name && !rebuiltPhases?.some(rp => rp.name === p.name)
+      ).map(p => p.name) || [] : []
+    });
+    
+    // Always update displayPhases to match processedPhases
+    // This ensures phases are displayed even if they're only in JSON
+    setDisplayPhases(processedPhases);
+    setPhasesLoaded(true);
+    
+    // Update local context with fresh phases
+    if (currentProject && processedPhases.length > 0) {
+      updateProject({
+        ...currentProject,
+        phases: processedPhases,
+        updatedAt: new Date()
       });
-      
-      setDisplayPhases(processedPhases);
-      setPhasesLoaded(true);
-      
-      // Update local context with fresh phases
-      if (currentProject) {
-        updateProject({
-          ...currentProject,
-          phases: processedPhases,
-          updatedAt: new Date()
-        });
-      }
-    } else if (!rebuildingPhases && processedPhases.length === 0 && displayPhases.length > 0) {
-      // If processedPhases becomes empty and we had phases before, keep displayPhases
-      // This prevents clearing phases during loading
     }
   }, [processedPhases, rebuildingPhases, currentProject, updateProject, rebuiltPhases, mergedPhases]);
 
