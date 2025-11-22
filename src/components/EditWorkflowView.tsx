@@ -809,14 +809,6 @@ export default function EditWorkflowView({
               <h1 className="text-xl font-bold">
                 {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name || 'Untitled Project'}`}
               </h1>
-              {!isEditingStandardProject && dynamicPhasesLoading && (
-                <div className="mt-2 space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                    <span>Loading workflow with latest standard phases...</span>
-                  </div>
-                </div>
-              )}
               {!isEditingStandardProject && (
                 <p className="text-xs text-muted-foreground mt-2">
                   Standard and incorporated phases must be edited outside this template.
