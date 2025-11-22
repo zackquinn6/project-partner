@@ -318,7 +318,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Use currentProject.phases as the source of truth for isStandard flags
   // Same logic as EditWorkflowView for consistency
   const mergedPhases = React.useMemo(() => {
+    console.log('🔍 StructureManager mergedPhases useMemo:', {
+      hasCurrentProject: !!currentProject,
+      currentProjectPhasesCount: currentProject?.phases?.length || 0,
+      currentProjectPhaseNames: currentProject?.phases?.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })) || [],
+      rebuiltPhasesCount: rebuiltPhases?.length || 0,
+      rebuiltPhaseNames: rebuiltPhases?.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })) || []
+    });
+    
     if (!currentProject?.phases || currentProject.phases.length === 0) {
+      console.log('🔍 No currentProject.phases, returning rebuiltPhases');
       return rebuiltPhases || [];
     }
     
@@ -353,11 +362,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         p.name && !rebuiltPhaseNames.has(p.name)
       );
       
+      console.log('🔍 StructureManager merge result:', {
+        mergedRebuiltPhasesCount: mergedRebuiltPhases.length,
+        phasesOnlyInJsonCount: phasesOnlyInJson.length,
+        phasesOnlyInJsonNames: phasesOnlyInJson.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
+        totalMergedCount: mergedRebuiltPhases.length + phasesOnlyInJson.length
+      });
+      
       // Combine: merged rebuilt phases (with corrected isStandard) + phases only in JSON
       return [...mergedRebuiltPhases, ...phasesOnlyInJson];
     }
     
     // Fallback: use currentProject.phases directly if no rebuilt phases
+    console.log('🔍 No rebuiltPhases, returning currentProject.phases directly');
     return currentProject.phases;
   }, [currentProject?.phases, rebuiltPhases]);
   
