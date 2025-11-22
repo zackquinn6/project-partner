@@ -235,6 +235,8 @@ export function UnifiedProjectManagement({
         effort_level: editedProject.effort_level !== undefined ? editedProject.effort_level : selectedProject.effort_level,
         skill_level: editedProject.skill_level !== undefined ? editedProject.skill_level : selectedProject.skill_level,
         estimated_time: editedProject.estimated_time !== undefined ? editedProject.estimated_time : selectedProject.estimated_time,
+        estimated_total_time: editedProject.estimated_total_time !== undefined ? editedProject.estimated_total_time : selectedProject.estimated_total_time,
+        typical_project_size: editedProject.typical_project_size !== undefined ? editedProject.typical_project_size : selectedProject.typical_project_size,
         scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
         item_type: editedProject.item_type !== undefined ? editedProject.item_type : selectedProject.item_type,
         project_type: editedProject.project_type || selectedProject.project_type || 'primary',
