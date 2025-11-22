@@ -408,13 +408,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   }, [currentProject?.id]);
 
   // Initialize displayPhases with current project phases if not loaded yet
+  // Use currentProject.phases as the primary source (like EditWorkflowView)
+  // This ensures all phases are visible immediately, including custom phases
   useEffect(() => {
-    if (!phasesLoaded && currentProject) {
-      const rawPhases = deduplicatePhases(currentProject?.phases || []);
+    if (!phasesLoaded && currentProject && currentProject.phases && currentProject.phases.length > 0) {
+      const rawPhases = deduplicatePhases(currentProject.phases);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
       const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
       if (sortedPhases.length > 0 && displayPhases.length === 0) {
+        console.log('🔍 StructureManager initializing displayPhases from currentProject:', {
+          projectId: currentProject.id,
+          projectName: currentProject.name,
+          phaseCount: sortedPhases.length,
+          phaseNames: sortedPhases.map(p => p.name)
+        });
         setDisplayPhases(sortedPhases);
       }
     }
