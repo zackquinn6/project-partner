@@ -97,24 +97,38 @@ BEGIN
 
     -- Build apps JSON with app overrides
     apps_json := '[]'::jsonb;
+    -- Process apps and apply overrides dynamically
+    apps_json := '[]'::jsonb;
     IF step_record.apps IS NOT NULL AND jsonb_typeof(step_record.apps) = 'array' THEN
-      FOR app_obj IN SELECT * FROM jsonb_array_elements(step_record.apps)
-      LOOP
-        -- Check for app override
+      FOR i IN 0..jsonb_array_length(step_record.apps) - 1 LOOP
+        app_obj := step_record.apps->i;
+        
+        -- Check for app override by app.id or actionKey
         SELECT * INTO app_override
         FROM public.app_overrides
-        WHERE app_key = app_obj->>'key'
+        WHERE app_id = app_obj->>'id'
+           OR app_id = app_obj->>'actionKey'
+           OR app_id = REPLACE(app_obj->>'id', 'app-', '')
+           OR (app_obj->>'actionKey' IS NOT NULL AND app_id = app_obj->>'actionKey')
         LIMIT 1;
-
+        
         IF FOUND THEN
+          -- Apply override - use app_name from app_overrides table
           apps_json := apps_json || jsonb_build_object(
-            'key', app_obj->>'key',
-            'name', app_override.display_name,
-            'description', COALESCE(app_override.description, app_obj->>'description'),
-            'url', app_obj->>'url',
-            'icon', app_obj->>'icon'
+            'id', COALESCE(app_obj->>'id', CONCAT('app-', app_override.app_id)),
+            'appName', app_override.app_name,  -- DYNAMIC: Use name from app_overrides
+            'appType', COALESCE(app_obj->>'appType', 'native'),
+            'icon', COALESCE(app_override.icon, app_obj->>'icon', 'Sparkles'),
+            'description', COALESCE(app_override.description, app_obj->>'description', ''),
+            'actionKey', COALESCE(app_obj->>'actionKey', app_override.app_id),
+            'displayOrder', COALESCE((app_obj->>'displayOrder')::INTEGER, COALESCE(app_override.display_order, 1)),
+            'embedUrl', app_obj->>'embedUrl',
+            'linkUrl', app_obj->>'linkUrl',
+            'openInNewTab', (app_obj->>'openInNewTab')::BOOLEAN,
+            'isBeta', (app_obj->>'isBeta')::BOOLEAN
           );
         ELSE
+          -- Keep original app (no override found)
           apps_json := apps_json || app_obj;
         END IF;
       END LOOP;
