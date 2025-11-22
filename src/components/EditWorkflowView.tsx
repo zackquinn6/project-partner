@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Tool, Material, Output, ContentSection, Phase, Operation, Project, AppReference } from '@/interfaces/Project';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
