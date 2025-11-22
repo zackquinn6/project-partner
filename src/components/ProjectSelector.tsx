@@ -32,7 +32,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   const [newProjectForm, setNewProjectForm] = useState({
     name: '',
     description: '',
-    category: ''
+    category: '',
+    estimatedTime: '',
+    estimatedTotalTime: '',
+    typicalProjectSize: '',
+    scalingUnit: ''
   });
   const [projectSetupForm, setProjectSetupForm] = useState({
     projectLeader: '',
