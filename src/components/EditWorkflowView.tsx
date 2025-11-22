@@ -121,15 +121,24 @@ export default function EditWorkflowView({
     // 1. Marked as standard (isStandard === true), OR
     // 2. Incorporated from another project (isLinked === true)
     // 
-    // The isStandard flag should be correctly set by the import pipeline:
-    // - Standard phases (Kickoff, Planning, Ordering, Close Project) should have isStandard: true
-    // - AI-generated phases should have isStandard: false
-    // - Incorporated phases should have isLinked: true
+    // IMPORTANT: For AI-generated phases, we must ensure they are editable.
+    // AI-generated phases should have isStandard: false and isLinked: false/undefined.
+    // If a phase is not a core standard phase name (Kickoff, Planning, Ordering, Close Project),
+    // it should be editable even if isStandard is incorrectly set to true.
     // 
     // NOTE: We check phase.isStandard, not step.isStandard, because the phase-level flag
     // is the source of truth for whether content is editable
     
-    const isStandardPhase = phase.isStandard === true;
+    const coreStandardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+    const isCoreStandardPhase = coreStandardPhaseNames.includes(phaseName);
+    
+    // Only block editing if:
+    // 1. It's a core standard phase AND isStandard === true, OR
+    // 2. It's an incorporated phase (isLinked === true)
+    // 
+    // This ensures AI-generated phases are always editable, even if they're incorrectly
+    // marked as isStandard: true in the database
+    const isStandardPhase = isCoreStandardPhase && phase.isStandard === true;
     const isLinkedPhase = phase.isLinked === true;
     const shouldBlock = isStandardPhase || isLinkedPhase;
     
