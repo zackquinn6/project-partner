@@ -330,13 +330,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         return;
       }
 
-      // Merge incorporated phases from current project (they're not in project_phases table)
+      // Merge incorporated phases and custom phases from current project
+      // Incorporated phases (isLinked) are not in project_phases table
+      // Custom phases (is_standard = false, not linked) might not be in project_phases table yet
       const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
       const currentPhases = currentProject.phases || [];
+      
+      // Get incorporated phases (isLinked = true) - these are dynamically linked
       const incorporatedPhases = currentPhases.filter(p => p.isLinked);
       
-      // Combine rebuilt phases with incorporated phases
-      const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
+      // Get custom phases (is_standard = false, not linked) that might not be in database yet
+      // Only include phases that aren't already in rebuiltPhasesArray (by ID)
+      const rebuiltPhaseIds = new Set(rebuiltPhasesArray.map(p => p.id));
+      const customPhasesFromJson = currentPhases.filter(p => 
+        !p.isLinked && 
+        p.isStandard !== true && 
+        !rebuiltPhaseIds.has(p.id)
+      );
+      
+      // Combine: rebuilt phases (from DB) + incorporated phases (from JSON) + custom phases (from JSON)
+      const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases, ...customPhasesFromJson];
       const rawPhases = deduplicatePhases(allPhases);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
