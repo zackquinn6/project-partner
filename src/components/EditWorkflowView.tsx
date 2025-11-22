@@ -129,7 +129,7 @@ export default function EditWorkflowView({
     const isLinkedPhase = phase.isLinked === true;
     const shouldBlock = isStandardPhase || isLinkedPhase;
     
-    // Debug logging for troubleshooting - always log for AI-generated content debugging
+    // Debug logging for troubleshooting
     console.log(`🔍 Edit Step Check for "${step.step}" in phase "${phaseName}":`, {
       isStandardPhase,
       isLinkedPhase,
@@ -143,7 +143,6 @@ export default function EditWorkflowView({
     if (shouldBlock) {
       console.log(`🚫 Blocking edit for step "${step.step}" in phase "${phaseName}": isStandard=${isStandardPhase}, isLinked=${isLinkedPhase}`);
     } else {
-      // Always log when allowing editing to help debug AI-generated content
       console.log(`✅ Allowing edit for step "${step.step}" in phase "${phaseName}": phase.isStandard=${phase.isStandard}, phase.isLinked=${phase.isLinked}, step.isStandard=${step.isStandard}`);
     }
     
