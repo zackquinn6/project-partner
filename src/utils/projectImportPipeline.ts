@@ -691,23 +691,8 @@ export async function importGeneratedProject(
           phaseId = newProjectPhase.id;
         }
       } else {
-        // Create custom phase - first create standard_phase, then project_phases
-        const { data: newStandardPhase, error: standardPhaseError } = await supabase
-          .from('standard_phases')
-          .insert({
-            name: phase.name,
-            description: phase.description,
-            display_order: 999,
-          })
-          .select('id')
-          .single();
-
-        if (standardPhaseError || !newStandardPhase) {
-          result.warnings.push(`Failed to create standard phase "${phase.name}": ${standardPhaseError?.message}`);
-          continue;
-        }
-
-        // Create project_phases entry
+        // Create custom phase - same as manually created phases (standard_phase_id: null)
+        // This ensures AI-generated phases are treated identically to manually created phases
         const { data: newProjectPhase, error: phaseError } = await supabase
           .from('project_phases')
           .insert({
@@ -716,7 +701,7 @@ export async function importGeneratedProject(
             description: phase.description,
             display_order: baseDisplayOrder + phaseIndex,
             is_standard: false,
-            standard_phase_id: newStandardPhase.id,
+            standard_phase_id: null, // Same as manually created phases - no link to standard_phases table
           })
           .select('id')
           .single();

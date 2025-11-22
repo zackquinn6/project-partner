@@ -111,9 +111,9 @@ export default function EditWorkflowView({
     const phase = displayPhases.find(p => p.name === phaseName);
     if (!phase) {
       // Phase not found in displayPhases - allow editing
-      // This can happen with AI-generated phases that haven't been properly loaded
+      // This can happen with phases that haven't been properly loaded
       // We want to allow editing in this case
-      console.warn(`⚠️ Phase "${phaseName}" not found in displayPhases - allowing edit (AI-generated content should be editable)`);
+      console.warn(`⚠️ Phase "${phaseName}" not found in displayPhases - allowing edit`);
       return false;
     }
     
