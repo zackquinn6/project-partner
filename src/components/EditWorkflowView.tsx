@@ -61,9 +61,56 @@ export default function EditWorkflowView({
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
   
-  // Get phases directly from currentProject (same as StructureManager)
-  // This works for both Standard Project Foundation and regular templates
-  const rawPhases: Phase[] = currentProject?.phases || [];
+  // Rebuild phases from database (like StructureManager does)
+  // This ensures we get fresh data, but we'll merge with currentProject.phases to preserve correct isStandard flags
+  const { phases: rebuiltPhases, loading: rebuildingPhases } = useDynamicPhases(currentProject?.id);
+  
+  // Merge rebuilt phases with currentProject.phases to preserve correct isStandard flags
+  // This ensures custom phases aren't incorrectly tagged as standard
+  // Use currentProject.phases as the source of truth for isStandard flags
+  const rawPhases: Phase[] = React.useMemo(() => {
+    if (!currentProject?.phases || currentProject.phases.length === 0) {
+      return rebuiltPhases || [];
+    }
+    
+    // If we have rebuilt phases, merge them with currentProject.phases to preserve correct isStandard flags
+    if (rebuiltPhases && rebuiltPhases.length > 0) {
+      const currentPhasesByName = new Map<string, Phase>();
+      currentProject.phases.forEach(phase => {
+        if (phase.name) {
+          currentPhasesByName.set(phase.name, phase);
+        }
+      });
+      
+      // Merge: Use rebuilt phases from DB for fresh data, but update isStandard from currentProject.phases
+      // This ensures custom phases aren't incorrectly tagged as standard
+      const mergedRebuiltPhases = rebuiltPhases.map(rebuiltPhase => {
+        const currentPhase = currentPhasesByName.get(rebuiltPhase.name);
+        if (currentPhase) {
+          // Preserve isStandard flag from currentProject.phases (source of truth)
+          return {
+            ...rebuiltPhase,
+            isStandard: currentPhase.isStandard, // Use isStandard from currentProject.phases
+            isLinked: currentPhase.isLinked || rebuiltPhase.isLinked // Preserve both flags
+          };
+        }
+        return rebuiltPhase;
+      });
+      
+      // Get phases from currentProject.phases that aren't in rebuilt phases (by name)
+      // These are phases that exist in JSON but might not be in DB yet
+      const rebuiltPhaseNames = new Set(rebuiltPhases.map(p => p.name));
+      const phasesOnlyInJson = currentProject.phases.filter(p => 
+        p.name && !rebuiltPhaseNames.has(p.name)
+      );
+      
+      // Combine: merged rebuilt phases (with corrected isStandard) + phases only in JSON
+      return [...mergedRebuiltPhases, ...phasesOnlyInJson];
+    }
+    
+    // Fallback: use currentProject.phases directly if no rebuilt phases
+    return currentProject.phases;
+  }, [currentProject?.phases, rebuiltPhases]);
 
   // Helper to check if a phase is standard - use isStandard flag from phase data
   // No hardcoded names - rely on database flag
