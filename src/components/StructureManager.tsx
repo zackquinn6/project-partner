@@ -350,6 +350,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // Combine: rebuilt phases (from DB) + incorporated phases (from JSON) + custom phases (from JSON)
       const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases, ...customPhasesFromJson];
+      
+      console.log('🔍 StructureManager loadFreshPhases:', {
+        projectId: currentProject.id,
+        projectName: currentProject.name,
+        rebuiltPhasesCount: rebuiltPhasesArray.length,
+        incorporatedPhasesCount: incorporatedPhases.length,
+        customPhasesFromJsonCount: customPhasesFromJson.length,
+        totalPhases: allPhases.length,
+        rebuiltPhaseNames: rebuiltPhasesArray.map(p => p.name),
+        customPhaseNames: customPhasesFromJson.map(p => p.name)
+      });
+      
       const rawPhases = deduplicatePhases(allPhases);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
@@ -378,9 +390,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
   };
 
-  // Load fresh phases from database on mount
+  // Load fresh phases from database on mount or when project changes
   useEffect(() => {
-    if (!phasesLoaded && currentProject) {
+    if (currentProject) {
+      // Reset phasesLoaded when project changes
+      setPhasesLoaded(false);
+      setDisplayPhases([]);
       loadFreshPhases();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
