@@ -374,7 +374,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         projectName: currentProject?.name,
         mergedPhasesCount: mergedPhases.length,
         sortedPhasesCount: sortedPhases.length,
-        phaseNames: sortedPhases.map(p => ({ name: p.name, isStandard: p.isStandard }))
+        rebuiltPhasesCount: rebuiltPhases?.length || 0,
+        currentProjectPhasesCount: currentProject?.phases?.length || 0,
+        phaseNames: sortedPhases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
+        rebuiltPhaseNames: rebuiltPhases?.map(p => p.name) || [],
+        currentPhaseNames: currentProject?.phases?.map(p => p.name) || []
       });
       
       setDisplayPhases(sortedPhases);
