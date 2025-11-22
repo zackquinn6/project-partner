@@ -55,6 +55,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       name: newProjectForm.name,
       description: newProjectForm.description,
       category: newProjectForm.category ? [newProjectForm.category] : undefined,
+      estimatedTime: newProjectForm.estimatedTime || undefined,
+      estimatedTotalTime: newProjectForm.estimatedTotalTime || undefined,
+      typicalProjectSize: newProjectForm.typicalProjectSize ? parseFloat(newProjectForm.typicalProjectSize) : undefined,
+      scalingUnit: newProjectForm.scalingUnit || undefined,
       projectChallenges: '', // Initialize empty project challenges field for new projects
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -64,7 +68,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
 
     addProject(newProject);
     setCurrentProject(newProject);
-    setNewProjectForm({ name: '', description: '', category: '' });
+    setNewProjectForm({ name: '', description: '', category: '', estimatedTime: '', estimatedTotalTime: '', typicalProjectSize: '', scalingUnit: '' });
     setIsNewProjectOpen(false);
     // Only open setup dialog in user mode, not admin mode
     if (!isAdminMode) {
@@ -299,6 +303,67 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                       onChange={(e) => setNewProjectForm(prev => ({ ...prev, description: e.target.value }))}
                     />
                   </div>
+                  
+                  {/* Estimated Time Fields */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="estimated-time" className="text-xs font-medium text-muted-foreground">Estimated Time</Label>
+                      <Input
+                        id="estimated-time"
+                        className="text-sm"
+                        placeholder="e.g., 0.5-1 hours per sqft"
+                        value={newProjectForm.estimatedTime}
+                        onChange={(e) => setNewProjectForm(prev => ({ ...prev, estimatedTime: e.target.value }))}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Time per scaling unit</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="scaling-unit" className="text-xs font-medium text-muted-foreground">Scaling Unit</Label>
+                      <Select
+                        value={newProjectForm.scalingUnit}
+                        onValueChange={(value) => setNewProjectForm(prev => ({ ...prev, scalingUnit: value }))}
+                      >
+                        <SelectTrigger id="scaling-unit" className="text-sm">
+                          <SelectValue placeholder="Select scaling unit" />
+                        </SelectTrigger>
+                        <SelectContent className="text-sm">
+                          <SelectItem className="text-sm" value="per square foot">per square foot</SelectItem>
+                          <SelectItem className="text-sm" value="per 10x10 room">per 10x10 room</SelectItem>
+                          <SelectItem className="text-sm" value="per linear foot">per linear foot</SelectItem>
+                          <SelectItem className="text-sm" value="per cubic yard">per cubic yard</SelectItem>
+                          <SelectItem className="text-sm" value="per item">per item</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  {/* Estimated Total Time and Typical Project Size */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="estimated-total-time" className="text-xs font-medium text-muted-foreground">Estimated Total Time</Label>
+                      <Input
+                        id="estimated-total-time"
+                        className="text-sm"
+                        placeholder="e.g., 40-60 hours"
+                        value={newProjectForm.estimatedTotalTime}
+                        onChange={(e) => setNewProjectForm(prev => ({ ...prev, estimatedTotalTime: e.target.value }))}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Total time for typical project size</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="typical-project-size" className="text-xs font-medium text-muted-foreground">Typical Project Size</Label>
+                      <Input
+                        id="typical-project-size"
+                        type="number"
+                        className="text-sm"
+                        placeholder="e.g., 100"
+                        value={newProjectForm.typicalProjectSize}
+                        onChange={(e) => setNewProjectForm(prev => ({ ...prev, typicalProjectSize: e.target.value }))}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Size used for estimated total time</p>
+                    </div>
+                  </div>
+                  
                   <div className="flex gap-2 justify-end">
                     <Button size="sm" variant="outline" onClick={() => setIsNewProjectOpen(false)}>
                       Cancel
