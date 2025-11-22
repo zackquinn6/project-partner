@@ -313,20 +313,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // This ensures we get fresh data, but we'll merge with currentProject.phases to preserve correct isStandard flags
   const { phases: rebuiltPhases, loading: rebuildingPhases } = useDynamicPhases(currentProject?.id);
   
-  // Load fresh phases from database - extracted as reusable function
-  // Use useDynamicPhases hook like EditWorkflowView does for consistency
-  const loadFreshPhases = React.useCallback(() => {
-    if (!currentProject) return;
+  // Merge rebuilt phases with currentProject.phases to preserve correct isStandard flags
+  // This ensures custom phases aren't incorrectly tagged as standard
+  // Use currentProject.phases as the source of truth for isStandard flags
+  // Same logic as EditWorkflowView for consistency
+  const mergedPhases = React.useMemo(() => {
+    if (!currentProject?.phases || currentProject.phases.length === 0) {
+      return rebuiltPhases || [];
+    }
     
-    try {
-      // Note: rebuiltPhases comes from useDynamicPhases hook (same as EditWorkflowView)
-      // This ensures consistent phase loading across components
-      const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
-      const currentPhases = currentProject.phases || [];
-      
-      // Build a map of phases from currentProject.phases by name to preserve their isStandard flags
+    // If we have rebuilt phases, merge them with currentProject.phases to preserve correct isStandard flags
+    if (rebuiltPhases && rebuiltPhases.length > 0) {
       const currentPhasesByName = new Map<string, Phase>();
-      currentPhases.forEach(phase => {
+      currentProject.phases.forEach(phase => {
         if (phase.name) {
           currentPhasesByName.set(phase.name, phase);
         }
@@ -334,7 +333,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // Merge: Use rebuilt phases from DB for fresh data, but update isStandard from currentProject.phases
       // This ensures custom phases aren't incorrectly tagged as standard
-      const mergedRebuiltPhases = rebuiltPhasesArray.map(rebuiltPhase => {
+      const mergedRebuiltPhases = rebuiltPhases.map(rebuiltPhase => {
         const currentPhase = currentPhasesByName.get(rebuiltPhase.name);
         if (currentPhase) {
           // Preserve isStandard flag from currentProject.phases (source of truth)
@@ -349,67 +348,64 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // Get phases from currentProject.phases that aren't in rebuilt phases (by name)
       // These are phases that exist in JSON but might not be in DB yet
-      const rebuiltPhaseNames = new Set(rebuiltPhasesArray.map(p => p.name));
-      const phasesOnlyInJson = currentPhases.filter(p => 
+      const rebuiltPhaseNames = new Set(rebuiltPhases.map(p => p.name));
+      const phasesOnlyInJson = currentProject.phases.filter(p => 
         p.name && !rebuiltPhaseNames.has(p.name)
       );
       
       // Combine: merged rebuilt phases (with corrected isStandard) + phases only in JSON
-      const allPhases = [...mergedRebuiltPhases, ...phasesOnlyInJson];
-      
-      console.log('🔍 StructureManager loadFreshPhases:', {
-        projectId: currentProject.id,
-        projectName: currentProject.name,
-        rebuiltPhasesCount: rebuiltPhasesArray.length,
-        mergedRebuiltPhasesCount: mergedRebuiltPhases.length,
-        phasesOnlyInJsonCount: phasesOnlyInJson.length,
-        totalPhases: allPhases.length,
-        rebuiltPhaseNames: rebuiltPhasesArray.map(p => p.name),
-        mergedPhasesWithIsStandard: mergedRebuiltPhases.map(p => ({ name: p.name, isStandard: p.isStandard })),
-        phasesOnlyInJsonNames: phasesOnlyInJson.map(p => p.name)
-      });
-      
-      const rawPhases = deduplicatePhases(allPhases);
+      return [...mergedRebuiltPhases, ...phasesOnlyInJson];
+    }
+    
+    // Fallback: use currentProject.phases directly if no rebuilt phases
+    return currentProject.phases;
+  }, [currentProject?.phases, rebuiltPhases]);
+  
+  // Process merged phases and update displayPhases
+  useEffect(() => {
+    if (!rebuildingPhases && mergedPhases && mergedPhases.length > 0) {
+      const rawPhases = deduplicatePhases(mergedPhases);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
       const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
+      
+      console.log('🔍 StructureManager processed phases:', {
+        projectId: currentProject?.id,
+        projectName: currentProject?.name,
+        mergedPhasesCount: mergedPhases.length,
+        sortedPhasesCount: sortedPhases.length,
+        phaseNames: sortedPhases.map(p => ({ name: p.name, isStandard: p.isStandard }))
+      });
       
       setDisplayPhases(sortedPhases);
       setPhasesLoaded(true);
       
       // Update local context with fresh phases
-      updateProject({
-        ...currentProject,
-        phases: orderedPhases,
-        updatedAt: new Date()
-      });
-    } catch (error) {
-      console.error('Error loading fresh phases:', error);
-      // Fallback to current project phases
-      const rawPhases = deduplicatePhases(currentProject?.phases || []);
-      // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST to ensure Close Project is last
-      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
-      // THEN assign order numbers based on the correct order
-      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
-      const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
+      if (currentProject) {
+        updateProject({
+          ...currentProject,
+          phases: orderedPhases,
+          updatedAt: new Date()
+        });
+      }
+    } else if (!rebuildingPhases && currentProject?.phases && currentProject.phases.length > 0) {
+      // Fallback to current project phases if no rebuilt phases
+      const rawPhases = deduplicatePhases(currentProject.phases);
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
+      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
+      const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
       setDisplayPhases(sortedPhases);
       setPhasesLoaded(true);
     }
-  };
+  }, [mergedPhases, rebuildingPhases, currentProject, updateProject]);
 
-  // Load fresh phases from database on mount or when project changes
-  // Also reload when rebuiltPhases from useDynamicPhases changes
+  // Reset phases when project changes
   useEffect(() => {
-    if (currentProject && !rebuildingPhases) {
-      // Reset phasesLoaded when project changes
-      if (!displayPhases.length || (displayPhases.length > 0 && displayPhases[0]?.projectId !== currentProject.id)) {
-        setPhasesLoaded(false);
-        setDisplayPhases([]);
-      }
-      loadFreshPhases();
+    if (currentProject) {
+      setPhasesLoaded(false);
+      setDisplayPhases([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentProject?.id, rebuiltPhases, rebuildingPhases, loadFreshPhases]);
+  }, [currentProject?.id]);
 
   // Initialize displayPhases with current project phases if not loaded yet
   // Use currentProject.phases as the primary source (like EditWorkflowView)
