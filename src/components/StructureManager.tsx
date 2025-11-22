@@ -362,75 +362,85 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   }, [currentProject?.phases, rebuiltPhases]);
   
   // Process merged phases and update displayPhases
+  // Use mergedPhases directly (same as EditWorkflowView uses rawPhases)
   useEffect(() => {
-    if (!rebuildingPhases && mergedPhases && mergedPhases.length > 0) {
-      const rawPhases = deduplicatePhases(mergedPhases);
-      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
-      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
-      const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
+    if (!rebuildingPhases) {
+      let phasesToDisplay: Phase[] = [];
       
-      console.log('🔍 StructureManager processed phases:', {
-        projectId: currentProject?.id,
-        projectName: currentProject?.name,
-        mergedPhasesCount: mergedPhases.length,
-        sortedPhasesCount: sortedPhases.length,
-        rebuiltPhasesCount: rebuiltPhases?.length || 0,
-        currentProjectPhasesCount: currentProject?.phases?.length || 0,
-        phaseNames: sortedPhases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
-        rebuiltPhaseNames: rebuiltPhases?.map(p => p.name) || [],
-        currentPhaseNames: currentProject?.phases?.map(p => p.name) || []
-      });
-      
-      setDisplayPhases(sortedPhases);
-      setPhasesLoaded(true);
-      
-      // Update local context with fresh phases
-      if (currentProject) {
-        updateProject({
-          ...currentProject,
-          phases: orderedPhases,
-          updatedAt: new Date()
-        });
+      if (mergedPhases && mergedPhases.length > 0) {
+        phasesToDisplay = mergedPhases;
+      } else if (currentProject?.phases && currentProject.phases.length > 0) {
+        // Fallback to current project phases if no merged phases yet
+        phasesToDisplay = currentProject.phases;
       }
-    } else if (!rebuildingPhases && currentProject?.phases && currentProject.phases.length > 0) {
-      // Fallback to current project phases if no rebuilt phases
-      const rawPhases = deduplicatePhases(currentProject.phases);
-      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
-      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
-      const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
-      setDisplayPhases(sortedPhases);
-      setPhasesLoaded(true);
+      
+      if (phasesToDisplay.length > 0) {
+        const rawPhases = deduplicatePhases(phasesToDisplay);
+        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
+        const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
+        const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
+        
+        console.log('🔍 StructureManager processed phases:', {
+          projectId: currentProject?.id,
+          projectName: currentProject?.name,
+          mergedPhasesCount: mergedPhases?.length || 0,
+          currentProjectPhasesCount: currentProject?.phases?.length || 0,
+          sortedPhasesCount: sortedPhases.length,
+          rebuiltPhasesCount: rebuiltPhases?.length || 0,
+          phaseNames: sortedPhases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
+          rebuiltPhaseNames: rebuiltPhases?.map(p => p.name) || [],
+          currentPhaseNames: currentProject?.phases?.map(p => p.name) || [],
+          phasesOnlyInJson: mergedPhases ? currentProject?.phases?.filter(p => 
+            p.name && !rebuiltPhases?.some(rp => rp.name === p.name)
+          ).map(p => p.name) || [] : []
+        });
+        
+        setDisplayPhases(sortedPhases);
+        setPhasesLoaded(true);
+        
+        // Update local context with fresh phases
+        if (currentProject) {
+          updateProject({
+            ...currentProject,
+            phases: orderedPhases,
+            updatedAt: new Date()
+          });
+        }
+      }
     }
-  }, [mergedPhases, rebuildingPhases, currentProject, updateProject]);
+  }, [mergedPhases, rebuildingPhases, currentProject, updateProject, rebuiltPhases]);
 
   // Reset phases when project changes
   useEffect(() => {
     if (currentProject) {
       setPhasesLoaded(false);
-      setDisplayPhases([]);
+      // Don't clear displayPhases immediately - let mergedPhases effect handle it
+      // This prevents flickering and ensures phases are visible
     }
   }, [currentProject?.id]);
 
   // Initialize displayPhases with current project phases if not loaded yet
   // Use currentProject.phases as the primary source (like EditWorkflowView)
   // This ensures all phases are visible immediately, including custom phases
+  // Only run if mergedPhases hasn't populated displayPhases yet
   useEffect(() => {
-    if (!phasesLoaded && currentProject && currentProject.phases && currentProject.phases.length > 0) {
+    if (!phasesLoaded && !rebuildingPhases && currentProject && currentProject.phases && currentProject.phases.length > 0 && displayPhases.length === 0) {
       const rawPhases = deduplicatePhases(currentProject.phases);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
       const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
-      if (sortedPhases.length > 0 && displayPhases.length === 0) {
-        console.log('🔍 StructureManager initializing displayPhases from currentProject:', {
+      if (sortedPhases.length > 0) {
+        console.log('🔍 StructureManager initializing displayPhases from currentProject (fallback):', {
           projectId: currentProject.id,
           projectName: currentProject.name,
           phaseCount: sortedPhases.length,
           phaseNames: sortedPhases.map(p => p.name)
         });
         setDisplayPhases(sortedPhases);
+        setPhasesLoaded(true);
       }
     }
-  }, [currentProject, phasesLoaded, displayPhases.length]);
+  }, [currentProject, phasesLoaded, displayPhases.length, rebuildingPhases]);
 
   // Toggle functions for collapsible sections
   const togglePhaseExpansion = (phaseId: string) => {
