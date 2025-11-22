@@ -213,10 +213,13 @@ export function UnifiedProjectManagement({
   const startProjectEdit = () => {
     if (selectedProject) {
       // Ensure category is an array when starting edit
+      // Include estimated_total_time and typical_project_size
       setEditedProject({
         ...selectedProject,
         category: selectedProject.category || [],
-        project_type: selectedProject.project_type || 'primary'
+        project_type: selectedProject.project_type || 'primary',
+        estimated_total_time: selectedProject.estimated_total_time || null,
+        typical_project_size: selectedProject.typical_project_size || null
       });
       setEditingProject(true);
     }
