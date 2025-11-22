@@ -373,11 +373,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         projectId: currentProject.id,
         projectName: currentProject.name,
         rebuiltPhasesCount: rebuiltPhasesArray.length,
-        incorporatedPhasesCount: incorporatedPhases.length,
-        customPhasesFromJsonCount: customPhasesFromJson.length,
+        mergedRebuiltPhasesCount: mergedRebuiltPhases.length,
+        phasesOnlyInJsonCount: phasesOnlyInJson.length,
         totalPhases: allPhases.length,
         rebuiltPhaseNames: rebuiltPhasesArray.map(p => p.name),
-        customPhaseNames: customPhasesFromJson.map(p => p.name)
+        mergedPhasesWithIsStandard: mergedRebuiltPhases.map(p => ({ name: p.name, isStandard: p.isStandard })),
+        phasesOnlyInJsonNames: phasesOnlyInJson.map(p => p.name)
       });
       
       const rawPhases = deduplicatePhases(allPhases);
