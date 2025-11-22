@@ -19,6 +19,7 @@ DECLARE
   effective_description text := COALESCE(p_phase_description, 'Phase description');
   standard_project_id CONSTANT uuid := '00000000-0000-0000-0000-000000000001';
   should_be_standard boolean;
+  existing_standard_phase_id uuid;
 BEGIN
   -- Determine if this phase should be marked as standard
   -- If adding to Standard Project Foundation, mark as standard
@@ -51,45 +52,41 @@ BEGIN
   -- If this is a standard phase, create or link to standard_phases entry
   IF should_be_standard THEN
     -- Check if standard_phase entry exists
-    DECLARE
-      existing_standard_phase_id uuid;
-    BEGIN
-      SELECT id INTO existing_standard_phase_id
-      FROM standard_phases
-      WHERE name = effective_name
-      LIMIT 1;
+    SELECT id INTO existing_standard_phase_id
+    FROM standard_phases
+    WHERE name = effective_name
+    LIMIT 1;
 
-      IF existing_standard_phase_id IS NULL THEN
-        -- Create new standard_phase entry
-        INSERT INTO standard_phases (
-          name,
-          description,
-          display_order,
-          is_locked,
-          position_rule,
-          position_value
-        )
-        VALUES (
-          effective_name,
-          effective_description,
-          999,  -- Custom standard phases get high display_order
-          true,  -- Lock standard phases
-          'last',  -- Default position rule
-          NULL
-        )
-        RETURNING id INTO existing_standard_phase_id;
+    IF existing_standard_phase_id IS NULL THEN
+      -- Create new standard_phase entry
+      INSERT INTO standard_phases (
+        name,
+        description,
+        display_order,
+        is_locked,
+        position_rule,
+        position_value
+      )
+      VALUES (
+        effective_name,
+        effective_description,
+        999,  -- Custom standard phases get high display_order
+        true,  -- Lock standard phases
+        'last',  -- Default position rule
+        NULL
+      )
+      RETURNING id INTO existing_standard_phase_id;
 
-        -- Update project_phases to link to standard_phase
-        UPDATE project_phases
-        SET standard_phase_id = existing_standard_phase_id
-        WHERE id = inserted_phase.id;
-      ELSE
-        -- Link to existing standard_phase
-        UPDATE project_phases
-        SET standard_phase_id = existing_standard_phase_id
-        WHERE id = inserted_phase.id;
-      END IF;
-    END;
+      -- Update project_phases to link to standard_phase
+      UPDATE project_phases
+      SET standard_phase_id = existing_standard_phase_id
+      WHERE id = inserted_phase.id;
+    ELSE
+      -- Link to existing standard_phase
+      UPDATE project_phases
+      SET standard_phase_id = existing_standard_phase_id
+      WHERE id = inserted_phase.id;
+    END IF;
   END IF;
 
   INSERT INTO template_operations (
