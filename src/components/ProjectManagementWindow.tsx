@@ -966,7 +966,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
               <CardDescription>Manage the workflow structure</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button className="w-full" variant="outline" onClick={() => setCurrentView('dragdrop')}>
+              <Button className="w-full" variant="outline" onClick={() => setCurrentView('editWorkflow')}>
                 Workflow Editor
               </Button>
             </div>
