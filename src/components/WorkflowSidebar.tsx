@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image, FileText, Info, HelpCircle, Calendar } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -354,49 +354,6 @@ export function WorkflowSidebar({
                         <SelectItem value="quick" className="text-xs">Advanced: Key points only</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-
-                  {/* Project Tools Section */}
-                  <div className="space-y-3" data-tutorial="project-tools">
-                    <h3 className="text-sm font-semibold text-primary">Project Tools</h3>
-                    <div className="flex gap-2">
-                      <Button onClick={() => setShowComingSoon(true)} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md text-blue-800 hover:text-blue-900 rounded-lg">
-                        <MessageCircle className="w-4 h-4" />
-                        <div className="text-[10px] font-semibold">Chat</div>
-                      </Button>
-                      
-                      <Button onClick={onKeysToSuccessClick} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border-green-200 hover:border-green-300 transition-all shadow-sm hover:shadow-md text-green-800 hover:text-green-900 rounded-lg">
-                        <Key className="w-4 h-4" />
-                        <div className="text-[10px] font-semibold">KeyInfo</div>
-                      </Button>
-                      
-                      {isKickoffComplete && <Button onClick={onUnplannedWorkClick} variant="outline" size="sm" className="flex-1 h-12 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-150 border-orange-200 hover:border-orange-300 transition-all shadow-sm hover:shadow-md text-orange-800 hover:text-orange-900 rounded-lg">
-                          <Settings className="w-4 h-4" />
-                          <div className="text-[10px] font-semibold">Re-Plan</div>
-                        </Button>}
-                    </div>
-                  </div>
-
-                  {/* Photos and Notes Buttons */}
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={onPhotosClick}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 h-8 flex items-center justify-center gap-1.5 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-150 border-purple-200 hover:border-purple-300 text-purple-800 hover:text-purple-900 rounded-lg shadow-sm hover:shadow-md transition-all"
-                    >
-                      <Image className="w-3.5 h-3.5" />
-                      <span className="text-[10px] font-semibold">Photos</span>
-                    </Button>
-                    <Button
-                      onClick={onNotesClick}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 h-8 flex items-center justify-center gap-1.5 bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-150 border-indigo-200 hover:border-indigo-300 text-indigo-800 hover:text-indigo-900 rounded-lg shadow-sm hover:shadow-md transition-all"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span className="text-[10px] font-semibold">Notes</span>
-                    </Button>
                   </div>
 
                   {/* Separator */}

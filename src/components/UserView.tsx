@@ -73,10 +73,13 @@ import {
   type ProjectSpace as WorkflowProjectSpace
 } from '@/utils/workflowNavigationUtils';
 import { 
-  calculateEstimatedFinishDate, 
   formatEstimatedFinishDate,
   shouldRefreshEstimatedFinishDate
 } from '@/utils/estimatedFinishDate';
+import { 
+  shouldRegenerateSchedule,
+  autoRegenerateSchedule
+} from '@/utils/autoScheduleRegeneration';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -812,26 +815,58 @@ export default function UserView({
     
     setEstimatedFinishDateLoading(true);
     try {
-      // Get team members from schedule_events if available
+      // Get schedule_events from project run
       const scheduleEvents = currentProjectRun.schedule_events as any;
-      const teamMembers = scheduleEvents?.teamMembers || [];
       
-      // Get schedule settings from project run
-      const scheduleSettings = {
-        scheduleTempo: scheduleEvents?.scheduleTempo || 'steady',
-        planningMode: scheduleEvents?.planningMode || 'standard',
-        targetDate: currentProjectRun.planEndDate ? new Date(currentProjectRun.planEndDate) : undefined
-      };
+      // Check if project has been scheduled (has events in schedule_events from Project Scheduler)
+      // A project is scheduled if "Generate schedule" has been created and applied in the project scheduler app
+      const hasSchedule = scheduleEvents?.events && 
+                         Array.isArray(scheduleEvents.events) && 
+                         scheduleEvents.events.length > 0;
       
-      const finishDate = await calculateEstimatedFinishDate(
-        currentProjectRun,
-        workflowPhases,
-        completedSteps,
-        teamMembers,
-        scheduleSettings
-      );
+      if (!hasSchedule) {
+        // Project hasn't been scheduled yet - show TBD
+        setEstimatedFinishDate(null);
+        setLastFinishDateRefresh(new Date());
+        return;
+      }
       
-      setEstimatedFinishDate(finishDate);
+      // Project has been scheduled - extract finish date from saved schedule events
+      // Use only the dates from the saved schedule, don't recalculate
+      if (scheduleEvents.events && scheduleEvents.events.length > 0) {
+        // Find the latest event end date
+        // Events have date field (YYYY-MM-DD) and duration (in minutes)
+        const eventEndDates = scheduleEvents.events
+          .map((event: any) => {
+            if (event.date) {
+              const eventDate = new Date(event.date);
+              // Add duration (in minutes) to get end date/time
+              if (event.duration) {
+                eventDate.setMinutes(eventDate.getMinutes() + event.duration);
+              }
+              return eventDate;
+            }
+            // If event has endTime directly, use it
+            if (event.endTime) {
+              return new Date(event.endTime);
+            }
+            return null;
+          })
+          .filter((date: Date | null) => date !== null) as Date[];
+        
+        if (eventEndDates.length > 0) {
+          // Get the latest end date from all scheduled events
+          const latestEndDate = eventEndDates.reduce((latest, date) => {
+            return date > latest ? date : latest;
+          });
+          setEstimatedFinishDate(latestEndDate);
+          setLastFinishDateRefresh(new Date());
+          return;
+        }
+      }
+      
+      // If we can't extract a date from events, show TBD
+      setEstimatedFinishDate(null);
       setLastFinishDateRefresh(new Date());
     } catch (error) {
       console.error('Error calculating estimated finish date:', error);
@@ -841,12 +876,67 @@ export default function UserView({
     }
   }, [currentProjectRun, workflowPhases, completedSteps, lastFinishDateRefresh]);
   
-  // Refresh estimated finish date on project open and once per day
+  // Function to check and auto-regenerate schedule if needed
+  const checkAndRegenerateSchedule = React.useCallback(async () => {
+    if (!currentProjectRun || !currentProject || !workflowPhases || workflowPhases.length === 0 || !isKickoffComplete) {
+      return;
+    }
+    
+    // Check if schedule needs regeneration (older than 1 day)
+    if (shouldRegenerateSchedule(currentProjectRun)) {
+      console.log('🔄 Schedule is older than 1 day, auto-regenerating...');
+      
+      // Get completed steps from project run (ensure we have latest data)
+      const completedStepsFromRun = new Set<string>(
+        Array.isArray(currentProjectRun.completedSteps) 
+          ? currentProjectRun.completedSteps 
+          : []
+      );
+      
+      const success = await autoRegenerateSchedule(
+        currentProjectRun,
+        currentProject,
+        workflowPhases,
+        completedStepsFromRun
+      );
+      
+      if (success) {
+        // Reload project run to get updated schedule
+        const { data: updatedRun, error } = await supabase
+          .from('project_runs')
+          .select('*')
+          .eq('id', currentProjectRun.id)
+          .single();
+        
+        if (!error && updatedRun) {
+          setCurrentProjectRun(updatedRun as any);
+          // Refresh estimated finish date with new schedule
+          refreshEstimatedFinishDate(true);
+        }
+      }
+    }
+  }, [currentProjectRun, currentProject, workflowPhases, isKickoffComplete, setCurrentProjectRun, refreshEstimatedFinishDate]);
+  
+  // Check and regenerate schedule on project open
   useEffect(() => {
     if (viewMode === 'workflow' && currentProjectRun && workflowPhases.length > 0 && isKickoffComplete) {
+      // Check if schedule needs regeneration
+      checkAndRegenerateSchedule();
+      // Also refresh estimated finish date
       refreshEstimatedFinishDate(false);
     }
-  }, [viewMode, currentProjectRun?.id, workflowPhases.length, isKickoffComplete, refreshEstimatedFinishDate]);
+  }, [viewMode, currentProjectRun?.id, workflowPhases.length, isKickoffComplete, checkAndRegenerateSchedule, refreshEstimatedFinishDate]);
+  
+  // Set up daily check for schedule regeneration (check every hour)
+  useEffect(() => {
+    if (!currentProjectRun || !isKickoffComplete) return;
+    
+    const interval = setInterval(() => {
+      checkAndRegenerateSchedule();
+    }, 60 * 60 * 1000); // Check every hour
+    
+    return () => clearInterval(interval);
+  }, [currentProjectRun?.id, isKickoffComplete, checkAndRegenerateSchedule]);
   
   // CRITICAL FIX: Calculate progress from actual workflow steps using unified utility
   // This ensures consistent progress calculation everywhere
@@ -1258,6 +1348,34 @@ export default function UserView({
             
             // Refresh estimated finish date on phase completion
             refreshEstimatedFinishDate(true);
+            
+            // Auto-regenerate schedule on phase completion
+            if (currentProjectRun && currentProject && workflowPhases.length > 0) {
+              console.log('🔄 Phase completed, auto-regenerating schedule...');
+              
+              // Use the updated completed steps set (includes the step just completed)
+              autoRegenerateSchedule(
+                currentProjectRun,
+                currentProject,
+                workflowPhases,
+                newCompletedStepsSet
+              ).then(success => {
+                if (success) {
+                  // Reload project run to get updated schedule
+                  supabase
+                    .from('project_runs')
+                    .select('*')
+                    .eq('id', currentProjectRun.id)
+                    .single()
+                    .then(({ data: updatedRun, error }) => {
+                      if (!error && updatedRun) {
+                        setCurrentProjectRun(updatedRun as any);
+                        refreshEstimatedFinishDate(true);
+                      }
+                    });
+                }
+              });
+            }
             
             // Automatically mark phase as complete - open PhaseCompletionPopup to verify outputs
             // Phase is considered complete when all steps are done, popup just checks outputs

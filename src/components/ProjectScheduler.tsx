@@ -793,7 +793,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             assignedTo: (task as any).assignedTo || ''
           })),
           teamMembers: teamMembers,
-          globalSettings: globalSettings
+          globalSettings: globalSettings,
+          scheduleTempo: scheduleTempo,
+          planningMode: planningMode,
+          lastGeneratedAt: new Date().toISOString() // Store generation timestamp for auto-regeneration
         },
         calendar_integration: {
           scheduledDays: schedulingResult.scheduledTasks.reduce((acc, task) => {

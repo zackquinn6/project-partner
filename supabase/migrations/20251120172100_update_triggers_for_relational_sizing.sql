@@ -11,12 +11,12 @@ DECLARE
 BEGIN
   -- Only proceed if initial_sizing is being set (not NULL) and it's different from the old value
   IF NEW.initial_sizing IS NOT NULL AND (OLD.initial_sizing IS NULL OR NEW.initial_sizing <> OLD.initial_sizing) THEN
-    -- Get the default space for this project run (priority = 1, name = 'Default Space')
+    -- Get the default space for this project run (priority = 1, name = 'Your Home')
     SELECT * INTO default_space
     FROM public.project_run_spaces
     WHERE project_run_id = NEW.id
       AND priority = 1
-      AND space_name = 'Default Space'
+      AND space_name = 'Your Home'
     LIMIT 1;
 
     -- Try to parse the initial_sizing as a number
@@ -69,7 +69,7 @@ BEGIN
         priority
       ) VALUES (
         NEW.id,
-        'Default Space',
+        'Your Home',
         'custom',
         parsed_size,
         project_scaling_unit,

@@ -89,10 +89,19 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         rawEstimatedTotalTime: (templateProject as any)?.estimated_total_time,
         rawTypicalProjectSize: (templateProject as any)?.typical_project_size,
         camelCaseEstimatedTotalTime: templateProject?.estimatedTotalTime,
-        camelCaseTypicalProjectSize: templateProject?.typicalProjectSize
+        camelCaseTypicalProjectSize: templateProject?.typicalProjectSize,
+        allTemplateProjectKeys: Object.keys(templateProject),
+        templateProjectRaw: templateProject
+      });
+    } else {
+      console.log('⚠️ ProjectOverviewStep - No template project found:', {
+        currentProject: currentProject?.id,
+        currentProjectRunTemplateId: currentProjectRun?.templateId,
+        projectsCount: projects.length,
+        projectsIds: projects.map(p => p.id)
       });
     }
-  }, [templateProject, displayEstimatedTotalTime, displayTypicalProjectSize]);
+  }, [templateProject, displayEstimatedTotalTime, displayTypicalProjectSize, currentProject, currentProjectRun, projects]);
 
   // Helper function to get skill level comparison
   const getSkillLevelComparison = () => {
@@ -246,13 +255,15 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-3 sm:p-4">
-          <div>
-            <Label className="text-xs sm:text-sm">Project Name</Label>
-            <p className="text-sm font-medium mt-0.5">{currentProjectRun.name}</p>
-          </div>
-          <div>
-            <Label className="text-xs sm:text-sm">Description</Label>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{currentProjectRun.description}</p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <Label className="text-xs sm:text-sm">Project Name</Label>
+              <p className="text-sm font-medium mt-0.5">{currentProjectRun.name}</p>
+            </div>
+            <div className="flex-1 min-w-0">
+              <Label className="text-xs sm:text-sm">Description</Label>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{currentProjectRun.description}</p>
+            </div>
           </div>
           <div>
             <div className="flex items-center justify-between gap-2 mb-1">
@@ -356,19 +367,21 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   </div>
                 )}
                 {/* Estimated total time for typical size */}
-                {displayEstimatedTotalTime && (
+                {(displayEstimatedTotalTime || displayTypicalProjectSize) && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="text-xs sm:text-sm">
-                      {displayEstimatedTotalTime}
-                    </Badge>
+                    {displayEstimatedTotalTime && (
+                      <Badge variant="outline" className="text-xs sm:text-sm">
+                        {displayEstimatedTotalTime}
+                      </Badge>
+                    )}
                     {displayTypicalProjectSize && (
                       <span className="text-xs sm:text-sm text-muted-foreground">
-                        for {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'}
+                        {displayEstimatedTotalTime ? 'for' : 'Typical size:'} {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'}
                       </span>
                     )}
                   </div>
                 )}
-                {!displayEstimatedTime && !displayEstimatedTotalTime && (
+                {!displayEstimatedTime && !displayEstimatedTotalTime && !displayTypicalProjectSize && (
                   <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
                 )}
               </div>

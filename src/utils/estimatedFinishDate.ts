@@ -186,9 +186,10 @@ export async function calculateEstimatedFinishDate(
 
 /**
  * Formats estimated finish date for display
+ * Shows both "in x days" and actual date, e.g. "in 5 days on Nov 27"
  */
 export function formatEstimatedFinishDate(date: Date | null): string {
-  if (!date) return 'Calculating...';
+  if (!date) return 'TBD';
   
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -196,20 +197,21 @@ export function formatEstimatedFinishDate(date: Date | null): string {
   finishDate.setHours(0, 0, 0, 0);
   
   const diffDays = Math.ceil((finishDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const formattedDate = format(finishDate, 'MMM d');
   
   if (diffDays < 0) {
-    return 'Overdue';
+    return `Overdue (${formattedDate})`;
   } else if (diffDays === 0) {
-    return 'Today';
+    return `Today (${formattedDate})`;
   } else if (diffDays === 1) {
-    return 'Tomorrow';
+    return `Tomorrow (${formattedDate})`;
   } else if (diffDays < 7) {
-    return `In ${diffDays} days`;
+    return `In ${diffDays} days on ${formattedDate}`;
   } else if (diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
-    return `In ${weeks} week${weeks > 1 ? 's' : ''}`;
+    return `In ${weeks} week${weeks > 1 ? 's' : ''} on ${formattedDate}`;
   } else {
-    return format(finishDate, 'MMM d, yyyy');
+    return `In ${diffDays} days on ${formattedDate}`;
   }
 }
 
