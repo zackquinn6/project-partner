@@ -538,6 +538,20 @@ export default function UserView({
           }
         }
         
+        // Ensure apps are properly parsed if they come as JSON strings
+        let apps = step.apps || [];
+        if (typeof apps === 'string') {
+          try {
+            apps = JSON.parse(apps);
+          } catch (e) {
+            console.error('Failed to parse apps JSON for step:', step.id, e);
+            apps = [];
+          }
+        }
+        if (!Array.isArray(apps)) {
+          apps = [];
+        }
+        
         return {
           ...step,
           phaseName,
@@ -546,6 +560,7 @@ export default function UserView({
           operationId,
           materials,
           tools,
+          apps, // Ensure apps are properly parsed array
           navigationType: item.type, // Track navigation type for display
           spaceId: item.type === 'space-container' ? item.spaces?.[0]?.id : undefined,
           spaceName: item.type === 'space-container' ? item.spaces?.[0]?.name : undefined,
@@ -970,7 +985,14 @@ export default function UserView({
     materialsLength: currentStep?.materials?.length || 0,
     toolsLength: currentStep?.tools?.length || 0,
     appsLength: currentStep?.apps?.length || 0,
-    hasApps: !!currentStep?.apps
+    hasApps: !!currentStep?.apps,
+    appsType: typeof currentStep?.apps,
+    appsIsArray: Array.isArray(currentStep?.apps),
+    appsValue: currentStep?.apps,
+    // Check if apps exist in the original step from phases
+    originalStepFromPhases: workflowPhases
+      .flatMap(p => p.operations.flatMap(op => op.steps))
+      .find(s => s.id === currentStep?.id)
   });
   
   // CRITICAL: Update database progress to match calculated progress
@@ -2468,25 +2490,46 @@ export default function UserView({
           )}
 
           {/* Apps Section - Positioned prominently after content */}
-          {currentStep && currentStep.apps && currentStep.apps.length > 0 && (
-            <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-xs font-medium">
-                  <Sparkles className="w-3 h-3" />
-                  Apps for This Step
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <CompactAppsSection
-                  apps={currentStep.apps}
-                  onAppsChange={() => {}}
-                  onAddApp={() => {}}
-                  onLaunchApp={handleLaunchApp}
-                  editMode={false}
-                />
-              </CardContent>
-            </Card>
-          )}
+          {(() => {
+            // Ensure apps is always an array, even if it comes as a string or other type
+            let apps = currentStep?.apps || [];
+            if (typeof apps === 'string') {
+              try {
+                apps = JSON.parse(apps);
+              } catch (e) {
+                console.error('Failed to parse apps JSON for current step:', currentStep?.id, e);
+                apps = [];
+              }
+            }
+            if (!Array.isArray(apps)) {
+              apps = [];
+            }
+            
+            // Filter out any invalid app objects
+            apps = apps.filter(app => app && app.id && app.appName);
+            
+            if (apps.length === 0) return null;
+            
+            return (
+              <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-xs font-medium">
+                    <Sparkles className="w-3 h-3" />
+                    Apps for This Step
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <CompactAppsSection
+                    apps={apps}
+                    onAppsChange={() => {}}
+                    onAddApp={() => {}}
+                    onLaunchApp={handleLaunchApp}
+                    editMode={false}
+                  />
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Outputs */}
           {currentStep && currentStep.outputs?.length > 0 && (
