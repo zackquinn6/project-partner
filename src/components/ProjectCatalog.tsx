@@ -176,6 +176,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           .from('project_templates_live')
           .select('*')
           .in('publish_status', ['published', 'beta-testing'])
+          .eq('is_current_version', true) // Only fetch latest revisions
           .order('updated_at', { ascending: false });
         
         console.log('📦 Public projects fetch result:', { dataCount: data?.length || 0, error });
@@ -236,7 +237,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     const filtered = user 
       ? projects.filter(project => {
           const publishStatus = project.publishStatus || (project as any).publish_status;
-          const isCurrentVersion = (project as any).is_current_version !== false; // Default to true if not specified
+          // Projects are already filtered to is_current_version = true in ProjectDataContext
+          // This ensures catalog shows and opens latest revision (workflow from latest, info from parent)
+          const isCurrentVersion = (project as any).is_current_version !== false; // Should already be true from query
           
           const isValidStatus = (
             publishStatus === 'published' || 
@@ -247,6 +250,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           const isNotStandardFoundation = project.id !== '00000000-0000-0000-0000-000000000001';
           
           // Include if: (published/beta OR admin mode) AND not manual template AND not standard foundation AND is current version
+          // Note: is_current_version filter is now applied at query level to ensure latest revisions
           const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation && isCurrentVersion;
           
           if (!shouldInclude) {
