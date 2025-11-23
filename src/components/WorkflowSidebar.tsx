@@ -359,57 +359,57 @@ export function WorkflowSidebar({
                   {/* Project Tools Section */}
                   <div className="space-y-2">
                     <div className="text-xs font-semibold text-muted-foreground">Project Tools</div>
-                    {/* First row: Chat, KeyInfo, Re-Plan */}
+                    {/* First row: Chat, KeyInfo, Re-Plan - Icons on top of text */}
                     <div className="flex items-center gap-1.5">
                       <Button
-                        variant="ghost"
+                        variant="default"
                         size="sm"
                         onClick={onHelpClick}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground flex-1"
+                        className="h-auto py-1.5 px-2 text-xs flex-1 flex-col gap-1"
                       >
-                        <MessageCircle className="h-3 w-3 mr-1.5" />
-                        Chat
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        <span>Chat</span>
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="default"
                         size="sm"
                         onClick={onKeysToSuccessClick}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground flex-1"
+                        className="h-auto py-1.5 px-2 text-xs flex-1 flex-col gap-1"
                       >
-                        <Key className="h-3 w-3 mr-1.5" />
-                        KeyInfo
+                        <Key className="h-3.5 w-3.5" />
+                        <span>KeyInfo</span>
                       </Button>
                       {isKickoffComplete && (
                         <Button
-                          variant="ghost"
+                          variant="default"
                           size="sm"
                           onClick={onUnplannedWorkClick}
-                          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground flex-1"
+                          className="h-auto py-1.5 px-2 text-xs flex-1 flex-col gap-1"
                         >
-                          <Layers className="h-3 w-3 mr-1.5" />
-                          Re-Plan
+                          <Layers className="h-3.5 w-3.5" />
+                          <span>Re-Plan</span>
                         </Button>
                       )}
                     </div>
-                    {/* Second row: Notes, Photos */}
+                    {/* Second row: Notes, Photos - Icons to the left of text */}
                     <div className="flex items-center gap-1.5">
                       <Button
-                        variant="ghost"
+                        variant="default"
                         size="sm"
                         onClick={onNotesClick}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground flex-1"
+                        className="h-7 px-2 text-xs flex-1"
                       >
                         <FileText className="h-3 w-3 mr-1.5" />
-                        Notes
+                        <span>Notes</span>
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="default"
                         size="sm"
                         onClick={onPhotosClick}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground flex-1"
+                        className="h-7 px-2 text-xs flex-1"
                       >
                         <Image className="h-3 w-3 mr-1.5" />
-                        Photos
+                        <span>Photos</span>
                       </Button>
                     </div>
                   </div>
