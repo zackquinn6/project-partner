@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -66,6 +66,17 @@ import { useDynamicPhases } from '@/hooks/useDynamicPhases';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 import { PostKickoffNotification } from './PostKickoffNotification';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { 
+  organizeWorkflowNavigation, 
+  convertToGroupedSteps,
+  getFlowType,
+  type ProjectSpace as WorkflowProjectSpace
+} from '@/utils/workflowNavigationUtils';
+import { 
+  calculateEstimatedFinishDate, 
+  formatEstimatedFinishDate,
+  shouldRefreshEstimatedFinishDate
+} from '@/utils/estimatedFinishDate';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -95,6 +106,15 @@ export default function UserView({
   const [checkedMaterials, setCheckedMaterials] = useState<Record<string, Set<string>>>({});
   const [checkedTools, setCheckedTools] = useState<Record<string, Set<string>>>({});
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
+  
+  // Project spaces state for workflow navigation
+  const [projectSpaces, setProjectSpaces] = useState<WorkflowProjectSpace[]>([]);
+  const [spacesLoading, setSpacesLoading] = useState(false);
+  
+  // Estimated finish date state
+  const [estimatedFinishDate, setEstimatedFinishDate] = useState<Date | null>(null);
+  const [estimatedFinishDateLoading, setEstimatedFinishDateLoading] = useState(false);
+  const [lastFinishDateRefresh, setLastFinishDateRefresh] = useState<Date | null>(null);
   
   // Issue report state
   const [issueReportOpen, setIssueReportOpen] = useState(false);
@@ -248,6 +268,89 @@ export default function UserView({
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
   
+  // Load project spaces from database
+  useEffect(() => {
+    const loadSpaces = async () => {
+      if (!currentProjectRun?.id) {
+        setProjectSpaces([]);
+        return;
+      }
+      
+      setSpacesLoading(true);
+      try {
+        const { data: spacesData, error } = await supabase
+          .from('project_run_spaces')
+          .select('id, space_name, space_type, priority')
+          .eq('project_run_id', currentProjectRun.id)
+          .order('priority', { ascending: true, nullsLast: true });
+        
+        if (error) throw error;
+        
+        const spaces: WorkflowProjectSpace[] = (spacesData || []).map(space => ({
+          id: space.id,
+          name: space.space_name,
+          priority: space.priority,
+          spaceType: space.space_type
+        }));
+        
+        setProjectSpaces(spaces);
+        console.log('✅ Loaded project spaces:', spaces);
+      } catch (error) {
+        console.error('Error loading project spaces:', error);
+        setProjectSpaces([]);
+      } finally {
+        setSpacesLoading(false);
+      }
+    };
+    
+    loadSpaces();
+  }, [currentProjectRun?.id]);
+  
+  // Refresh spaces when project customizer or scheduler updates
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (currentProjectRun?.id) {
+        // Trigger space reload
+        const loadSpaces = async () => {
+          try {
+            const { data: spacesData, error } = await supabase
+              .from('project_run_spaces')
+              .select('id, space_name, space_type, priority')
+              .eq('project_run_id', currentProjectRun.id)
+              .order('priority', { ascending: true, nullsLast: true });
+            
+            if (error) throw error;
+            
+            const spaces: WorkflowProjectSpace[] = (spacesData || []).map(space => ({
+              id: space.id,
+              name: space.space_name,
+              priority: space.priority,
+              spaceType: space.space_type
+            }));
+            
+            setProjectSpaces(spaces);
+            console.log('🔄 Refreshed project spaces:', spaces);
+          } catch (error) {
+            console.error('Error refreshing project spaces:', error);
+          }
+        };
+        
+        loadSpaces();
+      }
+    };
+    
+    // Listen for refresh events
+    window.addEventListener('project-customizer-updated', handleRefresh);
+    window.addEventListener('project-scheduler-updated', handleRefresh);
+    window.addEventListener('project-replanned', handleRefresh);
+    
+    return () => {
+      window.removeEventListener('project-customizer-updated', handleRefresh);
+      window.removeEventListener('project-scheduler-updated', handleRefresh);
+      window.removeEventListener('project-replanned', handleRefresh);
+    };
+  }, [currentProjectRun?.id]);
+  
   // CRITICAL ARCHITECTURE:
   // - Project templates use DYNAMIC phases (live updates from standard foundation)
   // - Project runs use STATIC phases (immutable snapshot taken at creation)
@@ -349,56 +452,105 @@ export default function UserView({
     } : null
   });
   
-  // Flatten all steps with phases directly from project
-  // NORMAL CODE METHODOLOGY: phases -> operations[] -> steps[]
-  // Structure: phase.operations is always an array, operation.steps is always an array
-  const allSteps = workflowPhases
-    ?.flatMap((phase) => 
-      (phase.operations || [])
-        .flatMap((operation) => 
-          (operation.steps || [])
-            .map((step) => {
-              // Add sample materials and tools for demonstration (since project templates are empty)
-              let materials = step.materials || [];
-              let tools = step.tools || [];
-              
-              // Add sample data to specific steps for testing
-              if (step.step?.includes('Measure') || step.id === 'measure-room') {
-                materials = [
-                  { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', alternates: ['Laser measure', 'Ruler'] },
-                  { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', alternates: ['Phone app', 'Digital notepad'] }
-                ];
-                tools = [
-                  { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', alternates: ['Traditional bubble level', 'Water level'] }
-                ];
-              } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
-                materials = [
-                  { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', alternates: ['Luxury vinyl', 'Natural stone'] },
-                  { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', alternates: ['Unsanded grout', 'Epoxy grout'] },
-                  { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', alternates: ['Mortar mix', 'Premium adhesive'] }
-                ];
-              } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
-                materials = [
-                  { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', alternates: ['Self-priming sealer', 'Bonding agent'] }
-                ];
-                tools = [
-                  { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', alternates: ['Putty knife', 'Chisel'] },
-                  { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', alternates: ['Regular vacuum', 'Broom and dustpan'] }
-                ];
-              }
-              
-              return {
-                ...step,
-                phaseName: phase.name,
-                phaseId: phase.id,
-                operationName: operation.name,
-                operationId: operation.id,
-                materials,
-                tools
-              };
-            })
-        )
-    ) || [];
+  // Organize workflow navigation based on scheduler setting (Single Piece Flow vs Batch Flow)
+  // This creates the 4th tier hierarchy: Standard Phases → Space Containers/Custom Phases → Close Project
+  const organizedNavigation = React.useMemo(() => {
+    if (!workflowPhases || workflowPhases.length === 0) return [];
+    
+    // Only organize for project runs (not templates)
+    if (!currentProjectRun) {
+      // For templates, use simple flat structure
+      return workflowPhases.map(phase => ({
+        type: 'standard-phase' as const,
+        id: phase.id,
+        name: phase.name,
+        phase,
+        steps: phase.operations.flatMap(op => op.steps || [])
+      }));
+    }
+    
+    return organizeWorkflowNavigation(workflowPhases, projectSpaces, currentProjectRun);
+  }, [workflowPhases, projectSpaces, currentProjectRun]);
+  
+  // Flatten all steps from organized navigation
+  // This maintains the correct order based on flow type
+  const allSteps = React.useMemo(() => {
+    if (organizedNavigation.length === 0) return [];
+    
+    let stepIndex = 0;
+    return organizedNavigation.flatMap(item => {
+      return item.steps.map((step) => {
+        // Add sample materials and tools for demonstration (since project templates are empty)
+        let materials = step.materials || [];
+        let tools = step.tools || [];
+        
+        // Add sample data to specific steps for testing
+        if (step.step?.includes('Measure') || step.id === 'measure-room') {
+          materials = [
+            { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', alternates: ['Laser measure', 'Ruler'] },
+            { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', alternates: ['Phone app', 'Digital notepad'] }
+          ];
+          tools = [
+            { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', alternates: ['Traditional bubble level', 'Water level'] }
+          ];
+        } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
+          materials = [
+            { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', alternates: ['Luxury vinyl', 'Natural stone'] },
+            { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', alternates: ['Unsanded grout', 'Epoxy grout'] },
+            { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', alternates: ['Mortar mix', 'Premium adhesive'] }
+          ];
+        } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
+          materials = [
+            { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', alternates: ['Self-priming sealer', 'Bonding agent'] }
+          ];
+          tools = [
+            { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', alternates: ['Putty knife', 'Chisel'] },
+            { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', alternates: ['Regular vacuum', 'Broom and dustpan'] }
+          ];
+        }
+        
+        // Determine phase and operation names based on navigation structure
+        let phaseName = (step as any).phaseName || item.name;
+        let phaseId = (step as any).phaseId || item.id;
+        let operationName = (step as any).operationName || 'General';
+        let operationId = (step as any).operationId || '';
+        
+        // For space containers, preserve original phase info from step
+        if (item.type === 'space-container' && item.phase) {
+          phaseName = item.phase.name;
+          phaseId = item.phase.id;
+        } else if (item.phase) {
+          phaseName = item.phase.name;
+          phaseId = item.phase.id;
+        }
+        
+        // Find the operation this step belongs to
+        if (item.phase) {
+          for (const operation of item.phase.operations || []) {
+            if (operation.steps?.some(s => s.id === step.id)) {
+              operationName = operation.name;
+              operationId = operation.id;
+              break;
+            }
+          }
+        }
+        
+        return {
+          ...step,
+          phaseName,
+          phaseId,
+          operationName,
+          operationId,
+          materials,
+          tools,
+          navigationType: item.type, // Track navigation type for display
+          spaceId: item.type === 'space-container' ? item.spaces?.[0]?.id : undefined,
+          spaceName: item.type === 'space-container' ? item.spaces?.[0]?.name : undefined,
+          originalIndex: stepIndex++
+        };
+      });
+    });
+  }, [organizedNavigation]);
   
   // CRITICAL DEBUG: Log what's actually in the data - simplified output
   const firstPhase = workflowPhases?.[0];
@@ -645,6 +797,56 @@ export default function UserView({
   }, [resetToListing, forceListingMode, showProfile, currentProjectRun, projectRunId, viewMode, onProjectSelected]);
   
   const currentStep = allSteps[currentStepIndex];
+  
+  // Function to refresh estimated finish date
+  const refreshEstimatedFinishDate = React.useCallback(async (forceRefresh: boolean = false) => {
+    if (!currentProjectRun || !workflowPhases || workflowPhases.length === 0) {
+      setEstimatedFinishDate(null);
+      return;
+    }
+    
+    // Check if refresh is needed
+    if (!forceRefresh && !shouldRefreshEstimatedFinishDate(lastFinishDateRefresh)) {
+      return;
+    }
+    
+    setEstimatedFinishDateLoading(true);
+    try {
+      // Get team members from schedule_events if available
+      const scheduleEvents = currentProjectRun.schedule_events as any;
+      const teamMembers = scheduleEvents?.teamMembers || [];
+      
+      // Get schedule settings from project run
+      const scheduleSettings = {
+        scheduleTempo: scheduleEvents?.scheduleTempo || 'steady',
+        planningMode: scheduleEvents?.planningMode || 'standard',
+        targetDate: currentProjectRun.planEndDate ? new Date(currentProjectRun.planEndDate) : undefined
+      };
+      
+      const finishDate = await calculateEstimatedFinishDate(
+        currentProjectRun,
+        workflowPhases,
+        completedSteps,
+        teamMembers,
+        scheduleSettings
+      );
+      
+      setEstimatedFinishDate(finishDate);
+      setLastFinishDateRefresh(new Date());
+    } catch (error) {
+      console.error('Error calculating estimated finish date:', error);
+      setEstimatedFinishDate(null);
+    } finally {
+      setEstimatedFinishDateLoading(false);
+    }
+  }, [currentProjectRun, workflowPhases, completedSteps, lastFinishDateRefresh]);
+  
+  // Refresh estimated finish date on project open and once per day
+  useEffect(() => {
+    if (viewMode === 'workflow' && currentProjectRun && workflowPhases.length > 0 && isKickoffComplete) {
+      refreshEstimatedFinishDate(false);
+    }
+  }, [viewMode, currentProjectRun?.id, workflowPhases.length, isKickoffComplete, refreshEstimatedFinishDate]);
   
   // CRITICAL FIX: Calculate progress from actual workflow steps using unified utility
   // This ensures consistent progress calculation everywhere
@@ -1053,6 +1255,9 @@ export default function UserView({
             
             // End time tracking for phase
             endTimeTracking('phase', currentPhase.id);
+            
+            // Refresh estimated finish date on phase completion
+            refreshEstimatedFinishDate(true);
             
             // Automatically mark phase as complete - open PhaseCompletionPopup to verify outputs
             // Phase is considered complete when all steps are done, popup just checks outputs
@@ -1570,12 +1775,21 @@ export default function UserView({
     }
   };
 
-  // Group steps by phase + operation using the flattened allSteps array
-  // This guarantees the sidebar only depends on the same data powering the main workflow view.
-  // CRITICAL: Use allSteps directly since it's already the deduped, flattened list
-  const groupedSteps = allSteps.length > 0 
-    ? allSteps.reduce((acc, step) => {
-        if (!step || !step.id) return acc; // Skip invalid steps
+  // Group steps using the new navigation structure
+  // This respects the flow type (Single Piece Flow vs Batch Flow) and space priority
+  const groupedSteps = React.useMemo(() => {
+    if (organizedNavigation.length === 0 || allSteps.length === 0) {
+      return {};
+    }
+    
+    // Use the utility function to convert organized navigation to grouped steps format
+    const converted = convertToGroupedSteps(organizedNavigation);
+    
+    // If conversion didn't work well, fall back to manual grouping
+    if (Object.keys(converted).length === 0) {
+      // Fallback: group by phase and operation
+      return allSteps.reduce((acc, step) => {
+        if (!step || !step.id) return acc;
         
         const phaseName = step.phaseName || 'Uncategorized';
         const operationName = step.operationName || 'General';
@@ -1593,8 +1807,11 @@ export default function UserView({
         }
 
         return acc;
-      }, {} as Record<string, Record<string, any[]>>)
-    : {};
+      }, {} as Record<string, Record<string, any[]>>);
+    }
+    
+    return converted;
+  }, [organizedNavigation, allSteps]);
   
   // Final safety check: if groupedSteps is empty but allSteps has data, create a fallback structure
   const hasGroupedData = Object.keys(groupedSteps).length > 0 && 
@@ -2012,6 +2229,8 @@ export default function UserView({
             instructionLevel={instructionLevel}
             projectName={currentProjectRun?.customProjectName || currentProjectRun?.name || 'Project'}
             projectRun={currentProjectRun}
+            estimatedFinishDate={estimatedFinishDate}
+            estimatedFinishDateLoading={estimatedFinishDateLoading}
             onInstructionLevelChange={handleInstructionLevelChange}
             onStepClick={(stepIndex, step) => {
               console.log('🎯 Step clicked:', {

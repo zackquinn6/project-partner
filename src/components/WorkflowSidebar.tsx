@@ -3,8 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image, FileText, Info, HelpCircle } from "lucide-react";
+import { CheckCircle, EyeOff, MessageCircle, Key, Settings, Layers, Sparkles, Image, FileText, Info, HelpCircle, Calendar } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
+import * as LucideIcons from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
+import { AppReference } from '@/interfaces/Project';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -16,6 +19,7 @@ import { WorkflowTutorial } from './WorkflowTutorial';
 import { ProgressReportingStyleDialog } from './ProgressReportingStyleDialog';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
+import { formatEstimatedFinishDate } from '@/utils/estimatedFinishDate';
 interface WorkflowSidebarProps {
   allSteps: any[];
   currentStep: any;
@@ -28,6 +32,8 @@ interface WorkflowSidebarProps {
   projectName: string;
   projectRunId?: string;
   projectRun?: ProjectRun;
+  estimatedFinishDate?: Date | null;
+  estimatedFinishDateLoading?: boolean;
   onInstructionLevelChange: (level: 'quick' | 'detailed' | 'new_user') => void;
   onStepClick: (stepIndex: number, step: any) => void;
   onHelpClick: () => void;
@@ -48,6 +54,8 @@ export function WorkflowSidebar({
   projectName,
   projectRunId,
   projectRun,
+  estimatedFinishDate,
+  estimatedFinishDateLoading = false,
   onInstructionLevelChange,
   onStepClick,
   onHelpClick,
@@ -62,9 +70,56 @@ export function WorkflowSidebar({
   } = useSidebar();
   const collapsed = state === "collapsed";
   
-  // Debug logging
+  // Function to get icon component from icon name (same logic as CompactAppsSection)
+  const getIconComponent = (iconName: string | undefined): LucideIcon => {
+    if (!iconName) {
+      return Sparkles;
+    }
+    
+    // Try exact match first
+    let Icon = (LucideIcons as any)[iconName];
+    
+    // If not found, try with first letter capitalized (common lucide pattern)
+    if (!Icon && iconName.length > 0) {
+      const capitalized = iconName.charAt(0).toUpperCase() + iconName.slice(1);
+      Icon = (LucideIcons as any)[capitalized];
+    }
+    
+    // If still not found, try all lowercase
+    if (!Icon) {
+      Icon = (LucideIcons as any)[iconName.toLowerCase()];
+    }
+    
+    // Try matching case-insensitive
+    if (!Icon) {
+      const iconKeys = Object.keys(LucideIcons);
+      const matchedKey = iconKeys.find(key => key.toLowerCase() === iconName.toLowerCase());
+      if (matchedKey) {
+        Icon = (LucideIcons as any)[matchedKey];
+      }
+    }
+    
+    if (!Icon) {
+      return Sparkles;
+    }
+    
+    return Icon;
+  };
+  
+  // Debug logging - check for apps in steps
+  const stepsWithApps = allSteps.filter(s => s.apps && Array.isArray(s.apps) && s.apps.length > 0);
   console.log('🔍 WorkflowSidebar Debug:', {
     allStepsLength: allSteps.length,
+    stepsWithAppsCount: stepsWithApps.length,
+    sampleStepWithApps: stepsWithApps.length > 0 ? {
+      step: stepsWithApps[0].step,
+      appsCount: stepsWithApps[0].apps?.length,
+      apps: stepsWithApps[0].apps?.map((app: AppReference) => ({
+        id: app.id,
+        appName: app.appName,
+        icon: app.icon
+      }))
+    } : null,
     groupedStepsKeys: Object.keys(groupedSteps || {}),
     groupedStepsPhases: Object.entries(groupedSteps || {}).map(([phase, ops]) => ({
       phase,
@@ -228,12 +283,12 @@ export function WorkflowSidebar({
           <SidebarGroupContent className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {!collapsed && <div className="flex flex-col h-full p-2 min-h-0 overflow-hidden">
                 {/* Fixed Upper Section - No scrolling */}
-                <div className="flex-shrink-0 space-y-4 pb-4">
+                <div className="flex-shrink-0 space-y-3 pb-3">
                   {/* Progress Header */}
-                  <div className="space-y-1" data-tutorial="progress-bar">
+                  <div className="space-y-0.5" data-tutorial="progress-bar">
                     <div className="flex justify-between items-center text-xs">
                       <span>Progress</span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2.5">
                         <span className="text-muted-foreground text-[10px]">
                           Step {currentStepIndex + 1} of {allSteps.length}
                         </span>
@@ -258,6 +313,23 @@ export function WorkflowSidebar({
                       <span>{Math.round(progress)}%</span>
                     </div>
                     <Progress value={progress} className="h-2" />
+                  </div>
+
+                  {/* Estimated Finish Date */}
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span>Est. Finish</span>
+                    </div>
+                    <span className="font-medium text-foreground">
+                      {estimatedFinishDateLoading ? (
+                        <span className="text-muted-foreground text-[10px]">Calculating...</span>
+                      ) : estimatedFinishDate ? (
+                        <span className="text-[10px]">{formatEstimatedFinishDate(estimatedFinishDate)}</span>
+                      ) : (
+                        <span className="text-muted-foreground text-[10px]">TBD</span>
+                      )}
+                    </span>
                   </div>
 
                   {/* Instruction Detail Level */}
@@ -414,7 +486,7 @@ export function WorkflowSidebar({
                                       className="border-none ml-2"
                                     >
                                       <AccordionTrigger 
-                                        className={`py-1.5 px-0 hover:no-underline text-xs font-medium ${
+                                        className={`py-1 px-0 hover:no-underline text-xs font-medium ${
                                           isOperationCompleted
                                             ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
                                             : isOperationInProgress
@@ -451,6 +523,37 @@ export function WorkflowSidebar({
                                               >
                                                 <div className="flex items-center gap-2">
                                                   {getStepIndicator(step.stepType || 'prime')}
+                                                  {/* Display app icons if available */}
+                                                  {step.apps && Array.isArray(step.apps) && step.apps.length > 0 && (
+                                                    <div className="flex items-center gap-1">
+                                                      {step.apps.slice(0, 2).map((app: AppReference, idx: number) => {
+                                                        // Use app.icon or fallback to 'Sparkles' if icon is missing
+                                                        const iconName = app.icon || 'Sparkles';
+                                                        const IconComponent = getIconComponent(iconName);
+                                                        return (
+                                                          <div 
+                                                            key={app.id || idx}
+                                                            className="w-4 h-4 rounded flex items-center justify-center bg-primary/10 border border-primary/20"
+                                                            title={app.appName || 'App'}
+                                                          >
+                                                            <IconComponent 
+                                                              className="w-3 h-3 text-primary" 
+                                                              fill="none"
+                                                              stroke="currentColor"
+                                                              strokeWidth={2}
+                                                              style={{ 
+                                                                color: 'hsl(var(--primary))',
+                                                                opacity: 1
+                                                              }}
+                                                            />
+                                                          </div>
+                                                        );
+                                                      })}
+                                                      {step.apps.length > 2 && (
+                                                        <span className="text-[10px] text-muted-foreground">+{step.apps.length - 2}</span>
+                                                      )}
+                                                    </div>
+                                                  )}
                                                   {isStepCompleted && <CheckCircle className="w-3 h-3" />}
                                                   <span className="truncate">{step.step}</span>
                                                 </div>

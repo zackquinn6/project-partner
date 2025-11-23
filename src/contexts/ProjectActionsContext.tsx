@@ -71,7 +71,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       return;
     }
 
-    // Check for duplicate project name
+    // Check for duplicate project name (case-insensitive)
     const normalizedName = projectData.name.trim().toLowerCase();
     const { data: existingProjects, error: checkError } = await supabase
       .from('projects')
@@ -92,8 +92,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       const exactMatch = existingProjects.find(p => p.name.trim().toLowerCase() === normalizedName);
       if (exactMatch) {
         toast({
-          title: "Error",
-          description: "A project with this name already exists. Please choose a unique name.",
+          title: "Duplicate Project Name",
+          description: `A project with the name "${projectData.name}" already exists. Please choose a unique name.`,
           variant: "destructive",
         });
         return;
@@ -109,7 +109,18 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           p_category: Array.isArray(projectData.category) ? projectData.category[0] : (projectData.category || 'general')
         });
 
-      if (error) throw error;
+      if (error) {
+        // Check if error is due to duplicate name constraint
+        if (error.code === '23505' && error.message.includes('idx_projects_name_unique')) {
+          toast({
+            title: "Duplicate Project Name",
+            description: `A project with the name "${projectData.name}" already exists. Please choose a unique name.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
 
       // Update the created project with additional fields not in RPC
       if (projectId) {
@@ -128,8 +139,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           console.error('Error updating additional project fields:', updateError);
         }
       }
-
-      if (error) throw error;
 
       console.log('✅ Project created with standard foundation:', projectId);
 
@@ -266,6 +275,38 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         phasesCount: project.phases?.length 
       });
       
+      // Check for duplicate project name if name is being changed
+      if (project.name && project.name.trim()) {
+        const normalizedName = project.name.trim().toLowerCase();
+        const { data: existingProjects, error: checkError } = await supabase
+          .from('projects')
+          .select('id, name')
+          .neq('id', project.id) // Exclude current project
+          .ilike('name', project.name.trim());
+
+        if (checkError) {
+          console.error('Error checking for duplicate project name:', checkError);
+          toast({
+            title: "Error",
+            description: "Failed to validate project name",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (existingProjects && existingProjects.length > 0) {
+          const exactMatch = existingProjects.find(p => p.name.trim().toLowerCase() === normalizedName);
+          if (exactMatch) {
+            toast({
+              title: "Duplicate Project Name",
+              description: `A project with the name "${project.name}" already exists. Please choose a unique name.`,
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+      
       // For all projects (including Standard Project), we DON'T update phases JSON
       // The database triggers will automatically rebuild it from template_operations/template_steps
       
@@ -288,6 +329,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         .eq('id', project.id);
 
       if (updateError) {
+        // Check if error is due to duplicate name constraint
+        if (updateError.code === '23505' && updateError.message.includes('idx_projects_name_unique')) {
+          toast({
+            title: "Duplicate Project Name",
+            description: `A project with the name "${project.name}" already exists. Please choose a unique name.`,
+            variant: "destructive",
+          });
+          return;
+        }
         console.error('❌ Error updating project:', updateError);
         throw updateError;
       }

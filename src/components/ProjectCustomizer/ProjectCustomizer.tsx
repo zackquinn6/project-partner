@@ -524,6 +524,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
       await updateProjectRun(updatedProjectRun);
       
+      // Dispatch refresh event for workflow navigation
+      window.dispatchEvent(new CustomEvent('project-customizer-updated', {
+        detail: { projectRunId: currentProjectRun.id }
+      }));
+      
       toast({
         title: "Success", 
         description: `Project customization saved. Workflow now has ${orderedPhases.length} phases.`

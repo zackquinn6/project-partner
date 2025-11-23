@@ -1,8 +1,7 @@
--- Update methodology: Use is_standard from project_phases as source of truth
--- Remove dependency on is_locked from standard_phases
--- Dynamically include ALL phases from Standard Project Foundation with is_standard: true
+-- Fix: Remove reference to phase_record.is_linked before phase_record is assigned
+-- The error occurred in rebuild_phases_json_from_project_phases when processing standard phases
+-- Since we're in the "IF NOT EXISTS" block, the phase is dynamically included and isLinked should be false
 
--- Update rebuild_phases_json_from_project_phases to dynamically merge standard phases
 CREATE OR REPLACE FUNCTION public.rebuild_phases_json_from_project_phases(
   p_project_id UUID,
   p_default_skill_level TEXT DEFAULT NULL
@@ -10,20 +9,16 @@ CREATE OR REPLACE FUNCTION public.rebuild_phases_json_from_project_phases(
 RETURNS JSONB AS $$
 DECLARE
   phases_json JSONB := '[]'::jsonb;
-  phase_record RECORD;
   operations_json JSONB;
-  operation_record RECORD;
-  effective_operation_id UUID;
   steps_json JSONB;
   step_obj JSONB;
-  step_record RECORD;
-  apps_json JSONB;
-  app_obj JSONB;
-  app_override RECORD;
-  phase_count INTEGER := 0;
+  total_phases INTEGER := 0;
   total_operations INTEGER := 0;
   project_skill_level TEXT;
-  standard_project_id CONSTANT UUID := '00000000-0000-0000-0000-000000000001';
+  standard_project_id UUID := '00000000-0000-0000-0000-000000000001';
+  phase_record RECORD;
+  operation_record RECORD;
+  effective_operation_id UUID;
   standard_phase_record RECORD;
   phase_seen JSONB := '{}'::jsonb;
 BEGIN
@@ -32,16 +27,9 @@ BEGIN
     SELECT skill_level INTO project_skill_level
     FROM public.projects
     WHERE id = p_project_id;
-    p_default_skill_level := project_skill_level;
+    
+    p_default_skill_level := COALESCE(project_skill_level, 'Beginner');
   END IF;
-
-  -- Debug: Count phases
-  SELECT COUNT(*) INTO phase_count
-  FROM public.project_phases
-  WHERE project_id = p_project_id;
-
-  RAISE NOTICE '🔍 rebuild_phases_json_from_project_phases: project_id=%, phase_count=%, default_skill_level=%', 
-    p_project_id, phase_count, p_default_skill_level;
 
   -- CRITICAL: If this is NOT the Standard Project Foundation, dynamically include ALL standard phases
   -- from Standard Project Foundation that have is_standard: true
@@ -170,9 +158,8 @@ BEGIN
         COALESCE(operation_record.is_reference, false)
       );
 
-      -- Update each step's skill_level if it's NULL, defaulting to project skill_level
+      -- Update skill levels if needed
       IF p_default_skill_level IS NOT NULL AND steps_json IS NOT NULL AND jsonb_array_length(steps_json) > 0 THEN
-        -- Rebuild steps_json with updated skill levels
         steps_json := (
           SELECT jsonb_agg(
             CASE 
@@ -185,7 +172,6 @@ BEGIN
         );
       END IF;
 
-      -- CRITICAL FIX: Wrap object in array, then concatenate arrays
       operations_json := operations_json || jsonb_build_array(
         jsonb_build_object(
           'id', operation_record.id,
@@ -219,12 +205,11 @@ BEGIN
   END LOOP;
 
   RAISE NOTICE '✅ rebuild_phases_json_from_project_phases: project_id=%, total_phases=%, total_operations=%', 
-    p_project_id, phase_count, total_operations;
+    p_project_id, jsonb_array_length(phases_json), total_operations;
 
   RETURN phases_json;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION public.rebuild_phases_json_from_project_phases(UUID, TEXT) IS 
-'Rebuilds phases JSON from project_phases table. For non-standard projects, dynamically includes ALL phases from Standard Project Foundation with is_standard: true. Standard phases are locked and cannot be edited or reordered in downstream projects.';
+COMMENT ON FUNCTION public.rebuild_phases_json_from_project_phases(UUID, TEXT) IS 'Rebuilds phases JSON from relational project_phases table, dynamically including standard phases from Standard Project Foundation. Fixed to not reference phase_record before it is assigned.';
 

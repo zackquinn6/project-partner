@@ -821,6 +821,12 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       };
       await updateProjectRun(updatedProjectRun);
       schedulingEngine.commitSchedule(schedulingResult);
+      
+      // Dispatch refresh event for workflow navigation
+      window.dispatchEvent(new CustomEvent('project-scheduler-updated', {
+        detail: { projectRunId: projectRun.id }
+      }));
+      
       toast({
         title: "Schedule saved",
         description: "Your optimized schedule has been saved successfully."

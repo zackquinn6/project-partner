@@ -80,6 +80,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [clipboard, setClipboard] = useState<ClipboardData | null>(null);
   const [oneTimeCorrectionApplied, setOneTimeCorrectionApplied] = useState(false);
   const [isAddingPhase, setIsAddingPhase] = useState(false);
+  const [justAddedPhaseId, setJustAddedPhaseId] = useState<string | null>(null);
   const [deletePhaseDialogOpen, setDeletePhaseDialogOpen] = useState(false);
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
   const [isDeletingPhase, setIsDeletingPhase] = useState(false);
@@ -311,7 +312,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Rebuild phases from database (like EditWorkflowView does)
   // This ensures we get fresh data, but we'll merge with currentProject.phases to preserve correct isStandard flags
-  const { phases: rebuiltPhases, loading: rebuildingPhases } = useDynamicPhases(currentProject?.id);
+  const { phases: rebuiltPhases, loading: rebuildingPhases, refetch: refetchDynamicPhases } = useDynamicPhases(currentProject?.id);
   
   // Merge rebuilt phases with currentProject.phases to preserve correct isStandard flags
   // This ensures custom phases aren't incorrectly tagged as standard
@@ -333,39 +334,65 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     
     // If we have rebuilt phases, merge them with currentProject.phases to preserve correct isStandard flags
     if (rebuiltPhases && rebuiltPhases.length > 0) {
+      // Create maps for both ID and name matching
+      // Use ID as primary identifier, but also check by name for phases that might have been renamed
+      const currentPhasesById = new Map<string, Phase>();
       const currentPhasesByName = new Map<string, Phase>();
       currentProject.phases.forEach(phase => {
+        if (phase.id) {
+          currentPhasesById.set(phase.id, phase);
+        }
         if (phase.name) {
-          currentPhasesByName.set(phase.name, phase);
+          // If multiple phases have the same name, keep the first one
+          if (!currentPhasesByName.has(phase.name)) {
+            currentPhasesByName.set(phase.name, phase);
+          }
         }
       });
       
       // Merge: Use rebuilt phases from DB for fresh data, but update isStandard from currentProject.phases
       // This ensures custom phases aren't incorrectly tagged as standard
       const mergedRebuiltPhases = rebuiltPhases.map(rebuiltPhase => {
-        const currentPhase = currentPhasesByName.get(rebuiltPhase.name);
-        if (currentPhase) {
+        // First try to match by ID (most reliable)
+        const currentPhaseById = rebuiltPhase.id ? currentPhasesById.get(rebuiltPhase.id) : null;
+        if (currentPhaseById) {
           // Preserve isStandard flag from currentProject.phases (source of truth)
           return {
             ...rebuiltPhase,
-            isStandard: currentPhase.isStandard, // Use isStandard from currentProject.phases
-            isLinked: currentPhase.isLinked || rebuiltPhase.isLinked // Preserve both flags
+            isStandard: currentPhaseById.isStandard, // Use isStandard from currentProject.phases
+            isLinked: currentPhaseById.isLinked || rebuiltPhase.isLinked // Preserve both flags
           };
         }
+        
+        // Fallback to name matching if ID doesn't match (e.g., renamed phases)
+        const currentPhaseByName = rebuiltPhase.name ? currentPhasesByName.get(rebuiltPhase.name) : null;
+        if (currentPhaseByName) {
+          return {
+            ...rebuiltPhase,
+            isStandard: currentPhaseByName.isStandard,
+            isLinked: currentPhaseByName.isLinked || rebuiltPhase.isLinked
+          };
+        }
+        
         return rebuiltPhase;
       });
       
-      // Get phases from currentProject.phases that aren't in rebuilt phases (by name)
-      // These are phases that exist in JSON but might not be in DB yet
-      const rebuiltPhaseNames = new Set(rebuiltPhases.map(p => p.name));
-      const phasesOnlyInJson = currentProject.phases.filter(p => 
-        p.name && !rebuiltPhaseNames.has(p.name)
-      );
+      // Get phases from currentProject.phases that aren't in rebuilt phases
+      // Check by both ID and name to catch all cases
+      const rebuiltPhaseIds = new Set(rebuiltPhases.map(p => p.id).filter(Boolean));
+      const rebuiltPhaseNames = new Set(rebuiltPhases.map(p => p.name).filter(Boolean));
+      const phasesOnlyInJson = currentProject.phases.filter(p => {
+        // Include if not found by ID or name in rebuilt phases
+        const notFoundById = p.id ? !rebuiltPhaseIds.has(p.id) : true;
+        const notFoundByName = p.name ? !rebuiltPhaseNames.has(p.name) : true;
+        // Include if either ID or name doesn't match (covers all cases)
+        return notFoundById && notFoundByName;
+      });
       
       console.log('🔍 StructureManager merge result:', {
         mergedRebuiltPhasesCount: mergedRebuiltPhases.length,
         phasesOnlyInJsonCount: phasesOnlyInJson.length,
-        phasesOnlyInJsonNames: phasesOnlyInJson.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
+        phasesOnlyInJsonNames: phasesOnlyInJson.map(p => ({ id: p.id, name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
         totalMergedCount: mergedRebuiltPhases.length + phasesOnlyInJson.length
       });
       
@@ -422,11 +449,23 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     });
     
     // Always update displayPhases to match processedPhases
-    // This ensures phases are displayed even if they're only in JSON
-    setDisplayPhases(processedPhases);
-    setPhasesLoaded(true);
+    // BUT: If we just added a phase, check if it's in processedPhases before overwriting
+    // This prevents the new phase from disappearing before the refetch completes
+    if (justAddedPhaseId) {
+      const newPhaseInProcessed = processedPhases.some(p => p.id === justAddedPhaseId);
+      if (!newPhaseInProcessed) {
+        console.log('⚠️ Newly added phase not yet in processedPhases, preserving displayPhases');
+        // Don't overwrite displayPhases if the new phase isn't in processedPhases yet
+        return;
+      } else {
+        console.log('✅ Newly added phase found in processedPhases, updating displayPhases');
+      }
+    }
     
-    // Update local context with fresh phases
+    setDisplayPhases(processedPhases);
+      setPhasesLoaded(true);
+      
+      // Update local context with fresh phases
     if (currentProject && processedPhases.length > 0) {
       updateProject({
         ...currentProject,
@@ -434,7 +473,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         updatedAt: new Date()
       });
     }
-  }, [processedPhases, rebuildingPhases, currentProject, updateProject, rebuiltPhases, mergedPhases]);
+  }, [processedPhases, rebuildingPhases, currentProject, updateProject, rebuiltPhases, mergedPhases, justAddedPhaseId]);
 
   // Reset phases when project changes
   useEffect(() => {
@@ -671,8 +710,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // Block reordering of standard phases (unless editing Standard Project Foundation)
     if (phaseIsStandard && !isEditingStandardProject) {
       toast.error('Cannot reorder standard phases. Standard phases are locked and must remain in their designated positions.');
-      return;
-    }
+        return;
+      }
     
     // Validate constraints for standard phases (only in Standard Project Foundation)
     if (phaseIsStandard && isEditingStandardProject) {
@@ -1329,20 +1368,54 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const phaseDescription = 'Phase description';
 
       // Use RPC to safely insert a custom phase with a unique display order
+      // The RPC function will check for duplicate phase names within the project
       const { data: newPhase, error: addPhaseError } = await supabase.rpc('add_custom_project_phase', {
         p_project_id: currentProject.id,
         p_phase_name: uniquePhaseName,
         p_phase_description: phaseDescription
       });
 
-      if (addPhaseError) throw addPhaseError;
+      if (addPhaseError) {
+        console.error('❌ Error adding phase:', addPhaseError);
+        // Check if error is due to duplicate phase name
+        if (addPhaseError.message && addPhaseError.message.includes('already exists')) {
+          toast.error(`A phase with the name "${uniquePhaseName}" already exists in this project. Please choose a unique name.`);
+        } else if (addPhaseError.code === '23505' && addPhaseError.message.includes('idx_project_phases_project_name_unique')) {
+          toast.error(`A phase with the name "${uniquePhaseName}" already exists in this project. Please choose a unique name.`);
+        } else {
+          console.error('❌ Unexpected error adding phase:', {
+            error: addPhaseError,
+            projectId: currentProject.id,
+            isStandardProject: isEditingStandardProject,
+            phaseName: uniquePhaseName
+          });
+          toast.error(`Failed to add phase: ${addPhaseError.message || 'Unknown error'}`);
+          throw addPhaseError;
+        }
+        return;
+      }
+      
+      console.log('✅ Phase added successfully:', {
+        newPhase,
+        projectId: currentProject.id,
+        isStandardProject: isEditingStandardProject,
+        phaseName: uniquePhaseName
+      });
 
       // Rebuild phases JSON from relational data
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
         p_project_id: currentProject.id
       });
 
-      if (rebuildError) throw rebuildError;
+      if (rebuildError) {
+        console.error('❌ Error rebuilding phases:', rebuildError);
+        throw rebuildError;
+      }
+      
+      console.log('✅ Rebuilt phases:', {
+        count: Array.isArray(rebuiltPhases) ? rebuiltPhases.length : 0,
+        phases: rebuiltPhases
+      });
 
       // Merge with any incorporated phases from current project (they're not in project_phases table)
       const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
@@ -1361,9 +1434,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         .update({ phases: phasesWithUniqueOrder as any })
         .eq('id', currentProject.id);
         
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('❌ Error updating project phases:', updateError);
+        throw updateError;
+      }
 
-      // Update local context immediately
+      console.log('✅ Updated project phases in database:', {
+        projectId: currentProject.id,
+        phaseCount: phasesWithUniqueOrder.length,
+        phaseNames: phasesWithUniqueOrder.map(p => p.name),
+        newPhaseIncluded: phasesWithUniqueOrder.some(p => p.name === uniquePhaseName)
+      });
+
+      // Update local context immediately - this triggers mergedPhases recalculation
       const updatedProject = {
         ...currentProject,
         phases: phasesWithUniqueOrder,
@@ -1371,8 +1454,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       };
       updateProject(updatedProject);
 
-      // Update display state immediately
+      console.log('✅ Updated local context:', {
+        projectId: updatedProject.id,
+        phaseCount: updatedProject.phases.length,
+        phaseNames: updatedProject.phases.map(p => p.name)
+      });
+
+      // Update display state immediately to show the new phase right away
+      // This ensures the phase is visible even before refetch completes
+      // Find the newly added phase ID
+      const newPhase = phasesWithUniqueOrder.find(p => p.name === uniquePhaseName);
+      if (newPhase?.id) {
+        setJustAddedPhaseId(newPhase.id);
+        // Clear the flag after refetch completes
+        setTimeout(() => {
+          setJustAddedPhaseId(null);
+        }, 2000);
+      }
+      
+      console.log('✅ Setting displayPhases:', {
+        count: phasesWithUniqueOrder.length,
+        phaseNames: phasesWithUniqueOrder.map(p => p.name),
+        newPhaseName: uniquePhaseName,
+        newPhaseId: newPhase?.id,
+        isStandardProject: isEditingStandardProject
+      });
       setDisplayPhases(phasesWithUniqueOrder);
+      setPhasesLoaded(true);
+      
+      // Trigger refetch of dynamic phases to ensure consistency
+      // Add a small delay to allow database to fully propagate the change
+      // This ensures useDynamicPhases includes the new phase in future renders
+      // The refetch will update rebuiltPhases, which will then be merged with currentProject.phases
+      setTimeout(() => {
+        console.log('🔄 Triggering refetch of dynamic phases after add phase...');
+        refetchDynamicPhases();
+      }, 1000); // Increased delay for Standard Project Foundation
       
       // Ensure minimum display time for loading state
       const elapsedTime = Date.now() - startTime;
@@ -1382,9 +1499,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       toast.success('Phase added successfully');
-    } catch (error) {
-      console.error('Error adding phase:', error);
-      toast.error('Failed to add phase');
+    } catch (error: any) {
+      console.error('❌ Error adding phase:', error);
+      console.error('❌ Error details:', {
+        error,
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        projectId: currentProject?.id,
+        isStandardProject: isEditingStandardProject
+      });
+      toast.error(`Failed to add phase: ${error?.message || 'Unknown error'}`);
       
       // Ensure minimum display time even on error
       const elapsedTime = Date.now() - startTime;
@@ -1915,7 +2040,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         setDisplayPhases(phasesWithUniqueOrder);
 
         // Also refresh from database to ensure consistency
-        await loadFreshPhases();
+        // Add a small delay to allow database to fully propagate the change
+        setTimeout(() => {
+          refetchDynamicPhases();
+        }, 500);
       }
 
       // Ensure minimum display time for loading state
@@ -1930,7 +2058,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setPhaseToDelete(null);
       
       // Force refresh to ensure UI updates
-      await loadFreshPhases();
+      // Add a small delay to allow database to fully propagate the change
+      setTimeout(() => {
+        refetchDynamicPhases();
+      }, 500);
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
@@ -2122,6 +2253,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Update phase name/description in project_phases table
         const phase = updatedProject.phases[phaseIndex];
         if (!phase.isStandard || isEditingStandardProject) {
+          // Check for duplicate phase name in database before updating
+          const newPhaseName = editingItem.data.name?.trim();
+          if (newPhaseName) {
+            const { data: existingPhases, error: checkError } = await supabase
+              .from('project_phases')
+              .select('id, name')
+              .eq('project_id', currentProject.id)
+              .neq('id', phase.id) // Exclude current phase
+              .ilike('name', newPhaseName);
+
+            if (checkError) {
+              console.error('Error checking for duplicate phase name:', checkError);
+              toast.error('Failed to validate phase name');
+              return;
+            }
+
+            if (existingPhases && existingPhases.length > 0) {
+              const exactMatch = existingPhases.find(p => p.name.trim().toLowerCase() === newPhaseName.toLowerCase());
+              if (exactMatch) {
+                toast.error(`A phase with the name "${newPhaseName}" already exists in this project. Please choose a unique name.`);
+                return;
+              }
+            }
+          }
+
           // Update custom phases in project_phases table
           const { data: projectPhase, error: fetchError } = await supabase
             .from('project_phases')
@@ -2141,8 +2297,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               .eq('id', projectPhase.id);
             
             if (updateError) {
+              // Check if error is due to duplicate name constraint
+              if (updateError.code === '23505' && updateError.message.includes('idx_project_phases_project_name_unique')) {
+                toast.error(`A phase with the name "${editingItem.data.name}" already exists in this project. Please choose a unique name.`);
+              } else {
               console.error('❌ Error updating phase name:', updateError);
               toast.error('Failed to save phase name');
+              }
               return;
             }
           }
