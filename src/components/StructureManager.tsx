@@ -1528,14 +1528,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setDisplayPhases(phasesWithUniqueOrder);
       setPhasesLoaded(true);
       
-      // Update local context immediately so the phase persists
-      // This prevents the phase from disappearing when the useEffect runs
-      const updatedProject = {
-        ...currentProject,
-        phases: phasesWithUniqueOrder,
-        updatedAt: new Date()
-      };
-      updateProject(updatedProject);
+      // Note: updatedProject was already created and updateProject called above (line 1493-1498)
+      // No need to duplicate this - the phase is already persisted
       
       // Trigger refetch of dynamic phases to ensure consistency
       // Add a small delay to allow database to fully propagate the change
