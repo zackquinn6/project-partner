@@ -1604,8 +1604,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       // Update display state immediately to show the new phase right away
       // This ensures the phase is visible even before refetch completes
-      // Find the newly added phase ID
-      const addedPhase = phasesWithCorrectStandardFlag.find(p => p.name === uniquePhaseName);
+      // Reuse addedPhase that was already found above
       if (addedPhase?.id) {
         setJustAddedPhaseId(addedPhase.id);
         // Clear the flag after refetch completes
