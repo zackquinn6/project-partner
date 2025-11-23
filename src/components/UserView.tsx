@@ -2163,6 +2163,9 @@ export default function UserView({
              // Ensure ALL kickoff steps are marked complete (prevent duplicates)
              const existingSteps = currentProjectRun.completedSteps || [];
              
+             // UI kickoff step IDs
+             const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
+             
              // Find all actual Kickoff phase operation steps to mark complete
              const kickoffPhase = currentProjectRun.phases.find(p => p.name === 'Kickoff');
              const allKickoffStepIds: string[] = kickoffPhase 
@@ -2170,6 +2173,7 @@ export default function UserView({
                : [];
              
              console.log("🎯 Found Kickoff phase step IDs:", allKickoffStepIds);
+             console.log("🎯 UI kickoff step IDs:", kickoffStepIds);
              
              // Combine kickoff UI step IDs and actual workflow step IDs
              const uniqueSteps = [...new Set([...existingSteps, ...kickoffStepIds, ...allKickoffStepIds])];
