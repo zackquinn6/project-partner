@@ -374,7 +374,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           };
         }
         
-        return rebuiltPhase;
+        // If phase is not in currentProject.phases, it's a newly added phase
+        // Set isStandard based on whether we're editing Standard Project Foundation
+        // - When editing Standard Project Foundation: new phases should be isStandard: true
+        // - When editing regular templates: new phases should be isStandard: false
+        return {
+          ...rebuiltPhase,
+          isStandard: isEditingStandardProject ? (rebuiltPhase.isStandard ?? true) : false
+        };
       });
       
       // Get phases from currentProject.phases that aren't in rebuilt phases
@@ -1486,11 +1493,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
       // THEN assign order numbers based on the correct order
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+      
+      // CRITICAL: Set isStandard flag correctly based on whether we're editing Standard Project Foundation
+      // - When editing Standard Project Foundation (isEditingStandardProject = true): 
+      //   Newly added phases should be isStandard: true (they become part of the standard foundation)
+      // - When editing regular project templates (isEditingStandardProject = false):
+      //   Newly added phases should be isStandard: false (they're custom phases)
+      const phasesWithCorrectStandardFlag = phasesWithUniqueOrder.map(phase => {
+        // If this is the newly added phase, set isStandard based on editing mode
+        if (phase.name === uniquePhaseName) {
+          return {
+            ...phase,
+            isStandard: isEditingStandardProject // true if editing Standard Project Foundation, false otherwise
+          };
+        }
+        // For existing phases, preserve their isStandard flag
+        // Standard phases are: Kickoff, Planning, Ordering, Close Project (when isStandard: true)
+        // When editing Standard Project Foundation, phases added there become standard
+        // When editing regular templates, phases added there are custom (isStandard: false)
+        return phase;
+      });
 
-      // Update project with rebuilt phases
+      // Update project with rebuilt phases (using phases with correct isStandard flags)
       const { error: updateError } = await supabase
         .from('projects')
-        .update({ phases: phasesWithUniqueOrder as any })
+        .update({ phases: phasesWithCorrectStandardFlag as any })
         .eq('id', currentProject.id);
         
       if (updateError) {
@@ -1500,15 +1527,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       console.log('✅ Updated project phases in database:', {
         projectId: currentProject.id,
-        phaseCount: phasesWithUniqueOrder.length,
-        phaseNames: phasesWithUniqueOrder.map(p => p.name),
-        newPhaseIncluded: phasesWithUniqueOrder.some(p => p.name === uniquePhaseName)
+        phaseCount: phasesWithCorrectStandardFlag.length,
+        phaseNames: phasesWithCorrectStandardFlag.map(p => p.name),
+        newPhaseIncluded: phasesWithCorrectStandardFlag.some(p => p.name === uniquePhaseName),
+        newPhaseIsStandard: phasesWithCorrectStandardFlag.find(p => p.name === uniquePhaseName)?.isStandard
       });
 
       // Update local context immediately - this triggers mergedPhases recalculation
       const updatedProject = {
         ...currentProject,
-        phases: phasesWithUniqueOrder,
+        phases: phasesWithCorrectStandardFlag,
         updatedAt: new Date()
       };
       updateProject(updatedProject);
@@ -1516,13 +1544,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       console.log('✅ Updated local context:', {
         projectId: updatedProject.id,
         phaseCount: updatedProject.phases.length,
-        phaseNames: updatedProject.phases.map(p => p.name)
+        phaseNames: updatedProject.phases.map(p => p.name),
+        phaseIsStandardFlags: updatedProject.phases.map(p => ({ name: p.name, isStandard: p.isStandard }))
       });
 
       // Update display state immediately to show the new phase right away
       // This ensures the phase is visible even before refetch completes
       // Find the newly added phase ID
-      const addedPhase = phasesWithUniqueOrder.find(p => p.name === uniquePhaseName);
+      const addedPhase = phasesWithCorrectStandardFlag.find(p => p.name === uniquePhaseName);
       if (addedPhase?.id) {
         setJustAddedPhaseId(addedPhase.id);
         // Clear the flag after refetch completes
@@ -1532,16 +1561,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       console.log('✅ Setting displayPhases:', {
-        count: phasesWithUniqueOrder.length,
-        phaseNames: phasesWithUniqueOrder.map(p => p.name),
+        count: phasesWithCorrectStandardFlag.length,
+        phaseNames: phasesWithCorrectStandardFlag.map(p => p.name),
+        phaseIsStandardFlags: phasesWithCorrectStandardFlag.map(p => ({ name: p.name, isStandard: p.isStandard })),
         newPhaseName: uniquePhaseName,
         newPhaseId: addedPhase?.id,
+        newPhaseIsStandard: addedPhase?.isStandard,
         isStandardProject: isEditingStandardProject
       });
       
       // CRITICAL: Update displayPhases immediately with the new phase
       // This ensures it's visible right away
-      setDisplayPhases(phasesWithUniqueOrder);
+      setDisplayPhases(phasesWithCorrectStandardFlag);
       setPhasesLoaded(true);
       
       // Note: updatedProject was already created and updateProject called above (line 1493-1498)
