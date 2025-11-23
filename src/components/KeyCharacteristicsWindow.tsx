@@ -1,6 +1,6 @@
 import { useState } from "react";
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,16 +110,27 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
           <DialogHeader className="flex-shrink-0">
             <div className="flex items-center justify-between gap-4">
               <DialogTitle className="text-lg sm:text-xl font-bold">Key Characteristics (KC's)</DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowHelpPopup(true)}
-                className="flex items-center gap-1 text-xs sm:text-sm mr-8"
-              >
-                <HelpCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">What's a KC?</span>
-                <span className="sm:hidden">Help</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowHelpPopup(true)}
+                  className="flex items-center gap-1 text-xs sm:text-sm"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  <span className="hidden sm:inline">What's a KC?</span>
+                  <span className="sm:hidden">Help</span>
+                </Button>
+                <DialogClose asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DialogClose>
+              </div>
             </div>
           </DialogHeader>
 
