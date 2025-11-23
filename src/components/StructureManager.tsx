@@ -395,11 +395,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // If phase is not in currentProject.phases, it's a newly added phase
         // Set isStandard based on whether we're editing Standard Project Foundation
         // - When editing Standard Project Foundation: new phases should be isStandard: true
-        // - When editing regular templates: new phases should be isStandard: false
-        return {
-          ...rebuiltPhase,
-          isStandard: isEditingStandardProject ? (rebuiltPhase.isStandard ?? true) : false
-        };
+        // - When editing regular templates: new phases should ALWAYS be isStandard: false
+        // CRITICAL: For regular templates, never mark new phases as standard
+        if (isEditingStandardProject) {
+          // When editing Standard Project Foundation, new phases become standard
+          return {
+            ...rebuiltPhase,
+            isStandard: true
+          };
+        } else {
+          // When editing regular templates, new phases are ALWAYS custom (isStandard: false)
+          return {
+            ...rebuiltPhase,
+            isStandard: false
+          };
+        }
       });
       
       // Get phases from currentProject.phases that aren't in rebuilt phases
