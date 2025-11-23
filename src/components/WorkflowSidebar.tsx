@@ -365,7 +365,7 @@ export function WorkflowSidebar({
                         variant="default"
                         size="sm"
                         onClick={onHelpClick}
-                        className="h-auto py-1.5 px-2 text-xs flex-1 flex-col gap-1"
+                        className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
                       >
                         <MessageCircle className="h-3.5 w-3.5" />
                         <span>Chat</span>
@@ -374,7 +374,7 @@ export function WorkflowSidebar({
                         variant="default"
                         size="sm"
                         onClick={onKeysToSuccessClick}
-                        className="h-auto py-1.5 px-2 text-xs flex-1 flex-col gap-1"
+                        className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
                       >
                         <Key className="h-3.5 w-3.5" />
                         <span>KeyInfo</span>
@@ -384,7 +384,7 @@ export function WorkflowSidebar({
                           variant="default"
                           size="sm"
                           onClick={onUnplannedWorkClick}
-                          className="h-auto py-1.5 px-2 text-xs flex-1 flex-col gap-1"
+                          className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
                         >
                           <Layers className="h-3.5 w-3.5" />
                           <span>Re-Plan</span>
@@ -397,7 +397,7 @@ export function WorkflowSidebar({
                         variant="default"
                         size="sm"
                         onClick={onNotesClick}
-                        className="h-7 px-2 text-xs flex-1"
+                        className="h-7 px-2 text-[10px] flex-1"
                       >
                         <FileText className="h-3 w-3 mr-1.5" />
                         <span>Notes</span>
@@ -406,7 +406,7 @@ export function WorkflowSidebar({
                         variant="default"
                         size="sm"
                         onClick={onPhotosClick}
-                        className="h-7 px-2 text-xs flex-1"
+                        className="h-7 px-2 text-[10px] flex-1"
                       >
                         <Image className="h-3 w-3 mr-1.5" />
                         <span>Photos</span>
