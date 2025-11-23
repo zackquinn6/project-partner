@@ -71,9 +71,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.templateId) || null;
   const displaySkillLevel = currentProjectRun?.skillLevel ?? templateProject?.skillLevel;
   const displayEffortLevel = templateProject?.effortLevel ?? currentProjectRun?.effortLevel;
-  const displayEstimatedTime = currentProjectRun?.estimatedTime ?? templateProject?.estimatedTime;
+  // Use manually entered estimated time from project information editor (no calculation)
+  const displayEstimatedTime = templateProject?.estimatedTime || currentProjectRun?.estimatedTime;
   // Handle both camelCase (from transformed Project interface) and snake_case (from raw database)
-  const displayEstimatedTotalTime = templateProject?.estimatedTotalTime || (templateProject as any)?.estimated_total_time || null;
+  // Check for both null/undefined and empty string, and handle string trimming
+  const rawEstimatedTotalTime = templateProject?.estimatedTotalTime || (templateProject as any)?.estimated_total_time;
+  const displayEstimatedTotalTime = rawEstimatedTotalTime && typeof rawEstimatedTotalTime === 'string' 
+    ? rawEstimatedTotalTime.trim() || null
+    : rawEstimatedTotalTime || null;
   const displayTypicalProjectSize = templateProject?.typicalProjectSize || (templateProject as any)?.typical_project_size || null;
   const displayScalingUnit = currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit;
   const displayProjectChallenges = currentProjectRun?.projectChallenges ?? templateProject?.projectChallenges;
@@ -84,6 +89,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       console.log('🔍 ProjectOverviewStep - Template Project Data:', {
         projectId: templateProject.id,
         projectName: templateProject.name,
+        estimatedTime: displayEstimatedTime,
+        templateEstimatedTime: templateProject?.estimatedTime,
+        currentProjectRunEstimatedTime: currentProjectRun?.estimatedTime,
         estimatedTotalTime: displayEstimatedTotalTime,
         typicalProjectSize: displayTypicalProjectSize,
         rawEstimatedTotalTime: (templateProject as any)?.estimated_total_time,
@@ -377,6 +385,11 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                     {displayTypicalProjectSize && (
                       <span className="text-xs sm:text-sm text-muted-foreground">
                         {displayEstimatedTotalTime ? 'for' : 'Typical size:'} {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'}
+                      </span>
+                    )}
+                    {displayEstimatedTotalTime && !displayTypicalProjectSize && (
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        total time
                       </span>
                     )}
                   </div>
