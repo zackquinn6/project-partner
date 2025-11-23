@@ -214,18 +214,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return 0;
     });
     
-    // Reconstruct array: Kickoff -> Planning -> Ordering -> sorted non-standard -> Close Project
+    // Reconstruct array: Kickoff -> Planning -> Ordering -> [Other Standard Phases] -> sorted non-standard -> Close Project
     const result: Phase[] = [];
     
-    // Add standard phases in fixed order
-    const kickoff = standardPhases.find(p => p.name === 'Kickoff');
-    const planning = standardPhases.find(p => p.name === 'Planning');
-    const ordering = standardPhases.find(p => p.name === 'Ordering');
-    const closeProject = standardPhases.find(p => p.name === 'Close Project');
+    // Separate the 4 specific standard phases from other standard phases
+    const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+    const specificStandardPhases = standardPhases.filter(p => standardPhaseNames.includes(p.name || ''));
+    const otherStandardPhases = standardPhases.filter(p => !standardPhaseNames.includes(p.name || ''));
+    
+    // Sort other standard phases by order number or name
+    otherStandardPhases.sort((a, b) => {
+      if (a.phaseOrderNumber !== undefined && b.phaseOrderNumber !== undefined) {
+        if (typeof a.phaseOrderNumber === 'number' && typeof b.phaseOrderNumber === 'number') {
+          return a.phaseOrderNumber - b.phaseOrderNumber;
+        }
+      }
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    
+    // Add the 4 specific standard phases in fixed order
+    const kickoff = specificStandardPhases.find(p => p.name === 'Kickoff');
+    const planning = specificStandardPhases.find(p => p.name === 'Planning');
+    const ordering = specificStandardPhases.find(p => p.name === 'Ordering');
+    const closeProject = specificStandardPhases.find(p => p.name === 'Close Project');
     
     if (kickoff) result.push(kickoff);
     if (planning) result.push(planning);
     if (ordering) result.push(ordering);
+    
+    // Add other standard phases (newly added standard phases when editing Standard Project Foundation)
+    result.push(...otherStandardPhases);
     
     // Add sorted non-standard phases
     result.push(...nonStandardPhases);
