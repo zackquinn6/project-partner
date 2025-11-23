@@ -478,42 +478,7 @@ export function WorkflowSidebar({
                                                   }
                                                 }}
                                               >
-                                                <div className="flex items-center gap-2">
-                                                  {getStepIndicator(step.stepType || 'prime')}
-                                                  {/* Display app icons if available */}
-                                                  {step.apps && Array.isArray(step.apps) && step.apps.length > 0 && (
-                                                    <div className="flex items-center gap-1">
-                                                      {step.apps.slice(0, 2).map((app: AppReference, idx: number) => {
-                                                        // Use app.icon or fallback to 'Sparkles' if icon is missing
-                                                        const iconName = app.icon || 'Sparkles';
-                                                        const IconComponent = getIconComponent(iconName);
-                                                        return (
-                                                          <div 
-                                                            key={app.id || idx}
-                                                            className="w-4 h-4 rounded flex items-center justify-center bg-primary/10 border border-primary/20"
-                                                            title={app.appName || 'App'}
-                                                          >
-                                                            <IconComponent 
-                                                              className="w-3 h-3 text-primary" 
-                                                              fill="none"
-                                                              stroke="currentColor"
-                                                              strokeWidth={2}
-                                                              style={{ 
-                                                                color: 'hsl(var(--primary))',
-                                                                opacity: 1
-                                                              }}
-                                                            />
-                                                          </div>
-                                                        );
-                                                      })}
-                                                      {step.apps.length > 2 && (
-                                                        <span className="text-[10px] text-muted-foreground">+{step.apps.length - 2}</span>
-                                                      )}
-                                                    </div>
-                                                  )}
-                                                  {isStepCompleted && <CheckCircle className="w-3 h-3" />}
-                                                  <span className="truncate">{step.step}</span>
-                                                </div>
+                                                <span className="truncate">{step.step}</span>
                                               </div>
                                             );
                                           })}
