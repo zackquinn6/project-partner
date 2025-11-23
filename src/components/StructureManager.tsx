@@ -379,9 +379,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // Get phases from currentProject.phases that aren't in rebuilt phases
       // Check by both ID and name to catch all cases
+      // CRITICAL: Always include phases that were just added (even if not in rebuiltPhases yet)
       const rebuiltPhaseIds = new Set(rebuiltPhases.map(p => p.id).filter(Boolean));
       const rebuiltPhaseNames = new Set(rebuiltPhases.map(p => p.name).filter(Boolean));
       const phasesOnlyInJson = currentProject.phases.filter(p => {
+        // Always include if this is the just-added phase
+        if (justAddedPhaseId && p.id === justAddedPhaseId) {
+          return true;
+        }
         // Include if not found by ID or name in rebuilt phases
         const notFoundById = p.id ? !rebuiltPhaseIds.has(p.id) : true;
         const notFoundByName = p.name ? !rebuiltPhaseNames.has(p.name) : true;
@@ -403,7 +408,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // Fallback: use currentProject.phases directly if no rebuilt phases
     console.log('🔍 No rebuiltPhases, returning currentProject.phases directly');
     return currentProject.phases;
-  }, [currentProject?.phases, rebuiltPhases]);
+  }, [currentProject?.phases, rebuiltPhases, justAddedPhaseId]);
   
   // Process merged phases and update displayPhases
   // Use mergedPhases directly (same as EditWorkflowView uses rawPhases)
@@ -463,17 +468,33 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     setDisplayPhases(processedPhases);
-      setPhasesLoaded(true);
+    setPhasesLoaded(true);
       
-      // Update local context with fresh phases
+    // Update local context with fresh phases ONLY if phases actually changed
+    // This prevents infinite loops from updateProject triggering re-renders
     if (currentProject && processedPhases.length > 0) {
-      updateProject({
-        ...currentProject,
-        phases: processedPhases,
-        updatedAt: new Date()
-      });
+      // Check if phases actually changed before updating
+      const currentPhaseIds = new Set((currentProject.phases || []).map(p => p.id));
+      const processedPhaseIds = new Set(processedPhases.map(p => p.id));
+      const phasesChanged = 
+        currentPhaseIds.size !== processedPhaseIds.size ||
+        !Array.from(currentPhaseIds).every(id => processedPhaseIds.has(id)) ||
+        !Array.from(processedPhaseIds).every(id => currentPhaseIds.has(id));
+      
+      if (phasesChanged) {
+        console.log('🔧 updateProject called: phases changed', {
+          projectId: currentProject.id,
+          oldCount: currentProject.phases?.length || 0,
+          newCount: processedPhases.length
+        });
+        updateProject({
+          ...currentProject,
+          phases: processedPhases,
+          updatedAt: new Date()
+        });
+      }
     }
-  }, [processedPhases, rebuildingPhases, currentProject, updateProject, rebuiltPhases, mergedPhases, justAddedPhaseId]);
+  }, [processedPhases, rebuildingPhases, currentProject?.id, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId]);
 
   // Reset phases when project changes
   useEffect(() => {
@@ -1351,12 +1372,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // CRUD operations
   const addPhase = async () => {
+    console.log('🔵 Add Phase button clicked', {
+      hasProject: !!currentProject,
+      projectId: currentProject?.id,
+      isEditingStandardProject,
+      isAddingPhase
+    });
+    
     if (!currentProject) {
       toast.error('No project selected');
       return;
     }
     
-    if (isAddingPhase) return; // Prevent multiple clicks
+    if (isAddingPhase) {
+      console.log('⚠️ Already adding phase, ignoring click');
+      return; // Prevent multiple clicks
+    }
     
     setIsAddingPhase(true);
     const startTime = Date.now();
@@ -1366,6 +1397,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Get unique phase name by checking existing phases
       const uniquePhaseName = getUniquePhaseName('New Phase', displayPhases);
       const phaseDescription = 'Phase description';
+
+      console.log('🔵 Calling add_custom_project_phase RPC', {
+        projectId: currentProject.id,
+        phaseName: uniquePhaseName,
+        isStandardProject: isEditingStandardProject
+      });
 
       // Use RPC to safely insert a custom phase with a unique display order
       // The RPC function will check for duplicate phase names within the project
@@ -1377,6 +1414,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       if (addPhaseError) {
         console.error('❌ Error adding phase:', addPhaseError);
+        console.error('❌ Full error details:', JSON.stringify(addPhaseError, null, 2));
         // Check if error is due to duplicate phase name
         if (addPhaseError.message && addPhaseError.message.includes('already exists')) {
           toast.error(`A phase with the name "${uniquePhaseName}" already exists in this project. Please choose a unique name.`);
@@ -1385,11 +1423,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         } else {
           console.error('❌ Unexpected error adding phase:', {
             error: addPhaseError,
+            errorCode: addPhaseError.code,
+            errorMessage: addPhaseError.message,
+            errorDetails: addPhaseError.details,
+            errorHint: addPhaseError.hint,
             projectId: currentProject.id,
             isStandardProject: isEditingStandardProject,
             phaseName: uniquePhaseName
           });
-          toast.error(`Failed to add phase: ${addPhaseError.message || 'Unknown error'}`);
+          const errorMessage = addPhaseError.message || addPhaseError.details || 'Unknown error';
+          toast.error(`Failed to add phase: ${errorMessage}`);
           throw addPhaseError;
         }
         return;
@@ -1479,8 +1522,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         newPhaseId: addedPhase?.id,
         isStandardProject: isEditingStandardProject
       });
+      
+      // CRITICAL: Update displayPhases immediately with the new phase
+      // This ensures it's visible right away
       setDisplayPhases(phasesWithUniqueOrder);
       setPhasesLoaded(true);
+      
+      // Update local context immediately so the phase persists
+      // This prevents the phase from disappearing when the useEffect runs
+      const updatedProject = {
+        ...currentProject,
+        phases: phasesWithUniqueOrder,
+        updatedAt: new Date()
+      };
+      updateProject(updatedProject);
       
       // Trigger refetch of dynamic phases to ensure consistency
       // Add a small delay to allow database to fully propagate the change
@@ -1489,7 +1544,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setTimeout(() => {
         console.log('🔄 Triggering refetch of dynamic phases after add phase...');
         refetchDynamicPhases();
-      }, 1000); // Increased delay for Standard Project Foundation
+      }, 2000); // Increased delay to ensure database propagation
       
       // Ensure minimum display time for loading state
       const elapsedTime = Date.now() - startTime;

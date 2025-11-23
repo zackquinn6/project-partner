@@ -3,25 +3,50 @@
 -- And no duplicate phase names within a single project
 
 -- 1. Add unique constraint for project names (case-insensitive)
--- First, check if there are any existing duplicates and handle them
+-- First, check if there are any existing duplicates and rename them
 DO $$
 DECLARE
-  duplicate_count INTEGER;
+  duplicate_rec RECORD;
+  counter INTEGER;
+  new_name TEXT;
 BEGIN
-  -- Check for duplicate project names (case-insensitive)
-  SELECT COUNT(*) INTO duplicate_count
-  FROM (
-    SELECT LOWER(TRIM(name)) as normalized_name, COUNT(*) as cnt
-    FROM public.projects
-    WHERE name IS NOT NULL AND TRIM(name) != ''
-    GROUP BY LOWER(TRIM(name))
-    HAVING COUNT(*) > 1
-  ) duplicates;
-  
-  IF duplicate_count > 0 THEN
-    RAISE NOTICE 'Found % duplicate project names. Please resolve these before applying the constraint.', duplicate_count;
-    -- Don't fail the migration, but warn the user
-  END IF;
+  -- Find and rename duplicate project names (case-insensitive)
+  -- Keep the first occurrence (by id) and rename the rest
+  FOR duplicate_rec IN
+    WITH ranked_projects AS (
+      SELECT 
+        id,
+        name,
+        LOWER(TRIM(name)) as normalized_name,
+        ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(name)) ORDER BY id) as rn
+      FROM public.projects
+      WHERE name IS NOT NULL AND TRIM(name) != ''
+    )
+    SELECT id, name, normalized_name
+    FROM ranked_projects
+    WHERE rn > 1
+    ORDER BY normalized_name, id
+  LOOP
+    -- Rename duplicates by appending a counter
+    counter := 1;
+    new_name := duplicate_rec.name || ' (' || counter || ')';
+    
+    -- Ensure the new name doesn't already exist
+    WHILE EXISTS (
+      SELECT 1 FROM public.projects 
+      WHERE LOWER(TRIM(name)) = LOWER(TRIM(new_name))
+    ) LOOP
+      counter := counter + 1;
+      new_name := duplicate_rec.name || ' (' || counter || ')';
+    END LOOP;
+    
+    -- Update the project name
+    UPDATE public.projects
+    SET name = new_name
+    WHERE id = duplicate_rec.id;
+    
+    RAISE NOTICE 'Renamed duplicate project "%" to "%"', duplicate_rec.name, new_name;
+  END LOOP;
 END $$;
 
 -- Create a unique index on project names (case-insensitive)
@@ -33,25 +58,52 @@ WHERE name IS NOT NULL AND TRIM(name) != '';
 COMMENT ON INDEX idx_projects_name_unique IS 'Ensures project names are unique (case-insensitive). Prevents duplicate project names globally.';
 
 -- 2. Add unique constraint for phase names within a project
--- First, check if there are any existing duplicates and handle them
+-- First, check if there are any existing duplicates and rename them
 DO $$
 DECLARE
-  duplicate_count INTEGER;
+  duplicate_rec RECORD;
+  counter INTEGER;
+  new_name TEXT;
 BEGIN
-  -- Check for duplicate phase names within projects (case-insensitive)
-  SELECT COUNT(*) INTO duplicate_count
-  FROM (
-    SELECT project_id, LOWER(TRIM(name)) as normalized_name, COUNT(*) as cnt
-    FROM public.project_phases
-    WHERE name IS NOT NULL AND TRIM(name) != ''
-    GROUP BY project_id, LOWER(TRIM(name))
-    HAVING COUNT(*) > 1
-  ) duplicates;
-  
-  IF duplicate_count > 0 THEN
-    RAISE NOTICE 'Found % duplicate phase names within projects. Please resolve these before applying the constraint.', duplicate_count;
-    -- Don't fail the migration, but warn the user
-  END IF;
+  -- Find and rename duplicate phase names within each project (case-insensitive)
+  -- Keep the first occurrence (by id) and rename the rest
+  FOR duplicate_rec IN
+    WITH ranked_phases AS (
+      SELECT 
+        id,
+        project_id,
+        name,
+        LOWER(TRIM(name)) as normalized_name,
+        ROW_NUMBER() OVER (PARTITION BY project_id, LOWER(TRIM(name)) ORDER BY id) as rn
+      FROM public.project_phases
+      WHERE name IS NOT NULL AND TRIM(name) != ''
+    )
+    SELECT id, project_id, name, normalized_name
+    FROM ranked_phases
+    WHERE rn > 1
+    ORDER BY project_id, normalized_name, id
+  LOOP
+    -- Rename duplicates by appending a counter
+    counter := 1;
+    new_name := duplicate_rec.name || ' (' || counter || ')';
+    
+    -- Ensure the new name doesn't already exist within the same project
+    WHILE EXISTS (
+      SELECT 1 FROM public.project_phases 
+      WHERE project_id = duplicate_rec.project_id
+        AND LOWER(TRIM(name)) = LOWER(TRIM(new_name))
+    ) LOOP
+      counter := counter + 1;
+      new_name := duplicate_rec.name || ' (' || counter || ')';
+    END LOOP;
+    
+    -- Update the phase name
+    UPDATE public.project_phases
+    SET name = new_name
+    WHERE id = duplicate_rec.id;
+    
+    RAISE NOTICE 'Renamed duplicate phase "%" in project % to "%"', duplicate_rec.name, duplicate_rec.project_id, new_name;
+  END LOOP;
 END $$;
 
 -- Create a unique index on phase names within a project (case-insensitive)
@@ -81,6 +133,7 @@ DECLARE
   standard_project_id CONSTANT uuid := '00000000-0000-0000-0000-000000000001';
   should_be_standard boolean;
   existing_standard_phase_id uuid;
+  default_operation_id uuid;
 BEGIN
   -- Check for duplicate phase name within this project (case-insensitive)
   SELECT id INTO existing_phase_id
@@ -183,6 +236,25 @@ BEGIN
     inserted_phase.name,
     inserted_phase.description,
     inserted_phase.display_order
+  )
+  RETURNING id INTO default_operation_id;
+
+  -- Create default step for the operation
+  INSERT INTO template_steps (
+    operation_id,
+    step_number,
+    step_title,
+    description,
+    display_order,
+    skill_level
+  )
+  VALUES (
+    default_operation_id,
+    1,
+    'New Step',
+    'Step description',
+    0,
+    (SELECT skill_level FROM projects WHERE id = p_project_id)
   );
 
   RETURN inserted_phase;

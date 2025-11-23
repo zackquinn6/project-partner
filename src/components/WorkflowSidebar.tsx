@@ -366,9 +366,9 @@ export function WorkflowSidebar({
                         size="sm"
                         onClick={onHelpClick}
                         className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
-                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)' }}
+                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.40)', color: 'black' }}
                       >
-                        <MessageCircle className="h-3.5 w-3.5" />
+                        <MessageCircle className="h-3.5 w-3.5" style={{ color: 'black' }} />
                         <span>Chat</span>
                       </Button>
                       <Button
@@ -376,9 +376,9 @@ export function WorkflowSidebar({
                         size="sm"
                         onClick={onKeysToSuccessClick}
                         className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
-                        style={{ backgroundColor: 'rgba(168, 85, 247, 0.15)' }}
+                        style={{ backgroundColor: 'rgba(168, 85, 247, 0.40)', color: 'black' }}
                       >
-                        <Key className="h-3.5 w-3.5" />
+                        <Key className="h-3.5 w-3.5" style={{ color: 'black' }} />
                         <span>KeyInfo</span>
                       </Button>
                       {isKickoffComplete && (
@@ -387,9 +387,9 @@ export function WorkflowSidebar({
                           size="sm"
                           onClick={onUnplannedWorkClick}
                           className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
-                          style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)' }}
+                          style={{ backgroundColor: 'rgba(236, 72, 153, 0.40)', color: 'black' }}
                         >
-                          <Layers className="h-3.5 w-3.5" />
+                          <Layers className="h-3.5 w-3.5" style={{ color: 'black' }} />
                           <span>Re-Plan</span>
                         </Button>
                       )}
@@ -401,9 +401,9 @@ export function WorkflowSidebar({
                         size="sm"
                         onClick={onNotesClick}
                         className="h-7 px-2 text-[10px] flex-1"
-                        style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)' }}
+                        style={{ backgroundColor: 'rgba(34, 197, 94, 0.40)', color: 'black' }}
                       >
-                        <FileText className="h-3 w-3 mr-1.5" />
+                        <FileText className="h-3 w-3 mr-1.5" style={{ color: 'black' }} />
                         <span>Notes</span>
                       </Button>
                       <Button
@@ -411,9 +411,9 @@ export function WorkflowSidebar({
                         size="sm"
                         onClick={onPhotosClick}
                         className="h-7 px-2 text-[10px] flex-1"
-                        style={{ backgroundColor: 'rgba(251, 146, 60, 0.15)' }}
+                        style={{ backgroundColor: 'rgba(251, 146, 60, 0.40)', color: 'black' }}
                       >
-                        <Image className="h-3 w-3 mr-1.5" />
+                        <Image className="h-3 w-3 mr-1.5" style={{ color: 'black' }} />
                         <span>Photos</span>
                       </Button>
                     </div>

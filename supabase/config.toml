@@ -195,15 +195,6 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Customize email templates
-[auth.email.template.confirmation]
-subject = "Confirm Your Email - Project Partner"
-content_path = "./supabase/templates/confirmation.html"
-
-[auth.email.template.magic_link]
-subject = "Sign In to Project Partner"
-content_path = "./supabase/templates/magic_link.html"
-
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
