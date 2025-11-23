@@ -374,11 +374,47 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // Merge: Use rebuilt phases from DB for fresh data, but update isStandard from currentProject.phases
       // This ensures custom phases aren't incorrectly tagged as standard
+      // CRITICAL: For regular templates (not editing Standard Project Foundation), 
+      // only the original 4 standard phases (Kickoff, Planning, Ordering, Close Project) 
+      // should be marked as standard. All other phases must be non-standard.
+      const standardPhaseNames = new Set(['Kickoff', 'Planning', 'Ordering', 'Close Project']);
+      
       const mergedRebuiltPhases = rebuiltPhases.map(rebuiltPhase => {
+        // CRITICAL CHECK: If we're NOT editing Standard Project Foundation,
+        // only allow the original 4 standard phases to be marked as standard
+        // All other phases (including newly added ones) must be non-standard
+        if (!isEditingStandardProject) {
+          const isOriginalStandardPhase = rebuiltPhase.name && standardPhaseNames.has(rebuiltPhase.name);
+          if (!isOriginalStandardPhase) {
+            // This is NOT one of the original 4 standard phases
+            // Force it to be non-standard, regardless of database value or currentProject.phases
+            console.log('🔵 FORCING isStandard to false for non-standard phase in regular template:', {
+              phaseId: rebuiltPhase.id,
+              phaseName: rebuiltPhase.name,
+              databaseIsStandard: rebuiltPhase.isStandard,
+              isEditingStandardProject: false
+            });
+            return {
+              ...rebuiltPhase,
+              isStandard: false // Force to false - this is a custom phase
+            };
+          }
+          // For original standard phases, preserve their standard status
+        }
+        
         // First try to match by ID (most reliable)
         const currentPhaseById = rebuiltPhase.id ? currentPhasesById.get(rebuiltPhase.id) : null;
         if (currentPhaseById) {
           // Preserve isStandard flag from currentProject.phases (source of truth)
+          // BUT: If we're not editing Standard Project Foundation and this isn't an original standard phase,
+          // override to false
+          if (!isEditingStandardProject && currentPhaseById.name && !standardPhaseNames.has(currentPhaseById.name)) {
+            return {
+              ...rebuiltPhase,
+              isStandard: false, // Force to false for custom phases
+              isLinked: currentPhaseById.isLinked || rebuiltPhase.isLinked
+            };
+          }
           return {
             ...rebuiltPhase,
             isStandard: currentPhaseById.isStandard, // Use isStandard from currentProject.phases
@@ -389,6 +425,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Fallback to name matching if ID doesn't match (e.g., renamed phases)
         const currentPhaseByName = rebuiltPhase.name ? currentPhasesByName.get(rebuiltPhase.name) : null;
         if (currentPhaseByName) {
+          // BUT: If we're not editing Standard Project Foundation and this isn't an original standard phase,
+          // override to false
+          if (!isEditingStandardProject && currentPhaseByName.name && !standardPhaseNames.has(currentPhaseByName.name)) {
+            return {
+              ...rebuiltPhase,
+              isStandard: false, // Force to false for custom phases
+              isLinked: currentPhaseByName.isLinked || rebuiltPhase.isLinked
+            };
+          }
           return {
             ...rebuiltPhase,
             isStandard: currentPhaseByName.isStandard,
@@ -400,11 +445,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Set isStandard based on whether we're editing Standard Project Foundation
         // - When editing Standard Project Foundation: new phases should be isStandard: true
         // - When editing regular templates: new phases should ALWAYS be isStandard: false
-        // CRITICAL: For regular templates, never mark new phases as standard
-        // Also check if this is the just-added phase to ensure correct flag
-        const isNewlyAddedPhase = justAddedPhaseId === rebuiltPhase.id || 
-          (rebuiltPhase.name && rebuiltPhase.name.startsWith('New Phase'));
-        
         if (isEditingStandardProject) {
           // When editing Standard Project Foundation, new phases become standard
           return {
@@ -414,7 +454,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         } else {
           // When editing regular templates, new phases are ALWAYS custom (isStandard: false)
           // CRITICAL: Explicitly override any isStandard value from the database
-          // This is essential because the RPC might set is_standard: true by default
           console.log('🔵 Overriding isStandard to false for new phase in regular template:', {
             phaseId: rebuiltPhase.id,
             phaseName: rebuiltPhase.name,
@@ -1589,15 +1628,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       //   Newly added phases should be isStandard: false (they're custom phases)
       // CRITICAL: Always use explicit boolean values, never undefined
       const shouldBeStandard = Boolean(isEditingStandardProject);
+      const standardPhaseNames = new Set(['Kickoff', 'Planning', 'Ordering', 'Close Project']);
+      
       const phasesWithCorrectStandardFlag = phasesWithUniqueOrder.map(phase => {
         // If this is the newly added phase, set isStandard based on editing mode
         if (phase.name === uniquePhaseName || (addedPhaseId && phase.id === addedPhaseId)) {
+          // CRITICAL: For regular templates, newly added phases are NEVER standard
+          // Only allow standard if we're editing Standard Project Foundation
+          const finalIsStandard = shouldBeStandard;
+          console.log('🔵 Setting isStandard for newly added phase:', {
+            phaseId: phase.id,
+            phaseName: phase.name,
+            shouldBeStandard,
+            isEditingStandardProject,
+            finalIsStandard
+          });
           return {
             ...phase,
-            isStandard: shouldBeStandard // Explicitly true or false, never undefined
+            isStandard: finalIsStandard // Explicitly true or false, never undefined
           };
         }
         // For existing phases, preserve their isStandard flag
+        // BUT: For regular templates, only the original 4 standard phases can be standard
+        if (!isEditingStandardProject && phase.name && !standardPhaseNames.has(phase.name)) {
+          // This is NOT one of the original 4 standard phases in a regular template
+          // Force it to be non-standard
+          return {
+            ...phase,
+            isStandard: false
+          };
+        }
         // Standard phases are: Kickoff, Planning, Ordering, Close Project (when isStandard: true)
         // When editing Standard Project Foundation, phases added there become standard
         // When editing regular templates, phases added there are custom (isStandard: false)
