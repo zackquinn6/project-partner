@@ -1394,14 +1394,30 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const minDisplayTime = 2000; // Minimum 2 seconds to show loading state
     
     try {
-      // Get unique phase name by checking existing phases
-      const uniquePhaseName = getUniquePhaseName('New Phase', displayPhases);
+      // Get unique phase name by checking existing phases from the database
+      // Query the database directly to ensure we have all phase names, not just what's in displayPhases
+      const { data: existingPhasesData, error: fetchError } = await supabase
+        .from('project_phases')
+        .select('name')
+        .eq('project_id', currentProject.id);
+      
+      if (fetchError) {
+        console.warn('⚠️ Could not fetch existing phases from database, using currentProject.phases:', fetchError);
+      }
+      
+      // Use database phases if available, otherwise fall back to currentProject.phases
+      const allExistingPhases = existingPhasesData && existingPhasesData.length > 0
+        ? existingPhasesData.map(p => ({ name: p.name } as Phase))
+        : (currentProject.phases || []);
+      
+      const uniquePhaseName = getUniquePhaseName('New Phase', allExistingPhases);
       const phaseDescription = 'Phase description';
 
       console.log('🔵 Calling add_custom_project_phase RPC', {
         projectId: currentProject.id,
         phaseName: uniquePhaseName,
-        isStandardProject: isEditingStandardProject
+        isStandardProject: isEditingStandardProject,
+        existingPhaseCount: allExistingPhases.length
       });
 
       // Use RPC to safely insert a custom phase with a unique display order
@@ -1417,9 +1433,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         console.error('❌ Full error details:', JSON.stringify(addPhaseError, null, 2));
         // Check if error is due to duplicate phase name
         if (addPhaseError.message && addPhaseError.message.includes('already exists')) {
-          toast.error(`A phase with the name "${uniquePhaseName}" already exists in this project. Please choose a unique name.`);
+          toast.error(`A phase with the name "${uniquePhaseName}" already exists in this project. Please try again - a unique name will be generated automatically.`);
         } else if (addPhaseError.code === '23505' && addPhaseError.message.includes('idx_project_phases_project_name_unique')) {
-          toast.error(`A phase with the name "${uniquePhaseName}" already exists in this project. Please choose a unique name.`);
+          toast.error(`A phase with the name "${uniquePhaseName}" already exists in this project. Please try again - a unique name will be generated automatically.`);
         } else {
           console.error('❌ Unexpected error adding phase:', {
             error: addPhaseError,
