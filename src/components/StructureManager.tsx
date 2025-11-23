@@ -111,17 +111,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       needsCorrection = true;
     }
 
-    // Check phase ordering
-    const standardPhases = phases.filter(p => ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(p.name) && !p.isLinked);
-    const kickoff = standardPhases.find(p => p.name === 'Kickoff');
-    const planning = standardPhases.find(p => p.name === 'Planning');
-    const ordering = standardPhases.find(p => p.name === 'Ordering');
-    const closeProject = standardPhases.find(p => p.name === 'Close Project');
-    const kickoffIndex = kickoff ? phases.findIndex(p => p.id === kickoff.id) : -1;
-    const planningIndex = planning ? phases.findIndex(p => p.id === planning.id) : -1;
-    const orderingIndex = ordering ? phases.findIndex(p => p.id === ordering.id) : -1;
-    const closeProjectIndex = closeProject ? phases.findIndex(p => p.id === closeProject.id) : -1;
-    if (kickoffIndex > planningIndex && planningIndex !== -1 || planningIndex > orderingIndex && orderingIndex !== -1 || closeProjectIndex !== -1 && closeProjectIndex !== phases.length - 1) {
+    // Check phase ordering - verify standard phases are in correct order
+    const standardPhases = phases.filter(p => isStandardPhase(p) && !p.isLinked);
+    // Find phases with 'first' and 'last' order numbers
+    const firstPhase = standardPhases.find(p => p.phaseOrderNumber === 'first');
+    const lastPhase = standardPhases.find(p => p.phaseOrderNumber === 'last');
+    const firstPhaseIndex = firstPhase ? phases.findIndex(p => p.id === firstPhase.id) : -1;
+    const lastPhaseIndex = lastPhase ? phases.findIndex(p => p.id === lastPhase.id) : -1;
+    // Check if first phase is actually first and last phase is actually last
+    if ((firstPhaseIndex !== -1 && firstPhaseIndex !== 0) || (lastPhaseIndex !== -1 && lastPhaseIndex !== phases.length - 1)) {
       console.log('🔧 One-time correction: Found phases out of order');
       needsCorrection = true;
     }
@@ -218,42 +216,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return 0;
     });
     
-    // Reconstruct array: Kickoff -> Planning -> Ordering -> [Other Standard Phases] -> sorted non-standard -> Close Project
+    // Reconstruct array: Standard phases (sorted by order number) -> non-standard phases
     const result: Phase[] = [];
     
-    // Separate the 4 specific standard phases from other standard phases
-    const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-    const specificStandardPhases = standardPhases.filter(p => standardPhaseNames.includes(p.name || ''));
-    const otherStandardPhases = standardPhases.filter(p => !standardPhaseNames.includes(p.name || ''));
-    
-    // Sort other standard phases by order number or name
-    otherStandardPhases.sort((a, b) => {
-      if (a.phaseOrderNumber !== undefined && b.phaseOrderNumber !== undefined) {
-        if (typeof a.phaseOrderNumber === 'number' && typeof b.phaseOrderNumber === 'number') {
-          return a.phaseOrderNumber - b.phaseOrderNumber;
-        }
+    // Sort standard phases by their order numbers
+    // Phases with 'first' come first, 'last' comes last, numeric values in between
+    standardPhases.sort((a, b) => {
+      const aOrder = a.phaseOrderNumber === 'first' ? -Infinity : (a.phaseOrderNumber === 'last' ? Infinity : (typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 1000));
+      const bOrder = b.phaseOrderNumber === 'first' ? -Infinity : (b.phaseOrderNumber === 'last' ? Infinity : (typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 1000));
+      if (aOrder !== bOrder) {
+        return aOrder - bOrder;
       }
+      // Fallback to name if order numbers are the same
       return (a.name || '').localeCompare(b.name || '');
     });
     
-    // Add the 4 specific standard phases in fixed order
-    const kickoff = specificStandardPhases.find(p => p.name === 'Kickoff');
-    const planning = specificStandardPhases.find(p => p.name === 'Planning');
-    const ordering = specificStandardPhases.find(p => p.name === 'Ordering');
-    const closeProject = specificStandardPhases.find(p => p.name === 'Close Project');
+    // Add standard phases (sorted)
+    result.push(...standardPhases);
     
-    if (kickoff) result.push(kickoff);
-    if (planning) result.push(planning);
-    if (ordering) result.push(ordering);
-    
-    // Add other standard phases (newly added standard phases when editing Standard Project Foundation)
-    result.push(...otherStandardPhases);
-    
-    // Add sorted non-standard phases
+    // Add non-standard phases (preserving their relative order)
     result.push(...nonStandardPhases);
-    
-    // Add Close Project last
-    if (closeProject) result.push(closeProject);
     
     return result;
   };
@@ -262,7 +244,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // IMPORTANT: This function assumes phases are already in the correct order (enforced by enforceStandardPhaseOrdering)
   // It preserves existing order numbers and only assigns new ones to phases that don't have them
   const ensureUniqueOrderNumbers = (phases: Phase[]): Phase[] => {
-    const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
     const usedNumbers = new Set<string | number>();
     
     // First pass: collect all existing order numbers
@@ -273,7 +254,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     });
     
     // Second pass: assign order numbers based on actual position in the array
-    // This ensures Close Project (which should be last) gets "last" and stays last
+    // Standard phases with 'first' or 'last' should keep those values
     return phases.map((phase, index) => {
       // If phase already has an order number, preserve it (unless it's a duplicate)
       if (phase.phaseOrderNumber !== undefined) {
@@ -293,30 +274,27 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       if (isStandardPhase(phase)) {
         // Standard phases get special order numbers based on position rules
-        // This logic can remain for Standard Project Foundation editing
-        // For downstream projects, standard phases are locked and can't be reordered
-        if (phase.name === 'Kickoff') {
+        // If it's the first phase and doesn't have an order number, assign 'first'
+        if (index === 0 && phase.phaseOrderNumber === undefined) {
           phase.phaseOrderNumber = 'first';
           usedNumbers.add('first');
-        } else if (phase.name === 'Close Project') {
-          // Close Project should always be last - verify it's at the end
-          if (index !== phases.length - 1) {
-            console.warn('⚠️ Close Project phase is not at the end! Index:', index, 'Total:', phases.length);
-          }
+        } else if (index === phases.length - 1 && phase.phaseOrderNumber === undefined) {
+          // If it's the last phase and doesn't have an order number, assign 'last'
           phase.phaseOrderNumber = 'last';
           usedNumbers.add('last');
-        } else if (phase.name === 'Planning') {
-          phase.phaseOrderNumber = 2;
-          usedNumbers.add(2);
-        } else if (phase.name === 'Ordering') {
-          phase.phaseOrderNumber = 3;
-          usedNumbers.add(3);
+        } else if (phase.phaseOrderNumber === undefined) {
+          // For other standard phases, assign sequential numbers
+          let candidateNumber = index + 1;
+          while (usedNumbers.has(candidateNumber) && candidateNumber <= phases.length + 10) {
+            candidateNumber++;
+          }
+          phase.phaseOrderNumber = candidateNumber;
+          usedNumbers.add(candidateNumber);
         }
       } else {
-        // Custom and linked phases get consecutive numbers starting from 4
-        // (after Kickoff=first, Planning=2, Ordering=3)
+        // Custom and linked phases get consecutive numbers
         // Find the next available number that's not already used
-        let candidateNumber = 4;
+        let candidateNumber = 1;
         while (usedNumbers.has(candidateNumber) && candidateNumber <= phases.length + 10) {
           candidateNumber++;
         }
@@ -374,41 +352,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // Merge: Use rebuilt phases from DB for fresh data, but update isStandard from currentProject.phases
       // This ensures custom phases aren't incorrectly tagged as standard
-      // CRITICAL: For regular templates (not editing Standard Project Foundation), 
-      // only the original 4 standard phases (Kickoff, Planning, Ordering, Close Project) 
-      // should be marked as standard. All other phases must be non-standard.
-      const standardPhaseNames = new Set(['Kickoff', 'Planning', 'Ordering', 'Close Project']);
-      
+      // CRITICAL: For regular templates (not editing Standard Project Foundation),
+      // only phases with isStandard: true from currentProject.phases should remain standard.
+      // All newly added phases must be non-standard.
       const mergedRebuiltPhases = rebuiltPhases.map(rebuiltPhase => {
-        // CRITICAL CHECK: If we're NOT editing Standard Project Foundation,
-        // only allow the original 4 standard phases to be marked as standard
-        // All other phases (including newly added ones) must be non-standard
-        if (!isEditingStandardProject) {
-          const isOriginalStandardPhase = rebuiltPhase.name && standardPhaseNames.has(rebuiltPhase.name);
-          if (!isOriginalStandardPhase) {
-            // This is NOT one of the original 4 standard phases
-            // Force it to be non-standard, regardless of database value or currentProject.phases
-            console.log('🔵 FORCING isStandard to false for non-standard phase in regular template:', {
-              phaseId: rebuiltPhase.id,
-              phaseName: rebuiltPhase.name,
-              databaseIsStandard: rebuiltPhase.isStandard,
-              isEditingStandardProject: false
-            });
-            return {
-              ...rebuiltPhase,
-              isStandard: false // Force to false - this is a custom phase
-            };
-          }
-          // For original standard phases, preserve their standard status
-        }
-        
         // First try to match by ID (most reliable)
         const currentPhaseById = rebuiltPhase.id ? currentPhasesById.get(rebuiltPhase.id) : null;
         if (currentPhaseById) {
           // Preserve isStandard flag from currentProject.phases (source of truth)
-          // BUT: If we're not editing Standard Project Foundation and this isn't an original standard phase,
+          // BUT: If we're not editing Standard Project Foundation and currentProject says it's not standard,
           // override to false
-          if (!isEditingStandardProject && currentPhaseById.name && !standardPhaseNames.has(currentPhaseById.name)) {
+          if (!isEditingStandardProject && !currentPhaseById.isStandard) {
             return {
               ...rebuiltPhase,
               isStandard: false, // Force to false for custom phases
@@ -425,9 +379,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Fallback to name matching if ID doesn't match (e.g., renamed phases)
         const currentPhaseByName = rebuiltPhase.name ? currentPhasesByName.get(rebuiltPhase.name) : null;
         if (currentPhaseByName) {
-          // BUT: If we're not editing Standard Project Foundation and this isn't an original standard phase,
+          // BUT: If we're not editing Standard Project Foundation and currentProject says it's not standard,
           // override to false
-          if (!isEditingStandardProject && currentPhaseByName.name && !standardPhaseNames.has(currentPhaseByName.name)) {
+          if (!isEditingStandardProject && !currentPhaseByName.isStandard) {
             return {
               ...rebuiltPhase,
               isStandard: false, // Force to false for custom phases
@@ -836,9 +790,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         toast.error('Custom and incorporated phases must come after the first 3 standard phases');
         return;
       }
-      const closeProjectIndex = displayPhases.findIndex(p => p.name === 'Close Project' && !p.isLinked);
-      if (closeProjectIndex !== -1 && newIndex >= closeProjectIndex) {
-        toast.error('Custom and incorporated phases must come before Close Project');
+      // Find the last standard phase (if any) - custom phases must come before it
+      const lastStandardPhaseIndex = displayPhases.findIndex((p, idx, arr) => {
+        if (p.isLinked) return false;
+        const isLastStandard = isStandardPhase(p) && 
+          (idx === arr.length - 1 || !arr.slice(idx + 1).some(ph => isStandardPhase(ph) && !ph.isLinked));
+        return isLastStandard;
+      });
+      if (lastStandardPhaseIndex !== -1 && newIndex >= lastStandardPhaseIndex) {
+        toast.error('Custom and incorporated phases must come before the last standard phase');
         return;
       }
     }
@@ -859,34 +819,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // For custom/linked phases, assign sequential numbers
       const totalPhases = reorderedPhases.length;
       reorderedPhases.forEach((p, index) => {
-        const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-        const isStandard = !p.isLinked && standardPhaseNames.includes(p.name);
+        const isStandard = !p.isLinked && isStandardPhase(p);
         
         if (isStandard) {
-          // Standard phases keep their special positions
-          if (p.name === 'Kickoff') {
+          // Standard phases keep their special positions based on phaseOrderNumber
+          // If they have 'first' or 'last', preserve it; otherwise use position
+          if (p.phaseOrderNumber === 'first' || (index === 0 && p.phaseOrderNumber === undefined)) {
             p.phaseOrderNumber = 'first';
-          } else if (p.name === 'Close Project') {
+          } else if (p.phaseOrderNumber === 'last' || (index === totalPhases - 1 && p.phaseOrderNumber === undefined)) {
             p.phaseOrderNumber = 'last';
-          } else {
-            // Planning and Ordering get their position numbers
+          } else if (p.phaseOrderNumber === undefined) {
+            // Other standard phases get their position numbers
             p.phaseOrderNumber = index + 1;
           }
         } else {
           // Custom and linked phases get sequential numbers
-          // But preserve 'first' or 'last' if they were at those positions
-          if (index === 0 && !reorderedPhases[0].isLinked && !standardPhaseNames.includes(reorderedPhases[0].name)) {
+          // But preserve 'first' or 'last' if they were at those positions and no standard phase is there
+          if (index === 0 && !reorderedPhases[0].isLinked && !isStandardPhase(reorderedPhases[0])) {
             // First custom phase could be 'first' if no standard phase is first
-            const hasKickoff = reorderedPhases.some(ph => ph.name === 'Kickoff');
-            if (!hasKickoff) {
+            const hasStandardFirst = reorderedPhases.some(ph => isStandardPhase(ph) && !ph.isLinked && ph.phaseOrderNumber === 'first');
+            if (!hasStandardFirst) {
               p.phaseOrderNumber = 'first';
             } else {
               p.phaseOrderNumber = index + 1;
             }
-          } else if (index === totalPhases - 1 && !reorderedPhases[totalPhases - 1].isLinked && !standardPhaseNames.includes(reorderedPhases[totalPhases - 1].name)) {
+          } else if (index === totalPhases - 1 && !reorderedPhases[totalPhases - 1].isLinked && !isStandardPhase(reorderedPhases[totalPhases - 1])) {
             // Last custom phase could be 'last' if no standard phase is last
-            const hasCloseProject = reorderedPhases.some(ph => ph.name === 'Close Project');
-            if (!hasCloseProject) {
+            const hasStandardLast = reorderedPhases.some(ph => isStandardPhase(ph) && !ph.isLinked && ph.phaseOrderNumber === 'last');
+            if (!hasStandardLast) {
               p.phaseOrderNumber = 'last';
             } else {
               p.phaseOrderNumber = index + 1;
@@ -1628,7 +1588,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       //   Newly added phases should be isStandard: false (they're custom phases)
       // CRITICAL: Always use explicit boolean values, never undefined
       const shouldBeStandard = Boolean(isEditingStandardProject);
-      const standardPhaseNames = new Set(['Kickoff', 'Planning', 'Ordering', 'Close Project']);
       
       const phasesWithCorrectStandardFlag = phasesWithUniqueOrder.map(phase => {
         // If this is the newly added phase, set isStandard based on editing mode
@@ -1649,16 +1608,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           };
         }
         // For existing phases, preserve their isStandard flag
-        // BUT: For regular templates, only the original 4 standard phases can be standard
-        if (!isEditingStandardProject && phase.name && !standardPhaseNames.has(phase.name)) {
-          // This is NOT one of the original 4 standard phases in a regular template
-          // Force it to be non-standard
-          return {
-            ...phase,
-            isStandard: false
-          };
-        }
-        // Standard phases are: Kickoff, Planning, Ordering, Close Project (when isStandard: true)
         // When editing Standard Project Foundation, phases added there become standard
         // When editing regular templates, phases added there are custom (isStandard: false)
         return phase;
@@ -1891,18 +1840,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const finalPhases = orderedSavedPhases.map(phase => {
         if (phase.phaseOrderNumber === undefined) {
           // Only assign if missing - use ensureUniqueOrderNumbers logic but preserve existing
-          const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-          const isStandard = !phase.isLinked && standardPhaseNames.includes(phase.name);
+          const isStandard = !phase.isLinked && isStandardPhase(phase);
           
           if (isStandard) {
-            if (phase.name === 'Kickoff') {
+            // For standard phases, assign based on position
+            // First standard phase gets 'first', last gets 'last', others get sequential numbers
+            const standardPhases = savedPhases.filter(p => isStandardPhase(p) && !p.isLinked);
+            const standardIndex = standardPhases.findIndex(p => p.id === phase.id);
+            if (standardIndex === 0) {
               phase.phaseOrderNumber = 'first';
-            } else if (phase.name === 'Close Project') {
+            } else if (standardIndex === standardPhases.length - 1) {
               phase.phaseOrderNumber = 'last';
-            } else if (phase.name === 'Planning') {
-              phase.phaseOrderNumber = 2;
-            } else if (phase.name === 'Ordering') {
-              phase.phaseOrderNumber = 3;
+            } else {
+              phase.phaseOrderNumber = standardIndex + 1;
             }
           } else {
             // Find next available number
@@ -3124,7 +3074,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                                         </Button>
                                                                       </div>
                                                                     )}
-                                                                    {(phase.isLinked || (phaseIsStandard && !isEditingStandardProject) || phase.name === 'Close Project') && <div className="w-4" />}
+                                                                    {(phase.isLinked || (phaseIsStandard && !isEditingStandardProject) || (phaseIsStandard && phase.phaseOrderNumber === 'last')) && <div className="w-4" />}
                                                                     
                                                                      {isStepEditing ? <div className="flex-1 space-y-2">
                                                                          <Input value={editingItem.data.step} onChange={e => setEditingItem({
