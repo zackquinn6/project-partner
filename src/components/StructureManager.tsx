@@ -397,6 +397,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // - When editing Standard Project Foundation: new phases should be isStandard: true
         // - When editing regular templates: new phases should ALWAYS be isStandard: false
         // CRITICAL: For regular templates, never mark new phases as standard
+        // Also check if this is the just-added phase to ensure correct flag
+        const isNewlyAddedPhase = justAddedPhaseId === rebuiltPhase.id || 
+          (rebuiltPhase.name && rebuiltPhase.name.startsWith('New Phase'));
+        
         if (isEditingStandardProject) {
           // When editing Standard Project Foundation, new phases become standard
           return {
@@ -405,9 +409,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           };
         } else {
           // When editing regular templates, new phases are ALWAYS custom (isStandard: false)
+          // CRITICAL: Explicitly override any isStandard value from the database
+          // This is essential because the RPC might set is_standard: true by default
+          console.log('🔵 Overriding isStandard to false for new phase in regular template:', {
+            phaseId: rebuiltPhase.id,
+            phaseName: rebuiltPhase.name,
+            databaseIsStandard: rebuiltPhase.isStandard,
+            isEditingStandardProject
+          });
           return {
             ...rebuiltPhase,
-            isStandard: false
+            isStandard: false // Force to false for regular templates, regardless of database value
           };
         }
       });
@@ -1496,6 +1508,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         phaseName: uniquePhaseName
       });
 
+      // CRITICAL: Update the is_standard flag in project_phases table IMMEDIATELY after RPC call
+      // This must happen before rebuilding phases to ensure the correct flag is used
+      // Query for the newly added phase by name to get its ID
+      const { data: newPhaseData, error: phaseQueryError } = await supabase
+        .from('project_phases')
+        .select('id')
+        .eq('project_id', currentProject.id)
+        .eq('name', uniquePhaseName)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (!phaseQueryError && newPhaseData?.id) {
+        const { error: phaseUpdateError } = await supabase
+          .from('project_phases')
+          .update({ 
+            is_standard: isEditingStandardProject // true only if editing Standard Project Foundation
+          })
+          .eq('id', newPhaseData.id)
+          .eq('project_id', currentProject.id);
+        
+        if (phaseUpdateError) {
+          console.error('❌ Error updating project_phases is_standard flag:', phaseUpdateError);
+          // Don't throw - continue with rebuild
+        } else {
+          console.log('✅ Updated project_phases is_standard flag BEFORE rebuild:', {
+            phaseId: newPhaseData.id,
+            phaseName: uniquePhaseName,
+            isStandard: isEditingStandardProject,
+            isEditingStandardProject
+          });
+        }
+      } else {
+        console.warn('⚠️ Could not find newly added phase to update is_standard flag:', phaseQueryError);
+      }
+
       // Rebuild phases JSON from relational data
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
         p_project_id: currentProject.id
@@ -1553,30 +1601,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         throw updateError;
       }
 
-      // CRITICAL: Also update the project_phases table to ensure is_standard column matches
-      // Find the newly added phase and update its is_standard flag in the database
-      const addedPhase = phasesWithCorrectStandardFlag.find(p => p.name === uniquePhaseName);
-      if (addedPhase?.id) {
-        const { error: phaseUpdateError } = await supabase
-          .from('project_phases')
-          .update({ 
-            is_standard: isEditingStandardProject // true only if editing Standard Project Foundation
-          })
-          .eq('id', addedPhase.id)
-          .eq('project_id', currentProject.id);
-        
-        if (phaseUpdateError) {
-          console.error('❌ Error updating project_phases is_standard flag:', phaseUpdateError);
-          // Don't throw - this is not critical, the JSON update already happened
-        } else {
-          console.log('✅ Updated project_phases is_standard flag:', {
-            phaseId: addedPhase.id,
-            phaseName: addedPhase.name,
-            isStandard: isEditingStandardProject,
-            isEditingStandardProject
-          });
-        }
-      }
+      // Note: The is_standard flag was already updated in project_phases table BEFORE rebuilding phases
+      // This ensures the rebuild function reads the correct value from the database
 
       console.log('✅ Updated project phases in database:', {
         projectId: currentProject.id,
