@@ -1369,7 +1369,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       // Use RPC to safely insert a custom phase with a unique display order
       // The RPC function will check for duplicate phase names within the project
-      const { data: newPhase, error: addPhaseError } = await supabase.rpc('add_custom_project_phase', {
+      const { data: rpcResult, error: addPhaseError } = await supabase.rpc('add_custom_project_phase', {
         p_project_id: currentProject.id,
         p_phase_name: uniquePhaseName,
         p_phase_description: phaseDescription
@@ -1396,7 +1396,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       console.log('✅ Phase added successfully:', {
-        newPhase,
+        rpcResult,
         projectId: currentProject.id,
         isStandardProject: isEditingStandardProject,
         phaseName: uniquePhaseName
@@ -1463,9 +1463,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Update display state immediately to show the new phase right away
       // This ensures the phase is visible even before refetch completes
       // Find the newly added phase ID
-      const newPhase = phasesWithUniqueOrder.find(p => p.name === uniquePhaseName);
-      if (newPhase?.id) {
-        setJustAddedPhaseId(newPhase.id);
+      const addedPhase = phasesWithUniqueOrder.find(p => p.name === uniquePhaseName);
+      if (addedPhase?.id) {
+        setJustAddedPhaseId(addedPhase.id);
         // Clear the flag after refetch completes
         setTimeout(() => {
           setJustAddedPhaseId(null);
@@ -1476,7 +1476,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         count: phasesWithUniqueOrder.length,
         phaseNames: phasesWithUniqueOrder.map(p => p.name),
         newPhaseName: uniquePhaseName,
-        newPhaseId: newPhase?.id,
+        newPhaseId: addedPhase?.id,
         isStandardProject: isEditingStandardProject
       });
       setDisplayPhases(phasesWithUniqueOrder);

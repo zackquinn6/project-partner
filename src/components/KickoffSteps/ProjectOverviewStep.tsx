@@ -72,10 +72,27 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const displaySkillLevel = currentProjectRun?.skillLevel ?? templateProject?.skillLevel;
   const displayEffortLevel = templateProject?.effortLevel ?? currentProjectRun?.effortLevel;
   const displayEstimatedTime = currentProjectRun?.estimatedTime ?? templateProject?.estimatedTime;
-  const displayEstimatedTotalTime = templateProject?.estimatedTotalTime;
-  const displayTypicalProjectSize = templateProject?.typicalProjectSize;
+  // Handle both camelCase (from transformed Project interface) and snake_case (from raw database)
+  const displayEstimatedTotalTime = templateProject?.estimatedTotalTime || (templateProject as any)?.estimated_total_time || null;
+  const displayTypicalProjectSize = templateProject?.typicalProjectSize || (templateProject as any)?.typical_project_size || null;
   const displayScalingUnit = currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit;
   const displayProjectChallenges = currentProjectRun?.projectChallenges ?? templateProject?.projectChallenges;
+  
+  // Debug logging to help diagnose missing fields
+  useEffect(() => {
+    if (templateProject) {
+      console.log('🔍 ProjectOverviewStep - Template Project Data:', {
+        projectId: templateProject.id,
+        projectName: templateProject.name,
+        estimatedTotalTime: displayEstimatedTotalTime,
+        typicalProjectSize: displayTypicalProjectSize,
+        rawEstimatedTotalTime: (templateProject as any)?.estimated_total_time,
+        rawTypicalProjectSize: (templateProject as any)?.typical_project_size,
+        camelCaseEstimatedTotalTime: templateProject?.estimatedTotalTime,
+        camelCaseTypicalProjectSize: templateProject?.typicalProjectSize
+      });
+    }
+  }, [templateProject, displayEstimatedTotalTime, displayTypicalProjectSize]);
 
   // Helper function to get skill level comparison
   const getSkillLevelComparison = () => {
@@ -339,14 +356,16 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   </div>
                 )}
                 {/* Estimated total time for typical size */}
-                {displayEstimatedTotalTime && displayTypicalProjectSize && (
+                {displayEstimatedTotalTime && (
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline" className="text-xs sm:text-sm">
                       {displayEstimatedTotalTime}
                     </Badge>
-                    <span className="text-xs sm:text-sm text-muted-foreground">
-                      for {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'}
-                    </span>
+                    {displayTypicalProjectSize && (
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        for {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'}
+                      </span>
+                    )}
                   </div>
                 )}
                 {!displayEstimatedTime && !displayEstimatedTotalTime && (
