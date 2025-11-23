@@ -93,7 +93,9 @@ BEGIN
     description,
     display_order,
     is_standard,
-    phase_order_number
+    standard_phase_id,
+    created_at,
+    updated_at
   )
   SELECT
     new_project_id,
@@ -101,7 +103,9 @@ BEGIN
     description,
     display_order,
     is_standard,
-    phase_order_number
+    standard_phase_id,
+    NOW(),
+    NOW()
   FROM project_phases
   WHERE project_id = source_project_id;
   
