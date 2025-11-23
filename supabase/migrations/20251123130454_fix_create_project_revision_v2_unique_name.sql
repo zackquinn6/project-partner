@@ -45,6 +45,7 @@ BEGIN
   END LOOP;
   
   -- Create new project with unique name
+  -- Only include columns that actually exist in the projects table
   INSERT INTO projects (
     name,
     description,
@@ -56,12 +57,13 @@ BEGIN
     parent_project_id,
     revision_notes,
     skill_level,
-    estimated_total_time,
-    typical_size,
     project_type,
     item_type,
     created_at,
-    updated_at
+    updated_at,
+    owner_id,
+    start_date,
+    plan_end_date
   )
   VALUES (
     unique_name,
@@ -74,12 +76,13 @@ BEGIN
     source_project_id,
     revision_notes_text,
     source_project.skill_level,
-    source_project.estimated_total_time,
-    source_project.typical_size,
     source_project.project_type,
     source_project.item_type,
     NOW(),
-    NOW()
+    NOW(),
+    source_project.owner_id,
+    COALESCE(source_project.start_date, NOW()),
+    COALESCE(source_project.plan_end_date, NOW())
   )
   RETURNING id INTO new_project_id;
   
