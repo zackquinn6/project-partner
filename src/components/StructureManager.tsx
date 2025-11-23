@@ -1543,12 +1543,38 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         throw updateError;
       }
 
+      // CRITICAL: Also update the project_phases table to ensure is_standard column matches
+      // Find the newly added phase and update its is_standard flag in the database
+      const addedPhase = phasesWithCorrectStandardFlag.find(p => p.name === uniquePhaseName);
+      if (addedPhase?.id) {
+        const { error: phaseUpdateError } = await supabase
+          .from('project_phases')
+          .update({ 
+            is_standard: isEditingStandardProject // true only if editing Standard Project Foundation
+          })
+          .eq('id', addedPhase.id)
+          .eq('project_id', currentProject.id);
+        
+        if (phaseUpdateError) {
+          console.error('❌ Error updating project_phases is_standard flag:', phaseUpdateError);
+          // Don't throw - this is not critical, the JSON update already happened
+        } else {
+          console.log('✅ Updated project_phases is_standard flag:', {
+            phaseId: addedPhase.id,
+            phaseName: addedPhase.name,
+            isStandard: isEditingStandardProject,
+            isEditingStandardProject
+          });
+        }
+      }
+
       console.log('✅ Updated project phases in database:', {
         projectId: currentProject.id,
         phaseCount: phasesWithCorrectStandardFlag.length,
         phaseNames: phasesWithCorrectStandardFlag.map(p => p.name),
         newPhaseIncluded: phasesWithCorrectStandardFlag.some(p => p.name === uniquePhaseName),
-        newPhaseIsStandard: phasesWithCorrectStandardFlag.find(p => p.name === uniquePhaseName)?.isStandard
+        newPhaseIsStandard: phasesWithCorrectStandardFlag.find(p => p.name === uniquePhaseName)?.isStandard,
+        isEditingStandardProject
       });
 
       // Update local context immediately - this triggers mergedPhases recalculation
