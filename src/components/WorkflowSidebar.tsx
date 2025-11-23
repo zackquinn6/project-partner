@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -354,6 +354,104 @@ export function WorkflowSidebar({
                         <SelectItem value="quick" className="text-xs">Advanced: Key points only</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Project Tools Section */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground">Project Tools</div>
+                    {/* First row: Chat, KeyInfo, Re-Plan */}
+                    <div className="flex items-center gap-1.5">
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={onHelpClick}
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Chat</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={onKeysToSuccessClick}
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            >
+                              <Key className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">KeyInfo</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      {isKickoffComplete && (
+                        <TooltipProvider delayDuration={100}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={onUnplannedWorkClick}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              >
+                                <Layers className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Re-Plan</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                    {/* Second row: Notes, Photos */}
+                    <div className="flex items-center gap-1.5">
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={onNotesClick}
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Notes</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={onPhotosClick}
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            >
+                              <Image className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Photos</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   </div>
 
                   {/* Separator */}
