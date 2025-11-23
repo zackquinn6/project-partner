@@ -42,7 +42,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   } = useProject();
 
   // Detect if editing Standard Project Foundation
-  const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
+  // CRITICAL: Ensure this is always a boolean (true or false), never undefined
+  const isEditingStandardProject = Boolean(
+    currentProject?.id === '00000000-0000-0000-0000-000000000001' || 
+    currentProject?.isStandardTemplate === true
+  );
 
   // Helper to check if a phase is standard - use isStandard flag from phase data
   // No hardcoded names - rely on database flag
@@ -1520,11 +1524,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         .limit(1)
         .single();
       
+      // CRITICAL: Store the phase ID for later use
+      let addedPhaseId: string | null = null;
+      
       if (!phaseQueryError && newPhaseData?.id) {
+        addedPhaseId = newPhaseData.id;
+        // CRITICAL: For regular templates, is_standard must be false (not undefined)
+        // For Standard Project Foundation, is_standard should be true
+        const shouldBeStandard = Boolean(isEditingStandardProject);
+        
         const { error: phaseUpdateError } = await supabase
           .from('project_phases')
           .update({ 
-            is_standard: isEditingStandardProject // true only if editing Standard Project Foundation
+            is_standard: shouldBeStandard // Explicitly set to true or false, never undefined
           })
           .eq('id', newPhaseData.id)
           .eq('project_id', currentProject.id);
@@ -1536,7 +1548,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           console.log('✅ Updated project_phases is_standard flag BEFORE rebuild:', {
             phaseId: newPhaseData.id,
             phaseName: uniquePhaseName,
-            isStandard: isEditingStandardProject,
+            isStandard: shouldBeStandard,
             isEditingStandardProject
           });
         }
@@ -1575,12 +1587,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       //   Newly added phases should be isStandard: true (they become part of the standard foundation)
       // - When editing regular project templates (isEditingStandardProject = false):
       //   Newly added phases should be isStandard: false (they're custom phases)
+      // CRITICAL: Always use explicit boolean values, never undefined
+      const shouldBeStandard = Boolean(isEditingStandardProject);
       const phasesWithCorrectStandardFlag = phasesWithUniqueOrder.map(phase => {
         // If this is the newly added phase, set isStandard based on editing mode
-        if (phase.name === uniquePhaseName) {
+        if (phase.name === uniquePhaseName || (addedPhaseId && phase.id === addedPhaseId)) {
           return {
             ...phase,
-            isStandard: isEditingStandardProject // true if editing Standard Project Foundation, false otherwise
+            isStandard: shouldBeStandard // Explicitly true or false, never undefined
           };
         }
         // For existing phases, preserve their isStandard flag
@@ -1630,7 +1644,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       // Update display state immediately to show the new phase right away
       // This ensures the phase is visible even before refetch completes
-      // Reuse addedPhase that was already found above
+      // Find the newly added phase from phasesWithCorrectStandardFlag
+      const addedPhase = phasesWithCorrectStandardFlag.find(p => 
+        p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
+      );
+      
       if (addedPhase?.id) {
         setJustAddedPhaseId(addedPhase.id);
         // Clear the flag after refetch completes
@@ -1646,7 +1664,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         newPhaseName: uniquePhaseName,
         newPhaseId: addedPhase?.id,
         newPhaseIsStandard: addedPhase?.isStandard,
-        isStandardProject: isEditingStandardProject
+        isStandardProject: isEditingStandardProject,
+        shouldBeStandard
       });
       
       // CRITICAL: Update displayPhases immediately with the new phase
