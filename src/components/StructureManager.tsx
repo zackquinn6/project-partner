@@ -841,13 +841,54 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const displayNeedsUpdate = displayIdsChanged || displayOrderChanged;
     
     if (displayNeedsUpdate) {
+      // CRITICAL: Ensure ALL phases have order numbers before setting displayPhases
+      // This fixes the issue where regular phases are missing order numbers
+      const phasesWithOrderNumbers = sortedForDisplay.map((phase, index) => {
+        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+          // Assign order number based on position
+          if (index === 0) {
+            // Check if first position should be 'first' or a number
+            const hasStandardFirst = sortedForDisplay.some(p => 
+              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'first'
+            );
+            if (!hasStandardFirst && !isEditingStandardProject) {
+              phase.phaseOrderNumber = 'first';
+            } else {
+              phase.phaseOrderNumber = 1;
+            }
+          } else if (index === sortedForDisplay.length - 1) {
+            // Check if last position should be 'last' or a number
+            const hasStandardLast = sortedForDisplay.some(p => 
+              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'last'
+            );
+            if (!hasStandardLast && !isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+              phase.phaseOrderNumber = 'last';
+            } else {
+              phase.phaseOrderNumber = index + 1;
+            }
+          } else {
+            phase.phaseOrderNumber = index + 1;
+          }
+          console.log('🔧 Assigned missing order number when setting displayPhases:', {
+            phaseName: phase.name,
+            phaseId: phase.id,
+            assignedOrder: phase.phaseOrderNumber,
+            index,
+            isStandard: isStandardPhase(phase),
+            isLinked: phase.isLinked
+          });
+        }
+        return phase;
+      });
+      
       console.log('🔄 Updating displayPhases:', {
         idsChanged: displayIdsChanged,
         orderChanged: displayOrderChanged,
         currentCount: displayPhases.length,
-        newCount: sortedForDisplay.length
+        newCount: phasesWithOrderNumbers.length,
+        phases: phasesWithOrderNumbers.map(p => ({ name: p.name, order: p.phaseOrderNumber, isStandard: p.isStandard }))
       });
-      setDisplayPhases(sortedForDisplay);
+      setDisplayPhases(phasesWithOrderNumbers);
     } else {
       console.log('⏭️ Skipping displayPhases update - no changes detected');
     }
