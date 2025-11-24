@@ -881,6 +881,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Get phase order number (First, Last, or integer)
   const getPhaseOrderNumber = (phase: Phase, phaseIndex: number, totalPhases: number): string | number => {
+    // CRITICAL: For standard phases in regular projects, try to get order number from Standard Project Foundation
+    if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked && standardProjectPhases.length > 0) {
+      const standardPhase = standardProjectPhases.find(sp => sp.name === phase.name);
+      if (standardPhase && standardPhase.phaseOrderNumber !== undefined) {
+        if (standardPhase.phaseOrderNumber === 'first') return 'First';
+        if (standardPhase.phaseOrderNumber === 'last') return 'Last';
+        return standardPhase.phaseOrderNumber;
+      }
+    }
+    
+    // Use phase's own order number if available
     if (phase.phaseOrderNumber !== undefined) {
       if (phase.phaseOrderNumber === 'first') return 'First';
       if (phase.phaseOrderNumber === 'last') return 'Last';
@@ -968,6 +979,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     for (let i = 1; i <= totalPhases; i++) {
       // Skip if this number is reserved by a standard phase (in project template mode)
       if (!isEditingStandardProject && reservedByStandardPhases.has(i)) {
+        continue;
+      }
+      // CRITICAL: If 'first' is reserved by a standard phase, also exclude position 1
+      // Position 1 is the same as 'first', so it should be reserved
+      if (!isEditingStandardProject && reservedByStandardPhases.has('First') && i === 1) {
         continue;
       }
       options.push(i);
