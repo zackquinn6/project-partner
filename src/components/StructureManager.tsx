@@ -651,6 +651,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             // Edit Standard: restore all preserved order numbers
             phase.phaseOrderNumber = preservedOrder;
           }
+        } else if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked && phase.name) {
+          // Fallback: If order number wasn't preserved by ID, try to get it from standardProjectPhases by name
+          const standardPhase = standardProjectPhases.find(sp => sp.name === phase.name);
+          if (standardPhase && standardPhase.phaseOrderNumber !== undefined) {
+            phase.phaseOrderNumber = standardPhase.phaseOrderNumber;
+          }
         }
       });
       
