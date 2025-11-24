@@ -334,7 +334,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     
     if (!currentProject?.phases || currentProject.phases.length === 0) {
       console.log('🔍 No currentProject.phases, returning rebuiltPhases');
-      return rebuiltPhases || [];
+      const fallbackPhases = rebuiltPhases || [];
+      
+      // CRITICAL: In Edit Standard mode, filter to ONLY standard phases
+      // Standard Project Foundation should never show non-standard or incorporated phases
+      if (isEditingStandardProject) {
+        const standardPhasesOnly = fallbackPhases.filter(p => isStandardPhase(p) && !p.isLinked);
+        console.log('🔒 Edit Standard: Filtered fallback rebuiltPhases to standard only', {
+          beforeCount: fallbackPhases.length,
+          afterCount: standardPhasesOnly.length,
+          filteredOut: fallbackPhases.filter(p => !isStandardPhase(p) || p.isLinked).map(p => ({ 
+            name: p.name, 
+            isStandard: p.isStandard, 
+            isLinked: p.isLinked 
+          }))
+        });
+        return standardPhasesOnly;
+      }
+      
+      return fallbackPhases;
     }
     
     // CRITICAL: Filter out deleted phase if we're currently deleting one
