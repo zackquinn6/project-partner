@@ -475,6 +475,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Combine: merged rebuilt phases (with corrected isStandard) + phases only in JSON
       // CRITICAL: If we just added a phase, preserve the order from currentProject.phases
       // This prevents reordering after refetch
+      let combinedPhases: Phase[];
       if (justAddedPhaseId) {
         // Create a map of phases by ID for quick lookup
         const allPhases = [...mergedRebuiltPhases, ...phasesOnlyInJson];
@@ -489,18 +490,49 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const existingIds = new Set(orderedPhases.map(p => p.id));
         const remainingPhases = allPhases.filter(p => !existingIds.has(p.id));
         
-        return [...orderedPhases, ...remainingPhases];
+        combinedPhases = [...orderedPhases, ...remainingPhases];
+      } else {
+        combinedPhases = [...mergedRebuiltPhases, ...phasesOnlyInJson];
       }
       
-      return [...mergedRebuiltPhases, ...phasesOnlyInJson];
+      // CRITICAL: In Edit Standard mode, filter to ONLY standard phases
+      // Standard Project Foundation should never show non-standard or incorporated phases
+      // This is a safety check to ensure non-standard phases never appear in Edit Standard
+      if (isEditingStandardProject) {
+        const standardPhasesOnly = combinedPhases.filter(p => isStandardPhase(p) && !p.isLinked);
+        console.log('🔒 Edit Standard: Filtered to standard phases only', {
+          beforeCount: combinedPhases.length,
+          afterCount: standardPhasesOnly.length,
+          filteredOut: combinedPhases.filter(p => !isStandardPhase(p) || p.isLinked).map(p => ({ 
+            name: p.name, 
+            isStandard: p.isStandard, 
+            isLinked: p.isLinked 
+          }))
+        });
+        return standardPhasesOnly;
+      }
+      
+      return combinedPhases;
     }
     
     // Fallback: use currentProject.phases directly if no rebuilt phases
     // But filter out deleted phase if we're currently deleting one
     console.log('🔍 No rebuiltPhases, returning currentProject.phases directly');
-    return phaseToDelete 
+    let fallbackPhases = phaseToDelete 
       ? (currentProject.phases || []).filter(p => p.id !== phaseToDelete)
       : (currentProject.phases || []);
+    
+    // CRITICAL: In Edit Standard mode, filter to ONLY standard phases
+    // Standard Project Foundation should never show non-standard or incorporated phases
+    if (isEditingStandardProject) {
+      fallbackPhases = fallbackPhases.filter(p => isStandardPhase(p) && !p.isLinked);
+      console.log('🔒 Edit Standard: Filtered fallback phases to standard only', {
+        beforeCount: (currentProject.phases || []).length,
+        afterCount: fallbackPhases.length
+      });
+    }
+    
+    return fallbackPhases;
   }, [currentProject?.phases, rebuiltPhases, justAddedPhaseId, phaseToDelete]);
   
   // Process merged phases and update displayPhases
