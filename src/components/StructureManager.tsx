@@ -819,8 +819,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
     }
     
-    // CRITICAL: Always sort by order number before displaying
-    // This ensures phases are always rendered in the correct order
+    // CONDITION 4: Always sort by order number before displaying
+    // This ensures phases are always rendered sequentially from lowest to highest, top to bottom
     const sortedForDisplay = sortPhasesByOrderNumber(phasesToDisplay);
     
     // CRITICAL: Only update displayPhases if there's an actual change
@@ -2147,8 +2147,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         existingPhaseCount: allExistingPhases.length
       });
 
-      // Use RPC to safely insert a custom phase with a unique display order
-      // The RPC function will check for duplicate phase names within the project
+      // CONDITION 1: Use RPC to immediately commit phase addition to database
+      // The RPC function inserts into project_phases table, ensuring visible phases reflect actual database state
       const { data: rpcResult, error: addPhaseError } = await supabase.rpc('add_custom_project_phase', {
         p_project_id: currentProject.id,
         p_phase_name: uniquePhaseName,
