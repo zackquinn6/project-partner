@@ -605,12 +605,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     if (phasesToProcess.length > 0) {
-      // CRITICAL: For regular projects, order numbers will be applied from Standard Project Foundation AFTER ensureUniqueOrderNumbers
-      // For Edit Standard, preserve order numbers from currentProject.phases
+      // CRITICAL: Preserve order numbers from currentProject.phases for ALL phases (not just Edit Standard)
+      // This ensures that when phases are rebuilt/merged, order numbers set by handlePhaseOrderChange are preserved
       const preservedOrderNumbers = new Map<string, string | number>();
       
-      if (isEditingStandardProject && currentProject?.phases && currentProject.phases.length > 0) {
-        // Edit Standard: Preserve order numbers from currentProject.phases
+      if (currentProject?.phases && currentProject.phases.length > 0) {
+        // Preserve order numbers from currentProject.phases for all phases
         // CRITICAL: Filter out deleted phase before preserving order numbers
         // This prevents preserving order numbers from a phase that no longer exists
         const validPhases = phaseToDelete 
@@ -621,6 +621,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           if (phase.phaseOrderNumber !== undefined) {
             preservedOrderNumbers.set(phase.id, phase.phaseOrderNumber);
           }
+        });
+        
+        console.log('🔒 Preserved order numbers from currentProject.phases:', {
+          count: preservedOrderNumbers.size,
+          orders: Array.from(preservedOrderNumbers.entries()).map(([id, order]) => ({
+            id,
+            order,
+            phaseName: validPhases.find(p => p.id === id)?.name
+          }))
         });
       }
       
@@ -651,6 +660,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 phaseName: phase.name,
                 orderNumber: standardOrder,
                 wasReassigned: preservedOrderNumbers.get(phase.id) !== standardOrder
+              });
+            }
+          }
+        });
+        
+        // CRITICAL: After applying standard phase order numbers, restore preserved order numbers for regular phases
+        // This ensures that order numbers set by handlePhaseOrderChange are preserved for regular phases
+        sortedPhases.forEach(phase => {
+          if (!isStandardPhase(phase) || phase.isLinked) {
+            const preservedOrder = preservedOrderNumbers.get(phase.id);
+            if (preservedOrder !== undefined) {
+              phase.phaseOrderNumber = preservedOrder;
+              console.log('🔒 Restored preserved order number for regular phase:', {
+                phaseName: phase.name,
+                orderNumber: preservedOrder
               });
             }
           }
@@ -758,16 +782,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       ? processedPhases.filter(p => p.id !== phaseToDelete)
       : processedPhases;
     
-    // CRITICAL: In Edit Standard mode, if we just deleted a phase, preserve the order from displayPhases
-    // This prevents the second refresh from jumbling the order
-    if (isEditingStandardProject && phaseToDelete && displayPhases.length > 0) {
-      // Use the order from displayPhases (which has correct order numbers after deletion)
+    // CRITICAL: If there are pending order changes, preserve order numbers from displayPhases
+    // This prevents the refresh from jumbling the order after re-ordering
+    // Also preserve order numbers in Edit Standard mode after deletion
+    if ((hasPendingOrderChanges || (isEditingStandardProject && phaseToDelete)) && displayPhases.length > 0) {
+      // Use the order from displayPhases (which has correct order numbers after re-ordering/deletion)
       // but update with any new data from processedPhases
       const displayPhasesMap = new Map(displayPhases.map(p => [p.id, p]));
       phasesToDisplay = phasesToDisplay.map(p => {
         const displayPhase = displayPhasesMap.get(p.id);
-        if (displayPhase) {
-          // Preserve order number from displayPhases
+        if (displayPhase && displayPhase.phaseOrderNumber !== undefined) {
+          // Preserve order number from displayPhases for all phases (not just standard)
           return { ...p, phaseOrderNumber: displayPhase.phaseOrderNumber };
         }
         return p;
@@ -775,6 +800,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // Sort by order number to maintain correct order
       phasesToDisplay = sortPhasesByOrderNumber(phasesToDisplay);
+      
+      if (hasPendingOrderChanges) {
+        console.log('🔒 Preserved order numbers from displayPhases due to pending changes:', {
+          phases: phasesToDisplay.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+        });
+      }
       
       console.log('🔧 Preserving order from displayPhases after deletion:', {
         phases: phasesToDisplay.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
