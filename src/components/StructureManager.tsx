@@ -871,6 +871,35 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       movedPhase.phaseOrderNumber = newOrder;
     }
     
+    // CRITICAL: For regular projects, collect standard phase order numbers that are reserved
+    const reservedByStandardPhases = new Set<string | number>();
+    if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+      standardProjectPhases.forEach(phase => {
+        if (phase.phaseOrderNumber !== undefined) {
+          if (phase.phaseOrderNumber === 'first') {
+            reservedByStandardPhases.add('first');
+          } else if (phase.phaseOrderNumber === 'last') {
+            reservedByStandardPhases.add('last');
+          } else if (typeof phase.phaseOrderNumber === 'number') {
+            reservedByStandardPhases.add(phase.phaseOrderNumber);
+          }
+        }
+      });
+    }
+    
+    // Also check current displayPhases for standard phase order numbers
+    displayPhases.forEach(phase => {
+      if (isStandardPhase(phase) && !phase.isLinked && phase.phaseOrderNumber !== undefined) {
+        if (phase.phaseOrderNumber === 'first') {
+          reservedByStandardPhases.add('first');
+        } else if (phase.phaseOrderNumber === 'last') {
+          reservedByStandardPhases.add('last');
+        } else if (typeof phase.phaseOrderNumber === 'number') {
+          reservedByStandardPhases.add(phase.phaseOrderNumber);
+        }
+      }
+    });
+    
     // Renumber all other phases sequentially
     // Track which numbers are already used
     const usedNumbers = new Set<string | number>();
@@ -882,35 +911,51 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         return;
       }
       
-      // Assign sequential number, avoiding conflicts
+      const isStandard = isStandardPhase(p) && !p.isLinked;
+      
+      // CRITICAL: Standard phases keep their order numbers, project phases avoid conflicts
+      if (isStandard && p.phaseOrderNumber !== undefined) {
+        // Standard phase - preserve its order number
+        usedNumbers.add(p.phaseOrderNumber);
+        return;
+      }
+      
+      // Project phase - assign number avoiding conflicts with standard phases
       let assignedNumber: 'first' | 'last' | number;
       
-      if (index === 0 && !usedNumbers.has('first') && !usedNumbers.has(1)) {
+      // CRITICAL: Project phases cannot use 'first' or 'last' if reserved by standard phases
+      if (index === 0 && !usedNumbers.has('first') && !reservedByStandardPhases.has('first') && !usedNumbers.has(1) && !reservedByStandardPhases.has(1)) {
         // First position available - check if this phase was originally 'first'
         const originalPhase = displayPhases.find(orig => orig.id === p.id);
-        if (originalPhase?.phaseOrderNumber === 'first') {
+        if (originalPhase?.phaseOrderNumber === 'first' && !reservedByStandardPhases.has('first')) {
           assignedNumber = 'first';
         } else {
           assignedNumber = 1;
         }
-      } else if (index === totalPhases - 1 && !usedNumbers.has('last') && !usedNumbers.has(totalPhases)) {
+      } else if (index === totalPhases - 1 && !usedNumbers.has('last') && !reservedByStandardPhases.has('last') && !usedNumbers.has(totalPhases) && !reservedByStandardPhases.has(totalPhases)) {
         // Last position available - check if this phase was originally 'last'
         const originalPhase = displayPhases.find(orig => orig.id === p.id);
-        if (originalPhase?.phaseOrderNumber === 'last') {
+        if (originalPhase?.phaseOrderNumber === 'last' && !reservedByStandardPhases.has('last')) {
           assignedNumber = 'last';
         } else {
           assignedNumber = totalPhases;
         }
       } else {
-        // Middle position - find next available number
+        // Middle position - find next available number that's not reserved by standard phases
         let candidateNumber = index + 1;
-        while (usedNumbers.has(candidateNumber) && candidateNumber <= totalPhases) {
+        while (
+          (usedNumbers.has(candidateNumber) || reservedByStandardPhases.has(candidateNumber)) && 
+          candidateNumber <= totalPhases + 100
+        ) {
           candidateNumber++;
         }
         // If we've exhausted all numbers, go backwards
-        if (candidateNumber > totalPhases) {
+        if (candidateNumber > totalPhases + 100) {
           candidateNumber = index;
-          while (usedNumbers.has(candidateNumber) && candidateNumber >= 1) {
+          while (
+            (usedNumbers.has(candidateNumber) || reservedByStandardPhases.has(candidateNumber)) && 
+            candidateNumber >= 1
+          ) {
             candidateNumber--;
           }
         }
