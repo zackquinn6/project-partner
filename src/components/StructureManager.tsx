@@ -627,7 +627,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         });
       } else if (isEditingStandardProject && currentProject?.phases && currentProject.phases.length > 0) {
         // Edit Standard: Preserve order numbers from currentProject.phases
-        currentProject.phases.forEach(phase => {
+        // CRITICAL: Filter out deleted phase before preserving order numbers
+        // This prevents preserving order numbers from a phase that no longer exists
+        const validPhases = phaseToDelete 
+          ? currentProject.phases.filter(p => p.id !== phaseToDelete)
+          : currentProject.phases;
+        
+        validPhases.forEach(phase => {
           if (phase.phaseOrderNumber !== undefined) {
             preservedOrderNumbers.set(phase.id, phase.phaseOrderNumber);
           }
