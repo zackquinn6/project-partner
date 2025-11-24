@@ -602,12 +602,33 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     if (phasesToProcess.length > 0) {
-      // CRITICAL: Preserve 'first' and 'last' order numbers from currentProject.phases BEFORE processing
-      // This ensures they're not lost during ensureUniqueOrderNumbers
+      // CRITICAL: For regular projects, get order numbers from Standard Project Foundation
+      // For Edit Standard, preserve order numbers from currentProject.phases
       const preservedOrderNumbers = new Map<string, string | number>();
-      if (currentProject?.phases && currentProject.phases.length > 0) {
+      
+      if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+        // Regular project: Get order numbers from Standard Project Foundation
+        // Create a map of phase name to order number from Standard Project Foundation
+        const standardOrderMap = new Map<string, string | number>();
+        standardProjectPhases.forEach(phase => {
+          if (phase.name && phase.phaseOrderNumber !== undefined) {
+            standardOrderMap.set(phase.name, phase.phaseOrderNumber);
+          }
+        });
+        
+        // Apply order numbers from Standard Project Foundation to standard phases
+        phasesToProcess.forEach(phase => {
+          if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
+            const standardOrder = standardOrderMap.get(phase.name);
+            if (standardOrder !== undefined) {
+              preservedOrderNumbers.set(phase.id, standardOrder);
+            }
+          }
+        });
+      } else if (isEditingStandardProject && currentProject?.phases && currentProject.phases.length > 0) {
+        // Edit Standard: Preserve order numbers from currentProject.phases
         currentProject.phases.forEach(phase => {
-          if (phase.phaseOrderNumber === 'first' || phase.phaseOrderNumber === 'last') {
+          if (phase.phaseOrderNumber !== undefined) {
             preservedOrderNumbers.set(phase.id, phase.phaseOrderNumber);
           }
         });
@@ -618,11 +639,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
       const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
       
-      // CRITICAL: Restore 'first' and 'last' order numbers after processing
+      // CRITICAL: Restore order numbers from Standard Project Foundation for regular projects
+      // For Edit Standard, restore from currentProject.phases
       sortedPhases.forEach(phase => {
         const preservedOrder = preservedOrderNumbers.get(phase.id);
-        if (preservedOrder === 'first' || preservedOrder === 'last') {
-          phase.phaseOrderNumber = preservedOrder;
+        if (preservedOrder !== undefined) {
+          // For regular projects, standard phases get their order from Standard Project Foundation
+          if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+            phase.phaseOrderNumber = preservedOrder;
+          } else if (isEditingStandardProject) {
+            // Edit Standard: restore all preserved order numbers
+            phase.phaseOrderNumber = preservedOrder;
+          }
         }
       });
       
