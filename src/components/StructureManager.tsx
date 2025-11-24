@@ -1919,10 +1919,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       if (addedPhase?.id) {
         setJustAddedPhaseId(addedPhase.id);
-        // Clear the flag after refetch completes
+        // Clear the flag after a longer delay to ensure order is preserved
+        // This prevents mergedPhases from reordering during the preservation window
         setTimeout(() => {
           setJustAddedPhaseId(null);
-        }, 2000);
+        }, 3000); // Longer delay to ensure order preservation completes
       }
       
       console.log('✅ Setting displayPhases:', {
@@ -1937,29 +1938,48 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       });
       
       // CRITICAL: In Edit Standard mode, ensure new phase stays at second-to-last position
-      // Sort by order number to maintain the correct order
+      // Don't sort yet - preserve the order we set earlier
       let finalPhases = phasesWithCorrectStandardFlag;
       if (isEditingStandardProject) {
-        // Sort to ensure order numbers are respected
-        finalPhases = sortPhasesByOrderNumber(phasesWithCorrectStandardFlag);
-        
-        // Double-check: if new phase is at the end, move it to second-to-last
+        // Find the new phase and ensure it's at second-to-last position
         const newPhaseIndex = finalPhases.findIndex(p => 
           p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
         );
-        if (newPhaseIndex === finalPhases.length - 1 && finalPhases.length > 1) {
-          // New phase is at the end, move it to second-to-last
-          const [newPhase] = finalPhases.splice(newPhaseIndex, 1);
-          finalPhases.splice(finalPhases.length - 1, 0, newPhase);
+        
+        if (newPhaseIndex !== -1 && finalPhases.length > 1) {
+          const newPhase = finalPhases[newPhaseIndex];
+          const lastPhaseIndex = finalPhases.length - 1;
           
-          // Update order numbers to reflect the correct position
-          const lastPhase = finalPhases[finalPhases.length - 1];
-          if (lastPhase && lastPhase.phaseOrderNumber === 'last') {
-            newPhase.phaseOrderNumber = finalPhases.length - 1;
-          } else if (lastPhase && typeof lastPhase.phaseOrderNumber === 'number') {
-            newPhase.phaseOrderNumber = lastPhase.phaseOrderNumber - 1;
+          // If new phase is not at second-to-last, move it there
+          if (newPhaseIndex !== lastPhaseIndex - 1) {
+            // Remove from current position
+            finalPhases.splice(newPhaseIndex, 1);
+            // Insert at second-to-last position
+            finalPhases.splice(lastPhaseIndex - 1, 0, newPhase);
+            
+            // Update order numbers to reflect the correct position
+            const lastPhase = finalPhases[lastPhaseIndex];
+            if (lastPhase && lastPhase.phaseOrderNumber === 'last') {
+              newPhase.phaseOrderNumber = finalPhases.length - 1;
+            } else if (lastPhase && typeof lastPhase.phaseOrderNumber === 'number') {
+              newPhase.phaseOrderNumber = lastPhase.phaseOrderNumber - 1;
+            }
+            
+            // Re-assign order numbers for all phases to ensure consistency
+            finalPhases.forEach((phase, index) => {
+              if (index === 0) {
+                phase.phaseOrderNumber = 'first';
+              } else if (index === finalPhases.length - 1) {
+                phase.phaseOrderNumber = 'last';
+              } else {
+                phase.phaseOrderNumber = index + 1;
+              }
+            });
           }
         }
+        
+        // Now sort to ensure order numbers are respected
+        finalPhases = sortPhasesByOrderNumber(finalPhases);
       }
       
       // CRITICAL: Double-check that new phase in finalPhases has correct isStandard flag
@@ -2015,11 +2035,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       toast.success('Phase added successfully');
       
       // Clear flags after a delay to allow UI to settle
-      // Only one refresh will happen naturally through the data flow
+      // Keep skipNextRefresh active longer to prevent useEffect from triggering reordering
       setTimeout(() => {
         setIsAddingPhase(false);
-        setSkipNextRefresh(false);
-      }, 500);
+        // Keep skipNextRefresh true a bit longer to ensure all async operations complete
+        setTimeout(() => {
+          setSkipNextRefresh(false);
+        }, 1000);
+      }, 1500); // Longer delay to ensure no refetch triggers
     } catch (error: any) {
       console.error('❌ Error adding phase:', error);
       console.error('❌ Error details:', {
