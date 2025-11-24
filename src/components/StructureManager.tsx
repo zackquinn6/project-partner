@@ -1253,9 +1253,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
 
-      // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST to ensure Close Project is always last
-      // This preserves custom/incorporated phase order but ensures standard phases are in correct positions
-      const orderedPhases = enforceStandardPhaseOrdering(finalPhases);
+      // IMPORTANT: When editing Standard Project Foundation, preserve the user's reordered phase order
+      // Don't apply enforceStandardPhaseOrdering as it would revert the reordering
+      // For regular projects, apply enforceStandardPhaseOrdering to maintain standard phase positions
+      let orderedPhases: Phase[];
+      if (isEditingStandardProject) {
+        // In Edit Standard mode, preserve the exact order from reorderedPhases
+        orderedPhases = finalPhases;
+      } else {
+        // For regular projects, enforce standard phase ordering
+        orderedPhases = enforceStandardPhaseOrdering(finalPhases);
+      }
       
       // Preserve existing order numbers before applying ensureUniqueOrderNumbers
       const orderNumberMap = new Map(finalPhases.map(p => [p.id, p.phaseOrderNumber]));
