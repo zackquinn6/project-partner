@@ -913,15 +913,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             .single();
 
           if (!error && standardProject?.phases) {
-            const phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
+            let phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
+            
+            // CRITICAL: If phases don't have phaseOrderNumber, derive it from their position
+            // This handles cases where the JSON was rebuilt from project_phases table
+            phases = phases.map((phase, index) => {
+              if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+                // Derive order number from position
+                if (index === 0) {
+                  phase.phaseOrderNumber = 'first';
+                } else if (index === phases.length - 1) {
+                  phase.phaseOrderNumber = 'last';
+                } else {
+                  phase.phaseOrderNumber = index + 1;
+                }
+                console.log('🔧 Derived phaseOrderNumber for phase:', {
+                  name: phase.name,
+                  index,
+                  derivedOrder: phase.phaseOrderNumber
+                });
+              }
+              return phase;
+            });
+            
             console.log('📋 Fetched Standard Project Foundation phases:', {
               count: phases.length,
               phases: phases.map(p => ({ 
                 name: p.name, 
                 order: p.phaseOrderNumber,
                 hasOrder: p.phaseOrderNumber !== undefined,
-                orderType: typeof p.phaseOrderNumber,
-                fullPhase: p
+                orderType: typeof p.phaseOrderNumber
               }))
             });
             setStandardProjectPhases(phases);
@@ -970,10 +991,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             reservedNumbers.add(orderNumber);
             reservedByStandardPhases.add(orderNumber);
             console.log('🔒 Reserved position', orderNumber, 'for:', phase.name);
-          } else {
+    } else {
             console.warn('⚠️ Unexpected order number type for', phase.name, ':', orderNumber, typeof orderNumber);
           }
-        } else {
+    } else {
           console.warn('⚠️ Phase', phase.name, 'has no phaseOrderNumber:', phase);
         }
       });
