@@ -103,15 +103,17 @@ Deno.serve(async (req) => {
     result.details.push(`Found ${templates?.length || 0} templates to update (including all revisions)`);
     
   // SAFETY CHECK: Verify Standard Project has data to cascade
+  // CRITICAL: Use is_standard flag to identify standard phases, not just standard_phase_id
+  // This ensures newly added standard phases are included
   const { data: standardOpsCheck, error: standardOpsCheckError } = await supabase
     .from('template_operations')
     .select(`
       id,
       name,
-      project_phases!inner(standard_phase_id)
+      project_phases!inner(is_standard, standard_phase_id)
     `)
     .eq('project_id', standardProjectId)
-    .not('project_phases.standard_phase_id', 'is', null);
+    .eq('project_phases.is_standard', true);  // Use is_standard flag, not standard_phase_id
   
   if (standardOpsCheckError) {
     throw new Error(`Failed to verify standard operations: ${standardOpsCheckError.message}`);
@@ -136,16 +138,18 @@ Deno.serve(async (req) => {
         let stepsUpdatedCount = 0;
         let stepsMissingCount = 0;
         
-        // Get all standard operations from Standard Project with their standard_phase_id
+        // Get all standard operations from Standard Project
+        // CRITICAL: Use is_standard flag to identify standard phases, not just standard_phase_id
+        // This ensures newly added standard phases are included in the sync
         const { data: standardOps, error: standardOpsError } = await supabase
           .from('template_operations')
           .select(`
             id,
             name,
-            project_phases!inner(standard_phase_id)
+            project_phases!inner(is_standard, standard_phase_id)
           `)
           .eq('project_id', standardProjectId)
-          .not('project_phases.standard_phase_id', 'is', null);
+          .eq('project_phases.is_standard', true);  // Use is_standard flag, not standard_phase_id
 
         if (standardOpsError) {
           throw new Error(`Failed to fetch standard operations: ${standardOpsError.message}`);
