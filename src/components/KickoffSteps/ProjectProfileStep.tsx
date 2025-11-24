@@ -70,17 +70,28 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           if (!error && data) {
             // Use scaling_unit from database, fallback to templateProject.scalingUnit, then currentProjectRun.scalingUnit, then 'per item'
             const fetchedScalingUnit = data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
+            const fetchedItemType = data.item_type || null;
+            
             setScalingUnit(fetchedScalingUnit);
-            setItemType(data.item_type || null);
+            setItemType(fetchedItemType);
+            
             console.log('📊 Fetched scaling unit and item type:', {
+              templateProjectId: templateProject.id,
               scaling_unit: data.scaling_unit,
               item_type: data.item_type,
               item_type_type: typeof data.item_type,
               item_type_length: data.item_type?.length,
+              item_type_truthy: !!data.item_type,
               templateProjectScalingUnit: templateProject?.scalingUnit,
               finalScalingUnit: fetchedScalingUnit,
-              willUseItemType: fetchedScalingUnit === 'per item' && data.item_type ? data.item_type.toLowerCase() : null
+              finalItemType: fetchedItemType,
+              willUseItemType: fetchedScalingUnit?.toLowerCase().trim() === 'per item' && fetchedItemType ? fetchedItemType.toLowerCase() : null
             });
+          } else if (error) {
+            console.error('❌ Error fetching scaling_unit and item_type:', error);
+            // Fallback to templateProject values if database fetch fails
+            setScalingUnit(templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item');
+            setItemType(templateProject?.itemType || null);
           }
         } catch (error) {
           console.error('Error fetching scaling_unit and item_type:', error);
@@ -94,7 +105,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     };
     
     fetchScalingUnitAndItemType();
-  }, [templateProject?.id, currentProjectRun?.templateId]);
+  }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun]);
 
   useEffect(() => {
     if (user) {
@@ -309,19 +320,21 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                     {(() => {
                       // Standard scaling units
-                      if (scalingUnit === 'per square foot') return 'sq ft';
-                      if (scalingUnit === 'per 10x10 room') return 'rooms';
-                      if (scalingUnit === 'per linear foot') return 'linear ft';
-                      if (scalingUnit === 'per cubic yard') return 'cu yd';
+                      const normalizedScalingUnit = scalingUnit?.toLowerCase().trim() || '';
+                      
+                      if (normalizedScalingUnit === 'per square foot') return 'sq ft';
+                      if (normalizedScalingUnit === 'per 10x10 room') return 'rooms';
+                      if (normalizedScalingUnit === 'per linear foot') return 'linear ft';
+                      if (normalizedScalingUnit === 'per cubic yard') return 'cu yd';
                       
                       // For "per item", use item_type if available, otherwise use "per item"
-                      // Check with case-insensitive comparison and trim
-                      const normalizedScalingUnit = scalingUnit?.toLowerCase().trim();
                       if (normalizedScalingUnit === 'per item') {
                         // Check if itemType exists and is not empty
-                        if (itemType && typeof itemType === 'string' && itemType.trim().length > 0) {
+                        const validItemType = itemType && typeof itemType === 'string' && itemType.trim().length > 0;
+                        
+                        if (validItemType) {
                           const displayValue = itemType.trim().toLowerCase();
-                          console.log('📊 Using item_type for display:', { 
+                          console.log('✅ Using item_type for display:', { 
                             itemType, 
                             displayValue, 
                             scalingUnit,
@@ -331,12 +344,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                           });
                           return displayValue;
                         }
-                        console.log('📊 No item_type available, using "per item":', { 
+                        
+                        console.log('⚠️ No item_type available, using "per item":', { 
                           itemType, 
                           scalingUnit,
                           normalizedScalingUnit,
                           itemTypeType: typeof itemType,
-                          itemTypeValue: itemType
+                          itemTypeValue: itemType,
+                          templateProjectId: templateProject?.id,
+                          currentProjectRunTemplateId: currentProjectRun?.templateId
                         });
                         return 'per item';
                       }
