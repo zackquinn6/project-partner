@@ -935,12 +935,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const reservedNumbers = new Set<string | number>();
     const reservedByStandardPhases = new Set<string | number>();
     
+    // CRITICAL: Always check standardProjectPhases first for reserved positions
+    // This ensures positions set in Edit Standard are properly reserved in regular projects
     if (!isEditingStandardProject && standardProjectPhases.length > 0) {
       standardProjectPhases.forEach(phase => {
         if (phase.phaseOrderNumber !== undefined) {
           if (phase.phaseOrderNumber === 'first') {
             reservedNumbers.add('First');
             reservedByStandardPhases.add('First');
+            // Also reserve position 1 when 'first' is used
+            reservedNumbers.add(1);
+            reservedByStandardPhases.add(1);
           } else if (phase.phaseOrderNumber === 'last') {
             reservedNumbers.add('Last');
             reservedByStandardPhases.add('Last');
@@ -950,15 +955,23 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           }
         }
       });
+      console.log('🔒 Reserved positions from Standard Project Foundation:', {
+        reserved: Array.from(reservedByStandardPhases),
+        standardPhases: standardProjectPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+      });
     }
     
     // Also check current displayPhases for reserved numbers (in case standard phases are already in the project)
+    // This is a fallback, but standardProjectPhases should be the source of truth
     if (!isEditingStandardProject) {
       displayPhases.forEach(phase => {
-        if (isStandardPhase(phase) && phase.phaseOrderNumber !== undefined) {
+        if (isStandardPhase(phase) && !phase.isLinked && phase.phaseOrderNumber !== undefined) {
           if (phase.phaseOrderNumber === 'first') {
             reservedNumbers.add('First');
             reservedByStandardPhases.add('First');
+            // Also reserve position 1 when 'first' is used
+            reservedNumbers.add(1);
+            reservedByStandardPhases.add(1);
           } else if (phase.phaseOrderNumber === 'last') {
             reservedNumbers.add('Last');
             reservedByStandardPhases.add('Last');
