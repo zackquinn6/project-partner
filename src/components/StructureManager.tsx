@@ -724,6 +724,44 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
       
+      // CONDITION 2: Ensure ALL phases have order numbers before returning (no blanks)
+      // This is a final safety check to ensure no phase is missing an order number
+      sortedPhases.forEach((phase, index) => {
+        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+          // Assign order number based on position
+          if (index === 0) {
+            // Check if first position should be 'first' or a number
+            const hasStandardFirst = sortedPhases.some(p => 
+              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'first'
+            );
+            if (!hasStandardFirst && !isEditingStandardProject) {
+              phase.phaseOrderNumber = 'first';
+            } else {
+              phase.phaseOrderNumber = 1;
+            }
+          } else if (index === sortedPhases.length - 1) {
+            // Check if last position should be 'last' or a number
+            const hasStandardLast = sortedPhases.some(p => 
+              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'last'
+            );
+            if (!hasStandardLast && !isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+              phase.phaseOrderNumber = 'last';
+            } else {
+              phase.phaseOrderNumber = index + 1;
+            }
+          } else {
+            phase.phaseOrderNumber = index + 1;
+          }
+          console.log('🔧 Assigned missing order number in processedPhases (final safety check):', {
+            phaseName: phase.name,
+            phaseId: phase.id,
+            assignedOrder: phase.phaseOrderNumber,
+            index,
+            totalPhases: sortedPhases.length
+          });
+        }
+      });
+      
       return sortedPhases;
     }
     
