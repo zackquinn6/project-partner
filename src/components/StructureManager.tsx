@@ -973,46 +973,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     return options;
   };
 
-          assignedNumber = 1;
-        }
-      } else if (index === totalPhases - 1 && !usedNumbers.has('last') && !reservedByStandardPhases.has('last') && !usedNumbers.has(totalPhases) && !reservedByStandardPhases.has(totalPhases)) {
-        // Last position available - check if this phase was originally 'last'
-        const originalPhase = displayPhases.find(orig => orig.id === p.id);
-        if (originalPhase?.phaseOrderNumber === 'last' && !reservedByStandardPhases.has('last')) {
-          assignedNumber = 'last';
-        } else {
-          assignedNumber = totalPhases;
-        }
-      } else {
-        // Middle position - find next available number that's not reserved by standard phases
-        let candidateNumber = index + 1;
-        while (
-          (usedNumbers.has(candidateNumber) || reservedByStandardPhases.has(candidateNumber)) && 
-          candidateNumber <= totalPhases + 100
-        ) {
-          candidateNumber++;
-        }
-        // If we've exhausted all numbers, go backwards
-        if (candidateNumber > totalPhases + 100) {
-          candidateNumber = index;
-          while (
-            (usedNumbers.has(candidateNumber) || reservedByStandardPhases.has(candidateNumber)) && 
-            candidateNumber >= 1
-          ) {
-            candidateNumber--;
-          }
-        }
-        assignedNumber = candidateNumber;
-      }
-      
-      p.phaseOrderNumber = assignedNumber;
-      usedNumbers.add(assignedNumber);
-    });
-    
-    // Update database
-    await updatePhaseOrder(reorderedPhases);
-  };
-
   // Move phase up/down
   const movePhase = async (phaseId: string, direction: 'up' | 'down') => {
     if (!currentProject) return;
