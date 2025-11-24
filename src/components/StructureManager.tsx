@@ -3244,6 +3244,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           }))
         });
 
+        // CRITICAL: Wait a bit to ensure deletion has fully committed before rebuilding
+        // This prevents the deleted phase from reappearing in the rebuilt phases
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         // Rebuild phases JSON - this will NOT include the deleted phase since it's gone from project_phases
         const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
           p_project_id: currentProject.id
@@ -3253,12 +3257,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           console.error('❌ Error rebuilding phases after deletion:', rebuildError);
           throw rebuildError;
         }
+        
+        // CRITICAL: Filter out deleted phase from rebuilt phases as a safety check
+        // Even though it should be gone, this ensures it doesn't reappear
+        const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+        const rebuiltPhasesFiltered = rebuiltPhasesArray.filter((p: Phase) => p.id !== phaseIdToDelete);
+        
+        console.log('🔍 Rebuilt phases after deletion:', {
+          beforeFilter: rebuiltPhasesArray.length,
+          afterFilter: rebuiltPhasesFiltered.length,
+          deletedPhaseId: phaseIdToDelete,
+          phases: rebuiltPhasesFiltered.map((p: Phase) => ({ id: p.id, name: p.name }))
+        });
 
         // Merge with any incorporated phases from current project
-        const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+        // CRITICAL: Use rebuiltPhasesFiltered (not rebuiltPhasesArray) to ensure deleted phase doesn't reappear
         const currentPhases = currentProject.phases || [];
         const incorporatedPhases = currentPhases.filter(p => p.isLinked && p.id !== phaseIdToDelete);
-        const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
+        const allPhases = [...rebuiltPhasesFiltered, ...incorporatedPhases];
         const rawPhases = deduplicatePhases(allPhases);
         
         // CRITICAL: Filter out deleted phase as a safety measure (shouldn't be in rebuiltPhases, but just in case)
@@ -3324,24 +3340,38 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
         }
 
+        // Update display state IMMEDIATELY - this prevents flicker and preserves order
+        setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
+        setDisplayPhases(phasesToDisplay);
+        
         // CRITICAL: In Edit Standard mode, update phase order in database to persist correct order numbers
-        // This ensures order numbers are saved and prevents duplicates on refresh
+        // BUT: Do this AFTER setting displayPhases to prevent the deleted phase from reappearing
+        // Also, filter out the deleted phase from phasesToDisplay before calling updatePhaseOrder
+        // to ensure it doesn't get included in the rebuild
         if (isEditingStandardProject) {
+          // CRITICAL: Ensure deleted phase is filtered out before updating order
+          const phasesWithoutDeleted = phasesToDisplay.filter(p => p.id !== phaseIdToDelete);
+          
           console.log('🔄 Updating phase order in database after deletion to persist order numbers:', {
-            phases: phasesToDisplay.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+            phases: phasesWithoutDeleted.map(p => ({ name: p.name, order: p.phaseOrderNumber })),
+            deletedPhaseId: phaseIdToDelete
           });
           try {
-            await updatePhaseOrder(phasesToDisplay);
+            // CRITICAL: Wait a bit to ensure deletion has fully committed before rebuilding
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            await updatePhaseOrder(phasesWithoutDeleted);
             console.log('✅ Phase order updated in database after deletion, order numbers preserved');
+            
+            // CRITICAL: After updatePhaseOrder, refetch to get fresh data that doesn't include deleted phase
+            // This ensures useDynamicPhases gets the correct data
+            await refetchDynamicPhases();
+            console.log('✅ Refetched dynamic phases after deletion to ensure deleted phase is gone');
           } catch (error) {
             console.error('❌ Error updating phase order in database after deletion:', error);
             // Continue anyway - the JSON update will still work
           }
         }
-
-        // Update display state IMMEDIATELY - this prevents flicker and preserves order
-        setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
-        setDisplayPhases(phasesToDisplay);
         
         // CRITICAL: Ensure all phases have order numbers before saving
         phasesToDisplay.forEach((phase, index) => {
