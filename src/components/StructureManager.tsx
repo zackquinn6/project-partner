@@ -2466,7 +2466,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       if (remainingTime > 0) {
         await new Promise(resolve => setTimeout(resolve, remainingTime));
       }
-    } finally {
+      
+      // On error, clear deletion state immediately
+      setPhaseToDelete(null);
       setIsDeletingPhase(false);
     }
   };
