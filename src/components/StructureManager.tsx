@@ -51,6 +51,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // State to store standard phase order from Standard Project Foundation
   // CRITICAL: Declare this early so it can be used in useMemo hooks below
   const [standardProjectPhases, setStandardProjectPhases] = useState<Phase[]>([]);
+  
+  // State to track if there are pending order changes that need to be saved
+  const [hasPendingOrderChanges, setHasPendingOrderChanges] = useState(false);
 
   // Helper to check if a phase is standard - use isStandard flag from phase data
   // No hardcoded names - rely on database flag
@@ -1076,7 +1079,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       });
       
-      console.log('🔄 Reordering phases - before updatePhaseOrder:', {
+      // CRITICAL: Ensure order numbers are sequential based on actual position
+      // Reassign order numbers sequentially based on new positions
+      reorderedPhases.forEach((p, index) => {
+        if (index === 0) {
+          p.phaseOrderNumber = 'first';
+        } else if (index === reorderedPhases.length - 1) {
+          p.phaseOrderNumber = 'last';
+        } else {
+          p.phaseOrderNumber = index + 1;
+        }
+      });
+      
+      // Update display immediately (UI-only change)
+      setDisplayPhases(reorderedPhases);
+      
+      // Update project context
+      updateProject({
+        ...currentProject,
+        phases: reorderedPhases,
+        updatedAt: new Date()
+      });
+      
+      // Mark that there are pending order changes (don't save to database yet)
+      setHasPendingOrderChanges(true);
+      console.log('🔄 Phase reordered in UI (pending save):', {
         phaseId,
         direction,
         oldIndex: phaseIndex,
@@ -1084,16 +1111,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         reorderedPhases: reorderedPhases.map(p => ({ id: p.id, name: p.name, order: p.phaseOrderNumber }))
       });
       
-      await updatePhaseOrder(reorderedPhases);
-      
-      console.log('✅ Reordering complete - displayPhases should update');
-      
-      // Ensure minimum display time
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
-      if (remainingTime > 0) {
-        await new Promise(resolve => setTimeout(resolve, remainingTime));
-      }
+      // No database update here - will be saved on window close
     } catch (error) {
       console.error('Error reordering phase:', error);
       // Ensure minimum display time even on error
@@ -1255,24 +1273,32 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return p;
     });
     
-    // Update display immediately
-    setDisplayPhases(reorderedPhases);
+    // CRITICAL: Ensure order numbers are sequential based on actual position
+    // Sort by order number first, then reassign sequentially
+    const sortedByOrder = sortPhasesByOrderNumber(reorderedPhases);
+    sortedByOrder.forEach((phase, index) => {
+      if (index === 0) {
+        phase.phaseOrderNumber = 'first';
+      } else if (index === sortedByOrder.length - 1) {
+        phase.phaseOrderNumber = 'last';
+      } else {
+        phase.phaseOrderNumber = index + 1;
+      }
+    });
+    
+    // Update display immediately (UI-only change)
+    setDisplayPhases(sortedByOrder);
     
     // Update project context
     updateProject({
       ...currentProject,
-      phases: reorderedPhases,
+      phases: sortedByOrder,
       updatedAt: new Date()
     });
     
-    // Update phase order in database
-    try {
-      await updatePhaseOrder(reorderedPhases);
-      console.log('✅ Phase order updated in database after dropdown change');
-    } catch (error) {
-      console.error('❌ Error updating phase order:', error);
-      toast.error('Error updating phase order');
-    }
+    // Mark that there are pending order changes (don't save to database yet)
+    setHasPendingOrderChanges(true);
+    console.log('🔄 Phase order changed in UI (pending save)');
   };
   
   // Move step up/down
