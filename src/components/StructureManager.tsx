@@ -2447,14 +2447,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       toast.success('Phase deleted');
       setDeletePhaseDialogOpen(false);
-      setPhaseToDelete(null);
       
-      // Refetch from database once to ensure consistency, but only after state is updated
-      // This single refetch will update the mergedPhases, which will then update displayPhases
-      // The deleted phase is already filtered out, so it won't reappear
+      // CRITICAL: Don't clear deletion state immediately - keep it active to prevent double refresh
+      // The phase is already deleted from database and displayPhases is already updated
+      // We don't need to refetch since we already rebuilt phases and updated everything
+      // Clear deletion state after a delay to ensure all async operations complete
       setTimeout(() => {
-        refetchDynamicPhases();
-      }, 1000);
+        setPhaseToDelete(null);
+        setIsDeletingPhase(false);
+      }, 2000); // Longer delay to ensure no refetch triggers
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
