@@ -1458,8 +1458,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
       
+      // CRITICAL: Before sorting, ensure the last phase has 'last' if it was originally 'last'
+      // This must happen BEFORE sorting so the sort puts it in the right position
+      if (phasesWithUniqueOrder.length > 0) {
+        const originalLastPhase = reorderedPhases.find(p => p.phaseOrderNumber === 'last');
+        if (originalLastPhase) {
+          const phaseToUpdate = phasesWithUniqueOrder.find(p => p.id === originalLastPhase.id);
+          if (phaseToUpdate) {
+            phaseToUpdate.phaseOrderNumber = 'last';
+          }
+        }
+      }
+      
       // Sort phases by order number before saving
       const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
+      
+      // CRITICAL: After sorting, ensure the last phase in the sorted array has 'last' if it was originally 'last'
+      // This handles the case where the last phase might have been moved during sorting
+      if (sortedPhases.length > 0) {
+        const originalLastPhase = reorderedPhases.find(p => p.phaseOrderNumber === 'last');
+        if (originalLastPhase) {
+          const lastPhase = sortedPhases[sortedPhases.length - 1];
+          if (lastPhase.id === originalLastPhase.id) {
+            lastPhase.phaseOrderNumber = 'last';
+          } else {
+            // The original last phase moved - find it and restore 'last', then move it to the end
+            const movedPhase = sortedPhases.find(p => p.id === originalLastPhase.id);
+            if (movedPhase) {
+              movedPhase.phaseOrderNumber = 'last';
+              // Move it to the end
+              const index = sortedPhases.indexOf(movedPhase);
+              sortedPhases.splice(index, 1);
+              sortedPhases.push(movedPhase);
+            }
+          }
+        }
+      }
       
       // Save final phases JSON to database - explicitly include phaseOrderNumber
       const phasesToSave = sortedPhases.map(phase => ({
