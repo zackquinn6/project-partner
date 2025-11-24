@@ -2262,6 +2262,32 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // THEN assign order numbers based on the correct order
       // CRITICAL: In Edit Standard mode, preserve the order number we just set for the new phase
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+      
+      // CRITICAL: Ensure ALL phases have order numbers assigned
+      // This prevents blank dropdown menus after adding a new phase
+      phasesWithUniqueOrder.forEach((phase, index) => {
+        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+          // Assign order number based on position
+          if (index === 0) {
+            phase.phaseOrderNumber = 'first';
+          } else if (index === phasesWithUniqueOrder.length - 1) {
+            // Check if this should be 'last' (only if it's a standard phase in regular projects)
+            if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+              phase.phaseOrderNumber = 'last';
+            } else {
+              phase.phaseOrderNumber = index + 1;
+            }
+          } else {
+            phase.phaseOrderNumber = index + 1;
+          }
+          console.log('🔧 Assigned missing order number to phase:', {
+            phaseName: phase.name,
+            phaseId: phase.id,
+            assignedOrder: phase.phaseOrderNumber,
+            index
+          });
+        }
+      });
 
       // CRITICAL: Set isStandard flag correctly based on whether we're editing Standard Project Foundation
       // - When editing Standard Project Foundation (isEditingStandardProject = true): 
