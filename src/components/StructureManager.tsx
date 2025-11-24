@@ -3600,6 +3600,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           updatedAt: new Date()
         };
         updateProject(updatedProject);
+        
+        // CRITICAL: For regular projects, refetch dynamic phases to ensure fresh data without deleted phase
+        // This prevents the deleted phase from reappearing when skipNextRefresh is cleared
+        // The refetch ensures useDynamicPhases returns fresh data without the deleted phase
+        if (!isEditingStandardProject) {
+          console.log('🔄 Refetching dynamic phases after regular phase deletion');
+          // Wait a bit to ensure deletion has fully committed
+          await new Promise(resolve => setTimeout(resolve, 300));
+          await refetchDynamicPhases();
+          console.log('✅ Dynamic phases refetched after regular phase deletion');
+        }
       }
 
       // Ensure minimum display time for loading state
@@ -3613,10 +3624,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setDeletePhaseDialogOpen(false);
       setPhaseIdPendingDelete(null); // Clear pending delete ID
       
-      // CRITICAL: Don't refetch after deletion - we've already updated the database correctly with updatePhaseOrder
-      // The displayPhases and currentProject.phases are already updated with correct order numbers
-      // Refetching would cause a second refresh that might jumble the order
-      // Just clear the state flags after a delay to allow any pending operations to complete
+      // CRITICAL: Keep phaseToDelete and skipNextRefresh set until refetch completes
+      // For regular projects, we've already refetched above
+      // For Edit Standard, the refetch happens in the if block above
+      // Clear the state flags after a delay to allow any pending operations to complete
       setTimeout(() => {
         setSkipNextRefresh(false);
         setPhaseToDelete(null);
