@@ -208,6 +208,20 @@ export default function EditWorkflowView({
   
   const deduplicatedPhases = deduplicatePhases(rawPhases);
   
+  // CRITICAL: Preserve order numbers from currentProject.phases (like StructureManager does)
+  // This ensures order numbers set in StructureManager are preserved in workflow editor
+  const preservedOrderNumbers = new Map<string, string | number>();
+  if (currentProject?.phases && currentProject.phases.length > 0) {
+    currentProject.phases.forEach(phase => {
+      if (phase.phaseOrderNumber !== undefined) {
+        preservedOrderNumbers.set(phase.id, phase.phaseOrderNumber);
+        if (phase.name) {
+          preservedOrderNumbers.set(phase.name, phase.phaseOrderNumber);
+        }
+      }
+    });
+  }
+  
   // CRITICAL: Apply standard phase ordering first, then sort by order number
   // This ensures phases are displayed in the correct order based on phaseOrderNumber
   const orderedPhases = enforceStandardPhaseOrdering(deduplicatedPhases, standardProjectPhases);
@@ -231,6 +245,19 @@ export default function EditWorkflowView({
       }
     });
   }
+  
+  // CRITICAL: Restore preserved order numbers from currentProject.phases
+  // This ensures order numbers set in StructureManager are preserved
+  orderedPhases.forEach(phase => {
+    // Try to restore by ID first, then by name
+    const preservedOrder = preservedOrderNumbers.get(phase.id) || (phase.name ? preservedOrderNumbers.get(phase.name) : undefined);
+    if (preservedOrder !== undefined) {
+      // Only restore if it's not a standard phase with a reserved position, or if we're in Edit Standard
+      if (isEditingStandardProject || !isStandardPhase(phase) || phase.isLinked) {
+        phase.phaseOrderNumber = preservedOrder;
+      }
+    }
+  });
   
   // CRITICAL: Sort by order number to ensure correct display order
   const displayPhases = sortPhasesByOrderNumber(orderedPhases);
