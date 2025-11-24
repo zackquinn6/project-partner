@@ -279,10 +279,41 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           usedNumbers.add(candidateNumber);
         }
       } else {
-        // Custom and linked phases get consecutive numbers
-        // Find the next available number that's not already used
+        // CRITICAL: Project phases (custom and linked) must avoid standard phase order numbers
+        // First, collect reserved order numbers from standard phases
+        const reservedByStandardPhases = new Set<string | number>();
+        if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+          standardProjectPhases.forEach(stdPhase => {
+            if (stdPhase.phaseOrderNumber !== undefined) {
+              if (stdPhase.phaseOrderNumber === 'first') {
+                reservedByStandardPhases.add('first');
+              } else if (stdPhase.phaseOrderNumber === 'last') {
+                reservedByStandardPhases.add('last');
+              } else if (typeof stdPhase.phaseOrderNumber === 'number') {
+                reservedByStandardPhases.add(stdPhase.phaseOrderNumber);
+              }
+            }
+          });
+        }
+        // Also check current phases for standard phase order numbers
+        phases.forEach(p => {
+          if (isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber !== undefined) {
+            if (p.phaseOrderNumber === 'first') {
+              reservedByStandardPhases.add('first');
+            } else if (p.phaseOrderNumber === 'last') {
+              reservedByStandardPhases.add('last');
+            } else if (typeof p.phaseOrderNumber === 'number') {
+              reservedByStandardPhases.add(p.phaseOrderNumber);
+            }
+          }
+        });
+        
+        // Find the next available number that's not already used AND not reserved by standard phases
         let candidateNumber = 1;
-        while (usedNumbers.has(candidateNumber) && candidateNumber <= phases.length + 10) {
+        while (
+          (usedNumbers.has(candidateNumber) || reservedByStandardPhases.has(candidateNumber)) && 
+          candidateNumber <= phases.length + 100
+        ) {
           candidateNumber++;
         }
         phase.phaseOrderNumber = candidateNumber;
