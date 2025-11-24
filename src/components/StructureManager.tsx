@@ -262,6 +262,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // Second pass: assign order numbers based on actual position in the array
     // Standard phases with 'first' or 'last' should keep those values
     return phases.map((phase, index) => {
+      // CRITICAL: Always preserve 'first' and 'last' designations - never reassign them
+      if (phase.phaseOrderNumber === 'first' && index === 0) {
+        // First phase with 'first' designation - always preserve
+        return phase;
+      }
+      if (phase.phaseOrderNumber === 'last' && index === phases.length - 1) {
+        // Last phase with 'last' designation - always preserve
+        return phase;
+      }
+      
       // If phase already has an order number, preserve it (unless it's a duplicate)
       if (phase.phaseOrderNumber !== undefined) {
         // Check if this order number is already used by another phase
@@ -1409,18 +1419,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       // Preserve existing order numbers before applying ensureUniqueOrderNumbers
+      // CRITICAL: Preserve 'first' and 'last' designations for all phases, not just incorporated
       const orderNumberMap = new Map(finalPhases.map(p => [p.id, p.phaseOrderNumber]));
       
       // THEN assign order numbers based on the correct order, but preserve existing ones
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       
-      // Restore preserved order numbers for incorporated phases
-      phasesWithUniqueOrder.forEach(phase => {
-        if (phase.isLinked && orderNumberMap.has(phase.id)) {
-          const preservedOrder = orderNumberMap.get(phase.id);
-          if (preservedOrder !== undefined) {
+      // Restore preserved order numbers for ALL phases, especially 'first' and 'last'
+      phasesWithUniqueOrder.forEach((phase, index) => {
+        const preservedOrder = orderNumberMap.get(phase.id);
+        if (preservedOrder !== undefined) {
+          // CRITICAL: Always restore 'first' and 'last' designations
+          if (preservedOrder === 'first' || preservedOrder === 'last') {
+            phase.phaseOrderNumber = preservedOrder;
+          } else if (phase.isLinked) {
+            // For incorporated phases, restore their order number
             phase.phaseOrderNumber = preservedOrder;
           }
+          // For other phases, ensureUniqueOrderNumbers has already assigned correct numbers
         }
       });
       
