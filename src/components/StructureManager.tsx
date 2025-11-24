@@ -2876,6 +2876,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           updatedAt: new Date()
         };
         updateProject(updatedProject);
+        
+        // CRITICAL: Refetch dynamic phases from database to ensure data is accurate
+        console.log('🔄 Refetching dynamic phases after incorporated phase deletion');
+        await refetchDynamicPhases();
+        console.log('✅ Dynamic phases refetched after incorporated phase deletion');
       } else {
         // For regular phases, delete from database tables
         // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
