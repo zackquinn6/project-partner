@@ -293,6 +293,57 @@ export type Database = {
         }
         Relationships: []
       }
+      contractor_phase_assignments: {
+        Row: {
+          assigned_at: string
+          contractor_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          phase_id: string | null
+          phase_name: string
+          project_run_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          contractor_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phase_id?: string | null
+          phase_name: string
+          project_run_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          contractor_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phase_id?: string | null
+          phase_name?: string
+          project_run_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_phase_assignments_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "user_contractors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_phase_assignments_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decision_tree_conditions: {
         Row: {
           condition_data: Json
@@ -2544,6 +2595,50 @@ export type Database = {
           },
         ]
       }
+      project_run_phase_assignments: {
+        Row: {
+          created_at: string | null
+          id: string
+          person_id: string
+          phase_id: string
+          project_run_id: string
+          scheduled_date: string | null
+          scheduled_hours: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          person_id: string
+          phase_id: string
+          project_run_id: string
+          scheduled_date?: string | null
+          scheduled_hours?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          person_id?: string
+          phase_id?: string
+          project_run_id?: string
+          scheduled_date?: string | null
+          scheduled_hours?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_phase_assignments_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_run_risks: {
         Row: {
           created_at: string
@@ -2610,15 +2705,59 @@ export type Database = {
           },
         ]
       }
+      project_run_space_sizing: {
+        Row: {
+          created_at: string
+          id: string
+          scaling_unit: string
+          size_value: number
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          scaling_unit: string
+          size_value: number
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          scaling_unit?: string
+          size_value?: number
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_space_sizing_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "project_run_spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_run_space_sizing_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "space_sizing_view"
+            referencedColumns: ["space_id"]
+          },
+        ]
+      }
       project_run_spaces: {
         Row: {
           created_at: string
           home_space_id: string | null
           id: string
           is_from_home: boolean
+          priority: number | null
           project_run_id: string
           scale_unit: string | null
           scale_value: number | null
+          sizing_values: Json | null
           space_name: string
           space_type: string
           updated_at: string
@@ -2628,9 +2767,11 @@ export type Database = {
           home_space_id?: string | null
           id?: string
           is_from_home?: boolean
+          priority?: number | null
           project_run_id: string
           scale_unit?: string | null
           scale_value?: number | null
+          sizing_values?: Json | null
           space_name: string
           space_type?: string
           updated_at?: string
@@ -2640,9 +2781,11 @@ export type Database = {
           home_space_id?: string | null
           id?: string
           is_from_home?: boolean
+          priority?: number | null
           project_run_id?: string
           scale_unit?: string | null
           scale_value?: number | null
+          sizing_values?: Json | null
           space_name?: string
           space_type?: string
           updated_at?: string
@@ -2723,6 +2866,7 @@ export type Database = {
           budget_data: Json | null
           category: string | null
           completed_steps: Json
+          completion_priority: string | null
           created_at: string
           current_operation_id: string | null
           current_phase_id: string | null
@@ -2766,6 +2910,7 @@ export type Database = {
           budget_data?: Json | null
           category?: string | null
           completed_steps?: Json
+          completion_priority?: string | null
           created_at?: string
           current_operation_id?: string | null
           current_phase_id?: string | null
@@ -2809,6 +2954,7 @@ export type Database = {
           budget_data?: Json | null
           category?: string | null
           completed_steps?: Json
+          completion_priority?: string | null
           created_at?: string
           current_operation_id?: string | null
           current_phase_id?: string | null
@@ -2886,6 +3032,7 @@ export type Database = {
           end_date: string | null
           estimated_time: string | null
           estimated_time_per_unit: number | null
+          estimated_total_time: string | null
           id: string
           image: string | null
           images: string[] | null
@@ -2908,6 +3055,7 @@ export type Database = {
           scaling_unit: string | null
           skill_level: string | null
           start_date: string
+          typical_project_size: number | null
           updated_at: string
         }
         Insert: {
@@ -2924,6 +3072,7 @@ export type Database = {
           end_date?: string | null
           estimated_time?: string | null
           estimated_time_per_unit?: number | null
+          estimated_total_time?: string | null
           id?: string
           image?: string | null
           images?: string[] | null
@@ -2946,6 +3095,7 @@ export type Database = {
           scaling_unit?: string | null
           skill_level?: string | null
           start_date?: string
+          typical_project_size?: number | null
           updated_at?: string
         }
         Update: {
@@ -2962,6 +3112,7 @@ export type Database = {
           end_date?: string | null
           estimated_time?: string | null
           estimated_time_per_unit?: number | null
+          estimated_total_time?: string | null
           id?: string
           image?: string | null
           images?: string[] | null
@@ -2984,6 +3135,7 @@ export type Database = {
           scaling_unit?: string | null
           skill_level?: string | null
           start_date?: string
+          typical_project_size?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -3074,6 +3226,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "project_run_spaces"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scaled_step_progress_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "space_sizing_view"
+            referencedColumns: ["space_id"]
           },
         ]
       }
@@ -3652,12 +3811,17 @@ export type Database = {
           materials: Json | null
           operation_id: string
           outputs: Json | null
+          skill_level: string | null
           step_number: number
           step_title: string
           step_type: string | null
           step_type_id: string | null
+          time_estimate_high: number | null
+          time_estimate_low: number | null
+          time_estimate_medium: number | null
           tools: Json | null
           updated_at: string | null
+          workers_needed: number | null
         }
         Insert: {
           apps?: Json | null
@@ -3671,12 +3835,17 @@ export type Database = {
           materials?: Json | null
           operation_id: string
           outputs?: Json | null
+          skill_level?: string | null
           step_number: number
           step_title: string
           step_type?: string | null
           step_type_id?: string | null
+          time_estimate_high?: number | null
+          time_estimate_low?: number | null
+          time_estimate_medium?: number | null
           tools?: Json | null
           updated_at?: string | null
+          workers_needed?: number | null
         }
         Update: {
           apps?: Json | null
@@ -3690,12 +3859,17 @@ export type Database = {
           materials?: Json | null
           operation_id?: string
           outputs?: Json | null
+          skill_level?: string | null
           step_number?: number
           step_title?: string
           step_type?: string | null
           step_type_id?: string | null
+          time_estimate_high?: number | null
+          time_estimate_low?: number | null
+          time_estimate_medium?: number | null
           tools?: Json | null
           updated_at?: string | null
+          workers_needed?: number | null
         }
         Relationships: [
           {
@@ -3859,6 +4033,66 @@ export type Database = {
           },
         ]
       }
+      user_contractors: {
+        Row: {
+          availability_dates: Json | null
+          availability_mode: string
+          company_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          cost_per_hour: number | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          specialty: string | null
+          updated_at: string
+          user_id: string
+          weekdays_after_five_pm: boolean
+          weekends_only: boolean
+          working_hours_end: string
+          working_hours_start: string
+        }
+        Insert: {
+          availability_dates?: Json | null
+          availability_mode?: string
+          company_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          cost_per_hour?: number | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          specialty?: string | null
+          updated_at?: string
+          user_id: string
+          weekdays_after_five_pm?: boolean
+          weekends_only?: boolean
+          working_hours_end?: string
+          working_hours_start?: string
+        }
+        Update: {
+          availability_dates?: Json | null
+          availability_mode?: string
+          company_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          cost_per_hour?: number | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string
+          weekdays_after_five_pm?: boolean
+          weekends_only?: boolean
+          working_hours_end?: string
+          working_hours_start?: string
+        }
+        Relationships: []
+      }
       user_maintenance_tasks: {
         Row: {
           category: string
@@ -3966,6 +4200,72 @@ export type Database = {
           session_start?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_team_members: {
+        Row: {
+          availability_dates: Json | null
+          availability_mode: string
+          cost_per_hour: number | null
+          created_at: string
+          effort_level: string
+          email: string | null
+          id: string
+          max_total_hours: number
+          name: string
+          notification_preferences: Json | null
+          phone: string | null
+          skill_level: string
+          type: string
+          updated_at: string
+          user_id: string
+          weekdays_after_five_pm: boolean
+          weekends_only: boolean
+          working_hours_end: string
+          working_hours_start: string
+        }
+        Insert: {
+          availability_dates?: Json | null
+          availability_mode?: string
+          cost_per_hour?: number | null
+          created_at?: string
+          effort_level?: string
+          email?: string | null
+          id?: string
+          max_total_hours?: number
+          name: string
+          notification_preferences?: Json | null
+          phone?: string | null
+          skill_level?: string
+          type?: string
+          updated_at?: string
+          user_id: string
+          weekdays_after_five_pm?: boolean
+          weekends_only?: boolean
+          working_hours_end?: string
+          working_hours_start?: string
+        }
+        Update: {
+          availability_dates?: Json | null
+          availability_mode?: string
+          cost_per_hour?: number | null
+          created_at?: string
+          effort_level?: string
+          email?: string | null
+          id?: string
+          max_total_hours?: number
+          name?: string
+          notification_preferences?: Json | null
+          phone?: string | null
+          skill_level?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          weekdays_after_five_pm?: boolean
+          weekends_only?: boolean
+          working_hours_end?: string
+          working_hours_start?: string
         }
         Relationships: []
       }
@@ -4087,6 +4387,7 @@ export type Database = {
           item_type: string
           name: string
           photo_url: string | null
+          quick_add: boolean | null
           sku: string | null
           updated_at: string
           warning_flags: string[] | null
@@ -4103,6 +4404,7 @@ export type Database = {
           item_type: string
           name: string
           photo_url?: string | null
+          quick_add?: boolean | null
           sku?: string | null
           updated_at?: string
           warning_flags?: string[] | null
@@ -4119,6 +4421,7 @@ export type Database = {
           item_type?: string
           name?: string
           photo_url?: string | null
+          quick_add?: boolean | null
           sku?: string | null
           updated_at?: string
           warning_flags?: string[] | null
@@ -4556,6 +4859,7 @@ export type Database = {
           end_date: string | null
           estimated_time: string | null
           estimated_time_per_unit: number | null
+          estimated_total_time: string | null
           id: string | null
           image: string | null
           images: string[] | null
@@ -4578,83 +4882,8 @@ export type Database = {
           scaling_unit: string | null
           skill_level: string | null
           start_date: string | null
+          typical_project_size: number | null
           updated_at: string | null
-        }
-        Insert: {
-          archived_at?: string | null
-          beta_released_at?: string | null
-          category?: string[] | null
-          cover_image?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          created_from_revision?: number | null
-          description?: string | null
-          difficulty?: string | null
-          effort_level?: string | null
-          end_date?: string | null
-          estimated_time?: string | null
-          estimated_time_per_unit?: number | null
-          id?: string | null
-          image?: string | null
-          images?: string[] | null
-          is_current_version?: boolean | null
-          is_standard_template?: boolean | null
-          item_type?: string | null
-          name?: string | null
-          owner_id?: string | null
-          parent_project_id?: string | null
-          phase_revision_alerts?: Json | null
-          phases?: never
-          plan_end_date?: string | null
-          project_challenges?: string | null
-          project_type?: string | null
-          publish_status?: string | null
-          published_at?: string | null
-          release_notes?: string | null
-          revision_notes?: string | null
-          revision_number?: number | null
-          scaling_unit?: string | null
-          skill_level?: string | null
-          start_date?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          archived_at?: string | null
-          beta_released_at?: string | null
-          category?: string[] | null
-          cover_image?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          created_from_revision?: number | null
-          description?: string | null
-          difficulty?: string | null
-          effort_level?: string | null
-          end_date?: string | null
-          estimated_time?: string | null
-          estimated_time_per_unit?: number | null
-          id?: string | null
-          image?: string | null
-          images?: string[] | null
-          is_current_version?: boolean | null
-          is_standard_template?: boolean | null
-          item_type?: string | null
-          name?: string | null
-          owner_id?: string | null
-          parent_project_id?: string | null
-          phase_revision_alerts?: Json | null
-          phases?: never
-          plan_end_date?: string | null
-          project_challenges?: string | null
-          project_type?: string | null
-          publish_status?: string | null
-          published_at?: string | null
-          release_notes?: string | null
-          revision_notes?: string | null
-          revision_number?: number | null
-          scaling_unit?: string | null
-          skill_level?: string | null
-          start_date?: string | null
-          updated_at?: string | null
         }
         Relationships: [
           {
@@ -4672,6 +4901,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      space_sizing_view: {
+        Row: {
+          priority: number | null
+          project_run_id: string | null
+          scaling_unit: string | null
+          size_value: number | null
+          sizing_created_at: string | null
+          sizing_updated_at: string | null
+          space_id: string | null
+          space_name: string | null
+          space_type: string | null
+        }
+        Relationships: []
       }
       step_materials_detail: {
         Row: {
@@ -5141,7 +5384,7 @@ export type Database = {
       migrate_phases_from_json_to_table: { Args: never; Returns: undefined }
       migrate_tools_from_jsonb_to_relational: { Args: never; Returns: number }
       rebuild_phases_json_from_project_phases: {
-        Args: { p_project_id: string }
+        Args: { p_default_skill_level?: string; p_project_id: string }
         Returns: Json
       }
       rebuild_phases_json_from_templates: {
