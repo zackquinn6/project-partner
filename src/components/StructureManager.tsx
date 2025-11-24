@@ -408,30 +408,39 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           };
         }
         
-        // If phase is not in currentProject.phases, it's a newly added phase
-        // Set isStandard based on whether we're editing Standard Project Foundation
-        // - When editing Standard Project Foundation: new phases should be isStandard: true
-        // - When editing regular templates: new phases should ALWAYS be isStandard: false
-        if (isEditingStandardProject) {
-          // When editing Standard Project Foundation, new phases become standard
-          return {
-            ...rebuiltPhase,
-            isStandard: true
-          };
-        } else {
-          // When editing regular templates, new phases are ALWAYS custom (isStandard: false)
-          // CRITICAL: Explicitly override any isStandard value from the database
-          console.log('🔵 Overriding isStandard to false for new phase in regular template:', {
-            phaseId: rebuiltPhase.id,
-            phaseName: rebuiltPhase.name,
-            databaseIsStandard: rebuiltPhase.isStandard,
-            isEditingStandardProject
-          });
-          return {
-            ...rebuiltPhase,
-            isStandard: false // Force to false for regular templates, regardless of database value
-          };
+        // If phase is not in currentProject.phases, check if it's a newly added phase
+        // CRITICAL: New phases in regular templates are ALWAYS non-standard
+        // Only phases in Standard Project Foundation can be standard
+        const isNewlyAddedPhase = justAddedPhaseId && rebuiltPhase.id === justAddedPhaseId;
+        
+        if (isNewlyAddedPhase) {
+          // This is a newly added phase - set isStandard based on editing mode
+          if (isEditingStandardProject) {
+            // When editing Standard Project Foundation, new phases become standard
+            return {
+              ...rebuiltPhase,
+              isStandard: true
+            };
+          } else {
+            // When editing regular templates, new phases are ALWAYS custom (isStandard: false)
+            // CRITICAL: Explicitly override any isStandard value from the database
+            console.log('🔵 Overriding isStandard to false for newly added phase in regular template:', {
+              phaseId: rebuiltPhase.id,
+              phaseName: rebuiltPhase.name,
+              databaseIsStandard: rebuiltPhase.isStandard,
+              isEditingStandardProject,
+              justAddedPhaseId
+            });
+            return {
+              ...rebuiltPhase,
+              isStandard: false // Force to false for regular templates, regardless of database value
+            };
+          }
         }
+        
+        // For existing phases not in currentProject.phases, preserve their isStandard flag
+        // These are likely standard phases from the Standard Project Foundation
+        return rebuiltPhase;
       });
       
       // Get phases from currentProject.phases that aren't in rebuilt phases
@@ -3074,8 +3083,41 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                           <CardHeader className="py-1 px-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1 flex-1">
-                                {/* Show reorder buttons only for non-standard phases, or standard phases when editing Standard Project Foundation */}
-                                {(!phaseIsStandard || (phaseIsStandard && isEditingStandardProject)) && !isLinkedPhase ? (
+                                {/* Reorder buttons visibility:
+                                    - Standard phases in regular projects: NO buttons (locked)
+                                    - Standard phases in Edit Standard: Show buttons
+                                    - Non-standard phases: Show buttons
+                                    - Incorporated phases: Show buttons (can reorder but must respect standard order)
+                                */}
+                                {isLinkedPhase ? (
+                                  // Incorporated phases: Show reorder buttons
+                                  <div className="flex flex-col gap-0.5">
+                                    {reorderingPhaseId === phase.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                                    ) : (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-4 w-4 p-0"
+                                          onClick={() => movePhase(phase.id, 'up')}
+                                          disabled={!canMoveUp || reorderingPhaseId !== null}
+                                        >
+                                          <ChevronUp className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-4 w-4 p-0"
+                                          onClick={() => movePhase(phase.id, 'down')}
+                                          disabled={!canMoveDown || reorderingPhaseId !== null}
+                                        >
+                                          <ChevronDown className="w-3 h-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                ) : (!phaseIsStandard || (phaseIsStandard && isEditingStandardProject)) ? (
                                   <div className="flex flex-col gap-0.5">
                                     {reorderingPhaseId === phase.id ? (
                                       <Loader2 className="w-3 h-3 animate-spin text-primary" />
@@ -3127,9 +3169,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                           {expandedPhases.has(phase.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                                         </Button>
                                         {/* Phase Order Number */}
-                                        {/* Show dropdown only for standard phases when editing Standard Project Foundation, or for non-standard phases */}
+                                        {/* Show dropdown:
+                                            - Standard phases in regular projects: NO dropdown (locked, show read-only)
+                                            - Standard phases in Edit Standard: Show dropdown
+                                            - Non-standard phases: Show dropdown
+                                            - Incorporated phases: Show dropdown (can change but must respect standard order)
+                                        */}
                                         <div className="flex items-center gap-1 mr-1">
-                                          {((phaseIsStandard && isEditingStandardProject) || !phaseIsStandard) && !isLinkedPhase ? (
+                                          {isLinkedPhase ? (
+                                            // Incorporated phases: Show dropdown
+                                            <Select
+                                              value={String(getPhaseOrderNumber(phase, phaseIndex, displayPhases.length))}
+                                              onValueChange={(value) => {
+                                                const newOrder = value === 'First' ? 'First' : value === 'Last' ? 'Last' : parseInt(value, 10);
+                                                handlePhaseOrderChange(phase.id, newOrder);
+                                              }}
+                                            >
+                                              <SelectTrigger className="w-16 h-5 text-xs px-1">
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                {getAvailableOrderNumbers(phase, phaseIndex, displayPhases.length).map((order) => (
+                                                  <SelectItem key={String(order)} value={String(order)}>
+                                                    {String(order)}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                          ) : ((phaseIsStandard && isEditingStandardProject) || !phaseIsStandard) ? (
                                             <Select
                                               value={String(getPhaseOrderNumber(phase, phaseIndex, displayPhases.length))}
                                               onValueChange={(value) => {
@@ -3171,14 +3238,30 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                  <div className="flex items-center gap-2">
                                   <Badge variant="outline">{phase.operations.length} operations</Badge>
                                   
-                                  {/* Show edit/delete buttons for non-incorporated phases */}
-                                  {(!phaseIsStandard || isEditingStandardProject) && !isLinkedPhase && (
+                                  {/* Button visibility rules:
+                                      - Standard phases in regular projects: NO buttons (locked)
+                                      - Standard phases in Edit Standard: Show edit/delete buttons
+                                      - Non-standard phases: Show edit/delete buttons
+                                      - Incorporated (linked) phases: Show delete button, NO edit button, reorder buttons shown above
+                                  */}
+                                  {isLinkedPhase ? (
+                                    // Incorporated phases: Show delete button only (no edit)
+                                    <>
+                                      <Button size="sm" variant="ghost" onClick={() => handleDeletePhaseClick(phase.id)}>
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </>
+                                  ) : phaseIsStandard && !isEditingStandardProject ? (
+                                    // Standard phases in regular projects: NO buttons (locked)
+                                    null
+                                  ) : (
+                                    // Non-standard phases OR standard phases in Edit Standard: Show edit/delete buttons
                                     <>
                                       {!phaseIsStandard && <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
                                         <Copy className="w-4 h-4" />
                                       </Button>}
                                       
-                                      {clipboard?.type === 'phase' && !isStandardPhase && <Button size="sm" variant="ghost" onClick={() => pasteItem('phase')}>
+                                      {clipboard?.type === 'phase' && !phaseIsStandard && <Button size="sm" variant="ghost" onClick={() => pasteItem('phase')}>
                                           <Clipboard className="w-4 h-4" />
                                         </Button>}
                                       
@@ -3193,19 +3276,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                           <Button size="sm" variant="ghost" onClick={() => startEdit('phase', phase.id, phase)}>
                                             <Edit className="w-4 h-4" />
                                           </Button>
-                                          
                                           <Button size="sm" variant="ghost" onClick={() => handleDeletePhaseClick(phase.id)}>
                                             <Trash2 className="w-4 h-4" />
                                           </Button>
                                         </>}
                                     </>
-                                  )}
-                                  
-                                  {/* Show delete button only for incorporated phases (no edit) */}
-                                  {isLinkedPhase && (
-                                    <Button size="sm" variant="ghost" onClick={() => handleDeletePhaseClick(phase.id)}>
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
                                   )}
                                 </div>
                             </div>
