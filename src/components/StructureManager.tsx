@@ -258,6 +258,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       if (isStandardPhase(phase)) {
+        // CRITICAL: Always preserve 'first' and 'last' if already set
+        if (phase.phaseOrderNumber === 'first') {
+          usedNumbers.add('first');
+          return phase;
+        }
+        if (phase.phaseOrderNumber === 'last') {
+          usedNumbers.add('last');
+          return phase;
+        }
+        
         // Standard phases get special order numbers based on position rules
         // If it's the first phase and doesn't have an order number, assign 'first'
         if (index === 0 && phase.phaseOrderNumber === undefined) {
@@ -639,7 +649,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     setDisplayPhases(phasesToDisplay);
-    setPhasesLoaded(true);
+      setPhasesLoaded(true);
       
     // Update local context with fresh phases ONLY if phases actually changed
     // This prevents infinite loops from updateProject triggering re-renders
@@ -658,12 +668,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           oldCount: currentProject.phases?.length || 0,
           newCount: processedPhases.length
         });
-        updateProject({
-          ...currentProject,
-          phases: processedPhases,
-          updatedAt: new Date()
-        });
-      }
+      updateProject({
+        ...currentProject,
+        phases: processedPhases,
+        updatedAt: new Date()
+      });
+    }
     }
   }, [processedPhases, rebuildingPhases, currentProject?.id, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId, skipNextRefresh, isAddingPhase, isDeletingPhase, phaseToDelete]);
 
@@ -1352,25 +1362,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const displayOrder = phaseDisplayOrderMap.get(phase.id) ?? i;
         
         // Update project_phases table for all phases (including standard phases in Edit Standard mode)
-        const updatePromise = (async () => {
-          const { data: phaseData } = await supabase
-            .from('project_phases')
-            .select('id')
-            .eq('id', phase.id)
-            .eq('project_id', currentProject.id)
-            .maybeSingle();
-          
-          if (phaseData) {
-            await supabase
+          const updatePromise = (async () => {
+            const { data: phaseData } = await supabase
               .from('project_phases')
-              .update({ 
-                display_order: displayOrder,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', phaseData.id);
-          }
-        })();
-        finalUpdatePromises.push(updatePromise);
+              .select('id')
+              .eq('id', phase.id)
+              .eq('project_id', currentProject.id)
+              .maybeSingle();
+            
+            if (phaseData) {
+              await supabase
+                .from('project_phases')
+                .update({ 
+                  display_order: displayOrder,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', phaseData.id);
+            }
+          })();
+          finalUpdatePromises.push(updatePromise);
       }
       
       await Promise.all(finalUpdatePromises);
@@ -1433,8 +1443,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // Restore preserved order numbers for ALL phases, especially 'first' and 'last'
       phasesWithUniqueOrder.forEach((phase, index) => {
-        const preservedOrder = orderNumberMap.get(phase.id);
-        if (preservedOrder !== undefined) {
+          const preservedOrder = orderNumberMap.get(phase.id);
+          if (preservedOrder !== undefined) {
           // CRITICAL: Always restore 'first' and 'last' designations from the original input
           if (preservedOrder === 'first' || preservedOrder === 'last') {
             phase.phaseOrderNumber = preservedOrder;
@@ -1862,7 +1872,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // THEN assign order numbers based on the correct order
       // CRITICAL: In Edit Standard mode, preserve the order number we just set for the new phase
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
-      
+
       // CRITICAL: Set isStandard flag correctly based on whether we're editing Standard Project Foundation
       // - When editing Standard Project Foundation (isEditingStandardProject = true): 
       //   Newly added phases should be isStandard: true (they become part of the standard foundation)
@@ -2748,7 +2758,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const orderedPhases = enforceStandardPhaseOrdering(phasesWithoutDeleted, standardProjectPhases);
         // THEN assign order numbers based on the correct order
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
-        
+
         // CRITICAL: Sort by order number to maintain correct order
         const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
 
@@ -2808,7 +2818,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Keep skipNextRefresh true a bit longer to ensure all async operations complete
         setTimeout(() => {
           setSkipNextRefresh(false);
-        }, 500);
+      }, 500);
       }, 2000); // Longer delay to ensure refetch completes and UI is stable
     } catch (error) {
       console.error('Error deleting phase:', error);
