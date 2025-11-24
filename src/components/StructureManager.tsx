@@ -3358,13 +3358,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           });
           try {
             // CRITICAL: Wait a bit to ensure deletion has fully committed before rebuilding
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 300));
             
             await updatePhaseOrder(phasesWithoutDeleted);
             console.log('✅ Phase order updated in database after deletion, order numbers preserved');
             
-            // CRITICAL: After updatePhaseOrder, refetch to get fresh data that doesn't include deleted phase
-            // This ensures useDynamicPhases gets the correct data
+            // CRITICAL: After updatePhaseOrder, wait a bit more then refetch to get fresh data
+            // This ensures useDynamicPhases gets the correct data without the deleted phase
+            await new Promise(resolve => setTimeout(resolve, 200));
             await refetchDynamicPhases();
             console.log('✅ Refetched dynamic phases after deletion to ensure deleted phase is gone');
           } catch (error) {
