@@ -3020,20 +3020,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // CRITICAL: Force refetch of dynamic phases to ensure UI is in sync with database
       // This ensures useDynamicPhases gets fresh data without the deleted phase
-      console.log('🔄 Refetching dynamic phases after deletion...');
+      // This prevents duplicate phases and ensures order numbers are correct
+      console.log('🔄 Refetching dynamic phases after deletion to ensure data accuracy...');
       await refetchDynamicPhases();
+      console.log('✅ Dynamic phases refetched after deletion');
       
-      // CRITICAL: Clear deletion state after a delay to prevent double refresh
-      // The phase is already deleted from database and displayPhases is already updated
-      // Keep skipNextRefresh active longer to prevent any useEffect from triggering
+      // CRITICAL: Clear deletion state after refetch completes
+      // Clear skipNextRefresh to allow useEffect to update displayPhases with fresh data from database
       setTimeout(() => {
         setPhaseToDelete(null);
         setIsDeletingPhase(false);
-        // Keep skipNextRefresh true a bit longer to ensure all async operations complete
-        setTimeout(() => {
-          setSkipNextRefresh(false);
-      }, 500);
-      }, 2000); // Longer delay to ensure refetch completes and UI is stable
+        // Clear skipNextRefresh to allow useEffect to refresh with database data
+        setSkipNextRefresh(false);
+      }, 500); // Short delay to ensure refetch completes
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
