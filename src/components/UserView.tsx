@@ -403,10 +403,26 @@ export default function UserView({
   let rawWorkflowPhases: Phase[] = [];
   if (currentProjectRun) {
     // Project runs: use immutable snapshot from project_runs.phases
-    rawWorkflowPhases = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
+    // Phases might be stored as JSON string, so parse if needed
+    let parsedPhases: Phase[] = [];
+    try {
+      if (Array.isArray(currentProjectRun.phases)) {
+        parsedPhases = currentProjectRun.phases;
+      } else if (typeof currentProjectRun.phases === 'string') {
+        parsedPhases = JSON.parse(currentProjectRun.phases);
+      } else if (currentProjectRun.phases) {
+        // Might already be parsed object
+        parsedPhases = currentProjectRun.phases as Phase[];
+      }
+    } catch (e) {
+      console.error('❌ Error parsing project run phases:', e, currentProjectRun.phases);
+      parsedPhases = [];
+    }
+    rawWorkflowPhases = Array.isArray(parsedPhases) ? parsedPhases : [];
     console.log('📦 Using project run phases:', {
       runId: currentProjectRun.id,
       phasesLength: rawWorkflowPhases.length,
+      phasesType: typeof currentProjectRun.phases,
       phasesIsArray: Array.isArray(currentProjectRun.phases),
       rawPhases: currentProjectRun.phases
     });
@@ -2335,8 +2351,35 @@ export default function UserView({
   }
   
   // Only show "under construction" if there are literally no phases at all
-  // Check both activeProject.phases and workflowPhases to ensure we catch all cases
-  const hasPhases = (activeProject?.phases?.length ?? 0) > 0 || workflowPhases.length > 0;
+  // Check multiple sources to ensure we catch all cases:
+  // 1. activeProject.phases (direct from project/project run)
+  // 2. rawWorkflowPhases (before ordering - most reliable)
+  // 3. workflowPhases (after ordering)
+  let activeProjectPhasesCount = 0;
+  if (activeProject?.phases) {
+    if (Array.isArray(activeProject.phases)) {
+      activeProjectPhasesCount = activeProject.phases.length;
+    } else if (typeof activeProject.phases === 'string') {
+      try {
+        const parsed = JSON.parse(activeProject.phases);
+        activeProjectPhasesCount = Array.isArray(parsed) ? parsed.length : 0;
+      } catch (e) {
+        console.error('Error parsing activeProject.phases:', e);
+      }
+    }
+  }
+  
+  const hasPhases = activeProjectPhasesCount > 0 || rawWorkflowPhases.length > 0 || workflowPhases.length > 0;
+  
+  console.log('🔍 Phase detection check:', {
+    activeProjectPhasesCount,
+    rawWorkflowPhasesLength: rawWorkflowPhases.length,
+    workflowPhasesLength: workflowPhases.length,
+    hasPhases,
+    currentProjectRunId: currentProjectRun?.id,
+    currentProjectId: currentProject?.id,
+    activeProjectId: activeProject?.id
+  });
   
   // If there are no phases at all, show "under construction"
   // If there are phases, show the workflow (even if steps aren't organized yet)
