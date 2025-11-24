@@ -2542,7 +2542,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return;
     }
 
-    setPhaseToDelete(phaseId);
+    // CRITICAL: Store the phase ID to delete, but don't set phaseToDelete yet
+    // phaseToDelete triggers filtering - only set it when user confirms deletion
+    // Store the ID in phaseIdPendingDelete which doesn't trigger filtering
+    setPhaseIdPendingDelete(phaseId);
     setDeletePhaseDialogOpen(true);
   };
 
@@ -2730,6 +2733,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       toast.success('Phase deleted');
       setDeletePhaseDialogOpen(false);
+      setPhaseIdPendingDelete(null); // Clear pending delete ID
       
       // CRITICAL: Clear deletion state after a delay to prevent double refresh
       // The phase is already deleted from database and displayPhases is already updated
@@ -3792,7 +3796,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       <PhaseIncorporationDialog open={showIncorporationDialog} onOpenChange={setShowIncorporationDialog} onIncorporatePhase={handleIncorporatePhase} />
 
       {/* Delete Phase Confirmation Dialog */}
-      <AlertDialog open={deletePhaseDialogOpen} onOpenChange={setDeletePhaseDialogOpen}>
+      <AlertDialog open={deletePhaseDialogOpen} onOpenChange={(open) => {
+        setDeletePhaseDialogOpen(open);
+        // If dialog is closed without confirming, clear the pending delete ID
+        if (!open) {
+          setPhaseIdPendingDelete(null);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Phase</AlertDialogTitle>
