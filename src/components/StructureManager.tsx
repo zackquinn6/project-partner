@@ -1847,6 +1847,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
       
+      // CRITICAL: Ensure all phases have order numbers before saving
+      sortedPhases.forEach((phase, index) => {
+        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+          // Assign order number based on position
+          if (index === 0) {
+            phase.phaseOrderNumber = 'first';
+          } else if (index === sortedPhases.length - 1) {
+            // Check if this should be 'last' (only if it's a standard phase in regular projects)
+            if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+              phase.phaseOrderNumber = 'last';
+            } else {
+              phase.phaseOrderNumber = index + 1;
+            }
+          } else {
+            phase.phaseOrderNumber = index + 1;
+          }
+          console.log('🔧 Assigned missing order number in updatePhaseOrder:', {
+            phaseName: phase.name,
+            phaseId: phase.id,
+            assignedOrder: phase.phaseOrderNumber,
+            index
+          });
+        }
+      });
+      
       // Save final phases JSON to database - explicitly include phaseOrderNumber
       const phasesToSave = sortedPhases.map(phase => ({
         ...phase,
@@ -3848,7 +3873,33 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                   if (hasPendingOrderChanges && currentProject) {
                     try {
                       console.log('💾 Saving pending order changes to database...');
-                      await updatePhaseOrder(displayPhases);
+                      console.log('📋 Current displayPhases before saving:', {
+                        phases: displayPhases.map(p => ({ name: p.name, id: p.id, order: p.phaseOrderNumber }))
+                      });
+                      
+                      // CRITICAL: Ensure all phases have order numbers before saving
+                      const phasesToSave = displayPhases.map((phase, index) => {
+                        // If phase doesn't have order number, assign based on position
+                        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+                          if (index === 0) {
+                            phase.phaseOrderNumber = 'first';
+                          } else if (index === displayPhases.length - 1) {
+                            if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+                              phase.phaseOrderNumber = 'last';
+                            } else {
+                              phase.phaseOrderNumber = index + 1;
+                            }
+                          } else {
+                            phase.phaseOrderNumber = index + 1;
+                          }
+                        }
+                        return {
+                          ...phase,
+                          phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
+                        };
+                      });
+                      
+                      await updatePhaseOrder(phasesToSave);
                       setHasPendingOrderChanges(false);
                       console.log('✅ Order changes saved to database');
                       toast.success('Order changes saved');
