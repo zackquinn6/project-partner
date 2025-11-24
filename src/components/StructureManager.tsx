@@ -3198,6 +3198,27 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           });
         }
 
+        // CRITICAL: Preserve order numbers from displayPhases BEFORE deletion
+        // This ensures order numbers are maintained after rebuilding
+        const orderNumberMap = new Map<string, string | number>();
+        displayPhases.forEach(phase => {
+          if (phase.id !== phaseIdToDelete && phase.phaseOrderNumber !== undefined) {
+            // Try to match by ID first, then by name
+            orderNumberMap.set(phase.id, phase.phaseOrderNumber);
+            if (phase.name) {
+              orderNumberMap.set(phase.name, phase.phaseOrderNumber);
+            }
+          }
+        });
+        
+        console.log('🔒 Preserved order numbers before deletion:', {
+          count: orderNumberMap.size,
+          orders: Array.from(orderNumberMap.entries()).map(([key, order]) => ({
+            key,
+            order
+          }))
+        });
+
         // Rebuild phases JSON - this will NOT include the deleted phase since it's gone from project_phases
         const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
           p_project_id: currentProject.id
@@ -3229,6 +3250,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const orderedPhases = enforceStandardPhaseOrdering(phasesWithoutDeleted, standardProjectPhases);
         // THEN assign order numbers based on the correct order
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+        
+        // CRITICAL: Restore preserved order numbers from displayPhases
+        // This ensures order numbers are maintained after deletion
+        phasesWithUniqueOrder.forEach(phase => {
+          // Try to restore by ID first, then by name
+          const preservedOrder = orderNumberMap.get(phase.id) || (phase.name ? orderNumberMap.get(phase.name) : undefined);
+          if (preservedOrder !== undefined) {
+            // Only restore if it's not a standard phase with a reserved position, or if we're in Edit Standard
+            if (isEditingStandardProject || !isStandardPhase(phase) || phase.isLinked) {
+              phase.phaseOrderNumber = preservedOrder;
+              console.log('🔒 Restored order number for phase:', {
+                phaseName: phase.name,
+                phaseId: phase.id,
+                restoredOrder: preservedOrder
+              });
+            }
+          }
+        });
 
         // CRITICAL: Sort by order number to maintain correct order
         const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
@@ -3279,10 +3318,50 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
         setDisplayPhases(phasesToDisplay);
         
+        // CRITICAL: Ensure all phases have order numbers before saving
+        phasesToDisplay.forEach((phase, index) => {
+          if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+            // Assign order number based on position
+            if (index === 0) {
+              phase.phaseOrderNumber = 'first';
+            } else if (index === phasesToDisplay.length - 1) {
+              // Check if this should be 'last' (only if it's a standard phase in regular projects)
+              if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+                phase.phaseOrderNumber = 'last';
+              } else {
+                phase.phaseOrderNumber = index + 1;
+              }
+            } else {
+              phase.phaseOrderNumber = index + 1;
+            }
+            console.log('🔧 Assigned missing order number after deletion:', {
+              phaseName: phase.name,
+              phaseId: phase.id,
+              assignedOrder: phase.phaseOrderNumber,
+              index
+            });
+          }
+        });
+        
+        // CRITICAL: Explicitly include phaseOrderNumber in the JSON to ensure it's saved
+        const phasesToSave = phasesToDisplay.map(phase => ({
+          ...phase,
+          phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
+        }));
+        
+        console.log('📋 Phases with order numbers before saving after deletion:', {
+          phases: phasesToSave.map(p => ({ 
+            name: p.name, 
+            id: p.id,
+            order: p.phaseOrderNumber,
+            hasOrder: p.phaseOrderNumber !== undefined
+          }))
+        });
+        
         // Update project JSON - the deleted phase is already gone from database, this just updates the JSON
         const { error: updateError } = await supabase
           .from('projects')
-          .update({ phases: phasesToDisplay as any })
+          .update({ phases: phasesToSave as any })
           .eq('id', currentProject.id);
 
         if (updateError) {
