@@ -1516,6 +1516,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return;
     }
     
+    if (!currentProject) {
+      toast.error('No project selected');
+      return;
+    }
+    
     setIsAddingPhase(true);
     setSkipNextRefresh(true);
     const startTime = Date.now();
@@ -1527,20 +1532,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       isEditingStandardProject,
       isAddingPhase: true
     });
-    
-    if (!currentProject) {
-      toast.error('No project selected');
-      return;
-    }
-    
-    if (isAddingPhase) {
-      console.log('⚠️ Already adding phase, ignoring click');
-      return; // Prevent multiple clicks
-    }
-    
-    setIsAddingPhase(true);
-    const startTime = Date.now();
-    const minDisplayTime = 2000; // Minimum 2 seconds to show loading state
     
     try {
       // Get unique phase name by checking existing phases from the database
