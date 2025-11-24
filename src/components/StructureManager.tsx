@@ -3819,18 +3819,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               // - Not at the last position
               // - The phase after is not the last standard phase (in regular projects)
               // - Or if it's the last standard phase but we're in Edit Standard
-              canMoveDown = phaseIndex < displayPhases.length - 1 && (
-                isEditingStandardProject || // In Edit Standard, can always move down if not at end
-                (lastStandardPhaseIndex === -1) || // No last standard phase found, can move
-                (phaseIndex < lastStandardPhaseIndex - 1) || // Can move if more than one position before the last standard phase
-                (phaseIndex === lastStandardPhaseIndex - 1 && !isStandardPhase(displayPhases[phaseIndex + 1])) // Can move if next phase is not standard (edge case)
-              );
-              
-              // CRITICAL: If the next phase is the last standard phase, can't move down
-              if (!isEditingStandardProject && phaseIndex === lastStandardPhaseIndex - 1 && lastStandardPhaseIndex !== -1) {
-                const nextPhase = displayPhases[phaseIndex + 1];
-                if (isStandardPhase(nextPhase) && !nextPhase.isLinked && nextPhase.phaseOrderNumber === 'last') {
-                  canMoveDown = false;
+              if (isEditingStandardProject) {
+                // In Edit Standard, can always move down if not at end
+                canMoveDown = phaseIndex < displayPhases.length - 1;
+              } else {
+                // In regular projects, check if we can move past the last standard phase
+                if (lastStandardPhaseIndex === -1) {
+                  // No last standard phase found, can move freely
+                  canMoveDown = phaseIndex < displayPhases.length - 1;
+                } else {
+                  // Check if we're before the last standard phase
+                  if (phaseIndex < lastStandardPhaseIndex - 1) {
+                    // More than one position before the last standard phase, can move
+                    canMoveDown = true;
+                  } else if (phaseIndex === lastStandardPhaseIndex - 1) {
+                    // Immediately before the last standard phase - check if next phase is the last standard phase
+                    const nextPhase = displayPhases[phaseIndex + 1];
+                    if (isStandardPhase(nextPhase) && !nextPhase.isLinked && 
+                        (nextPhase.phaseOrderNumber === 'last' || phaseIndex + 1 === lastStandardPhaseIndex)) {
+                      // Next phase is the last standard phase, can't move down
+                      canMoveDown = false;
+                    } else {
+                      // Next phase is not the last standard phase, can move
+                      canMoveDown = true;
+                    }
+                  } else {
+                    // At or after the last standard phase, can't move down
+                    canMoveDown = false;
+                  }
                 }
               }
               
