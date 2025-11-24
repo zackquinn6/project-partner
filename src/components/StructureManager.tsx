@@ -755,6 +755,29 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       ? processedPhases.filter(p => p.id !== phaseToDelete)
       : processedPhases;
     
+    // CRITICAL: In Edit Standard mode, if we just deleted a phase, preserve the order from displayPhases
+    // This prevents the second refresh from jumbling the order
+    if (isEditingStandardProject && phaseToDelete && displayPhases.length > 0) {
+      // Use the order from displayPhases (which has correct order numbers after deletion)
+      // but update with any new data from processedPhases
+      const displayPhasesMap = new Map(displayPhases.map(p => [p.id, p]));
+      phasesToDisplay = phasesToDisplay.map(p => {
+        const displayPhase = displayPhasesMap.get(p.id);
+        if (displayPhase) {
+          // Preserve order number from displayPhases
+          return { ...p, phaseOrderNumber: displayPhase.phaseOrderNumber };
+        }
+        return p;
+      });
+      
+      // Sort by order number to maintain correct order
+      phasesToDisplay = sortPhasesByOrderNumber(phasesToDisplay);
+      
+      console.log('🔧 Preserving order from displayPhases after deletion:', {
+        phases: phasesToDisplay.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+      });
+    }
+    
     // CRITICAL: In Edit Standard mode, only show standard phases
     // This ensures non-standard phases never appear in Edit Standard
     if (isEditingStandardProject) {
@@ -766,46 +789,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
     // Update local context with fresh phases ONLY if phases actually changed
     // This prevents infinite loops from updateProject triggering re-renders
-    if (currentProject && processedPhases.length > 0) {
+    if (currentProject && phasesToDisplay.length > 0) {
       // Check if phases actually changed before updating
       const currentPhaseIds = new Set((currentProject.phases || []).map(p => p.id));
-      const processedPhaseIds = new Set(processedPhases.map(p => p.id));
+      const displayPhaseIds = new Set(phasesToDisplay.map(p => p.id));
       const phasesChanged = 
-        currentPhaseIds.size !== processedPhaseIds.size ||
-        !Array.from(currentPhaseIds).every(id => processedPhaseIds.has(id)) ||
-        !Array.from(processedPhaseIds).every(id => currentPhaseIds.has(id));
-      
-      // CRITICAL: In Edit Standard mode, also check for duplicate order numbers
-      // If duplicates are found, skip the update to prevent reordering issues
-      if (isEditingStandardProject && processedPhases.length > 0) {
-        const orderNumberCounts = new Map<string | number, number>();
-        processedPhases.forEach(phase => {
-          if (phase.phaseOrderNumber !== undefined) {
-            orderNumberCounts.set(phase.phaseOrderNumber, (orderNumberCounts.get(phase.phaseOrderNumber) || 0) + 1);
-          }
-        });
-        
-        // Check for duplicates
-        const hasDuplicates = Array.from(orderNumberCounts.values()).some(count => count > 1);
-        if (hasDuplicates) {
-          console.warn('⚠️ Duplicate order numbers detected in processedPhases, skipping update to prevent reordering:', {
-            orderNumberCounts: Array.from(orderNumberCounts.entries()),
-            phases: processedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
-          });
-          // Skip this update - the deletePhase function will handle the correct update
-          return;
-        }
-      }
+        currentPhaseIds.size !== displayPhaseIds.size ||
+        !Array.from(currentPhaseIds).every(id => displayPhaseIds.has(id)) ||
+        !Array.from(displayPhaseIds).every(id => currentPhaseIds.has(id));
       
       if (phasesChanged) {
         console.log('🔧 updateProject called: phases changed', {
           projectId: currentProject.id,
           oldCount: currentProject.phases?.length || 0,
-          newCount: processedPhases.length
+          newCount: phasesToDisplay.length
         });
       updateProject({
         ...currentProject,
-        phases: processedPhases,
+        phases: phasesToDisplay,
         updatedAt: new Date()
       });
     }
