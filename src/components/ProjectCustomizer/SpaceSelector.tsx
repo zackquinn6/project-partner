@@ -167,26 +167,32 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
             if (!isNaN(parsedInitial) && parsedInitial > 0) {
               primaryValue = parsedInitial;
               // Update the space in database with initial sizing (async, don't await)
-              (async () => {
-                try {
-                  await supabase
-                    .from('project_run_spaces')
-                    .update({ scale_value: parsedInitial })
-                    .eq('id', space.id);
-                  
-                  await supabase
-                    .from('project_run_space_sizing')
-                    .upsert({
-                      space_id: space.id,
-                      scaling_unit: projectScaleUnit,
-                      size_value: parsedInitial
-                    }, {
-                      onConflict: 'space_id,scaling_unit'
-                    });
-                } catch (error) {
-                  console.error('Error inheriting initial sizing:', error);
-                }
-              })();
+              // CRITICAL: Only do this if space.id exists and is valid
+              if (space.id) {
+                (async () => {
+                  try {
+                    await supabase
+                      .from('project_run_spaces')
+                      .update({ scale_value: parsedInitial })
+                      .eq('id', space.id);
+                    
+                    // CRITICAL: Ensure space_id is not null before upserting
+                    if (space.id && projectScaleUnit) {
+                      await supabase
+                        .from('project_run_space_sizing')
+                        .upsert({
+                          space_id: space.id,
+                          scaling_unit: projectScaleUnit,
+                          size_value: parsedInitial
+                        }, {
+                          onConflict: 'space_id,scaling_unit'
+                        });
+                    }
+                  } catch (error) {
+                    console.error('Error inheriting initial sizing:', error);
+                  }
+                })();
+              }
             }
           }
 
