@@ -149,10 +149,21 @@ export function organizeStepsForSinglePieceFlow(
     
     if (applicablePhases.length > 0) {
       // Collect all steps from applicable phases for this space
+      // CRITICAL: Preserve phase and operation information on each step
       const spaceSteps: WorkflowStep[] = [];
       applicablePhases.forEach(phase => {
-        const phaseSteps = phase.operations.flatMap(op => op.steps || []);
-        spaceSteps.push(...phaseSteps);
+        phase.operations.forEach(operation => {
+          const operationSteps = (operation.steps || []).map(step => ({
+            ...step,
+            phaseId: phase.id,
+            phaseName: phase.name,
+            operationId: operation.id,
+            operationName: operation.name,
+            spaceId: space.id,
+            spaceName: space.name
+          }));
+          spaceSteps.push(...operationSteps);
+        });
       });
       
       result.push({
@@ -315,27 +326,32 @@ export function convertToGroupedSteps(
   organizedNavigation.forEach(item => {
     if (item.type === 'space-container') {
       // Single Piece Flow: Space containers contain custom phases
-      // Group by space name, then by phase name within that space
+      // Group by space name, then by phase name, then by operation name
+      // Structure: { "Room 1": { "Phase Name": { "Operation Name": [steps...] } } }
       item.spaces?.forEach(space => {
         const spaceKey = space.name; // Use space name directly
         if (!grouped[spaceKey]) {
           grouped[spaceKey] = {};
         }
         
-        // Group steps by their original phase name
-        // Steps should have phaseName preserved from the original phase
+        // Group steps by phase name first, then by operation name
+        // Steps should have phaseName and operationName preserved from organizeStepsForSinglePieceFlow
         item.steps.forEach(step => {
           const phaseName = (step as any).phaseName || 'Workflow';
           const operationName = (step as any).operationName || 'General';
-          const operationKey = `${phaseName} - ${operationName}`;
           
-          if (!grouped[spaceKey][operationKey]) {
-            grouped[spaceKey][operationKey] = [];
+          // Create nested structure: space → phase → operation → steps
+          if (!grouped[spaceKey][phaseName]) {
+            grouped[spaceKey][phaseName] = {};
+          }
+          
+          if (!grouped[spaceKey][phaseName][operationName]) {
+            grouped[spaceKey][phaseName][operationName] = [];
           }
           
           // Dedupe by step ID
-          if (!grouped[spaceKey][operationKey].some((s: any) => s.id === step.id)) {
-            grouped[spaceKey][operationKey].push(step);
+          if (!grouped[spaceKey][phaseName][operationName].some((s: any) => s.id === step.id)) {
+            grouped[spaceKey][phaseName][operationName].push(step);
           }
         });
       });

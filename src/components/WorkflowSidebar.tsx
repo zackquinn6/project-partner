@@ -159,23 +159,57 @@ export function WorkflowSidebar({
   const [openPhases, setOpenPhases] = useState<Set<string>>(new Set());
   const [openOperations, setOpenOperations] = useState<Set<string>>(new Set());
   
+  // Helper function to check if a value is a space container (nested structure)
+  const isSpaceContainer = (value: any): boolean => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    // Space container has nested structure: { "Phase": { "Operation": [steps] } }
+    // Check if all values are objects (phases) that contain operations
+    return Object.values(value).every(phaseValue => 
+      phaseValue && typeof phaseValue === 'object' && !Array.isArray(phaseValue) &&
+      Object.values(phaseValue as any).some(opValue => Array.isArray(opValue))
+    );
+  };
+
   // Find the current step's phase and operation, and determine operation order
   const currentStepPhaseAndOperation = useMemo(() => {
     if (!currentStep || !groupedSteps) return null;
     
-    for (const [phase, operations] of Object.entries(groupedSteps)) {
-      const phaseOps = Object.entries(operations as any);
-      for (let i = 0; i < phaseOps.length; i++) {
-        const [operation, opSteps] = phaseOps[i];
-        if (Array.isArray(opSteps)) {
-          const hasCurrentStep = opSteps.some((step: any) => step.id === currentStep.id);
-          if (hasCurrentStep) {
-            return { 
-              phase, 
-              operation,
-              operationIndex: i,
-              allOperationsInPhase: phaseOps.map(([op]) => op)
-            };
+    for (const [topLevelKey, topLevelValue] of Object.entries(groupedSteps)) {
+      if (isSpaceContainer(topLevelValue)) {
+        // Space container: { "Space": { "Phase": { "Operation": [steps] } } }
+        for (const [phase, phaseValue] of Object.entries(topLevelValue as any)) {
+          const phaseOps = Object.entries(phaseValue as any);
+          for (let i = 0; i < phaseOps.length; i++) {
+            const [operation, opSteps] = phaseOps[i];
+            if (Array.isArray(opSteps)) {
+              const hasCurrentStep = opSteps.some((step: any) => step.id === currentStep.id);
+              if (hasCurrentStep) {
+                return { 
+                  space: topLevelKey,
+                  phase, 
+                  operation,
+                  operationIndex: i,
+                  allOperationsInPhase: phaseOps.map(([op]) => op)
+                };
+              }
+            }
+          }
+        }
+      } else {
+        // Regular phase: { "Phase": { "Operation": [steps] } }
+        const phaseOps = Object.entries(topLevelValue as any);
+        for (let i = 0; i < phaseOps.length; i++) {
+          const [operation, opSteps] = phaseOps[i];
+          if (Array.isArray(opSteps)) {
+            const hasCurrentStep = opSteps.some((step: any) => step.id === currentStep.id);
+            if (hasCurrentStep) {
+              return { 
+                phase: topLevelKey, 
+                operation,
+                operationIndex: i,
+                allOperationsInPhase: phaseOps.map(([op]) => op)
+              };
+            }
           }
         }
       }
@@ -187,14 +221,19 @@ export function WorkflowSidebar({
   // This runs whenever the current step changes (via next/previous navigation or step click)
   useEffect(() => {
     if (currentStepPhaseAndOperation) {
-      const { phase, operation } = currentStepPhaseAndOperation;
+      const { space, phase, operation } = currentStepPhaseAndOperation;
+      
+      // For space containers, use "Space-Phase" as the phase key
+      // For regular phases, use just the phase name
+      const phaseKey = space ? `${space}-${phase}` : phase;
+      const operationKey = space ? `${space}-${phase}-${operation}` : `${phase}-${operation}`;
       
       // Close ALL phases except the current one
-      setOpenPhases(new Set([phase]));
+      setOpenPhases(new Set([phaseKey]));
       
       // Close ALL operations except the current one
       // Only open the current operation - all others (including future ones) should be closed
-      setOpenOperations(new Set([`${phase}-${operation}`]));
+      setOpenOperations(new Set([operationKey]));
     } else {
       // If no current step found, close everything
       setOpenPhases(new Set());
@@ -202,20 +241,35 @@ export function WorkflowSidebar({
     }
   }, [currentStepPhaseAndOperation, currentStepIndex, currentStep?.id]); // Trigger on step change
 
-  // Calculate completed operations and phases
+  // Calculate completed operations and phases (handles both regular phases and space containers)
   const completedOperations = useMemo(() => {
     const completed = new Set<string>();
     if (!groupedSteps) return completed;
 
-    Object.entries(groupedSteps).forEach(([phase, operations]) => {
-      Object.entries(operations as any).forEach(([operation, opSteps]) => {
-        if (Array.isArray(opSteps) && opSteps.length > 0) {
-          const allStepsCompleted = opSteps.every((step: any) => completedSteps.has(step.id));
-          if (allStepsCompleted) {
-            completed.add(`${phase}-${operation}`);
+    Object.entries(groupedSteps).forEach(([topLevelKey, topLevelValue]) => {
+      if (isSpaceContainer(topLevelValue)) {
+        // Space container: { "Space": { "Phase": { "Operation": [steps] } } }
+        Object.entries(topLevelValue as any).forEach(([phase, phaseValue]) => {
+          Object.entries(phaseValue as any).forEach(([operation, opSteps]) => {
+            if (Array.isArray(opSteps) && opSteps.length > 0) {
+              const allStepsCompleted = opSteps.every((step: any) => completedSteps.has(step.id));
+              if (allStepsCompleted) {
+                completed.add(`${topLevelKey}-${phase}-${operation}`);
+              }
+            }
+          });
+        });
+      } else {
+        // Regular phase: { "Phase": { "Operation": [steps] } }
+        Object.entries(topLevelValue as any).forEach(([operation, opSteps]) => {
+          if (Array.isArray(opSteps) && opSteps.length > 0) {
+            const allStepsCompleted = opSteps.every((step: any) => completedSteps.has(step.id));
+            if (allStepsCompleted) {
+              completed.add(`${topLevelKey}-${operation}`);
+            }
           }
-        }
-      });
+        });
+      }
     });
 
     return completed;
@@ -225,14 +279,29 @@ export function WorkflowSidebar({
     const completed = new Set<string>();
     if (!groupedSteps) return completed;
 
-    Object.entries(groupedSteps).forEach(([phase, operations]) => {
-      const phaseOperations = Object.entries(operations as any);
-      const allOperationsCompleted = phaseOperations.every(([operation, opSteps]) => {
-        if (!Array.isArray(opSteps) || opSteps.length === 0) return true;
-        return opSteps.every((step: any) => completedSteps.has(step.id));
-      });
-      if (allOperationsCompleted && phaseOperations.length > 0) {
-        completed.add(phase);
+    Object.entries(groupedSteps).forEach(([topLevelKey, topLevelValue]) => {
+      if (isSpaceContainer(topLevelValue)) {
+        // Space container: check each phase within the space
+        Object.entries(topLevelValue as any).forEach(([phase, phaseValue]) => {
+          const phaseOperations = Object.entries(phaseValue as any);
+          const allOperationsCompleted = phaseOperations.every(([operation, opSteps]) => {
+            if (!Array.isArray(opSteps) || opSteps.length === 0) return true;
+            return opSteps.every((step: any) => completedSteps.has(step.id));
+          });
+          if (allOperationsCompleted && phaseOperations.length > 0) {
+            completed.add(`${topLevelKey}-${phase}`);
+          }
+        });
+      } else {
+        // Regular phase
+        const phaseOperations = Object.entries(topLevelValue as any);
+        const allOperationsCompleted = phaseOperations.every(([operation, opSteps]) => {
+          if (!Array.isArray(opSteps) || opSteps.length === 0) return true;
+          return opSteps.every((step: any) => completedSteps.has(step.id));
+        });
+        if (allOperationsCompleted && phaseOperations.length > 0) {
+          completed.add(topLevelKey);
+        }
       }
     });
 
@@ -440,120 +509,272 @@ export function WorkflowSidebar({
                       }}
                       className="w-full"
                     >
-                      {Object.entries(groupedSteps).map(([phase, operations]) => {
-                        const phaseOperations = Object.entries(operations as any);
-                        const hasSteps = phaseOperations.some(([_, opSteps]) => 
-                          Array.isArray(opSteps) && opSteps.length > 0
-                        );
-                        
-                        if (!hasSteps) return null;
-                        
-                        const isPhaseCompleted = completedPhases.has(phase);
-                        const isPhaseInProgress = inProgressPhase === phase;
-                        
-                        return (
-                          <AccordionItem key={phase} value={phase} className="border-none">
-                            <AccordionTrigger 
-                              className={`py-2 px-0 hover:no-underline text-sm font-semibold ${
-                                isPhaseCompleted
-                                  ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
-                                  : isPhaseInProgress
-                                  ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
-                                  : 'text-primary'
-                              }`}
-                            >
-                              <span>{phase}</span>
-                            </AccordionTrigger>
-                            <AccordionContent className="pt-1 pb-2">
-                              <Accordion 
-                                type="multiple"
-                                value={phaseOperations
-                                  .map(([operation]) => `${phase}-${operation}`)
-                                  .filter(key => openOperations.has(key))
-                                }
-                                onValueChange={(values) => {
-                                  // Update state when nested accordion changes
-                                  const newOpenOps = new Set(values);
-                                  setOpenOperations(prev => {
-                                    const updated = new Set(prev);
-                                    // Remove all operations for this phase
-                                    phaseOperations.forEach(([op]) => {
-                                      updated.delete(`${phase}-${op}`);
-                                    });
-                                    // Add back the ones that should be open
-                                    newOpenOps.forEach(key => {
-                                      if (key.startsWith(`${phase}-`)) {
-                                        updated.add(key);
-                                      }
-                                    });
-                                    return updated;
-                                  });
-                                }}
-                                className="w-full"
+                      {Object.entries(groupedSteps).map(([topLevelKey, topLevelValue]) => {
+                        if (isSpaceContainer(topLevelValue)) {
+                          // Space container: { "Space": { "Phase": { "Operation": [steps] } } }
+                          return (
+                            <AccordionItem key={topLevelKey} value={topLevelKey} className="border-none">
+                              <AccordionTrigger 
+                                className="py-2 px-0 hover:no-underline text-sm font-semibold text-primary"
                               >
-                                {phaseOperations.map(([operation, opSteps]) => {
-                                  if (!Array.isArray(opSteps) || opSteps.length === 0) {
-                                    return null;
+                                <span>{topLevelKey}</span>
+                              </AccordionTrigger>
+                              <AccordionContent className="pt-1 pb-2">
+                                <Accordion 
+                                  type="multiple"
+                                  value={Object.keys(topLevelValue as any)
+                                    .map(phase => `${topLevelKey}-${phase}`)
+                                    .filter(key => openPhases.has(key))
                                   }
-                                  const operationKey = `${phase}-${operation}`;
-                                  const isOperationCompleted = completedOperations.has(operationKey);
-                                  const isOperationInProgress = inProgressOperation === operationKey;
-                                  
-                                  return (
-                                    <AccordionItem 
-                                      key={operationKey} 
-                                      value={operationKey}
-                                      className="border-none ml-2"
-                                    >
-                                      <AccordionTrigger 
-                                        className={`py-1 px-0 hover:no-underline text-xs font-medium ${
-                                          isOperationCompleted
-                                            ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
-                                            : isOperationInProgress
-                                            ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
-                                            : 'text-muted-foreground'
-                                        }`}
-                                      >
-                                        <span>{operation}</span>
-                                      </AccordionTrigger>
-                                      <AccordionContent className="pt-1 pb-1">
-                                        <div className="space-y-1 ml-2">
-                                          {opSteps.map((step: any) => {
-                                            const stepIndex = allSteps.findIndex(s => s.id === step.id);
-                                            const isStepCompleted = completedSteps.has(step.id);
-                                            const isStepInProgress = inProgressStep === step.id;
-                                            
-                                            return (
-                                              <div 
-                                                key={step.id} 
-                                                className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
-                                                  step.id === currentStep?.id 
-                                                    ? 'bg-primary/10 text-primary border-primary/20' 
-                                                    : isStepCompleted
-                                                    ? 'bg-green-50 text-green-700 border-green-200' 
-                                                    : isStepInProgress
-                                                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                                                    : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
-                                                }`} 
-                                                onClick={() => {
-                                                  if (stepIndex >= 0 && isKickoffComplete) {
-                                                    onStepClick(stepIndex, step);
+                                  onValueChange={(values) => {
+                                    const newOpenPhases = new Set(values);
+                                    setOpenPhases(prev => {
+                                      const updated = new Set(prev);
+                                      // Remove all phases for this space
+                                      Object.keys(topLevelValue as any).forEach(phase => {
+                                        updated.delete(`${topLevelKey}-${phase}`);
+                                      });
+                                      // Add back the ones that should be open
+                                      newOpenPhases.forEach(key => {
+                                        if (key.startsWith(`${topLevelKey}-`)) {
+                                          updated.add(key);
+                                        }
+                                      });
+                                      return updated;
+                                    });
+                                  }}
+                                  className="w-full"
+                                >
+                                  {Object.entries(topLevelValue as any).map(([phase, phaseValue]) => {
+                                    const phaseOperations = Object.entries(phaseValue as any);
+                                    const hasSteps = phaseOperations.some(([_, opSteps]) => 
+                                      Array.isArray(opSteps) && opSteps.length > 0
+                                    );
+                                    
+                                    if (!hasSteps) return null;
+                                    
+                                    const phaseKey = `${topLevelKey}-${phase}`;
+                                    const isPhaseCompleted = completedPhases.has(phaseKey);
+                                    const isPhaseInProgress = inProgressPhase === phaseKey;
+                                    
+                                    return (
+                                      <AccordionItem key={phaseKey} value={phaseKey} className="border-none ml-2">
+                                        <AccordionTrigger 
+                                          className={`py-2 px-0 hover:no-underline text-xs font-semibold ${
+                                            isPhaseCompleted
+                                              ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                              : isPhaseInProgress
+                                              ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
+                                              : 'text-primary'
+                                          }`}
+                                        >
+                                          <span>{phase}</span>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-1 pb-2">
+                                          <Accordion 
+                                            type="multiple"
+                                            value={phaseOperations
+                                              .map(([operation]) => `${topLevelKey}-${phase}-${operation}`)
+                                              .filter(key => openOperations.has(key))
+                                            }
+                                            onValueChange={(values) => {
+                                              const newOpenOps = new Set(values);
+                                              setOpenOperations(prev => {
+                                                const updated = new Set(prev);
+                                                phaseOperations.forEach(([op]) => {
+                                                  updated.delete(`${topLevelKey}-${phase}-${op}`);
+                                                });
+                                                newOpenOps.forEach(key => {
+                                                  if (key.startsWith(`${topLevelKey}-${phase}-`)) {
+                                                    updated.add(key);
                                                   }
-                                                }}
-                                              >
-                                                <span className="truncate">{step.step}</span>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      </AccordionContent>
-                                    </AccordionItem>
-                                  );
-                                })}
-                              </Accordion>
-                            </AccordionContent>
-                          </AccordionItem>
-                        );
+                                                });
+                                                return updated;
+                                              });
+                                            }}
+                                            className="w-full"
+                                          >
+                                            {phaseOperations.map(([operation, opSteps]) => {
+                                              if (!Array.isArray(opSteps) || opSteps.length === 0) {
+                                                return null;
+                                              }
+                                              const operationKey = `${topLevelKey}-${phase}-${operation}`;
+                                              const isOperationCompleted = completedOperations.has(operationKey);
+                                              const isOperationInProgress = inProgressOperation === operationKey;
+                                              
+                                              return (
+                                                <AccordionItem 
+                                                  key={operationKey} 
+                                                  value={operationKey}
+                                                  className="border-none ml-2"
+                                                >
+                                                  <AccordionTrigger 
+                                                    className={`py-1 px-0 hover:no-underline text-xs font-medium ${
+                                                      isOperationCompleted
+                                                        ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                                        : isOperationInProgress
+                                                        ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
+                                                        : 'text-muted-foreground'
+                                                    }`}
+                                                  >
+                                                    <span>{operation}</span>
+                                                  </AccordionTrigger>
+                                                  <AccordionContent className="pt-1 pb-1">
+                                                    <div className="space-y-1 ml-2">
+                                                      {opSteps.map((step: any) => {
+                                                        const stepIndex = allSteps.findIndex(s => s.id === step.id);
+                                                        const isStepCompleted = completedSteps.has(step.id);
+                                                        const isStepInProgress = inProgressStep === step.id;
+                                                        
+                                                        return (
+                                                          <div 
+                                                            key={step.id} 
+                                                            className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
+                                                              step.id === currentStep?.id 
+                                                                ? 'bg-primary/10 text-primary border-primary/20' 
+                                                                : isStepCompleted
+                                                                ? 'bg-green-50 text-green-700 border-green-200' 
+                                                                : isStepInProgress
+                                                                ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                                                : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                                                            }`} 
+                                                            onClick={() => {
+                                                              if (stepIndex >= 0 && isKickoffComplete) {
+                                                                onStepClick(stepIndex, step);
+                                                              }
+                                                            }}
+                                                          >
+                                                            <span className="truncate">{step.step}</span>
+                                                          </div>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  </AccordionContent>
+                                                </AccordionItem>
+                                              );
+                                            })}
+                                          </Accordion>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    );
+                                  })}
+                                </Accordion>
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        } else {
+                          // Regular phase: { "Phase": { "Operation": [steps] } }
+                          const phaseOperations = Object.entries(topLevelValue as any);
+                          const hasSteps = phaseOperations.some(([_, opSteps]) => 
+                            Array.isArray(opSteps) && opSteps.length > 0
+                          );
+                          
+                          if (!hasSteps) return null;
+                          
+                          const isPhaseCompleted = completedPhases.has(topLevelKey);
+                          const isPhaseInProgress = inProgressPhase === topLevelKey;
+                          
+                          return (
+                            <AccordionItem key={topLevelKey} value={topLevelKey} className="border-none">
+                              <AccordionTrigger 
+                                className={`py-2 px-0 hover:no-underline text-sm font-semibold ${
+                                  isPhaseCompleted
+                                    ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                    : isPhaseInProgress
+                                    ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
+                                    : 'text-primary'
+                                }`}
+                              >
+                                <span>{topLevelKey}</span>
+                              </AccordionTrigger>
+                              <AccordionContent className="pt-1 pb-2">
+                                <Accordion 
+                                  type="multiple"
+                                  value={phaseOperations
+                                    .map(([operation]) => `${topLevelKey}-${operation}`)
+                                    .filter(key => openOperations.has(key))
+                                  }
+                                  onValueChange={(values) => {
+                                    const newOpenOps = new Set(values);
+                                    setOpenOperations(prev => {
+                                      const updated = new Set(prev);
+                                      phaseOperations.forEach(([op]) => {
+                                        updated.delete(`${topLevelKey}-${op}`);
+                                      });
+                                      newOpenOps.forEach(key => {
+                                        if (key.startsWith(`${topLevelKey}-`)) {
+                                          updated.add(key);
+                                        }
+                                      });
+                                      return updated;
+                                    });
+                                  }}
+                                  className="w-full"
+                                >
+                                  {phaseOperations.map(([operation, opSteps]) => {
+                                    if (!Array.isArray(opSteps) || opSteps.length === 0) {
+                                      return null;
+                                    }
+                                    const operationKey = `${topLevelKey}-${operation}`;
+                                    const isOperationCompleted = completedOperations.has(operationKey);
+                                    const isOperationInProgress = inProgressOperation === operationKey;
+                                    
+                                    return (
+                                      <AccordionItem 
+                                        key={operationKey} 
+                                        value={operationKey}
+                                        className="border-none ml-2"
+                                      >
+                                        <AccordionTrigger 
+                                          className={`py-1 px-0 hover:no-underline text-xs font-medium ${
+                                            isOperationCompleted
+                                              ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                              : isOperationInProgress
+                                              ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
+                                              : 'text-muted-foreground'
+                                          }`}
+                                        >
+                                          <span>{operation}</span>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-1 pb-1">
+                                          <div className="space-y-1 ml-2">
+                                            {opSteps.map((step: any) => {
+                                              const stepIndex = allSteps.findIndex(s => s.id === step.id);
+                                              const isStepCompleted = completedSteps.has(step.id);
+                                              const isStepInProgress = inProgressStep === step.id;
+                                              
+                                              return (
+                                                <div 
+                                                  key={step.id} 
+                                                  className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
+                                                    step.id === currentStep?.id 
+                                                      ? 'bg-primary/10 text-primary border-primary/20' 
+                                                      : isStepCompleted
+                                                      ? 'bg-green-50 text-green-700 border-green-200' 
+                                                      : isStepInProgress
+                                                      ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                                      : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                                                  }`} 
+                                                  onClick={() => {
+                                                    if (stepIndex >= 0 && isKickoffComplete) {
+                                                      onStepClick(stepIndex, step);
+                                                    }
+                                                  }}
+                                                >
+                                                  <span className="truncate">{step.step}</span>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    );
+                                  })}
+                                </Accordion>
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        }
                       })}
                     </Accordion>
                   )}
