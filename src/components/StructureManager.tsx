@@ -474,8 +474,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Check by both ID and name to catch all cases
       // CRITICAL: Always include phases that were just added (even if not in rebuiltPhases yet)
       // CRITICAL: Exclude phases that are being deleted
-      const rebuiltPhaseIds = new Set(rebuiltPhases.map(p => p.id).filter(Boolean));
-      const rebuiltPhaseNames = new Set(rebuiltPhases.map(p => p.name).filter(Boolean));
+      const rebuiltPhaseIds = new Set(rebuiltPhasesFiltered.map(p => p.id).filter(Boolean));
+      const rebuiltPhaseNames = new Set(rebuiltPhasesFiltered.map(p => p.name).filter(Boolean));
       const phasesOnlyInJson = currentPhasesFiltered.filter(p => {
         // Exclude deleted phase
         if (phaseToDelete && p.id === phaseToDelete) {
