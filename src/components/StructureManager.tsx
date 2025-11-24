@@ -3821,10 +3821,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               // - Or if it's the last standard phase but we're in Edit Standard
               canMoveDown = phaseIndex < displayPhases.length - 1 && (
                 isEditingStandardProject || // In Edit Standard, can always move down if not at end
-                phaseIndex < lastStandardPhaseIndex || // Can move if before the last standard phase
                 (lastStandardPhaseIndex === -1) || // No last standard phase found, can move
-                (phaseIndex === lastStandardPhaseIndex - 1 && !isStandardPhase(displayPhases[phaseIndex + 1])) // Can move if next phase is not standard
+                (phaseIndex < lastStandardPhaseIndex - 1) || // Can move if more than one position before the last standard phase
+                (phaseIndex === lastStandardPhaseIndex - 1 && !isStandardPhase(displayPhases[phaseIndex + 1])) // Can move if next phase is not standard (edge case)
               );
+              
+              // CRITICAL: If the next phase is the last standard phase, can't move down
+              if (!isEditingStandardProject && phaseIndex === lastStandardPhaseIndex - 1 && lastStandardPhaseIndex !== -1) {
+                const nextPhase = displayPhases[phaseIndex + 1];
+                if (isStandardPhase(nextPhase) && !nextPhase.isLinked && nextPhase.phaseOrderNumber === 'last') {
+                  canMoveDown = false;
+                }
+              }
               
               console.log('🔍 Re-order button logic:', {
                 phaseName: phase.name,
@@ -3866,18 +3874,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="h-4 w-4 p-0"
+                                          className={`h-4 w-4 p-0 ${!canMoveUp ? 'opacity-30 cursor-not-allowed' : ''}`}
                                           onClick={() => movePhase(phase.id, 'up')}
                                           disabled={!canMoveUp || reorderingPhaseId !== null}
+                                          title={!canMoveUp ? 'Cannot move up' : 'Move up'}
                                         >
                                           <ChevronUp className="w-3 h-3" />
                                         </Button>
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="h-4 w-4 p-0"
+                                          className={`h-4 w-4 p-0 ${!canMoveDown ? 'opacity-30 cursor-not-allowed' : ''}`}
                                           onClick={() => movePhase(phase.id, 'down')}
                                           disabled={!canMoveDown || reorderingPhaseId !== null}
+                                          title={!canMoveDown ? 'Cannot move down' : 'Move down'}
                                         >
                                           <ChevronDown className="w-3 h-3" />
                                         </Button>
