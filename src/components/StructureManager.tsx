@@ -3057,10 +3057,66 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // CRITICAL: Sort by order number to maintain correct order
         const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
 
+        // CRITICAL: In Edit Standard mode, ensure order numbers are unique and correct after deletion
+        // This prevents duplicate order numbers (e.g., two "first" positions)
+        if (isEditingStandardProject) {
+          // Check for duplicate order numbers and fix them
+          const orderNumberCounts = new Map<string | number, number>();
+          sortedPhases.forEach(phase => {
+            if (phase.phaseOrderNumber !== undefined) {
+              orderNumberCounts.set(phase.phaseOrderNumber, (orderNumberCounts.get(phase.phaseOrderNumber) || 0) + 1);
+            }
+          });
+          
+          // Fix duplicates by reassigning order numbers sequentially
+          const usedOrderNumbers = new Set<string | number>();
+          sortedPhases.forEach((phase, index) => {
+            if (phase.phaseOrderNumber !== undefined) {
+              const count = orderNumberCounts.get(phase.phaseOrderNumber) || 0;
+              if (count > 1 || usedOrderNumbers.has(phase.phaseOrderNumber)) {
+                // Duplicate found - reassign based on position
+                if (index === 0) {
+                  phase.phaseOrderNumber = 'first';
+                } else if (index === sortedPhases.length - 1) {
+                  phase.phaseOrderNumber = 'last';
+                } else {
+                  phase.phaseOrderNumber = index + 1;
+                }
+              }
+              usedOrderNumbers.add(phase.phaseOrderNumber);
+            } else {
+              // No order number - assign based on position
+              if (index === 0) {
+                phase.phaseOrderNumber = 'first';
+              } else if (index === sortedPhases.length - 1) {
+                phase.phaseOrderNumber = 'last';
+              } else {
+                phase.phaseOrderNumber = index + 1;
+              }
+              usedOrderNumbers.add(phase.phaseOrderNumber);
+            }
+          });
+        }
+
         // CRITICAL: In Edit Standard mode, filter to only standard phases BEFORE updating
         let phasesToDisplay = sortedPhases.filter(p => p.id !== phaseIdToDelete);
         if (isEditingStandardProject) {
           phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
+        }
+
+        // CRITICAL: In Edit Standard mode, update phase order in database to persist correct order numbers
+        // This ensures order numbers are saved and prevents duplicates on refresh
+        if (isEditingStandardProject) {
+          console.log('🔄 Updating phase order in database after deletion to persist order numbers:', {
+            phases: phasesToDisplay.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+          });
+          try {
+            await updatePhaseOrder(phasesToDisplay);
+            console.log('✅ Phase order updated in database after deletion, order numbers preserved');
+          } catch (error) {
+            console.error('❌ Error updating phase order in database after deletion:', error);
+            // Continue anyway - the JSON update will still work
+          }
         }
 
         // Update display state IMMEDIATELY - this prevents flicker and preserves order
