@@ -1754,10 +1754,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
       }));
       
-      await supabase
+      console.log('💾 Saving phases with order numbers to database:', {
+        projectId: currentProject.id,
+        phases: phasesToSave.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+      });
+      
+      const { error: saveError } = await supabase
         .from('projects')
         .update({ phases: phasesToSave as any })
         .eq('id', currentProject.id);
+      
+      if (saveError) {
+        console.error('❌ Error saving phases with order numbers:', saveError);
+        throw saveError;
+      }
+      
+      console.log('✅ Phases saved successfully with order numbers');
       
       // Update local context with sorted phases
       updateProject({
