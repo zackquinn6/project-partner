@@ -914,7 +914,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
           if (!error && standardProject?.phases) {
             const phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
+            console.log('📋 Fetched Standard Project Foundation phases:', {
+              count: phases.length,
+              phases: phases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+            });
             setStandardProjectPhases(phases);
+          } else if (error) {
+            console.error('❌ Error fetching Standard Project Foundation phases:', error);
           }
         } catch (error) {
           console.error('Error fetching standard project phases:', error);
