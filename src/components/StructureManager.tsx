@@ -1763,16 +1763,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       const phasesWithCorrectStandardFlag = phasesWithUniqueOrder.map(phase => {
         // If this is the newly added phase, set isStandard based on editing mode
-        if (phase.name === uniquePhaseName || (addedPhaseId && phase.id === addedPhaseId)) {
+        const isNewPhase = phase.name === uniquePhaseName || (addedPhaseId && phase.id === addedPhaseId);
+        if (isNewPhase) {
           // CRITICAL: For regular templates, newly added phases are NEVER standard
           // Only allow standard if we're editing Standard Project Foundation
-          const finalIsStandard = shouldBeStandard;
+          // CRITICAL: Explicitly set to false for regular projects, regardless of what the database says
+          const finalIsStandard = Boolean(isEditingStandardProject);
           console.log('🔵 Setting isStandard for newly added phase:', {
             phaseId: phase.id,
             phaseName: phase.name,
             shouldBeStandard,
             isEditingStandardProject,
-            finalIsStandard
+            finalIsStandard,
+            currentPhaseIsStandard: phase.isStandard,
+            addedPhaseId
           });
           return {
             ...phase,
@@ -1784,6 +1788,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // When editing regular templates, phases added there are custom (isStandard: false)
         return phase;
       });
+      
+      // CRITICAL: Double-check that the new phase has the correct isStandard flag
+      // This is a safety measure to ensure it's never incorrectly set to true for regular projects
+      const newPhaseInFinal = phasesWithCorrectStandardFlag.find(p => 
+        p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
+      );
+      if (newPhaseInFinal && !isEditingStandardProject && newPhaseInFinal.isStandard === true) {
+        console.error('❌ ERROR: New phase incorrectly marked as standard in regular project! Fixing...');
+        newPhaseInFinal.isStandard = false;
+      }
 
       // Update project with rebuilt phases (using phases with correct isStandard flags)
       const { error: updateError } = await supabase
