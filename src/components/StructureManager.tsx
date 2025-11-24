@@ -596,7 +596,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // We handle displayPhases updates directly in those functions to prevent double refreshes
     if (skipNextRefresh) {
       console.log('⏭️ Skipping refresh - operation in progress');
-      setSkipNextRefresh(false);
+      // Don't clear skipNextRefresh here - let the operation clear it when done
       return;
     }
     
@@ -2481,18 +2481,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
         }
         
-        // Update local context immediately
+        // Update display state IMMEDIATELY - this prevents flicker and preserves order
+        setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
+        setDisplayPhases(phasesToDisplay);
+        
+        // Update local context AFTER display is updated to prevent reordering
         const updatedProject = {
           ...currentProject,
-          phases: sortedPhases,
+          phases: phasesToDisplay, // Use filtered phasesToDisplay, not sortedPhases
           updatedAt: new Date()
         };
         updateProject(updatedProject);
-
-        // Update display state immediately - don't call loadFreshPhases() for incorporated phases
-        // since they're only stored in JSON and we already have the updated data
-        setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
-        setDisplayPhases(phasesToDisplay);
       } else {
         // For regular phases, delete from database tables
         // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
@@ -2584,11 +2583,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const orderedPhases = enforceStandardPhaseOrdering(phasesWithoutDeleted, standardProjectPhases);
         // THEN assign order numbers based on the correct order
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+        
+        // CRITICAL: Sort by order number to maintain correct order
+        const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
 
+        // CRITICAL: In Edit Standard mode, filter to only standard phases BEFORE updating
+        let phasesToDisplay = sortedPhases.filter(p => p.id !== phaseToDelete);
+        if (isEditingStandardProject) {
+          phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
+        }
+
+        // Update display state IMMEDIATELY - this prevents flicker and preserves order
+        setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
+        setDisplayPhases(phasesToDisplay);
+        
         // Update project JSON - the deleted phase is already gone from database, this just updates the JSON
         const { error: updateError } = await supabase
           .from('projects')
-          .update({ phases: phasesWithUniqueOrder as any })
+          .update({ phases: phasesToDisplay as any })
           .eq('id', currentProject.id);
 
         if (updateError) {
@@ -2596,24 +2608,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           throw updateError;
         }
 
-        // Update local context immediately
+        // Update local context AFTER display is updated to prevent reordering
+        // Use phasesToDisplay (already filtered and sorted) instead of phasesWithUniqueOrder
         const updatedProject = {
           ...currentProject,
-          phases: phasesWithUniqueOrder,
+          phases: phasesToDisplay,
           updatedAt: new Date()
         };
         updateProject(updatedProject);
-
-        // CRITICAL: In Edit Standard mode, filter to only standard phases
-        let phasesToDisplay = phasesWithUniqueOrder.filter(p => p.id !== phaseToDelete);
-        if (isEditingStandardProject) {
-          phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
-        }
-        
-        // Update display state immediately - filter out deleted phase to prevent flicker
-        // This is temporary UI filtering - the phase is already permanently deleted from the database
-        setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
-        setDisplayPhases(phasesToDisplay);
       }
 
       // Ensure minimum display time for loading state
