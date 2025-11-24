@@ -516,6 +516,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       phasesToProcess = currentProject.phases;
     }
     
+    // CRITICAL: In Edit Standard mode, only show standard phases
+    // Edit Standard should never show non-standard or incorporated phases
+    if (isEditingStandardProject) {
+      phasesToProcess = phasesToProcess.filter(p => isStandardPhase(p) && !p.isLinked);
+    }
+    
+    // CRITICAL: Filter out deleted phase during deletion process
+    if (phaseToDelete) {
+      phasesToProcess = phasesToProcess.filter(p => p.id !== phaseToDelete);
+    }
+    
     if (phasesToProcess.length > 0) {
       const rawPhases = deduplicatePhases(phasesToProcess);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
@@ -525,7 +536,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     return [];
-  }, [mergedPhases, currentProject?.phases, standardProjectPhases]);
+  }, [mergedPhases, currentProject?.phases, standardProjectPhases, isEditingStandardProject, phaseToDelete]);
   
   // Update displayPhases when processedPhases changes
   // Always update displayPhases to match processedPhases (even if empty)
@@ -576,9 +587,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     
     // CRITICAL: Filter out deleted phase during deletion process to prevent flicker
     // If we're currently deleting a phase, make sure it doesn't reappear during refetch
-    const phasesToDisplay = phaseToDelete 
+    let phasesToDisplay = phaseToDelete 
       ? processedPhases.filter(p => p.id !== phaseToDelete)
       : processedPhases;
+    
+    // CRITICAL: In Edit Standard mode, only show standard phases
+    // This ensures non-standard phases never appear in Edit Standard
+    if (isEditingStandardProject) {
+      phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
+    }
     
     setDisplayPhases(phasesToDisplay);
     setPhasesLoaded(true);
@@ -2523,10 +2540,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         };
         updateProject(updatedProject);
 
+        // CRITICAL: In Edit Standard mode, filter to only standard phases
+        let phasesToDisplay = phasesWithUniqueOrder.filter(p => p.id !== phaseToDelete);
+        if (isEditingStandardProject) {
+          phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
+        }
+        
         // Update display state immediately - filter out deleted phase to prevent flicker
         // This is temporary UI filtering - the phase is already permanently deleted from the database
         setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
-        setDisplayPhases(phasesWithUniqueOrder.filter(p => p.id !== phaseToDelete));
+        setDisplayPhases(phasesToDisplay);
       }
 
       // Ensure minimum display time for loading state
