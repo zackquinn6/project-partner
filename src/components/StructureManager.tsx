@@ -2342,10 +2342,27 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
 
+      // CRITICAL: Ensure all phases have order numbers before saving
+      // Log order numbers to help debug
+      console.log('📋 Phases with order numbers before saving:', {
+        phases: phasesWithCorrectStandardFlag.map(p => ({ 
+          name: p.name, 
+          id: p.id,
+          order: p.phaseOrderNumber,
+          hasOrder: p.phaseOrderNumber !== undefined
+        }))
+      });
+      
       // Update project with rebuilt phases (using phases with correct isStandard flags)
+      // CRITICAL: Explicitly include phaseOrderNumber in the JSON to ensure it's saved
+      const phasesToSave = phasesWithCorrectStandardFlag.map(phase => ({
+        ...phase,
+        phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
+      }));
+      
       const { error: updateError } = await supabase
         .from('projects')
-        .update({ phases: phasesWithCorrectStandardFlag as any })
+        .update({ phases: phasesToSave as any })
         .eq('id', currentProject.id);
         
       if (updateError) {
@@ -2366,9 +2383,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       });
 
       // Update local context immediately - this triggers mergedPhases recalculation
+      // CRITICAL: Use phasesToSave (with explicit phaseOrderNumber) instead of phasesWithCorrectStandardFlag
       const updatedProject = {
         ...currentProject,
-        phases: phasesWithCorrectStandardFlag,
+        phases: phasesToSave,
         updatedAt: new Date()
       };
       updateProject(updatedProject);
