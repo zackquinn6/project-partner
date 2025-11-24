@@ -476,7 +476,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     return [];
-  }, [mergedPhases, currentProject?.phases]);
+  }, [mergedPhases, currentProject?.phases, standardProjectPhases]);
   
   // Update displayPhases when processedPhases changes
   // Always update displayPhases to match processedPhases (even if empty)
@@ -649,10 +649,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const getAvailableOrderNumbers = (currentPhase: Phase, currentIndex: number, totalPhases: number): (string | number)[] => {
     const options: (string | number)[] = ['First', 'Last'];
     
+    // Create a set of reserved order numbers from standard project phases
+    const reservedNumbers = new Set<string | number>();
+    if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+      standardProjectPhases.forEach(phase => {
+        if (phase.phaseOrderNumber !== undefined) {
+          if (phase.phaseOrderNumber === 'first') reservedNumbers.add('First');
+          else if (phase.phaseOrderNumber === 'last') reservedNumbers.add('Last');
+          else if (typeof phase.phaseOrderNumber === 'number') reservedNumbers.add(phase.phaseOrderNumber);
+        }
+      });
+    }
+    
     // Add integer options (1 to totalPhases)
     for (let i = 1; i <= totalPhases; i++) {
       // Skip if this number is reserved by a standard phase (in project template mode)
-      if (!isEditingStandardProject && standardPhaseOrderNumbers.has(i)) {
+      if (!isEditingStandardProject && reservedNumbers.has(i)) {
         continue;
       }
       options.push(i);
