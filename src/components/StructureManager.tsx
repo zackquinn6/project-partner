@@ -2418,6 +2418,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
         if (updateError) throw updateError;
 
+        // CRITICAL: In Edit Standard mode, filter to only standard phases
+        let phasesToDisplay = sortedPhases;
+        if (isEditingStandardProject) {
+          phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
+        }
+        
         // Update local context immediately
         const updatedProject = {
           ...currentProject,
@@ -2428,7 +2434,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
         // Update display state immediately - don't call loadFreshPhases() for incorporated phases
         // since they're only stored in JSON and we already have the updated data
-        setDisplayPhases(sortedPhases);
+        setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
+        setDisplayPhases(phasesToDisplay);
       } else {
         // For regular phases, delete from database tables
         // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
