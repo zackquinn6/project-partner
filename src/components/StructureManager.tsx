@@ -3773,11 +3773,43 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               canMoveUp = phaseIndex > 0;
               canMoveDown = phaseIndex < displayPhases.length - 1;
             } else if (!phaseIsStandard || isLinkedPhase) {
-              // Custom and linked phases: must be after first standard phases and before last standard phase
-              const minIndex = firstStandardAfterCustomIndex !== -1 ? firstStandardAfterCustomIndex : 0;
-              const maxIndex = lastStandardPhaseIndex !== -1 ? lastStandardPhaseIndex : displayPhases.length - 1;
-              canMoveUp = phaseIndex > minIndex; // Can move up if not at the start
-              canMoveDown = phaseIndex < maxIndex; // Can move down if not at the end (before last standard phase)
+              // Custom and linked phases: can move between standard phases
+              // They can move up if there's a phase before them (and it's not a locked standard phase in regular projects)
+              // They can move down if there's a phase after them (and it's not the last standard phase)
+              
+              // Can move up if:
+              // - Not at index 0
+              // - The phase before is not a locked standard phase (in regular projects)
+              canMoveUp = phaseIndex > 0 && (
+                isEditingStandardProject || // In Edit Standard, can always move up if not at start
+                !isStandardPhase(displayPhases[phaseIndex - 1]) || // Can move past non-standard phases
+                displayPhases[phaseIndex - 1].isLinked // Can move past linked phases
+              );
+              
+              // Can move down if:
+              // - Not at the last position
+              // - The phase after is not the last standard phase (in regular projects)
+              // - Or if it's the last standard phase but we're in Edit Standard
+              canMoveDown = phaseIndex < displayPhases.length - 1 && (
+                isEditingStandardProject || // In Edit Standard, can always move down if not at end
+                phaseIndex < lastStandardPhaseIndex || // Can move if before the last standard phase
+                (lastStandardPhaseIndex === -1) || // No last standard phase found, can move
+                (phaseIndex === lastStandardPhaseIndex - 1 && !isStandardPhase(displayPhases[phaseIndex + 1])) // Can move if next phase is not standard
+              );
+              
+              console.log('🔍 Re-order button logic:', {
+                phaseName: phase.name,
+                phaseIndex,
+                phaseIsStandard,
+                isLinkedPhase,
+                lastStandardPhaseIndex,
+                firstStandardAfterCustomIndex,
+                canMoveUp,
+                canMoveDown,
+                totalPhases: displayPhases.length,
+                phasesBefore: phaseIndex > 0 ? displayPhases[phaseIndex - 1].name : 'none',
+                phasesAfter: phaseIndex < displayPhases.length - 1 ? displayPhases[phaseIndex + 1].name : 'none'
+              });
             }
             
             return <Card 
