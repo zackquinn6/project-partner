@@ -1856,13 +1856,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       });
       
       // CRITICAL: Double-check that the new phase has the correct isStandard flag
-      // This is a safety measure to ensure it's never incorrectly set to true for regular projects
+      // This is a safety measure to ensure correct flag assignment
       const newPhaseInFinal = phasesWithCorrectStandardFlag.find(p => 
         p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
       );
-      if (newPhaseInFinal && !isEditingStandardProject && newPhaseInFinal.isStandard === true) {
-        console.error('❌ ERROR: New phase incorrectly marked as standard in regular project! Fixing...');
-        newPhaseInFinal.isStandard = false;
+      if (newPhaseInFinal) {
+        if (!isEditingStandardProject && newPhaseInFinal.isStandard === true) {
+          // Regular project: new phase should NOT be standard
+          console.error('❌ ERROR: New phase incorrectly marked as standard in regular project! Fixing...');
+          newPhaseInFinal.isStandard = false;
+        } else if (isEditingStandardProject && newPhaseInFinal.isStandard !== true) {
+          // Edit Standard: new phase MUST be standard
+          console.error('❌ ERROR: New phase incorrectly NOT marked as standard in Edit Standard! Fixing...');
+          newPhaseInFinal.isStandard = true;
+        }
       }
 
       // Update project with rebuilt phases (using phases with correct isStandard flags)
