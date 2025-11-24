@@ -45,6 +45,7 @@ BEGIN
   INSERT INTO public.project_runs (
     template_id,
     user_id,
+    name,
     custom_project_name,
     home_id,
     start_date,
@@ -55,7 +56,8 @@ BEGIN
   ) VALUES (
     p_template_id,
     p_user_id,
-    p_run_name,
+    p_run_name,  -- Set name column (required, NOT NULL)
+    p_run_name,  -- Also set custom_project_name
     p_home_id,
     p_start_date,
     p_plan_end_date,
