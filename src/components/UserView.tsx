@@ -2342,7 +2342,7 @@ export default function UserView({
               console.log("✅ Auto-rating kickoff phase:", kickoffRating);
               
               // Update project status to in-progress with all steps and phase rating
-              await updateProjectRun({
+              const updatedRun = {
                 ...currentProjectRun,
                 completedSteps: uniqueSteps,
                 status: 'in-progress',
@@ -2353,10 +2353,17 @@ export default function UserView({
                   }, 0);
                 }, 0))) * 100),
                 updatedAt: new Date()
-              });
+              };
+              
+              await updateProjectRun(updatedRun);
+              
+              // CRITICAL: Update local state immediately after database update to ensure UI reflects changes
+              // This ensures the completedSteps state is in sync with the database
+              console.log("🔄 Refreshing completedSteps state after kickoff completion");
+              setCompletedSteps(new Set(uniqueSteps));
             } else {
               // Fallback if kickoff phase not found
-              await updateProjectRun({
+              const updatedRun = {
                 ...currentProjectRun,
                 completedSteps: uniqueSteps,
                 status: 'in-progress',
@@ -2366,7 +2373,13 @@ export default function UserView({
                   }, 0);
                 }, 0))) * 100),
                 updatedAt: new Date()
-              });
+              };
+              
+              await updateProjectRun(updatedRun);
+              
+              // CRITICAL: Update local state immediately after database update
+              console.log("🔄 Refreshing completedSteps state after kickoff completion (fallback)");
+              setCompletedSteps(new Set(uniqueSteps));
             }
             
             console.log("✅ Kickoff completed - proceeding to main workflow");
