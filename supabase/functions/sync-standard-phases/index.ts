@@ -158,20 +158,46 @@ Deno.serve(async (req) => {
         // For each standard operation, copy steps to template
         for (const standardOp of standardOps || []) {
           const standardPhaseId = (standardOp as any).project_phases?.standard_phase_id;
+          const standardPhaseName = (standardOp as any).project_phases?.name;
           
-          if (!standardPhaseId) continue;
+          // Find matching operation in template
+          // CRITICAL: Match by standard_phase_id if available, otherwise match by phase name and is_standard flag
+          // This ensures newly added standard phases without standard_phase_id are still synced
+          let templateOp;
+          let templateOpError;
           
-          // Find matching operation in template (by standard_phase_id via project_phases AND name)
-          const { data: templateOp, error: templateOpError } = await supabase
-            .from('template_operations')
-            .select(`
-              id,
-              project_phases!inner(standard_phase_id)
-            `)
-            .eq('project_id', template.id)
-            .eq('project_phases.standard_phase_id', standardPhaseId)
-            .eq('name', standardOp.name)
-            .maybeSingle();
+          if (standardPhaseId) {
+            // Try matching by standard_phase_id first (for existing standard phases)
+            const { data, error } = await supabase
+              .from('template_operations')
+              .select(`
+                id,
+                project_phases!inner(is_standard, standard_phase_id)
+              `)
+              .eq('project_id', template.id)
+              .eq('project_phases.standard_phase_id', standardPhaseId)
+              .eq('name', standardOp.name)
+              .maybeSingle();
+            templateOp = data;
+            templateOpError = error;
+          }
+          
+          // If no match by standard_phase_id, try matching by phase name and is_standard flag
+          if (!templateOp && !templateOpError && standardPhaseName) {
+            const { data, error } = await supabase
+              .from('template_operations')
+              .select(`
+                id,
+                project_phases!inner(is_standard, name)
+              `)
+              .eq('project_id', template.id)
+              .eq('project_phases.is_standard', true)
+              .eq('project_phases.name', standardPhaseName)
+              .eq('name', standardOp.name)
+              .maybeSingle();
+            templateOp = data;
+            templateOpError = error;
+          }
 
           if (templateOpError) {
             console.error(`SYNC: Error finding operation "${standardOp.name}":`, templateOpError);
