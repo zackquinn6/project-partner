@@ -2631,11 +2631,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // CRITICAL: Clear deletion state after a delay to prevent double refresh
       // The phase is already deleted from database and displayPhases is already updated
       // We don't need to refetch since we already rebuilt phases and updated everything
+      // Keep skipNextRefresh active longer to prevent any useEffect from triggering
       setTimeout(() => {
         setPhaseToDelete(null);
         setIsDeletingPhase(false);
-        setSkipNextRefresh(false);
-      }, 1000); // Delay to ensure no refetch triggers
+        // Keep skipNextRefresh true a bit longer to ensure all async operations complete
+        setTimeout(() => {
+          setSkipNextRefresh(false);
+        }, 500);
+      }, 1500); // Longer delay to ensure no refetch triggers
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
