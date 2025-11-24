@@ -232,12 +232,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // Standard phases with 'first' or 'last' should keep those values
     return phases.map((phase, index) => {
       // CRITICAL: Always preserve 'first' and 'last' designations - never reassign them
-      if (phase.phaseOrderNumber === 'first' && index === 0) {
-        // First phase with 'first' designation - always preserve
+      // Check this BEFORE any other logic, regardless of position
+      if (phase.phaseOrderNumber === 'first') {
+        usedNumbers.add('first');
         return phase;
       }
-      if (phase.phaseOrderNumber === 'last' && index === phases.length - 1) {
-        // Last phase with 'last' designation - always preserve
+      if (phase.phaseOrderNumber === 'last') {
+        usedNumbers.add('last');
         return phase;
       }
       
@@ -252,22 +253,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         
         if (!isDuplicate) {
           // Order number is valid, keep it
+          usedNumbers.add(phase.phaseOrderNumber);
           return phase;
         }
         // If duplicate, we'll reassign below
       }
       
       if (isStandardPhase(phase)) {
-        // CRITICAL: Always preserve 'first' and 'last' if already set
-        if (phase.phaseOrderNumber === 'first') {
-          usedNumbers.add('first');
-          return phase;
-        }
-        if (phase.phaseOrderNumber === 'last') {
-          usedNumbers.add('last');
-          return phase;
-        }
-        
         // Standard phases get special order numbers based on position rules
         // If it's the first phase and doesn't have an order number, assign 'first'
         if (index === 0 && phase.phaseOrderNumber === undefined) {
