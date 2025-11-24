@@ -1889,6 +1889,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
       
+      // CRITICAL: Double-check that new phase in finalPhases has correct isStandard flag
+      // This ensures it's never incorrectly displayed as standard-locked in regular projects
+      const newPhaseInDisplay = finalPhases.find(p => 
+        p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
+      );
+      if (newPhaseInDisplay && !isEditingStandardProject && newPhaseInDisplay.isStandard === true) {
+        console.error('❌ ERROR: New phase in finalPhases incorrectly marked as standard! Fixing...');
+        newPhaseInDisplay.isStandard = false;
+        // Update the phase in the array
+        const phaseIndex = finalPhases.findIndex(p => p.id === newPhaseInDisplay.id);
+        if (phaseIndex !== -1) {
+          finalPhases[phaseIndex] = { ...newPhaseInDisplay, isStandard: false };
+        }
+      }
+      
       // CRITICAL: Update displayPhases immediately with the new phase
       // This ensures it's visible right away
       setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
