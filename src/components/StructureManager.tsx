@@ -188,91 +188,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Sort phases by order number while preserving standard phase positions
   const sortPhasesByOrderNumber = (phases: Phase[]): Phase[] => {
-    // Separate standard and non-standard phases using isStandard flag
-    const standardPhases: Phase[] = [];
-    const nonStandardPhases: Phase[] = [];
-    
-    phases.forEach(phase => {
-      if (isStandardPhase(phase)) {
-        standardPhases.push(phase);
-      } else {
-        nonStandardPhases.push(phase);
-      }
-    });
-    
-    // Sort non-standard phases by order number
-    nonStandardPhases.sort((a, b) => {
-      const aOrder = a.phaseOrderNumber;
-      const bOrder = b.phaseOrderNumber;
+    // CRITICAL: Sort ALL phases together by their order numbers
+    // This ensures standard and custom phases are interleaved correctly based on order numbers
+    const sortedPhases = [...phases].sort((a, b) => {
+      const aOrder = a.phaseOrderNumber === 'first' ? -Infinity : 
+                    (a.phaseOrderNumber === 'last' ? Infinity : 
+                    (typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 1000));
+      const bOrder = b.phaseOrderNumber === 'first' ? -Infinity : 
+                    (b.phaseOrderNumber === 'last' ? Infinity : 
+                    (typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 1000));
       
-      // Handle 'first' and 'last' special values
-      if (aOrder === 'first') return -1;
-      if (bOrder === 'first') return 1;
-      if (aOrder === 'last') return 1;
-      if (bOrder === 'last') return -1;
-      
-      // Handle numeric order numbers
-      if (typeof aOrder === 'number' && typeof bOrder === 'number') {
-        return aOrder - bOrder;
-      }
-      if (typeof aOrder === 'number') return -1;
-      if (typeof bOrder === 'number') return 1;
-      
-      // If both are undefined or same type, maintain order
-      return 0;
-    });
-    
-    // Reconstruct array: Standard phases (sorted by order number) -> non-standard phases
-    const result: Phase[] = [];
-    
-    // Sort standard phases by their order numbers
-    // Phases with 'first' come first, 'last' comes last, numeric values in between
-    standardPhases.sort((a, b) => {
-      const aOrder = a.phaseOrderNumber === 'first' ? -Infinity : (a.phaseOrderNumber === 'last' ? Infinity : (typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 1000));
-      const bOrder = b.phaseOrderNumber === 'first' ? -Infinity : (b.phaseOrderNumber === 'last' ? Infinity : (typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 1000));
       if (aOrder !== bOrder) {
         return aOrder - bOrder;
       }
-      // Fallback to name if order numbers are the same
-      return (a.name || '').localeCompare(b.name || '');
+      
+      // If same order number, standard phases come before non-standard
+      const aIsStandard = isStandardPhase(a) && !a.isLinked;
+      const bIsStandard = isStandardPhase(b) && !b.isLinked;
+      if (aIsStandard && !bIsStandard) return -1;
+      if (!aIsStandard && bIsStandard) return 1;
+      
+      // If both are same type, maintain original order (stable sort)
+      return 0;
     });
     
-    // CRITICAL: For regular projects, insert non-standard phases in correct positions
-    // Standard phases should maintain their order, but non-standard phases should be inserted
-    // between standard phases based on their order numbers
-    if (!isEditingStandardProject && standardProjectPhases.length > 0) {
-      // Build result array by inserting phases in order based on their order numbers
-      const allPhases = [...standardPhases, ...nonStandardPhases];
-      
-      // Sort all phases by their order numbers
-      allPhases.sort((a, b) => {
-        const aOrder = a.phaseOrderNumber === 'first' ? -Infinity : 
-                      (a.phaseOrderNumber === 'last' ? Infinity : 
-                      (typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 1000));
-        const bOrder = b.phaseOrderNumber === 'first' ? -Infinity : 
-                      (b.phaseOrderNumber === 'last' ? Infinity : 
-                      (typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 1000));
-        if (aOrder !== bOrder) {
-          return aOrder - bOrder;
-        }
-        // If same order number, standard phases come before non-standard
-        const aIsStandard = isStandardPhase(a);
-        const bIsStandard = isStandardPhase(b);
-        if (aIsStandard && !bIsStandard) return -1;
-        if (!aIsStandard && bIsStandard) return 1;
-        return 0;
-      });
-      
-      return allPhases;
-    }
-    
-    // For Edit Standard mode, just add standard phases (sorted)
-    result.push(...standardPhases);
-    
-    // Add non-standard phases (preserving their relative order)
-    result.push(...nonStandardPhases);
-    
-    return result;
+    return sortedPhases;
   };
 
   // Ensure no duplicate order numbers across phases and make them consecutive
