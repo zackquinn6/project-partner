@@ -638,7 +638,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
       const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
       
-      // CRITICAL: For regular projects, apply order numbers from Standard Project Foundation AFTER ensureUniqueOrderNumbers
+      // CONDITION 5: For regular projects, apply order numbers from Standard Project Foundation AFTER ensureUniqueOrderNumbers
+      // This ensures standard project foundation ordering is respected (absolute and relative order numbers)
       // This must happen AFTER ensureUniqueOrderNumbers because it may reassign order numbers
       // Match by phase name, not ID, because phases in regular projects have different IDs
       if (!isEditingStandardProject && standardProjectPhases.length > 0) {
@@ -841,7 +842,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const displayNeedsUpdate = displayIdsChanged || displayOrderChanged;
     
     if (displayNeedsUpdate) {
-      // CRITICAL: Ensure ALL phases have order numbers before setting displayPhases
+      // CONDITION 2: Ensure ALL phases have order numbers before setting displayPhases (no blanks)
       // This fixes the issue where regular phases are missing order numbers
       const phasesWithOrderNumbers = sortedForDisplay.map((phase, index) => {
         if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
@@ -3242,7 +3243,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             .eq('phase_id', projectPhase.id);
         }
 
-        // Delete phase from database - CRITICAL: This permanently removes it
+        // CONDITION 1: Delete phase from database - This immediately commits deletion
+        // Ensures visible phases reflect actual phases in database
         const { error: deletePhaseError, data: deleteResult } = await supabase
           .from('project_phases')
           .delete()
@@ -3328,8 +3330,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           console.error('❌ WARNING: Deleted phase still present in rebuilt phases! This should not happen.');
         }
         
-        // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST using Standard Project Foundation order
-        const orderedPhases = enforceStandardPhaseOrdering(phasesWithoutDeleted, standardProjectPhases);
+      // CONDITION 5: Apply enforceStandardPhaseOrdering FIRST using Standard Project Foundation order
+      // This ensures standard project foundation ordering is respected (absolute and relative order numbers)
+      const orderedPhases = enforceStandardPhaseOrdering(phasesWithoutDeleted, standardProjectPhases);
         // THEN assign order numbers based on the correct order
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
         
@@ -3351,29 +3354,66 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           }
         });
 
-        // CRITICAL: Sort by order number to maintain correct order
-        const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
+      // CRITICAL: Sort by order number to maintain correct order
+      // CONDITION 4: Phases must display sequentially from lowest to highest, top to bottom
+      const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
 
-        // CRITICAL: In Edit Standard mode, ensure order numbers are unique and correct after deletion
-        // This prevents duplicate order numbers (e.g., two "first" positions)
-        // ALWAYS reassign order numbers sequentially after deletion to prevent duplicates
-        if (isEditingStandardProject) {
-          // Reassign ALL order numbers sequentially based on position
-          // This ensures no duplicates and correct ordering
-          sortedPhases.forEach((phase, index) => {
-            if (index === 0) {
+      // CRITICAL: In Edit Standard mode, ensure order numbers are unique and correct after deletion
+      // This prevents duplicate order numbers (e.g., two "first" positions)
+      // ALWAYS reassign order numbers sequentially after deletion to prevent duplicates
+      if (isEditingStandardProject) {
+        // Reassign ALL order numbers sequentially based on position
+        // This ensures no duplicates and correct ordering
+        sortedPhases.forEach((phase, index) => {
+          if (index === 0) {
+            phase.phaseOrderNumber = 'first';
+          } else if (index === sortedPhases.length - 1) {
+            phase.phaseOrderNumber = 'last';
+          } else {
+            phase.phaseOrderNumber = index + 1;
+          }
+        });
+        
+        console.log('🔧 Reassigned order numbers after deletion:', {
+          phases: sortedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+        });
+      }
+      
+      // CONDITION 2: Ensure ALL phases have order numbers (no blanks)
+      sortedPhases.forEach((phase, index) => {
+        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+          // Assign order number based on position
+          if (index === 0) {
+            // Check if first position should be 'first' or a number
+            const hasStandardFirst = sortedPhases.some(p => 
+              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'first'
+            );
+            if (!hasStandardFirst && !isEditingStandardProject) {
               phase.phaseOrderNumber = 'first';
-            } else if (index === sortedPhases.length - 1) {
+            } else {
+              phase.phaseOrderNumber = 1;
+            }
+          } else if (index === sortedPhases.length - 1) {
+            // Check if last position should be 'last' or a number
+            const hasStandardLast = sortedPhases.some(p => 
+              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'last'
+            );
+            if (!hasStandardLast && !isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
               phase.phaseOrderNumber = 'last';
             } else {
               phase.phaseOrderNumber = index + 1;
             }
-          });
-          
-          console.log('🔧 Reassigned order numbers after deletion:', {
-            phases: sortedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+          } else {
+            phase.phaseOrderNumber = index + 1;
+          }
+          console.log('🔧 Assigned missing order number after deletion:', {
+            phaseName: phase.name,
+            phaseId: phase.id,
+            assignedOrder: phase.phaseOrderNumber,
+            index
           });
         }
+      });
 
         // CRITICAL: In Edit Standard mode, filter to only standard phases BEFORE updating
         let phasesToDisplay = sortedPhases.filter(p => p.id !== phaseIdToDelete);
@@ -3415,15 +3455,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           }
         }
         
-        // CRITICAL: Ensure all phases have order numbers before saving
+        // CONDITION 2: Ensure ALL phases have order numbers before saving (no blanks)
         phasesToDisplay.forEach((phase, index) => {
           if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
             // Assign order number based on position
             if (index === 0) {
-              phase.phaseOrderNumber = 'first';
+              // Check if first position should be 'first' or a number
+              const hasStandardFirst = phasesToDisplay.some(p => 
+                isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'first'
+              );
+              if (!hasStandardFirst && !isEditingStandardProject) {
+                phase.phaseOrderNumber = 'first';
+              } else {
+                phase.phaseOrderNumber = 1;
+              }
             } else if (index === phasesToDisplay.length - 1) {
-              // Check if this should be 'last' (only if it's a standard phase in regular projects)
-              if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+              // Check if last position should be 'last' or a number
+              const hasStandardLast = phasesToDisplay.some(p => 
+                isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'last'
+              );
+              if (!hasStandardLast && !isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
                 phase.phaseOrderNumber = 'last';
               } else {
                 phase.phaseOrderNumber = index + 1;
@@ -3440,7 +3491,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           }
         });
         
-        // CRITICAL: Explicitly include phaseOrderNumber in the JSON to ensure it's saved
+        // CONDITION 3: Explicitly include phaseOrderNumber in the JSON to ensure it's saved to database
         const phasesToSave = phasesToDisplay.map(phase => ({
           ...phase,
           phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
@@ -3951,8 +4002,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                         phases: displayPhases.map(p => ({ name: p.name, id: p.id, order: p.phaseOrderNumber, isStandard: p.isStandard }))
                       });
                       
-                      // CRITICAL: Use currentProject.phases as source of truth, but update with displayPhases order numbers
+                      // CONDITION 3: Use currentProject.phases as source of truth, but update with displayPhases order numbers
                       // This ensures we have all phase data (operations, steps) while preserving order numbers
+                      // All phases will have order numbers saved to database upon saving
                       const phasesToSave = displayPhases.map((displayPhase, index) => {
                         // Find the corresponding phase in currentProject.phases to preserve all data
                         const projectPhase = currentProject.phases?.find(p => p.id === displayPhase.id);
