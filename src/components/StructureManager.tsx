@@ -916,7 +916,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             const phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
             console.log('📋 Fetched Standard Project Foundation phases:', {
               count: phases.length,
-              phases: phases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+              phases: phases.map(p => ({ 
+                name: p.name, 
+                order: p.phaseOrderNumber,
+                hasOrder: p.phaseOrderNumber !== undefined,
+                orderType: typeof p.phaseOrderNumber,
+                fullPhase: p
+              }))
             });
             setStandardProjectPhases(phases);
           } else if (error) {
@@ -945,25 +951,40 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // This ensures positions set in Edit Standard are properly reserved in regular projects
     if (!isEditingStandardProject && standardProjectPhases.length > 0) {
       standardProjectPhases.forEach(phase => {
-        if (phase.phaseOrderNumber !== undefined) {
-          if (phase.phaseOrderNumber === 'first') {
+        // Check for phaseOrderNumber in multiple possible locations
+        const orderNumber = phase.phaseOrderNumber;
+        
+        if (orderNumber !== undefined && orderNumber !== null) {
+          if (orderNumber === 'first' || orderNumber === 'First') {
             reservedNumbers.add('First');
             reservedByStandardPhases.add('First');
             // Also reserve position 1 when 'first' is used
             reservedNumbers.add(1);
             reservedByStandardPhases.add(1);
-          } else if (phase.phaseOrderNumber === 'last') {
+            console.log('🔒 Reserved "First" and position 1 for:', phase.name);
+          } else if (orderNumber === 'last' || orderNumber === 'Last') {
             reservedNumbers.add('Last');
             reservedByStandardPhases.add('Last');
-          } else if (typeof phase.phaseOrderNumber === 'number') {
-            reservedNumbers.add(phase.phaseOrderNumber);
-            reservedByStandardPhases.add(phase.phaseOrderNumber);
+            console.log('🔒 Reserved "Last" for:', phase.name);
+          } else if (typeof orderNumber === 'number') {
+            reservedNumbers.add(orderNumber);
+            reservedByStandardPhases.add(orderNumber);
+            console.log('🔒 Reserved position', orderNumber, 'for:', phase.name);
+          } else {
+            console.warn('⚠️ Unexpected order number type for', phase.name, ':', orderNumber, typeof orderNumber);
           }
+        } else {
+          console.warn('⚠️ Phase', phase.name, 'has no phaseOrderNumber:', phase);
         }
       });
       console.log('🔒 Reserved positions from Standard Project Foundation:', {
         reserved: Array.from(reservedByStandardPhases),
-        standardPhases: standardProjectPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+        reservedCount: reservedByStandardPhases.size,
+        standardPhases: standardProjectPhases.map(p => ({ 
+          name: p.name, 
+          order: p.phaseOrderNumber,
+          hasOrder: p.phaseOrderNumber !== undefined
+        }))
       });
     }
     
