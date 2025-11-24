@@ -336,13 +336,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return rebuiltPhases || [];
     }
     
+    // CRITICAL: Filter out deleted phase if we're currently deleting one
+    const currentPhasesFiltered = phaseToDelete 
+      ? (currentProject.phases || []).filter(p => p.id !== phaseToDelete)
+      : (currentProject.phases || []);
+    
     // If we have rebuilt phases, merge them with currentProject.phases to preserve correct isStandard flags
     if (rebuiltPhases && rebuiltPhases.length > 0) {
       // Create maps for both ID and name matching
       // Use ID as primary identifier, but also check by name for phases that might have been renamed
       const currentPhasesById = new Map<string, Phase>();
       const currentPhasesByName = new Map<string, Phase>();
-      currentProject.phases.forEach(phase => {
+      currentPhasesFiltered.forEach(phase => {
         if (phase.id) {
           currentPhasesById.set(phase.id, phase);
         }
@@ -428,9 +433,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Get phases from currentProject.phases that aren't in rebuilt phases
       // Check by both ID and name to catch all cases
       // CRITICAL: Always include phases that were just added (even if not in rebuiltPhases yet)
+      // CRITICAL: Exclude phases that are being deleted
       const rebuiltPhaseIds = new Set(rebuiltPhases.map(p => p.id).filter(Boolean));
       const rebuiltPhaseNames = new Set(rebuiltPhases.map(p => p.name).filter(Boolean));
-      const phasesOnlyInJson = currentProject.phases.filter(p => {
+      const phasesOnlyInJson = currentPhasesFiltered.filter(p => {
+        // Exclude deleted phase
+        if (phaseToDelete && p.id === phaseToDelete) {
+          return false;
+        }
         // Always include if this is the just-added phase
         if (justAddedPhaseId && p.id === justAddedPhaseId) {
           return true;
@@ -454,9 +464,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     // Fallback: use currentProject.phases directly if no rebuilt phases
+    // But filter out deleted phase if we're currently deleting one
     console.log('🔍 No rebuiltPhases, returning currentProject.phases directly');
-    return currentProject.phases;
-  }, [currentProject?.phases, rebuiltPhases, justAddedPhaseId]);
+    return phaseToDelete 
+      ? (currentProject.phases || []).filter(p => p.id !== phaseToDelete)
+      : (currentProject.phases || []);
+  }, [currentProject?.phases, rebuiltPhases, justAddedPhaseId, phaseToDelete]);
   
   // Process merged phases and update displayPhases
   // Use mergedPhases directly (same as EditWorkflowView uses rawPhases)
