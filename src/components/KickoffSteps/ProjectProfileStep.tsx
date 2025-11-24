@@ -59,12 +59,24 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   
   useEffect(() => {
     const fetchScalingUnitAndItemType = async () => {
-      if (templateProject?.id) {
+      // CRITICAL FIX: Use templateProject.id if available, otherwise use currentProjectRun.templateId directly
+      // This ensures we can fetch even if projects array hasn't loaded yet
+      const templateId = templateProject?.id || currentProjectRun?.templateId;
+      
+      console.log('📊 fetchScalingUnitAndItemType called:', {
+        hasTemplateProject: !!templateProject,
+        templateProjectId: templateProject?.id,
+        currentProjectRunTemplateId: currentProjectRun?.templateId,
+        templateIdToUse: templateId,
+        projectsArrayLength: projects?.length || 0
+      });
+      
+      if (templateId) {
         try {
           const { data, error } = await supabase
             .from('projects')
             .select('scaling_unit, item_type')
-            .eq('id', templateProject.id)
+            .eq('id', templateId)
             .single();
           
           if (!error && data) {
@@ -76,7 +88,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             setItemType(fetchedItemType);
             
             console.log('📊 Fetched scaling unit and item type:', {
-              templateProjectId: templateProject.id,
+              templateId,
               scaling_unit: data.scaling_unit,
               item_type: data.item_type,
               item_type_type: typeof data.item_type,
@@ -116,20 +128,22 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           });
         }
       } else {
-        // No template project, use currentProjectRun values or fallback
+        // No template ID available, use currentProjectRun values or fallback
         const fallbackScalingUnit = (currentProjectRun as any)?.scalingUnit || 'per item';
         const fallbackItemType = (currentProjectRun as any)?.itemType || (currentProjectRun as any)?.item_type || null;
         setScalingUnit(fallbackScalingUnit);
         setItemType(fallbackItemType);
-        console.log('📊 No template project, using currentProjectRun values:', {
+        console.log('📊 No template ID available, using currentProjectRun values:', {
           fallbackScalingUnit,
-          fallbackItemType
+          fallbackItemType,
+          hasCurrentProjectRun: !!currentProjectRun,
+          hasTemplateProject: !!templateProject
         });
       }
     };
     
     fetchScalingUnitAndItemType();
-  }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun]);
+  }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun, projects]);
 
   useEffect(() => {
     if (user) {
