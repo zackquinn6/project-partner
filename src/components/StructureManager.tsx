@@ -1424,9 +1424,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         orderedPhases = enforceStandardPhaseOrdering(finalPhases, standardProjectPhases);
       }
       
-      // Preserve existing order numbers before applying ensureUniqueOrderNumbers
-      // CRITICAL: Preserve 'first' and 'last' designations for all phases, not just incorporated
-      const orderNumberMap = new Map(finalPhases.map(p => [p.id, p.phaseOrderNumber]));
+      // CRITICAL: Preserve order numbers from the INPUT reorderedPhases, not from finalPhases
+      // This ensures 'first' and 'last' designations are preserved even after database rebuild
+      const orderNumberMap = new Map(reorderedPhases.map(p => [p.id, p.phaseOrderNumber]));
       
       // THEN assign order numbers based on the correct order, but preserve existing ones
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
@@ -1435,7 +1435,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       phasesWithUniqueOrder.forEach((phase, index) => {
         const preservedOrder = orderNumberMap.get(phase.id);
         if (preservedOrder !== undefined) {
-          // CRITICAL: Always restore 'first' and 'last' designations
+          // CRITICAL: Always restore 'first' and 'last' designations from the original input
           if (preservedOrder === 'first' || preservedOrder === 'last') {
             phase.phaseOrderNumber = preservedOrder;
           } else if (phase.isLinked) {
@@ -1445,6 +1445,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           // For other phases, ensureUniqueOrderNumbers has already assigned correct numbers
         }
       });
+      
+      // CRITICAL: After restoring, ensure the last phase in the sorted array has 'last' if it was originally 'last'
+      // This handles the case where the last phase might have been moved during sorting
+      if (phasesWithUniqueOrder.length > 0) {
+        const lastPhase = phasesWithUniqueOrder[phasesWithUniqueOrder.length - 1];
+        const originalLastPhase = reorderedPhases.find(p => p.phaseOrderNumber === 'last');
+        if (originalLastPhase && lastPhase.id === originalLastPhase.id) {
+          lastPhase.phaseOrderNumber = 'last';
+        }
+      }
       
       // Sort phases by order number before saving
       const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
