@@ -602,10 +602,64 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     if (phasesToProcess.length > 0) {
+      // CRITICAL: Preserve 'first' and 'last' order numbers from currentProject.phases BEFORE processing
+      // This ensures they're not lost during ensureUniqueOrderNumbers
+      const preservedOrderNumbers = new Map<string, string | number>();
+      if (currentProject?.phases && currentProject.phases.length > 0) {
+        currentProject.phases.forEach(phase => {
+          if (phase.phaseOrderNumber === 'first' || phase.phaseOrderNumber === 'last') {
+            preservedOrderNumbers.set(phase.id, phase.phaseOrderNumber);
+          }
+        });
+      }
+      
       const rawPhases = deduplicatePhases(phasesToProcess);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
       const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
+      
+      // CRITICAL: Restore 'first' and 'last' order numbers after processing
+      sortedPhases.forEach(phase => {
+        const preservedOrder = preservedOrderNumbers.get(phase.id);
+        if (preservedOrder === 'first' || preservedOrder === 'last') {
+          phase.phaseOrderNumber = preservedOrder;
+        }
+      });
+      
+      // CRITICAL: After all processing, ensure the last phase has 'last' if it was originally 'last'
+      if (sortedPhases.length > 0) {
+        const originalLastPhaseId = Array.from(preservedOrderNumbers.entries())
+          .find(([id, order]) => order === 'last')?.[0];
+        if (originalLastPhaseId) {
+          const lastPhaseInSorted = sortedPhases.find(p => p.id === originalLastPhaseId);
+          if (lastPhaseInSorted) {
+            // Restore 'last' to the original last phase
+            lastPhaseInSorted.phaseOrderNumber = 'last';
+            // Move it to the end if it's not already there
+            const currentIndex = sortedPhases.indexOf(lastPhaseInSorted);
+            if (currentIndex !== sortedPhases.length - 1) {
+              sortedPhases.splice(currentIndex, 1);
+              sortedPhases.push(lastPhaseInSorted);
+            }
+          } else {
+            // Original last phase not found - ensure current last phase has 'last'
+            const lastPhase = sortedPhases[sortedPhases.length - 1];
+            if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
+              lastPhase.phaseOrderNumber = 'last';
+            }
+          }
+        } else {
+          // No original last phase found - check if current last phase should have 'last'
+          // In Edit Standard mode, the last phase should always have 'last'
+          if (isEditingStandardProject) {
+            const lastPhase = sortedPhases[sortedPhases.length - 1];
+            if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
+              lastPhase.phaseOrderNumber = 'last';
+            }
+          }
+        }
+      }
+      
       return sortedPhases;
     }
     
