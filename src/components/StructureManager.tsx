@@ -2240,14 +2240,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         };
         updateProject(updatedProject);
 
-        // Update display state immediately
-        setDisplayPhases(phasesWithUniqueOrder);
-
-        // Also refresh from database to ensure consistency
-        // Add a small delay to allow database to fully propagate the change
-        setTimeout(() => {
-          refetchDynamicPhases();
-        }, 500);
+        // Update display state immediately - filter out deleted phase to prevent flicker
+        // This ensures the phase disappears immediately and doesn't reappear during refetch
+        setDisplayPhases(phasesWithUniqueOrder.filter(p => p.id !== phaseToDelete));
       }
 
       // Ensure minimum display time for loading state
@@ -2261,11 +2256,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setDeletePhaseDialogOpen(false);
       setPhaseToDelete(null);
       
-      // Force refresh to ensure UI updates
-      // Add a small delay to allow database to fully propagate the change
+      // Refetch from database once to ensure consistency, but only after state is updated
+      // This single refetch will update the mergedPhases, which will then update displayPhases
+      // The deleted phase is already filtered out, so it won't reappear
       setTimeout(() => {
         refetchDynamicPhases();
-      }, 500);
+      }, 1000);
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
