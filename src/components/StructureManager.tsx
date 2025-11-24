@@ -1657,10 +1657,40 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           if (lastStandardPhaseIndex !== -1) {
             phasesWithoutNew.splice(lastStandardPhaseIndex, 0, newPhase);
             orderedPhases = phasesWithoutNew;
+            
+            // CRITICAL: Set the new phase's order number to ensure it stays at second-to-last
+            // Find the last phase's order number and set new phase to be one less
+            const lastPhase = orderedPhases[orderedPhases.length - 1];
+            if (lastPhase && lastPhase.phaseOrderNumber === 'last') {
+              // If last phase has 'last', set new phase to totalPhases - 1 (second-to-last)
+              const newPhaseIndex = orderedPhases.findIndex(p => p.id === newPhase.id || p.name === uniquePhaseName);
+              if (newPhaseIndex !== -1) {
+                orderedPhases[newPhaseIndex].phaseOrderNumber = orderedPhases.length - 1;
+              }
+            } else if (lastPhase && typeof lastPhase.phaseOrderNumber === 'number') {
+              // If last phase has a number, set new phase to that number - 1
+              const newPhaseIndex = orderedPhases.findIndex(p => p.id === newPhase.id || p.name === uniquePhaseName);
+              if (newPhaseIndex !== -1) {
+                orderedPhases[newPhaseIndex].phaseOrderNumber = lastPhase.phaseOrderNumber - 1;
+              }
+            }
           } else {
             // If no last standard phase found, insert before the last phase
             phasesWithoutNew.splice(phasesWithoutNew.length - 1, 0, newPhase);
             orderedPhases = phasesWithoutNew;
+            
+            // Set new phase's order number to be second-to-last
+            const newPhaseIndex = orderedPhases.findIndex(p => p.id === newPhase.id || p.name === uniquePhaseName);
+            const lastPhase = orderedPhases[orderedPhases.length - 1];
+            if (newPhaseIndex !== -1 && lastPhase) {
+              if (lastPhase.phaseOrderNumber === 'last') {
+                orderedPhases[newPhaseIndex].phaseOrderNumber = orderedPhases.length - 1;
+              } else if (typeof lastPhase.phaseOrderNumber === 'number') {
+                orderedPhases[newPhaseIndex].phaseOrderNumber = lastPhase.phaseOrderNumber - 1;
+              } else {
+                orderedPhases[newPhaseIndex].phaseOrderNumber = orderedPhases.length - 1;
+              }
+            }
           }
         } else {
           // New phase not found, use standard ordering
@@ -1672,6 +1702,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       // THEN assign order numbers based on the correct order
+      // CRITICAL: In Edit Standard mode, preserve the order number we just set for the new phase
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       
       // CRITICAL: Set isStandard flag correctly based on whether we're editing Standard Project Foundation
@@ -1770,13 +1801,47 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         shouldBeStandard
       });
       
+      // CRITICAL: In Edit Standard mode, ensure new phase stays at second-to-last position
+      // Sort by order number to maintain the correct order
+      let finalPhases = phasesWithCorrectStandardFlag;
+      if (isEditingStandardProject) {
+        // Sort to ensure order numbers are respected
+        finalPhases = sortPhasesByOrderNumber(phasesWithCorrectStandardFlag);
+        
+        // Double-check: if new phase is at the end, move it to second-to-last
+        const newPhaseIndex = finalPhases.findIndex(p => 
+          p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
+        );
+        if (newPhaseIndex === finalPhases.length - 1 && finalPhases.length > 1) {
+          // New phase is at the end, move it to second-to-last
+          const [newPhase] = finalPhases.splice(newPhaseIndex, 1);
+          finalPhases.splice(finalPhases.length - 1, 0, newPhase);
+          
+          // Update order numbers to reflect the correct position
+          const lastPhase = finalPhases[finalPhases.length - 1];
+          if (lastPhase && lastPhase.phaseOrderNumber === 'last') {
+            newPhase.phaseOrderNumber = finalPhases.length - 1;
+          } else if (lastPhase && typeof lastPhase.phaseOrderNumber === 'number') {
+            newPhase.phaseOrderNumber = lastPhase.phaseOrderNumber - 1;
+          }
+        }
+      }
+      
       // CRITICAL: Update displayPhases immediately with the new phase
       // This ensures it's visible right away
-      setDisplayPhases(phasesWithCorrectStandardFlag);
+      setDisplayPhases(finalPhases);
       setPhasesLoaded(true);
       
+      // Update the project with the correctly ordered phases
+      const finalUpdatedProject = {
+        ...currentProject,
+        phases: finalPhases,
+        updatedAt: new Date()
+      };
+      updateProject(finalUpdatedProject);
+      
       // Note: updatedProject was already created and updateProject called above (line 1493-1498)
-      // No need to duplicate this - the phase is already persisted
+      // But we're updating again with the correctly ordered phases
       
       // Trigger refetch of dynamic phases to ensure consistency
       // Add a small delay to allow database to fully propagate the change
