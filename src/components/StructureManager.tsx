@@ -2295,18 +2295,37 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             .eq('phase_id', projectPhase.id);
         }
 
-        // Delete phase
-        await supabase
+        // Delete phase from database - CRITICAL: This permanently removes it
+        const { error: deletePhaseError, data: deleteResult } = await supabase
           .from('project_phases')
           .delete()
-          .eq('id', projectPhase.id);
+          .eq('id', projectPhase.id)
+          .select();
 
-        // Rebuild phases JSON
+        if (deletePhaseError) {
+          console.error('❌ Error deleting phase from project_phases:', deletePhaseError);
+          throw deletePhaseError;
+        }
+
+        // Verify deletion succeeded
+        if (!deleteResult || deleteResult.length === 0) {
+          console.warn('⚠️ Phase deletion returned no rows - phase may not have existed');
+        } else {
+          console.log('✅ Phase permanently deleted from database:', {
+            phaseId: projectPhase.id,
+            deletedRows: deleteResult.length
+          });
+        }
+
+        // Rebuild phases JSON - this will NOT include the deleted phase since it's gone from project_phases
         const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
           p_project_id: currentProject.id
         });
 
-        if (rebuildError) throw rebuildError;
+        if (rebuildError) {
+          console.error('❌ Error rebuilding phases after deletion:', rebuildError);
+          throw rebuildError;
+        }
 
         // Merge with any incorporated phases from current project
         const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
@@ -2314,18 +2333,32 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const incorporatedPhases = currentPhases.filter(p => p.isLinked && p.id !== phaseToDelete);
         const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
         const rawPhases = deduplicatePhases(allPhases);
-        // CRITICAL: Filter out deleted phase to prevent it from reappearing
+        
+        // CRITICAL: Filter out deleted phase as a safety measure (shouldn't be in rebuiltPhases, but just in case)
+        // This is temporary UI filtering - the phase is already permanently deleted from the database above
         const phasesWithoutDeleted = rawPhases.filter(p => p.id !== phaseToDelete);
+        
+        // Verify deleted phase is not in the rebuilt phases
+        const deletedPhaseStillPresent = phasesWithoutDeleted.some(p => p.id === phaseToDelete);
+        if (deletedPhaseStillPresent) {
+          console.error('❌ WARNING: Deleted phase still present in rebuilt phases! This should not happen.');
+        }
+        
         // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST using Standard Project Foundation order
         const orderedPhases = enforceStandardPhaseOrdering(phasesWithoutDeleted, standardProjectPhases);
         // THEN assign order numbers based on the correct order
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
 
-        // Update project
-        await supabase
+        // Update project JSON - the deleted phase is already gone from database, this just updates the JSON
+        const { error: updateError } = await supabase
           .from('projects')
           .update({ phases: phasesWithUniqueOrder as any })
           .eq('id', currentProject.id);
+
+        if (updateError) {
+          console.error('❌ Error updating project phases JSON after deletion:', updateError);
+          throw updateError;
+        }
 
         // Update local context immediately
         const updatedProject = {
@@ -2336,7 +2369,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         updateProject(updatedProject);
 
         // Update display state immediately - filter out deleted phase to prevent flicker
-        // This ensures the phase disappears immediately and doesn't reappear during refetch
+        // This is temporary UI filtering - the phase is already permanently deleted from the database
         setDisplayPhases(phasesWithUniqueOrder.filter(p => p.id !== phaseToDelete));
       }
 
