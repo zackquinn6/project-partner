@@ -3063,31 +3063,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setDeletePhaseDialogOpen(false);
       setPhaseIdPendingDelete(null); // Clear pending delete ID
       
-      // CRITICAL: Clear skipNextRefresh after a delay to allow useEffect to process the update
-      // But don't refetch immediately - let the useEffect handle it naturally
+      // CRITICAL: Don't refetch after deletion - we've already updated the database correctly with updatePhaseOrder
+      // The displayPhases and currentProject.phases are already updated with correct order numbers
+      // Refetching would cause a second refresh that might jumble the order
+      // Just clear the state flags after a delay to allow any pending operations to complete
       setTimeout(() => {
         setSkipNextRefresh(false);
-      setPhaseToDelete(null);
-        setIsDeletingPhase(false);
-        console.log('✅ Deletion state cleared, useEffect can now process updates');
-      }, 1000);
-      
-      // CRITICAL: Force refetch of dynamic phases to ensure UI is in sync with database
-      // This ensures useDynamicPhases gets fresh data without the deleted phase
-      // This prevents duplicate phases and ensures order numbers are correct
-      // BUT: Do this AFTER clearing skipNextRefresh so the useEffect can process it
-      setTimeout(async () => {
-        console.log('🔄 Refetching dynamic phases after deletion to ensure data accuracy...');
-        await refetchDynamicPhases();
-        console.log('✅ Dynamic phases refetched after deletion');
-      }, 1500);
-      // Clear skipNextRefresh to allow useEffect to update displayPhases with fresh data from database
-      setTimeout(() => {
         setPhaseToDelete(null);
         setIsDeletingPhase(false);
-        // Clear skipNextRefresh to allow useEffect to refresh with database data
-        setSkipNextRefresh(false);
-      }, 500); // Short delay to ensure refetch completes
+        console.log('✅ Deletion state cleared');
+      }, 2000); // Longer delay to ensure all updates are complete
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
