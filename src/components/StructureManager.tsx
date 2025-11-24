@@ -1340,6 +1340,80 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     toast.success('Operation reordered successfully');
   };
   
+  // Handle phase order change from dropdown
+  const handlePhaseOrderChange = async (phaseId: string, newOrder: string | number) => {
+    if (!currentProject) return;
+    
+    const phase = displayPhases.find(p => p.id === phaseId);
+    if (!phase) return;
+    
+    // Convert 'First'/'Last' to 'first'/'last'
+    const normalizedOrder = newOrder === 'First' ? 'first' : newOrder === 'Last' ? 'last' : newOrder;
+    
+    // Find if another phase already has this order number
+    const conflictingPhase = displayPhases.find(p => 
+      p.id !== phaseId && p.phaseOrderNumber === normalizedOrder
+    );
+    
+    // Create new phases array with updated order
+    const reorderedPhases = displayPhases.map(p => {
+      if (p.id === phaseId) {
+        // Update the selected phase's order
+        return { ...p, phaseOrderNumber: normalizedOrder };
+      } else if (conflictingPhase && p.id === conflictingPhase.id) {
+        // Move the conflicting phase to the next available position
+        // Find the next available order number
+        const usedOrders = new Set(displayPhases.map(ph => ph.phaseOrderNumber));
+        let nextOrder: string | number;
+        
+        if (normalizedOrder === 'first') {
+          // If moving to first, move conflicting to second position
+          nextOrder = 2;
+          while (usedOrders.has(nextOrder)) {
+            nextOrder = (nextOrder as number) + 1;
+          }
+        } else if (normalizedOrder === 'last') {
+          // If moving to last, move conflicting to second-to-last
+          const totalPhases = displayPhases.length;
+          nextOrder = totalPhases - 1;
+          while (usedOrders.has(nextOrder) || nextOrder === normalizedOrder) {
+            nextOrder = (nextOrder as number) - 1;
+          }
+          if (nextOrder < 1) nextOrder = 1;
+        } else {
+          // If moving to a number, move conflicting to next available number
+          const targetNum = typeof normalizedOrder === 'number' ? normalizedOrder : parseInt(String(normalizedOrder), 10);
+          nextOrder = targetNum + 1;
+          while (usedOrders.has(nextOrder)) {
+            nextOrder = (nextOrder as number) + 1;
+          }
+        }
+        
+        return { ...p, phaseOrderNumber: nextOrder };
+      }
+      return p;
+    });
+    
+    // Update display immediately
+    setDisplayPhases(reorderedPhases);
+    
+    // Update project context
+    updateProject({
+      ...currentProject,
+      phases: reorderedPhases,
+      updatedAt: new Date()
+    });
+    
+    // Update phase order in database
+    try {
+      await updatePhaseOrder(reorderedPhases);
+      console.log('✅ Phase order updated in database after dropdown change');
+    } catch (error) {
+      console.error('❌ Error updating phase order:', error);
+      toast.error('Error updating phase order');
+    }
+  };
+  
   // Move step up/down
   const moveStep = async (phaseId: string, operationId: string, stepId: string, direction: 'up' | 'down') => {
     if (!currentProject) return;
