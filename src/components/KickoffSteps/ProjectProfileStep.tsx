@@ -90,17 +90,25 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           } else if (error) {
             console.error('❌ Error fetching scaling_unit and item_type:', error);
             // Fallback to templateProject values if database fetch fails
-            setScalingUnit(templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item');
-            setItemType(templateProject?.itemType || null);
+            const fallbackScalingUnit = templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
+            const fallbackItemType = (templateProject as any)?.itemType || (templateProject as any)?.item_type || null;
+            setScalingUnit(fallbackScalingUnit);
+            setItemType(fallbackItemType);
+            console.log('📊 Using fallback values (error case):', {
+              fallbackScalingUnit,
+              fallbackItemType,
+              templateProjectItemType: (templateProject as any)?.itemType,
+              templateProjectItem_type: (templateProject as any)?.item_type
+            });
           }
         } catch (error) {
-          console.error('Error fetching scaling_unit and item_type:', error);
+          console.error('❌ Exception fetching scaling_unit and item_type:', error);
           // Fallback to templateProject values if database fetch fails
           const fallbackScalingUnit = templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
           const fallbackItemType = (templateProject as any)?.itemType || (templateProject as any)?.item_type || null;
           setScalingUnit(fallbackScalingUnit);
           setItemType(fallbackItemType);
-          console.log('📊 Using fallback values:', {
+          console.log('📊 Using fallback values (exception case):', {
             fallbackScalingUnit,
             fallbackItemType,
             templateProjectItemType: (templateProject as any)?.itemType,
