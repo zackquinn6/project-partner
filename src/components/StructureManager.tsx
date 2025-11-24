@@ -602,30 +602,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     if (phasesToProcess.length > 0) {
-      // CRITICAL: For regular projects, get order numbers from Standard Project Foundation
+      // CRITICAL: For regular projects, order numbers will be applied from Standard Project Foundation AFTER ensureUniqueOrderNumbers
       // For Edit Standard, preserve order numbers from currentProject.phases
       const preservedOrderNumbers = new Map<string, string | number>();
       
-      if (!isEditingStandardProject && standardProjectPhases.length > 0) {
-        // Regular project: Get order numbers from Standard Project Foundation
-        // Create a map of phase name to order number from Standard Project Foundation
-        const standardOrderMap = new Map<string, string | number>();
-        standardProjectPhases.forEach(phase => {
-          if (phase.name && phase.phaseOrderNumber !== undefined) {
-            standardOrderMap.set(phase.name, phase.phaseOrderNumber);
-          }
-        });
-        
-        // Apply order numbers from Standard Project Foundation to standard phases
-        phasesToProcess.forEach(phase => {
-          if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
-            const standardOrder = standardOrderMap.get(phase.name);
-            if (standardOrder !== undefined) {
-              preservedOrderNumbers.set(phase.id, standardOrder);
-            }
-          }
-        });
-      } else if (isEditingStandardProject && currentProject?.phases && currentProject.phases.length > 0) {
+      if (isEditingStandardProject && currentProject?.phases && currentProject.phases.length > 0) {
         // Edit Standard: Preserve order numbers from currentProject.phases
         // CRITICAL: Filter out deleted phase before preserving order numbers
         // This prevents preserving order numbers from a phase that no longer exists
