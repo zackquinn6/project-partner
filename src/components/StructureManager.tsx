@@ -48,6 +48,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     currentProject?.isStandardTemplate === true
   );
 
+  // State to store standard phase order from Standard Project Foundation
+  // CRITICAL: Declare this early so it can be used in useMemo hooks below
+  const [standardProjectPhases, setStandardProjectPhases] = useState<Phase[]>([]);
+
   // Helper to check if a phase is standard - use isStandard flag from phase data
   // No hardcoded names - rely on database flag
   const isStandardPhase = (phase: Phase) => {
@@ -615,9 +619,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // Default: use index + 1
     return phaseIndex + 1;
   };
-
-  // State to store standard phase order from Standard Project Foundation
-  const [standardProjectPhases, setStandardProjectPhases] = useState<Phase[]>([]);
 
   // Fetch standard phase order from Standard Project Foundation
   useEffect(() => {
