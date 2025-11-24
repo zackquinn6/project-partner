@@ -100,6 +100,7 @@ export default function UserView({
     currentProject,
     currentProjectRun,
     projectRuns,
+    projects,
     setCurrentProjectRun,
     updateProjectRun
   } = useProject();
@@ -419,12 +420,29 @@ export default function UserView({
       parsedPhases = [];
     }
     rawWorkflowPhases = Array.isArray(parsedPhases) ? parsedPhases : [];
+    
+    // FALLBACK: If project run has no phases, try to get them from the template project
+    if (rawWorkflowPhases.length === 0 && currentProjectRun.templateId) {
+      console.log('⚠️ Project run has no phases, checking template project:', currentProjectRun.templateId);
+      const templateProject = currentProject || projects?.find(p => p.id === currentProjectRun.templateId);
+      if (templateProject?.phases && templateProject.phases.length > 0) {
+        console.log('✅ Found phases in template project, using as fallback:', templateProject.phases.length);
+        rawWorkflowPhases = templateProject.phases;
+      } else if (dynamicPhases.length > 0 && currentProject?.id === currentProjectRun.templateId) {
+        // If we're loading dynamic phases for the template, use those
+        console.log('✅ Using dynamic phases as fallback:', dynamicPhases.length);
+        rawWorkflowPhases = dynamicPhases;
+      }
+    }
+    
     console.log('📦 Using project run phases:', {
       runId: currentProjectRun.id,
+      templateId: currentProjectRun.templateId,
       phasesLength: rawWorkflowPhases.length,
       phasesType: typeof currentProjectRun.phases,
       phasesIsArray: Array.isArray(currentProjectRun.phases),
-      rawPhases: currentProjectRun.phases
+      hasTemplatePhases: !!(currentProject?.phases && currentProject.phases.length > 0),
+      hasDynamicPhases: dynamicPhases.length > 0
     });
   } else if (currentProject) {
     // Templates: prefer dynamic phases from RPC, fallback to stored phases
@@ -2355,6 +2373,8 @@ export default function UserView({
   // 1. activeProject.phases (direct from project/project run)
   // 2. rawWorkflowPhases (before ordering - most reliable)
   // 3. workflowPhases (after ordering)
+  // 4. Template project phases (fallback for project runs)
+  // 5. Dynamic phases (for templates)
   let activeProjectPhasesCount = 0;
   if (activeProject?.phases) {
     if (Array.isArray(activeProject.phases)) {
@@ -2369,21 +2389,41 @@ export default function UserView({
     }
   }
   
-  const hasPhases = activeProjectPhasesCount > 0 || rawWorkflowPhases.length > 0 || workflowPhases.length > 0;
+  // Also check template project phases as fallback
+  let templatePhasesCount = 0;
+  if (currentProjectRun?.templateId) {
+    const templateProject = currentProject || projects?.find(p => p.id === currentProjectRun.templateId);
+    if (templateProject?.phases) {
+      templatePhasesCount = Array.isArray(templateProject.phases) ? templateProject.phases.length : 0;
+    }
+  }
+  
+  const hasPhases = activeProjectPhasesCount > 0 || 
+                   rawWorkflowPhases.length > 0 || 
+                   workflowPhases.length > 0 ||
+                   templatePhasesCount > 0 ||
+                   (currentProject && dynamicPhases.length > 0);
   
   console.log('🔍 Phase detection check:', {
     activeProjectPhasesCount,
     rawWorkflowPhasesLength: rawWorkflowPhases.length,
     workflowPhasesLength: workflowPhases.length,
+    templatePhasesCount,
+    dynamicPhasesLength: dynamicPhases.length,
     hasPhases,
     currentProjectRunId: currentProjectRun?.id,
     currentProjectId: currentProject?.id,
-    activeProjectId: activeProject?.id
+    activeProjectId: activeProject?.id,
+    templateId: currentProjectRun?.templateId,
+    isDynamicPhasesLoading: dynamicPhasesLoading
   });
   
-  // If there are no phases at all, show "under construction"
+  // If there are no phases at all AND we're not still loading, show "under construction"
+  // If we're still loading dynamic phases, wait before showing "under construction"
   // If there are phases, show the workflow (even if steps aren't organized yet)
-  if (!hasPhases) {
+  const shouldShowUnderConstruction = !hasPhases && !dynamicPhasesLoading;
+  
+  if (shouldShowUnderConstruction) {
     return <div className="container mx-auto px-6 py-8">
         <Card>
           <CardContent className="text-center py-8">
