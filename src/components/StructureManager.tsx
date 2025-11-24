@@ -1615,8 +1615,49 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const incorporatedPhases = currentPhases.filter(p => p.isLinked);
       const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
       const rawPhases = deduplicatePhases(allPhases);
-      // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST using Standard Project Foundation order
-      const orderedPhases = enforceStandardPhaseOrdering(rawPhases, standardProjectPhases);
+      
+      // CRITICAL: When editing Standard Project Foundation, position new phase at second-to-last position
+      // (before the last standard phase)
+      let orderedPhases: Phase[];
+      if (isEditingStandardProject) {
+        // Find the newly added phase
+        const newPhase = rawPhases.find(p => 
+          p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
+        );
+        
+        if (newPhase) {
+          // Remove the new phase from the array temporarily
+          const phasesWithoutNew = rawPhases.filter(p => 
+            p.id !== newPhase.id && p.name !== uniquePhaseName
+          );
+          
+          // Find the last standard phase (one with 'last' order number or at the end)
+          const lastStandardPhaseIndex = phasesWithoutNew.findIndex((p, idx) => {
+            if (p.isLinked) return false;
+            const isLastStandard = isStandardPhase(p) && 
+              (p.phaseOrderNumber === 'last' || 
+               (idx === phasesWithoutNew.length - 1 && !phasesWithoutNew.slice(idx + 1).some(ph => isStandardPhase(ph) && !ph.isLinked)));
+            return isLastStandard;
+          });
+          
+          // Insert new phase at second-to-last position (before last standard phase)
+          if (lastStandardPhaseIndex !== -1) {
+            phasesWithoutNew.splice(lastStandardPhaseIndex, 0, newPhase);
+            orderedPhases = phasesWithoutNew;
+          } else {
+            // If no last standard phase found, insert before the last phase
+            phasesWithoutNew.splice(phasesWithoutNew.length - 1, 0, newPhase);
+            orderedPhases = phasesWithoutNew;
+          }
+        } else {
+          // New phase not found, use standard ordering
+          orderedPhases = enforceStandardPhaseOrdering(rawPhases, standardProjectPhases);
+        }
+      } else {
+        // For regular projects, apply enforceStandardPhaseOrdering using Standard Project Foundation order
+        orderedPhases = enforceStandardPhaseOrdering(rawPhases, standardProjectPhases);
+      }
+      
       // THEN assign order numbers based on the correct order
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       
@@ -2260,8 +2301,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const incorporatedPhases = currentPhases.filter(p => p.isLinked && p.id !== phaseToDelete);
         const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
         const rawPhases = deduplicatePhases(allPhases);
+        // CRITICAL: Filter out deleted phase to prevent it from reappearing
+        const phasesWithoutDeleted = rawPhases.filter(p => p.id !== phaseToDelete);
         // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST using Standard Project Foundation order
-        const orderedPhases = enforceStandardPhaseOrdering(rawPhases, standardProjectPhases);
+        const orderedPhases = enforceStandardPhaseOrdering(phasesWithoutDeleted, standardProjectPhases);
         // THEN assign order numbers based on the correct order
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
 
