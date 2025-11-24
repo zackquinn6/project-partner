@@ -158,7 +158,8 @@ export function organizeStepsForSinglePieceFlow(
       result.push({
         type: 'space-container',
         id: `space-${space.id}`,
-        name: space.name,
+        name: space.name, // CRITICAL: This comes from database via dynamic linkage
+        // Always use space.name which is dynamically linked to project_run_spaces.space_name
         spaces: [space],
         steps: spaceSteps
       });
@@ -356,6 +357,8 @@ export function convertToGroupedSteps(
           });
           
           if (operationSteps.length > 0) {
+            // CRITICAL: Use space.name which is dynamically linked to database
+            // If space_name changes in project_run_spaces, this will automatically reflect it
             const operationKey = `${space.name} - ${operation.name}`;
             if (!grouped[phaseName][operationKey]) {
               grouped[phaseName][operationKey] = [];

@@ -271,14 +271,16 @@ export default function UserView({
   // Get the active project data from either currentProject or currentProjectRun
   const activeProject = currentProjectRun || currentProject;
   
-  // Load project spaces from database
+  // Load project spaces from database with dynamic linkage
+  // CRITICAL: Always read space names directly from database - never copy/store them
+  // This ensures workflow navigation automatically updates when space names change
   useEffect(() => {
+    if (!currentProjectRun?.id) {
+      setProjectSpaces([]);
+      return;
+    }
+    
     const loadSpaces = async () => {
-      if (!currentProjectRun?.id) {
-        setProjectSpaces([]);
-        return;
-      }
-      
       setSpacesLoading(true);
       try {
         const { data: spacesData, error } = await supabase
@@ -289,15 +291,17 @@ export default function UserView({
         
         if (error) throw error;
         
+        // CRITICAL: Map space_name directly from database - this is dynamic linkage
+        // If space_name changes in database, this will reflect it immediately
         const spaces: WorkflowProjectSpace[] = (spacesData || []).map(space => ({
           id: space.id,
-          name: space.space_name,
+          name: space.space_name, // Dynamic: always reads from database
           priority: space.priority,
           spaceType: space.space_type
         }));
         
         setProjectSpaces(spaces);
-        console.log('✅ Loaded project spaces:', spaces);
+        console.log('✅ Loaded project spaces (dynamic linkage):', spaces);
       } catch (error) {
         console.error('Error loading project spaces:', error);
         setProjectSpaces([]);
@@ -307,13 +311,43 @@ export default function UserView({
     };
     
     loadSpaces();
+    
+    // CRITICAL: Set up Supabase realtime subscription for dynamic linkage
+    // This automatically updates workflow navigation when space names change in database
+    const channel = supabase
+      .channel(`project-spaces-${currentProjectRun.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen for INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'project_run_spaces',
+          filter: `project_run_id=eq.${currentProjectRun.id}`
+        },
+        (payload) => {
+          console.log('🔄 Space change detected in database:', payload.eventType, payload);
+          
+          // Reload spaces from database to get updated names
+          // This ensures workflow navigation always shows current space names
+          loadSpaces();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      // Cleanup: unsubscribe when component unmounts or project changes
+      supabase.removeChannel(channel);
+    };
   }, [currentProjectRun?.id]);
   
   // Refresh spaces when project customizer or scheduler updates
+  // Note: Realtime subscription above handles most updates automatically
+  // This is a fallback for manual refresh events
   useEffect(() => {
     const handleRefresh = () => {
       if (currentProjectRun?.id) {
-        // Trigger space reload
+        // Trigger space reload from database
+        // CRITICAL: Always read from database - never use cached/copied names
         const loadSpaces = async () => {
           try {
             const { data: spacesData, error } = await supabase
@@ -324,15 +358,16 @@ export default function UserView({
             
             if (error) throw error;
             
+            // CRITICAL: Map space_name directly from database - dynamic linkage
             const spaces: WorkflowProjectSpace[] = (spacesData || []).map(space => ({
               id: space.id,
-              name: space.space_name,
+              name: space.space_name, // Always from database - never copied
               priority: space.priority,
               spaceType: space.space_type
             }));
             
             setProjectSpaces(spaces);
-            console.log('🔄 Refreshed project spaces:', spaces);
+            console.log('🔄 Refreshed project spaces (dynamic linkage):', spaces);
           } catch (error) {
             console.error('Error refreshing project spaces:', error);
           }
@@ -342,15 +377,17 @@ export default function UserView({
       }
     };
     
-    // Listen for refresh events
+    // Listen for refresh events (fallback for manual triggers)
     window.addEventListener('project-customizer-updated', handleRefresh);
     window.addEventListener('project-scheduler-updated', handleRefresh);
     window.addEventListener('project-replanned', handleRefresh);
+    window.addEventListener('space-name-updated', handleRefresh); // New event for space name updates
     
     return () => {
       window.removeEventListener('project-customizer-updated', handleRefresh);
       window.removeEventListener('project-scheduler-updated', handleRefresh);
       window.removeEventListener('project-replanned', handleRefresh);
+      window.removeEventListener('space-name-updated', handleRefresh);
     };
   }, [currentProjectRun?.id]);
   
