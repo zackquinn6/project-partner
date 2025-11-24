@@ -787,7 +787,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
     }
     
-    setDisplayPhases(phasesToDisplay);
+    // CRITICAL: Always sort by order number before displaying
+    // This ensures phases are always rendered in the correct order
+    const sortedForDisplay = sortPhasesByOrderNumber(phasesToDisplay);
+    
+    setDisplayPhases(sortedForDisplay);
       setPhasesLoaded(true);
       
     // Update local context with fresh phases ONLY if phases actually changed
@@ -1091,8 +1095,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       });
       
+      // CRITICAL: Sort by order number to ensure correct display order
+      const sortedPhases = sortPhasesByOrderNumber(reorderedPhases);
+      
       // Update display immediately (UI-only change)
-      setDisplayPhases(reorderedPhases);
+      setDisplayPhases(sortedPhases);
       
       // Update project context
       updateProject({
@@ -1286,8 +1293,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
     });
     
+    // CRITICAL: Sort again after reassigning order numbers to ensure correct display order
+    const finalSorted = sortPhasesByOrderNumber(sortedByOrder);
+    
     // Update display immediately (UI-only change)
-    setDisplayPhases(sortedByOrder);
+    setDisplayPhases(finalSorted);
     
     // Update project context
     updateProject({
