@@ -3668,7 +3668,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               // Standard phases can move when editing Standard Project Foundation
               canMoveUp = phaseIndex > 0;
               canMoveDown = phaseIndex < displayPhases.length - 1;
-            } else if (!isStandardPhase) {
+            } else if (!phaseIsStandard || isLinkedPhase) {
               // Custom and linked phases: must be after first standard phases and before last standard phase
               const minIndex = firstStandardAfterCustomIndex !== -1 ? firstStandardAfterCustomIndex : 0;
               const maxIndex = lastStandardPhaseIndex !== -1 ? lastStandardPhaseIndex : displayPhases.length - 1;
