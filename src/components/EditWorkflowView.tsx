@@ -118,6 +118,50 @@ export default function EditWorkflowView({
     return phase.isStandard === true;
   };
 
+  // State to store standard phase order from Standard Project Foundation
+  const [standardProjectPhases, setStandardProjectPhases] = React.useState<Phase[]>([]);
+  
+  // Fetch standard phase order from Standard Project Foundation (like StructureManager does)
+  React.useEffect(() => {
+    if (!isEditingStandardProject && currentProject) {
+      const fetchStandardPhases = async () => {
+        try {
+          const { data: standardProject, error } = await supabase
+            .from('projects')
+            .select('phases')
+            .eq('id', '00000000-0000-0000-0000-000000000001')
+            .single();
+
+          if (!error && standardProject?.phases) {
+            let phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
+            
+            // CRITICAL: If phases don't have phaseOrderNumber, derive it from their position
+            phases = phases.map((phase, index) => {
+              if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+                if (index === 0) {
+                  phase.phaseOrderNumber = 'first';
+                } else if (index === phases.length - 1) {
+                  phase.phaseOrderNumber = 'last';
+                } else {
+                  phase.phaseOrderNumber = index + 1;
+                }
+              }
+              return phase;
+            });
+            
+            setStandardProjectPhases(phases);
+          }
+        } catch (error) {
+          console.error('Error fetching standard project phases:', error);
+        }
+      };
+
+      fetchStandardPhases();
+    } else {
+      setStandardProjectPhases([]);
+    }
+  }, [isEditingStandardProject, currentProject?.id]);
+
   // Apply standard phase ordering to match Structure Manager
   // This ensures the workflow editor shows phases in the same order as structure manager
   // Also deduplicate phases like StructureManager does
@@ -135,8 +179,66 @@ export default function EditWorkflowView({
     return result;
   };
   
+  // Sort phases by order number (same logic as StructureManager)
+  const sortPhasesByOrderNumber = (phases: Phase[]): Phase[] => {
+    const sortedPhases = [...phases].sort((a, b) => {
+      const aOrder = a.phaseOrderNumber === 'first' ? -Infinity : 
+                    (a.phaseOrderNumber === 'last' ? Infinity : 
+                    (typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 1000));
+      const bOrder = b.phaseOrderNumber === 'first' ? -Infinity : 
+                    (b.phaseOrderNumber === 'last' ? Infinity : 
+                    (typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 1000));
+      
+      if (aOrder !== bOrder) {
+        return aOrder - bOrder;
+      }
+      
+      // If same order number, standard phases come before non-standard
+      const aIsStandard = isStandardPhase(a) && !a.isLinked;
+      const bIsStandard = isStandardPhase(b) && !b.isLinked;
+      if (aIsStandard && !bIsStandard) return -1;
+      if (!aIsStandard && bIsStandard) return 1;
+      
+      // If both are same type, maintain original order (stable sort)
+      return 0;
+    });
+    
+    return sortedPhases;
+  };
+  
   const deduplicatedPhases = deduplicatePhases(rawPhases);
-  const displayPhases = enforceStandardPhaseOrdering(deduplicatedPhases);
+  
+  // CRITICAL: Apply standard phase ordering first, then sort by order number
+  // This ensures phases are displayed in the correct order based on phaseOrderNumber
+  const orderedPhases = enforceStandardPhaseOrdering(deduplicatedPhases, standardProjectPhases);
+  
+  // CRITICAL: For regular projects, apply order numbers from Standard Project Foundation
+  if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+    const standardOrderMap = new Map<string, string | number>();
+    standardProjectPhases.forEach(sp => {
+      if (sp.name && sp.phaseOrderNumber !== undefined) {
+        standardOrderMap.set(sp.name, sp.phaseOrderNumber);
+      }
+    });
+    
+    // Apply order numbers from Standard Project Foundation to standard phases
+    orderedPhases.forEach(phase => {
+      if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
+        const standardOrder = standardOrderMap.get(phase.name);
+        if (standardOrder !== undefined) {
+          phase.phaseOrderNumber = standardOrder;
+        }
+      }
+    });
+  }
+  
+  // CRITICAL: Sort by order number to ensure correct display order
+  const displayPhases = sortPhasesByOrderNumber(orderedPhases);
+  
+  console.log('🔍 EditWorkflowView - displayPhases:', {
+    count: displayPhases.length,
+    phases: displayPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber, isStandard: p.isStandard }))
+  });
 
   // Helper to check if current step is from a standard or incorporated phase
   const isStepFromStandardOrIncorporatedPhase = (step: WorkflowStep | undefined) => {
