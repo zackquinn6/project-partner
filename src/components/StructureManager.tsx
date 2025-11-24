@@ -3370,10 +3370,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
 
         // Update local context AFTER display is updated to prevent reordering
-        // Use phasesToDisplay (already filtered and sorted) instead of phasesWithUniqueOrder
+        // Use phasesToSave (with explicit phaseOrderNumber) instead of phasesToDisplay
         const updatedProject = {
           ...currentProject,
-          phases: phasesToDisplay,
+          phases: phasesToSave, // Use phasesToSave with explicit phaseOrderNumber
           updatedAt: new Date()
         };
         updateProject(updatedProject);
