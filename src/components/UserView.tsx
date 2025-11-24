@@ -421,18 +421,32 @@ export default function UserView({
     }
     rawWorkflowPhases = Array.isArray(parsedPhases) ? parsedPhases : [];
     
-    // FALLBACK: If project run has no phases, try to get them from the template project
+    // CRITICAL: Project runs MUST have phases - they are immutable snapshots of templates
+    // NO FALLBACKS to templates - if phases are missing, this is a data integrity issue
     if (rawWorkflowPhases.length === 0 && currentProjectRun.templateId) {
-      console.log('⚠️ Project run has no phases, checking template project:', currentProjectRun.templateId);
-      const templateProject = currentProject || projects?.find(p => p.id === currentProjectRun.templateId);
-      if (templateProject?.phases && templateProject.phases.length > 0) {
-        console.log('✅ Found phases in template project, using as fallback:', templateProject.phases.length);
-        rawWorkflowPhases = templateProject.phases;
-      } else if (dynamicPhases.length > 0 && currentProject?.id === currentProjectRun.templateId) {
-        // If we're loading dynamic phases for the template, use those
-        console.log('✅ Using dynamic phases as fallback:', dynamicPhases.length);
-        rawWorkflowPhases = dynamicPhases;
-      }
+      console.error('❌ CRITICAL ERROR: Project run has no phases!', {
+        runId: currentProjectRun.id,
+        runName: currentProjectRun.name,
+        templateId: currentProjectRun.templateId,
+        phasesValue: currentProjectRun.phases,
+        phasesType: typeof currentProjectRun.phases,
+        phasesIsArray: Array.isArray(currentProjectRun.phases),
+        phasesIsNull: currentProjectRun.phases === null,
+        phasesIsUndefined: currentProjectRun.phases === undefined,
+        phasesStringLength: typeof currentProjectRun.phases === 'string' ? currentProjectRun.phases.length : 'N/A'
+      });
+      
+      // Log detailed information to help identify root cause
+      console.error('🔍 Root cause investigation:', {
+        projectRunCreated: !!currentProjectRun.createdAt,
+        projectRunUpdated: !!currentProjectRun.updatedAt,
+        projectRunStatus: currentProjectRun.status,
+        templateExists: !!projects?.find(p => p.id === currentProjectRun.templateId),
+        templateHasPhases: !!(projects?.find(p => p.id === currentProjectRun.templateId)?.phases?.length)
+      });
+      
+      // Show error to user - this should never happen
+      toast.error('Project run is missing phases. Please contact support or try creating a new project run.');
     }
     
     console.log('📦 Using project run phases:', {
@@ -441,8 +455,8 @@ export default function UserView({
       phasesLength: rawWorkflowPhases.length,
       phasesType: typeof currentProjectRun.phases,
       phasesIsArray: Array.isArray(currentProjectRun.phases),
-      hasTemplatePhases: !!(currentProject?.phases && currentProject.phases.length > 0),
-      hasDynamicPhases: dynamicPhases.length > 0
+      hasPhases: rawWorkflowPhases.length > 0,
+      // REMOVED: hasTemplatePhases and hasDynamicPhases - no longer using fallbacks
     });
   } else if (currentProject) {
     // Templates: prefer dynamic phases from RPC, fallback to stored phases

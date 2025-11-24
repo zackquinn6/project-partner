@@ -174,6 +174,68 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       if (error) throw error;
 
+      if (!data) {
+        throw new Error('Project run creation returned no ID');
+      }
+
+      // CRITICAL: Verify that phases were copied to the project run
+      // Project runs MUST be immutable snapshots with their own copy of phases
+      const { data: createdRun, error: fetchError } = await supabase
+        .from('project_runs')
+        .select('id, phases, template_id')
+        .eq('id', data)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Error fetching created project run:', fetchError);
+        throw fetchError;
+      }
+
+      // Validate phases exist
+      let phasesExist = false;
+      if (createdRun.phases) {
+        if (Array.isArray(createdRun.phases) && createdRun.phases.length > 0) {
+          phasesExist = true;
+        } else if (typeof createdRun.phases === 'string') {
+          try {
+            const parsed = JSON.parse(createdRun.phases);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              phasesExist = true;
+            }
+          } catch (e) {
+            console.error('❌ Error parsing phases JSON:', e);
+          }
+        }
+      }
+
+      if (!phasesExist) {
+        console.error('❌ CRITICAL: Project run created without phases!', {
+          runId: data,
+          templateId: project.id,
+          templateName: project.name,
+          runPhases: createdRun.phases,
+          runPhasesType: typeof createdRun.phases,
+          templateHasPhases: !!(project.phases && project.phases.length > 0),
+          templatePhasesCount: project.phases?.length || 0
+        });
+        
+        // Delete the invalid project run - it should not exist without phases
+        await supabase
+          .from('project_runs')
+          .delete()
+          .eq('id', data);
+        
+        throw new Error('Project run was created without phases. This indicates a problem with the create_project_run_snapshot function. Please ensure the template has phases before creating a project run.');
+      }
+
+      console.log('✅ Project run created successfully with phases:', {
+        runId: data,
+        templateId: project.id,
+        phasesCount: Array.isArray(createdRun.phases) 
+          ? createdRun.phases.length 
+          : (typeof createdRun.phases === 'string' ? JSON.parse(createdRun.phases).length : 'unknown')
+      });
+
       // Update additional fields that the function doesn't handle
       if (customName || project.projectChallenges || project.scalingUnit || project.estimatedTimePerUnit) {
         await supabase
