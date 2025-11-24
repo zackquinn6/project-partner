@@ -237,7 +237,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return (a.name || '').localeCompare(b.name || '');
     });
     
-    // Add standard phases (sorted)
+    // CRITICAL: For regular projects, insert non-standard phases in correct positions
+    // Standard phases should maintain their order, but non-standard phases should be inserted
+    // between standard phases based on their order numbers
+    if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+      // Build result array by inserting phases in order based on their order numbers
+      const allPhases = [...standardPhases, ...nonStandardPhases];
+      
+      // Sort all phases by their order numbers
+      allPhases.sort((a, b) => {
+        const aOrder = a.phaseOrderNumber === 'first' ? -Infinity : 
+                      (a.phaseOrderNumber === 'last' ? Infinity : 
+                      (typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 1000));
+        const bOrder = b.phaseOrderNumber === 'first' ? -Infinity : 
+                      (b.phaseOrderNumber === 'last' ? Infinity : 
+                      (typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 1000));
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+        // If same order number, standard phases come before non-standard
+        const aIsStandard = isStandardPhase(a);
+        const bIsStandard = isStandardPhase(b);
+        if (aIsStandard && !bIsStandard) return -1;
+        if (!aIsStandard && bIsStandard) return 1;
+        return 0;
+      });
+      
+      return allPhases;
+    }
+    
+    // For Edit Standard mode, just add standard phases (sorted)
     result.push(...standardPhases);
     
     // Add non-standard phases (preserving their relative order)
@@ -796,27 +825,64 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Get available order numbers for dropdown (excluding standard phase numbers in project templates)
   const getAvailableOrderNumbers = (currentPhase: Phase, currentIndex: number, totalPhases: number): (string | number)[] => {
-    const options: (string | number)[] = ['First', 'Last'];
+    const options: (string | number)[] = [];
     
     // Create a set of reserved order numbers from standard project phases
     const reservedNumbers = new Set<string | number>();
+    const reservedByStandardPhases = new Set<string | number>();
+    
     if (!isEditingStandardProject && standardProjectPhases.length > 0) {
       standardProjectPhases.forEach(phase => {
         if (phase.phaseOrderNumber !== undefined) {
-          if (phase.phaseOrderNumber === 'first') reservedNumbers.add('First');
-          else if (phase.phaseOrderNumber === 'last') reservedNumbers.add('Last');
-          else if (typeof phase.phaseOrderNumber === 'number') reservedNumbers.add(phase.phaseOrderNumber);
+          if (phase.phaseOrderNumber === 'first') {
+            reservedNumbers.add('First');
+            reservedByStandardPhases.add('First');
+          } else if (phase.phaseOrderNumber === 'last') {
+            reservedNumbers.add('Last');
+            reservedByStandardPhases.add('Last');
+          } else if (typeof phase.phaseOrderNumber === 'number') {
+            reservedNumbers.add(phase.phaseOrderNumber);
+            reservedByStandardPhases.add(phase.phaseOrderNumber);
+          }
         }
       });
+    }
+    
+    // Also check current displayPhases for reserved numbers (in case standard phases are already in the project)
+    if (!isEditingStandardProject) {
+      displayPhases.forEach(phase => {
+        if (isStandardPhase(phase) && phase.phaseOrderNumber !== undefined) {
+          if (phase.phaseOrderNumber === 'first') {
+            reservedNumbers.add('First');
+            reservedByStandardPhases.add('First');
+          } else if (phase.phaseOrderNumber === 'last') {
+            reservedNumbers.add('Last');
+            reservedByStandardPhases.add('Last');
+          } else if (typeof phase.phaseOrderNumber === 'number') {
+            reservedNumbers.add(phase.phaseOrderNumber);
+            reservedByStandardPhases.add(phase.phaseOrderNumber);
+          }
+        }
+      });
+    }
+    
+    // Add 'First' only if not reserved by a standard phase
+    if (!reservedByStandardPhases.has('First')) {
+      options.push('First');
     }
     
     // Add integer options (1 to totalPhases)
     for (let i = 1; i <= totalPhases; i++) {
       // Skip if this number is reserved by a standard phase (in project template mode)
-      if (!isEditingStandardProject && reservedNumbers.has(i)) {
+      if (!isEditingStandardProject && reservedByStandardPhases.has(i)) {
         continue;
       }
       options.push(i);
+    }
+    
+    // Add 'Last' only if not reserved by a standard phase
+    if (!reservedByStandardPhases.has('Last')) {
+      options.push('Last');
     }
     
     return options;
