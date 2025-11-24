@@ -3221,9 +3221,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                             </span>
                                           )}
                                         </div>
-                                        {isStandardPhase && <span className="mr-1">🔒</span>}
+                                        {phaseIsStandard && <span className="mr-1">🔒</span>}
                                         {phase.name}
-                                        {isStandardPhase && <span className="text-xs text-blue-600 ml-1">(Standard - Locked)</span>}
+                                        {phaseIsStandard && <span className="text-xs text-blue-600 ml-1">(Standard - Locked)</span>}
                                         {isLinkedPhase && (
                                           <span className="text-xs text-purple-600 ml-1 flex items-center gap-1">
                                             <Link className="w-3 h-3" />
