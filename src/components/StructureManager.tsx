@@ -822,8 +822,37 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // This ensures phases are always rendered in the correct order
     const sortedForDisplay = sortPhasesByOrderNumber(phasesToDisplay);
     
-    setDisplayPhases(sortedForDisplay);
-      setPhasesLoaded(true);
+    // CRITICAL: Only update displayPhases if there's an actual change
+    // This prevents bouncy refreshes when data hasn't changed
+    const currentDisplayIds = new Set(displayPhases.map(p => p.id));
+    const newDisplayIds = new Set(sortedForDisplay.map(p => p.id));
+    const displayIdsChanged = 
+      currentDisplayIds.size !== newDisplayIds.size ||
+      !Array.from(currentDisplayIds).every(id => newDisplayIds.has(id)) ||
+      !Array.from(newDisplayIds).every(id => currentDisplayIds.has(id));
+    
+    // Also check if order numbers changed (even if same phases)
+    const displayOrderChanged = displayPhases.length !== sortedForDisplay.length ||
+      displayPhases.some((phase, index) => {
+        const newPhase = sortedForDisplay[index];
+        return !newPhase || phase.id !== newPhase.id || phase.phaseOrderNumber !== newPhase.phaseOrderNumber;
+      });
+    
+    const displayNeedsUpdate = displayIdsChanged || displayOrderChanged;
+    
+    if (displayNeedsUpdate) {
+      console.log('🔄 Updating displayPhases:', {
+        idsChanged: displayIdsChanged,
+        orderChanged: displayOrderChanged,
+        currentCount: displayPhases.length,
+        newCount: sortedForDisplay.length
+      });
+      setDisplayPhases(sortedForDisplay);
+    } else {
+      console.log('⏭️ Skipping displayPhases update - no changes detected');
+    }
+    
+    setPhasesLoaded(true);
       
     // Update local context with fresh phases ONLY if phases actually changed
     // This prevents infinite loops from updateProject triggering re-renders
