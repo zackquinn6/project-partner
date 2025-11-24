@@ -2335,9 +2335,12 @@ export default function UserView({
   }
   
   // Only show "under construction" if there are literally no phases at all
-  const hasPhases = (activeProject?.phases?.length ?? 0) > 0;
+  // Check both activeProject.phases and workflowPhases to ensure we catch all cases
+  const hasPhases = (activeProject?.phases?.length ?? 0) > 0 || workflowPhases.length > 0;
   
-  if (allSteps.length === 0 && !hasPhases) {
+  // If there are no phases at all, show "under construction"
+  // If there are phases, show the workflow (even if steps aren't organized yet)
+  if (!hasPhases) {
     return <div className="container mx-auto px-6 py-8">
         <Card>
           <CardContent className="text-center py-8">
