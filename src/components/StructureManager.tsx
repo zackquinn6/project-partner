@@ -3901,38 +3901,72 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 size="sm" 
                 onClick={async () => {
                   // Save pending order changes before closing
-                  if (hasPendingOrderChanges && currentProject) {
+                  // CRITICAL: Always save order numbers, even if hasPendingOrderChanges is false
+                  // This ensures order numbers are persisted when closing the window
+                  if (currentProject) {
                     try {
-                      console.log('💾 Saving pending order changes to database...');
+                      console.log('💾 Saving order numbers to database...');
                       console.log('📋 Current displayPhases before saving:', {
-                        phases: displayPhases.map(p => ({ name: p.name, id: p.id, order: p.phaseOrderNumber }))
+                        phases: displayPhases.map(p => ({ name: p.name, id: p.id, order: p.phaseOrderNumber, isStandard: p.isStandard }))
                       });
                       
-                      // CRITICAL: Ensure all phases have order numbers before saving
-                      const phasesToSave = displayPhases.map((phase, index) => {
-                        // If phase doesn't have order number, assign based on position
-                        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+                      // CRITICAL: Use currentProject.phases as source of truth, but update with displayPhases order numbers
+                      // This ensures we have all phase data (operations, steps) while preserving order numbers
+                      const phasesToSave = displayPhases.map((displayPhase, index) => {
+                        // Find the corresponding phase in currentProject.phases to preserve all data
+                        const projectPhase = currentProject.phases?.find(p => p.id === displayPhase.id);
+                        const phaseToSave = projectPhase ? { ...projectPhase } : { ...displayPhase };
+                        
+                        // CRITICAL: Always use order number from displayPhases (which has the current order)
+                        // If displayPhase doesn't have order number, assign based on position
+                        if (displayPhase.phaseOrderNumber === undefined || displayPhase.phaseOrderNumber === null) {
                           if (index === 0) {
-                            phase.phaseOrderNumber = 'first';
-                          } else if (index === displayPhases.length - 1) {
-                            if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
-                              phase.phaseOrderNumber = 'last';
+                            // Check if first position should be 'first' or a number
+                            const hasStandardFirst = displayPhases.some(p => 
+                              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'first'
+                            );
+                            if (!hasStandardFirst && !isEditingStandardProject) {
+                              phaseToSave.phaseOrderNumber = 'first';
                             } else {
-                              phase.phaseOrderNumber = index + 1;
+                              phaseToSave.phaseOrderNumber = 1;
+                            }
+                          } else if (index === displayPhases.length - 1) {
+                            // Check if last position should be 'last' or a number
+                            const hasStandardLast = displayPhases.some(p => 
+                              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'last'
+                            );
+                            if (!hasStandardLast && !isEditingStandardProject && isStandardPhase(displayPhase) && !displayPhase.isLinked) {
+                              phaseToSave.phaseOrderNumber = 'last';
+                            } else {
+                              phaseToSave.phaseOrderNumber = index + 1;
                             }
                           } else {
-                            phase.phaseOrderNumber = index + 1;
+                            phaseToSave.phaseOrderNumber = index + 1;
                           }
+                          console.log('🔧 Assigned missing order number before saving:', {
+                            phaseName: phaseToSave.name,
+                            phaseId: phaseToSave.id,
+                            assignedOrder: phaseToSave.phaseOrderNumber,
+                            index
+                          });
+                        } else {
+                          // Use order number from displayPhases
+                          phaseToSave.phaseOrderNumber = displayPhase.phaseOrderNumber;
                         }
+                        
                         return {
-                          ...phase,
-                          phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
+                          ...phaseToSave,
+                          phaseOrderNumber: phaseToSave.phaseOrderNumber // Explicitly include phaseOrderNumber
                         };
+                      });
+                      
+                      console.log('💾 Phases to save with order numbers:', {
+                        phases: phasesToSave.map(p => ({ name: p.name, id: p.id, order: p.phaseOrderNumber, hasOrder: p.phaseOrderNumber !== undefined }))
                       });
                       
                       await updatePhaseOrder(phasesToSave);
                       setHasPendingOrderChanges(false);
-                      console.log('✅ Order changes saved to database');
+                      console.log('✅ Order numbers saved to database');
                       toast.success('Order changes saved');
                     } catch (error) {
                       console.error('❌ Error saving order changes:', error);
