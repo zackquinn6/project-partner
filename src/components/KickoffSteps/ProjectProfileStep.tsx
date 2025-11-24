@@ -96,11 +96,27 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         } catch (error) {
           console.error('Error fetching scaling_unit and item_type:', error);
           // Fallback to templateProject values if database fetch fails
-          setScalingUnit(templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item');
+          const fallbackScalingUnit = templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
+          const fallbackItemType = (templateProject as any)?.itemType || (templateProject as any)?.item_type || null;
+          setScalingUnit(fallbackScalingUnit);
+          setItemType(fallbackItemType);
+          console.log('📊 Using fallback values:', {
+            fallbackScalingUnit,
+            fallbackItemType,
+            templateProjectItemType: (templateProject as any)?.itemType,
+            templateProjectItem_type: (templateProject as any)?.item_type
+          });
         }
       } else {
         // No template project, use currentProjectRun values or fallback
-        setScalingUnit((currentProjectRun as any)?.scalingUnit || 'per item');
+        const fallbackScalingUnit = (currentProjectRun as any)?.scalingUnit || 'per item';
+        const fallbackItemType = (currentProjectRun as any)?.itemType || (currentProjectRun as any)?.item_type || null;
+        setScalingUnit(fallbackScalingUnit);
+        setItemType(fallbackItemType);
+        console.log('📊 No template project, using currentProjectRun values:', {
+          fallbackScalingUnit,
+          fallbackItemType
+        });
       }
     };
     
