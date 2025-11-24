@@ -69,13 +69,17 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           
           if (!error && data) {
             // Use scaling_unit from database, fallback to templateProject.scalingUnit, then currentProjectRun.scalingUnit, then 'per item'
-            setScalingUnit(data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item');
-            setItemType(data.item_type);
+            const fetchedScalingUnit = data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
+            setScalingUnit(fetchedScalingUnit);
+            setItemType(data.item_type || null);
             console.log('📊 Fetched scaling unit and item type:', {
               scaling_unit: data.scaling_unit,
               item_type: data.item_type,
+              item_type_type: typeof data.item_type,
+              item_type_length: data.item_type?.length,
               templateProjectScalingUnit: templateProject?.scalingUnit,
-              finalScalingUnit: data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item'
+              finalScalingUnit: fetchedScalingUnit,
+              willUseItemType: fetchedScalingUnit === 'per item' && data.item_type ? data.item_type.toLowerCase() : null
             });
           }
         } catch (error) {
@@ -302,7 +306,13 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       
                       // For "per item", use item_type if available, otherwise use "per item"
                       if (scalingUnit === 'per item') {
-                        if (itemType) return itemType.toLowerCase();
+                        // Check if itemType exists and is not empty
+                        if (itemType && itemType.trim().length > 0) {
+                          const displayValue = itemType.toLowerCase();
+                          console.log('📊 Using item_type for display:', { itemType, displayValue, scalingUnit });
+                          return displayValue;
+                        }
+                        console.log('📊 No item_type available, using "per item":', { itemType, scalingUnit });
                         return 'per item';
                       }
                       
