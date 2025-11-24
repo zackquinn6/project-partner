@@ -305,14 +305,29 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       if (scalingUnit === 'per cubic yard') return 'cu yd';
                       
                       // For "per item", use item_type if available, otherwise use "per item"
-                      if (scalingUnit === 'per item') {
+                      // Check with case-insensitive comparison and trim
+                      const normalizedScalingUnit = scalingUnit?.toLowerCase().trim();
+                      if (normalizedScalingUnit === 'per item') {
                         // Check if itemType exists and is not empty
-                        if (itemType && itemType.trim().length > 0) {
-                          const displayValue = itemType.toLowerCase();
-                          console.log('📊 Using item_type for display:', { itemType, displayValue, scalingUnit });
+                        if (itemType && typeof itemType === 'string' && itemType.trim().length > 0) {
+                          const displayValue = itemType.trim().toLowerCase();
+                          console.log('📊 Using item_type for display:', { 
+                            itemType, 
+                            displayValue, 
+                            scalingUnit,
+                            normalizedScalingUnit,
+                            itemTypeLength: itemType.length,
+                            itemTypeTrimmedLength: itemType.trim().length
+                          });
                           return displayValue;
                         }
-                        console.log('📊 No item_type available, using "per item":', { itemType, scalingUnit });
+                        console.log('📊 No item_type available, using "per item":', { 
+                          itemType, 
+                          scalingUnit,
+                          normalizedScalingUnit,
+                          itemTypeType: typeof itemType,
+                          itemTypeValue: itemType
+                        });
                         return 'per item';
                       }
                       
