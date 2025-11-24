@@ -1096,6 +1096,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       options.push('First');
     }
     
+    // CRITICAL: Also reserve numeric positions based on actual positions of standard phases in displayPhases
+    // This ensures that if a standard phase is at position 7 (index 6), position 7 is reserved
+    if (!isEditingStandardProject) {
+      displayPhases.forEach((phase, index) => {
+        if (isStandardPhase(phase) && !phase.isLinked) {
+          const numericPosition = index + 1; // Convert 0-based index to 1-based position
+          reservedNumbers.add(numericPosition);
+          reservedByStandardPhases.add(numericPosition);
+          console.log('🔒 Reserved numeric position', numericPosition, 'for standard phase:', phase.name);
+        }
+      });
+    }
+    
     // Add integer options (1 to totalPhases)
     for (let i = 1; i <= totalPhases; i++) {
       // Skip if this number is reserved by a standard phase (in project template mode)
@@ -1105,6 +1118,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // CRITICAL: If 'first' is reserved by a standard phase, also exclude position 1
       // Position 1 is the same as 'first', so it should be reserved
       if (!isEditingStandardProject && reservedByStandardPhases.has('First') && i === 1) {
+        continue;
+      }
+      // CRITICAL: If 'last' is reserved by a standard phase, also exclude the last numeric position
+      // The last numeric position (totalPhases) is the same as 'last', so it should be reserved
+      if (!isEditingStandardProject && reservedByStandardPhases.has('Last') && i === totalPhases) {
         continue;
       }
       options.push(i);
