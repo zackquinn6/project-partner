@@ -2261,17 +2261,34 @@ export default function UserView({
              
              // Find all actual Kickoff phase operation steps to mark complete
              const kickoffPhase = currentProjectRun.phases.find(p => p.name === 'Kickoff');
-             const allKickoffStepIds: string[] = kickoffPhase 
-               ? kickoffPhase.operations.flatMap(op => op.steps.map(s => s.id))
-               : [];
+             
+             // CRITICAL: Collect ALL step IDs from ALL operations in the Kickoff phase
+             const allKickoffStepIds: string[] = [];
+             if (kickoffPhase) {
+               kickoffPhase.operations.forEach(operation => {
+                 if (operation.steps && Array.isArray(operation.steps)) {
+                   operation.steps.forEach(step => {
+                     if (step.id) {
+                       allKickoffStepIds.push(step.id);
+                     }
+                   });
+                 }
+               });
+             }
              
              console.log("🎯 Found Kickoff phase step IDs:", allKickoffStepIds);
              console.log("🎯 UI kickoff step IDs:", kickoffStepIds);
+             console.log("🎯 Kickoff phase operations count:", kickoffPhase?.operations?.length || 0);
              
              // Combine kickoff UI step IDs and actual workflow step IDs
              const uniqueSteps = [...new Set([...existingSteps, ...kickoffStepIds, ...allKickoffStepIds])];
              
-             console.log("✅ Marking all kickoff steps complete (UI + workflow):", uniqueSteps);
+             console.log("✅ Marking all kickoff steps complete (UI + workflow):", {
+               totalSteps: uniqueSteps.length,
+               uiSteps: kickoffStepIds.length,
+               workflowSteps: allKickoffStepIds.length,
+               allStepIds: uniqueSteps
+             });
             
             // Automatically mark kickoff outputs as complete
             console.log("📝 Marking kickoff outputs as complete...");
