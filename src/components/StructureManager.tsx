@@ -1063,8 +1063,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   }, [isEditingStandardProject, currentProject?.id]);
 
   // Get available order numbers for dropdown (excluding standard phase numbers in project templates)
+  // CRITICAL: This function MUST always return at least one option to ensure dropdown is never empty
   const getAvailableOrderNumbers = (currentPhase: Phase, currentIndex: number, totalPhases: number): (string | number)[] => {
     const options: (string | number)[] = [];
+    
+    // CRITICAL: If totalPhases is 0 or invalid, return at least 'First' as a fallback
+    if (totalPhases <= 0) {
+      console.warn('⚠️ getAvailableOrderNumbers: totalPhases is invalid, returning fallback options');
+      return ['First', 1, 'Last'];
+    }
     
     // Create a set of reserved order numbers from standard project phases
     const reservedNumbers = new Set<string | number>();
@@ -1175,7 +1182,37 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       options.push('Last');
     }
     
-    return options;
+    // CRITICAL: Ensure we always return at least one option
+    // If no options were added (shouldn't happen, but safety check), add fallback options
+    if (options.length === 0) {
+      console.warn('⚠️ getAvailableOrderNumbers: No options generated, adding fallback options', {
+        totalPhases,
+        currentIndex,
+        phaseName: currentPhase.name,
+        reservedByStandardPhases: Array.from(reservedByStandardPhases)
+      });
+      // Add at least the current position and adjacent positions
+      if (totalPhases === 1) {
+        // If only one phase, it can be 'First' or 'Last' or 1
+        options.push('First', 1, 'Last');
+      } else {
+        // Add current position and adjacent positions
+        const currentPos = currentIndex + 1;
+        options.push(Math.max(1, currentPos - 1), currentPos, Math.min(totalPhases, currentPos + 1));
+        if (currentIndex === 0) options.push('First');
+        if (currentIndex === totalPhases - 1) options.push('Last');
+      }
+    }
+    
+    // Remove duplicates and sort
+    const uniqueOptions = Array.from(new Set(options));
+    uniqueOptions.sort((a, b) => {
+      const aVal = a === 'First' ? -Infinity : a === 'Last' ? Infinity : (typeof a === 'number' ? a : 1000);
+      const bVal = b === 'First' ? -Infinity : b === 'Last' ? Infinity : (typeof b === 'number' ? b : 1000);
+      return aVal - bVal;
+    });
+    
+    return uniqueOptions;
   };
 
   // Move phase up/down
