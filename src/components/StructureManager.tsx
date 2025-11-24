@@ -973,106 +973,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     return options;
   };
 
-  // Handle phase order number change
-  const handlePhaseOrderChange = async (phaseId: string, newOrder: string | number) => {
-    if (!currentProject) return;
-    
-    const phaseIndex = displayPhases.findIndex(p => p.id === phaseId);
-    if (phaseIndex === -1) return;
-    
-    const phase = displayPhases[phaseIndex];
-    const totalPhases = displayPhases.length;
-    
-    // Convert 'First' and 'Last' to actual positions
-    let targetPosition: number;
-    if (newOrder === 'First') {
-      targetPosition = 0;
-    } else if (newOrder === 'Last') {
-      targetPosition = totalPhases - 1;
-    } else if (typeof newOrder === 'number') {
-      targetPosition = newOrder - 1; // Convert to 0-based index
-    } else {
-      return;
-    }
-    
-    // If moving to same position, do nothing
-    if (targetPosition === phaseIndex) return;
-    
-    // Reorder phases array
-    const reorderedPhases = Array.from(displayPhases);
-    const [removed] = reorderedPhases.splice(phaseIndex, 1);
-    reorderedPhases.splice(targetPosition, 0, removed);
-    
-    // Renumber all phases to avoid duplicates
-    // Set the moved phase's order number
-    const movedPhase = reorderedPhases[targetPosition];
-    if (newOrder === 'First') {
-      movedPhase.phaseOrderNumber = 'first';
-    } else if (newOrder === 'Last') {
-      movedPhase.phaseOrderNumber = 'last';
-    } else {
-      movedPhase.phaseOrderNumber = newOrder;
-    }
-    
-    // CRITICAL: For regular projects, collect standard phase order numbers that are reserved
-    const reservedByStandardPhases = new Set<string | number>();
-    if (!isEditingStandardProject && standardProjectPhases.length > 0) {
-      standardProjectPhases.forEach(phase => {
-        if (phase.phaseOrderNumber !== undefined) {
-          if (phase.phaseOrderNumber === 'first') {
-            reservedByStandardPhases.add('first');
-          } else if (phase.phaseOrderNumber === 'last') {
-            reservedByStandardPhases.add('last');
-          } else if (typeof phase.phaseOrderNumber === 'number') {
-            reservedByStandardPhases.add(phase.phaseOrderNumber);
-          }
-        }
-      });
-    }
-    
-    // Also check current displayPhases for standard phase order numbers
-    displayPhases.forEach(phase => {
-      if (isStandardPhase(phase) && !phase.isLinked && phase.phaseOrderNumber !== undefined) {
-        if (phase.phaseOrderNumber === 'first') {
-          reservedByStandardPhases.add('first');
-        } else if (phase.phaseOrderNumber === 'last') {
-          reservedByStandardPhases.add('last');
-        } else if (typeof phase.phaseOrderNumber === 'number') {
-          reservedByStandardPhases.add(phase.phaseOrderNumber);
-        }
-      }
-    });
-    
-    // Renumber all other phases sequentially
-    // Track which numbers are already used
-    const usedNumbers = new Set<string | number>();
-    usedNumbers.add(movedPhase.phaseOrderNumber);
-    
-    reorderedPhases.forEach((p, index) => {
-      if (p.id === phaseId) {
-        // Already set above
-        return;
-      }
-      
-      const isStandard = isStandardPhase(p) && !p.isLinked;
-      
-      // CRITICAL: Standard phases keep their order numbers, project phases avoid conflicts
-      if (isStandard && p.phaseOrderNumber !== undefined) {
-        // Standard phase - preserve its order number
-        usedNumbers.add(p.phaseOrderNumber);
-        return;
-      }
-      
-      // Project phase - assign number avoiding conflicts with standard phases
-      let assignedNumber: 'first' | 'last' | number;
-      
-      // CRITICAL: Project phases cannot use 'first' or 'last' if reserved by standard phases
-      if (index === 0 && !usedNumbers.has('first') && !reservedByStandardPhases.has('first') && !usedNumbers.has(1) && !reservedByStandardPhases.has(1)) {
-        // First position available - check if this phase was originally 'first'
-        const originalPhase = displayPhases.find(orig => orig.id === p.id);
-        if (originalPhase?.phaseOrderNumber === 'first' && !reservedByStandardPhases.has('first')) {
-          assignedNumber = 'first';
-        } else {
           assignedNumber = 1;
         }
       } else if (index === totalPhases - 1 && !usedNumbers.has('last') && !reservedByStandardPhases.has('last') && !usedNumbers.has(totalPhases) && !reservedByStandardPhases.has(totalPhases)) {
@@ -3025,7 +2925,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           updatedAt: new Date()
         };
         updateProject(updatedProject);
-        
+
         // CRITICAL: Refetch dynamic phases from database to ensure data is accurate
         console.log('🔄 Refetching dynamic phases after incorporated phase deletion');
         await refetchDynamicPhases();
@@ -3207,7 +3107,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // But don't refetch immediately - let the useEffect handle it naturally
       setTimeout(() => {
         setSkipNextRefresh(false);
-        setPhaseToDelete(null);
+      setPhaseToDelete(null);
         setIsDeletingPhase(false);
         console.log('✅ Deletion state cleared, useEffect can now process updates');
       }, 1000);
