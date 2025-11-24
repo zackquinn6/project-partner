@@ -3149,14 +3149,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setDeletePhaseDialogOpen(false);
       setPhaseIdPendingDelete(null); // Clear pending delete ID
       
+      // CRITICAL: Clear skipNextRefresh after a delay to allow useEffect to process the update
+      // But don't refetch immediately - let the useEffect handle it naturally
+      setTimeout(() => {
+        setSkipNextRefresh(false);
+        setPhaseToDelete(null);
+        setIsDeletingPhase(false);
+        console.log('✅ Deletion state cleared, useEffect can now process updates');
+      }, 1000);
+      
       // CRITICAL: Force refetch of dynamic phases to ensure UI is in sync with database
       // This ensures useDynamicPhases gets fresh data without the deleted phase
       // This prevents duplicate phases and ensures order numbers are correct
-      console.log('🔄 Refetching dynamic phases after deletion to ensure data accuracy...');
-      await refetchDynamicPhases();
-      console.log('✅ Dynamic phases refetched after deletion');
-      
-      // CRITICAL: Clear deletion state after refetch completes
+      // BUT: Do this AFTER clearing skipNextRefresh so the useEffect can process it
+      setTimeout(async () => {
+        console.log('🔄 Refetching dynamic phases after deletion to ensure data accuracy...');
+        await refetchDynamicPhases();
+        console.log('✅ Dynamic phases refetched after deletion');
+      }, 1500);
       // Clear skipNextRefresh to allow useEffect to update displayPhases with fresh data from database
       setTimeout(() => {
         setPhaseToDelete(null);
