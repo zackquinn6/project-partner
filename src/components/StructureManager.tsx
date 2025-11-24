@@ -138,8 +138,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         return phase;
       });
 
-      // Apply standard phase ordering
-      const orderedPhases = enforceStandardPhaseOrdering(correctedPhases);
+      // Apply standard phase ordering using Standard Project Foundation order
+      const orderedPhases = enforceStandardPhaseOrdering(correctedPhases, standardProjectPhases);
       const updatedProject = {
         ...currentProject,
         phases: orderedPhases,
@@ -470,7 +470,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     if (phasesToProcess.length > 0) {
       const rawPhases = deduplicatePhases(phasesToProcess);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
-      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
+      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
       const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
       return sortedPhases;
     }
@@ -563,7 +563,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     if (!phasesLoaded && !rebuildingPhases && currentProject && currentProject.phases && currentProject.phases.length > 0 && displayPhases.length === 0) {
       const rawPhases = deduplicatePhases(currentProject.phases);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
-      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder);
+      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
       const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
       if (sortedPhases.length > 0) {
         console.log('🔍 StructureManager initializing displayPhases from currentProject (fallback):', {
@@ -616,13 +616,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     return phaseIndex + 1;
   };
 
-  // State to store standard phase order numbers from Standard Project Foundation
-  const [standardPhaseOrderNumbers, setStandardPhaseOrderNumbers] = useState<Set<string | number>>(new Set());
+  // State to store standard phase order from Standard Project Foundation
+  const [standardProjectPhases, setStandardProjectPhases] = useState<Phase[]>([]);
 
-  // Fetch standard phase order numbers from Standard Project Foundation
+  // Fetch standard phase order from Standard Project Foundation
   useEffect(() => {
     if (!isEditingStandardProject && currentProject) {
-      const fetchStandardPhaseOrders = async () => {
+      const fetchStandardPhases = async () => {
         try {
           const { data: standardProject, error } = await supabase
             .from('projects')
@@ -632,24 +632,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
           if (!error && standardProject?.phases) {
             const phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
-            const orderNumbers = new Set<string | number>();
-            phases.forEach((phase: Phase) => {
-              if (phase.phaseOrderNumber !== undefined) {
-                if (phase.phaseOrderNumber === 'first') orderNumbers.add('First');
-                else if (phase.phaseOrderNumber === 'last') orderNumbers.add('Last');
-                else orderNumbers.add(phase.phaseOrderNumber);
-              }
-            });
-            setStandardPhaseOrderNumbers(orderNumbers);
+            setStandardProjectPhases(phases);
           }
         } catch (error) {
-          console.error('Error fetching standard phase order numbers:', error);
+          console.error('Error fetching standard project phases:', error);
         }
       };
 
-      fetchStandardPhaseOrders();
+      fetchStandardPhases();
     } else {
-      setStandardPhaseOrderNumbers(new Set());
+      setStandardProjectPhases([]);
     }
   }, [isEditingStandardProject, currentProject?.id]);
 
@@ -969,7 +961,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       });
       
-      const orderedPhases = enforceStandardPhaseOrdering(mergedPhases);
+      const orderedPhases = enforceStandardPhaseOrdering(mergedPhases, standardProjectPhases);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
       
@@ -1066,7 +1058,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       });
       
-      const orderedPhases = enforceStandardPhaseOrdering(mergedPhases);
+      const orderedPhases = enforceStandardPhaseOrdering(mergedPhases, standardProjectPhases);
       
       await supabase
         .from('projects')
@@ -1255,14 +1247,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       // IMPORTANT: When editing Standard Project Foundation, preserve the user's reordered phase order
       // Don't apply enforceStandardPhaseOrdering as it would revert the reordering
-      // For regular projects, apply enforceStandardPhaseOrdering to maintain standard phase positions
+      // For regular projects, apply enforceStandardPhaseOrdering using order from Standard Project Foundation
       let orderedPhases: Phase[];
       if (isEditingStandardProject) {
         // In Edit Standard mode, preserve the exact order from reorderedPhases
         orderedPhases = finalPhases;
       } else {
-        // For regular projects, enforce standard phase ordering
-        orderedPhases = enforceStandardPhaseOrdering(finalPhases);
+        // For regular projects, enforce standard phase ordering using Standard Project Foundation order
+        orderedPhases = enforceStandardPhaseOrdering(finalPhases, standardProjectPhases);
       }
       
       // Preserve existing order numbers before applying ensureUniqueOrderNumbers
@@ -1610,8 +1602,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const incorporatedPhases = currentPhases.filter(p => p.isLinked);
       const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
       const rawPhases = deduplicatePhases(allPhases);
-      // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST to ensure Close Project is last
-      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST using Standard Project Foundation order
+      const orderedPhases = enforceStandardPhaseOrdering(rawPhases, standardProjectPhases);
       // THEN assign order numbers based on the correct order
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       
@@ -1794,7 +1786,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
       // Add linked phase and enforce standard phase ordering
       const phasesWithLinked = [...currentProject.phases, linkedPhase];
-      const orderedPhases = enforceStandardPhaseOrdering(phasesWithLinked);
+      const orderedPhases = enforceStandardPhaseOrdering(phasesWithLinked, standardProjectPhases);
       
       // Ensure unique and consecutive order numbers
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
@@ -1853,7 +1845,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       })));
       
       // Apply ordering to saved phases, but preserve existing order numbers for ALL phases
-      const orderedSavedPhases = enforceStandardPhaseOrdering(savedPhases);
+      const orderedSavedPhases = enforceStandardPhaseOrdering(savedPhases, standardProjectPhases);
       
       // Create a map of saved phases with their order numbers
       const savedPhasesMap = new Map(savedPhases.map(p => [p.id, p]));
@@ -2175,7 +2167,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       if (isIncorporatedPhase) {
         // For incorporated phases, just remove from JSON
         const updatedPhases = currentProject.phases.filter(p => p.id !== phaseToDelete);
-        const orderedPhases = enforceStandardPhaseOrdering(updatedPhases);
+        const orderedPhases = enforceStandardPhaseOrdering(updatedPhases, standardProjectPhases);
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
         const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
 
@@ -2255,8 +2247,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const incorporatedPhases = currentPhases.filter(p => p.isLinked && p.id !== phaseToDelete);
         const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
         const rawPhases = deduplicatePhases(allPhases);
-        // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST to ensure Close Project is last
-        const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+        // IMPORTANT: Apply enforceStandardPhaseOrdering FIRST using Standard Project Foundation order
+        const orderedPhases = enforceStandardPhaseOrdering(rawPhases, standardProjectPhases);
         // THEN assign order numbers based on the correct order
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
 
@@ -2631,7 +2623,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const incorporatedPhases = updatedProject.phases.filter(p => p.isLinked);
       const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
       const rawPhases = deduplicatePhases(allPhases);
-      const orderedPhases = enforceStandardPhaseOrdering(rawPhases);
+      const orderedPhases = enforceStandardPhaseOrdering(rawPhases, standardProjectPhases);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
       

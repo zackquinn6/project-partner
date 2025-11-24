@@ -2,71 +2,91 @@ import { Phase } from "@/interfaces/Project";
 
 /**
  * Ensures standard phases are in the correct order in a project
- * Standard phases: Kickoff -> Planning -> Order -> [Other Standard Phases] -> [Custom/Incorporated Phases] -> Close Project
- * 
- * Custom phases and incorporated phases can be reordered throughout the workflow,
- * as long as the first 3 phases are Kickoff, Planning, Order (in that order)
- * and Close Project is always last.
+ * Uses the order defined in the Standard Project Foundation (not hardcoded positions)
  * 
  * Standard phases are identified by isStandard: true flag, not just by name.
- * Newly added standard phases (when editing Standard Project Foundation) should be included.
+ * The order is determined by phaseOrderNumber values from the Standard Project Foundation.
+ * 
+ * @param phases - The phases to order
+ * @param standardProjectPhases - Optional: The phases from Standard Project Foundation to use as reference for ordering
  */
-export function enforceStandardPhaseOrdering(phases: Phase[]): Phase[] {
-  const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+export function enforceStandardPhaseOrdering(phases: Phase[], standardProjectPhases?: Phase[]): Phase[] {
+  // Separate standard and non-standard phases
+  const standardPhases = phases.filter(p => p.isStandard && !p.isLinked);
+  const nonStandardPhases = phases.filter(p => !p.isStandard || p.isLinked);
   
-  // Extract the 4 specific standard phases by name (for fixed positioning)
-  const kickoffPhase = phases.find(p => p.name === 'Kickoff' && !p.isLinked);
-  const planningPhase = phases.find(p => p.name === 'Planning' && !p.isLinked);
-  const orderingPhase = phases.find(p => p.name === 'Ordering' && !p.isLinked);
-  const closeProjectPhase = phases.find(p => p.name === 'Close Project' && !p.isLinked);
-  
-  // Get all other standard phases (isStandard: true but not one of the 4 specific names)
-  // These are newly added standard phases when editing Standard Project Foundation
-  const otherStandardPhases = phases.filter(phase => {
-    if (phase.isLinked) return false; // Exclude incorporated phases
-    if (!phase.isStandard) return false; // Only include standard phases
-    // Exclude the 4 specific standard phases (they're handled separately)
-    return !standardPhaseNames.includes(phase.name);
-  });
-  
-  // Sort other standard phases by order number or name
-  otherStandardPhases.sort((a, b) => {
-    // First try to sort by order number
-    if (a.phaseOrderNumber !== undefined && b.phaseOrderNumber !== undefined) {
-      if (typeof a.phaseOrderNumber === 'number' && typeof b.phaseOrderNumber === 'number') {
-        return a.phaseOrderNumber - b.phaseOrderNumber;
+  // If we have standard project phases as reference, use them to determine order
+  if (standardProjectPhases && standardProjectPhases.length > 0) {
+    // Create a map of phase names to their order numbers from Standard Project Foundation
+    const standardOrderMap = new Map<string, string | number>();
+    standardProjectPhases.forEach(phase => {
+      if (phase.name && phase.phaseOrderNumber !== undefined) {
+        standardOrderMap.set(phase.name, phase.phaseOrderNumber);
       }
-    }
-    // Fall back to name sorting
-    return (a.name || '').localeCompare(b.name || '');
-  });
+    });
+    
+    // Sort standard phases based on their order in Standard Project Foundation
+    standardPhases.sort((a, b) => {
+      const aOrder = standardOrderMap.get(a.name || '');
+      const bOrder = standardOrderMap.get(b.name || '');
+      
+      // If both have order numbers from standard project, use those
+      if (aOrder !== undefined && bOrder !== undefined) {
+        // Handle 'first' and 'last' special cases
+        if (aOrder === 'first') return -1;
+        if (bOrder === 'first') return 1;
+        if (aOrder === 'last') return 1;
+        if (bOrder === 'last') return -1;
+        
+        // Both are numbers
+        if (typeof aOrder === 'number' && typeof bOrder === 'number') {
+          return aOrder - bOrder;
+        }
+      }
+      
+      // Fallback: use phaseOrderNumber from the phase itself
+      if (a.phaseOrderNumber !== undefined && b.phaseOrderNumber !== undefined) {
+        if (a.phaseOrderNumber === 'first') return -1;
+        if (b.phaseOrderNumber === 'first') return 1;
+        if (a.phaseOrderNumber === 'last') return 1;
+        if (b.phaseOrderNumber === 'last') return -1;
+        if (typeof a.phaseOrderNumber === 'number' && typeof b.phaseOrderNumber === 'number') {
+          return a.phaseOrderNumber - b.phaseOrderNumber;
+        }
+      }
+      
+      // Final fallback: alphabetical
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  } else {
+    // No standard project reference - sort by phaseOrderNumber
+    standardPhases.sort((a, b) => {
+      const aOrder = a.phaseOrderNumber;
+      const bOrder = b.phaseOrderNumber;
+      
+      if (aOrder === 'first') return -1;
+      if (bOrder === 'first') return 1;
+      if (aOrder === 'last') return 1;
+      if (bOrder === 'last') return -1;
+      
+      if (typeof aOrder === 'number' && typeof bOrder === 'number') {
+        return aOrder - bOrder;
+      }
+      
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }
   
-  // Get all non-standard phases (custom and incorporated) while preserving their order
-  const nonStandardPhases = phases.filter(phase => {
-    if (phase.isLinked) return true; // Include incorporated phases
-    // Exclude standard phases (both the 4 specific ones and other standard phases)
-    if (phase.isStandard) return false;
-    return !standardPhaseNames.includes(phase.name); // Include custom phases
-  });
+  // Reconstruct array: sorted standard phases -> non-standard phases
+  const result: Phase[] = [];
   
-  // Build ordered array: First 3 standard phases -> Other Standard Phases -> Custom/Incorporated -> Close Project
-  const orderedPhases: Phase[] = [];
+  // Add standard phases (sorted)
+  result.push(...standardPhases);
   
-  // Add first 3 standard phases in fixed order
-  if (kickoffPhase) orderedPhases.push(kickoffPhase);
-  if (planningPhase) orderedPhases.push(planningPhase);
-  if (orderingPhase) orderedPhases.push(orderingPhase);
+  // Add non-standard phases (preserving their relative order)
+  result.push(...nonStandardPhases);
   
-  // Add other standard phases (newly added standard phases)
-  orderedPhases.push(...otherStandardPhases);
-  
-  // Add custom and incorporated phases in their current order (preserves drag-and-drop reordering)
-  orderedPhases.push(...nonStandardPhases);
-  
-  // Add Close Project last
-  if (closeProjectPhase) orderedPhases.push(closeProjectPhase);
-  
-  return orderedPhases;
+  return result;
 }
 
 /**
