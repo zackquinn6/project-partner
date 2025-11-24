@@ -364,6 +364,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // CRITICAL: For regular templates (not editing Standard Project Foundation),
       // only phases with isStandard: true from currentProject.phases should remain standard.
       // All newly added phases must be non-standard.
+      // CRITICAL: If we just added a phase, preserve the order from currentProject.phases
+      // to prevent reordering after refetch
+      const shouldPreserveOrder = justAddedPhaseId !== null;
       const mergedRebuiltPhases = rebuiltPhases.map(rebuiltPhase => {
         // First try to match by ID (most reliable)
         const currentPhaseById = rebuiltPhase.id ? currentPhasesById.get(rebuiltPhase.id) : null;
@@ -460,6 +463,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       });
       
       // Combine: merged rebuilt phases (with corrected isStandard) + phases only in JSON
+      // CRITICAL: If we just added a phase, preserve the order from currentProject.phases
+      // This prevents reordering after refetch
+      if (justAddedPhaseId) {
+        // Create a map of phases by ID for quick lookup
+        const allPhases = [...mergedRebuiltPhases, ...phasesOnlyInJson];
+        const phasesById = new Map(allPhases.map(p => [p.id, p]));
+        
+        // Reorder based on currentProject.phases order, but only include phases that exist in allPhases
+        const orderedPhases = currentPhasesFiltered
+          .map(phase => phasesById.get(phase.id))
+          .filter((phase): phase is Phase => phase !== undefined);
+        
+        // Add any phases in allPhases that aren't in currentProject.phases (shouldn't happen, but safety)
+        const existingIds = new Set(orderedPhases.map(p => p.id));
+        const remainingPhases = allPhases.filter(p => !existingIds.has(p.id));
+        
+        return [...orderedPhases, ...remainingPhases];
+      }
+      
       return [...mergedRebuiltPhases, ...phasesOnlyInJson];
     }
     
@@ -1843,14 +1865,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Note: updatedProject was already created and updateProject called above (line 1493-1498)
       // But we're updating again with the correctly ordered phases
       
-      // Trigger refetch of dynamic phases to ensure consistency
-      // Add a small delay to allow database to fully propagate the change
-      // This ensures useDynamicPhases includes the new phase in future renders
-      // The refetch will update rebuiltPhases, which will then be merged with currentProject.phases
-      setTimeout(() => {
-        console.log('🔄 Triggering refetch of dynamic phases after add phase...');
-        refetchDynamicPhases();
-      }, 2000); // Increased delay to ensure database propagation
+      // CRITICAL: Don't refetch immediately - it causes reordering
+      // The data is already correct in currentProject.phases and the database
+      // Only refetch if absolutely necessary, and ensure order is preserved
+      // We'll let the normal data flow handle updates, but preserve the order we set
+      // The refetch can happen naturally when the component re-renders or when needed
+      // For now, skip the refetch to prevent reordering
+      // setTimeout(() => {
+      //   console.log('🔄 Triggering refetch of dynamic phases after add phase...');
+      //   refetchDynamicPhases();
+      // }, 2000);
       
       // Ensure minimum display time for loading state
       const elapsedTime = Date.now() - startTime;
