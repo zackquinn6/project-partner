@@ -357,12 +357,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     // CRITICAL: Filter out deleted phase if we're currently deleting one
+    // This prevents the deleted phase from reappearing in mergedPhases
     const currentPhasesFiltered = phaseToDelete 
       ? (currentProject.phases || []).filter(p => p.id !== phaseToDelete)
       : (currentProject.phases || []);
     
+    // Double-check: Also filter from rebuiltPhases if phaseToDelete is set
+    // This ensures the deleted phase doesn't come back from the refetch
+    const rebuiltPhasesFiltered = phaseToDelete && rebuiltPhases
+      ? rebuiltPhases.filter(p => p.id !== phaseToDelete)
+      : rebuiltPhases;
+    
     // If we have rebuilt phases, merge them with currentProject.phases to preserve correct isStandard flags
-    if (rebuiltPhases && rebuiltPhases.length > 0) {
+    // Use rebuiltPhasesFiltered to ensure deleted phase doesn't reappear
+    if (rebuiltPhasesFiltered && rebuiltPhasesFiltered.length > 0) {
       // Create maps for both ID and name matching
       // Use ID as primary identifier, but also check by name for phases that might have been renamed
       const currentPhasesById = new Map<string, Phase>();
@@ -387,7 +395,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // CRITICAL: If we just added a phase, preserve the order from currentProject.phases
       // to prevent reordering after refetch
       const shouldPreserveOrder = justAddedPhaseId !== null;
-      const mergedRebuiltPhases = rebuiltPhases.map(rebuiltPhase => {
+      const mergedRebuiltPhases = rebuiltPhasesFiltered.map(rebuiltPhase => {
         // First try to match by ID (most reliable)
         const currentPhaseById = rebuiltPhase.id ? currentPhasesById.get(rebuiltPhase.id) : null;
         if (currentPhaseById) {
@@ -511,7 +519,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         
         combinedPhases = [...orderedPhases, ...remainingPhases];
       } else {
-        combinedPhases = [...mergedRebuiltPhases, ...phasesOnlyInJson];
+        // CRITICAL: Filter out deleted phase from combined phases
+        combinedPhases = phaseToDelete
+          ? [...mergedRebuiltPhases, ...phasesOnlyInJson].filter(p => p.id !== phaseToDelete)
+          : [...mergedRebuiltPhases, ...phasesOnlyInJson];
       }
       
       // CRITICAL: In Edit Standard mode, filter to ONLY standard phases
