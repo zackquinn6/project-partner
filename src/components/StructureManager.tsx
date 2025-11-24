@@ -821,23 +821,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       reorderedPhases.splice(newIndex, 0, removed);
       
       // Update phase order numbers based on new positions
-      // For standard phases, preserve their special order numbers
+      // For standard phases in Edit Standard mode, recalculate order numbers based on new position
       // For custom/linked phases, assign sequential numbers
       const totalPhases = reorderedPhases.length;
       reorderedPhases.forEach((p, index) => {
         const isStandard = !p.isLinked && isStandardPhase(p);
         
-        if (isStandard) {
-          // Standard phases keep their special positions based on phaseOrderNumber
-          // If they have 'first' or 'last', preserve it; otherwise use position
-          if (p.phaseOrderNumber === 'first' || (index === 0 && p.phaseOrderNumber === undefined)) {
+        if (isStandard && isEditingStandardProject) {
+          // When editing Standard Project Foundation, standard phases can be reordered
+          // Update order numbers based on their new position
+          if (index === 0) {
             p.phaseOrderNumber = 'first';
-          } else if (p.phaseOrderNumber === 'last' || (index === totalPhases - 1 && p.phaseOrderNumber === undefined)) {
+          } else if (index === totalPhases - 1) {
             p.phaseOrderNumber = 'last';
-          } else if (p.phaseOrderNumber === undefined) {
+          } else {
             // Other standard phases get their position numbers
             p.phaseOrderNumber = index + 1;
           }
+        } else if (isStandard && !isEditingStandardProject) {
+          // Standard phases outside Edit Standard mode keep their existing order numbers
+          // Don't change them
         } else {
           // Custom and linked phases get sequential numbers
           // But preserve 'first' or 'last' if they were at those positions and no standard phase is there
@@ -1116,8 +1119,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const displayOrder = phaseDisplayOrderMap.get(phase.id) ?? i;
         
         if (isEditingStandardProject && phase.isStandard) {
-          // Standard phases - update standard_phases table
+          // Standard phases in Edit Standard mode - update both standard_phases and project_phases tables
           const updatePromise = (async () => {
+            // Update standard_phases table
             const { data: standardPhase } = await supabase
               .from('standard_phases')
               .select('id')
@@ -1125,7 +1129,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               .single();
             
             if (standardPhase) {
-              // For standard phases, we can update directly since there's no unique constraint conflict
               await supabase
                 .from('standard_phases')
                 .update({ 
@@ -1133,6 +1136,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', standardPhase.id);
+            }
+            
+            // Also update project_phases table for the Standard Project Foundation
+            const { data: phaseData } = await supabase
+              .from('project_phases')
+              .select('id')
+              .eq('id', phase.id)
+              .eq('project_id', currentProject.id)
+              .maybeSingle();
+            
+            if (phaseData) {
+              // First pass: set to temporary negative value to avoid conflicts
+              await supabase
+                .from('project_phases')
+                .update({ 
+                  display_order: -(displayOrder + 1000), // Use negative values as temporary
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', phaseData.id);
             }
           })();
           tempUpdatePromises.push(updatePromise);
@@ -1170,28 +1192,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const phase = nonIncorporatedPhases[i];
         const displayOrder = phaseDisplayOrderMap.get(phase.id) ?? i;
         
-        if (!isEditingStandardProject || !phase.isStandard) {
-          // Only update project_phases in second pass (standard_phases already done in first pass)
-          const updatePromise = (async () => {
-            const { data: phaseData } = await supabase
+        // Update project_phases table for all phases (including standard phases in Edit Standard mode)
+        const updatePromise = (async () => {
+          const { data: phaseData } = await supabase
+            .from('project_phases')
+            .select('id')
+            .eq('id', phase.id)
+            .eq('project_id', currentProject.id)
+            .maybeSingle();
+          
+          if (phaseData) {
+            await supabase
               .from('project_phases')
-              .select('id')
-              .eq('id', phase.id)
-              .eq('project_id', currentProject.id)
-              .maybeSingle();
-            
-            if (phaseData) {
-              await supabase
-                .from('project_phases')
-                .update({ 
-                  display_order: displayOrder,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', phaseData.id);
-            }
-          })();
-          finalUpdatePromises.push(updatePromise);
-        }
+              .update({ 
+                display_order: displayOrder,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', phaseData.id);
+          }
+        })();
+        finalUpdatePromises.push(updatePromise);
       }
       
       await Promise.all(finalUpdatePromises);
