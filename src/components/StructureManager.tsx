@@ -1949,6 +1949,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         if (newPhaseIndex !== -1 && finalPhases.length > 1) {
           const newPhase = finalPhases[newPhaseIndex];
           const targetIndex = finalPhases.length - 2; // Second-to-last position
+          const lastPhase = finalPhases[finalPhases.length - 1];
+          
+          // Preserve the last phase's order number (should be 'last')
+          const lastPhaseOriginalOrder = lastPhase.phaseOrderNumber;
           
           // If new phase is not at second-to-last, move it there
           if (newPhaseIndex !== targetIndex) {
@@ -1957,14 +1961,33 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             // Insert at second-to-last position (before the last phase)
             finalPhases.splice(targetIndex, 0, newPhase);
             
-            // Update order numbers to reflect the correct position
-            // Re-assign order numbers for all phases to ensure consistency
+            // Update order numbers - preserve existing order numbers where possible
+            // Only update the new phase's order number, preserve others
             finalPhases.forEach((phase, index) => {
-              if (index === 0) {
+              if (phase.id === newPhase.id) {
+                // This is the new phase - set to second-to-last
+                if (lastPhaseOriginalOrder === 'last') {
+                  // If last phase is 'last', new phase should be totalPhases - 1
+                  phase.phaseOrderNumber = finalPhases.length - 1;
+                } else if (typeof lastPhaseOriginalOrder === 'number') {
+                  // If last phase has a number, new phase should be that number - 1
+                  phase.phaseOrderNumber = lastPhaseOriginalOrder - 1;
+                } else {
+                  // Fallback
+                  phase.phaseOrderNumber = finalPhases.length - 1;
+                }
+              } else if (index === 0 && phase.phaseOrderNumber !== 'first') {
+                // Preserve 'first' if it exists, otherwise set it
                 phase.phaseOrderNumber = 'first';
               } else if (index === finalPhases.length - 1) {
+                // CRITICAL: Always preserve 'last' for the last phase
                 phase.phaseOrderNumber = 'last';
-              } else {
+              }
+              // For other phases, preserve their existing order numbers if they're valid
+              // Only update if they don't have a valid order number
+              else if (phase.phaseOrderNumber === undefined || 
+                      (typeof phase.phaseOrderNumber === 'number' && 
+                       (phase.phaseOrderNumber < 1 || phase.phaseOrderNumber >= finalPhases.length))) {
                 phase.phaseOrderNumber = index + 1;
               }
             });
@@ -1974,8 +1997,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               newPhaseId: newPhase.id,
               targetIndex,
               totalPhases: finalPhases.length,
+              lastPhaseOriginalOrder,
+              newPhaseOrder: newPhase.phaseOrderNumber,
               orderNumbers: finalPhases.map((p, i) => ({ name: p.name, index: i, order: p.phaseOrderNumber }))
             });
+          } else {
+            // New phase is already at second-to-last, just ensure order numbers are correct
+            if (lastPhase.phaseOrderNumber !== 'last') {
+              lastPhase.phaseOrderNumber = 'last';
+            }
+            if (newPhase.phaseOrderNumber === undefined || 
+                (typeof newPhase.phaseOrderNumber === 'number' && 
+                 newPhase.phaseOrderNumber !== finalPhases.length - 1)) {
+              newPhase.phaseOrderNumber = finalPhases.length - 1;
+            }
           }
         }
         
@@ -1983,9 +2018,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         finalPhases = sortPhasesByOrderNumber(finalPhases);
         
         // Double-check after sorting that new phase is still at second-to-last
+        // and that last phase still has 'last'
         const newPhaseAfterSort = finalPhases.findIndex(p => 
           p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
         );
+        const lastPhaseAfterSort = finalPhases[finalPhases.length - 1];
+        
+        // Ensure last phase always has 'last'
+        if (lastPhaseAfterSort && lastPhaseAfterSort.phaseOrderNumber !== 'last') {
+          console.warn('⚠️ Last phase lost "last" designation after sort, fixing:', {
+            phaseName: lastPhaseAfterSort.name,
+            currentOrder: lastPhaseAfterSort.phaseOrderNumber
+          });
+          lastPhaseAfterSort.phaseOrderNumber = 'last';
+        }
+        
         if (newPhaseAfterSort !== -1 && newPhaseAfterSort !== finalPhases.length - 2) {
           console.warn('⚠️ New phase moved during sort, repositioning:', {
             currentIndex: newPhaseAfterSort,
@@ -1995,16 +2042,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           finalPhases.splice(newPhaseAfterSort, 1);
           finalPhases.splice(finalPhases.length - 2, 0, newPhase);
           
-          // Re-assign order numbers again
-          finalPhases.forEach((phase, index) => {
-            if (index === 0) {
-              phase.phaseOrderNumber = 'first';
-            } else if (index === finalPhases.length - 1) {
-              phase.phaseOrderNumber = 'last';
-            } else {
-              phase.phaseOrderNumber = index + 1;
-            }
-          });
+          // Update only the new phase's order number, preserve last phase's 'last'
+          if (lastPhaseAfterSort.phaseOrderNumber === 'last') {
+            newPhase.phaseOrderNumber = finalPhases.length - 1;
+          } else if (typeof lastPhaseAfterSort.phaseOrderNumber === 'number') {
+            newPhase.phaseOrderNumber = lastPhaseAfterSort.phaseOrderNumber - 1;
+          } else {
+            newPhase.phaseOrderNumber = finalPhases.length - 1;
+          }
+          
+          // Ensure last phase still has 'last'
+          finalPhases[finalPhases.length - 1].phaseOrderNumber = 'last';
         }
       }
       
