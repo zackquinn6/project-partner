@@ -90,7 +90,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [isAddingPhase, setIsAddingPhase] = useState(false);
   const [justAddedPhaseId, setJustAddedPhaseId] = useState<string | null>(null);
   const [deletePhaseDialogOpen, setDeletePhaseDialogOpen] = useState(false);
-  const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
+  const [phaseIdPendingDelete, setPhaseIdPendingDelete] = useState<string | null>(null); // Phase ID waiting for confirmation
+  const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null); // Phase ID being deleted (triggers filtering)
   const [isDeletingPhase, setIsDeletingPhase] = useState(false);
   const [reorderingPhaseId, setReorderingPhaseId] = useState<string | null>(null);
   const [skipNextRefresh, setSkipNextRefresh] = useState(false);
@@ -2546,7 +2547,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   };
 
   const deletePhase = async () => {
-    if (!currentProject || !phaseToDelete) return;
+    // Use phaseIdPendingDelete (set when dialog opens) or phaseToDelete (fallback)
+    const phaseIdToDelete = phaseIdPendingDelete || phaseToDelete;
+    if (!currentProject || !phaseIdToDelete) return;
+    
+    // NOW set phaseToDelete to trigger filtering - user has confirmed
+    setPhaseToDelete(phaseIdToDelete);
 
     setIsDeletingPhase(true);
     const startTime = Date.now();
@@ -2554,12 +2560,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
     try {
       // Check if this is an incorporated phase (stored only in JSON)
-      const phase = displayPhases.find(p => p.id === phaseToDelete);
+      const phase = displayPhases.find(p => p.id === phaseIdToDelete);
       const isIncorporatedPhase = phase?.isLinked;
 
       if (isIncorporatedPhase) {
         // For incorporated phases, just remove from JSON
-        const updatedPhases = currentProject.phases.filter(p => p.id !== phaseToDelete);
+        const updatedPhases = currentProject.phases.filter(p => p.id !== phaseIdToDelete);
         const orderedPhases = enforceStandardPhaseOrdering(updatedPhases, standardProjectPhases);
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
         const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
@@ -2596,7 +2602,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           .from('project_phases')
           .select('id')
           .eq('project_id', currentProject.id)
-          .eq('id', phaseToDelete)
+          .eq('id', phaseIdToDelete)
           .single();
 
         if (!projectPhase) {
@@ -2662,16 +2668,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Merge with any incorporated phases from current project
         const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
         const currentPhases = currentProject.phases || [];
-        const incorporatedPhases = currentPhases.filter(p => p.isLinked && p.id !== phaseToDelete);
+        const incorporatedPhases = currentPhases.filter(p => p.isLinked && p.id !== phaseIdToDelete);
         const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
         const rawPhases = deduplicatePhases(allPhases);
         
         // CRITICAL: Filter out deleted phase as a safety measure (shouldn't be in rebuiltPhases, but just in case)
         // This is temporary UI filtering - the phase is already permanently deleted from the database above
-        const phasesWithoutDeleted = rawPhases.filter(p => p.id !== phaseToDelete);
+        const phasesWithoutDeleted = rawPhases.filter(p => p.id !== phaseIdToDelete);
         
         // Verify deleted phase is not in the rebuilt phases
-        const deletedPhaseStillPresent = phasesWithoutDeleted.some(p => p.id === phaseToDelete);
+        const deletedPhaseStillPresent = phasesWithoutDeleted.some(p => p.id === phaseIdToDelete);
         if (deletedPhaseStillPresent) {
           console.error('❌ WARNING: Deleted phase still present in rebuilt phases! This should not happen.');
         }
@@ -2685,7 +2691,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
 
         // CRITICAL: In Edit Standard mode, filter to only standard phases BEFORE updating
-        let phasesToDisplay = sortedPhases.filter(p => p.id !== phaseToDelete);
+        let phasesToDisplay = sortedPhases.filter(p => p.id !== phaseIdToDelete);
         if (isEditingStandardProject) {
           phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
         }
@@ -2750,6 +2756,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // On error, clear deletion state immediately
       setPhaseToDelete(null);
+      setPhaseIdPendingDelete(null);
       setIsDeletingPhase(false);
     }
   };
