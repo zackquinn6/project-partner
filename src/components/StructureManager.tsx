@@ -2735,9 +2735,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setDeletePhaseDialogOpen(false);
       setPhaseIdPendingDelete(null); // Clear pending delete ID
       
+      // CRITICAL: Force refetch of dynamic phases to ensure UI is in sync with database
+      // This ensures useDynamicPhases gets fresh data without the deleted phase
+      console.log('🔄 Refetching dynamic phases after deletion...');
+      await refetchDynamicPhases();
+      
       // CRITICAL: Clear deletion state after a delay to prevent double refresh
       // The phase is already deleted from database and displayPhases is already updated
-      // We don't need to refetch since we already rebuilt phases and updated everything
       // Keep skipNextRefresh active longer to prevent any useEffect from triggering
       setTimeout(() => {
         setPhaseToDelete(null);
@@ -2746,7 +2750,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         setTimeout(() => {
           setSkipNextRefresh(false);
         }, 500);
-      }, 1500); // Longer delay to ensure no refetch triggers
+      }, 2000); // Longer delay to ensure refetch completes and UI is stable
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
