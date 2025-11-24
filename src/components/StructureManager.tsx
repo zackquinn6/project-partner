@@ -93,7 +93,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
   const [isDeletingPhase, setIsDeletingPhase] = useState(false);
   const [reorderingPhaseId, setReorderingPhaseId] = useState<string | null>(null);
-  const [isAddingPhase, setIsAddingPhase] = useState(false);
   const [skipNextRefresh, setSkipNextRefresh] = useState(false);
 
   // Collapsible state
