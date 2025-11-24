@@ -653,12 +653,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           }
         } else if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked && phase.name) {
           // Fallback: If order number wasn't preserved by ID, try to get it from standardProjectPhases by name
+          // This ensures standard phases always get their order numbers from Standard Project Foundation
           const standardPhase = standardProjectPhases.find(sp => sp.name === phase.name);
           if (standardPhase && standardPhase.phaseOrderNumber !== undefined) {
             phase.phaseOrderNumber = standardPhase.phaseOrderNumber;
+            console.log('✅ Applied order number from Standard Project Foundation:', {
+              phaseName: phase.name,
+              orderNumber: standardPhase.phaseOrderNumber
+            });
           }
         }
       });
+      
+      // CRITICAL: For regular projects, ensure ALL standard phases have order numbers from Standard Project Foundation
+      // This is a final check to ensure no standard phase is missing its order number
+      if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+        const standardOrderMap = new Map<string, string | number>();
+        standardProjectPhases.forEach(sp => {
+          if (sp.name && sp.phaseOrderNumber !== undefined) {
+            standardOrderMap.set(sp.name, sp.phaseOrderNumber);
+          }
+        });
+        
+        sortedPhases.forEach(phase => {
+          if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
+            const standardOrder = standardOrderMap.get(phase.name);
+            if (standardOrder !== undefined && phase.phaseOrderNumber !== standardOrder) {
+              console.log('🔧 Correcting order number for standard phase:', {
+                phaseName: phase.name,
+                currentOrder: phase.phaseOrderNumber,
+                correctOrder: standardOrder
+              });
+              phase.phaseOrderNumber = standardOrder;
+            }
+          }
+        });
+      }
       
       // CRITICAL: After all processing, ensure the last phase has 'last' if it was originally 'last'
       if (sortedPhases.length > 0) {
