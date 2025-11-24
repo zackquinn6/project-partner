@@ -511,7 +511,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
     }
     
-    setDisplayPhases(processedPhases);
+    // CRITICAL: Filter out deleted phase during deletion process to prevent flicker
+    // If we're currently deleting a phase, make sure it doesn't reappear during refetch
+    const phasesToDisplay = phaseToDelete 
+      ? processedPhases.filter(p => p.id !== phaseToDelete)
+      : processedPhases;
+    
+    setDisplayPhases(phasesToDisplay);
     setPhasesLoaded(true);
       
     // Update local context with fresh phases ONLY if phases actually changed
