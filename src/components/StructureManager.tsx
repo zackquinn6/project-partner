@@ -2789,7 +2789,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                           <CardHeader className="py-1 px-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1 flex-1">
-                                {((!phaseIsStandard || isEditingStandardProject) && !isLinkedPhase) || isLinkedPhase ? (
+                                {/* Show reorder buttons only for non-standard phases, or standard phases when editing Standard Project Foundation */}
+                                {(!phaseIsStandard || (phaseIsStandard && isEditingStandardProject)) && !isLinkedPhase ? (
                                   <div className="flex flex-col gap-0.5">
                                     {reorderingPhaseId === phase.id ? (
                                       <Loader2 className="w-3 h-3 animate-spin text-primary" />
@@ -2841,8 +2842,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                           {expandedPhases.has(phase.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                                         </Button>
                                         {/* Phase Order Number */}
+                                        {/* Show dropdown only for standard phases when editing Standard Project Foundation, or for non-standard phases */}
                                         <div className="flex items-center gap-1 mr-1">
-                                          {isEditingStandardProject && !isLinkedPhase ? (
+                                          {((phaseIsStandard && isEditingStandardProject) || !phaseIsStandard) && !isLinkedPhase ? (
                                             <Select
                                               value={String(getPhaseOrderNumber(phase, phaseIndex, displayPhases.length))}
                                               onValueChange={(value) => {
