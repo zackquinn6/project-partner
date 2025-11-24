@@ -1527,10 +1527,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // CRITICAL: After restoring, ensure the last phase in the sorted array has 'last' if it was originally 'last'
       // This handles the case where the last phase might have been moved during sorting
       if (phasesWithUniqueOrder.length > 0) {
-        const lastPhase = phasesWithUniqueOrder[phasesWithUniqueOrder.length - 1];
         const originalLastPhase = reorderedPhases.find(p => p.phaseOrderNumber === 'last');
-        if (originalLastPhase && lastPhase.id === originalLastPhase.id) {
-          lastPhase.phaseOrderNumber = 'last';
+        if (originalLastPhase) {
+          // Find the phase in phasesWithUniqueOrder that matches the original last phase
+          const lastPhaseInSorted = phasesWithUniqueOrder.find(p => p.id === originalLastPhase.id);
+          if (lastPhaseInSorted) {
+            // Restore 'last' to this phase
+            lastPhaseInSorted.phaseOrderNumber = 'last';
+            
+            // If this phase is not at the end, move it to the end
+            const currentIndex = phasesWithUniqueOrder.indexOf(lastPhaseInSorted);
+            if (currentIndex !== phasesWithUniqueOrder.length - 1) {
+              phasesWithUniqueOrder.splice(currentIndex, 1);
+              phasesWithUniqueOrder.push(lastPhaseInSorted);
+            }
+          } else {
+            // Original last phase not found - ensure the actual last phase has 'last'
+            const lastPhase = phasesWithUniqueOrder[phasesWithUniqueOrder.length - 1];
+            if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
+              console.warn('⚠️ Original last phase not found, ensuring current last phase has "last":', {
+                originalLastPhaseName: originalLastPhase.name,
+                currentLastPhaseName: lastPhase.name
+              });
+              lastPhase.phaseOrderNumber = 'last';
+            }
+          }
         }
       }
       
