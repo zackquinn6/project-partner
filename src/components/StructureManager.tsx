@@ -645,34 +645,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
       const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
       
-      // CRITICAL: Restore order numbers from Standard Project Foundation for regular projects
-      // For Edit Standard, restore from currentProject.phases
-      sortedPhases.forEach(phase => {
-        const preservedOrder = preservedOrderNumbers.get(phase.id);
-        if (preservedOrder !== undefined) {
-          // For regular projects, standard phases get their order from Standard Project Foundation
-          if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
-            phase.phaseOrderNumber = preservedOrder;
-          } else if (isEditingStandardProject) {
-            // Edit Standard: restore all preserved order numbers
-            phase.phaseOrderNumber = preservedOrder;
-          }
-        } else if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked && phase.name) {
-          // Fallback: If order number wasn't preserved by ID, try to get it from standardProjectPhases by name
-          // This ensures standard phases always get their order numbers from Standard Project Foundation
-          const standardPhase = standardProjectPhases.find(sp => sp.name === phase.name);
-          if (standardPhase && standardPhase.phaseOrderNumber !== undefined) {
-            phase.phaseOrderNumber = standardPhase.phaseOrderNumber;
-            console.log('✅ Applied order number from Standard Project Foundation:', {
-              phaseName: phase.name,
-              orderNumber: standardPhase.phaseOrderNumber
-            });
-          }
-        }
-      });
-      
-      // CRITICAL: For regular projects, ensure ALL standard phases have order numbers from Standard Project Foundation
-      // This is a final check to ensure no standard phase is missing its order number
+      // CRITICAL: For regular projects, apply order numbers from Standard Project Foundation AFTER ensureUniqueOrderNumbers
+      // This must happen AFTER ensureUniqueOrderNumbers because it may reassign order numbers
+      // Match by phase name, not ID, because phases in regular projects have different IDs
       if (!isEditingStandardProject && standardProjectPhases.length > 0) {
         const standardOrderMap = new Map<string, string | number>();
         standardProjectPhases.forEach(sp => {
@@ -681,17 +656,27 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           }
         });
         
+        // Apply order numbers from Standard Project Foundation to standard phases
         sortedPhases.forEach(phase => {
           if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
             const standardOrder = standardOrderMap.get(phase.name);
-            if (standardOrder !== undefined && phase.phaseOrderNumber !== standardOrder) {
-              console.log('🔧 Correcting order number for standard phase:', {
-                phaseName: phase.name,
-                currentOrder: phase.phaseOrderNumber,
-                correctOrder: standardOrder
-              });
+            if (standardOrder !== undefined) {
+              // Always apply order number from Standard Project Foundation, even if it was reassigned
               phase.phaseOrderNumber = standardOrder;
+              console.log('✅ Applied order number from Standard Project Foundation:', {
+                phaseName: phase.name,
+                orderNumber: standardOrder,
+                wasReassigned: preservedOrderNumbers.get(phase.id) !== standardOrder
+              });
             }
+          }
+        });
+      } else if (isEditingStandardProject) {
+        // Edit Standard: restore all preserved order numbers by ID
+        sortedPhases.forEach(phase => {
+          const preservedOrder = preservedOrderNumbers.get(phase.id);
+          if (preservedOrder !== undefined) {
+            phase.phaseOrderNumber = preservedOrder;
           }
         });
       }
