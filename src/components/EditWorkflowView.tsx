@@ -222,11 +222,8 @@ export default function EditWorkflowView({
     });
   }
   
-  // CRITICAL: Apply standard phase ordering first, then sort by order number
-  // This ensures phases are displayed in the correct order based on phaseOrderNumber
-  const orderedPhases = enforceStandardPhaseOrdering(deduplicatedPhases, standardProjectPhases);
-  
   // CRITICAL: For regular projects, apply order numbers from Standard Project Foundation
+  // Do this BEFORE sorting to ensure all phases have correct order numbers
   if (!isEditingStandardProject && standardProjectPhases.length > 0) {
     const standardOrderMap = new Map<string, string | number>();
     standardProjectPhases.forEach(sp => {
@@ -236,7 +233,7 @@ export default function EditWorkflowView({
     });
     
     // Apply order numbers from Standard Project Foundation to standard phases
-    orderedPhases.forEach(phase => {
+    deduplicatedPhases.forEach(phase => {
       if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
         const standardOrder = standardOrderMap.get(phase.name);
         if (standardOrder !== undefined) {
@@ -248,7 +245,7 @@ export default function EditWorkflowView({
   
   // CRITICAL: Restore preserved order numbers from currentProject.phases
   // This ensures order numbers set in StructureManager are preserved
-  orderedPhases.forEach(phase => {
+  deduplicatedPhases.forEach(phase => {
     // Try to restore by ID first, then by name
     const preservedOrder = preservedOrderNumbers.get(phase.id) || (phase.name ? preservedOrderNumbers.get(phase.name) : undefined);
     if (preservedOrder !== undefined) {
@@ -259,8 +256,10 @@ export default function EditWorkflowView({
     }
   });
   
-  // CRITICAL: Sort by order number to ensure correct display order
-  const displayPhases = sortPhasesByOrderNumber(orderedPhases);
+  // CRITICAL: Sort ALL phases together by order number
+  // This ensures 'first' is first, 'last' is last, and numeric orders (2, 3, 4, etc.) are in between sequentially
+  // Do NOT use enforceStandardPhaseOrdering here as it groups phases incorrectly
+  const displayPhases = sortPhasesByOrderNumber(deduplicatedPhases);
   
   console.log('🔍 EditWorkflowView - displayPhases:', {
     count: displayPhases.length,
