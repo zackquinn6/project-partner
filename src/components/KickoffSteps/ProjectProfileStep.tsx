@@ -300,14 +300,14 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       if (scalingUnit === 'per linear foot') return 'linear ft';
                       if (scalingUnit === 'per cubic yard') return 'cu yd';
                       
-                      // For "per item", check if there's a custom item_type
+                      // For "per item", use item_type if available, otherwise use "per item"
                       if (scalingUnit === 'per item') {
                         if (itemType) return itemType.toLowerCase();
-                        return 'items';
+                        return 'per item';
                       }
                       
                       // If scalingUnit is a custom value (not one of the standard ones), use it directly
-                      // This handles cases like "Toilet(s)" as a custom scaling unit
+                      // This handles cases like "per toilet(s)" as a custom scaling unit
                       return scalingUnit;
                     })()}
                   </span>
