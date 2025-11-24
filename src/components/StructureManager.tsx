@@ -1938,33 +1938,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       });
       
       // CRITICAL: In Edit Standard mode, ensure new phase stays at second-to-last position
-      // Don't sort yet - preserve the order we set earlier
+      // Position the new phase correctly BEFORE sorting to maintain order
       let finalPhases = phasesWithCorrectStandardFlag;
       if (isEditingStandardProject) {
-        // Find the new phase and ensure it's at second-to-last position
+        // Find the new phase
         const newPhaseIndex = finalPhases.findIndex(p => 
           p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
         );
         
         if (newPhaseIndex !== -1 && finalPhases.length > 1) {
           const newPhase = finalPhases[newPhaseIndex];
-          const lastPhaseIndex = finalPhases.length - 1;
+          const targetIndex = finalPhases.length - 2; // Second-to-last position
           
           // If new phase is not at second-to-last, move it there
-          if (newPhaseIndex !== lastPhaseIndex - 1) {
+          if (newPhaseIndex !== targetIndex) {
             // Remove from current position
             finalPhases.splice(newPhaseIndex, 1);
-            // Insert at second-to-last position
-            finalPhases.splice(lastPhaseIndex - 1, 0, newPhase);
+            // Insert at second-to-last position (before the last phase)
+            finalPhases.splice(targetIndex, 0, newPhase);
             
             // Update order numbers to reflect the correct position
-            const lastPhase = finalPhases[lastPhaseIndex];
-            if (lastPhase && lastPhase.phaseOrderNumber === 'last') {
-              newPhase.phaseOrderNumber = finalPhases.length - 1;
-            } else if (lastPhase && typeof lastPhase.phaseOrderNumber === 'number') {
-              newPhase.phaseOrderNumber = lastPhase.phaseOrderNumber - 1;
-            }
-            
             // Re-assign order numbers for all phases to ensure consistency
             finalPhases.forEach((phase, index) => {
               if (index === 0) {
@@ -1975,11 +1968,44 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 phase.phaseOrderNumber = index + 1;
               }
             });
+            
+            console.log('🔧 Repositioned new phase to second-to-last:', {
+              newPhaseName: newPhase.name,
+              newPhaseId: newPhase.id,
+              targetIndex,
+              totalPhases: finalPhases.length,
+              orderNumbers: finalPhases.map((p, i) => ({ name: p.name, index: i, order: p.phaseOrderNumber }))
+            });
           }
         }
         
         // Now sort to ensure order numbers are respected
         finalPhases = sortPhasesByOrderNumber(finalPhases);
+        
+        // Double-check after sorting that new phase is still at second-to-last
+        const newPhaseAfterSort = finalPhases.findIndex(p => 
+          p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
+        );
+        if (newPhaseAfterSort !== -1 && newPhaseAfterSort !== finalPhases.length - 2) {
+          console.warn('⚠️ New phase moved during sort, repositioning:', {
+            currentIndex: newPhaseAfterSort,
+            targetIndex: finalPhases.length - 2
+          });
+          const newPhase = finalPhases[newPhaseAfterSort];
+          finalPhases.splice(newPhaseAfterSort, 1);
+          finalPhases.splice(finalPhases.length - 2, 0, newPhase);
+          
+          // Re-assign order numbers again
+          finalPhases.forEach((phase, index) => {
+            if (index === 0) {
+              phase.phaseOrderNumber = 'first';
+            } else if (index === finalPhases.length - 1) {
+              phase.phaseOrderNumber = 'last';
+            } else {
+              phase.phaseOrderNumber = index + 1;
+            }
+          });
+        }
       }
       
       // CRITICAL: Double-check that new phase in finalPhases has correct isStandard flag
