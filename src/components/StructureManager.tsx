@@ -3127,42 +3127,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
         // CRITICAL: In Edit Standard mode, ensure order numbers are unique and correct after deletion
         // This prevents duplicate order numbers (e.g., two "first" positions)
+        // ALWAYS reassign order numbers sequentially after deletion to prevent duplicates
         if (isEditingStandardProject) {
-          // Check for duplicate order numbers and fix them
-          const orderNumberCounts = new Map<string | number, number>();
-          sortedPhases.forEach(phase => {
-            if (phase.phaseOrderNumber !== undefined) {
-              orderNumberCounts.set(phase.phaseOrderNumber, (orderNumberCounts.get(phase.phaseOrderNumber) || 0) + 1);
+          // Reassign ALL order numbers sequentially based on position
+          // This ensures no duplicates and correct ordering
+          sortedPhases.forEach((phase, index) => {
+            if (index === 0) {
+              phase.phaseOrderNumber = 'first';
+            } else if (index === sortedPhases.length - 1) {
+              phase.phaseOrderNumber = 'last';
+            } else {
+              phase.phaseOrderNumber = index + 1;
             }
           });
           
-          // Fix duplicates by reassigning order numbers sequentially
-          const usedOrderNumbers = new Set<string | number>();
-          sortedPhases.forEach((phase, index) => {
-            if (phase.phaseOrderNumber !== undefined) {
-              const count = orderNumberCounts.get(phase.phaseOrderNumber) || 0;
-              if (count > 1 || usedOrderNumbers.has(phase.phaseOrderNumber)) {
-                // Duplicate found - reassign based on position
-                if (index === 0) {
-                  phase.phaseOrderNumber = 'first';
-                } else if (index === sortedPhases.length - 1) {
-                  phase.phaseOrderNumber = 'last';
-                } else {
-                  phase.phaseOrderNumber = index + 1;
-                }
-              }
-              usedOrderNumbers.add(phase.phaseOrderNumber);
-            } else {
-              // No order number - assign based on position
-              if (index === 0) {
-                phase.phaseOrderNumber = 'first';
-              } else if (index === sortedPhases.length - 1) {
-                phase.phaseOrderNumber = 'last';
-              } else {
-                phase.phaseOrderNumber = index + 1;
-              }
-              usedOrderNumbers.add(phase.phaseOrderNumber);
-            }
+          console.log('🔧 Reassigned order numbers after deletion:', {
+            phases: sortedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
           });
         }
 
