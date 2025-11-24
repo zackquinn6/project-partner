@@ -52,32 +52,45 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const templateProject = currentProjectRun?.templateId 
     ? projects.find(p => p.id === currentProjectRun.templateId)
     : null;
-  const scalingUnit = templateProject?.scalingUnit || currentProjectRun?.scalingUnit || 'per item';
   
-  // Fetch item_type directly from database since it's not in the transformed Project interface
+  // Fetch scaling_unit and item_type directly from database since they may not be in the transformed Project interface
+  const [scalingUnit, setScalingUnit] = useState<string>('per item');
   const [itemType, setItemType] = useState<string | null>(null);
   
   useEffect(() => {
-    const fetchItemType = async () => {
+    const fetchScalingUnitAndItemType = async () => {
       if (templateProject?.id) {
         try {
           const { data, error } = await supabase
             .from('projects')
-            .select('item_type')
+            .select('scaling_unit, item_type')
             .eq('id', templateProject.id)
             .single();
           
           if (!error && data) {
+            // Use scaling_unit from database, fallback to templateProject.scalingUnit, then currentProjectRun.scalingUnit, then 'per item'
+            setScalingUnit(data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item');
             setItemType(data.item_type);
+            console.log('📊 Fetched scaling unit and item type:', {
+              scaling_unit: data.scaling_unit,
+              item_type: data.item_type,
+              templateProjectScalingUnit: templateProject?.scalingUnit,
+              finalScalingUnit: data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item'
+            });
           }
         } catch (error) {
-          console.error('Error fetching item_type:', error);
+          console.error('Error fetching scaling_unit and item_type:', error);
+          // Fallback to templateProject values if database fetch fails
+          setScalingUnit(templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item');
         }
+      } else {
+        // No template project, use currentProjectRun values or fallback
+        setScalingUnit((currentProjectRun as any)?.scalingUnit || 'per item');
       }
     };
     
-    fetchItemType();
-  }, [templateProject?.id]);
+    fetchScalingUnitAndItemType();
+  }, [templateProject?.id, currentProjectRun?.templateId]);
 
   useEffect(() => {
     if (user) {
