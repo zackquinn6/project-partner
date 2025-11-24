@@ -133,10 +133,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     return scalingUnit;
   };
 
-  // Helper function to create default "Space 1" placeholder
+  // Helper function to create default "Room 1" placeholder
   const createDefaultSpace = (): ProjectSpace => ({
     id: 'default-space-1',
-    name: 'Space 1',
+    name: 'Room 1',
     spaceType: 'general',
     isFromHome: false
   });
