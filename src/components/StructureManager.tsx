@@ -2764,11 +2764,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             const isLinkedPhase = phase.isLinked;
             const isEditing = editingItem?.type === 'phase' && editingItem.id === phase.id;
             
-            // For linked phases, can move between Ordering (index 2) and Close Project (last)
+            // For linked phases, can move between standard phases
             // For custom phases, same constraint
             // For standard phases, only if editing Standard Project
-            const orderingIndex = displayPhases.findIndex(p => p.name === 'Ordering' && !p.isLinked);
-            const closeProjectIndex = displayPhases.findIndex(p => p.name === 'Close Project' && !p.isLinked);
+            // Find the last standard phase (one with 'last' order number or at the end)
+            const lastStandardPhaseIndex = displayPhases.findIndex((p, idx) => {
+              if (p.isLinked) return false;
+              const isLastStandard = isStandardPhase(p) && 
+                (p.phaseOrderNumber === 'last' || 
+                 (idx === displayPhases.length - 1 && !displayPhases.slice(idx + 1).some(ph => isStandardPhase(ph) && !ph.isLinked)));
+              return isLastStandard;
+            });
+            const firstStandardAfterCustomIndex = displayPhases.findIndex((p, idx) => {
+              if (p.isLinked) return false;
+              // Find first standard phase that comes after custom phases
+              return isStandardPhase(p) && idx > 0 && !isStandardPhase(displayPhases[idx - 1]) && !displayPhases[idx - 1].isLinked;
+            });
             
             let canMoveUp = false;
             let canMoveDown = false;
@@ -2778,9 +2789,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               canMoveUp = phaseIndex > 0;
               canMoveDown = phaseIndex < displayPhases.length - 1;
             } else if (!isStandardPhase) {
-              // Custom and linked phases: must be after Ordering and before Close Project
-              canMoveUp = phaseIndex > orderingIndex + 1; // Can move up if not immediately after Ordering
-              canMoveDown = closeProjectIndex !== -1 && phaseIndex < closeProjectIndex - 1; // Can move down if not immediately before Close Project
+              // Custom and linked phases: must be after first standard phases and before last standard phase
+              const minIndex = firstStandardAfterCustomIndex !== -1 ? firstStandardAfterCustomIndex : 0;
+              const maxIndex = lastStandardPhaseIndex !== -1 ? lastStandardPhaseIndex : displayPhases.length - 1;
+              canMoveUp = phaseIndex > minIndex; // Can move up if not at the start
+              canMoveDown = phaseIndex < maxIndex; // Can move down if not at the end (before last standard phase)
             }
             
             return <Card 
