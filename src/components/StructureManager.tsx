@@ -2237,16 +2237,48 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // This ensures the 'last' designation is saved to the database
       // updatePhaseOrder will preserve the phaseOrderNumber values we set
       if (isEditingStandardProject) {
+        // CRITICAL: Before calling updatePhaseOrder, ensure the last phase has 'last'
+        const lastPhase = finalPhases[finalPhases.length - 1];
+        if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
+          console.warn('⚠️ Last phase does not have "last" designation, fixing before updatePhaseOrder:', {
+            phaseName: lastPhase.name,
+            currentOrder: lastPhase.phaseOrderNumber
+          });
+          lastPhase.phaseOrderNumber = 'last';
+        }
+        
         console.log('🔄 Updating phase order in database to persist order numbers:', {
           phases: finalPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
         });
         try {
           await updatePhaseOrder(finalPhases);
           console.log('✅ Phase order updated in database, order numbers preserved');
+          
+          // CRITICAL: After updatePhaseOrder, verify the last phase still has 'last'
+          // updatePhaseOrder returns sorted phases, so we need to check the result
+          // But updatePhaseOrder doesn't return the phases, so we need to ensure finalPhases still has 'last'
+          const lastPhaseAfterUpdate = finalPhases[finalPhases.length - 1];
+          if (lastPhaseAfterUpdate && lastPhaseAfterUpdate.phaseOrderNumber !== 'last') {
+            console.warn('⚠️ Last phase lost "last" designation after updatePhaseOrder, restoring:', {
+              phaseName: lastPhaseAfterUpdate.name,
+              currentOrder: lastPhaseAfterUpdate.phaseOrderNumber
+            });
+            lastPhaseAfterUpdate.phaseOrderNumber = 'last';
+          }
         } catch (error) {
           console.error('❌ Error updating phase order in database:', error);
           // Continue anyway - the JSON update will still work
         }
+      }
+      
+      // CRITICAL: Before updating project, ensure the last phase has 'last' designation
+      const lastPhaseBeforeUpdate = finalPhases[finalPhases.length - 1];
+      if (lastPhaseBeforeUpdate && lastPhaseBeforeUpdate.phaseOrderNumber !== 'last') {
+        console.warn('⚠️ Last phase does not have "last" designation before updating project, fixing:', {
+          phaseName: lastPhaseBeforeUpdate.name,
+          currentOrder: lastPhaseBeforeUpdate.phaseOrderNumber
+        });
+        lastPhaseBeforeUpdate.phaseOrderNumber = 'last';
       }
       
       // Update the project with the correctly ordered phases
