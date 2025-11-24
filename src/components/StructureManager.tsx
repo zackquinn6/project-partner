@@ -93,6 +93,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
   const [isDeletingPhase, setIsDeletingPhase] = useState(false);
   const [reorderingPhaseId, setReorderingPhaseId] = useState<string | null>(null);
+  const [isAddingPhase, setIsAddingPhase] = useState(false);
+  const [skipNextRefresh, setSkipNextRefresh] = useState(false);
 
   // Collapsible state
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -521,6 +523,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Always update displayPhases to match processedPhases (even if empty)
   // This ensures displayPhases is always in sync with processedPhases
   useEffect(() => {
+    // CRITICAL: Skip refresh if we're in the middle of adding or deleting a phase
+    // We handle displayPhases updates directly in those functions to prevent double refreshes
+    if (skipNextRefresh) {
+      console.log('⏭️ Skipping refresh - operation in progress');
+      setSkipNextRefresh(false);
+      return;
+    }
+    
+    // Skip if we're actively adding or deleting
+    if (isAddingPhase || isDeletingPhase) {
+      console.log('⏭️ Skipping refresh - add/delete in progress', { isAddingPhase, isDeletingPhase });
+      return;
+    }
+    
     console.log('🔍 StructureManager processed phases:', {
       projectId: currentProject?.id,
       projectName: currentProject?.name,
@@ -583,7 +599,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         });
       }
     }
-  }, [processedPhases, rebuildingPhases, currentProject?.id, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId]);
+  }, [processedPhases, rebuildingPhases, currentProject?.id, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId, skipNextRefresh, isAddingPhase, isDeletingPhase, phaseToDelete]);
 
   // Reset phases when project changes
   useEffect(() => {
@@ -1496,11 +1512,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // CRUD operations
   const addPhase = async () => {
+    if (isAddingPhase) {
+      console.log('⏭️ Add phase already in progress, skipping');
+      return;
+    }
+    
+    setIsAddingPhase(true);
+    setSkipNextRefresh(true);
+    const startTime = Date.now();
+    const minDisplayTime = 1500; // Minimum 1.5 seconds to show loading state
+    
     console.log('🔵 Add Phase button clicked', {
       hasProject: !!currentProject,
       projectId: currentProject?.id,
       isEditingStandardProject,
-      isAddingPhase
+      isAddingPhase: true
     });
     
     if (!currentProject) {
@@ -1851,6 +1877,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // CRITICAL: Update displayPhases immediately with the new phase
       // This ensures it's visible right away
+      setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
       setDisplayPhases(finalPhases);
       setPhasesLoaded(true);
       
@@ -1884,6 +1911,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       toast.success('Phase added successfully');
+      
+      // Clear flags after a delay to allow UI to settle
+      // Only one refresh will happen naturally through the data flow
+      setTimeout(() => {
+        setIsAddingPhase(false);
+        setSkipNextRefresh(false);
+      }, 500);
     } catch (error: any) {
       console.error('❌ Error adding phase:', error);
       console.error('❌ Error details:', {
@@ -1902,6 +1936,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       if (remainingTime > 0) {
         await new Promise(resolve => setTimeout(resolve, remainingTime));
       }
+      
+      // Clear flags on error
+      setIsAddingPhase(false);
+      setSkipNextRefresh(false);
     } finally {
       setIsAddingPhase(false);
     }
@@ -2459,6 +2497,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
         // Update display state immediately - filter out deleted phase to prevent flicker
         // This is temporary UI filtering - the phase is already permanently deleted from the database
+        setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
         setDisplayPhases(phasesWithUniqueOrder.filter(p => p.id !== phaseToDelete));
       }
 
@@ -2472,14 +2511,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       toast.success('Phase deleted');
       setDeletePhaseDialogOpen(false);
       
-      // CRITICAL: Don't clear deletion state immediately - keep it active to prevent double refresh
+      // CRITICAL: Clear deletion state after a delay to prevent double refresh
       // The phase is already deleted from database and displayPhases is already updated
       // We don't need to refetch since we already rebuilt phases and updated everything
-      // Clear deletion state after a delay to ensure all async operations complete
       setTimeout(() => {
         setPhaseToDelete(null);
         setIsDeletingPhase(false);
-      }, 2000); // Longer delay to ensure no refetch triggers
+        setSkipNextRefresh(false);
+      }, 1000); // Delay to ensure no refetch triggers
     } catch (error) {
       console.error('Error deleting phase:', error);
       toast.error('Failed to delete phase');
