@@ -3460,68 +3460,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1 flex-1">
                                 {/* Reorder buttons visibility:
-                                    - Standard phases in regular projects: NO buttons (locked)
-                                    - Standard phases in Edit Standard: Show buttons
-                                    - Non-standard phases: Show buttons
-                                    - Incorporated phases: Show buttons (can reorder but must respect standard order)
+                                    - Project phases (non-standard, non-linked): Show buttons ✓
+                                    - Standard phases in regular projects: NO buttons (locked) ✓
+                                    - Standard phases in Edit Standard: Show buttons ✓
+                                    - Incorporated phases (linked): Show buttons ✓
                                 */}
-                                {isLinkedPhase ? (
-                                  // Incorporated phases: Show reorder buttons
-                                  <div className="flex flex-col gap-0.5">
-                                    {reorderingPhaseId === phase.id ? (
-                                      <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                                    ) : (
-                                      <>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-4 w-4 p-0"
-                                          onClick={() => movePhase(phase.id, 'up')}
-                                          disabled={!canMoveUp || reorderingPhaseId !== null}
-                                        >
-                                          <ChevronUp className="w-3 h-3" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-4 w-4 p-0"
-                                          onClick={() => movePhase(phase.id, 'down')}
-                                          disabled={!canMoveDown || reorderingPhaseId !== null}
-                                        >
-                                          <ChevronDown className="w-3 h-3" />
-                                        </Button>
-                                      </>
-                                    )}
-                                  </div>
-                                ) : (!phaseIsStandard || (phaseIsStandard && isEditingStandardProject)) ? (
-                                  <div className="flex flex-col gap-0.5">
-                                    {reorderingPhaseId === phase.id ? (
-                                      <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                                    ) : (
-                                      <>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-4 w-4 p-0"
-                                          onClick={() => movePhase(phase.id, 'up')}
-                                          disabled={!canMoveUp || reorderingPhaseId !== null}
-                                        >
-                                          <ChevronUp className="w-3 h-3" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-4 w-4 p-0"
-                                          onClick={() => movePhase(phase.id, 'down')}
-                                          disabled={!canMoveDown || reorderingPhaseId !== null}
-                                        >
-                                          <ChevronDown className="w-3 h-3" />
-                                        </Button>
-                                      </>
-                                    )}
-                                  </div>
-                                ) : (
+                                {phaseIsStandard && !isEditingStandardProject ? (
+                                  // Standard phases in regular projects: NO reorder buttons (locked)
                                   <div className="w-4" />
+                                ) : (
+                                  // Project phases, incorporated phases, or standard phases in Edit Standard: Show reorder buttons
+                                  <div className="flex flex-col gap-0.5">
+                                    {reorderingPhaseId === phase.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                                    ) : (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-4 w-4 p-0"
+                                          onClick={() => movePhase(phase.id, 'up')}
+                                          disabled={!canMoveUp || reorderingPhaseId !== null}
+                                        >
+                                          <ChevronUp className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-4 w-4 p-0"
+                                          onClick={() => movePhase(phase.id, 'down')}
+                                          disabled={!canMoveDown || reorderingPhaseId !== null}
+                                        >
+                                          <ChevronDown className="w-3 h-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
                                 )}
                                 
                                 {isEditing ? <div className="flex-1 space-y-1">
@@ -3615,23 +3589,23 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                   <Badge variant="outline">{phase.operations.length} operations</Badge>
                                   
                                   {/* Button visibility rules:
-                                      - Standard phases in regular projects: NO buttons (locked)
-                                      - Standard phases in Edit Standard: Show edit/delete buttons
-                                      - Non-standard phases: Show edit/delete buttons
-                                      - Incorporated (linked) phases: Show delete button, NO edit button, reorder buttons shown above
+                                      - Project phases (non-standard, non-linked): Show edit/delete buttons ✓
+                                      - Standard phases in regular projects: NO buttons (locked) ✓
+                                      - Standard phases in Edit Standard: Show edit/delete buttons ✓
+                                      - Incorporated (linked) phases: Show delete button, NO edit button ✓
                                   */}
-                                  {isLinkedPhase ? (
+                                  {phaseIsStandard && !isEditingStandardProject ? (
+                                    // Standard phases in regular projects: NO buttons (locked)
+                                    null
+                                  ) : isLinkedPhase ? (
                                     // Incorporated phases: Show delete button only (no edit)
                                     <>
                                       <Button size="sm" variant="ghost" onClick={() => handleDeletePhaseClick(phase.id)}>
                                         <Trash2 className="w-4 h-4" />
                                       </Button>
                                     </>
-                                  ) : phaseIsStandard && !isEditingStandardProject ? (
-                                    // Standard phases in regular projects: NO buttons (locked)
-                                    null
                                   ) : (
-                                    // Non-standard phases OR standard phases in Edit Standard: Show edit/delete buttons
+                                    // Project phases (non-standard, non-linked) OR standard phases in Edit Standard: Show edit/delete buttons
                                     <>
                                       {!phaseIsStandard && <Button size="sm" variant="ghost" onClick={() => copyItem('phase', phase)}>
                                         <Copy className="w-4 h-4" />
