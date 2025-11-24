@@ -876,22 +876,63 @@ export function UnifiedProjectManagement({
         console.log('✅ All other revisions deleted');
       }
 
+      // CRITICAL: Preserve all project information (name, description, etc.) from the latest revision
+      // Find the parent project to preserve its information if it exists
+      let parentProjectInfo: any = null;
+      if (latestRevision.parent_project_id) {
+        const { data: parentData } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', latestRevision.parent_project_id)
+          .single();
+        
+        if (parentData) {
+          parentProjectInfo = parentData;
+          console.log('📋 Found parent project to preserve info:', parentData.name);
+        }
+      }
+      
+      // Use parent project info if available, otherwise use latest revision info
+      // This ensures project name and other metadata are preserved
+      const projectInfoToPreserve = parentProjectInfo || latestRevision;
+      
       // Update the latest revision to be revision 1, draft, with no parent
-      console.log('🔄 Updating latest revision to revision 1:', latestRevision.id);
+      // BUT preserve all project information (name, description, etc.)
+      console.log('🔄 Updating latest revision to revision 1, preserving project info:', latestRevision.id);
+      const updateData: any = {
+        revision_number: 1,
+        parent_project_id: null,
+        publish_status: 'draft',
+        is_current_version: true,
+        revision_notes: null,
+        release_notes: null,
+        published_at: null,
+        beta_released_at: null,
+        archived_at: null,
+        created_from_revision: null,
+        // PRESERVE all project information fields
+        name: projectInfoToPreserve.name, // CRITICAL: Preserve project name
+        description: projectInfoToPreserve.description || latestRevision.description,
+        category: projectInfoToPreserve.category || latestRevision.category,
+        effort_level: projectInfoToPreserve.effort_level || latestRevision.effort_level,
+        skill_level: projectInfoToPreserve.skill_level || latestRevision.skill_level,
+        estimated_time: projectInfoToPreserve.estimated_time || latestRevision.estimated_time,
+        estimated_total_time: projectInfoToPreserve.estimated_total_time || latestRevision.estimated_total_time,
+        typical_project_size: projectInfoToPreserve.typical_project_size || latestRevision.typical_project_size,
+        scaling_unit: projectInfoToPreserve.scaling_unit || latestRevision.scaling_unit,
+        item_type: projectInfoToPreserve.item_type || latestRevision.item_type,
+        project_challenges: projectInfoToPreserve.project_challenges || projectInfoToPreserve.diy_length_challenges || latestRevision.project_challenges || latestRevision.diy_length_challenges,
+        project_type: projectInfoToPreserve.project_type || latestRevision.project_type,
+        owner_id: projectInfoToPreserve.owner_id || latestRevision.owner_id,
+        created_by: projectInfoToPreserve.created_by || latestRevision.created_by,
+        // Preserve images
+        images: projectInfoToPreserve.images || latestRevision.images,
+        cover_image: projectInfoToPreserve.cover_image || latestRevision.cover_image
+      };
+      
       const { error: updateError } = await supabase
         .from('projects')
-        .update({
-          revision_number: 1,
-          parent_project_id: null,
-          publish_status: 'draft',
-          is_current_version: true,
-          revision_notes: null,
-          release_notes: null,
-          published_at: null,
-          beta_released_at: null,
-          archived_at: null,
-          created_from_revision: null
-        })
+        .update(updateData)
         .eq('id', latestRevision.id);
 
       if (updateError) {
