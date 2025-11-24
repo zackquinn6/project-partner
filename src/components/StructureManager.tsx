@@ -3541,7 +3541,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                   <Link className="w-4 h-4" />
                   Incorporate Phase
                 </Button>
-              <Button size="sm" onClick={onBack} className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                onClick={async () => {
+                  // Save pending order changes before closing
+                  if (hasPendingOrderChanges && currentProject) {
+                    try {
+                      console.log('💾 Saving pending order changes to database...');
+                      await updatePhaseOrder(displayPhases);
+                      setHasPendingOrderChanges(false);
+                      console.log('✅ Order changes saved to database');
+                      toast.success('Order changes saved');
+                    } catch (error) {
+                      console.error('❌ Error saving order changes:', error);
+                      toast.error('Error saving order changes');
+                    }
+                  }
+                  onBack();
+                }} 
+                className="flex items-center gap-2"
+              >
                 <Save className="w-4 h-4" />
                 Done Editing
               </Button>
