@@ -1588,6 +1588,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // This ensures 'first' and 'last' designations are preserved even after database rebuild
       const orderNumberMap = new Map(reorderedPhases.map(p => [p.id, p.phaseOrderNumber]));
       
+      // For Edit Standard mode, also create a map by name to preserve order numbers for standard phases
+      // This ensures order numbers are preserved even if phase IDs change during rebuild
+      const orderNumberByNameMap = new Map<string, string | number>();
+      if (isEditingStandardProject) {
+        reorderedPhases.forEach(phase => {
+          if (phase.name && phase.phaseOrderNumber !== undefined) {
+            orderNumberByNameMap.set(phase.name, phase.phaseOrderNumber);
+          }
+        });
+      }
+      
       // THEN assign order numbers based on the correct order, but preserve existing ones
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       
@@ -1603,6 +1614,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             phase.phaseOrderNumber = preservedOrder;
           }
           // For other phases, ensureUniqueOrderNumbers has already assigned correct numbers
+        } else if (isEditingStandardProject && phase.name) {
+          // Fallback: try to restore by name if ID doesn't match (e.g., after rebuild)
+          const orderByName = orderNumberByNameMap.get(phase.name);
+          if (orderByName !== undefined) {
+            phase.phaseOrderNumber = orderByName;
+          }
         }
       });
       
