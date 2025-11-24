@@ -2089,6 +2089,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setDisplayPhases(finalPhases);
       setPhasesLoaded(true);
       
+      // CRITICAL: Update phase order in database FIRST to persist order numbers
+      // This ensures the 'last' designation is saved to the database
+      // updatePhaseOrder will preserve the phaseOrderNumber values we set
+      if (isEditingStandardProject) {
+        console.log('🔄 Updating phase order in database to persist order numbers:', {
+          phases: finalPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+        });
+        try {
+          await updatePhaseOrder(finalPhases);
+          console.log('✅ Phase order updated in database, order numbers preserved');
+        } catch (error) {
+          console.error('❌ Error updating phase order in database:', error);
+          // Continue anyway - the JSON update will still work
+        }
+      }
+      
       // Update the project with the correctly ordered phases
       const finalUpdatedProject = {
         ...currentProject,
