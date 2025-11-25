@@ -201,7 +201,20 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       });
 
       if (error) {
-        console.error('❌ Error calling create_project_run_snapshot:', error);
+        console.error('❌ Error calling create_project_run_snapshot:', {
+          error,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fullError: JSON.stringify(error, null, 2)
+        });
+        // Show full error message to user
+        toast({
+          title: "Failed to Create Project Run",
+          description: error.message || "Unknown error occurred while creating project run. Please check console for details.",
+          variant: "destructive",
+        });
         throw error;
       }
 

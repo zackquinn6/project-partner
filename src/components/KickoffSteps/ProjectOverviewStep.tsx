@@ -155,7 +155,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun, templateProject]);
   
   // Use fetched scaling unit or fallback
-  const displayScalingUnit = scalingUnit || currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit;
+  const displayScalingUnit = scalingUnit || (currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit);
   
   // Debug logging to help diagnose missing fields
   useEffect(() => {
