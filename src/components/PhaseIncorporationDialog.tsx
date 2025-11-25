@@ -39,7 +39,7 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
   const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
+  // Use isStandard flag instead of hardcoded phase names
 
   // Load all published projects when dialog opens
   useEffect(() => {
@@ -170,7 +170,8 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
   const availablePhases = selectedProject?.phases.filter(phase => {
     if (!phase || !phase.name) return false;
     if (phase.name === 'New Phase' || phase.name.trim() === '') return false;
-    return !standardPhaseNames.includes(phase.name);
+    // Filter out standard phases (use isStandard flag instead of hardcoded names)
+    return phase.isStandard !== true || phase.isLinked === true;
   }) || [];
   return <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">

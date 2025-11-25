@@ -389,32 +389,46 @@ export const createCloseProjectPhase = (): Phase => {
 
 // Function to ensure standard phases for new project creation only - with deduplication
 // This preserves existing phases (including apps) and only adds missing standard phases
+// Uses isStandard flag and phaseOrderNumber instead of hardcoded names
 export const ensureStandardPhasesForNewProject = (phases: Phase[]): Phase[] => {
-  const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
   const missingPhases: Phase[] = [];
 
-  // Mark existing standard phases with isStandard flag
+  // Mark existing standard phases with isStandard flag (if not already marked)
   const markedPhases = phases.map(phase => {
-    if (standardPhaseNames.includes(phase.name)) {
+    // If phase is already marked as standard, keep it
+    if (phase.isStandard === true) {
+      return phase;
+    }
+    // For backward compatibility: if phase has standard order numbers, mark as standard
+    if (phase.phaseOrderNumber === 'first' || 
+        phase.phaseOrderNumber === 'last' ||
+        (typeof phase.phaseOrderNumber === 'number' && phase.phaseOrderNumber >= 1 && phase.phaseOrderNumber <= 4)) {
       return { ...phase, isStandard: true };
     }
     return phase;
   });
 
-  const existingPhaseNames = markedPhases.map(p => p.name);
+  // Check for missing standard phases by phaseOrderNumber
+  const hasFirstPhase = markedPhases.some(p => p.isStandard === true && p.phaseOrderNumber === 'first');
+  const hasLastPhase = markedPhases.some(p => p.isStandard === true && p.phaseOrderNumber === 'last');
+  const hasPhase2 = markedPhases.some(p => p.isStandard === true && p.phaseOrderNumber === 2);
+  const hasPhase3 = markedPhases.some(p => p.isStandard === true && 
+    (p.phaseOrderNumber === 3 || 
+     (typeof p.phaseOrderNumber === 'number' && p.phaseOrderNumber > 2 && p.phaseOrderNumber < 10))); // Ordering is typically 3rd
 
   // CRITICAL: Only create fresh phases if they don't exist
   // This ensures apps and other data from template phases are preserved
-  if (!existingPhaseNames.includes('Kickoff')) {
+  // Note: We create phases with specific names for backward compatibility, but check by isStandard flag
+  if (!hasFirstPhase) {
     missingPhases.push(createKickoffPhase());
   }
-  if (!existingPhaseNames.includes('Planning')) {
+  if (!hasPhase2) {
     missingPhases.push(createPlanningPhase());
   }
-  if (!existingPhaseNames.includes('Ordering')) {
+  if (!hasPhase3) {
     missingPhases.push(createOrderingPhase());
   }
-  if (!existingPhaseNames.includes('Close Project')) {
+  if (!hasLastPhase) {
     missingPhases.push(createCloseProjectPhase());
   }
 
@@ -427,10 +441,15 @@ export const ensureStandardPhasesForNewProject = (phases: Phase[]): Phase[] => {
 };
 
 // NEW: Function to check if project has all standard phases
+// Uses isStandard flag and phaseOrderNumber instead of hardcoded names
 export const hasAllStandardPhases = (phases: Phase[]): boolean => {
-  const requiredPhases = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-  const phaseNames = phases.map(phase => phase.name);
-  return requiredPhases.every(name => phaseNames.includes(name));
+  const standardPhases = phases.filter(p => p.isStandard === true && !p.isLinked);
+  const hasFirst = standardPhases.some(p => p.phaseOrderNumber === 'first');
+  const hasLast = standardPhases.some(p => p.phaseOrderNumber === 'last');
+  const hasNumbered = standardPhases.some(p => typeof p.phaseOrderNumber === 'number' && p.phaseOrderNumber >= 2);
+  
+  // At minimum, should have 'first' and 'last' phases, plus at least one numbered phase in between
+  return hasFirst && hasLast && hasNumbered && standardPhases.length >= 3;
 };
 
 /**

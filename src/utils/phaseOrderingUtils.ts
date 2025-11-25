@@ -91,36 +91,50 @@ export function enforceStandardPhaseOrdering(phases: Phase[], standardProjectPha
 
 /**
  * Validates that standard phases are in the correct order
- * First 3 phases must be: Kickoff, Planning, Order (in that order)
- * Close Project must be last
+ * Uses isStandard flag and phaseOrderNumber instead of hardcoded names
+ * Standard phases must be in order based on their phaseOrderNumber
+ * Close Project (phaseOrderNumber='last') must be last
  * Custom and incorporated phases can be anywhere in between
  */
 export function validateStandardPhaseOrdering(phases: Phase[]): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  const kickoffIndex = phases.findIndex(p => p.name === 'Kickoff' && !p.isLinked);
-  const planningIndex = phases.findIndex(p => p.name === 'Planning' && !p.isLinked);
-  const orderingIndex = phases.findIndex(p => p.name === 'Ordering' && !p.isLinked);
-  const closeProjectIndex = phases.findIndex(p => p.name === 'Close Project' && !p.isLinked);
+  // Get standard phases (excluding Close Project which should be last)
+  const standardPhases = phases.filter(p => 
+    p.isStandard === true && 
+    !p.isLinked &&
+    p.phaseOrderNumber !== 'last'
+  );
   
-  // Check that first 3 phases are Kickoff, Planning, Order (in that order)
-  if (kickoffIndex !== -1 && kickoffIndex !== 0) {
-    errors.push('Kickoff phase must be the first phase');
-  }
+  // Get Close Project phase (standard phase with phaseOrderNumber='last')
+  const closeProjectPhase = phases.find(p => 
+    p.isStandard === true && 
+    !p.isLinked &&
+    p.phaseOrderNumber === 'last'
+  );
   
-  if (planningIndex !== -1 && planningIndex !== 1) {
-    errors.push('Planning phase must be the second phase');
-  }
-  
-  if (orderingIndex !== -1 && orderingIndex !== 2) {
-    errors.push('Order phase must be the third phase');
-  }
+  // Validate standard phases are in correct order by phaseOrderNumber
+  standardPhases.forEach((phase, index) => {
+    const expectedOrder = typeof phase.phaseOrderNumber === 'number' ? phase.phaseOrderNumber : -1;
+    const actualIndex = phases.findIndex(p => p.id === phase.id);
+    
+    // Validate 'first' phase is at index 0
+    if (phase.phaseOrderNumber === 'first' && actualIndex !== 0) {
+      errors.push(`${phase.name} phase must be the first phase`);
+    }
+    
+    // Validate numbered phases are in correct position
+    if (typeof expectedOrder === 'number' && expectedOrder > 0 && actualIndex !== expectedOrder - 1) {
+      errors.push(`${phase.name} phase must be at position ${expectedOrder}`);
+    }
+  });
   
   // Check that Close Project is last (if it exists)
-  if (closeProjectIndex !== -1) {
+  if (closeProjectPhase) {
+    const closeProjectIndex = phases.findIndex(p => p.id === closeProjectPhase.id);
     const expectedLastIndex = phases.length - 1;
     if (closeProjectIndex !== expectedLastIndex) {
-      errors.push('Close Project must be the last phase');
+      errors.push(`${closeProjectPhase.name} phase must be the last phase`);
     }
   }
   
@@ -131,19 +145,25 @@ export function validateStandardPhaseOrdering(phases: Phase[]): { isValid: boole
 }
 
 /**
- * Gets the expected position for a standard phase
+ * Gets the expected position for a standard phase based on phaseOrderNumber
+ * Uses phaseOrderNumber instead of hardcoded phase names
  */
-export function getStandardPhaseExpectedPosition(phaseName: string, totalPhases: number): number {
-  switch (phaseName) {
-    case 'Kickoff':
-      return 0;
-    case 'Planning':
-      return 1;
-    case 'Ordering':
-      return 2;
-    case 'Close Project':
-      return totalPhases - 1; // Always last
-    default:
-      return -1; // Not a standard phase
+export function getStandardPhaseExpectedPosition(phase: Phase, totalPhases: number): number {
+  if (phase.isStandard !== true || phase.isLinked) {
+    return -1; // Not a standard phase
   }
+  
+  if (phase.phaseOrderNumber === 'first') {
+    return 0;
+  }
+  
+  if (phase.phaseOrderNumber === 'last') {
+    return totalPhases - 1;
+  }
+  
+  if (typeof phase.phaseOrderNumber === 'number') {
+    return phase.phaseOrderNumber - 1; // Convert 1-based to 0-based index
+  }
+  
+  return -1; // Invalid order number
 }

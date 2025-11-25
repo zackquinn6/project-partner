@@ -140,8 +140,12 @@ export const ProjectCustomizationStep: React.FC<ProjectCustomizationStepProps> =
 
     console.log("ProjectCustomizationStep - Saving customization and calling onComplete");
 
-    // Combine kickoff phase with selected phases
-    const kickoffPhase = currentProjectRun.phases.find(phase => phase.name === 'Kickoff');
+    // Combine kickoff phase with selected phases (use isStandard flag instead of hardcoded name)
+    const kickoffPhase = currentProjectRun.phases.find(phase => 
+      phase.isStandard === true && 
+      !phase.isLinked &&
+      phase.phaseOrderNumber === 'first'
+    );
     const updatedPhases = kickoffPhase ? [kickoffPhase, ...selectedPhases] : selectedPhases;
     
     await updateProjectRun({

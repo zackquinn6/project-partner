@@ -161,6 +161,34 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     if (!user) return null;
 
     try {
+      // CRITICAL: Validate template has phases before creating project run
+      // Project runs MUST be immutable snapshots - they cannot exist without phases
+      const templateHasPhases = project.phases && Array.isArray(project.phases) && project.phases.length > 0;
+      
+      if (!templateHasPhases) {
+        console.error('❌ CRITICAL: Cannot create project run - template has no phases!', {
+          templateId: project.id,
+          templateName: project.name,
+          templatePhases: project.phases,
+          templatePhasesType: typeof project.phases,
+          templatePhasesIsArray: Array.isArray(project.phases),
+          templatePhasesLength: Array.isArray(project.phases) ? project.phases.length : 'N/A'
+        });
+        
+        toast({
+          title: "Error",
+          description: `Cannot create project run: Template "${project.name}" has no phases. Please ensure the template has phases before creating a project run.`,
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      console.log('✅ Template validation passed - creating project run:', {
+        templateId: project.id,
+        templateName: project.name,
+        templatePhasesCount: project.phases.length
+      });
+
       // Use database function to create project run snapshot with properly built phases
       // This ensures phases include operations and steps from the template
       const { data, error } = await supabase.rpc('create_project_run_snapshot', {
@@ -172,7 +200,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         p_plan_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error calling create_project_run_snapshot:', error);
+        throw error;
+      }
 
       if (!data) {
         throw new Error('Project run creation returned no ID');
@@ -191,16 +222,19 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         throw fetchError;
       }
 
-      // Validate phases exist
+      // CRITICAL: Validate phases exist AND match template phase count
+      let parsedPhases: any[] = [];
       let phasesExist = false;
+      
       if (createdRun.phases) {
-        if (Array.isArray(createdRun.phases) && createdRun.phases.length > 0) {
-          phasesExist = true;
+        if (Array.isArray(createdRun.phases)) {
+          parsedPhases = createdRun.phases;
+          phasesExist = parsedPhases.length > 0;
         } else if (typeof createdRun.phases === 'string') {
           try {
-            const parsed = JSON.parse(createdRun.phases);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              phasesExist = true;
+            parsedPhases = JSON.parse(createdRun.phases);
+            if (Array.isArray(parsedPhases)) {
+              phasesExist = parsedPhases.length > 0;
             }
           } catch (e) {
             console.error('❌ Error parsing phases JSON:', e);
@@ -208,7 +242,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         }
       }
 
-      if (!phasesExist) {
+      const templatePhasesCount = project.phases?.length || 0;
+      const runPhasesCount = parsedPhases.length;
+
+      if (!phasesExist || runPhasesCount === 0) {
         console.error('❌ CRITICAL: Project run created without phases!', {
           runId: data,
           templateId: project.id,
@@ -216,7 +253,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           runPhases: createdRun.phases,
           runPhasesType: typeof createdRun.phases,
           templateHasPhases: !!(project.phases && project.phases.length > 0),
-          templatePhasesCount: project.phases?.length || 0
+          templatePhasesCount,
+          runPhasesCount
         });
         
         // Delete the invalid project run - it should not exist without phases
@@ -228,13 +266,53 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         throw new Error('Project run was created without phases. This indicates a problem with the create_project_run_snapshot function. Please ensure the template has phases before creating a project run.');
       }
 
+      // CRITICAL: Validate that all phases from template were copied
+      if (runPhasesCount < templatePhasesCount) {
+        console.error('❌ CRITICAL: Project run created with incomplete phases!', {
+          runId: data,
+          templateId: project.id,
+          templateName: project.name,
+          templatePhasesCount,
+          runPhasesCount,
+          missingPhases: templatePhasesCount - runPhasesCount
+        });
+        
+        // Delete the invalid project run - it must have all phases
+        await supabase
+          .from('project_runs')
+          .delete()
+          .eq('id', data);
+        
+        throw new Error(`Project run was created with only ${runPhasesCount} of ${templatePhasesCount} phases. This indicates a problem with the create_project_run_snapshot function. The project run must be a complete snapshot of the template.`);
+      }
+
       console.log('✅ Project run created successfully with phases:', {
         runId: data,
         templateId: project.id,
-        phasesCount: Array.isArray(createdRun.phases) 
-          ? createdRun.phases.length 
-          : (typeof createdRun.phases === 'string' ? JSON.parse(createdRun.phases).length : 'unknown')
+        templatePhasesCount: templatePhasesCount,
+        runPhasesCount: runPhasesCount,
+        phasesMatch: runPhasesCount === templatePhasesCount
       });
+      
+      // Verify spaces were created
+      const { data: spacesData, error: spacesError } = await supabase
+        .from('project_run_spaces')
+        .select('id, space_name')
+        .eq('project_run_id', data);
+      
+      if (spacesError) {
+        console.warn('⚠️ Error checking spaces for new project run:', spacesError);
+      } else {
+        console.log('✅ Verified spaces created for project run:', {
+          runId: data,
+          spacesCount: spacesData?.length || 0,
+          spaces: spacesData?.map(s => s.space_name) || []
+        });
+        
+        if (!spacesData || spacesData.length === 0) {
+          console.error('❌ CRITICAL: No spaces created for project run! Default "Room 1" should have been created.');
+        }
+      }
 
       // Update additional fields that the function doesn't handle
       if (customName || project.projectChallenges || project.scalingUnit || project.estimatedTimePerUnit) {

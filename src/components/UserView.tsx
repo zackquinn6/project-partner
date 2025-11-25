@@ -276,12 +276,21 @@ export default function UserView({
   // CRITICAL: Always read space names directly from database - never copy/store them
   // This ensures workflow navigation automatically updates when space names change
   useEffect(() => {
+    console.log('🔄 Spaces useEffect triggered:', {
+      hasCurrentProjectRun: !!currentProjectRun,
+      projectRunId: currentProjectRun?.id
+    });
+    
     if (!currentProjectRun?.id) {
+      console.log('⚠️ Spaces useEffect: No currentProjectRun.id, clearing spaces');
       setProjectSpaces([]);
       return;
     }
     
     const loadSpaces = async () => {
+      console.log('🔄 Starting to load spaces from database...', {
+        projectRunId: currentProjectRun.id
+      });
       setSpacesLoading(true);
       try {
         const { data: spacesData, error } = await supabase
@@ -290,7 +299,15 @@ export default function UserView({
           .eq('project_run_id', currentProjectRun.id)
           .order('priority', { ascending: true, nullsLast: true });
         
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error fetching spaces from database:', error);
+          throw error;
+        }
+        
+        console.log('📦 Raw spaces data from database:', {
+          spacesDataCount: spacesData?.length || 0,
+          spacesData: spacesData
+        });
         
         // CRITICAL: Map space_name directly from database - this is dynamic linkage
         // If space_name changes in database, this will reflect it immediately
@@ -301,10 +318,20 @@ export default function UserView({
           spaceType: space.space_type
         }));
         
+        console.log('✅ Loaded project spaces (dynamic linkage):', {
+          spacesCount: spaces.length,
+          spaces: spaces.map(s => ({ id: s.id, name: s.name, priority: s.priority })),
+          projectRunId: currentProjectRun.id
+        });
+        
         setProjectSpaces(spaces);
-        console.log('✅ Loaded project spaces (dynamic linkage):', spaces);
+        
+        // If no spaces exist, log a warning
+        if (spaces.length === 0) {
+          console.error('❌ CRITICAL: No spaces found for project run! Default "Room 1" should have been created by create_project_run_snapshot. This will prevent workflow navigation from working correctly.');
+        }
       } catch (error) {
-        console.error('Error loading project spaces:', error);
+        console.error('❌ Error loading project spaces:', error);
         setProjectSpaces([]);
       } finally {
         setSpacesLoading(false);
@@ -335,56 +362,20 @@ export default function UserView({
       )
       .subscribe();
     
-    return () => {
-      // Cleanup: unsubscribe when component unmounts or project changes
-      supabase.removeChannel(channel);
-    };
-  }, [currentProjectRun?.id]);
-  
-  // Refresh spaces when project customizer or scheduler updates
-  // Note: Realtime subscription above handles most updates automatically
-  // This is a fallback for manual refresh events
-  useEffect(() => {
+    // Handler for refresh events (manual triggers)
     const handleRefresh = () => {
-      if (currentProjectRun?.id) {
-        // Trigger space reload from database
-        // CRITICAL: Always read from database - never use cached/copied names
-        const loadSpaces = async () => {
-          try {
-            const { data: spacesData, error } = await supabase
-              .from('project_run_spaces')
-              .select('id, space_name, space_type, priority')
-              .eq('project_run_id', currentProjectRun.id)
-              .order('priority', { ascending: true, nullsLast: true });
-            
-            if (error) throw error;
-            
-            // CRITICAL: Map space_name directly from database - dynamic linkage
-            const spaces: WorkflowProjectSpace[] = (spacesData || []).map(space => ({
-              id: space.id,
-              name: space.space_name, // Always from database - never copied
-              priority: space.priority,
-              spaceType: space.space_type
-            }));
-            
-            setProjectSpaces(spaces);
-            console.log('🔄 Refreshed project spaces (dynamic linkage):', spaces);
-          } catch (error) {
-            console.error('Error refreshing project spaces:', error);
-          }
-        };
-        
-        loadSpaces();
-      }
+      loadSpaces();
     };
     
-    // Listen for refresh events (fallback for manual triggers)
+    // Listen for refresh events
     window.addEventListener('project-customizer-updated', handleRefresh);
     window.addEventListener('project-scheduler-updated', handleRefresh);
     window.addEventListener('project-replanned', handleRefresh);
-    window.addEventListener('space-name-updated', handleRefresh); // New event for space name updates
+    window.addEventListener('space-name-updated', handleRefresh);
     
     return () => {
+      // Cleanup: unsubscribe when component unmounts or project changes
+      supabase.removeChannel(channel);
       window.removeEventListener('project-customizer-updated', handleRefresh);
       window.removeEventListener('project-scheduler-updated', handleRefresh);
       window.removeEventListener('project-replanned', handleRefresh);
@@ -422,30 +413,16 @@ export default function UserView({
     rawWorkflowPhases = Array.isArray(parsedPhases) ? parsedPhases : [];
     
     // CRITICAL: Project runs MUST have phases - they are immutable snapshots of templates
-    // NO FALLBACKS to templates - if phases are missing, this is a data integrity issue
-    if (rawWorkflowPhases.length === 0 && currentProjectRun.templateId) {
+    // If phases are missing or incomplete, log error and show user message
+    if (rawWorkflowPhases.length === 0) {
       console.error('❌ CRITICAL ERROR: Project run has no phases!', {
         runId: currentProjectRun.id,
         runName: currentProjectRun.name,
         templateId: currentProjectRun.templateId,
         phasesValue: currentProjectRun.phases,
         phasesType: typeof currentProjectRun.phases,
-        phasesIsArray: Array.isArray(currentProjectRun.phases),
-        phasesIsNull: currentProjectRun.phases === null,
-        phasesIsUndefined: currentProjectRun.phases === undefined,
-        phasesStringLength: typeof currentProjectRun.phases === 'string' ? currentProjectRun.phases.length : 'N/A'
+        phasesIsArray: Array.isArray(currentProjectRun.phases)
       });
-      
-      // Log detailed information to help identify root cause
-      console.error('🔍 Root cause investigation:', {
-        projectRunCreated: !!currentProjectRun.createdAt,
-        projectRunUpdated: !!currentProjectRun.updatedAt,
-        projectRunStatus: currentProjectRun.status,
-        templateExists: !!projects?.find(p => p.id === currentProjectRun.templateId),
-        templateHasPhases: !!(projects?.find(p => p.id === currentProjectRun.templateId)?.phases?.length)
-      });
-      
-      // Show error to user - this should never happen
       toast.error('Project run is missing phases. Please contact support or try creating a new project run.');
     }
     
@@ -456,24 +433,22 @@ export default function UserView({
       phasesType: typeof currentProjectRun.phases,
       phasesIsArray: Array.isArray(currentProjectRun.phases),
       hasPhases: rawWorkflowPhases.length > 0,
-      // REMOVED: hasTemplatePhases and hasDynamicPhases - no longer using fallbacks
     });
   } else if (currentProject) {
-    // Templates: prefer dynamic phases from RPC, fallback to stored phases
+    // Templates: use dynamic phases from RPC
     if (dynamicPhases.length > 0) {
       rawWorkflowPhases = dynamicPhases;
       console.log('🔄 Using dynamic phases from RPC:', { phasesLength: dynamicPhases.length });
-    } else if (currentProject.phases && currentProject.phases.length > 0) {
-      rawWorkflowPhases = currentProject.phases;
-      console.log('📁 Using stored project phases:', { phasesLength: currentProject.phases.length });
+    } else if (dynamicPhasesLoading) {
+      // Still loading, wait for phases
+      rawWorkflowPhases = [];
     } else {
-      console.warn('⚠️ No phases found for project:', {
+      // No phases available
+      console.error('❌ No phases found for project template:', {
         projectId: currentProject.id,
-        projectName: currentProject.name,
-        hasDynamicPhases: dynamicPhases.length > 0,
-        hasStoredPhases: !!(currentProject.phases && currentProject.phases.length > 0),
-        dynamicPhasesLoading
+        projectName: currentProject.name
       });
+      rawWorkflowPhases = [];
     }
   }
 
@@ -540,24 +515,70 @@ export default function UserView({
     } : null
   });
   
-  // Organize workflow navigation based on scheduler setting (Single Piece Flow vs Batch Flow)
-  // This creates the 4th tier hierarchy: Standard Phases → Space Containers/Custom Phases → Close Project
+  // CRITICAL: Project runs should preserve exact template phase structure
+  // Template structure: Standard phases → Custom phases → Standard phases (Ordering) → Close Project
+  // Navigation logic:
+  // - Single-piece-flow (default): Standard phases show once, custom phases repeated per space
+  // - Batch-flow: Standard phases show once, spaces nested inside custom phases
   const organizedNavigation = React.useMemo(() => {
-    if (!workflowPhases || workflowPhases.length === 0) return [];
+    console.log('🔄 organizedNavigation memo recalculating:', {
+      hasWorkflowPhases: !!workflowPhases,
+      workflowPhasesLength: workflowPhases?.length || 0,
+      hasCurrentProjectRun: !!currentProjectRun,
+      projectSpacesLength: projectSpaces?.length || 0
+    });
     
-    // Only organize for project runs (not templates)
-    if (!currentProjectRun) {
-      // For templates, use simple flat structure
-      return workflowPhases.map(phase => ({
-        type: 'standard-phase' as const,
-        id: phase.id,
-        name: phase.name,
-        phase,
-        steps: phase.operations.flatMap(op => op.steps || [])
-      }));
+    if (!workflowPhases || workflowPhases.length === 0) {
+      console.warn('⚠️ organizedNavigation: No workflow phases, returning empty array');
+      return [];
     }
     
-    return organizeWorkflowNavigation(workflowPhases, projectSpaces, currentProjectRun);
+    // For templates: preserve phase structure exactly (no space logic)
+    if (!currentProjectRun) {
+      console.log('📋 organizedNavigation: Processing as template (no space logic)');
+      return workflowPhases.map(phase => {
+        // Use isStandard flag instead of hardcoded names
+        const isStandardPhase = phase.isStandard === true && !phase.isLinked;
+        const isCloseProject = phase.isStandard === true && !phase.isLinked && phase.phaseOrderNumber === 'last';
+        
+        return {
+          type: (isCloseProject ? 'close-project' : (isStandardPhase ? 'standard-phase' : 'custom-phase')) as const,
+          id: phase.id,
+          name: phase.name,
+          phase,
+          steps: phase.operations.flatMap(op => op.steps || [])
+        };
+      });
+    }
+    
+    // For project runs: Use organizeWorkflowNavigation to properly structure based on flow type
+    // This handles single-piece-flow vs batch-flow correctly
+    console.log('🔄 About to call organizeWorkflowNavigation:', {
+      workflowPhasesCount: workflowPhases.length,
+      projectSpacesCount: projectSpaces.length,
+      projectRunId: currentProjectRun.id,
+      workflowPhases: workflowPhases.map(p => ({ name: p.name, isStandard: p.isStandard, phaseOrderNumber: p.phaseOrderNumber })),
+      projectSpaces: projectSpaces.map(s => ({ name: s.name, priority: s.priority }))
+    });
+    
+    const result = organizeWorkflowNavigation(workflowPhases, projectSpaces, currentProjectRun);
+    
+    console.log('✅ organizeWorkflowNavigation completed:', {
+      totalItems: result.length,
+      items: result.map(item => ({
+        type: item.type,
+        name: item.name,
+        phaseName: item.phase?.name,
+        spacesCount: item.spaces?.length || 0,
+        stepsCount: item.steps?.length || 0,
+        hasPhase: !!item.phase
+      })),
+      workflowPhasesCount: workflowPhases.length,
+      projectSpacesCount: projectSpaces.length,
+      hasProjectRun: !!currentProjectRun
+    });
+    
+    return result;
   }, [workflowPhases, projectSpaces, currentProjectRun]);
   
   // Flatten all steps from organized navigation
@@ -1569,33 +1590,13 @@ export default function UserView({
       }
     }
     
-    // FALLBACK: Search through phases to find the step (should not be needed with correct data)
-    const processedPhases = activeProject.phases;
-    
-    console.log("🔍 getCurrentPhase: Fallback search for step", {
+    // If phase not found by name, step data is invalid
+    console.error("❌ getCurrentPhase: Step phaseName not found in project phases!", {
       stepId: currentStep.id,
       stepName: currentStep.step,
       stepPhaseName: currentStep.phaseName,
-      totalPhases: processedPhases.length,
-      phaseNames: processedPhases.map(p => p.name)
+      availablePhases: activeProject.phases.map(p => p.name)
     });
-    
-    for (const phase of processedPhases) {
-      for (const operation of phase.operations || []) {
-        if (operation.steps.some(step => step.id === currentStep.id)) {
-          console.log("🎯 getCurrentPhase: Found step in phase via fallback search:", {
-            stepId: currentStep.id,
-            stepName: currentStep.step,
-            foundInPhase: phase.name,
-            foundInOperation: operation.name,
-            expectedPhaseName: currentStep.phaseName
-          });
-          return phase;
-        }
-      }
-    }
-    
-    console.log("❌ getCurrentPhase: Step not found in any phase!");
     return null;
   };
 
@@ -1902,7 +1903,7 @@ export default function UserView({
       );
     }
     
-    // Fallback to original content if no instruction data
+    // Use original content if no instruction data
     // Handle multi-content sections (new format with buttons)
     if (step.contentSections && step.contentSections.length > 0) {
       const handleButtonAction = (action: string) => {
@@ -2007,48 +2008,137 @@ export default function UserView({
       return {};
     }
     
-    // Use the utility function to convert organized navigation to grouped steps format
-    const converted = convertToGroupedSteps(organizedNavigation);
+    // CRITICAL: Group steps correctly for WorkflowSidebar structure
+    // Space containers need nested structure: { "Space": { "Phase": { "Operation": [steps] } } }
+    // Regular phases: { "Phase": { "Operation": [steps] } }
+    const grouped: Record<string, any> = {};
     
-    // If conversion didn't work well, fall back to manual grouping
-    if (Object.keys(converted).length === 0) {
-      // Fallback: group by phase and operation
-      return allSteps.reduce((acc, step) => {
-        if (!step || !step.id) return acc;
+    organizedNavigation.forEach(item => {
+      if (item.type === 'space-container' && item.spaces && item.spaces.length > 0) {
+        // Space container: Create nested structure Space → Phase → Operation → Steps
+        // Each space container contains steps from potentially multiple phases
+        const space = item.spaces[0];
+        const spaceKey = space.name;
         
-        const phaseName = step.phaseName || 'Uncategorized';
-        const operationName = step.operationName || 'General';
-
-        if (!acc[phaseName]) {
-          acc[phaseName] = {};
+        // Initialize space if it doesn't exist
+        if (!grouped[spaceKey]) {
+          grouped[spaceKey] = {}; // Nested structure for space container: { "Phase": { "Operation": [steps] } }
         }
-        if (!acc[phaseName][operationName]) {
-          acc[phaseName][operationName] = [];
+        
+        // Group steps by phase name first, then by operation
+        // This preserves the phase structure within each space container
+        const stepsByPhase = new Map<string, Map<string, WorkflowStep[]>>();
+        
+        item.steps.forEach(step => {
+          const phaseName = (step as any).phaseName || item.phase?.name || 'Workflow';
+          const operationName = (step as any).operationName || 'General';
+          
+          // Initialize phase map if needed
+          if (!stepsByPhase.has(phaseName)) {
+            stepsByPhase.set(phaseName, new Map<string, WorkflowStep[]>());
+          }
+          
+          // Initialize operation array if needed
+          const phaseOps = stepsByPhase.get(phaseName)!;
+          if (!phaseOps.has(operationName)) {
+            phaseOps.set(operationName, []);
+          }
+          
+          // Add step if not already present (dedupe by step ID)
+          const opSteps = phaseOps.get(operationName)!;
+          if (!opSteps.some(s => s.id === step.id)) {
+            opSteps.push(step);
+          }
+        });
+        
+        // Now add the grouped steps to the space container
+        // Preserve phase order from template by sorting phase names according to original order
+        const phaseNamesOrdered = Array.from(stepsByPhase.keys()).sort((a, b) => {
+          // Find the original order of phases in workflowPhases
+          const aIndex = workflowPhases.findIndex(p => p.name === a);
+          const bIndex = workflowPhases.findIndex(p => p.name === b);
+          if (aIndex === -1 && bIndex === -1) return 0;
+          if (aIndex === -1) return 1;
+          if (bIndex === -1) return -1;
+          return aIndex - bIndex;
+        });
+        
+        phaseNamesOrdered.forEach(phaseName => {
+          const operations = stepsByPhase.get(phaseName)!;
+          
+          if (!grouped[spaceKey][phaseName]) {
+            grouped[spaceKey][phaseName] = {};
+          }
+          
+          // Preserve operation order from original phase
+          const originalPhase = workflowPhases.find(p => p.name === phaseName);
+          const operationNamesOrdered = originalPhase 
+            ? originalPhase.operations.map(op => op.name)
+            : Array.from(operations.keys());
+          
+          // Add operations in their original order
+          operationNamesOrdered.forEach(operationName => {
+            if (operations.has(operationName)) {
+              grouped[spaceKey][phaseName][operationName] = operations.get(operationName)!;
+            }
+          });
+        });
+      } else if (item.phase) {
+        // Regular phase (standard or custom): group by phase name, then operation
+        const phaseName = item.phase.name;
+        
+        if (!grouped[phaseName]) {
+          grouped[phaseName] = {}; // Flat structure for regular phase
         }
+        
+        // Group steps by operation, preserving operation order from original phase
+        const stepsByOperation = new Map<string, WorkflowStep[]>();
+        item.steps.forEach(step => {
+          const operationName = (step as any).operationName || step.operationName || 'General';
+          
+          if (!stepsByOperation.has(operationName)) {
+            stepsByOperation.set(operationName, []);
+          }
 
-        // Dedupe by step ID
-        if (!acc[phaseName][operationName].some((existingStep: any) => existingStep.id === step.id)) {
-          acc[phaseName][operationName].push(step);
-        }
-
-        return acc;
-      }, {} as Record<string, Record<string, any[]>>);
-    }
+          // Dedupe by step ID
+          const opSteps = stepsByOperation.get(operationName)!;
+          if (!opSteps.some(s => s.id === step.id)) {
+            opSteps.push(step);
+          }
+        });
+        
+        // Add operations in their original order from the phase
+        const operationNamesOrdered = item.phase.operations.map(op => op.name);
+        operationNamesOrdered.forEach(operationName => {
+          if (stepsByOperation.has(operationName)) {
+            grouped[phaseName][operationName] = stepsByOperation.get(operationName)!;
+          }
+        });
+      }
+    });
     
-    return converted;
-  }, [organizedNavigation, allSteps]);
-  
-  // Final safety check: if groupedSteps is empty but allSteps has data, create a fallback structure
-  const hasGroupedData = Object.keys(groupedSteps).length > 0 && 
-    Object.values(groupedSteps).some((ops: any) => 
-      Object.values(ops).some((steps: any) => Array.isArray(steps) && steps.length > 0)
-    );
-  
-  const finalGroupedSteps = hasGroupedData 
-    ? groupedSteps 
-    : (allSteps.length > 0 
-        ? { 'All Steps': { 'Workflow': allSteps } } 
-        : {});
+    console.log('📋 groupedSteps structure:', {
+      keys: Object.keys(grouped),
+      totalItems: Object.keys(grouped).length,
+      sample: Object.entries(grouped).slice(0, 3).map(([key, value]) => {
+        const isSpaceContainer = typeof value === 'object' && !Array.isArray(value) && 
+          Object.values(value as any).some(v => typeof v === 'object' && !Array.isArray(v) && !Array.isArray(v));
+        return {
+          key,
+          isSpaceContainer,
+          structure: isSpaceContainer 
+            ? Object.keys(value as any).map(phase => ({
+                phase,
+                operations: Object.keys((value as any)[phase] || {})
+              }))
+            : Object.keys(value as any)
+        };
+      }),
+      fullStructure: grouped
+    });
+    
+    return grouped;
+  }, [organizedNavigation, allSteps, workflowPhases]);
   
   // Debug the phase structure in detail
   console.log("🔍 WorkflowPhases detailed structure:", {
@@ -2056,10 +2146,7 @@ export default function UserView({
     allStepsLength: allSteps.length,
     groupedStepsKeys: Object.keys(groupedSteps),
     groupedStepsEmpty: Object.keys(groupedSteps).length === 0,
-    hasGroupedData,
-    finalGroupedStepsKeys: Object.keys(finalGroupedSteps),
-    finalGroupedStepsEmpty: Object.keys(finalGroupedSteps).length === 0,
-    groupedStepsSample: Object.entries(finalGroupedSteps).slice(0, 2).map(([phase, ops]) => ({
+    groupedStepsSample: Object.entries(groupedSteps).slice(0, 2).map(([phase, ops]) => ({
       phase,
       operations: Object.keys(ops as any),
       totalStepsInPhase: Object.values(ops as any).reduce((sum: number, opSteps: any) => sum + (Array.isArray(opSteps) ? opSteps.length : 0), 0)
@@ -2376,7 +2463,7 @@ export default function UserView({
               console.log("🔄 Refreshing completedSteps state after kickoff completion");
               setCompletedSteps(new Set(uniqueSteps));
             } else {
-              // Fallback if kickoff phase not found
+              // Update project run if kickoff phase not found
               const updatedRun = {
                 ...currentProjectRun,
                 completedSteps: uniqueSteps,
@@ -2392,7 +2479,7 @@ export default function UserView({
               await updateProjectRun(updatedRun);
               
               // CRITICAL: Update local state immediately after database update
-              console.log("🔄 Refreshing completedSteps state after kickoff completion (fallback)");
+              console.log("🔄 Refreshing completedSteps state after kickoff completion");
               setCompletedSteps(new Set(uniqueSteps));
             }
             
@@ -2417,8 +2504,7 @@ export default function UserView({
   // 1. activeProject.phases (direct from project/project run)
   // 2. rawWorkflowPhases (before ordering - most reliable)
   // 3. workflowPhases (after ordering)
-  // 4. Template project phases (fallback for project runs)
-  // 5. Dynamic phases (for templates)
+  // Count phases for debugging
   let activeProjectPhasesCount = 0;
   if (activeProject?.phases) {
     if (Array.isArray(activeProject.phases)) {
@@ -2433,7 +2519,7 @@ export default function UserView({
     }
   }
   
-  // Also check template project phases as fallback
+  // Count template phases for debugging
   let templatePhasesCount = 0;
   if (currentProjectRun?.templateId) {
     const templateProject = currentProject || projects?.find(p => p.id === currentProjectRun.templateId);
@@ -2535,7 +2621,7 @@ export default function UserView({
             currentStepIndex={currentStepIndex}
             completedSteps={completedSteps}
             progress={progress}
-            groupedSteps={finalGroupedSteps}
+            groupedSteps={groupedSteps}
             isKickoffComplete={isKickoffComplete}
             instructionLevel={instructionLevel}
             projectName={currentProjectRun?.customProjectName || currentProjectRun?.name || 'Project'}

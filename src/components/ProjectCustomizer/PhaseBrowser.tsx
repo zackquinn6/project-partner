@@ -88,12 +88,8 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
     
     const phases: PhaseWithProject[] = [];
     project.phases?.forEach(phase => {
-      // Hide standard phases (kickoff, planning, ordering, close)
-      const phaseLower = phase.name.toLowerCase();
-      if (phaseLower.includes('kickoff') || 
-          phaseLower.includes('planning') ||
-          phaseLower.includes('ordering') ||
-          phaseLower.includes('close')) {
+      // Hide standard phases (use isStandard flag instead of hardcoded names)
+      if (phase.isStandard === true && !phase.isLinked) {
         return;
       }
       
@@ -299,13 +295,10 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                   </TableHeader>
                   <TableBody>
                     {filteredProjects.map((project) => {
-                      const availablePhases = project.phases?.filter(p => {
-                        const phaseLower = p.name.toLowerCase();
-                        return !(phaseLower.includes('kickoff') || 
-                                phaseLower.includes('planning') ||
-                                phaseLower.includes('ordering') ||
-                                phaseLower.includes('close'));
-                      }).length || 0;
+                      // Count non-standard phases (use isStandard flag instead of hardcoded names)
+                      const availablePhases = project.phases?.filter(p => 
+                        p.isStandard !== true || p.isLinked === true
+                      ).length || 0;
                       
                       const projectCategories = Array.isArray(project.category) 
                         ? project.category 

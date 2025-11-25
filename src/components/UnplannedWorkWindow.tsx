@@ -317,9 +317,10 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                 >
                   {/* Show current project phases with drop zones */}
                   {currentProjectRun && currentProjectRun.phases.map((phase: any, index: number) => {
-                    const isStandardPhase = ['Kickoff', 'Planning', 'Ordering', 'Close Project'].includes(phase.name);
-                    const canDropBefore = !(['Kickoff', 'Planning', 'Ordering'].includes(phase.name));
-                    const canDropAfter = !(phase.name === 'Close Project');
+                    // Use isStandard flag instead of hardcoded names
+                    const isStandardPhase = phase.isStandard === true && !phase.isLinked;
+                    const canDropBefore = !(phase.isStandard === true && !phase.isLinked && phase.phaseOrderNumber !== 'last');
+                    const canDropAfter = !(phase.isStandard === true && !phase.isLinked && phase.phaseOrderNumber === 'last');
                     
                     return (
                       <div key={`phase-${phase.id}-${phase.name}-${index}`}>

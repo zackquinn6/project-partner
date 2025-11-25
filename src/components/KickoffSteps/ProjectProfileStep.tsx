@@ -82,22 +82,33 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           if (!error && data) {
             // Use scaling_unit from database, fallback to templateProject.scalingUnit, then currentProjectRun.scalingUnit, then 'per item'
             const fetchedScalingUnit = data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
-            const fetchedItemType = data.item_type || null;
+            // CRITICAL: Ensure item_type is properly extracted - check both snake_case and camelCase
+            const fetchedItemType = data.item_type || (data as any).itemType || null;
+            
+            console.log('📊 Raw database response:', {
+              scaling_unit: data.scaling_unit,
+              item_type: data.item_type,
+              itemType: (data as any).itemType,
+              allKeys: Object.keys(data)
+            });
             
             setScalingUnit(fetchedScalingUnit);
             setItemType(fetchedItemType);
             
-            console.log('📊 Fetched scaling unit and item type:', {
+            console.log('✅ Fetched and set scaling unit and item type:', {
               templateId,
               scaling_unit: data.scaling_unit,
               item_type: data.item_type,
               item_type_type: typeof data.item_type,
               item_type_length: data.item_type?.length,
               item_type_truthy: !!data.item_type,
+              item_type_trimmed: data.item_type?.trim(),
               templateProjectScalingUnit: templateProject?.scalingUnit,
               finalScalingUnit: fetchedScalingUnit,
               finalItemType: fetchedItemType,
-              willUseItemType: fetchedScalingUnit?.toLowerCase().trim() === 'per item' && fetchedItemType ? fetchedItemType.toLowerCase() : null
+              willUseItemType: fetchedScalingUnit?.toLowerCase().trim() === 'per item' && fetchedItemType ? fetchedItemType.toLowerCase() : null,
+              stateScalingUnit: scalingUnit,
+              stateItemType: itemType
             });
           } else if (error) {
             console.error('❌ Error fetching scaling_unit and item_type:', error);
@@ -142,7 +153,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       }
     };
     
-    fetchScalingUnitAndItemType();
+    if (currentProjectRun?.templateId || templateProject?.id) {
+      fetchScalingUnitAndItemType();
+    }
   }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun, projects]);
 
   useEffect(() => {
@@ -368,28 +381,35 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       // For "per item", use item_type if available, otherwise use "per item"
                       if (normalizedScalingUnit === 'per item') {
                         // Check if itemType exists and is not empty
-                        const validItemType = itemType && typeof itemType === 'string' && itemType.trim().length > 0;
+                        // Also check state directly in case of timing issues
+                        const currentItemType = itemType || (templateProject as any)?.item_type || (templateProject as any)?.itemType;
+                        const validItemType = currentItemType && typeof currentItemType === 'string' && currentItemType.trim().length > 0;
                         
                         if (validItemType) {
-                          const displayValue = itemType.trim().toLowerCase();
+                          const displayValue = currentItemType.trim().toLowerCase();
                           console.log('✅ Using item_type for display:', { 
                             itemType, 
+                            currentItemType,
                             displayValue, 
                             scalingUnit,
                             normalizedScalingUnit,
-                            itemTypeLength: itemType.length,
-                            itemTypeTrimmedLength: itemType.trim().length
+                            itemTypeLength: currentItemType.length,
+                            itemTypeTrimmedLength: currentItemType.trim().length,
+                            fromTemplate: !!(templateProject as any)?.item_type || !!(templateProject as any)?.itemType
                           });
                           return displayValue;
                         }
                         
                         console.log('⚠️ No item_type available, using "per item":', { 
                           itemType, 
+                          currentItemType,
                           scalingUnit,
                           normalizedScalingUnit,
                           itemTypeType: typeof itemType,
                           itemTypeValue: itemType,
                           templateProjectId: templateProject?.id,
+                          templateProjectItemType: (templateProject as any)?.item_type,
+                          templateProjectItemTypeCamel: (templateProject as any)?.itemType,
                           currentProjectRunTemplateId: currentProjectRun?.templateId
                         });
                         return 'per item';

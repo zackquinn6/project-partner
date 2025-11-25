@@ -175,8 +175,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         const { data, error } = await supabase
           .from('project_templates_live')
           .select('*')
-          .in('publish_status', ['published', 'beta-testing'])
-          .eq('is_current_version', true) // Only fetch latest revisions
           .order('updated_at', { ascending: false });
         
         console.log('📦 Public projects fetch result:', { dataCount: data?.length || 0, error });
@@ -224,7 +222,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       console.log('⚠️ No projects from context, trying direct query...');
       supabase
         .from('project_templates_live')
-        .select('id, name, publish_status, is_current_version')
+        .select('id, name, publish_status, is_current_version, revision_number')
         .limit(10)
         .then(({ data, error }) => {
           console.log('🔍 Direct query result:', { dataCount: data?.length || 0, error, sample: data?.[0] });

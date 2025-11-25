@@ -241,10 +241,9 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
   }, []);
 
   // Fetch projects data
-  // Fetch only latest revisions (is_current_version = true) from project_templates_live
+  // Fetch only latest published revisions from project_templates_live view
   // This ensures the catalog shows and opens the latest revision, not the parent project
-  // Project info (description, images, etc.) is inherited from parent via the view,
-  // but the workflow (phases) comes from the latest revision
+  // The view automatically filters to show only published/beta-testing projects with latest revisions
   const {
     data: projects,
     loading: projectsLoading,
@@ -254,11 +253,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
   } = useDataFetch<Project>({
     table: 'project_templates_live',
     select: '*',
-    // Filter for latest revisions only - ensures catalog opens latest revision workflow
-    filters: [
-      { column: 'is_current_version', operator: 'eq', value: true }
-    ],
-    orderBy: { column: 'created_at', ascending: false },
+    orderBy: { column: 'updated_at', ascending: false },
     transform: transformProjects,
     cacheKey: 'projects',
     enabled: true // Explicitly enable
@@ -270,23 +265,24 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
       console.log('⚠️ ProjectDataContext: No projects loaded, trying direct query...');
       supabase
         .from('project_templates_live')
-        .select('id, name, publish_status, is_current_version')
+        .select('id, name, publish_status, is_current_version, revision_number')
         .limit(5)
         .then(({ data, error }) => {
-          console.log('🔍 Direct query to project_templates_live:', {
+          console.log('🔍 Direct query to project_templates_live view:', {
             dataCount: data?.length || 0,
             error,
             sample: data?.[0]
           });
           
-          // Also try projects table directly
+          // Also try projects table directly to see if data exists
           if (data?.length === 0) {
             supabase
               .from('projects')
-              .select('id, name, publish_status, is_current_version')
+              .select('id, name, publish_status, is_current_version, revision_number')
+              .in('publish_status', ['published', 'beta-testing'])
               .limit(5)
               .then(({ data: projectsData, error: projectsError }) => {
-                console.log('🔍 Direct query to projects table:', {
+                console.log('🔍 Direct query to projects table (published only):', {
                   dataCount: projectsData?.length || 0,
                   error: projectsError,
                   sample: projectsData?.[0]

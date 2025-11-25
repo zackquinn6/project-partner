@@ -29,33 +29,55 @@ export function getFlowType(projectRun: ProjectRun | null): FlowType {
 }
 
 /**
- * Gets standard phases (Kickoff, Planning, Ordering)
+ * Gets standard phases (phases with isStandard=true, excluding Close Project)
  * These are always shown in order and not affected by spaces
+ * Uses isStandard flag instead of hardcoded names
  */
 export function getStandardPhases(phases: Phase[]): Phase[] {
-  const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering'];
-  return phases
-    .filter(phase => standardPhaseNames.includes(phase.name))
-    .sort((a, b) => {
-      const aIndex = standardPhaseNames.indexOf(a.name);
-      const bIndex = standardPhaseNames.indexOf(b.name);
-      return aIndex - bIndex;
-    });
+  // Filter for standard phases, excluding Close Project (which should be last)
+  const standardPhases = phases.filter(phase => 
+    phase.isStandard === true && 
+    !phase.isLinked &&
+    phase.phaseOrderNumber !== 'last' // Close Project uses 'last'
+  );
+  
+  // Sort by phaseOrderNumber
+  return standardPhases.sort((a, b) => {
+    const aOrder = a.phaseOrderNumber;
+    const bOrder = b.phaseOrderNumber;
+    
+    // Handle 'first' special case
+    if (aOrder === 'first') return -1;
+    if (bOrder === 'first') return 1;
+    
+    // Both are numbers
+    if (typeof aOrder === 'number' && typeof bOrder === 'number') {
+      return aOrder - bOrder;
+    }
+    
+    // Fallback: alphabetical
+    return (a.name || '').localeCompare(b.name || '');
+  });
 }
 
 /**
- * Gets custom phases (non-standard, non-close-project phases)
+ * Gets custom phases (non-standard phases)
+ * Uses isStandard flag instead of hardcoded names
  */
 export function getCustomPhases(phases: Phase[]): Phase[] {
-  const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-  return phases.filter(phase => !standardPhaseNames.includes(phase.name));
+  return phases.filter(phase => phase.isStandard !== true || phase.isLinked === true);
 }
 
 /**
- * Gets the Close Project phase
+ * Gets the Close Project phase (standard phase with phaseOrderNumber='last')
+ * Uses isStandard flag and phaseOrderNumber instead of hardcoded name
  */
 export function getCloseProjectPhase(phases: Phase[]): Phase | null {
-  return phases.find(phase => phase.name === 'Close Project') || null;
+  return phases.find(phase => 
+    phase.isStandard === true && 
+    !phase.isLinked &&
+    phase.phaseOrderNumber === 'last'
+  ) || null;
 }
 
 /**
@@ -70,10 +92,9 @@ export function phaseAppliesToSpace(phase: Phase, spaceId: string, projectRun: P
   // - phase assignments in schedule_events
   // - space-specific phase filters
   
-  // For now, return true for all custom phases
-  // Standard phases always apply
-  const standardPhaseNames = ['Kickoff', 'Planning', 'Ordering', 'Close Project'];
-  if (standardPhaseNames.includes(phase.name)) {
+  // Standard phases always apply to all spaces
+  // Use isStandard flag instead of hardcoded names
+  if (phase.isStandard === true && !phase.isLinked) {
     return true;
   }
   
@@ -96,7 +117,10 @@ export function phaseAppliesToSpace(phase: Phase, spaceId: string, projectRun: P
 
 /**
  * Reorganizes workflow steps for Single Piece Flow navigation
- * Structure: Standard Phases → Space Containers (with custom phases) → Close Project
+ * Structure: Standard Phases → Space Containers (each with ALL custom phases) → Close Project
+ * 
+ * Single-piece-flow means: Complete each space's ALL custom phases before moving to next space
+ * Each space container contains ALL custom phases for that space
  */
 export function organizeStepsForSinglePieceFlow(
   phases: Phase[],
@@ -119,10 +143,68 @@ export function organizeStepsForSinglePieceFlow(
     steps: WorkflowStep[];
   }> = [];
   
-  // 1. Add standard phases (Kickoff, Planning, Ordering)
-  const standardPhases = getStandardPhases(phases);
+  // Sort spaces by priority (lower number = higher priority)
+  const sortedSpaces = spaces.length > 0 
+    ? [...spaces].sort((a, b) => {
+        const aPriority = a.priority ?? 999;
+        const bPriority = b.priority ?? 999;
+        return aPriority - bPriority;
+      })
+    : [];
+  
+  // Separate standard phases, custom phases, and close project
+  const standardPhases: Phase[] = [];
+  const customPhases: Phase[] = [];
+  let closeProjectPhase: Phase | null = null;
+  
+  phases.forEach(phase => {
+    const isStandardPhase = phase.isStandard === true && !phase.isLinked;
+    const isCloseProject = phase.isStandard === true && !phase.isLinked && phase.phaseOrderNumber === 'last';
+    
+    if (isCloseProject) {
+      closeProjectPhase = phase;
+    } else if (isStandardPhase) {
+      standardPhases.push(phase);
+    } else {
+      // Custom phase (non-standard or linked)
+      customPhases.push(phase);
+    }
+  });
+  
+  // Sort standard phases by phaseOrderNumber to preserve template order
+  standardPhases.sort((a, b) => {
+    if (a.phaseOrderNumber === 'first') return -1;
+    if (b.phaseOrderNumber === 'first') return 1;
+    if (typeof a.phaseOrderNumber === 'number' && typeof b.phaseOrderNumber === 'number') {
+      return a.phaseOrderNumber - b.phaseOrderNumber;
+    }
+    return 0;
+  });
+  
+  console.log('🔍 organizeStepsForSinglePieceFlow:', {
+    standardPhasesCount: standardPhases.length,
+    standardPhases: standardPhases.map(p => p.name),
+    customPhasesCount: customPhases.length,
+    customPhases: customPhases.map(p => p.name),
+    sortedSpacesCount: sortedSpaces.length,
+    sortedSpaces: sortedSpaces.map(s => s.name),
+    hasCloseProject: !!closeProjectPhase
+  });
+  
+  // 1. Add standard phases (show ONCE, in order)
   standardPhases.forEach(phase => {
-    const steps = phase.operations.flatMap(op => op.steps || []);
+    const steps = phase.operations.flatMap(op => 
+      (op.steps || []).map(step => ({
+        ...step,
+        phaseId: phase.id,
+        phaseName: phase.name,
+        operationId: op.id,
+        operationName: op.name
+      }))
+    );
+    
+    console.log(`  ✅ Added standard phase "${phase.name}" with ${steps.length} steps`);
+    
     result.push({
       type: 'standard-phase',
       id: phase.id,
@@ -132,55 +214,87 @@ export function organizeStepsForSinglePieceFlow(
     });
   });
   
-  // 2. Sort spaces by priority (lower number = higher priority)
-  const sortedSpaces = [...spaces].sort((a, b) => {
-    const aPriority = a.priority ?? 999;
-    const bPriority = b.priority ?? 999;
-    return aPriority - bPriority;
-  });
-  
-  // 3. Add space containers with their custom phases
-  const customPhases = getCustomPhases(phases);
-  sortedSpaces.forEach(space => {
-    // Get custom phases that apply to this space
-    const applicablePhases = customPhases.filter(phase => 
-      phaseAppliesToSpace(phase, space.id, projectRun)
-    );
+  // 2. Create space containers with ALL custom phases (if spaces exist)
+  if (sortedSpaces.length > 0 && customPhases.length > 0) {
+    console.log('🔧 Creating space containers for single-piece-flow:', {
+      spacesCount: sortedSpaces.length,
+      customPhasesCount: customPhases.length,
+      spaces: sortedSpaces.map(s => s.name),
+      customPhases: customPhases.map(p => p.name)
+    });
     
-    if (applicablePhases.length > 0) {
-      // Collect all steps from applicable phases for this space
-      // CRITICAL: Preserve phase and operation information on each step
-      const spaceSteps: WorkflowStep[] = [];
-      applicablePhases.forEach(phase => {
+    sortedSpaces.forEach(space => {
+      // Collect ALL steps from ALL custom phases for this space
+      // CRITICAL: Preserve phase structure - each step must have phaseName
+      const allSpaceSteps: WorkflowStep[] = [];
+      
+      // Process custom phases in their template order
+      customPhases.forEach(phase => {
+        const phaseSteps: WorkflowStep[] = [];
         phase.operations.forEach(operation => {
           const operationSteps = (operation.steps || []).map(step => ({
             ...step,
             phaseId: phase.id,
-            phaseName: phase.name,
+            phaseName: phase.name, // CRITICAL: Preserve phase name for grouping
             operationId: operation.id,
             operationName: operation.name,
             spaceId: space.id,
             spaceName: space.name
           }));
-          spaceSteps.push(...operationSteps);
+          phaseSteps.push(...operationSteps);
+          allSpaceSteps.push(...operationSteps);
         });
+        
+        console.log(`  - Space "${space.name}": Phase "${phase.name}" = ${phaseSteps.length} steps`);
       });
+      
+      console.log(`  - Created space container "${space.name}" with ${allSpaceSteps.length} total steps from ${customPhases.length} phases`);
       
       result.push({
         type: 'space-container',
         id: `space-${space.id}`,
-        name: space.name, // CRITICAL: This comes from database via dynamic linkage
-        // Always use space.name which is dynamically linked to project_run_spaces.space_name
+        name: space.name, // Space name only - contains all custom phases
         spaces: [space],
-        steps: spaceSteps
+        // CRITICAL: Don't include phase here - space container has steps from multiple phases
+        // The groupedSteps function will extract phases from step phaseName properties
+        steps: allSpaceSteps
       });
-    }
-  });
+    });
+  } else if (customPhases.length > 0) {
+    // No spaces but has custom phases: show as single container with all custom phases
+    const allSteps: WorkflowStep[] = [];
+    customPhases.forEach(phase => {
+      phase.operations.forEach(operation => {
+        const operationSteps = (operation.steps || []).map(step => ({
+          ...step,
+          phaseId: phase.id,
+          phaseName: phase.name,
+          operationId: operation.id,
+          operationName: operation.name
+        }));
+        allSteps.push(...operationSteps);
+      });
+    });
+    
+    result.push({
+      type: 'space-container',
+      id: 'no-space-custom-phases',
+      name: 'Custom Work',
+      steps: allSteps
+    });
+  }
   
-  // 4. Add Close Project phase (outside all space containers)
-  const closeProjectPhase = getCloseProjectPhase(phases);
+  // 3. Add Close Project phase (show ONCE at the end)
   if (closeProjectPhase) {
-    const steps = closeProjectPhase.operations.flatMap(op => op.steps || []);
+    const steps = closeProjectPhase.operations.flatMap(op => 
+      (op.steps || []).map(step => ({
+        ...step,
+        phaseId: closeProjectPhase!.id,
+        phaseName: closeProjectPhase!.name,
+        operationId: op.id,
+        operationName: op.name
+      }))
+    );
     result.push({
       type: 'close-project',
       id: closeProjectPhase.id,
@@ -195,7 +309,10 @@ export function organizeStepsForSinglePieceFlow(
 
 /**
  * Reorganizes workflow steps for Batch Flow navigation
- * Structure: Standard Phases → Custom Phases (with spaces) → Close Project
+ * Structure: Standard Phases → Custom Phases (with spaces nested inside) → Close Project
+ * 
+ * Batch-flow means: Complete each phase for all spaces before moving to next phase
+ * Each custom phase contains all spaces, with operations repeated per space
  */
 export function organizeStepsForBatchFlow(
   phases: Phase[],
@@ -218,10 +335,54 @@ export function organizeStepsForBatchFlow(
     steps: WorkflowStep[];
   }> = [];
   
-  // 1. Add standard phases (Kickoff, Planning, Ordering)
-  const standardPhases = getStandardPhases(phases);
+  // Sort spaces by priority
+  const sortedSpaces = spaces.length > 0
+    ? [...spaces].sort((a, b) => {
+        const aPriority = a.priority ?? 999;
+        const bPriority = b.priority ?? 999;
+        return aPriority - bPriority;
+      })
+    : [];
+  
+  // Separate standard phases, custom phases, and close project
+  const standardPhases: Phase[] = [];
+  const customPhases: Phase[] = [];
+  let closeProjectPhase: Phase | null = null;
+  
+  phases.forEach(phase => {
+    const isStandardPhase = phase.isStandard === true && !phase.isLinked;
+    const isCloseProject = phase.isStandard === true && !phase.isLinked && phase.phaseOrderNumber === 'last';
+    
+    if (isCloseProject) {
+      closeProjectPhase = phase;
+    } else if (isStandardPhase) {
+      standardPhases.push(phase);
+    } else {
+      customPhases.push(phase);
+    }
+  });
+  
+  // Sort standard phases by phaseOrderNumber
+  standardPhases.sort((a, b) => {
+    if (a.phaseOrderNumber === 'first') return -1;
+    if (b.phaseOrderNumber === 'first') return 1;
+    if (typeof a.phaseOrderNumber === 'number' && typeof b.phaseOrderNumber === 'number') {
+      return a.phaseOrderNumber - b.phaseOrderNumber;
+    }
+    return 0;
+  });
+  
+  // 1. Add standard phases (show ONCE, in order)
   standardPhases.forEach(phase => {
-    const steps = phase.operations.flatMap(op => op.steps || []);
+    const steps = phase.operations.flatMap(op => 
+      (op.steps || []).map(step => ({
+        ...step,
+        phaseId: phase.id,
+        phaseName: phase.name,
+        operationId: op.id,
+        operationName: op.name
+      }))
+    );
     result.push({
       type: 'standard-phase',
       id: phase.id,
@@ -231,29 +392,21 @@ export function organizeStepsForBatchFlow(
     });
   });
   
-  // 2. Sort spaces by priority
-  const sortedSpaces = [...spaces].sort((a, b) => {
-    const aPriority = a.priority ?? 999;
-    const bPriority = b.priority ?? 999;
-    return aPriority - bPriority;
-  });
-  
-  // 3. Add custom phases with spaces nested inside
-  const customPhases = getCustomPhases(phases);
+  // 2. Add custom phases with spaces nested inside (operations repeated per space)
   customPhases.forEach(phase => {
-    // Get spaces that this phase applies to
-    const applicableSpaces = sortedSpaces.filter(space =>
-      phaseAppliesToSpace(phase, space.id, projectRun)
-    );
-    
-    if (applicableSpaces.length > 0) {
-      // For batch flow, operations are repeated under each space
-      // Collect steps from all operations for all applicable spaces
+    if (sortedSpaces.length > 0) {
+      // For batch flow: operations are repeated for each space
+      // Collect all steps from all operations, repeated for each space
       const phaseSteps: WorkflowStep[] = [];
-      applicableSpaces.forEach(space => {
+      
+      sortedSpaces.forEach(space => {
         phase.operations.forEach(operation => {
           const operationSteps = (operation.steps || []).map(step => ({
             ...step,
+            phaseId: phase.id,
+            phaseName: phase.name,
+            operationId: operation.id,
+            operationName: operation.name,
             spaceId: space.id,
             spaceName: space.name
           }));
@@ -266,16 +419,41 @@ export function organizeStepsForBatchFlow(
         id: phase.id,
         name: phase.name,
         phase,
-        spaces: applicableSpaces,
+        spaces: sortedSpaces, // All spaces associated with this phase
         steps: phaseSteps
+      });
+    } else {
+      // No spaces: show custom phase without space logic
+      const steps = phase.operations.flatMap(op => 
+        (op.steps || []).map(step => ({
+          ...step,
+          phaseId: phase.id,
+          phaseName: phase.name,
+          operationId: op.id,
+          operationName: op.name
+        }))
+      );
+      result.push({
+        type: 'custom-phase',
+        id: phase.id,
+        name: phase.name,
+        phase,
+        steps
       });
     }
   });
   
-  // 4. Add Close Project phase
-  const closeProjectPhase = getCloseProjectPhase(phases);
+  // 3. Add Close Project phase (show ONCE at the end)
   if (closeProjectPhase) {
-    const steps = closeProjectPhase.operations.flatMap(op => op.steps || []);
+    const steps = closeProjectPhase.operations.flatMap(op => 
+      (op.steps || []).map(step => ({
+        ...step,
+        phaseId: closeProjectPhase!.id,
+        phaseName: closeProjectPhase!.name,
+        operationId: op.id,
+        operationName: op.name
+      }))
+    );
     result.push({
       type: 'close-project',
       id: closeProjectPhase.id,
@@ -305,11 +483,26 @@ export function organizeWorkflowNavigation(
 }> {
   const flowType = getFlowType(projectRun);
   
+  console.log('🔄 organizeWorkflowNavigation:', {
+    phasesCount: phases.length,
+    spacesCount: spaces.length,
+    flowType,
+    projectRunId: projectRun?.id,
+    schedule_optimization_method: projectRun?.schedule_optimization_method,
+    completion_priority: projectRun?.completion_priority,
+    phases: phases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
+    spaces: spaces.map(s => ({ name: s.name, priority: s.priority }))
+  });
+  
   if (flowType === 'batch-flow') {
-    return organizeStepsForBatchFlow(phases, spaces, projectRun);
+    const result = organizeStepsForBatchFlow(phases, spaces, projectRun);
+    console.log('📋 Batch flow result:', result.map(r => ({ type: r.type, name: r.name, spacesCount: r.spaces?.length || 0, stepsCount: r.steps.length })));
+    return result;
   } else {
     // Default to single-piece-flow
-    return organizeStepsForSinglePieceFlow(phases, spaces, projectRun);
+    const result = organizeStepsForSinglePieceFlow(phases, spaces, projectRun);
+    console.log('📋 Single-piece flow result:', result.map(r => ({ type: r.type, name: r.name, spacesCount: r.spaces?.length || 0, stepsCount: r.steps.length })));
+    return result;
   }
 }
 

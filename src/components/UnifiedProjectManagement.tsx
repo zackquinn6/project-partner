@@ -1256,8 +1256,14 @@ export function UnifiedProjectManagement({
                             {editingProject ? <Popover>
                                 <PopoverTrigger asChild>
                                   <Button variant="outline" className="w-full justify-between text-sm h-auto min-h-[40px] py-2">
-                                    <span className="text-left">
-                                      {editedProject.category && editedProject.category.length > 0 ? editedProject.category.join(', ') : 'Select categories...'}
+                                    <span className="text-left truncate flex-1 min-w-0">
+                                      {(() => {
+                                        const categories = editedProject.category || [];
+                                        if (categories.length === 0) return 'Select categories...';
+                                        // Show first category, and count if more
+                                        if (categories.length === 1) return categories[0];
+                                        return `${categories[0]}${categories.length > 1 ? ` +${categories.length - 1} more` : ''}`;
+                                      })()}
                                     </span>
                                     <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                   </Button>
@@ -1285,8 +1291,13 @@ export function UnifiedProjectManagement({
                                   ))}
                                 </div>
                               </PopoverContent>
-                              </Popover> : <div className="p-2 bg-muted rounded text-sm">
-                                {selectedProject.category && selectedProject.category.length > 0 ? selectedProject.category.join(', ') : 'Not specified'}
+                              </Popover> : <div className="p-2 bg-muted rounded text-sm break-words">
+                                {(() => {
+                                  const categories = selectedProject.category || [];
+                                  if (categories.length === 0) return 'Not specified';
+                                  if (categories.length === 1) return categories[0];
+                                  return `${categories[0]}${categories.length > 1 ? ` +${categories.length - 1} more` : ''}`;
+                                })()}
                               </div>}
                           </div>
 

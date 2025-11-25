@@ -81,8 +81,81 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     ? (rawEstimatedTotalTime.trim() || null)
     : (rawEstimatedTotalTime || null);
   const displayTypicalProjectSize = templateProject?.typicalProjectSize || (templateProject as any)?.typical_project_size || null;
-  const displayScalingUnit = currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit;
   const displayProjectChallenges = currentProjectRun?.projectChallenges ?? templateProject?.projectChallenges;
+  
+  // Fetch scaling_unit and item_type directly from database
+  const [scalingUnit, setScalingUnit] = useState<string | null>(null);
+  const [itemType, setItemType] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const fetchScalingUnitAndItemType = async () => {
+      const templateId = templateProject?.id || currentProjectRun?.templateId;
+      
+      console.log('📊 ProjectOverviewStep - fetchScalingUnitAndItemType called:', {
+        templateId,
+        hasTemplateProject: !!templateProject,
+        templateProjectId: templateProject?.id,
+        currentProjectRunTemplateId: currentProjectRun?.templateId
+      });
+      
+      if (templateId) {
+        try {
+          const { data, error } = await supabase
+            .from('projects')
+            .select('scaling_unit, item_type')
+            .eq('id', templateId)
+            .single();
+          
+          if (!error && data) {
+            const fetchedScalingUnit = data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null;
+            const fetchedItemType = data.item_type || null;
+            
+            setScalingUnit(fetchedScalingUnit);
+            setItemType(fetchedItemType);
+            
+            console.log('✅ ProjectOverviewStep - Fetched scaling_unit and item_type:', {
+              scaling_unit: data.scaling_unit,
+              item_type: data.item_type,
+              finalScalingUnit: fetchedScalingUnit,
+              finalItemType: fetchedItemType,
+              willUseItemType: fetchedScalingUnit?.toLowerCase().trim() === 'per item' && fetchedItemType ? fetchedItemType.toLowerCase() : null
+            });
+          } else if (error) {
+            console.error('❌ Error fetching scaling_unit and item_type:', error);
+            // Fallback to templateProject values
+            const fallbackScalingUnit = templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null;
+            const fallbackItemType = (templateProject as any)?.item_type || (templateProject as any)?.itemType || null;
+            setScalingUnit(fallbackScalingUnit);
+            setItemType(fallbackItemType);
+          }
+        } catch (error) {
+          console.error('❌ Exception fetching scaling_unit and item_type:', error);
+          // Fallback to templateProject values
+          const fallbackScalingUnit = templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null;
+          const fallbackItemType = (templateProject as any)?.item_type || (templateProject as any)?.itemType || null;
+          setScalingUnit(fallbackScalingUnit);
+          setItemType(fallbackItemType);
+        }
+      } else {
+        // No template ID, use fallback values
+        const fallbackScalingUnit = (currentProjectRun as any)?.scalingUnit || templateProject?.scalingUnit || null;
+        const fallbackItemType = (templateProject as any)?.item_type || (templateProject as any)?.itemType || null;
+        setScalingUnit(fallbackScalingUnit);
+        setItemType(fallbackItemType);
+        console.log('📊 ProjectOverviewStep - No template ID, using fallback values:', {
+          fallbackScalingUnit,
+          fallbackItemType
+        });
+      }
+    };
+    
+    if (currentProjectRun?.templateId || templateProject?.id) {
+      fetchScalingUnitAndItemType();
+    }
+  }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun, templateProject]);
+  
+  // Use fetched scaling unit or fallback
+  const displayScalingUnit = scalingUnit || currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit;
   
   // Debug logging to help diagnose missing fields
   useEffect(() => {
@@ -260,7 +333,45 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const skillComparison = getSkillLevelComparison();
   const effortComparison = getEffortLevelComparison();
   const categories = parseCategories(currentProjectRun?.category || templateProject?.category);
-  const formattedScalingUnit = displayScalingUnit ? displayScalingUnit.toLowerCase().startsWith('per ') ? displayScalingUnit : `per ${displayScalingUnit}` : null;
+  
+  // Format scaling unit, using item_type if scaling unit is "per item"
+  const formattedScalingUnit = displayScalingUnit ? (() => {
+    // Use the fetched scalingUnit state if available, otherwise use displayScalingUnit
+    const scalingUnitToUse = scalingUnit || displayScalingUnit;
+    const normalizedScalingUnit = scalingUnitToUse.toLowerCase().trim();
+    
+    console.log('🔍 ProjectOverviewStep - Formatting scaling unit:', {
+      scalingUnit,
+      displayScalingUnit,
+      scalingUnitToUse,
+      normalizedScalingUnit,
+      itemType,
+      templateProjectItemType: (templateProject as any)?.item_type || (templateProject as any)?.itemType
+    });
+    
+    // If scaling unit is "per item" and we have an item_type, use the item_type
+    if (normalizedScalingUnit === 'per item') {
+      // Check state first, then templateProject as fallback
+      const currentItemType = itemType || (templateProject as any)?.item_type || (templateProject as any)?.itemType;
+      
+      if (currentItemType && typeof currentItemType === 'string' && currentItemType.trim().length > 0) {
+        const displayValue = currentItemType.trim().toLowerCase();
+        console.log('✅ ProjectOverviewStep - Using item_type for display:', displayValue);
+        return displayValue;
+      }
+      
+      console.log('⚠️ ProjectOverviewStep - No item_type available, using "per item":', {
+        itemType,
+        currentItemType,
+        templateProjectItemType: (templateProject as any)?.item_type,
+        templateProjectItemTypeCamel: (templateProject as any)?.itemType
+      });
+      return 'per item';
+    }
+    
+    // For other scaling units, add "per " prefix if not already present
+    return normalizedScalingUnit.startsWith('per ') ? scalingUnitToUse : `per ${scalingUnitToUse}`;
+  })() : null;
   return <div className="space-y-3">
       <Card>
         <CardHeader className="p-3 sm:p-4">
