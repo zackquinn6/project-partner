@@ -1,21 +1,9 @@
--- Fix add_custom_project_phase RPC function to use position_rule/position_value instead of display_order
--- Migration: 20251126000000_fix_add_custom_project_phase.sql
+-- Fix ambiguous id reference in add_custom_project_phase function
+-- Migration: 20251126000003_fix_ambiguous_id_in_add_phase.sql
 --
--- This migration fixes the add_custom_project_phase function to work without display_order.
--- It now uses position_rule and position_value for positioning phases.
+-- This migration fixes the ambiguous 'id' column reference by explicitly aliasing
+-- all columns in the RETURN QUERY to match the RETURNS TABLE definition.
 
--- ============================================
--- STEP 1: Drop existing function if it exists
--- ============================================
-DROP FUNCTION IF EXISTS public.add_custom_project_phase(
-  p_project_id UUID,
-  p_phase_name TEXT,
-  p_phase_description TEXT
-);
-
--- ============================================
--- STEP 2: Create fixed add_custom_project_phase function
--- ============================================
 CREATE OR REPLACE FUNCTION public.add_custom_project_phase(
   p_project_id UUID,
   p_phase_name TEXT DEFAULT NULL,
@@ -148,7 +136,7 @@ BEGIN
   )
   RETURNING template_steps.id INTO v_new_step_id;
 
-  -- Return the newly created phase
+  -- Return the newly created phase with explicit column aliases to avoid ambiguity
   RETURN QUERY
   SELECT 
     v_new_phase_id AS id,
@@ -164,9 +152,6 @@ BEGIN
 END;
 $$;
 
--- ============================================
--- STEP 3: Add comment
--- ============================================
 COMMENT ON FUNCTION public.add_custom_project_phase IS 
 'Adds a custom phase to a project with one operation and one step.
 For Standard Project Foundation, sets position_rule to "last_minus_n" with position_value = 1 (second-to-last).
