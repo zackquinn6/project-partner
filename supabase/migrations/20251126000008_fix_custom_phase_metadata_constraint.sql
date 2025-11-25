@@ -100,9 +100,8 @@ BEGIN
 
   -- Create one operation with one step for the new phase
   -- IMPORTANT: Include custom_phase_name and custom_phase_description to satisfy
-  -- the custom_phase_metadata_check constraint. Since standard_phase_id is NULL,
-  -- is_custom_phase will be computed as true, and the constraint requires
-  -- custom_phase_name to be NOT NULL.
+  -- the custom_phase_metadata_check constraint. The constraint requires
+  -- custom_phase_name to be NOT NULL when is_custom_phase is true.
   INSERT INTO public.template_operations (
     project_id,
     phase_id,
@@ -111,7 +110,7 @@ BEGIN
     flow_type,
     custom_phase_name,
     custom_phase_description,
-    standard_phase_id
+    is_custom_phase
   ) VALUES (
     p_project_id,
     v_new_phase_id,
@@ -120,7 +119,7 @@ BEGIN
     'prime',
     v_phase_name, -- Required by custom_phase_metadata_check constraint
     v_phase_description, -- Optional but good to include
-    NULL -- Explicitly NULL to ensure is_custom_phase is computed as true
+    TRUE -- Explicitly set to true since this is a custom phase
   )
   RETURNING template_operations.id INTO v_new_operation_id;
 
