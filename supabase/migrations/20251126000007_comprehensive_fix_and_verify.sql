@@ -125,7 +125,7 @@ BEGIN
     v_position_value := NULL;
   END IF;
 
-  -- Insert the new phase (NO display_order - column has been removed)
+  -- Insert the new phase
   INSERT INTO public.project_phases (
     project_id,
     name,
@@ -221,11 +221,13 @@ For regular projects, sets position_rule to NULL (phases ordered by creation tim
 This function does NOT reference display_order - that column has been removed.';
 
 -- ============================================
--- STEP 5: Verify function source code doesn't contain display_order
+-- STEP 5: Verify function source code doesn't contain display_order in actual SQL
 -- ============================================
 DO $$
 DECLARE
   func_source TEXT;
+  -- Remove comments and check only actual SQL code
+  func_sql_only TEXT;
 BEGIN
   SELECT pg_get_functiondef(oid) INTO func_source
   FROM pg_proc
@@ -237,8 +239,15 @@ BEGIN
     RAISE EXCEPTION 'Function add_custom_project_phase not found after creation';
   END IF;
 
-  IF func_source ILIKE '%display_order%' THEN
-    RAISE EXCEPTION 'Function add_custom_project_phase still contains display_order reference: %', func_source;
+  -- Remove comments (lines starting with -- or /* */ blocks) and check for display_order in actual SQL
+  -- This regex removes SQL comments but keeps the actual code
+  func_sql_only := regexp_replace(func_source, '--[^\n]*', '', 'g');
+  func_sql_only := regexp_replace(func_sql_only, '/\*.*?\*/', '', 'gs');
+
+  -- Check for display_order as a column reference (not in comments)
+  -- Look for patterns like: display_order, "display_order", or .display_order
+  IF func_sql_only ~* '(^|[^a-z_])display_order([^a-z_]|$)' THEN
+    RAISE EXCEPTION 'Function add_custom_project_phase still contains display_order reference in SQL code';
   END IF;
 END $$;
 
