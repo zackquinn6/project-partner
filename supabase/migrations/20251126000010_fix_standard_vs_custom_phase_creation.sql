@@ -1,8 +1,8 @@
 -- ============================================
--- Fix: Remove standard_phase_id from template_operations INSERT
+-- Fix: Create standard phases for Standard Project Foundation, custom phases for regular projects
 -- ============================================
--- The template_operations table does not have a standard_phase_id column.
--- This migration fixes the add_custom_project_phase function to use is_custom_phase instead.
+-- When editing the Standard Project Foundation, we should create "standard phases" (is_standard_phase = TRUE)
+-- Custom phases should only be created for regular projects (is_custom_phase = TRUE)
 
 -- Drop the function first to ensure clean recreation
 DROP FUNCTION IF EXISTS public.add_custom_project_phase(UUID, TEXT, TEXT) CASCADE;
@@ -10,7 +10,7 @@ DROP FUNCTION IF EXISTS public.add_custom_project_phase(UUID, TEXT) CASCADE;
 DROP FUNCTION IF EXISTS public.add_custom_project_phase(UUID) CASCADE;
 DROP FUNCTION IF EXISTS public.add_custom_project_phase CASCADE;
 
--- Recreate the function with is_custom_phase instead of standard_phase_id
+-- Recreate the function with correct standard vs custom phase logic
 CREATE OR REPLACE FUNCTION public.add_custom_project_phase(
   p_project_id UUID,
   p_phase_name TEXT DEFAULT NULL,
@@ -146,7 +146,6 @@ BEGIN
     )
     RETURNING template_operations.id INTO v_new_operation_id;
   END IF;
-  RETURNING template_operations.id INTO v_new_operation_id;
 
   -- Create one step for the new operation
   INSERT INTO public.template_steps (
@@ -211,6 +210,8 @@ BEGIN
     RAISE EXCEPTION 'Function add_custom_project_phase was not created';
   END IF;
 
-  RAISE NOTICE '✅ Function add_custom_project_phase recreated with is_custom_phase instead of standard_phase_id';
+  RAISE NOTICE '✅ Function add_custom_project_phase recreated with correct standard vs custom phase logic';
+  RAISE NOTICE '✅ Standard Project Foundation will create standard phases (is_standard_phase = TRUE)';
+  RAISE NOTICE '✅ Regular projects will create custom phases (is_custom_phase = TRUE)';
 END $$;
 

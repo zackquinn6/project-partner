@@ -96,28 +96,55 @@ BEGIN
     v_updated_at;
 
   -- Create one operation with one step for the new phase
-  -- CRITICAL FIX: Include custom_phase_name and custom_phase_description
+  -- IMPORTANT: For Standard Project Foundation, create standard phases (is_standard_phase = TRUE)
+  -- For regular projects, create custom phases (is_custom_phase = TRUE, custom_phase_name required)
   -- The custom_phase_metadata_check constraint requires that if is_custom_phase is true,
   -- then custom_phase_name must not be NULL.
-  INSERT INTO public.template_operations (
-    project_id,
-    phase_id,
-    name,
-    description,
-    flow_type,
-    custom_phase_name,
-    custom_phase_description,
-    is_custom_phase
-  ) VALUES (
-    p_project_id,
-    v_new_phase_id,
-    'New Operation',
-    'Operation description',
-    'prime',
-    v_phase_name, -- Required by custom_phase_metadata_check constraint
-    v_phase_description, -- Optional but good to include
-    TRUE -- Explicitly set to true since this is a custom phase
-  )
+  IF v_is_standard THEN
+    -- Standard Project Foundation: Create standard phase operations
+    INSERT INTO public.template_operations (
+      project_id,
+      phase_id,
+      name,
+      description,
+      flow_type,
+      is_standard_phase,
+      is_custom_phase
+    ) VALUES (
+      p_project_id,
+      v_new_phase_id,
+      'New Operation',
+      'Operation description',
+      'prime',
+      TRUE, -- This is a standard phase operation
+      FALSE -- Not a custom phase
+    )
+    RETURNING template_operations.id INTO v_new_operation_id;
+  ELSE
+    -- Regular projects: Create custom phase operations
+    INSERT INTO public.template_operations (
+      project_id,
+      phase_id,
+      name,
+      description,
+      flow_type,
+      custom_phase_name,
+      custom_phase_description,
+      is_custom_phase,
+      is_standard_phase
+    ) VALUES (
+      p_project_id,
+      v_new_phase_id,
+      'New Operation',
+      'Operation description',
+      'prime',
+      v_phase_name, -- Required by custom_phase_metadata_check constraint
+      v_phase_description, -- Optional but good to include
+      TRUE, -- This is a custom phase
+      FALSE -- Not a standard phase
+    )
+    RETURNING template_operations.id INTO v_new_operation_id;
+  END IF;
   RETURNING template_operations.id INTO v_new_operation_id;
 
   -- Create one step for the new operation
