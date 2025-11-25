@@ -1,18 +1,17 @@
 -- ============================================
--- IMMEDIATE FIX: Fix custom_phase_metadata_check constraint violation
+-- Fix: Remove is_custom_phase from INSERT (it's a GENERATED column)
 -- ============================================
--- Run this script directly in Supabase SQL Editor to fix the constraint violation
--- The issue is that add_custom_project_phase doesn't set custom_phase_name and
--- custom_phase_description when inserting into template_operations, which violates
--- the custom_phase_metadata_check constraint.
+-- is_custom_phase is a GENERATED column that cannot be inserted into directly.
+-- It is computed automatically by the database based on other columns.
+-- We should only set the columns that determine its value.
 
--- Step 1: Drop the function
+-- Drop the function first to ensure clean recreation
 DROP FUNCTION IF EXISTS public.add_custom_project_phase(UUID, TEXT, TEXT) CASCADE;
 DROP FUNCTION IF EXISTS public.add_custom_project_phase(UUID, TEXT) CASCADE;
 DROP FUNCTION IF EXISTS public.add_custom_project_phase(UUID) CASCADE;
 DROP FUNCTION IF EXISTS public.add_custom_project_phase CASCADE;
 
--- Step 2: Recreate the function with custom_phase_name and custom_phase_description
+-- Recreate the function without is_custom_phase in INSERT statements
 CREATE OR REPLACE FUNCTION public.add_custom_project_phase(
   p_project_id UUID,
   p_phase_name TEXT DEFAULT NULL,
@@ -60,10 +59,13 @@ BEGIN
   v_is_standard := (p_project_id = v_standard_project_id);
 
   -- For Standard Project Foundation, set position to 'last_minus_n' with value 1 (second-to-last)
+  -- This places the new phase before the "Close Project" phase (which has position_rule = 'last')
   IF v_is_standard THEN
     v_position_rule := 'last_minus_n';
     v_position_value := 1;
   ELSE
+    -- For regular projects, custom phases don't have position rules
+    -- They will be ordered by creation time or by their position in the phases JSON
     v_position_rule := NULL;
     v_position_value := NULL;
   END IF;
@@ -82,7 +84,7 @@ BEGIN
     v_phase_name,
     v_phase_description,
     v_is_standard,
-    NULL,
+    NULL, -- Custom phases don't have standard_phase_id
     v_position_rule,
     v_position_value
   )
@@ -144,7 +146,6 @@ BEGIN
     )
     RETURNING template_operations.id INTO v_new_operation_id;
   END IF;
-  RETURNING template_operations.id INTO v_new_operation_id;
 
   -- Create one step for the new operation
   INSERT INTO public.template_steps (
@@ -192,7 +193,9 @@ BEGIN
 END;
 $$;
 
--- Step 3: Verify the function was created
+-- ============================================
+-- Verify: Check that the function was created correctly
+-- ============================================
 DO $$
 DECLARE
   func_exists BOOLEAN;
@@ -204,11 +207,10 @@ BEGIN
   ) INTO func_exists;
 
   IF NOT func_exists THEN
-    RAISE EXCEPTION '❌ Function add_custom_project_phase was not created';
+    RAISE EXCEPTION 'Function add_custom_project_phase was not created';
   END IF;
 
-  RAISE NOTICE '✅ Function add_custom_project_phase recreated successfully';
-  RAISE NOTICE '✅ Now includes custom_phase_name and custom_phase_description in template_operations INSERT';
-  RAISE NOTICE '✅ This should fix the custom_phase_metadata_check constraint violation';
+  RAISE NOTICE '✅ Function add_custom_project_phase recreated without is_custom_phase in INSERT';
+  RAISE NOTICE '✅ is_custom_phase will be computed automatically by the database';
 END $$;
 
