@@ -1420,44 +1420,39 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const newIndex = direction === 'up' ? operationIndex - 1 : operationIndex + 1;
     if (newIndex < 0 || newIndex >= phase.operations.length) return;
     
-    // Update operation order in template_operations table
+    // Reorder operations by updating the phases JSON directly
+    // Operations are ordered by their position in the operations array
     const operation = phase.operations[operationIndex];
     const targetOperation = phase.operations[newIndex];
     
-    // Get current display_order values (may not be in TypeScript interface but exists in DB)
-    const currentOrder = (operation as any).display_order ?? operationIndex;
-    const targetOrder = (targetOperation as any).display_order ?? newIndex;
+    // Swap operations in the local phase
+    const updatedOperations = [...phase.operations];
+    [updatedOperations[operationIndex], updatedOperations[newIndex]] = [updatedOperations[newIndex], updatedOperations[operationIndex]];
     
-    // Swap display_order values
-    const { error: updateError1 } = await supabase
-      .from('template_operations')
-      .update({ display_order: -1 }) // Temporary value to avoid conflicts
-      .eq('id', operation.id);
+    // Update the phase in the project
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(p => 
+        p.id === phaseId 
+          ? { ...p, operations: updatedOperations }
+          : p
+      ),
+      updatedAt: new Date()
+    };
     
-    if (updateError1) {
+    // Save to database
+    const { error: updateError } = await supabase
+      .from('projects')
+      .update({ phases: updatedProject.phases as any })
+      .eq('id', currentProject.id);
+    
+    if (updateError) {
       toast.error('Error reordering operation');
       return;
     }
     
-    const { error: updateError2 } = await supabase
-      .from('template_operations')
-      .update({ display_order: currentOrder })
-      .eq('id', targetOperation.id);
-    
-    if (updateError2) {
-      toast.error('Error reordering operation');
-      return;
-    }
-    
-    const { error: updateError3 } = await supabase
-      .from('template_operations')
-      .update({ display_order: targetOrder })
-      .eq('id', operation.id);
-    
-    if (updateError3) {
-      toast.error('Error reordering operation');
-      return;
-    }
+    // Update local context
+    updateProject(updatedProject);
     
     // Rebuild phases JSON from relational data
     const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
@@ -1602,44 +1597,46 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const newIndex = direction === 'up' ? stepIndex - 1 : stepIndex + 1;
     if (newIndex < 0 || newIndex >= operation.steps.length) return;
     
-    // Update step order in template_steps table
+    // Reorder steps by updating the phases JSON directly
+    // Steps are ordered by their position in the steps array
     const step = operation.steps[stepIndex];
     const targetStep = operation.steps[newIndex];
     
-    // Get current display_order values (may not be in TypeScript interface but exists in DB)
-    const currentOrder = (step as any).display_order ?? stepIndex;
-    const targetOrder = (targetStep as any).display_order ?? newIndex;
+    // Swap steps in the local operation
+    const updatedSteps = [...operation.steps];
+    [updatedSteps[stepIndex], updatedSteps[newIndex]] = [updatedSteps[newIndex], updatedSteps[stepIndex]];
     
-    // Swap display_order values
-    const { error: updateError1 } = await supabase
-      .from('template_steps')
-      .update({ display_order: -1 }) // Temporary value to avoid conflicts
-      .eq('id', step.id);
+    // Update the operation in the phase
+    const updatedOperations = phase.operations.map(op =>
+      op.id === operationId
+        ? { ...op, steps: updatedSteps }
+        : op
+    );
     
-    if (updateError1) {
+    // Update the phase in the project
+    const updatedProject = {
+      ...currentProject,
+      phases: currentProject.phases.map(p => 
+        p.id === phaseId 
+          ? { ...p, operations: updatedOperations }
+          : p
+      ),
+      updatedAt: new Date()
+    };
+    
+    // Save to database
+    const { error: updateError } = await supabase
+      .from('projects')
+      .update({ phases: updatedProject.phases as any })
+      .eq('id', currentProject.id);
+    
+    if (updateError) {
       toast.error('Error reordering step');
       return;
     }
     
-    const { error: updateError2 } = await supabase
-      .from('template_steps')
-      .update({ display_order: currentOrder })
-      .eq('id', targetStep.id);
-    
-    if (updateError2) {
-      toast.error('Error reordering step');
-      return;
-    }
-    
-    const { error: updateError3 } = await supabase
-      .from('template_steps')
-      .update({ display_order: targetOrder })
-      .eq('id', step.id);
-    
-    if (updateError3) {
-      toast.error('Error reordering step');
-      return;
-    }
+    // Update local context
+    updateProject(updatedProject);
     
     // Rebuild phases JSON from relational data
     const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
@@ -1679,117 +1676,72 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   };
   
   // Update phase order in database
+  // Since we're using position_rule/position_value, we update the phases JSON directly
+  // The position_rule/position_value are preserved from when phases were created
   const updatePhaseOrder = async (reorderedPhases: Phase[]) => {
     if (!currentProject) return;
     
     try {
-      // Separate incorporated phases (linked phases) - they're not in project_phases table
-      const incorporatedPhases = reorderedPhases.filter(p => p.isLinked);
-      // Keep non-incorporated phases in the order they appear in reorderedPhases
-      const nonIncorporatedPhases = reorderedPhases.filter(p => !p.isLinked);
-      
       console.log('🔄 updatePhaseOrder - reorderedPhases:', reorderedPhases.map(p => ({ id: p.id, name: p.name, isLinked: p.isLinked })));
-      console.log('🔄 updatePhaseOrder - nonIncorporatedPhases:', nonIncorporatedPhases.map(p => ({ id: p.id, name: p.name })));
       
-      // Create a map of phase ID to its display_order position in reorderedPhases (excluding incorporated)
-      // This ensures we set display_order based on the actual position in reorderedPhases
-      let nonIncorporatedIndex = 0;
-      const phaseDisplayOrderMap = new Map<string, number>();
-      for (const phase of reorderedPhases) {
-        if (!phase.isLinked) {
-          phaseDisplayOrderMap.set(phase.id, nonIncorporatedIndex);
-          nonIncorporatedIndex++;
-        }
-      }
-      
-      // Two-pass update to avoid unique constraint conflicts
-      // Pass 1: Set all display_order values to temporary negative values to free up slots
-      const tempUpdatePromises: Promise<void>[] = [];
-      
-      for (let i = 0; i < nonIncorporatedPhases.length; i++) {
-        const phase = nonIncorporatedPhases[i];
-        const displayOrder = phaseDisplayOrderMap.get(phase.id) ?? i;
+      // For Standard Project Foundation, update position_rule/position_value for custom phases
+      // Standard phases keep their position_rule/position_value
+      if (isEditingStandardProject) {
+        const updatePromises: Promise<void>[] = [];
         
-        if (isEditingStandardProject && phase.isStandard) {
-          // Standard phases in Edit Standard mode - update project_phases table
-          const updatePromise = (async () => {
-            // Update project_phases table for the Standard Project Foundation
+        // Count custom phases (phases without position_rule or with position_rule = 'last_minus_n')
+        let customPhaseIndex = 0;
+        for (let i = 0; i < reorderedPhases.length; i++) {
+          const phase = reorderedPhases[i];
+          if (!phase.isLinked) {
             const { data: phaseData } = await supabase
               .from('project_phases')
-              .select('id')
+              .select('id, position_rule')
               .eq('id', phase.id)
               .eq('project_id', currentProject.id)
               .maybeSingle();
             
             if (phaseData) {
-              // First pass: set to temporary negative value to avoid conflicts
-              await supabase
-                .from('project_phases')
-                .update({ 
-                  display_order: -(displayOrder + 1000), // Use negative values as temporary
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', phaseData.id);
+              // Check if this is a custom phase (NULL position_rule or 'last_minus_n')
+              const isCustomPhase = !phaseData.position_rule || phaseData.position_rule === 'last_minus_n';
+              
+              if (isCustomPhase) {
+                // Update custom phases to use 'last_minus_n' with appropriate position_value
+                // Count how many custom phases come before this one
+                let customCountBefore = 0;
+                for (let j = 0; j < i; j++) {
+                  const prevPhase = reorderedPhases[j];
+                  if (!prevPhase.isLinked) {
+                    const { data: prevPhaseData } = await supabase
+                      .from('project_phases')
+                      .select('position_rule')
+                      .eq('id', prevPhase.id)
+                      .eq('project_id', currentProject.id)
+                      .maybeSingle();
+                    
+                    if (prevPhaseData && (!prevPhaseData.position_rule || prevPhaseData.position_rule === 'last_minus_n')) {
+                      customCountBefore++;
+                    }
+                  }
+                }
+                
+                const updatePromise = supabase
+                  .from('project_phases')
+                  .update({ 
+                    position_rule: 'last_minus_n',
+                    position_value: customCountBefore + 1,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', phaseData.id);
+                
+                updatePromises.push(updatePromise.then(() => {}));
+              }
             }
-          })();
-          tempUpdatePromises.push(updatePromise);
-        } else {
-          // Custom phases - update project_phases table (skip incorporated phases)
-          const updatePromise = (async () => {
-            const { data: phaseData } = await supabase
-              .from('project_phases')
-              .select('id')
-              .eq('id', phase.id)
-              .eq('project_id', currentProject.id)
-              .maybeSingle();
-            
-            if (phaseData) {
-              // First pass: set to temporary negative value to avoid conflicts
-              await supabase
-                .from('project_phases')
-                .update({ 
-                  display_order: -(displayOrder + 1000), // Use negative values as temporary
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', phaseData.id);
-            }
-          })();
-          tempUpdatePromises.push(updatePromise);
+          }
         }
-      }
-      
-      await Promise.all(tempUpdatePromises);
-      
-      // Pass 2: Update to final display_order values (now safe since all slots are free)
-      const finalUpdatePromises: Promise<void>[] = [];
-      
-      for (let i = 0; i < nonIncorporatedPhases.length; i++) {
-        const phase = nonIncorporatedPhases[i];
-        const displayOrder = phaseDisplayOrderMap.get(phase.id) ?? i;
         
-        // Update project_phases table for all phases (including standard phases in Edit Standard mode)
-          const updatePromise = (async () => {
-            const { data: phaseData } = await supabase
-              .from('project_phases')
-              .select('id')
-              .eq('id', phase.id)
-              .eq('project_id', currentProject.id)
-              .maybeSingle();
-            
-            if (phaseData) {
-              await supabase
-                .from('project_phases')
-                .update({ 
-                  display_order: displayOrder,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', phaseData.id);
-            }
-          })();
-          finalUpdatePromises.push(updatePromise);
+        await Promise.all(updatePromises);
       }
-      
-      await Promise.all(finalUpdatePromises);
       
       // Rebuild phases JSON from project_phases table (this only includes non-incorporated phases)
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
@@ -3016,7 +2968,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Get the project_phases record to link the operation
       const { data: projectPhase } = await supabase
         .from('project_phases')
-        .select('id, name, description, display_order, is_standard')
+        .select('id, name, description, position_rule, position_value, is_standard')
         .eq('id', phaseId)
         .eq('project_id', currentProject.id)
         .single();
@@ -3032,14 +2984,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         phase_id: projectPhase.id,
         name: operationName,
         description: 'Operation description',
-        display_order: operationCount,
+        // Operations are ordered by their position in the operations array, not by display_order
         flow_type: 'prime'
       };
 
       if (!projectPhase.is_standard) {
         operationPayload.custom_phase_name = projectPhase.name;
         operationPayload.custom_phase_description = projectPhase.description;
-        operationPayload.custom_phase_display_order = projectPhase.display_order;
+        // Custom phase position is handled by position_rule/position_value, not display_order
       }
 
       const { data: newOperation, error } = await supabase
@@ -3064,7 +3016,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           outputs: [],
           apps: [],
           estimated_time_minutes: 0,
-          display_order: 0,
+          // Steps are ordered by their position in the steps array, not by display_order
           flow_type: 'prime',
           step_type: 'prime'
         });
@@ -3153,7 +3105,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           outputs: [],
           apps: [],
           estimated_time_minutes: 0,
-          display_order: stepCount,
+          // Steps are ordered by their position in the steps array, not by display_order
           flow_type: 'prime',
           step_type: 'prime',
           time_estimate_low: null,
