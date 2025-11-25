@@ -108,17 +108,18 @@ async function createCustomStandardPhases() {
   ];
   
   for (const phase of customPhases) {
+    // Create phase in project_phases for this project
     const { data, error } = await supabase
-      .from('standard_phases')
-      .upsert({
+      .from('project_phases')
+      .insert({
+        project_id: PROJECT_ID,
         name: phase.name,
         description: phase.description,
         position_rule: phase.position_rule,
         position_value: phase.position_value,
-        is_locked: false,
-        display_order: phase.position_value
-      }, {
-        onConflict: 'name'
+        is_standard: false,
+        standard_phase_id: null,
+        display_order: phase.position_value || 0
       })
       .select('id')
       .single();
@@ -126,7 +127,7 @@ async function createCustomStandardPhases() {
     if (error) {
       console.error(`Error creating phase ${phase.name}:`, error);
     } else {
-      console.log(`Created/updated phase: ${phase.name} with ID ${data.id}`);
+      console.log(`Created phase: ${phase.name} with ID ${data.id}`);
       phaseMapping[phase.name] = data.id;
     }
   }
@@ -158,9 +159,9 @@ async function importContent() {
   
   // Import each phase
   for (const [phaseName, operationMap] of phaseGroups) {
-    const standardPhaseId = phaseMapping[phaseName];
-    if (!standardPhaseId) {
-      console.warn(`No standard phase mapping for: ${phaseName}`);
+    const phaseId = phaseMapping[phaseName];
+    if (!phaseId) {
+      console.warn(`No phase mapping for: ${phaseName}`);
       continue;
     }
     
@@ -170,12 +171,12 @@ async function importContent() {
     for (const [operationName, steps] of operationMap) {
       console.log(`  Creating operation: ${operationName}`);
       
-      // Create operation
+      // Create operation - use phase_id from project_phases
       const { data: operation, error: opError } = await supabase
         .from('template_operations')
         .insert({
           project_id: PROJECT_ID,
-          standard_phase_id: standardPhaseId,
+          phase_id: phaseId,
           name: operationName,
           description: steps[0]?.description || operationName,
           display_order: operationOrder++

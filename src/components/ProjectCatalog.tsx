@@ -639,6 +639,37 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     setIsBetaWarningOpen(false);
 
     try {
+      // Ensure template has phases - rebuild from database if needed
+      let templatePhases = projectTemplate.phases || [];
+      
+      // If phases are missing or empty, try to rebuild from database
+      if (!templatePhases || !Array.isArray(templatePhases) || templatePhases.length === 0) {
+        console.log('⚠️ Template phases missing or empty, rebuilding from database...');
+        try {
+          const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc(
+            'rebuild_phases_json_from_project_phases',
+            { p_project_id: projectTemplate.id }
+          );
+          
+          if (!rebuildError && rebuiltPhases) {
+            templatePhases = Array.isArray(rebuiltPhases) ? rebuiltPhases : 
+                            (typeof rebuiltPhases === 'string' ? JSON.parse(rebuiltPhases) : []);
+            console.log('✅ Rebuilt phases from database:', { phaseCount: templatePhases.length });
+          } else {
+            console.error('❌ Failed to rebuild phases:', rebuildError);
+            // Continue with empty phases - the project run creation will validate
+          }
+        } catch (rebuildErr) {
+          console.error('❌ Error rebuilding phases:', rebuildErr);
+          // Continue with empty phases
+        }
+      }
+      
+      // Validate: Template must have phases before creating project run
+      if (!templatePhases || !Array.isArray(templatePhases) || templatePhases.length === 0) {
+        throw new Error(`Template "${projectTemplate.name}" has no phases. Please ensure the template has phases before starting a project.`);
+      }
+      
       // Create a new project RUN based on the template without setup info
       const newProjectRun = {
         templateId: projectTemplate.id,
@@ -652,8 +683,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         // No user customization data when skipping
         completedSteps: [],
         progress: 0,
-        // Copy template data
-        phases: projectTemplate.phases || [],
+        // Copy template data with rebuilt phases
+        phases: templatePhases,
         category: projectTemplate.category,
         effortLevel: projectTemplate.effortLevel,
         skillLevel: projectTemplate.skillLevel,
@@ -664,7 +695,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       console.log('📦 Created project run data:', {
         templateId: newProjectRun.templateId,
         name: newProjectRun.name,
-        hasPhases: !!newProjectRun.phases && Array.isArray(newProjectRun.phases)
+        hasPhases: !!newProjectRun.phases && Array.isArray(newProjectRun.phases),
+        phaseCount: newProjectRun.phases?.length || 0
       });
       
       // Set timeout to reset flag if creation doesn't complete
@@ -770,6 +802,18 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     // After accepting beta warning, proceed with normal project setup flow
     if (!selectedTemplate || !user) return;
     
+    // CRITICAL: Check if template has phases - if it does, skip setup window and proceed directly
+    const hasPhases = selectedTemplate.phases && 
+                      Array.isArray(selectedTemplate.phases) && 
+                      selectedTemplate.phases.length > 0;
+    
+    if (hasPhases) {
+      // Template has phases - proceed directly to project creation without setup window
+      console.log('✅ Template has phases, proceeding directly to project creation');
+      proceedToNewProject(selectedTemplate);
+      return;
+    }
+    
     setProjectSetupForm(prev => ({
       ...prev,
       customProjectName: selectedTemplate.name
@@ -788,24 +832,32 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         existingRun.completedSteps.includes(stepId)
       );
       
-        // Only show project setup dialog if kickoff is complete
-        if (kickoffComplete) {
-          setIsProjectSetupOpen(true);
-        } else {
-          // Kickoff not complete, navigate to continue the existing project run
-          console.log('ProjectCatalog: Kickoff not complete after beta accept, continuing existing project run:', existingRun.id);
-          navigate('/', {
-            state: {
-              view: 'user',
-              projectRunId: existingRun.id
-            }
-          });
-        }
+      // Only show project setup dialog if kickoff is complete AND template doesn't have phases
+      // (But we already checked above, so this should never happen for templates with phases)
+      if (kickoffComplete && !hasPhases) {
+        setIsProjectSetupOpen(true);
       } else {
-        // New project run, will go through kickoff flow - start project creation process
-        console.log('🚀 ProjectCatalog: New project after beta accept, proceeding directly to kickoff');
+        // Kickoff not complete, navigate to continue the existing project run
+        console.log('ProjectCatalog: Kickoff not complete after beta accept, continuing existing project run:', existingRun.id);
+        navigate('/', {
+          state: {
+            view: 'user',
+            projectRunId: existingRun.id
+          }
+        });
+      }
+    } else {
+      // New project run - if no phases, show setup window; otherwise proceed directly
+      if (!hasPhases) {
+        // No phases - show setup window (legacy flow for projects without phases)
+        console.log('⚠️ Template has no phases, showing setup window');
+        setIsProjectSetupOpen(true);
+      } else {
+        // Has phases - proceed directly to kickoff
+        console.log('🚀 ProjectCatalog: New project with phases after beta accept, proceeding directly to kickoff');
         proceedToNewProject(selectedTemplate);
       }
+    }
   };
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-y-auto">
       <div className="container mx-auto px-6 py-8 min-h-screen">

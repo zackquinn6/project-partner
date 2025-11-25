@@ -100,17 +100,18 @@ export default function ImportTileContent() {
     const phaseMapping: Record<string, string> = {};
     
     for (const phase of customPhases) {
+      // Create phase in project_phases for this project
       const { data, error } = await supabase
-        .from('standard_phases')
-        .upsert({
+        .from('project_phases')
+        .insert({
+          project_id: PROJECT_ID,
           name: phase.name,
           description: phase.description,
           position_rule: phase.position_rule,
           position_value: phase.position_value,
-          is_locked: false,
-          display_order: phase.position_value
-        }, {
-          onConflict: 'name'
+          is_standard: false,
+          standard_phase_id: null,
+          display_order: phase.position_value || 0
         })
         .select('id')
         .single();
@@ -119,7 +120,7 @@ export default function ImportTileContent() {
         addLog(`❌ Error creating phase ${phase.name}: ${error.message}`);
         throw error;
       } else {
-        addLog(`✅ Created/updated phase: ${phase.name}`);
+        addLog(`✅ Created phase: ${phase.name}`);
         phaseMapping[phase.name] = data.id;
       }
     }

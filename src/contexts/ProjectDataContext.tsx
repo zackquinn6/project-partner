@@ -84,6 +84,9 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
   const { isGuest, guestData } = useGuest();
 
   // Memoized transform function for projects (synchronous, loads from JSON first)
+  // Note: Phases are loaded from the projects.phases JSONB column.
+  // This column is kept up-to-date by rebuild_phases_json_from_project_phases function.
+  // If phases are empty, they should be rebuilt in the database before loading here.
   const transformProjects = React.useMemo(() => (data: any[]): Project[] => {
     if (!data || !Array.isArray(data)) {
       console.error('❌ transformProjects: data is not an array:', data);

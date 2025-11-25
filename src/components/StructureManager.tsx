@@ -1711,26 +1711,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         const displayOrder = phaseDisplayOrderMap.get(phase.id) ?? i;
         
         if (isEditingStandardProject && phase.isStandard) {
-          // Standard phases in Edit Standard mode - update both standard_phases and project_phases tables
+          // Standard phases in Edit Standard mode - update project_phases table
           const updatePromise = (async () => {
-            // Update standard_phases table
-            const { data: standardPhase } = await supabase
-              .from('standard_phases')
-              .select('id')
-              .eq('name', phase.name)
-              .single();
-            
-            if (standardPhase) {
-              await supabase
-                .from('standard_phases')
-                .update({ 
-                  display_order: displayOrder,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', standardPhase.id);
-            }
-            
-            // Also update project_phases table for the Standard Project Foundation
+            // Update project_phases table for the Standard Project Foundation
             const { data: phaseData } = await supabase
               .from('project_phases')
               .select('id')

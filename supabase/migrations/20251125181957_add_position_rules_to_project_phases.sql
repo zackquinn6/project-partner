@@ -42,7 +42,7 @@ WHERE standard_phase_id IS NULL
 -- ============================================
 COMMENT ON COLUMN public.project_phases.position_rule IS 
 'Position rule for phase ordering. Values: "first", "last", "nth", "last_minus_n", or NULL for custom phases.
-Standard phases use rules from standard_phases table. Custom phases typically have NULL.';
+Standard phases have position rules. Custom phases typically have NULL.';
 
 COMMENT ON COLUMN public.project_phases.position_value IS 
 'Position value for "nth" and "last_minus_n" rules. 
