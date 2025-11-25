@@ -497,59 +497,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       console.log('✅ Project metadata updated successfully');
       
-      // Update display_order of template_operations and template_steps based on in-memory order
-      // The triggers will automatically rebuild the phases JSON after these updates
-      let updatedOpsCount = 0;
-      let updatedStepsCount = 0;
-      
-      for (let phaseIndex = 0; phaseIndex < project.phases.length; phaseIndex++) {
-        const phase = project.phases[phaseIndex];
-        
-        // Update operations within this phase
-        for (let opIndex = 0; opIndex < phase.operations.length; opIndex++) {
-          const operation = phase.operations[opIndex];
-          
-          const { error: opError } = await supabase
-            .from('template_operations')
-            .update({ 
-              display_order: opIndex,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', operation.id)
-            .eq('project_id', project.id);
-            
-          if (opError) {
-            console.error('❌ Error updating operation display_order:', opError);
-          } else {
-            updatedOpsCount++;
-          }
-
-          // Update steps within this operation
-          for (let stepIndex = 0; stepIndex < operation.steps.length; stepIndex++) {
-            const step = operation.steps[stepIndex];
-            
-            const { error: stepError } = await supabase
-              .from('template_steps')
-              .update({ 
-                display_order: stepIndex,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', step.id)
-              .eq('operation_id', operation.id);
-            
-            if (stepError) {
-              console.error('❌ Error updating step display_order:', stepError);
-            } else {
-              updatedStepsCount++;
-            }
-          }
-        }
-      }
-      
-      console.log('✅ Template tables updated:', { 
-        operations: updatedOpsCount, 
-        steps: updatedStepsCount 
-      });
+      // NOTE: display_order columns have been removed from template_operations and template_steps
+      // Ordering is now handled by position_rule/position_value for phases and step_number/created_at for steps
+      // No need to update display_order anymore
 
       // Optimistically update cache
       const updatedProjects = projects.map(p => p.id === project.id ? project : p);

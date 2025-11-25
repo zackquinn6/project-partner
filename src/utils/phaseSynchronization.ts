@@ -56,7 +56,6 @@ export async function syncPhaseToDatabase(
             description: operation.description || null,
             custom_phase_description: phase.description || null,
             custom_phase_display_order: displayOrder,
-            display_order: opIndex,
             updated_at: new Date().toISOString()
           })
           .eq('id', existingOp.id);
@@ -78,7 +77,6 @@ export async function syncPhaseToDatabase(
             custom_phase_name: phase.name,
             custom_phase_description: phase.description || null,
             custom_phase_display_order: displayOrder,
-            display_order: opIndex,
             standard_phase_id: null
           })
           .select('id')
@@ -131,7 +129,6 @@ async function syncStepsForOperation(
       outputs: JSON.stringify(step.outputs || []),
       apps: JSON.stringify(step.apps || []),
       estimated_time_minutes: step.timeEstimation?.variableTime?.low || 0,
-      display_order: stepIndex,
       flow_type: step.flowType || 'prime',
       step_type: step.stepType || 'prime',
       time_estimate_low: step.timeEstimation?.variableTime?.low || null,
