@@ -218,31 +218,39 @@ BEGIN
   END IF;
 
   -- Insert the new phase
-  INSERT INTO public.project_phases (
-    project_id,
-    name,
-    description,
-    is_standard,
-    standard_phase_id,
-    position_rule,
-    position_value
-  ) VALUES (
-    p_project_id,
-    v_phase_name,
-    v_phase_description,
-    v_is_standard,
-    NULL, -- Custom phases don't have standard_phase_id
-    v_position_rule,
-    v_position_value
+  -- CRITICAL: Use explicit column references to avoid ambiguity with RETURNS TABLE
+  WITH inserted_phase AS (
+    INSERT INTO public.project_phases (
+      project_id,
+      name,
+      description,
+      is_standard,
+      standard_phase_id,
+      position_rule,
+      position_value
+    ) VALUES (
+      p_project_id,
+      v_phase_name,
+      v_phase_description,
+      v_is_standard,
+      NULL, -- Custom phases don't have standard_phase_id
+      v_position_rule,
+      v_position_value
+    )
+    RETURNING 
+      project_phases.id,
+      project_phases.created_at,
+      project_phases.updated_at
   )
-  RETURNING 
-    id,
-    created_at,
-    updated_at
+  SELECT 
+    ip.id,
+    ip.created_at,
+    ip.updated_at
   INTO 
     v_new_phase_id,
     v_created_at,
-    v_updated_at;
+    v_updated_at
+  FROM inserted_phase ip;
 
   -- Create one operation with one step for the new phase
   -- IMPORTANT: is_custom_phase is a GENERATED column (computed automatically)
@@ -268,7 +276,7 @@ BEGIN
       'prime',
       TRUE -- This is a standard phase operation
     )
-    RETURNING template_operations.id INTO v_new_operation_id;
+    RETURNING id INTO v_new_operation_id;
   ELSE
     -- Regular projects: Create custom phase operations
     -- is_custom_phase will be computed as TRUE (since custom_phase_name is NOT NULL)
@@ -291,7 +299,7 @@ BEGIN
       v_phase_description,
       FALSE -- This is a custom phase operation
     )
-    RETURNING template_operations.id INTO v_new_operation_id;
+    RETURNING id INTO v_new_operation_id;
   END IF;
 
   -- Create one step for the operation
@@ -306,7 +314,7 @@ BEGIN
     'New Step',
     'Step description'
   )
-  RETURNING template_steps.id INTO v_new_step_id;
+  RETURNING id INTO v_new_step_id;
 
   -- Return the new phase
   RETURN QUERY
