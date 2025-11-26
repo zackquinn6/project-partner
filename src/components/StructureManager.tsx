@@ -5549,9 +5549,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                             <Select
                                               value={String(getPhaseOrderNumber(phase, phaseIndex, displayPhases.length))}
                                               onValueChange={(value) => {
+                                                console.log('🔄 Dropdown onValueChange called:', {
+                                                  phaseId: phase.id,
+                                                  phaseName: phase.name,
+                                                  oldValue: getPhaseOrderNumber(phase, phaseIndex, displayPhases.length),
+                                                  newValue: value
+                                                });
                                                 const newOrder = value === 'First' ? 'First' : value === 'Last' ? 'Last' : parseInt(value, 10);
                                                 handlePhaseOrderChange(phase.id, newOrder);
                                               }}
+                                              disabled={isChangingPhaseOrder || isAddingPhase || isDeletingPhase}
                                             >
                                               <SelectTrigger className="w-16 h-5 text-xs px-1">
                                                 <SelectValue />
@@ -5568,9 +5575,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                             <Select
                                               value={String(getPhaseOrderNumber(phase, phaseIndex, displayPhases.length))}
                                               onValueChange={(value) => {
+                                                console.log('🔄 Dropdown onValueChange called:', {
+                                                  phaseId: phase.id,
+                                                  phaseName: phase.name,
+                                                  oldValue: getPhaseOrderNumber(phase, phaseIndex, displayPhases.length),
+                                                  newValue: value,
+                                                  isEditingStandardProject,
+                                                  phaseIsStandard
+                                                });
                                                 const newOrder = value === 'First' ? 'First' : value === 'Last' ? 'Last' : parseInt(value, 10);
                                                 handlePhaseOrderChange(phase.id, newOrder);
                                               }}
+                                              disabled={isChangingPhaseOrder || isAddingPhase || isDeletingPhase}
                                             >
                                               <SelectTrigger className="w-16 h-5 text-xs px-1">
                                                 <SelectValue />
