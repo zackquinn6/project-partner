@@ -913,6 +913,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Process merged phases and update displayPhases
   // Use mergedPhases directly (same as EditWorkflowView uses rawPhases)
   // Process phases similar to EditWorkflowView for consistency
+  // CRITICAL: Database is the source of truth - preserve order from database when available
   const processedPhases = React.useMemo(() => {
     // Get phases from mergedPhases (which already handles Edit Standard filtering)
     let phasesToProcess: Phase[] = [];
@@ -936,12 +937,47 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // Deduplicate phases
     const deduplicatedPhases = deduplicatePhases(phasesToProcess);
     
-    // CRITICAL: Apply sequential ordering validation - single source of truth
-    // This ensures all phases have sequential ordering positions (1, 2, 3, ...) with no gaps or duplicates
-    // Per user requirements: phases must be in sequential order, all must have ordering positions
-    const validatedPhases = validateAndFixSequentialOrdering(deduplicatedPhases);
+    // CRITICAL: Check if phases already have valid order positions from database
+    // If all phases have order positions, preserve the database order (don't reorder)
+    // Only apply sequential ordering validation if phases are missing order positions
+    const phasesWithOrder = deduplicatedPhases.filter(p => 
+      p.phaseOrderNumber !== undefined && 
+      p.phaseOrderNumber !== null && 
+      p.phaseOrderNumber !== ''
+    );
     
-    return validatedPhases;
+    // If all phases have order positions, preserve database order
+    // Only apply validation if some phases are missing order positions
+    if (phasesWithOrder.length === deduplicatedPhases.length) {
+      // All phases have order positions - preserve database order
+      // Sort by order number to ensure correct display order, but don't reassign positions
+      const sortedPhases = [...deduplicatedPhases].sort((a, b) => {
+        const aOrder = typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 
+                      a.phaseOrderNumber === 'first' ? 0 : 
+                      a.phaseOrderNumber === 'last' ? 9999 : 0;
+        const bOrder = typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 
+                      b.phaseOrderNumber === 'first' ? 0 : 
+                      b.phaseOrderNumber === 'last' ? 9999 : 0;
+        return aOrder - bOrder;
+      });
+      
+      console.log('✅ Preserving database order (all phases have order positions):', {
+        count: sortedPhases.length,
+        phases: sortedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+      });
+      
+      return sortedPhases;
+    } else {
+      // Some phases are missing order positions - apply sequential ordering validation
+      console.log('⚠️ Some phases missing order positions, applying sequential ordering validation:', {
+        totalPhases: deduplicatedPhases.length,
+        phasesWithOrder: phasesWithOrder.length,
+        missingOrder: deduplicatedPhases.length - phasesWithOrder.length
+      });
+      
+      const validatedPhases = validateAndFixSequentialOrdering(deduplicatedPhases);
+      return validatedPhases;
+    }
   }, [mergedPhases, currentProject?.phases, phaseToDelete]);
   
   // CRITICAL: Force immediate refresh on opening StructureManager
@@ -2207,8 +2243,33 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     } catch (error) {
       console.error('❌ Error saving phase order to database:', error);
       toast.error('Error saving phase order');
-      // Revert to previous state on error
-      refetchDynamicPhases();
+      // Revert to previous state on error - read directly from database as source of truth
+      try {
+        if (isEditingStandardProject) {
+          const { data: freshPhases, error: freshError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+            p_project_id: currentProject.id
+          });
+          if (!freshError && freshPhases) {
+            const freshArray = Array.isArray(freshPhases) ? freshPhases : [];
+            const freshStandard = freshArray.filter(p => isStandardPhase(p) && !p.isLinked);
+            if (freshStandard.length > 0) {
+              setDisplayPhases(freshStandard);
+            }
+          }
+        } else {
+          const { data: freshPhases, error: freshError } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
+            p_project_id: currentProject.id
+          });
+          if (!freshError && freshPhases) {
+            const freshArray = Array.isArray(freshPhases) ? freshPhases : [];
+            if (freshArray.length > 0) {
+              setDisplayPhases(freshArray);
+            }
+          }
+        }
+      } catch (revertError) {
+        console.error('❌ Error reverting to database state:', revertError);
+      }
     }
   };
   
@@ -4196,10 +4257,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         };
         updateProject(updatedProject);
 
-        // CRITICAL: Refetch dynamic phases from database to ensure data is accurate
-        console.log('🔄 Refetching dynamic phases after incorporated phase deletion');
-        await refetchDynamicPhases();
-        console.log('✅ Dynamic phases refetched after incorporated phase deletion');
+        // CRITICAL: Read directly from database as source of truth after incorporated phase deletion
+        console.log('🔄 Reading phases directly from database after incorporated phase deletion (source of truth)');
+        try {
+          const { data: freshPhases, error: freshError } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
+            p_project_id: currentProject.id
+          });
+          if (!freshError && freshPhases) {
+            const freshArray = Array.isArray(freshPhases) ? freshPhases : [];
+            if (freshArray.length > 0) {
+              setDisplayPhases(freshArray);
+              console.log('✅ Updated displayPhases from database after incorporated phase deletion');
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error reading phases from database:', error);
+        }
       } else {
         // For regular phases, delete from database tables
         // CRITICAL: Find the project_phases record by name OR ID
@@ -4542,11 +4615,44 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             await updatePhaseOrder(phasesWithoutDeleted);
             console.log('✅ Phase order updated in database after deletion, order numbers preserved');
             
-            // CRITICAL: After updatePhaseOrder, wait a bit more then refetch to get fresh data
-            // This ensures useDynamicPhases gets the correct data without the deleted phase
+            // CRITICAL: After updatePhaseOrder, read directly from database as source of truth
+            // Don't refetch useDynamicPhases - it may cause reordering
+            // Instead, rebuild phases directly from database to get fresh data
             await new Promise(resolve => setTimeout(resolve, 200));
-            await refetchDynamicPhases();
-            console.log('✅ Refetched dynamic phases after deletion to ensure deleted phase is gone');
+            
+            // Read directly from database as source of truth
+            const { data: freshRebuiltPhases, error: freshRebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+              p_project_id: currentProject.id
+            });
+            
+            if (!freshRebuildError && freshRebuiltPhases) {
+              const freshPhasesArray = Array.isArray(freshRebuiltPhases) ? freshRebuiltPhases : [];
+              const freshStandardPhases = freshPhasesArray.filter(p => isStandardPhase(p) && !p.isLinked);
+              
+              // Update displayPhases directly with database data (preserve order)
+              if (freshStandardPhases.length > 0) {
+                // Sort by order number but preserve database order positions
+                const sortedFreshPhases = [...freshStandardPhases].sort((a, b) => {
+                  const aOrder = typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 
+                                a.phaseOrderNumber === 'first' ? 0 : 
+                                a.phaseOrderNumber === 'last' ? 9999 : 0;
+                  const bOrder = typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 
+                                b.phaseOrderNumber === 'first' ? 0 : 
+                                b.phaseOrderNumber === 'last' ? 9999 : 0;
+                  return aOrder - bOrder;
+                });
+                
+                setDisplayPhases(sortedFreshPhases);
+                console.log('✅ Updated displayPhases from database (source of truth) after deletion:', {
+                  count: sortedFreshPhases.length,
+                  phases: sortedFreshPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+                });
+              }
+            }
+            
+            // Don't call refetchDynamicPhases - it may cause reordering
+            // The database is the source of truth, and we've already read from it above
+            console.log('✅ Read phases directly from database after deletion (database is source of truth)');
           } catch (error) {
             console.error('❌ Error updating phase order in database after deletion:', error);
             // Continue anyway - the JSON update will still work
@@ -4624,15 +4730,47 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         };
         updateProject(updatedProject);
         
-        // CRITICAL: For regular projects, refetch dynamic phases to ensure fresh data without deleted phase
-        // This prevents the deleted phase from reappearing when skipNextRefresh is cleared
-        // The refetch ensures useDynamicPhases returns fresh data without the deleted phase
+        // CRITICAL: For regular projects, read directly from database as source of truth
+        // Don't refetch useDynamicPhases - it may cause reordering
+        // Instead, read directly from database to get fresh data without deleted phase
         if (!isEditingStandardProject) {
-          console.log('🔄 Refetching dynamic phases after regular phase deletion');
+          console.log('🔄 Reading phases directly from database after regular phase deletion (source of truth)');
           // Wait a bit to ensure deletion has fully committed
           await new Promise(resolve => setTimeout(resolve, 300));
-          await refetchDynamicPhases();
-          console.log('✅ Dynamic phases refetched after regular phase deletion');
+          
+          // Read directly from database using get_project_workflow_with_standards
+          const { data: freshWorkflowPhases, error: freshWorkflowError } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
+            p_project_id: currentProject.id
+          });
+          
+          if (!freshWorkflowError && freshWorkflowPhases) {
+            const freshPhasesArray = Array.isArray(freshWorkflowPhases) ? freshWorkflowPhases : 
+                                    (typeof freshWorkflowPhases === 'string' ? JSON.parse(freshWorkflowPhases) : []);
+            
+            // Update displayPhases directly with database data (preserve order)
+            if (freshPhasesArray.length > 0) {
+              // Sort by order number but preserve database order positions
+              const sortedFreshPhases = [...freshPhasesArray].sort((a, b) => {
+                const aOrder = typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 
+                              a.phaseOrderNumber === 'first' ? 0 : 
+                              a.phaseOrderNumber === 'last' ? 9999 : 0;
+                const bOrder = typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 
+                              b.phaseOrderNumber === 'first' ? 0 : 
+                              b.phaseOrderNumber === 'last' ? 9999 : 0;
+                return aOrder - bOrder;
+              });
+              
+              setDisplayPhases(sortedFreshPhases);
+              console.log('✅ Updated displayPhases from database (source of truth) after regular deletion:', {
+                count: sortedFreshPhases.length,
+                phases: sortedFreshPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+              });
+            }
+          }
+          
+          // Don't call refetchDynamicPhases - it may cause reordering
+          // The database is the source of truth, and we've already read from it above
+          console.log('✅ Read phases directly from database after regular deletion (database is source of truth)');
         }
       }
 
