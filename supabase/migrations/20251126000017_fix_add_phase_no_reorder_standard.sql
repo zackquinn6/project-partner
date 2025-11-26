@@ -128,11 +128,11 @@ BEGIN
     IF v_existing_phase_count > 0 THEN
       -- Increment position_value for all existing last_minus_n phases
       -- This slides them forward to make room for the new phase at position_value = 1
-      UPDATE public.project_phases
-      SET position_value = position_value + 1,
+      UPDATE public.project_phases pp
+      SET position_value = pp.position_value + 1,
           updated_at = NOW()
-      WHERE project_id = p_project_id
-        AND position_rule = 'last_minus_n';
+      WHERE pp.project_id = p_project_id
+        AND pp.position_rule = 'last_minus_n';
       
       RAISE NOTICE 'Reordered % existing last_minus_n phases to make room for new phase', v_existing_phase_count;
     END IF;
@@ -236,9 +236,9 @@ BEGIN
     v_position_value
   )
   RETURNING 
-    project_phases.id,
-    project_phases.created_at,
-    project_phases.updated_at
+    id,
+    created_at,
+    updated_at
   INTO 
     v_new_phase_id,
     v_created_at,
