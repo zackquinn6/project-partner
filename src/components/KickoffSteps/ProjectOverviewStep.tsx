@@ -80,7 +80,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const displayEstimatedTotalTime = rawEstimatedTotalTime && typeof rawEstimatedTotalTime === 'string' 
     ? (rawEstimatedTotalTime.trim() || null)
     : (rawEstimatedTotalTime || null);
-  const displayTypicalProjectSize = templateProject?.typicalProjectSize || (templateProject as any)?.typical_project_size || null;
+  const rawTypicalProjectSize = templateProject?.typicalProjectSize || (templateProject as any)?.typical_project_size;
+  const displayTypicalProjectSize = rawTypicalProjectSize != null ? rawTypicalProjectSize : null;
   const displayProjectChallenges = currentProjectRun?.projectChallenges ?? templateProject?.projectChallenges;
   
   // Fetch scaling_unit and item_type directly from database
@@ -482,27 +483,44 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             <div>
               <Label className="text-sm">Estimated Time</Label>
               <div className="mt-2 space-y-2">
-                {/* Show both pieces of information together if both are available */}
-                {displayEstimatedTime && displayEstimatedTotalTime && displayTypicalProjectSize ? (
+                {/* Show both pieces of information together if we have estimatedTime and (estimatedTotalTime or typicalProjectSize) */}
+                {displayEstimatedTime && (displayEstimatedTotalTime || displayTypicalProjectSize) ? (
                   <div className="space-y-1">
+                    {/* Time per scaling unit */}
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs sm:text-sm">
                         {displayEstimatedTime}
                       </Badge>
-                      {formattedScalingUnit && (
+                      {formattedScalingUnit ? (
                         <span className="text-xs sm:text-sm text-muted-foreground capitalize">
                           {formattedScalingUnit}
                         </span>
+                      ) : (
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          per unit
+                        </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className="text-xs sm:text-sm">
-                        {displayEstimatedTotalTime}
-                      </Badge>
-                      <span className="text-xs sm:text-sm text-muted-foreground">
-                        for {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'} typical project size
-                      </span>
-                    </div>
+                    {/* Total time for typical project size */}
+                    {(displayEstimatedTotalTime || displayTypicalProjectSize) && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {displayEstimatedTotalTime && (
+                          <Badge variant="outline" className="text-xs sm:text-sm">
+                            {displayEstimatedTotalTime}
+                          </Badge>
+                        )}
+                        {displayTypicalProjectSize && (
+                          <span className="text-xs sm:text-sm text-muted-foreground">
+                            {displayEstimatedTotalTime ? 'for' : 'Typical size:'} {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'} typical project size
+                          </span>
+                        )}
+                        {displayEstimatedTotalTime && !displayTypicalProjectSize && (
+                          <span className="text-xs sm:text-sm text-muted-foreground">
+                            total time
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <>
@@ -512,9 +530,13 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                         <Badge variant="outline" className="text-xs sm:text-sm">
                           {displayEstimatedTime}
                         </Badge>
-                        {formattedScalingUnit && (
+                        {formattedScalingUnit ? (
                           <span className="text-xs sm:text-sm text-muted-foreground capitalize">
                             {formattedScalingUnit}
+                          </span>
+                        ) : (
+                          <span className="text-xs sm:text-sm text-muted-foreground">
+                            per unit
                           </span>
                         )}
                       </div>
