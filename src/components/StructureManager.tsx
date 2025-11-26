@@ -1201,7 +1201,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     // Add 'First' only if not reserved by a standard phase
-    if (!reservedByStandardPhases.has('First')) {
+    const hasFirstOption = !reservedByStandardPhases.has('First');
+    if (hasFirstOption) {
       options.push('First');
     }
     
@@ -1227,6 +1228,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // CRITICAL: If 'first' is reserved by a standard phase, also exclude position 1
       // Position 1 is the same as 'first', so it should be reserved
       if (!isEditingStandardProject && reservedByStandardPhases.has('First') && i === 1) {
+        continue;
+      }
+      // CRITICAL: In Edit Standard mode, if 'First' is available, exclude position 1
+      // 'First' and position 1 are the same position, so only show one
+      if (isEditingStandardProject && hasFirstOption && i === 1) {
         continue;
       }
       // CRITICAL: If 'last' is reserved by a standard phase, also exclude the last numeric position
