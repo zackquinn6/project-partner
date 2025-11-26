@@ -4786,12 +4786,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                            <Collapsible open={expandedPhases.has(phase.id)}>
                              <CollapsibleContent>
                                <CardContent>
-                              <div className="flex items-center gap-2 mb-4">
+                              {/* Only show Add Operation button if phase is not standard OR we're editing Standard Project */}
+                              {(!phaseIsStandard || isEditingStandardProject) && !phase.isLinked && (
+                                <div className="flex items-center gap-2 mb-4">
                                   <Button size="sm" onClick={() => addOperation(phase.id)} className="flex items-center gap-2">
                                     <Plus className="w-3 h-3" />
                                     Add Operation
                                   </Button>
-                              </div>
+                                </div>
+                              )}
                             
                             <div className="space-y-3">
                               {phase.operations.map((operation, operationIndex) => {
@@ -4805,7 +4808,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                             <CardHeader className="pb-3">
                                               <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3 flex-1">
-                                                  {!phase.isLinked && (
+                                                  {/* Only show move buttons if operation is not standard OR we're editing Standard Project */}
+                                                  {!phase.isLinked && (!operation.isStandard || isEditingStandardProject) && (
                                                     <div className="flex flex-col gap-0.5">
                                                       <Button
                                                         variant="ghost"
@@ -4879,12 +4883,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                              <X className="w-3 h-3" />
                                                            </Button>
                                                          </> : <>
-                                                           <Button size="sm" variant="ghost" onClick={() => startEdit('operation', operation.id, operation)}>
-                                                             <Edit className="w-3 h-3" />
-                                                           </Button>
-                                                           {phase.name !== 'Close Project' && <Button size="sm" variant="ghost" onClick={() => deleteOperation(phase.id, operation.id)}>
-                                                               <Trash2 className="w-3 h-3" />
-                                                             </Button>}
+                                                           {/* Only show edit/delete buttons if operation is not standard OR we're editing Standard Project */}
+                                                           {(!operation.isStandard || isEditingStandardProject) && (
+                                                             <>
+                                                               <Button size="sm" variant="ghost" onClick={() => startEdit('operation', operation.id, operation)}>
+                                                                 <Edit className="w-3 h-3" />
+                                                               </Button>
+                                                               {phase.name !== 'Close Project' && <Button size="sm" variant="ghost" onClick={() => deleteOperation(phase.id, operation.id)}>
+                                                                   <Trash2 className="w-3 h-3" />
+                                                                 </Button>}
+                                                             </>
+                                                           )}
                                                          </>}
                                                      </>}
                                                  </div>
@@ -4894,12 +4903,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                              <Collapsible open={expandedOperations.has(operation.id)}>
                                                <CollapsibleContent>
                                                  <CardContent className="pt-0">
-                                               {!phase.isLinked && <div className="flex items-center gap-2 mb-3">
-                                                 <Button size="sm" variant="outline" onClick={() => addStep(phase.id, operation.id)} className="flex items-center gap-1 text-xs">
-                                                   <Plus className="w-3 h-3" />
-                                                   Add Step
-                                                 </Button>
-                                               </div>}
+                                               {/* Only show Add Step button if operation is not standard OR we're editing Standard Project */}
+                                               {!phase.isLinked && (!operation.isStandard || isEditingStandardProject) && (
+                                                 <div className="flex items-center gap-2 mb-3">
+                                                   <Button size="sm" variant="outline" onClick={() => addStep(phase.id, operation.id)} className="flex items-center gap-1 text-xs">
+                                                     <Plus className="w-3 h-3" />
+                                                     Add Step
+                                                   </Button>
+                                                 </div>
+                                               )}
                                               
                                               <div className="space-y-2">
                                                 {operation.steps.map((step, stepIndex) => {
@@ -5014,25 +5026,29 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                                <X className="w-3 h-3" />
                                                              </Button>
                                                             </> : <>
-                                                              
-                                                              <Button size="sm" variant="ghost" onClick={() => startEdit('step', step.id, step)}>
-                                                                <Edit className="w-3 h-3" />
-                                                              </Button>
-                                                              
-                                                              {!step.isStandard && <Button size="sm" variant="ghost" onClick={() => copyItem('step', step)}>
-                                                                <Copy className="w-3 h-3" />
-                                                              </Button>}
-                                                              
-                                                              {clipboard?.type === 'step' && !step.isStandard && <Button size="sm" variant="ghost" onClick={() => pasteItem('step', {
-                                                                phaseId: phase.id,
-                                                                operationId: operation.id
-                                                              })}>
-                                                                  <Clipboard className="w-3 h-3" />
-                                                                </Button>}
-                                                              
-                                                              <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)}>
-                                                                 <Trash2 className="w-3 h-3" />
-                                                               </Button>
+                                                              {/* Only show edit/delete buttons if step is not standard OR we're editing Standard Project */}
+                                                              {(!step.isStandard || isEditingStandardProject) && (
+                                                                <>
+                                                                  <Button size="sm" variant="ghost" onClick={() => startEdit('step', step.id, step)}>
+                                                                    <Edit className="w-3 h-3" />
+                                                                  </Button>
+                                                                  
+                                                                  {!step.isStandard && <Button size="sm" variant="ghost" onClick={() => copyItem('step', step)}>
+                                                                    <Copy className="w-3 h-3" />
+                                                                  </Button>}
+                                                                  
+                                                                  {clipboard?.type === 'step' && !step.isStandard && <Button size="sm" variant="ghost" onClick={() => pasteItem('step', {
+                                                                    phaseId: phase.id,
+                                                                    operationId: operation.id
+                                                                  })}>
+                                                                      <Clipboard className="w-3 h-3" />
+                                                                    </Button>}
+                                                                  
+                                                                  <Button size="sm" variant="ghost" onClick={() => deleteStep(phase.id, operation.id, step.id)}>
+                                                                   <Trash2 className="w-3 h-3" />
+                                                                 </Button>
+                                                                </>
+                                                              )}
                                                            </>)}
                                                                   </div>
                                                                 </div>
