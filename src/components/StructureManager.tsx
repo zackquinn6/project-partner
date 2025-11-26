@@ -2091,6 +2091,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       if (isNaN(targetPosition) || targetPosition < 1 || targetPosition > displayPhases.length) {
         console.error('❌ Invalid target position:', targetPosition, 'from newOrder:', newOrder);
         toast.error('Invalid position selected');
+        setIsChangingPhaseOrder(false);
+        setSkipNextRefresh(false);
         return;
       }
       
@@ -2100,6 +2102,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       if (currentIndex === -1) {
         console.error('❌ Phase not found in displayPhases:', phaseId);
+        setIsChangingPhaseOrder(false);
+        setSkipNextRefresh(false);
         return;
       }
       
@@ -2123,8 +2127,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Update display immediately (optimistic UI update)
       setDisplayPhases(reorderedPhases);
     
-    // CRITICAL: Immediately commit to database
-    try {
+      // CRITICAL: Immediately commit to database
       // Update all phases in database with new positions
       const updatePromises: Promise<any>[] = [];
       
@@ -2177,11 +2180,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               positionValue = i + 1; // Sequential position
             } else if (existingRule === 'last_minus_n') {
               const distanceFromLast = reorderedPhases.length - i - 1;
-            positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
-          } else {
+              positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
+            } else {
               positionValue = null;
-          }
-        } else {
+            }
+          } else {
             // Custom phases: use last_minus_n
             if (i === 0) {
               positionRule = 'first';
