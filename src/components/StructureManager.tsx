@@ -1134,6 +1134,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                       if (phase.id && (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null || phase.phaseOrderNumber === '')) {
                         const positionData = positionMap.get(phase.id);
                         if (positionData) {
+                          // Derive numeric order position from position_rule and position_value
+                          // getPhaseOrderNumber will convert 1 to 'First' and last position to 'Last' for display
                           if (positionData.position_rule === 'first') {
                             phase.phaseOrderNumber = 1;
                           } else if (positionData.position_rule === 'last') {
@@ -1152,7 +1154,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                             id: phase.id,
                             position_rule: positionData.position_rule,
                             position_value: positionData.position_value,
-                            derivedOrder: phase.phaseOrderNumber
+                            derivedOrder: phase.phaseOrderNumber,
+                            derivedOrderType: typeof phase.phaseOrderNumber
                           });
                         }
                       }
@@ -1478,8 +1481,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       if (phase.phaseOrderNumber === 'first') return 'First';
       if (phase.phaseOrderNumber === 'last') return 'Last';
       if (typeof phase.phaseOrderNumber === 'number') {
-      return phase.phaseOrderNumber;
-    }
+        // CRITICAL: Convert numeric positions to 'First'/'Last' for display if appropriate
+        // This ensures the dropdown shows the correct value even when phaseOrderNumber is a number
+        if (phase.phaseOrderNumber === 1) {
+          return 'First';
+        } else if (phase.phaseOrderNumber === totalPhases) {
+          return 'Last';
+        }
+        return phase.phaseOrderNumber;
+      }
     }
     
     // CRITICAL: If phase is missing order position, assign it based on current position
