@@ -2414,16 +2414,74 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       // THEN assign order numbers based on the correct order
-      // CRITICAL: In Edit Standard mode, preserve the order number we just set for the new phase
+      // CRITICAL: Use positionRule/positionValue from database when available
+      // This ensures phases respect their database position rules instead of array index
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
       
-      // CRITICAL: Ensure ALL phases have order numbers assigned
-      // This prevents blank dropdown menus after adding a new phase
+      // CRITICAL: Map positionRule/positionValue to phaseOrderNumber
+      // This ensures the database position rules are respected in the UI
       phasesWithUniqueOrder.forEach((phase, index) => {
-        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
-          // Assign order number based on position
-          if (index === 0) {
+        // First, try to use positionRule/positionValue from database if available
+        const positionRule = (phase as any).positionRule || (phase as any).position_rule;
+        const positionValue = (phase as any).positionValue || (phase as any).position_value;
+        
+        if (positionRule) {
+          // Map positionRule to phaseOrderNumber
+          if (positionRule === 'first') {
             phase.phaseOrderNumber = 'first';
+          } else if (positionRule === 'last') {
+            phase.phaseOrderNumber = 'last';
+          } else if (positionRule === 'nth' && positionValue !== undefined && positionValue !== null) {
+            // For 'nth', use the position_value as the order number
+            // BUT: position_value = 1 is equivalent to 'first', which is reserved for standard phases
+            // So custom phases should never get position_value = 1
+            if (positionValue === 1 && !isStandardPhase(phase)) {
+              console.error('❌ ERROR: Custom phase has position_value = 1, which is reserved for standard "Kickoff" phase!', {
+                phaseName: phase.name,
+                phaseId: phase.id,
+                positionRule,
+                positionValue
+              });
+              // Don't assign 'first' to custom phases - use a safe fallback
+              phase.phaseOrderNumber = index + 1;
+            } else {
+              phase.phaseOrderNumber = positionValue;
+            }
+          } else if (positionRule === 'last_minus_n' && positionValue !== undefined && positionValue !== null) {
+            // For 'last_minus_n', calculate the position from the end
+            // If there are N total phases and position_value = 1, the phase should be at position N-1
+            const totalPhases = phasesWithUniqueOrder.length;
+            const calculatedPosition = totalPhases - positionValue;
+            // Ensure it's not less than 1 (which would conflict with 'first')
+            if (calculatedPosition <= 1 && !isStandardPhase(phase)) {
+              console.warn('⚠️ Calculated position for last_minus_n would conflict with first position:', {
+                phaseName: phase.name,
+                calculatedPosition,
+                totalPhases,
+                positionValue
+              });
+              phase.phaseOrderNumber = Math.max(2, calculatedPosition); // Use at least position 2
+            } else {
+              phase.phaseOrderNumber = calculatedPosition;
+            }
+          }
+        }
+        
+        // If phaseOrderNumber is still undefined, assign based on index (fallback)
+        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+          // CRITICAL: Never assign position 1 or 'first' to custom phases
+          // Position 1 is reserved for the standard "Kickoff" phase
+          if (index === 0) {
+            // Check if first position is already taken by a standard phase
+            const hasStandardFirst = phasesWithUniqueOrder.some(p => 
+              isStandardPhase(p) && !p.isLinked && (p.phaseOrderNumber === 'first' || p.phaseOrderNumber === 1)
+            );
+            if (hasStandardFirst || !isStandardPhase(phase) || phase.isLinked) {
+              // Don't assign 'first' to custom phases or if standard phase already has it
+              phase.phaseOrderNumber = index + 1;
+            } else {
+              phase.phaseOrderNumber = 'first';
+            }
           } else if (index === phasesWithUniqueOrder.length - 1) {
             // Check if this should be 'last' (only if it's a standard phase in regular projects)
             if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
@@ -2434,11 +2492,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           } else {
             phase.phaseOrderNumber = index + 1;
           }
-          console.log('🔧 Assigned missing order number to phase:', {
+          console.log('🔧 Assigned missing order number to phase (fallback):', {
             phaseName: phase.name,
             phaseId: phase.id,
             assignedOrder: phase.phaseOrderNumber,
-            index
+            index,
+            positionRule,
+            positionValue
+          });
+        } else {
+          console.log('✅ Using database position rule for phase:', {
+            phaseName: phase.name,
+            phaseId: phase.id,
+            phaseOrderNumber: phase.phaseOrderNumber,
+            positionRule,
+            positionValue
           });
         }
       });

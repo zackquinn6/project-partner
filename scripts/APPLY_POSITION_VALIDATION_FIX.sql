@@ -92,12 +92,21 @@ BEGIN
     -- This places the new phase before the "Close Project" phase (which has position_rule = 'last')
     -- The position can be edited after creation
     -- CRITICAL: Never allow custom phases to use 'last' position - it's reserved for standard "Close Project" phase
+    -- CRITICAL: Never allow custom phases to use 'first' or 'nth' with value 1 - reserved for standard "Kickoff" phase
     v_position_rule := 'last_minus_n';
     v_position_value := 1;
     
-    -- CRITICAL: Explicitly prevent 'last' position for custom phases
+    -- CRITICAL: Explicitly prevent reserved positions for custom phases
     IF v_position_rule = 'last' THEN
       RAISE EXCEPTION 'Position "last" is reserved for the standard "Close Project" phase and cannot be used by custom phases';
+    END IF;
+    
+    IF v_position_rule = 'first' THEN
+      RAISE EXCEPTION 'Position "first" is reserved for the standard "Kickoff" phase and cannot be used by custom phases';
+    END IF;
+    
+    IF v_position_rule = 'nth' AND v_position_value = 1 THEN
+      RAISE EXCEPTION 'Position "nth" with position_value = 1 is reserved for the standard "Kickoff" phase and cannot be used by custom phases';
     END IF;
     
     -- Check if this position is already taken by another custom phase in this project
