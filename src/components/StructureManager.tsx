@@ -100,6 +100,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [skipNextRefresh, setSkipNextRefresh] = useState(false);
   // CRITICAL: Track verified phase IDs for standard projects to filter out deleted phases
   const [verifiedPhaseIds, setVerifiedPhaseIds] = useState<Set<string>>(new Set());
+  // CRITICAL: Use ref to prevent infinite loops from updateProject triggering re-renders
+  const isUpdatingProjectRef = React.useRef(false);
+  const lastSavedPhasesRef = React.useRef<string>('');
 
   // Collapsible state
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -981,9 +984,63 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const validationResult = validateAndFixPhaseOrderNumbers(orderedPhases);
       const validatedPhases = validationResult.phases;
       
-      // CRITICAL: After validation, restore preserved order numbers to ensure they're not overwritten
-      // This ensures saved order numbers persist even after validation
+      // CRITICAL: After validation, check for duplicates and fix them
+      // Re-run duplicate detection to catch any remaining duplicates after validation
+      const finalOrderNumberUsage = new Map<string | number, Phase[]>();
+      validatedPhases.forEach(phase => {
+        const order = phase.phaseOrderNumber;
+        if (order !== undefined && order !== null) {
+          if (!finalOrderNumberUsage.has(order)) {
+            finalOrderNumberUsage.set(order, []);
+          }
+          finalOrderNumberUsage.get(order)!.push(phase);
+        }
+      });
+      
+      // Collect reserved positions again for duplicate fixing
+      const reservedForDuplicates = new Set<string | number>();
+      if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+        standardProjectPhases.forEach(phase => {
+          const orderNumber = phase.phaseOrderNumber;
+          if (orderNumber !== undefined && orderNumber !== null) {
+            reservedForDuplicates.add(orderNumber);
+            if (orderNumber === 'first' || orderNumber === 'First') {
+              reservedForDuplicates.add(1);
+            } else if (orderNumber === 'last' || orderNumber === 'Last') {
+              reservedForDuplicates.add(validatedPhases.length);
+            }
+          }
+        });
+      }
+      
+      // Fix duplicates: keep preserved order for first occurrence, reassign others
       const validatedPhasesWithPreservedOrder = validatedPhases.map(phase => {
+        const order = phase.phaseOrderNumber;
+        if (order !== undefined && order !== null) {
+          const phasesWithSameOrder = finalOrderNumberUsage.get(order) || [];
+          if (phasesWithSameOrder.length > 1) {
+            // This is a duplicate - check if this phase has a preserved order
+            const preservedOrder = preservedOrderNumbers.get(phase.id);
+            const isFirstDuplicate = phasesWithSameOrder[0].id === phase.id;
+            
+            if (isFirstDuplicate && preservedOrder === order) {
+              // First duplicate with preserved order - keep it
+              return phase;
+            } else if (!isFirstDuplicate) {
+              // Not the first duplicate - reassign
+              // Find next available number
+              let candidateNumber = 1;
+              const allUsedOrders = new Set(validatedPhases.map(p => p.phaseOrderNumber).filter(o => o !== undefined && o !== null));
+              while (allUsedOrders.has(candidateNumber) || reservedForDuplicates.has(candidateNumber)) {
+                candidateNumber++;
+                if (candidateNumber > validatedPhases.length + 10) break;
+              }
+              return { ...phase, phaseOrderNumber: candidateNumber as number | 'first' | 'last' };
+            }
+          }
+        }
+        
+        // Not a duplicate - check if we should restore preserved order
         const preservedOrder = preservedOrderNumbers.get(phase.id);
         if (preservedOrder !== undefined) {
           // Only restore if validation didn't fix a conflict
@@ -992,7 +1049,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             issue.includes(phase.name) || issue.includes(phase.id || '')
           );
           if (!wasConflict) {
-            return { ...phase, phaseOrderNumber: preservedOrder };
+            return { ...phase, phaseOrderNumber: preservedOrder as number | 'first' | 'last' };
           }
         }
         return phase;
@@ -1007,33 +1064,47 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // CRITICAL: Persist validation fixes to database
         // This ensures the backend database is properly updated for all phases
         // BUT: Use validatedPhasesWithPreservedOrder to ensure saved order numbers are preserved
-        if (currentProject && validatedPhasesWithPreservedOrder.length > 0) {
+        // CRITICAL: Only update if we're not already updating to prevent infinite loops
+        if (currentProject && validatedPhasesWithPreservedOrder.length > 0 && !isUpdatingProjectRef.current) {
           // Sort phases by order number before saving
           const sortedValidatedPhases = sortPhasesByOrderNumber(validatedPhasesWithPreservedOrder);
           
-          // Update project JSON with validated phases
-          const updatedProject = {
-            ...currentProject,
-            phases: sortedValidatedPhases,
-            updatedAt: new Date()
-          };
+          // Create a hash of the phases to compare with last saved
+          const phasesHash = JSON.stringify(sortedValidatedPhases.map(p => ({ id: p.id, order: p.phaseOrderNumber })));
           
-          // Update project context (this saves to database via updateProject)
-          updateProject(updatedProject);
-          
-          // CRITICAL: Also update database project_phases table for Standard Project Foundation
-          // For regular projects, the JSON update is sufficient, but for Standard Project Foundation
-          // we need to update position_rule/position_value in the database
-          if (isEditingStandardProject) {
-            // Use setTimeout to avoid state update during render
-            setTimeout(async () => {
-              try {
-                await updatePhaseOrder(sortedValidatedPhases);
-                console.log('✅ Phase order validation fixes persisted to database');
-              } catch (error) {
-                console.error('❌ Error persisting validation fixes to database:', error);
-              }
-            }, 100);
+          // Only update if phases actually changed
+          if (phasesHash !== lastSavedPhasesRef.current) {
+            isUpdatingProjectRef.current = true;
+            lastSavedPhasesRef.current = phasesHash;
+            
+            // Update project JSON with validated phases
+            const updatedProject = {
+              ...currentProject,
+              phases: sortedValidatedPhases,
+              updatedAt: new Date()
+            };
+            
+            // Update project context (this saves to database via updateProject)
+            // Use setTimeout to break the render cycle
+            setTimeout(() => {
+              updateProject(updatedProject);
+              isUpdatingProjectRef.current = false;
+            }, 0);
+            
+            // CRITICAL: Also update database project_phases table for Standard Project Foundation
+            // For regular projects, the JSON update is sufficient, but for Standard Project Foundation
+            // we need to update position_rule/position_value in the database
+            if (isEditingStandardProject) {
+              // Use setTimeout to avoid state update during render
+              setTimeout(async () => {
+                try {
+                  await updatePhaseOrder(sortedValidatedPhases);
+                  console.log('✅ Phase order validation fixes persisted to database');
+                } catch (error) {
+                  console.error('❌ Error persisting validation fixes to database:', error);
+                }
+              }, 100);
+            }
           }
         }
       }
@@ -1411,26 +1482,43 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       });
       
       if (phasesChanged || orderNumbersChanged) {
-        console.log('🔧 updateProject called: phases or order numbers changed', {
-          projectId: currentProject.id,
-          oldCount: currentProject.phases?.length || 0,
-          newCount: phasesToDisplay.length,
-          orderNumbersChanged
-        });
-        // CRITICAL: Explicitly include phaseOrderNumber in all phases before saving
-        const phasesWithOrderNumbers = phasesToDisplay.map(phase => ({
-          ...phase,
-          phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
-        }));
-        
-        updateProject({
-          ...currentProject,
-          phases: phasesWithOrderNumbers,
-          updatedAt: new Date()
-        });
+        // CRITICAL: Only update if we're not already updating to prevent infinite loops
+        if (!isUpdatingProjectRef.current) {
+          // Create a hash of the phases to compare with last saved
+          const phasesHash = JSON.stringify(phasesToDisplay.map(p => ({ id: p.id, order: p.phaseOrderNumber })));
+          
+          // Only update if phases actually changed
+          if (phasesHash !== lastSavedPhasesRef.current) {
+            isUpdatingProjectRef.current = true;
+            lastSavedPhasesRef.current = phasesHash;
+            
+            console.log('🔧 updateProject called: phases or order numbers changed', {
+              projectId: currentProject.id,
+              oldCount: currentProject.phases?.length || 0,
+              newCount: phasesToDisplay.length,
+              orderNumbersChanged
+            });
+            
+            // CRITICAL: Explicitly include phaseOrderNumber in all phases before saving
+            const phasesWithOrderNumbers = phasesToDisplay.map(phase => ({
+              ...phase,
+              phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
+            }));
+            
+            // Use setTimeout to break the render cycle
+            setTimeout(() => {
+              updateProject({
+                ...currentProject,
+                phases: phasesWithOrderNumbers,
+                updatedAt: new Date()
+              });
+              isUpdatingProjectRef.current = false;
+            }, 0);
+          }
+        }
       }
     }
-  }, [processedPhases, rebuildingPhases, currentProject?.id, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId, skipNextRefresh, isAddingPhase, isDeletingPhase, phaseToDelete]);
+  }, [rebuildingPhases, currentProject?.id, currentProject?.phases, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId, skipNextRefresh, isAddingPhase, isDeletingPhase, phaseToDelete, displayPhases.length]);
 
   // CRITICAL: Verify phases exist in database for standard projects
   // This prevents deleted phases from appearing after page refresh
