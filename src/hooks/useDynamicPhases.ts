@@ -19,6 +19,9 @@ export function useDynamicPhases(projectId: string | undefined) {
       return;
     }
 
+    // CRITICAL: Don't clear phases when starting a new fetch
+    // This prevents standard phases from disappearing during refetch
+    // Only set loading to true, keep existing phases visible
     setLoading(true);
     setError(null);
 
@@ -61,11 +64,19 @@ export function useDynamicPhases(projectId: string | undefined) {
         phases: parsedPhases
       });
       
-      setPhases(parsedPhases);
+      // Only update phases if we got valid data
+      // This ensures standard phases remain visible even if the fetch fails
+      if (parsedPhases.length > 0) {
+        setPhases(parsedPhases);
+      }
+      // If parsedPhases is empty but we had previous phases, keep the previous phases
+      // This prevents standard phases from disappearing during refetch
     } catch (err) {
       console.error('Failed to fetch dynamic phases:', err);
       setError(err instanceof Error ? err : new Error('Failed to fetch phases'));
-      setPhases([]);
+      // Don't clear phases on error - keep existing phases visible
+      // Only clear if we have no previous phases
+      setPhases(prevPhases => prevPhases.length > 0 ? prevPhases : []);
     } finally {
       setLoading(false);
     }

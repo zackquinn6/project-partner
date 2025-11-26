@@ -368,6 +368,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         return standardPhasesOnly;
       }
       
+      // CRITICAL: For regular projects, if rebuiltPhases is empty but we're loading,
+      // return empty array to prevent showing stale data
+      // But if we have rebuiltPhases, use them
       return fallbackPhases;
     }
     
@@ -382,6 +385,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const rebuiltPhasesFiltered = phaseToDelete && rebuiltPhases
       ? rebuiltPhases.filter(p => p.id !== phaseToDelete)
       : rebuiltPhases;
+    
+    // CRITICAL: Always include standard phases from currentProject.phases even if rebuiltPhases is empty
+    // This prevents standard phases from disappearing during refetch
+    // Extract standard phases from currentProject.phases to ensure they're always visible
+    // For regular projects (not editing standard), standard phases come from get_project_workflow_with_standards
+    // but we should preserve them from currentProject.phases during refetch
+    const standardPhasesFromCurrent = !isEditingStandardProject 
+      ? currentPhasesFiltered.filter(p => isStandardPhase(p) && !p.isLinked)
+      : [];
     
     // If we have rebuilt phases, merge them with currentProject.phases to preserve correct isStandard flags
     // Use rebuiltPhasesFiltered to ensure deleted phase doesn't reappear
@@ -515,8 +527,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       });
       
       // Combine: merged rebuilt phases (with corrected isStandard) + phases only in JSON
-      // CRITICAL: If we just added a phase, preserve the order from currentProject.phases
-      // This prevents reordering after refetch
+      // CRITICAL: Always include standard phases from currentProject.phases to prevent them from disappearing
+      // during refetch. Merge standard phases that might not be in rebuiltPhases yet.
       let combinedPhases: Phase[];
       if (justAddedPhaseId) {
         // Create a map of phases by ID for quick lookup
@@ -535,9 +547,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         combinedPhases = [...orderedPhases, ...remainingPhases];
       } else {
         // CRITICAL: Filter out deleted phase from combined phases
-        combinedPhases = phaseToDelete
+        // Also ensure standard phases from currentProject are included even if not in rebuiltPhases
+        const basePhases = phaseToDelete
           ? [...mergedRebuiltPhases, ...phasesOnlyInJson].filter(p => p.id !== phaseToDelete)
           : [...mergedRebuiltPhases, ...phasesOnlyInJson];
+        
+        // Add standard phases from currentProject that might not be in rebuiltPhases yet
+        // This prevents standard phases from disappearing during refetch
+        const existingPhaseIds = new Set(basePhases.map(p => p.id));
+        const missingStandardPhases = standardPhasesFromCurrent.filter(p => 
+          !existingPhaseIds.has(p.id)
+        );
+        
+        combinedPhases = [...basePhases, ...missingStandardPhases];
       }
       
       // CRITICAL: In Edit Standard mode, filter to ONLY standard phases
@@ -2242,23 +2264,50 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         console.warn('⚠️ Could not find newly added phase to update is_standard flag:', phaseQueryError);
       }
 
-      // Rebuild phases JSON from relational data
-      const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-        p_project_id: currentProject.id
-      });
+      // CRITICAL: For regular projects, use get_project_workflow_with_standards to include standard phases
+      // For Standard Project Foundation, use rebuild_phases_json_from_project_phases
+      let rebuiltPhasesArray: Phase[] = [];
+      if (isEditingStandardProject) {
+        // For Standard Project Foundation, rebuild from project_phases table
+        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+          p_project_id: currentProject.id
+        });
 
-      if (rebuildError) {
-        console.error('❌ Error rebuilding phases:', rebuildError);
-        throw rebuildError;
+        if (rebuildError) {
+          console.error('❌ Error rebuilding phases:', rebuildError);
+          throw rebuildError;
+        }
+        
+        rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+      } else {
+        // For regular projects, use get_project_workflow_with_standards to get all phases (standard + custom)
+        // This prevents standard phases from disappearing during refresh
+        const { data: workflowPhases, error: workflowError } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
+          p_project_id: currentProject.id
+        });
+
+        if (workflowError) {
+          console.error('❌ Error getting workflow with standards:', workflowError);
+          throw workflowError;
+        }
+        
+        // Parse the result
+        if (workflowPhases) {
+          if (typeof workflowPhases === 'string') {
+            rebuiltPhasesArray = JSON.parse(workflowPhases);
+          } else if (Array.isArray(workflowPhases)) {
+            rebuiltPhasesArray = workflowPhases;
+          }
+        }
       }
       
       console.log('✅ Rebuilt phases:', {
-        count: Array.isArray(rebuiltPhases) ? rebuiltPhases.length : 0,
-        phases: rebuiltPhases
+        count: rebuiltPhasesArray.length,
+        phases: rebuiltPhasesArray,
+        isEditingStandardProject
       });
 
       // Merge with any incorporated phases from current project (they're not in project_phases table)
-      const rebuiltPhasesArray = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
       const currentPhases = currentProject.phases || [];
       const incorporatedPhases = currentPhases.filter(p => p.isLinked);
       const allPhases = [...rebuiltPhasesArray, ...incorporatedPhases];
@@ -2334,6 +2383,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       } else {
         // For regular projects, apply enforceStandardPhaseOrdering using Standard Project Foundation order
         orderedPhases = enforceStandardPhaseOrdering(rawPhases, standardProjectPhases);
+        
+        // CRITICAL: Verify that the newly added phase is positioned correctly (last_minus_n, not last)
+        // Find the newly added phase
+        const newPhase = orderedPhases.find(p => 
+          p.name === uniquePhaseName || (addedPhaseId && p.id === addedPhaseId)
+        );
+        if (newPhase) {
+          // Find the standard "Close Project" phase (should be last)
+          // Check both phaseOrderNumber (UI ordering) and any positionRule from database
+          const lastStandardPhaseIndex = orderedPhases.findIndex(p => 
+            isStandardPhase(p) && !p.isLinked && (p.phaseOrderNumber === 'last' || (p as any).positionRule === 'last')
+          );
+          if (lastStandardPhaseIndex !== -1) {
+            // Find the new phase index
+            const newPhaseIndex = orderedPhases.findIndex(p => p.id === newPhase.id);
+            // If new phase is at or after the last phase, move it before
+            if (newPhaseIndex >= lastStandardPhaseIndex) {
+              // Remove new phase and insert it before the last phase
+              orderedPhases.splice(newPhaseIndex, 1);
+              orderedPhases.splice(lastStandardPhaseIndex, 0, newPhase);
+              console.log('🔧 Repositioned new phase to last_minus_n (before Close Project):', {
+                phaseName: newPhase.name,
+                oldIndex: newPhaseIndex,
+                newIndex: lastStandardPhaseIndex
+              });
+            }
+          }
+        }
       }
       
       // THEN assign order numbers based on the correct order
@@ -3217,18 +3294,60 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         console.log('✅ Dynamic phases refetched after incorporated phase deletion');
       } else {
         // For regular phases, delete from database tables
-        // Find the project_phases record by name (since UI phase IDs are different from DB IDs)
-        const { data: projectPhase } = await supabase
-          .from('project_phases')
-          .select('id')
-          .eq('project_id', currentProject.id)
-          .eq('id', phaseIdToDelete)
-          .single();
-
-        if (!projectPhase) {
-          toast.error('Phase not found in database');
+        // CRITICAL: Find the project_phases record by name OR ID
+        // UI phase IDs might match DB IDs, but we should try both to be safe
+        const phase = displayPhases.find(p => p.id === phaseIdToDelete);
+        const phaseName = phase?.name;
+        
+        if (!phaseName) {
+          console.error('❌ Could not find phase name for deletion:', { phaseIdToDelete });
+          toast.error('Phase not found');
           return;
         }
+        
+        // Try to find by ID first (most reliable if IDs match)
+        let { data: projectPhase, error: findError } = await supabase
+          .from('project_phases')
+          .select('id, name')
+          .eq('project_id', currentProject.id)
+          .eq('id', phaseIdToDelete)
+          .maybeSingle();
+
+        // If not found by ID, try by name (fallback)
+        if (!projectPhase && !findError) {
+          console.log('🔍 Phase not found by ID, trying by name:', { phaseName, phaseIdToDelete });
+          const { data: projectPhaseByName, error: findByNameError } = await supabase
+            .from('project_phases')
+            .select('id, name')
+            .eq('project_id', currentProject.id)
+            .eq('name', phaseName)
+            .maybeSingle();
+          
+          if (projectPhaseByName) {
+            projectPhase = projectPhaseByName;
+            console.log('✅ Found phase by name:', { phaseId: projectPhase.id, phaseName: projectPhase.name });
+          } else if (findByNameError) {
+            console.error('❌ Error finding phase by name:', findByNameError);
+            findError = findByNameError;
+          }
+        }
+
+        if (!projectPhase) {
+          console.error('❌ Phase not found in database:', { 
+            phaseIdToDelete, 
+            phaseName, 
+            projectId: currentProject.id,
+            findError 
+          });
+          toast.error(`Phase "${phaseName}" not found in database`);
+          return;
+        }
+        
+        console.log('✅ Found phase to delete:', { 
+          dbPhaseId: projectPhase.id, 
+          phaseName: projectPhase.name,
+          uiPhaseId: phaseIdToDelete 
+        });
 
         // Delete from database - get operations first
         const { data: operations } = await supabase
@@ -3269,11 +3388,46 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Verify deletion succeeded
         if (!deleteResult || deleteResult.length === 0) {
           console.warn('⚠️ Phase deletion returned no rows - phase may not have existed');
+          // Check if phase still exists in database
+          const { data: verifyPhase, error: verifyError } = await supabase
+            .from('project_phases')
+            .select('id, name')
+            .eq('id', projectPhase.id)
+            .single();
+          
+          if (verifyPhase && !verifyError) {
+            console.error('❌ Phase still exists in database after deletion attempt!', {
+              phaseId: projectPhase.id,
+              phaseName: verifyPhase.name
+            });
+            toast.error(`Failed to delete phase "${verifyPhase.name}" - phase still exists in database`);
+            throw new Error('Phase deletion failed - phase still exists in database');
+          } else {
+            console.log('✅ Phase verified as deleted (not found in database)');
+          }
         } else {
           console.log('✅ Phase permanently deleted from database:', {
             phaseId: projectPhase.id,
-            deletedRows: deleteResult.length
+            deletedRows: deleteResult.length,
+            deletedPhaseName: deleteResult[0]?.name
           });
+          
+          // Double-check: Verify phase is actually gone
+          const { data: doubleCheck } = await supabase
+            .from('project_phases')
+            .select('id')
+            .eq('id', projectPhase.id)
+            .single();
+          
+          if (doubleCheck) {
+            console.error('❌ CRITICAL: Phase still exists after deletion!', {
+              phaseId: projectPhase.id
+            });
+            toast.error('Phase deletion failed - phase still exists');
+            throw new Error('Phase deletion verification failed');
+          } else {
+            console.log('✅ Phase deletion verified - phase no longer exists in database');
+          }
         }
 
         // CRITICAL: Preserve order numbers from displayPhases BEFORE deletion
@@ -3301,10 +3455,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // This prevents the deleted phase from reappearing in the rebuilt phases
         await new Promise(resolve => setTimeout(resolve, 200));
         
-        // Rebuild phases JSON - this will NOT include the deleted phase since it's gone from project_phases
-        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-          p_project_id: currentProject.id
-        });
+        // CRITICAL: For regular projects, use get_project_workflow_with_standards to include standard phases
+        // For Standard Project Foundation, use rebuild_phases_json_from_project_phases
+        let rebuiltPhases: Phase[] = [];
+        let rebuildError: any = null;
+        
+        if (isEditingStandardProject) {
+          // For Standard Project Foundation, rebuild from project_phases table
+          const { data, error } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+            p_project_id: currentProject.id
+          });
+          rebuiltPhases = Array.isArray(data) ? data : [];
+          rebuildError = error;
+        } else {
+          // For regular projects, use get_project_workflow_with_standards to get all phases (standard + custom)
+          // This ensures standard phases remain visible and deleted custom phase is excluded
+          const { data, error } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
+            p_project_id: currentProject.id
+          });
+          
+          if (error) {
+            rebuildError = error;
+          } else if (data) {
+            // Parse the result
+            if (typeof data === 'string') {
+              rebuiltPhases = JSON.parse(data);
+            } else if (Array.isArray(data)) {
+              rebuiltPhases = data;
+            }
+          }
+        }
 
         if (rebuildError) {
           console.error('❌ Error rebuilding phases after deletion:', rebuildError);
