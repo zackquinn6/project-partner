@@ -298,18 +298,19 @@ BEGIN
   END IF;
 
   -- Return the new phase
+  -- Use explicit column list to avoid ambiguity with RETURNS TABLE column names
   RETURN QUERY
   SELECT 
-    v_new_phase_id AS id,
-    p_project_id AS project_id,
-    v_phase_name AS name,
-    v_phase_description AS description,
-    v_position_rule AS position_rule,
-    v_position_value AS position_value,
-    v_is_standard AS is_standard,
-    NULL::UUID AS standard_phase_id,
-    v_created_at AS created_at,
-    v_updated_at AS updated_at;
+    v_new_phase_id,
+    p_project_id,
+    v_phase_name,
+    v_phase_description,
+    v_position_rule,
+    v_position_value,
+    v_is_standard,
+    NULL::UUID,
+    v_created_at,
+    v_updated_at;
 END;
 $$;
 
