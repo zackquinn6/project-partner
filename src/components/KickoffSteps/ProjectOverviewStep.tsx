@@ -482,38 +482,64 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             <div>
               <Label className="text-sm">Estimated Time</Label>
               <div className="mt-2 space-y-2">
-                {/* Estimated time per scaling unit */}
-                {displayEstimatedTime && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="text-xs sm:text-sm">
-                      {displayEstimatedTime}
-                    </Badge>
-                    {formattedScalingUnit && (
-                      <span className="text-xs sm:text-sm text-muted-foreground capitalize">
-                        {formattedScalingUnit}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {/* Estimated total time for typical size */}
-                {(displayEstimatedTotalTime || displayTypicalProjectSize) && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {displayEstimatedTotalTime && (
+                {/* Show both pieces of information together if both are available */}
+                {displayEstimatedTime && displayEstimatedTotalTime && displayTypicalProjectSize ? (
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="text-xs sm:text-sm">
+                        {displayEstimatedTime}
+                      </Badge>
+                      {formattedScalingUnit && (
+                        <span className="text-xs sm:text-sm text-muted-foreground capitalize">
+                          {formattedScalingUnit}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs sm:text-sm">
                         {displayEstimatedTotalTime}
                       </Badge>
-                    )}
-                    {displayTypicalProjectSize && (
                       <span className="text-xs sm:text-sm text-muted-foreground">
-                        {displayEstimatedTotalTime ? 'for' : 'Typical size:'} {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'} typical project size
+                        for {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'} typical project size
                       </span>
-                    )}
-                    {displayEstimatedTotalTime && !displayTypicalProjectSize && (
-                      <span className="text-xs sm:text-sm text-muted-foreground">
-                        total time
-                      </span>
-                    )}
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    {/* Estimated time per scaling unit */}
+                    {displayEstimatedTime && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="text-xs sm:text-sm">
+                          {displayEstimatedTime}
+                        </Badge>
+                        {formattedScalingUnit && (
+                          <span className="text-xs sm:text-sm text-muted-foreground capitalize">
+                            {formattedScalingUnit}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {/* Estimated total time for typical size */}
+                    {(displayEstimatedTotalTime || displayTypicalProjectSize) && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {displayEstimatedTotalTime && (
+                          <Badge variant="outline" className="text-xs sm:text-sm">
+                            {displayEstimatedTotalTime}
+                          </Badge>
+                        )}
+                        {displayTypicalProjectSize && (
+                          <span className="text-xs sm:text-sm text-muted-foreground">
+                            {displayEstimatedTotalTime ? 'for' : 'Typical size:'} {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'} typical project size
+                          </span>
+                        )}
+                        {displayEstimatedTotalTime && !displayTypicalProjectSize && (
+                          <span className="text-xs sm:text-sm text-muted-foreground">
+                            total time
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
                 {!displayEstimatedTime && !displayEstimatedTotalTime && !displayTypicalProjectSize && (
                   <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
