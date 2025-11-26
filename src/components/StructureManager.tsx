@@ -2326,6 +2326,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return;
     }
     
+    // CRITICAL: Clear justAddedPhaseId before adding a new phase
+    // This prevents the previous phase's ID from interfering with the new phase
+    setJustAddedPhaseId(null);
+    
     setIsAddingPhase(true);
     setSkipNextRefresh(true);
     const startTime = Date.now();
@@ -3191,9 +3195,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Clear flags on error
       setIsAddingPhase(false);
       setSkipNextRefresh(false);
-    } finally {
-      setIsAddingPhase(false);
+      setJustAddedPhaseId(null);
     }
+    // CRITICAL: Don't use finally block - it runs even on success and can interfere
+    // with the setTimeout that clears isAddingPhase after the UI settles
+    // The success path already clears isAddingPhase in setTimeout
+    // The error path clears it immediately above
   };
   const handleIncorporatePhase = async (incorporatedPhase: Phase & {
     sourceProjectId: string;
