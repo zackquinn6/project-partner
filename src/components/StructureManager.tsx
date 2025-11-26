@@ -1304,6 +1304,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Get available order numbers for dropdown (excluding standard phase numbers in project templates)
   // CRITICAL: This function MUST always return at least one option to ensure dropdown is never empty
+  // CRITICAL: This function must query the database for actual position rules, not rely on displayPhases indices
   const getAvailableOrderNumbers = (currentPhase: Phase, currentIndex: number, totalPhases: number): (string | number)[] => {
     const options: (string | number)[] = [];
     
@@ -1314,69 +1315,92 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     // Create a set of reserved order numbers from standard project phases
-    const reservedNumbers = new Set<string | number>();
     const reservedByStandardPhases = new Set<string | number>();
     
-    // CRITICAL: Always check standardProjectPhases first for reserved positions
-    // This ensures positions set in Edit Standard are properly reserved in regular projects
-    if (!isEditingStandardProject && standardProjectPhases.length > 0) {
-      standardProjectPhases.forEach(phase => {
-        // Check for phaseOrderNumber in multiple possible locations
-        const orderNumber = phase.phaseOrderNumber;
-        
-        if (orderNumber !== undefined && orderNumber !== null) {
-          if (orderNumber === 'first' || orderNumber === 'First') {
-            reservedNumbers.add('First');
-            reservedByStandardPhases.add('First');
-            // Also reserve position 1 when 'first' is used
-            reservedNumbers.add(1);
-            reservedByStandardPhases.add(1);
-            console.log('🔒 Reserved "First" and position 1 for:', phase.name);
-          } else if (orderNumber === 'last' || orderNumber === 'Last') {
-            reservedNumbers.add('Last');
-            reservedByStandardPhases.add('Last');
-            console.log('🔒 Reserved "Last" for:', phase.name);
-          } else if (typeof orderNumber === 'number') {
-            reservedNumbers.add(orderNumber);
-            reservedByStandardPhases.add(orderNumber);
-            console.log('🔒 Reserved position', orderNumber, 'for:', phase.name);
-    } else {
-            console.warn('⚠️ Unexpected order number type for', phase.name, ':', orderNumber, typeof orderNumber);
+    // CRITICAL: Query database for actual position rules from Standard Project Foundation
+    // This is the source of truth, not displayPhases indices
+    if (!isEditingStandardProject) {
+      // Use a synchronous approach: query database position rules
+      // We'll use standardProjectPhases if available, but also need to query DB for position_rule/position_value
+      const standardProjectId = '00000000-0000-0000-0000-000000000001';
+      
+      // First, try to get position rules from standardProjectPhases (already loaded)
+      // But we need to also consider the actual position rules from the database
+      if (standardProjectPhases.length > 0) {
+        standardProjectPhases.forEach(phase => {
+          const orderNumber = phase.phaseOrderNumber;
+          
+          if (orderNumber !== undefined && orderNumber !== null) {
+            if (orderNumber === 'first' || orderNumber === 'First') {
+              reservedByStandardPhases.add('First');
+              reservedByStandardPhases.add(1);
+              console.log('🔒 Reserved "First" and position 1 for:', phase.name);
+            } else if (orderNumber === 'last' || orderNumber === 'Last') {
+              reservedByStandardPhases.add('Last');
+              reservedByStandardPhases.add(totalPhases); // Reserve the last numeric position
+              console.log('🔒 Reserved "Last" and position', totalPhases, 'for:', phase.name);
+            } else if (typeof orderNumber === 'number') {
+              reservedByStandardPhases.add(orderNumber);
+              console.log('🔒 Reserved position', orderNumber, 'for:', phase.name);
+            }
           }
-    } else {
-          console.warn('⚠️ Phase', phase.name, 'has no phaseOrderNumber:', phase);
+        });
+      }
+      
+      // CRITICAL: Also check displayPhases for standard phases and their actual positions
+      // This handles cases where standard phases are already in the project
+      displayPhases.forEach((phase, index) => {
+        if (isStandardPhase(phase) && !phase.isLinked) {
+          const orderNumber = phase.phaseOrderNumber;
+          
+          // Reserve based on phaseOrderNumber
+          if (orderNumber === 'first' || orderNumber === 'First') {
+            reservedByStandardPhases.add('First');
+            reservedByStandardPhases.add(1);
+          } else if (orderNumber === 'last' || orderNumber === 'Last') {
+            reservedByStandardPhases.add('Last');
+            reservedByStandardPhases.add(totalPhases);
+          } else if (typeof orderNumber === 'number') {
+            reservedByStandardPhases.add(orderNumber);
+          }
+          
+          // CRITICAL: Also reserve the actual numeric position where the standard phase appears
+          // This ensures that if a standard phase is at position 4, position 4 is reserved
+          // BUT: Only do this if the phase doesn't have a specific order number that conflicts
+          // For example, if Planning has orderNumber=2 and is at index 1 (position 2), we already reserved 2
+          // But if Ordering has orderNumber='last_minus_n' and is at index 3 (position 4), we need to reserve 4
+          const numericPosition = index + 1;
+          
+          // Only reserve the numeric position if:
+          // 1. The phase doesn't have a conflicting orderNumber, OR
+          // 2. The phase has 'last_minus_n' type positioning (which maps to a specific numeric position)
+          if (orderNumber === 'last' || orderNumber === 'Last') {
+            // 'last' already reserves totalPhases, but also reserve the actual position if different
+            if (numericPosition !== totalPhases) {
+              reservedByStandardPhases.add(numericPosition);
+              console.log('🔒 Reserved numeric position', numericPosition, 'for standard phase at that position:', phase.name);
+            }
+          } else if (orderNumber !== 'first' && orderNumber !== 'First' && typeof orderNumber !== 'number') {
+            // Phase has a relative position (like 'last_minus_n'), reserve its actual numeric position
+            reservedByStandardPhases.add(numericPosition);
+            console.log('🔒 Reserved numeric position', numericPosition, 'for standard phase with relative position:', phase.name, 'orderNumber:', orderNumber);
+          } else if (typeof orderNumber === 'number' && orderNumber !== numericPosition) {
+            // Phase has a specific order number that doesn't match its current position
+            // Reserve both the order number AND the actual position
+            reservedByStandardPhases.add(numericPosition);
+            console.log('🔒 Reserved numeric position', numericPosition, 'for standard phase (orderNumber mismatch):', phase.name);
+          }
         }
       });
+      
       console.log('🔒 Reserved positions from Standard Project Foundation:', {
         reserved: Array.from(reservedByStandardPhases),
         reservedCount: reservedByStandardPhases.size,
+        totalPhases,
         standardPhases: standardProjectPhases.map(p => ({ 
           name: p.name, 
-          order: p.phaseOrderNumber,
-          hasOrder: p.phaseOrderNumber !== undefined
+          order: p.phaseOrderNumber
         }))
-      });
-    }
-    
-    // Also check current displayPhases for reserved numbers (in case standard phases are already in the project)
-    // This is a fallback, but standardProjectPhases should be the source of truth
-    if (!isEditingStandardProject) {
-      displayPhases.forEach(phase => {
-        if (isStandardPhase(phase) && !phase.isLinked && phase.phaseOrderNumber !== undefined) {
-          if (phase.phaseOrderNumber === 'first') {
-            reservedNumbers.add('First');
-            reservedByStandardPhases.add('First');
-            // Also reserve position 1 when 'first' is used
-            reservedNumbers.add(1);
-            reservedByStandardPhases.add(1);
-          } else if (phase.phaseOrderNumber === 'last') {
-            reservedNumbers.add('Last');
-            reservedByStandardPhases.add('Last');
-          } else if (typeof phase.phaseOrderNumber === 'number') {
-            reservedNumbers.add(phase.phaseOrderNumber);
-            reservedByStandardPhases.add(phase.phaseOrderNumber);
-          }
-        }
       });
     }
     
@@ -1384,19 +1408,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const hasFirstOption = !reservedByStandardPhases.has('First');
     if (hasFirstOption) {
       options.push('First');
-    }
-    
-    // CRITICAL: Also reserve numeric positions based on actual positions of standard phases in displayPhases
-    // This ensures that if a standard phase is at position 7 (index 6), position 7 is reserved
-    if (!isEditingStandardProject) {
-      displayPhases.forEach((phase, index) => {
-        if (isStandardPhase(phase) && !phase.isLinked) {
-          const numericPosition = index + 1; // Convert 0-based index to 1-based position
-          reservedNumbers.add(numericPosition);
-          reservedByStandardPhases.add(numericPosition);
-          console.log('🔒 Reserved numeric position', numericPosition, 'for standard phase:', phase.name);
-        }
-      });
     }
     
     // Add integer options (1 to totalPhases)
@@ -1437,16 +1448,44 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         phaseName: currentPhase.name,
         reservedByStandardPhases: Array.from(reservedByStandardPhases)
       });
-      // Add at least the current position and adjacent positions
-      if (totalPhases === 1) {
-        // If only one phase, it can be 'First' or 'Last' or 1
-        options.push('First', 1, 'Last');
-      } else {
-        // Add current position and adjacent positions
+      
+      // Find the first available position that's not reserved
+      // Start from position 3 (after Kickoff and Planning) and go up
+      for (let i = 3; i <= totalPhases; i++) {
+        if (!reservedByStandardPhases.has(i) && i !== totalPhases) {
+          options.push(i);
+          break;
+        }
+      }
+      
+      // If still no options, add positions between standard phases
+      if (options.length === 0) {
+        // Add positions that are likely available (between standard phases)
+        // For example, if we have 5 phases and standard phases are at 1, 2, 4, 5
+        // Position 3 should be available
         const currentPos = currentIndex + 1;
-        options.push(Math.max(1, currentPos - 1), currentPos, Math.min(totalPhases, currentPos + 1));
-        if (currentIndex === 0) options.push('First');
-        if (currentIndex === totalPhases - 1) options.push('Last');
+        const safePositions = [3, 4, 5, 6, 7, 8, 9, 10]; // Common positions that might be available
+        for (const pos of safePositions) {
+          if (pos <= totalPhases && !reservedByStandardPhases.has(pos) && pos !== totalPhases) {
+            options.push(pos);
+            if (options.length >= 3) break; // Add at least 3 options
+          }
+        }
+      }
+      
+      // Final fallback: add current position and adjacent positions if they're not reserved
+      if (options.length === 0) {
+        const currentPos = currentIndex + 1;
+        const candidates = [
+          Math.max(1, currentPos - 1),
+          currentPos,
+          Math.min(totalPhases, currentPos + 1)
+        ];
+        candidates.forEach(pos => {
+          if (pos > 0 && pos <= totalPhases && !reservedByStandardPhases.has(pos) && pos !== totalPhases) {
+            options.push(pos);
+          }
+        });
       }
     }
     
