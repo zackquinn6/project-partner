@@ -992,8 +992,43 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
         
         if (freshPhases.length > 0) {
+          // CRITICAL: Check for phases missing order positions BEFORE validation
+          const phasesWithoutOrder = freshPhases.filter(p => 
+            p.phaseOrderNumber === undefined || 
+            p.phaseOrderNumber === null || 
+            p.phaseOrderNumber === ''
+          );
+          
+          if (phasesWithoutOrder.length > 0) {
+            console.log('⚠️ Found phases missing order positions:', {
+              count: phasesWithoutOrder.length,
+              phases: phasesWithoutOrder.map(p => ({ name: p.name, id: p.id, hasOrder: p.phaseOrderNumber !== undefined }))
+            });
+          }
+          
           // Apply sequential ordering validation - ensures ALL phases have order positions (1, 2, 3, ...)
           const validatedPhases = validateAndFixSequentialOrdering(deduplicatePhases(freshPhases));
+          
+          // CRITICAL: Verify ALL phases now have order positions
+          const stillMissingOrder = validatedPhases.filter(p => 
+            p.phaseOrderNumber === undefined || 
+            p.phaseOrderNumber === null || 
+            p.phaseOrderNumber === ''
+          );
+          
+          if (stillMissingOrder.length > 0) {
+            console.error('❌ CRITICAL: Phases still missing order positions after validation:', {
+              count: stillMissingOrder.length,
+              phases: stillMissingOrder.map(p => ({ name: p.name, id: p.id }))
+            });
+            // Force assign order positions to any that are still missing
+            validatedPhases.forEach((phase, index) => {
+              if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null || phase.phaseOrderNumber === '') {
+                phase.phaseOrderNumber = index + 1;
+                console.log('🔧 Forced order position assignment:', { name: phase.name, order: phase.phaseOrderNumber });
+              }
+            });
+          }
           
           // CRITICAL: For Edit Standard, immediately persist order positions to database
           // This ensures missing order positions are saved to the database right away
@@ -1004,9 +1039,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               
               for (let i = 0; i < validatedPhases.length; i++) {
                 const phase = validatedPhases[i];
-                if (phase.isLinked) continue; // Skip linked phases
+                if (phase.isLinked || !phase.id) continue; // Skip linked phases or phases without IDs
                 
-                const sequentialPosition = i + 1; // 1-based position
+                // CRITICAL: Ensure phase has order position assigned
+                const sequentialPosition = typeof phase.phaseOrderNumber === 'number' 
+                  ? phase.phaseOrderNumber 
+                  : (phase.phaseOrderNumber === 'first' ? 1 : phase.phaseOrderNumber === 'last' ? validatedPhases.length : i + 1);
                 
                 // Determine position_rule and position_value
                 let positionRule: string;
@@ -1018,7 +1056,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 } else if (sequentialPosition === validatedPhases.length) {
                   positionRule = 'last';
                   positionValue = null;
-      } else {
+                } else {
                   positionRule = 'nth';
                   positionValue = sequentialPosition;
                 }
@@ -1038,32 +1076,166 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               }
               
               // Wait for all updates to complete
-              await Promise.all(updatePromises);
+              const updateResults = await Promise.all(updatePromises);
+              
+              // Check for any update errors
+              const updateErrors = updateResults.filter(result => result.error);
+              if (updateErrors.length > 0) {
+                console.error('❌ Some phase order updates failed:', updateErrors);
+              }
               
               console.log('✅ Order positions persisted to database on immediate refresh:', {
                 count: validatedPhases.length,
-                phases: validatedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+                phases: validatedPhases.map(p => ({ 
+                  name: p.name, 
+                  id: p.id,
+                  order: p.phaseOrderNumber,
+                  orderType: typeof p.phaseOrderNumber
+                }))
               });
+              
+              // CRITICAL: Rebuild phases from database after updating positions
+              // This ensures the phases JSON reflects the updated order positions
+              const { data: rebuiltAfterUpdate, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+                p_project_id: currentProject.id
+              });
+              
+              if (!rebuildError && rebuiltAfterUpdate) {
+                const rebuiltPhasesArray = Array.isArray(rebuiltAfterUpdate) ? rebuiltAfterUpdate : [];
+                const rebuiltStandardPhases = rebuiltPhasesArray.filter(p => isStandardPhase(p) && !p.isLinked);
+                
+                // CRITICAL: If phases are missing phaseOrderNumber after rebuild, fetch from database directly
+                // and derive phaseOrderNumber from position_rule and position_value
+                const phasesNeedingOrderNumbers = rebuiltStandardPhases.filter(p => 
+                  p.phaseOrderNumber === undefined || 
+                  p.phaseOrderNumber === null || 
+                  p.phaseOrderNumber === ''
+                );
+                
+                if (phasesNeedingOrderNumbers.length > 0) {
+                  console.log('⚠️ Phases missing phaseOrderNumber after rebuild, fetching from database:', {
+                    count: phasesNeedingOrderNumbers.length,
+                    phaseIds: phasesNeedingOrderNumbers.map(p => p.id)
+                  });
+                  
+                  // Fetch position_rule and position_value from database for phases missing order numbers
+                  const { data: phasePositions, error: positionError } = await supabase
+                    .from('project_phases')
+                    .select('id, position_rule, position_value')
+                    .eq('project_id', currentProject.id)
+                    .in('id', phasesNeedingOrderNumbers.map(p => p.id).filter(id => id));
+                  
+                  if (!positionError && phasePositions) {
+                    // Create a map of phase ID to position data
+                    const positionMap = new Map(phasePositions.map(p => [p.id, p]));
+                    
+                    // Derive phaseOrderNumber from position_rule and position_value
+                    rebuiltStandardPhases.forEach(phase => {
+                      if (phase.id && (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null || phase.phaseOrderNumber === '')) {
+                        const positionData = positionMap.get(phase.id);
+                        if (positionData) {
+                          if (positionData.position_rule === 'first') {
+                            phase.phaseOrderNumber = 1;
+                          } else if (positionData.position_rule === 'last') {
+                            phase.phaseOrderNumber = rebuiltStandardPhases.length;
+                          } else if (positionData.position_rule === 'nth' && positionData.position_value) {
+                            phase.phaseOrderNumber = positionData.position_value;
+                          } else if (positionData.position_rule === 'last_minus_n' && positionData.position_value) {
+                            phase.phaseOrderNumber = rebuiltStandardPhases.length - positionData.position_value;
+                          } else {
+                            // Fallback: use current index
+                            const currentIndex = rebuiltStandardPhases.indexOf(phase);
+                            phase.phaseOrderNumber = currentIndex + 1;
+                          }
+                          console.log('🔧 Derived phaseOrderNumber from database:', {
+                            name: phase.name,
+                            id: phase.id,
+                            position_rule: positionData.position_rule,
+                            position_value: positionData.position_value,
+                            derivedOrder: phase.phaseOrderNumber
+                          });
+                        }
+                      }
+                    });
+                  }
+                }
+                
+                // Apply validation again to ensure all rebuilt phases have order positions
+                const finalValidatedPhases = validateAndFixSequentialOrdering(rebuiltStandardPhases);
+                
+                // Verify all phases have order positions
+                const finalMissingOrder = finalValidatedPhases.filter(p => 
+                  p.phaseOrderNumber === undefined || 
+                  p.phaseOrderNumber === null || 
+                  p.phaseOrderNumber === ''
+                );
+                
+                if (finalMissingOrder.length === 0) {
+                  console.log('✅ All phases have order positions after rebuild:', {
+                    count: finalValidatedPhases.length,
+                    phases: finalValidatedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+                  });
+                  
+                  // Use the rebuilt phases instead
+                  validatedPhases.length = 0;
+                  validatedPhases.push(...finalValidatedPhases);
+                } else {
+                  console.error('❌ Phases still missing order positions after rebuild and derivation:', {
+                    count: finalMissingOrder.length,
+                    phases: finalMissingOrder.map(p => ({ name: p.name, id: p.id }))
+                  });
+                  // Force assign order positions as last resort
+                  finalMissingOrder.forEach((phase, index) => {
+                    const phaseIndex = finalValidatedPhases.indexOf(phase);
+                    phase.phaseOrderNumber = phaseIndex + 1;
+                    console.log('🔧 Force assigned order position as last resort:', {
+                      name: phase.name,
+                      order: phase.phaseOrderNumber
+                    });
+                  });
+                  validatedPhases.length = 0;
+                  validatedPhases.push(...finalValidatedPhases);
+                }
+              }
             } catch (error) {
               console.error('❌ Error persisting order positions to database:', error);
               // Continue anyway - phases are still valid
             }
           }
           
+          // CRITICAL: Final verification - ensure ALL phases have order positions before displaying
+          const finalCheck = validatedPhases.map((phase, index) => {
+            if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null || phase.phaseOrderNumber === '') {
+              console.warn('⚠️ Phase missing order position at final check, assigning:', {
+                name: phase.name,
+                index: index + 1
+              });
+              return {
+                ...phase,
+                phaseOrderNumber: index + 1 as number
+              };
+            }
+            return phase;
+          });
+          
           // Update display immediately
-          setDisplayPhases(validatedPhases);
+          setDisplayPhases(finalCheck);
           setPhasesLoaded(true);
           
           // Update project context to keep everything in sync
           updateProject({
             ...currentProject,
-            phases: validatedPhases,
+            phases: finalCheck,
             updatedAt: new Date()
           });
           
-          console.log('✅ Phases loaded immediately from database:', {
-            count: validatedPhases.length,
-            phases: validatedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+          console.log('✅ Phases loaded immediately from database (final):', {
+            count: finalCheck.length,
+            phases: finalCheck.map(p => ({ 
+              name: p.name, 
+              order: p.phaseOrderNumber,
+              hasOrder: p.phaseOrderNumber !== undefined && p.phaseOrderNumber !== null
+            }))
           });
       } else {
           // No phases found - clear display
