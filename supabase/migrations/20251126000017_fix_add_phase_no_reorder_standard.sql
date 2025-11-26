@@ -230,8 +230,17 @@ BEGIN
       'Operation description',
       'prime',
       TRUE -- This is a standard phase operation
-    )
-    RETURNING id INTO v_new_operation_id;
+    );
+    
+    -- Query back the operation id to avoid ambiguity with RETURNS TABLE column 'id'
+    SELECT to_op.id INTO v_new_operation_id
+    FROM public.template_operations to_op
+    WHERE to_op.project_id = p_project_id
+      AND to_op.phase_id = v_new_phase_id
+      AND to_op.name = 'New Operation'
+      AND to_op.created_at >= NOW() - INTERVAL '1 second'
+    ORDER BY to_op.created_at DESC
+    LIMIT 1;
   ELSE
     -- Regular projects: Create custom phase operations
     -- is_custom_phase will be computed as TRUE (since custom_phase_name is NOT NULL)
@@ -253,8 +262,17 @@ BEGIN
       v_phase_name,
       v_phase_description,
       FALSE -- This is a custom phase operation
-    )
-    RETURNING id INTO v_new_operation_id;
+    );
+    
+    -- Query back the operation id to avoid ambiguity with RETURNS TABLE column 'id'
+    SELECT to_op.id INTO v_new_operation_id
+    FROM public.template_operations to_op
+    WHERE to_op.project_id = p_project_id
+      AND to_op.phase_id = v_new_phase_id
+      AND to_op.name = 'New Operation'
+      AND to_op.created_at >= NOW() - INTERVAL '1 second'
+    ORDER BY to_op.created_at DESC
+    LIMIT 1;
   END IF;
 
   -- Create one step for the operation
@@ -268,8 +286,17 @@ BEGIN
     1,
     'New Step',
     'Step description'
-  )
-  RETURNING id INTO v_new_step_id;
+  );
+  
+  -- Query back the step id to avoid ambiguity with RETURNS TABLE column 'id'
+  SELECT ts.id INTO v_new_step_id
+  FROM public.template_steps ts
+  WHERE ts.operation_id = v_new_operation_id
+    AND ts.step_number = 1
+    AND ts.step_title = 'New Step'
+    AND ts.created_at >= NOW() - INTERVAL '1 second'
+  ORDER BY ts.created_at DESC
+  LIMIT 1;
 
   -- CRITICAL: Final validation - ensure the phase wasn't created with a conflicting position
   -- This is a safety check to verify the phase doesn't conflict with any standard phase position
@@ -289,7 +316,8 @@ BEGIN
         OR (v_standard_phases.position_rule = 'last_minus_n' AND v_position_rule = 'last_minus_n' AND v_position_value = v_standard_phases.position_value)
       ) THEN
         -- Delete the phase we just created since it has an invalid position
-        DELETE FROM public.project_phases WHERE id = v_new_phase_id;
+        -- Use table alias to avoid ambiguity with RETURNS TABLE column 'id'
+        DELETE FROM public.project_phases pp_del WHERE pp_del.id = v_new_phase_id;
         RAISE EXCEPTION 'Custom phase position conflicts with standard phase position "%" (position_value: %)',
           v_standard_phases.position_rule,
           COALESCE(v_standard_phases.position_value::TEXT, 'NULL');
