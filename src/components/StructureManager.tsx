@@ -1110,7 +1110,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       // Use validated phases with preserved order numbers
-      const sortedPhases = sortPhasesByOrderNumber(validatedPhasesWithPreservedOrder);
+      let sortedPhases = sortPhasesByOrderNumber(validatedPhasesWithPreservedOrder);
       
       // CONDITION 5: For regular projects, apply order numbers from Standard Project Foundation AFTER ensureUniqueOrderNumbers
       // This ensures standard project foundation ordering is respected (absolute and relative order numbers)
@@ -1125,44 +1125,74 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         });
         
         // Apply order numbers from Standard Project Foundation to standard phases
-        sortedPhases.forEach(phase => {
+        sortedPhases = sortedPhases.map(phase => {
           if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
             const standardOrder = standardOrderMap.get(phase.name);
             if (standardOrder !== undefined) {
               // Always apply order number from Standard Project Foundation, even if it was reassigned
-              phase.phaseOrderNumber = standardOrder;
               console.log('✅ Applied order number from Standard Project Foundation:', {
                 phaseName: phase.name,
                 orderNumber: standardOrder,
                 wasReassigned: preservedOrderNumbers.get(phase.id) !== standardOrder
               });
+              return { ...phase, phaseOrderNumber: standardOrder as number | 'first' | 'last' };
             }
           }
+          return phase;
         });
         
         // CRITICAL: After applying standard phase order numbers, restore preserved order numbers for regular phases
         // This ensures that order numbers set by handlePhaseOrderChange are preserved for regular phases
-        sortedPhases.forEach(phase => {
+        sortedPhases = sortedPhases.map(phase => {
           if (!isStandardPhase(phase) || phase.isLinked) {
             const preservedOrder = preservedOrderNumbers.get(phase.id);
             if (preservedOrder !== undefined) {
-              phase.phaseOrderNumber = preservedOrder;
               console.log('🔒 Restored preserved order number for regular phase:', {
                 phaseName: phase.name,
                 orderNumber: preservedOrder
               });
+              return { ...phase, phaseOrderNumber: preservedOrder as number | 'first' | 'last' };
             }
           }
+          return phase;
         });
       } else if (isEditingStandardProject) {
         // Edit Standard: restore all preserved order numbers by ID
-        sortedPhases.forEach(phase => {
+        sortedPhases = sortedPhases.map(phase => {
           const preservedOrder = preservedOrderNumbers.get(phase.id);
           if (preservedOrder !== undefined) {
-            phase.phaseOrderNumber = preservedOrder;
+            return { ...phase, phaseOrderNumber: preservedOrder as number | 'first' | 'last' };
           }
+          return phase;
         });
       }
+      
+      // CRITICAL: Final pass - ensure ALL phases have order numbers (no exceptions)
+      // This fixes the issue where phases are missing order numbers
+      const usedOrderNumbers = new Set<string | number>();
+      sortedPhases.forEach(phase => {
+        if (phase.phaseOrderNumber !== undefined && phase.phaseOrderNumber !== null) {
+          usedOrderNumbers.add(phase.phaseOrderNumber);
+        }
+      });
+      
+      sortedPhases = sortedPhases.map((phase, index) => {
+        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+          // Find next available number
+          let candidateNumber = index + 1;
+          while (usedOrderNumbers.has(candidateNumber) && candidateNumber <= sortedPhases.length + 10) {
+            candidateNumber++;
+          }
+          usedOrderNumbers.add(candidateNumber);
+          console.log('🔧 Final pass: Assigned missing order number:', {
+            phaseName: phase.name,
+            phaseId: phase.id,
+            assignedOrder: candidateNumber
+          });
+          return { ...phase, phaseOrderNumber: candidateNumber as number | 'first' | 'last' };
+        }
+        return phase;
+      });
       
       // CRITICAL: After all processing, ensure the last phase has 'last' if it was originally 'last'
       if (sortedPhases.length > 0) {
@@ -1373,40 +1403,30 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     if (displayNeedsUpdate) {
       // CONDITION 2: Ensure ALL phases have order numbers before setting displayPhases (no blanks)
       // This fixes the issue where regular phases are missing order numbers
+      const usedOrderNumbers = new Set<string | number>();
+      sortedForDisplay.forEach(phase => {
+        if (phase.phaseOrderNumber !== undefined && phase.phaseOrderNumber !== null) {
+          usedOrderNumbers.add(phase.phaseOrderNumber);
+        }
+      });
+      
       const phasesWithOrderNumbers = sortedForDisplay.map((phase, index) => {
         if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
-          // Assign order number based on position
-          if (index === 0) {
-            // Check if first position should be 'first' or a number
-            const hasStandardFirst = sortedForDisplay.some(p => 
-              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'first'
-            );
-            if (!hasStandardFirst && !isEditingStandardProject) {
-              phase.phaseOrderNumber = 'first';
-            } else {
-              phase.phaseOrderNumber = 1;
-            }
-          } else if (index === sortedForDisplay.length - 1) {
-            // Check if last position should be 'last' or a number
-            const hasStandardLast = sortedForDisplay.some(p => 
-              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'last'
-            );
-            if (!hasStandardLast && !isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
-              phase.phaseOrderNumber = 'last';
-            } else {
-              phase.phaseOrderNumber = index + 1;
-            }
-          } else {
-            phase.phaseOrderNumber = index + 1;
+          // Find next available number
+          let candidateNumber = index + 1;
+          while (usedOrderNumbers.has(candidateNumber) && candidateNumber <= sortedForDisplay.length + 10) {
+            candidateNumber++;
           }
+          usedOrderNumbers.add(candidateNumber);
           console.log('🔧 Assigned missing order number when setting displayPhases:', {
             phaseName: phase.name,
             phaseId: phase.id,
-            assignedOrder: phase.phaseOrderNumber,
+            assignedOrder: candidateNumber,
             index,
             isStandard: isStandardPhase(phase),
             isLinked: phase.isLinked
           });
+          return { ...phase, phaseOrderNumber: candidateNumber as number | 'first' | 'last' };
         }
         return phase;
       });
@@ -1518,7 +1538,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
     }
-  }, [rebuildingPhases, currentProject?.id, currentProject?.phases, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId, skipNextRefresh, isAddingPhase, isDeletingPhase, phaseToDelete, displayPhases.length]);
+  }, [rebuildingPhases, currentProject?.id, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId, skipNextRefresh, isAddingPhase, isDeletingPhase, phaseToDelete]);
 
   // CRITICAL: Verify phases exist in database for standard projects
   // This prevents deleted phases from appearing after page refresh
