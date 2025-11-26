@@ -167,3 +167,52 @@ export function getStandardPhaseExpectedPosition(phase: Phase, totalPhases: numb
   
   return -1; // Invalid order number
 }
+
+/**
+ * Validates and fixes phase ordering positions to ensure:
+ * 1. All phases have an ordering position (1-based sequential numbers)
+ * 2. Phases are in sequential order with no gaps (1, 2, 3, 4...)
+ * 3. No duplicate ordering positions
+ * 
+ * This is the single source of truth for ordering validation.
+ * 
+ * @param phases - The phases to validate and fix
+ * @returns Validated phases with sequential ordering positions (1, 2, 3, ...)
+ */
+export function validateAndFixSequentialOrdering(phases: Phase[]): Phase[] {
+  if (phases.length === 0) {
+    return [];
+  }
+
+  // First, sort phases by their current order (handling 'first', 'last', and numbers)
+  const sortedPhases = [...phases].sort((a, b) => {
+    const aOrder = a.phaseOrderNumber;
+    const bOrder = b.phaseOrderNumber;
+    
+    // Handle 'first' - always comes first
+    if (aOrder === 'first') return -1;
+    if (bOrder === 'first') return 1;
+    
+    // Handle 'last' - always comes last
+    if (aOrder === 'last') return 1;
+    if (bOrder === 'last') return -1;
+    
+    // Handle numeric ordering
+    const aNum = typeof aOrder === 'number' ? aOrder : 0;
+    const bNum = typeof bOrder === 'number' ? bOrder : 0;
+    
+    if (aNum !== bNum) {
+      return aNum - bNum;
+    }
+    
+    // If same order number, maintain relative position (stable sort)
+    return 0;
+  });
+
+  // Assign sequential ordering positions (1, 2, 3, ...) based on sorted order
+  // Position 1 is exclusive for the first phase
+  return sortedPhases.map((phase, index) => ({
+    ...phase,
+    phaseOrderNumber: index + 1 as number // Sequential: 1, 2, 3, 4...
+  }));
+}

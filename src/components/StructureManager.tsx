@@ -23,7 +23,7 @@ import { DecisionTreeFlowchart } from './DecisionTreeFlowchart';
 import { DecisionPointEditor } from './DecisionPointEditor';
 import { PhaseIncorporationDialog } from './PhaseIncorporationDialog';
 import { DecisionTreeManager } from './DecisionTreeManager';
-import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
+import { enforceStandardPhaseOrdering, validateAndFixSequentialOrdering } from '@/utils/phaseOrderingUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useDynamicPhases } from '@/hooks/useDynamicPhases';
 interface StructureManagerProps {
@@ -914,6 +914,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Use mergedPhases directly (same as EditWorkflowView uses rawPhases)
   // Process phases similar to EditWorkflowView for consistency
   const processedPhases = React.useMemo(() => {
+    // Get phases from mergedPhases (which already handles Edit Standard filtering)
     let phasesToProcess: Phase[] = [];
     
     if (mergedPhases && mergedPhases.length > 0) {
@@ -923,633 +924,58 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       phasesToProcess = currentProject.phases;
     }
     
-    // CRITICAL: In Edit Standard mode, only show standard phases
-    // Edit Standard should never show non-standard or incorporated phases
-    if (isEditingStandardProject) {
-      phasesToProcess = phasesToProcess.filter(p => isStandardPhase(p) && !p.isLinked);
-    }
-    
-    // CRITICAL: Filter out deleted phase during deletion process
+    // Filter out deleted phase during deletion process
     if (phaseToDelete) {
       phasesToProcess = phasesToProcess.filter(p => p.id !== phaseToDelete);
     }
     
-    if (phasesToProcess.length > 0) {
-      // CRITICAL: Preserve order numbers from currentProject.phases for ALL phases (not just Edit Standard)
-      // This ensures that when phases are rebuilt/merged, order numbers set by handlePhaseOrderChange are preserved
-      const preservedOrderNumbers = new Map<string, string | number>();
-      
-      if (currentProject?.phases && currentProject.phases.length > 0) {
-        // Preserve order numbers from currentProject.phases for all phases
-        // CRITICAL: Filter out deleted phase before preserving order numbers
-        // This prevents preserving order numbers from a phase that no longer exists
-        const validPhases = phaseToDelete 
-          ? currentProject.phases.filter(p => p.id !== phaseToDelete)
-          : currentProject.phases;
-        
-        validPhases.forEach(phase => {
-          if (phase.phaseOrderNumber !== undefined) {
-            preservedOrderNumbers.set(phase.id, phase.phaseOrderNumber);
-          }
-        });
-        
-        console.log('🔒 Preserved order numbers from currentProject.phases:', {
-          count: preservedOrderNumbers.size,
-          orders: Array.from(preservedOrderNumbers.entries()).map(([id, order]) => ({
-            id,
-            order,
-            phaseName: validPhases.find(p => p.id === id)?.name
-          }))
-        });
-      }
-      
-      const rawPhases = deduplicatePhases(phasesToProcess);
-      
-      // CRITICAL: Apply preserved order numbers FIRST, before validation
-      // This ensures saved order numbers are respected and not overwritten by validation
-      const phasesWithPreservedOrder = rawPhases.map(phase => {
-        const preservedOrder = preservedOrderNumbers.get(phase.id);
-        if (preservedOrder !== undefined) {
-          return { ...phase, phaseOrderNumber: preservedOrder };
-        }
-        return phase;
-      });
-      
-      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(phasesWithPreservedOrder);
-      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
-      
-      // CRITICAL: Validate and fix phase order numbers when opening StructureManager
-      // This ensures all phases have unique order numbers and respects standard phase positions
-      // BUT: Only fix phases that don't have preserved order numbers or have conflicts
-      const validationResult = validateAndFixPhaseOrderNumbers(orderedPhases);
-      const validatedPhases = validationResult.phases;
-      
-      // CRITICAL: After validation, check for duplicates and fix them
-      // Re-run duplicate detection to catch any remaining duplicates after validation
-      const finalOrderNumberUsage = new Map<string | number, Phase[]>();
-      validatedPhases.forEach(phase => {
-        const order = phase.phaseOrderNumber;
-        if (order !== undefined && order !== null) {
-          if (!finalOrderNumberUsage.has(order)) {
-            finalOrderNumberUsage.set(order, []);
-          }
-          finalOrderNumberUsage.get(order)!.push(phase);
-        }
-      });
-      
-      // Collect reserved positions again for duplicate fixing
-      const reservedForDuplicates = new Set<string | number>();
-      if (!isEditingStandardProject && standardProjectPhases.length > 0) {
-        standardProjectPhases.forEach(phase => {
-          const orderNumber = phase.phaseOrderNumber;
-          if (orderNumber !== undefined && orderNumber !== null) {
-            reservedForDuplicates.add(orderNumber);
-            if (orderNumber === 'first' || orderNumber === 'First') {
-              reservedForDuplicates.add(1);
-            } else if (orderNumber === 'last' || orderNumber === 'Last') {
-              reservedForDuplicates.add(validatedPhases.length);
-            }
-          }
-        });
-      }
-      
-      // Fix duplicates: keep preserved order for first occurrence, reassign others
-      const validatedPhasesWithPreservedOrder = validatedPhases.map(phase => {
-        const order = phase.phaseOrderNumber;
-        if (order !== undefined && order !== null) {
-          const phasesWithSameOrder = finalOrderNumberUsage.get(order) || [];
-          if (phasesWithSameOrder.length > 1) {
-            // This is a duplicate - check if this phase has a preserved order
-            const preservedOrder = preservedOrderNumbers.get(phase.id);
-            const isFirstDuplicate = phasesWithSameOrder[0].id === phase.id;
-            
-            if (isFirstDuplicate && preservedOrder === order) {
-              // First duplicate with preserved order - keep it
-              return phase;
-            } else if (!isFirstDuplicate) {
-              // Not the first duplicate - reassign
-              // Find next available number
-              let candidateNumber = 1;
-              const allUsedOrders = new Set(validatedPhases.map(p => p.phaseOrderNumber).filter(o => o !== undefined && o !== null));
-              while (allUsedOrders.has(candidateNumber) || reservedForDuplicates.has(candidateNumber)) {
-                candidateNumber++;
-                if (candidateNumber > validatedPhases.length + 10) break;
-              }
-              return { ...phase, phaseOrderNumber: candidateNumber as number | 'first' | 'last' };
-            }
-          }
-        }
-        
-        // Not a duplicate - check if we should restore preserved order
-        const preservedOrder = preservedOrderNumbers.get(phase.id);
-        if (preservedOrder !== undefined) {
-          // Only restore if validation didn't fix a conflict
-          // If validation fixed a conflict, trust the validation result
-          const wasConflict = validationResult.issues.some(issue => 
-            issue.includes(phase.name) || issue.includes(phase.id || '')
-          );
-          if (!wasConflict) {
-            return { ...phase, phaseOrderNumber: preservedOrder as number | 'first' | 'last' };
-          }
-        }
-        return phase;
-      });
-      
-      if (validationResult.fixed) {
-        console.log('🔧 Phase order validation fixed issues:', {
-          issuesCount: validationResult.issues.length,
-          sampleIssues: validationResult.issues.slice(0, 3)
-        });
-        
-        // CRITICAL: Persist validation fixes to database
-        // This ensures the backend database is properly updated for all phases
-        // BUT: Use validatedPhasesWithPreservedOrder to ensure saved order numbers are preserved
-        // CRITICAL: Only update if we're not already updating to prevent infinite loops
-        if (currentProject && validatedPhasesWithPreservedOrder.length > 0 && !isUpdatingProjectRef.current) {
-          // Sort phases by order number before saving
-          const sortedValidatedPhases = sortPhasesByOrderNumber(validatedPhasesWithPreservedOrder);
-          
-          // Create a hash of the phases to compare with last saved
-          const phasesHash = JSON.stringify(sortedValidatedPhases.map(p => ({ id: p.id, order: p.phaseOrderNumber })));
-          
-          // Only update if phases actually changed
-          if (phasesHash !== lastSavedPhasesRef.current) {
-            isUpdatingProjectRef.current = true;
-            lastSavedPhasesRef.current = phasesHash;
-            
-            // Update project JSON with validated phases
-            const updatedProject = {
-              ...currentProject,
-              phases: sortedValidatedPhases,
-              updatedAt: new Date()
-            };
-            
-            // Update project context (this saves to database via updateProject)
-            // Use setTimeout to break the render cycle
-            setTimeout(() => {
-              updateProject(updatedProject);
-              isUpdatingProjectRef.current = false;
-            }, 0);
-            
-            // CRITICAL: Also update database project_phases table for Standard Project Foundation
-            // For regular projects, the JSON update is sufficient, but for Standard Project Foundation
-            // we need to update position_rule/position_value in the database
-            if (isEditingStandardProject) {
-              // Use setTimeout to avoid state update during render
-              setTimeout(async () => {
-                try {
-                  await updatePhaseOrder(sortedValidatedPhases);
-                  console.log('✅ Phase order validation fixes persisted to database');
-                } catch (error) {
-                  console.error('❌ Error persisting validation fixes to database:', error);
-                }
-              }, 100);
-            }
-          }
-        }
-      }
-      
-      // Use validated phases with preserved order numbers
-      let sortedPhases = sortPhasesByOrderNumber(validatedPhasesWithPreservedOrder);
-      
-      // CONDITION 5: For regular projects, apply order numbers from Standard Project Foundation AFTER ensureUniqueOrderNumbers
-      // This ensures standard project foundation ordering is respected (absolute and relative order numbers)
-      // This must happen AFTER ensureUniqueOrderNumbers because it may reassign order numbers
-      // Match by phase name, not ID, because phases in regular projects have different IDs
-      if (!isEditingStandardProject && standardProjectPhases.length > 0) {
-        const standardOrderMap = new Map<string, string | number>();
-        standardProjectPhases.forEach(sp => {
-          if (sp.name && sp.phaseOrderNumber !== undefined) {
-            standardOrderMap.set(sp.name, sp.phaseOrderNumber);
-          }
-        });
-        
-        // Apply order numbers from Standard Project Foundation to standard phases
-        sortedPhases = sortedPhases.map(phase => {
-          if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
-            const standardOrder = standardOrderMap.get(phase.name);
-            if (standardOrder !== undefined) {
-              // Always apply order number from Standard Project Foundation, even if it was reassigned
-              console.log('✅ Applied order number from Standard Project Foundation:', {
-                phaseName: phase.name,
-                orderNumber: standardOrder,
-                wasReassigned: preservedOrderNumbers.get(phase.id) !== standardOrder
-              });
-              return { ...phase, phaseOrderNumber: standardOrder as number | 'first' | 'last' };
-            }
-          }
-          return phase;
-        });
-        
-        // CRITICAL: After applying standard phase order numbers, restore preserved order numbers for regular phases
-        // This ensures that order numbers set by handlePhaseOrderChange are preserved for regular phases
-        sortedPhases = sortedPhases.map(phase => {
-          if (!isStandardPhase(phase) || phase.isLinked) {
-            const preservedOrder = preservedOrderNumbers.get(phase.id);
-            if (preservedOrder !== undefined) {
-              console.log('🔒 Restored preserved order number for regular phase:', {
-                phaseName: phase.name,
-                orderNumber: preservedOrder
-              });
-              return { ...phase, phaseOrderNumber: preservedOrder as number | 'first' | 'last' };
-            }
-          }
-          return phase;
-        });
-      } else if (isEditingStandardProject) {
-        // Edit Standard: restore all preserved order numbers by ID
-        sortedPhases = sortedPhases.map(phase => {
-          const preservedOrder = preservedOrderNumbers.get(phase.id);
-          if (preservedOrder !== undefined) {
-            return { ...phase, phaseOrderNumber: preservedOrder as number | 'first' | 'last' };
-          }
-          return phase;
-        });
-      }
-      
-      // CRITICAL: Final pass - ensure ALL phases have order numbers (no exceptions)
-      // This fixes the issue where phases are missing order numbers
-      const usedOrderNumbers = new Set<string | number>();
-      sortedPhases.forEach(phase => {
-        if (phase.phaseOrderNumber !== undefined && phase.phaseOrderNumber !== null) {
-          usedOrderNumbers.add(phase.phaseOrderNumber);
-        }
-      });
-      
-      sortedPhases = sortedPhases.map((phase, index) => {
-        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
-          // Find next available number
-          let candidateNumber = index + 1;
-          while (usedOrderNumbers.has(candidateNumber) && candidateNumber <= sortedPhases.length + 10) {
-            candidateNumber++;
-          }
-          usedOrderNumbers.add(candidateNumber);
-          console.log('🔧 Final pass: Assigned missing order number:', {
-            phaseName: phase.name,
-            phaseId: phase.id,
-            assignedOrder: candidateNumber
-          });
-          return { ...phase, phaseOrderNumber: candidateNumber as number | 'first' | 'last' };
-        }
-        return phase;
-      });
-      
-      // CRITICAL: After all processing, ensure the last phase has 'last' if it was originally 'last'
-      if (sortedPhases.length > 0) {
-        const originalLastPhaseId = Array.from(preservedOrderNumbers.entries())
-          .find(([id, order]) => order === 'last')?.[0];
-        if (originalLastPhaseId) {
-          const lastPhaseInSorted = sortedPhases.find(p => p.id === originalLastPhaseId);
-          if (lastPhaseInSorted) {
-            // Restore 'last' to the original last phase
-            lastPhaseInSorted.phaseOrderNumber = 'last';
-            // Move it to the end if it's not already there
-            const currentIndex = sortedPhases.indexOf(lastPhaseInSorted);
-            if (currentIndex !== sortedPhases.length - 1) {
-              sortedPhases.splice(currentIndex, 1);
-              sortedPhases.push(lastPhaseInSorted);
-            }
-          } else {
-            // Original last phase not found - ensure current last phase has 'last'
-            const lastPhase = sortedPhases[sortedPhases.length - 1];
-            if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
-              lastPhase.phaseOrderNumber = 'last';
-            }
-          }
-        } else {
-          // No original last phase found - check if current last phase should have 'last'
-          // In Edit Standard mode, the last phase should always have 'last'
-          if (isEditingStandardProject) {
-            const lastPhase = sortedPhases[sortedPhases.length - 1];
-            if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
-              lastPhase.phaseOrderNumber = 'last';
-            }
-          }
-        }
-      }
-      
-      // CONDITION 2: Ensure ALL phases have order numbers before returning (no blanks)
-      // This is a final safety check to ensure no phase is missing an order number
-      sortedPhases.forEach((phase, index) => {
-        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
-          // Assign order number based on position
-          if (index === 0) {
-            // Check if first position should be 'first' or a number
-            const hasStandardFirst = sortedPhases.some(p => 
-              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'first'
-            );
-            if (!hasStandardFirst && !isEditingStandardProject) {
-              phase.phaseOrderNumber = 'first';
-            } else {
-              phase.phaseOrderNumber = 1;
-            }
-          } else if (index === sortedPhases.length - 1) {
-            // Check if last position should be 'last' or a number
-            const hasStandardLast = sortedPhases.some(p => 
-              isStandardPhase(p) && !p.isLinked && p.phaseOrderNumber === 'last'
-            );
-            if (!hasStandardLast && !isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
-              phase.phaseOrderNumber = 'last';
-            } else {
-              phase.phaseOrderNumber = index + 1;
-            }
-          } else {
-            phase.phaseOrderNumber = index + 1;
-          }
-          console.log('🔧 Assigned missing order number in processedPhases (final safety check):', {
-            phaseName: phase.name,
-            phaseId: phase.id,
-            assignedOrder: phase.phaseOrderNumber,
-            index,
-            totalPhases: sortedPhases.length
-          });
-        }
-      });
-      
-      return sortedPhases;
+    if (phasesToProcess.length === 0) {
+      return [];
     }
     
-    return [];
-  }, [mergedPhases, currentProject?.phases, standardProjectPhases, isEditingStandardProject, phaseToDelete]);
+    // Deduplicate phases
+    const deduplicatedPhases = deduplicatePhases(phasesToProcess);
+    
+    // CRITICAL: Apply sequential ordering validation - single source of truth
+    // This ensures all phases have sequential ordering positions (1, 2, 3, ...) with no gaps or duplicates
+    // Per user requirements: phases must be in sequential order, all must have ordering positions
+    const validatedPhases = validateAndFixSequentialOrdering(deduplicatedPhases);
+    
+    return validatedPhases;
+  }, [mergedPhases, currentProject?.phases, phaseToDelete]);
   
-  // Update displayPhases when processedPhases changes
-  // Always update displayPhases to match processedPhases (even if empty)
-  // This ensures displayPhases is always in sync with processedPhases
+  // Update displayPhases on initial project load only
+  // CRITICAL: This should only run when the project changes (initial load), not on every data change
+  // This prevents auto-refresh behavior - phases are loaded once and only updated via explicit actions (add/delete/reorder)
   useEffect(() => {
-    // CRITICAL: Skip refresh if we're in the middle of adding or deleting a phase
-    // We handle displayPhases updates directly in those functions to prevent double refreshes
-    if (skipNextRefresh) {
-      console.log('⏭️ Skipping refresh - operation in progress');
-      // Don't clear skipNextRefresh here - let the operation clear it when done
+    // Skip if we're actively adding or deleting (those functions handle their own updates)
+    if (isAddingPhase || isDeletingPhase || skipNextRefresh) {
       return;
     }
     
-    // Skip if we're actively adding or deleting
-    if (isAddingPhase || isDeletingPhase) {
-      console.log('⏭️ Skipping refresh - add/delete in progress', { isAddingPhase, isDeletingPhase });
-      return;
-    }
-    
-    console.log('🔍 StructureManager processed phases:', {
-      projectId: currentProject?.id,
-      projectName: currentProject?.name,
-      mergedPhasesCount: mergedPhases?.length || 0,
-      currentProjectPhasesCount: currentProject?.phases?.length || 0,
-      processedPhasesCount: processedPhases.length,
-      rebuiltPhasesCount: rebuiltPhases?.length || 0,
-      phaseNames: processedPhases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
-      rebuiltPhaseNames: rebuiltPhases?.map(p => p.name) || [],
-      currentPhaseNames: currentProject?.phases?.map(p => p.name) || [],
-      phasesOnlyInJson: mergedPhases ? currentProject?.phases?.filter(p => 
-        p.name && !rebuiltPhases?.some(rp => rp.name === p.name)
-      ).map(p => p.name) || [] : []
-    });
-    
-    // Always update displayPhases to match processedPhases
-    // BUT: If we just added a phase, check if it's in processedPhases before overwriting
-    // This prevents the new phase from disappearing before the refetch completes
-    if (justAddedPhaseId) {
-      const newPhaseInProcessed = processedPhases.some(p => p.id === justAddedPhaseId);
-      if (!newPhaseInProcessed) {
-        console.log('⚠️ Newly added phase not yet in processedPhases, preserving displayPhases');
-        // Don't overwrite displayPhases if the new phase isn't in processedPhases yet
-        return;
-      } else {
-        console.log('✅ Newly added phase found in processedPhases, updating displayPhases');
-      }
-    }
-    
-    // CRITICAL: Filter out deleted phase during deletion process to prevent flicker
-    // If we're currently deleting a phase, make sure it doesn't reappear during refetch
-    let phasesToDisplay = phaseToDelete 
-      ? processedPhases.filter(p => p.id !== phaseToDelete)
-      : processedPhases;
-    
-    // CRITICAL: If there are pending order changes, preserve order numbers from displayPhases
-    // This prevents the refresh from jumbling the order after re-ordering
-    // Also preserve order numbers in Edit Standard mode after deletion
-    if ((hasPendingOrderChanges || (isEditingStandardProject && phaseToDelete)) && displayPhases.length > 0) {
-      // Use the order from displayPhases (which has correct order numbers after re-ordering/deletion)
-      // but update with any new data from processedPhases
-      const displayPhasesMap = new Map(displayPhases.map(p => [p.id, p]));
-      phasesToDisplay = phasesToDisplay.map(p => {
-        const displayPhase = displayPhasesMap.get(p.id);
-        if (displayPhase && displayPhase.phaseOrderNumber !== undefined) {
-          // Preserve order number from displayPhases for all phases (not just standard)
-          return { ...p, phaseOrderNumber: displayPhase.phaseOrderNumber };
-        }
-        return p;
+    // Only update if we have processedPhases and displayPhases is empty (initial load)
+    // This ensures we only refresh on initial load, not on every data change
+    if (processedPhases.length > 0 && displayPhases.length === 0 && !phasesLoaded) {
+      console.log('🔄 Initial load: Setting displayPhases from processedPhases', {
+        projectId: currentProject?.id,
+        processedPhasesCount: processedPhases.length
       });
       
-      // Sort by order number to maintain correct order
-      phasesToDisplay = sortPhasesByOrderNumber(phasesToDisplay);
+      // Filter out deleted phase during deletion process
+      let phasesToDisplay = phaseToDelete 
+        ? processedPhases.filter(p => p.id !== phaseToDelete)
+        : processedPhases;
       
-      if (hasPendingOrderChanges) {
-        console.log('🔒 Preserved order numbers from displayPhases due to pending changes:', {
-          phases: phasesToDisplay.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
-        });
-      }
-      
-      console.log('🔧 Preserving order from displayPhases after deletion:', {
-        phases: phasesToDisplay.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
-      });
+      // Apply sequential ordering validation (ensures no gaps, no duplicates)
+      // processedPhases already has sequential ordering applied, but ensure it's sorted correctly
+      const sortedForDisplay = sortPhasesByOrderNumber(phasesToDisplay);
+    
+      // All phases should already have sequential ordering positions from processedPhases
+      // Just set displayPhases - no need for complex change detection on initial load
+      setDisplayPhases(sortedForDisplay);
+      setPhasesLoaded(true);
     }
-    
-    // CRITICAL: In Edit Standard mode, only show standard phases
-    // This ensures non-standard phases never appear in Edit Standard
-    if (isEditingStandardProject) {
-      phasesToDisplay = phasesToDisplay.filter(p => isStandardPhase(p) && !p.isLinked);
-    }
-    
-    // CONDITION 4: Always sort by order number before displaying
-    // This ensures phases are always rendered sequentially from lowest to highest, top to bottom
-    const sortedForDisplay = sortPhasesByOrderNumber(phasesToDisplay);
-    
-    // CRITICAL: Only update displayPhases if there's an actual change
-    // This prevents bouncy refreshes when data hasn't changed
-    const currentDisplayIds = new Set(displayPhases.map(p => p.id));
-    const newDisplayIds = new Set(sortedForDisplay.map(p => p.id));
-    const displayIdsChanged = 
-      currentDisplayIds.size !== newDisplayIds.size ||
-      !Array.from(currentDisplayIds).every(id => newDisplayIds.has(id)) ||
-      !Array.from(newDisplayIds).every(id => currentDisplayIds.has(id));
-    
-    // Also check if order numbers changed (even if same phases)
-    // CRITICAL: Compare order numbers properly, handling undefined/null values
-    const displayOrderChanged = displayPhases.length !== sortedForDisplay.length ||
-      displayPhases.some((phase, index) => {
-        const newPhase = sortedForDisplay[index];
-        if (!newPhase || phase.id !== newPhase.id) {
-          return true; // Phase ID changed or phase missing
-        }
-        // Compare order numbers, treating undefined/null as different from any value
-        const currentOrder = phase.phaseOrderNumber;
-        const newOrder = newPhase.phaseOrderNumber;
-        // If one is undefined/null and the other isn't, they're different
-        if ((currentOrder === undefined || currentOrder === null) !== (newOrder === undefined || newOrder === null)) {
-          return true;
-        }
-        // If both are defined, compare them
-        if (currentOrder !== undefined && currentOrder !== null && newOrder !== undefined && newOrder !== null) {
-          return currentOrder !== newOrder;
-        }
-        // Both are undefined/null - check if they should have values
-        // If a phase should have an order number but doesn't, that's a change
-        return false; // Both undefined - no change detected (will be handled by validation)
-      });
-    
-    const displayNeedsUpdate = displayIdsChanged || displayOrderChanged;
-    
-    if (displayNeedsUpdate) {
-      // CONDITION 2: Ensure ALL phases have order numbers before setting displayPhases (no blanks)
-      // This fixes the issue where regular phases are missing order numbers
-      const usedOrderNumbers = new Set<string | number>();
-      sortedForDisplay.forEach(phase => {
-        if (phase.phaseOrderNumber !== undefined && phase.phaseOrderNumber !== null) {
-          usedOrderNumbers.add(phase.phaseOrderNumber);
-        }
-      });
-      
-      const phasesWithOrderNumbers = sortedForDisplay.map((phase, index) => {
-        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
-          // Find next available number
-          let candidateNumber = index + 1;
-          while (usedOrderNumbers.has(candidateNumber) && candidateNumber <= sortedForDisplay.length + 10) {
-            candidateNumber++;
-          }
-          usedOrderNumbers.add(candidateNumber);
-          console.log('🔧 Assigned missing order number when setting displayPhases:', {
-            phaseName: phase.name,
-            phaseId: phase.id,
-            assignedOrder: candidateNumber,
-            index,
-            isStandard: isStandardPhase(phase),
-            isLinked: phase.isLinked
-          });
-          return { ...phase, phaseOrderNumber: candidateNumber as number | 'first' | 'last' };
-        }
-        return phase;
-      });
-      
-      // CRITICAL: Only update if there's an actual meaningful change
-      // Compare the actual order numbers to prevent unnecessary updates
-      const hasMeaningfulChange = displayIdsChanged || 
-        phasesWithOrderNumbers.some((phase, index) => {
-          const currentPhase = displayPhases[index];
-          if (!currentPhase || currentPhase.id !== phase.id) {
-            return true; // Phase ID changed
-          }
-          // Compare order numbers
-          const currentOrder = currentPhase.phaseOrderNumber;
-          const newOrder = phase.phaseOrderNumber;
-          if ((currentOrder === undefined || currentOrder === null) !== (newOrder === undefined || newOrder === null)) {
-            return true; // One has order, other doesn't
-          }
-          if (currentOrder !== undefined && currentOrder !== null && newOrder !== undefined && newOrder !== null) {
-            return currentOrder !== newOrder; // Both have orders, compare them
-          }
-          return false; // Both undefined/null - no change
-        });
-      
-      if (hasMeaningfulChange) {
-        console.log('🔄 Updating displayPhases:', {
-          idsChanged: displayIdsChanged,
-          orderChanged: displayOrderChanged,
-          currentCount: displayPhases.length,
-          newCount: phasesWithOrderNumbers.length,
-          phases: phasesWithOrderNumbers.map(p => ({ name: p.name, order: p.phaseOrderNumber, isStandard: p.isStandard }))
-        });
-        setDisplayPhases(phasesWithOrderNumbers);
-      } else {
-        console.log('⏭️ Skipping displayPhases update - no meaningful changes detected');
-      }
-    } else {
-      console.log('⏭️ Skipping displayPhases update - no changes detected');
-    }
-    
-    setPhasesLoaded(true);
-      
-    // Update local context with fresh phases ONLY if phases actually changed
-    // This prevents infinite loops from updateProject triggering re-renders
-    if (currentProject && phasesToDisplay.length > 0) {
-      // Check if phases actually changed before updating
-      const currentPhaseIds = new Set((currentProject.phases || []).map(p => p.id));
-      const displayPhaseIds = new Set(phasesToDisplay.map(p => p.id));
-      const phasesChanged = 
-        currentPhaseIds.size !== displayPhaseIds.size ||
-        !Array.from(currentPhaseIds).every(id => displayPhaseIds.has(id)) ||
-        !Array.from(displayPhaseIds).every(id => currentPhaseIds.has(id));
-      
-      // CRITICAL: Also check if order numbers changed (validation fixes)
-      // Compare order numbers properly, handling undefined/null values
-      const orderNumbersChanged = phasesToDisplay.some((phase) => {
-        const currentPhase = currentProject.phases?.find(p => p.id === phase.id);
-        if (!currentPhase) {
-          return true; // New phase - order number changed
-        }
-        const currentOrder = currentPhase.phaseOrderNumber;
-        const newOrder = phase.phaseOrderNumber;
-        // If one is undefined/null and the other isn't, they're different
-        if ((currentOrder === undefined || currentOrder === null) !== (newOrder === undefined || newOrder === null)) {
-          return true;
-        }
-        // If both are defined, compare them
-        if (currentOrder !== undefined && currentOrder !== null && newOrder !== undefined && newOrder !== null) {
-          return currentOrder !== newOrder;
-        }
-        // Both are undefined/null - no change
-        return false;
-      });
-      
-      if (phasesChanged || orderNumbersChanged) {
-        // CRITICAL: Only update if we're not already updating to prevent infinite loops
-        if (!isUpdatingProjectRef.current) {
-          // Create a hash of the phases to compare with last saved
-          const phasesHash = JSON.stringify(phasesToDisplay.map(p => ({ id: p.id, order: p.phaseOrderNumber })));
-          
-          // Only update if phases actually changed
-          if (phasesHash !== lastSavedPhasesRef.current) {
-            isUpdatingProjectRef.current = true;
-            lastSavedPhasesRef.current = phasesHash;
-            
-            console.log('🔧 updateProject called: phases or order numbers changed', {
-              projectId: currentProject.id,
-              oldCount: currentProject.phases?.length || 0,
-              newCount: phasesToDisplay.length,
-              orderNumbersChanged
-            });
-            
-            // CRITICAL: Explicitly include phaseOrderNumber in all phases before saving
-            const phasesWithOrderNumbers = phasesToDisplay.map(phase => ({
-              ...phase,
-              phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
-            }));
-            
-            // CRITICAL: Save order positions to database before updating project JSON
-            // This ensures the database is the source of truth for phase ordering
-            (async () => {
-              try {
-                await updatePhaseOrder(phasesWithOrderNumbers);
-              } catch (error) {
-                console.error('❌ Error saving phase order positions:', error);
-                // Continue with JSON update even if position save fails
-              }
-            })();
-            
-            // Use setTimeout to break the render cycle
-            setTimeout(() => {
-              updateProject({
-                ...currentProject,
-                phases: phasesWithOrderNumbers,
-                updatedAt: new Date()
-              });
-              isUpdatingProjectRef.current = false;
-            }, 0);
-          }
-        }
-      }
-    }
-  }, [rebuildingPhases, currentProject?.id, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId, skipNextRefresh, isAddingPhase, isDeletingPhase, phaseToDelete]);
+  }, [currentProject?.id, processedPhases, displayPhases.length, phasesLoaded, isAddingPhase, isDeletingPhase, skipNextRefresh, phaseToDelete]); // CRITICAL: Depend on project ID for initial load, but check processedPhases when available
 
   // CRITICAL: Verify phases exist in database for standard projects
   // This prevents deleted phases from appearing after page refresh
