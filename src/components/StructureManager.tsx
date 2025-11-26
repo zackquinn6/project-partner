@@ -98,6 +98,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [isDeletingPhase, setIsDeletingPhase] = useState(false);
   const [reorderingPhaseId, setReorderingPhaseId] = useState<string | null>(null);
   const [skipNextRefresh, setSkipNextRefresh] = useState(false);
+  // CRITICAL: Track verified phase IDs for standard projects to filter out deleted phases
+  const [verifiedPhaseIds, setVerifiedPhaseIds] = useState<Set<string>>(new Set());
 
   // Collapsible state
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -376,9 +378,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     
     // CRITICAL: Filter out deleted phase if we're currently deleting one
     // This prevents the deleted phase from reappearing in mergedPhases
-    const currentPhasesFiltered = phaseToDelete 
+    // CRITICAL: For standard projects, also filter out phases that don't exist in database
+    let currentPhasesFiltered = phaseToDelete 
       ? (currentProject.phases || []).filter(p => p.id !== phaseToDelete)
       : (currentProject.phases || []);
+    
+    // CRITICAL: For standard projects, verify phases exist in database
+    // This prevents deleted phases from appearing after page refresh
+    if (isEditingStandardProject && verifiedPhaseIds.size > 0) {
+      const beforeCount = currentPhasesFiltered.length;
+      currentPhasesFiltered = currentPhasesFiltered.filter(phase => {
+        const exists = phase.id ? verifiedPhaseIds.has(phase.id) : false;
+        if (!exists && phase.id) {
+          console.log('🚫 Filtering out deleted phase from currentProject.phases in mergedPhases:', {
+            phaseId: phase.id,
+            phaseName: phase.name
+          });
+        }
+        return exists;
+      });
+      const afterCount = currentPhasesFiltered.length;
+      if (beforeCount !== afterCount) {
+        console.log('✅ Filtered out deleted phases from currentProject.phases in mergedPhases:', {
+          beforeCount,
+          afterCount,
+          filteredCount: beforeCount - afterCount
+        });
+      }
+    }
     
     // Double-check: Also filter from rebuiltPhases if phaseToDelete is set
     // This ensures the deleted phase doesn't come back from the refetch
@@ -631,6 +658,30 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       ? (currentProject.phases || []).filter(p => p.id !== phaseToDelete)
       : (currentProject.phases || []);
     
+    // CRITICAL: For standard projects, verify phases exist in database
+    // This prevents deleted phases from appearing after page refresh
+    if (isEditingStandardProject && verifiedPhaseIds.size > 0) {
+      const beforeCount = fallbackPhases.length;
+      fallbackPhases = fallbackPhases.filter(phase => {
+        const exists = phase.id ? verifiedPhaseIds.has(phase.id) : false;
+        if (!exists && phase.id) {
+          console.log('🚫 Filtering out deleted phase from fallback phases:', {
+            phaseId: phase.id,
+            phaseName: phase.name
+          });
+        }
+        return exists;
+      });
+      const afterCount = fallbackPhases.length;
+      if (beforeCount !== afterCount) {
+        console.log('✅ Filtered out deleted phases from fallback phases:', {
+          beforeCount,
+          afterCount,
+          filteredCount: beforeCount - afterCount
+        });
+      }
+    }
+    
     // CRITICAL: In Edit Standard mode, filter to ONLY standard phases
     // Standard Project Foundation should never show non-standard or incorporated phases
     if (isEditingStandardProject) {
@@ -642,7 +693,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     return fallbackPhases;
-  }, [currentProject?.phases, rebuiltPhases, justAddedPhaseId, phaseToDelete]);
+  }, [currentProject?.phases, rebuiltPhases, justAddedPhaseId, phaseToDelete, isEditingStandardProject, verifiedPhaseIds]);
   
   // Process merged phases and update displayPhases
   // Use mergedPhases directly (same as EditWorkflowView uses rawPhases)
@@ -1023,6 +1074,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     }
   }, [processedPhases, rebuildingPhases, currentProject?.id, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId, skipNextRefresh, isAddingPhase, isDeletingPhase, phaseToDelete]);
+
+  // CRITICAL: Verify phases exist in database for standard projects
+  // This prevents deleted phases from appearing after page refresh
+  useEffect(() => {
+    if (isEditingStandardProject && currentProject?.id) {
+      const verifyPhases = async () => {
+        try {
+          const { data: existingPhases, error } = await supabase
+            .from('project_phases')
+            .select('id')
+            .eq('project_id', currentProject.id);
+          
+          if (error) {
+            console.error('❌ Error verifying phases exist:', error);
+            setVerifiedPhaseIds(new Set());
+          } else if (existingPhases) {
+            const verifiedIds = new Set(existingPhases.map(p => p.id));
+            setVerifiedPhaseIds(verifiedIds);
+            console.log('✅ Verified phase IDs for standard project:', {
+              projectId: currentProject.id,
+              verifiedCount: verifiedIds.size,
+              verifiedIds: Array.from(verifiedIds)
+            });
+          }
+        } catch (err) {
+          console.error('❌ Error verifying phases:', err);
+          setVerifiedPhaseIds(new Set());
+        }
+      };
+      
+      verifyPhases();
+    } else {
+      // For non-standard projects, clear verified IDs (not needed)
+      setVerifiedPhaseIds(new Set());
+    }
+  }, [isEditingStandardProject, currentProject?.id]);
 
   // Reset phases when project changes
   useEffect(() => {
