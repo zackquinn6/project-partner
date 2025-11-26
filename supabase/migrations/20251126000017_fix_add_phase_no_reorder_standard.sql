@@ -93,61 +93,24 @@ BEGIN
     -- CRITICAL: Do NOT update existing phases' position_value
     -- The new phase will use the next available position_value, and existing phases keep their values
   ELSE
-    -- For regular projects, set new custom phases to 'last_minus_n' with value 1 (second-to-last)
-    -- This places the new phase before the "Close Project" phase (which has position_rule = 'last')
-    -- The position can be edited after creation
-    -- CRITICAL: Never allow custom phases to use 'last' position - it's reserved for standard "Close Project" phase
-    -- CRITICAL: Never allow custom phases to use 'first' or 'nth' with value 1 - reserved for standard "Kickoff" phase
+    -- For regular projects, new custom phases always land at "last minus one" position
+    -- Design intent: Each new phase is added to the end of the list without reordering existing phases
+    -- The new phase uses the next available position_value for 'last_minus_n'
     v_position_rule := 'last_minus_n';
-    v_position_value := 1;
     
-    -- CRITICAL: Explicitly prevent reserved positions for custom phases
-    IF v_position_rule = 'last' THEN
-      RAISE EXCEPTION 'Position "last" is reserved for the standard "Close Project" phase and cannot be used by custom phases';
-    END IF;
-    
-    IF v_position_rule = 'first' THEN
-      RAISE EXCEPTION 'Position "first" is reserved for the standard "Kickoff" phase and cannot be used by custom phases';
-    END IF;
-    
-    IF v_position_rule = 'nth' AND v_position_value = 1 THEN
-      RAISE EXCEPTION 'Position "nth" with position_value = 1 is reserved for the standard "Kickoff" phase and cannot be used by custom phases';
-    END IF;
-    
-    -- CRITICAL: Reorder existing last_minus_n phases to make room for the new phase
-    -- When a new phase is added at last_minus_n with value 1, all existing last_minus_n phases
-    -- should be incremented (slid forward) to make room
-    -- This ensures phases are properly ordered and don't conflict
-    -- NOTE: This reordering is ONLY for regular projects, NOT for standard projects
-    
-    -- First, check if there are any existing phases with last_minus_n
-    SELECT COUNT(*) INTO v_existing_phase_count
+    -- Find the maximum position_value for existing 'last_minus_n' phases in this project
+    -- If no existing phases, start at position_value = 1
+    SELECT COALESCE(MAX(pp.position_value), 0) INTO v_position_value
     FROM public.project_phases pp
     WHERE pp.project_id = p_project_id
       AND pp.position_rule = 'last_minus_n';
     
-    IF v_existing_phase_count > 0 THEN
-      -- Increment position_value for all existing last_minus_n phases
-      -- This slides them forward to make room for the new phase at position_value = 1
-      UPDATE public.project_phases pp
-      SET position_value = pp.position_value + 1,
-          updated_at = NOW()
-      WHERE pp.project_id = p_project_id
-        AND pp.position_rule = 'last_minus_n';
-      
-      RAISE NOTICE 'Reordered % existing last_minus_n phases to make room for new phase', v_existing_phase_count;
-    END IF;
+    -- Set the new phase's position_value to max + 1
+    -- This ensures it's added at the end without overlapping existing phases
+    v_position_value := v_position_value + 1;
     
-    -- The new phase will use position_value = 1 (which is now available after reordering)
-    
-    -- CRITICAL: Validate that the new custom phase doesn't use position rules that conflict with standard phases
-    -- Standard phases have these reserved position rules:
-    -- - 'first' (Kickoff) - equivalent to 'nth' with position_value = 1 - RESERVED, cannot be used
-    -- - 'nth' with position_value = 2 (Planning) - RESERVED, cannot be used
-    -- - 'last_minus_n' with position_value = 1 (Ordering) - ALLOWED for custom phases (they can share this position)
-    -- - 'last' (Close Project) - RESERVED, cannot be used
-    -- Custom phases should NOT use the reserved position rules, but can share 'last_minus_n' with value 1
-    
+    -- CRITICAL: Validate that the new custom phase doesn't use any position occupied by a standard phase
+    -- This includes 'first', 'last', and any 'nth' positions used by standard phases
     -- Get all standard phases from Standard Project Foundation to check for conflicts
     FOR v_standard_phases IN
       SELECT pp.position_rule, pp.position_value
@@ -155,24 +118,28 @@ BEGIN
       WHERE pp.project_id = v_standard_project_id
         AND pp.position_rule IS NOT NULL
     LOOP
-      -- Check if the NEW phase we're about to create conflicts with standard phases
-      -- CRITICAL: Recognize that 'first' and 'nth' with position_value = 1 are the same position
-      -- CRITICAL: Allow 'last_minus_n' with value 1 to be shared between standard and custom phases
+      -- Check if the new phase's position conflicts with any standard phase position
+      -- We need to check:
+      -- 1. If standard phase uses 'first' or 'last' - these are always reserved
+      -- 2. If standard phase uses 'nth' with a specific value - that value is reserved
+      -- 3. If standard phase uses 'last_minus_n' with a specific value - that value is reserved
+      -- 4. Special case: 'first' and 'nth' with value 1 are equivalent
+      
       IF (
-        -- Check for exact matches on reserved rules (excluding 'last_minus_n' which can be shared)
-        (v_position_rule = v_standard_phases.position_rule
-         AND v_standard_phases.position_rule IN ('first', 'last')
-         AND v_position_value IS NULL)
-        -- Check for 'nth' conflicts (excluding value 1 which is equivalent to 'first')
-        OR (v_standard_phases.position_rule = 'nth' 
-            AND v_position_rule = 'nth' 
-            AND v_position_value = v_standard_phases.position_value
-            AND v_standard_phases.position_value != 1) -- Allow nth with value 1 (it's equivalent to 'first')
-        -- CRITICAL: Check if new phase uses 'nth' with value 1, which conflicts with 'first'
+        -- Standard phase uses 'first' - reserved, cannot be used
+        (v_standard_phases.position_rule = 'first')
+        -- Standard phase uses 'last' - reserved, cannot be used
+        OR (v_standard_phases.position_rule = 'last')
+        -- Standard phase uses 'nth' with a specific value - that value is reserved
+        OR (v_standard_phases.position_rule = 'nth' AND v_standard_phases.position_value IS NOT NULL)
+        -- Standard phase uses 'last_minus_n' with a specific value - that value is reserved
+        OR (v_standard_phases.position_rule = 'last_minus_n' 
+            AND v_standard_phases.position_value IS NOT NULL
+            AND v_standard_phases.position_value = v_position_value)
+        -- Special case: 'first' is equivalent to 'nth' with value 1
         OR (v_standard_phases.position_rule = 'first' 
             AND v_position_rule = 'nth' 
             AND v_position_value = 1)
-        -- CRITICAL: Check if new phase uses 'first', which conflicts with 'nth' with value 1
         OR (v_standard_phases.position_rule = 'nth' 
             AND v_standard_phases.position_value = 1
             AND v_position_rule = 'first')
@@ -180,8 +147,16 @@ BEGIN
         -- Provide a clear error message indicating the conflict
         IF v_standard_phases.position_rule = 'first' THEN
           RAISE EXCEPTION 'Position "first" (or "nth" with position_value = 1) is reserved for the standard "Kickoff" phase and cannot be used by custom phases';
+        ELSIF v_standard_phases.position_rule = 'last' THEN
+          RAISE EXCEPTION 'Position "last" is reserved for the standard "Close Project" phase and cannot be used by custom phases';
         ELSIF v_standard_phases.position_rule = 'nth' AND v_standard_phases.position_value = 1 THEN
           RAISE EXCEPTION 'Position "nth" with position_value = 1 (or "first") is reserved for the standard "Kickoff" phase and cannot be used by custom phases';
+        ELSIF v_standard_phases.position_rule = 'nth' THEN
+          RAISE EXCEPTION 'Position "nth" with position_value = % is reserved for standard phases and cannot be used by custom phases',
+            v_standard_phases.position_value;
+        ELSIF v_standard_phases.position_rule = 'last_minus_n' THEN
+          RAISE EXCEPTION 'Position "last_minus_n" with position_value = % is reserved for standard phases and cannot be used by custom phases',
+            v_standard_phases.position_value;
         ELSE
           RAISE EXCEPTION 'Position rule "%" with position_value % is reserved for standard phases and cannot be used by custom phases',
             v_standard_phases.position_rule,
@@ -189,33 +164,6 @@ BEGIN
         END IF;
       END IF;
     END LOOP;
-    
-    -- Also check for duplicate position rules within custom phases in this project
-    -- Ensure that 'first' and 'nth' with value 1 are treated as the same position
-    SELECT * INTO v_conflicting_phase
-    FROM public.project_phases pp
-    WHERE pp.project_id = p_project_id
-      AND (
-        -- Check if another custom phase already uses 'last_minus_n' with the same value
-        (pp.position_rule = v_position_rule AND pp.position_value = v_position_value)
-        -- Check if another custom phase uses 'first' when we're trying to use 'nth' with value 1
-        OR (v_position_rule = 'nth' AND v_position_value = 1 AND pp.position_rule = 'first')
-        -- Check if another custom phase uses 'nth' with value 1 when we're trying to use 'first'
-        OR (v_position_rule = 'first' AND pp.position_rule = 'nth' AND pp.position_value = 1)
-      )
-      LIMIT 1;
-    
-    IF v_conflicting_phase IS NOT NULL THEN
-      IF v_position_rule = 'nth' AND v_position_value = 1 THEN
-        RAISE EXCEPTION 'Position "nth" with position_value = 1 (or "first") is already used by another phase';
-      ELSIF v_position_rule = 'first' THEN
-        RAISE EXCEPTION 'Position "first" (or "nth" with position_value = 1) is already used by another phase';
-      ELSE
-        RAISE EXCEPTION 'Position rule "%" with position_value % is already used by another phase',
-          v_position_rule,
-          COALESCE(v_position_value::TEXT, 'NULL');
-      END IF;
-    END IF;
   END IF;
 
   -- Insert the new phase
@@ -323,20 +271,29 @@ BEGIN
   RETURNING id INTO v_new_step_id;
 
   -- CRITICAL: Final validation - ensure the phase wasn't created with a conflicting position
-  -- This is a safety check in case something went wrong earlier
+  -- This is a safety check to verify the phase doesn't conflict with any standard phase position
   IF NOT v_is_standard THEN
-    -- Check if the phase was created with a reserved position
-    IF v_position_rule = 'first' OR (v_position_rule = 'nth' AND v_position_value = 1) THEN
-      -- Delete the phase we just created since it has an invalid position
-      DELETE FROM public.project_phases WHERE id = v_new_phase_id;
-      RAISE EXCEPTION 'Custom phases cannot use position "first" or "nth" with position_value = 1 (reserved for standard "Kickoff" phase)';
-    END IF;
-    
-    IF v_position_rule = 'last' THEN
-      -- Delete the phase we just created since it has an invalid position
-      DELETE FROM public.project_phases WHERE id = v_new_phase_id;
-      RAISE EXCEPTION 'Custom phases cannot use position "last" (reserved for standard "Close Project" phase)';
-    END IF;
+    -- Check if the phase position conflicts with any standard phase position
+    FOR v_standard_phases IN
+      SELECT pp.position_rule, pp.position_value
+      FROM public.project_phases pp
+      WHERE pp.project_id = v_standard_project_id
+        AND pp.position_rule IS NOT NULL
+    LOOP
+      -- Check for conflicts with standard phase positions
+      IF (
+        (v_standard_phases.position_rule = 'first' AND (v_position_rule = 'first' OR (v_position_rule = 'nth' AND v_position_value = 1)))
+        OR (v_standard_phases.position_rule = 'last' AND v_position_rule = 'last')
+        OR (v_standard_phases.position_rule = 'nth' AND v_position_rule = 'nth' AND v_position_value = v_standard_phases.position_value)
+        OR (v_standard_phases.position_rule = 'last_minus_n' AND v_position_rule = 'last_minus_n' AND v_position_value = v_standard_phases.position_value)
+      ) THEN
+        -- Delete the phase we just created since it has an invalid position
+        DELETE FROM public.project_phases WHERE id = v_new_phase_id;
+        RAISE EXCEPTION 'Custom phase position conflicts with standard phase position "%" (position_value: %)',
+          v_standard_phases.position_rule,
+          COALESCE(v_standard_phases.position_value::TEXT, 'NULL');
+      END IF;
+    END LOOP;
   END IF;
 
   -- Return the new phase
@@ -357,5 +314,7 @@ $$;
 
 COMMENT ON FUNCTION public.add_custom_project_phase IS 
 'Adds a new phase to a project. For standard projects, finds the next available position_value without modifying existing phases.
-For regular projects, reorders existing last_minus_n phases to make room for the new phase at position_value = 1.';
+For regular projects, new custom phases always land at "last minus one" position. The new phase uses the next available position_value 
+for last_minus_n (max existing + 1), ensuring phases are added to the end of the list without reordering existing phases.
+Custom phases are prevented from using any position occupied by a standard phase (including first and last).';
 
