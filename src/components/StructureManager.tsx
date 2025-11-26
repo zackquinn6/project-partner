@@ -2250,6 +2250,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     } catch (error) {
       console.error('❌ Error saving phase order to database:', error);
       toast.error('Error saving phase order');
+      setIsChangingPhaseOrder(false);
+      setSkipNextRefresh(false);
       // Revert to previous state on error - read directly from database as source of truth
       try {
         if (isEditingStandardProject) {
