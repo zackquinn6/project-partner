@@ -95,6 +95,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [deletePhaseDialogOpen, setDeletePhaseDialogOpen] = useState(false);
   const [phaseIdPendingDelete, setPhaseIdPendingDelete] = useState<string | null>(null); // Phase ID waiting for confirmation
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null); // Phase ID being deleted (triggers filtering)
+  const [isChangingPhaseOrder, setIsChangingPhaseOrder] = useState(false); // Flag to prevent reordering during manual order change
   const [isDeletingPhase, setIsDeletingPhase] = useState(false);
   const [reorderingPhaseId, setReorderingPhaseId] = useState<string | null>(null);
   const [skipNextRefresh, setSkipNextRefresh] = useState(false);
@@ -914,7 +915,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Use mergedPhases directly (same as EditWorkflowView uses rawPhases)
   // Process phases similar to EditWorkflowView for consistency
   // CRITICAL: Database is the source of truth - preserve order from database when available
+  // CRITICAL: Don't reorder if skipNextRefresh or isChangingPhaseOrder is true
   const processedPhases = React.useMemo(() => {
+    // CRITICAL: Skip processing if we're actively changing phase order
+    // This prevents reordering while the user is manually changing order positions
+    if (skipNextRefresh || isChangingPhaseOrder) {
+      console.log('⏭️ Skipping processedPhases - order change in progress:', {
+        skipNextRefresh,
+        isChangingPhaseOrder
+      });
+      return [];
+    }
+    
     // Get phases from mergedPhases (which already handles Edit Standard filtering)
     let phasesToProcess: Phase[] = [];
     
@@ -978,7 +990,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const validatedPhases = validateAndFixSequentialOrdering(deduplicatedPhases);
       return validatedPhases;
     }
-  }, [mergedPhases, currentProject?.phases, phaseToDelete]);
+  }, [mergedPhases, currentProject?.phases, phaseToDelete, skipNextRefresh, isChangingPhaseOrder]);
   
   // CRITICAL: Force immediate refresh on opening StructureManager
   // For Edit Standard, fetch directly from database without intermediate processes
@@ -2046,6 +2058,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       return;
     }
     
+    // Prevent concurrent order changes
+    if (isChangingPhaseOrder) {
+      console.log('⏭️ Phase order change already in progress, skipping');
+      return;
+    }
+    
     const phase = displayPhases.find(p => p.id === phaseId);
     if (!phase) {
       console.error('❌ Phase not found for order change:', phaseId);
@@ -2061,45 +2079,49 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       totalPhases: displayPhases.length
     });
     
-    // Convert 'First'/'Last' to numeric positions for sequential ordering
-    const targetPosition = newOrder === 'First' ? 1 : newOrder === 'Last' ? displayPhases.length : 
-                          typeof newOrder === 'number' ? newOrder : parseInt(String(newOrder), 10);
+    setIsChangingPhaseOrder(true);
+    setSkipNextRefresh(true); // Prevent processedPhases from reordering
     
-    // Validate target position
-    if (isNaN(targetPosition) || targetPosition < 1 || targetPosition > displayPhases.length) {
-      console.error('❌ Invalid target position:', targetPosition, 'from newOrder:', newOrder);
-      toast.error('Invalid position selected');
-      return;
-    }
-    
-    // Create reordered array by moving the phase to target position
-    const phasesArray = [...displayPhases];
-    const currentIndex = phasesArray.findIndex(p => p.id === phaseId);
-    
-    if (currentIndex === -1) {
-      console.error('❌ Phase not found in displayPhases:', phaseId);
-      return;
-    }
-    
-    // Move phase to target position
-    const [movedPhase] = phasesArray.splice(currentIndex, 1);
-    const targetIndex = Math.min(Math.max(0, targetPosition - 1), phasesArray.length);
-    phasesArray.splice(targetIndex, 0, movedPhase);
-    
-    // CRITICAL: Apply sequential ordering validation (1, 2, 3, ...)
-    // This ensures ALL phases have valid order positions, even if they were missing them
-    const reorderedPhases = validateAndFixSequentialOrdering(phasesArray);
-    
-    console.log('✅ Phases reordered:', {
-      movedPhase: phase.name,
-      fromIndex: currentIndex,
-      toIndex: targetIndex,
-      before: displayPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber })),
-      after: reorderedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
-    });
-    
-    // Update display immediately (optimistic UI update)
-    setDisplayPhases(reorderedPhases);
+    try {
+      // Convert 'First'/'Last' to numeric positions for sequential ordering
+      const targetPosition = newOrder === 'First' ? 1 : newOrder === 'Last' ? displayPhases.length : 
+                            typeof newOrder === 'number' ? newOrder : parseInt(String(newOrder), 10);
+      
+      // Validate target position
+      if (isNaN(targetPosition) || targetPosition < 1 || targetPosition > displayPhases.length) {
+        console.error('❌ Invalid target position:', targetPosition, 'from newOrder:', newOrder);
+        toast.error('Invalid position selected');
+        return;
+      }
+      
+      // Create reordered array by moving the phase to target position
+      const phasesArray = [...displayPhases];
+      const currentIndex = phasesArray.findIndex(p => p.id === phaseId);
+      
+      if (currentIndex === -1) {
+        console.error('❌ Phase not found in displayPhases:', phaseId);
+        return;
+      }
+      
+      // Move phase to target position
+      const [movedPhase] = phasesArray.splice(currentIndex, 1);
+      const targetIndex = Math.min(Math.max(0, targetPosition - 1), phasesArray.length);
+      phasesArray.splice(targetIndex, 0, movedPhase);
+      
+      // CRITICAL: Apply sequential ordering validation (1, 2, 3, ...)
+      // This ensures ALL phases have valid order positions, even if they were missing them
+      const reorderedPhases = validateAndFixSequentialOrdering(phasesArray);
+      
+      console.log('✅ Phases reordered:', {
+        movedPhase: phase.name,
+        fromIndex: currentIndex,
+        toIndex: targetIndex,
+        before: displayPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber })),
+        after: reorderedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+      });
+      
+      // Update display immediately (optimistic UI update)
+      setDisplayPhases(reorderedPhases);
     
     // CRITICAL: Immediately commit to database
     try {
@@ -2194,52 +2216,37 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       console.log('✅ Phase order positions saved to database immediately');
       
-      // Rebuild phases from database and refresh UI
-      let freshPhases: Phase[] = [];
+      // CRITICAL: Don't rebuild phases immediately - the reorderedPhases already have correct order
+      // Rebuilding would fetch from database but might apply reordering logic
+      // Instead, just update the project JSON and context with the reordered phases we already have
       
-      if (isEditingStandardProject) {
-        // For Edit Standard: fetch directly from database
-        const { data: rebuiltPhases, error } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-        p_project_id: currentProject.id
+      // Update project JSON with reordered phases
+      await supabase
+        .from('projects')
+        .update({ phases: reorderedPhases as any })
+        .eq('id', currentProject.id);
+      
+      // Update context and display - use reorderedPhases directly
+      updateProject({
+        ...currentProject,
+        phases: reorderedPhases,
+        updatedAt: new Date()
       });
       
-        if (!error && rebuiltPhases) {
-          freshPhases = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
-          freshPhases = freshPhases.filter(p => isStandardPhase(p) && !p.isLinked);
-        }
-      } else {
-        // For regular projects: use get_project_workflow_with_standards
-        const { data, error } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
-          p_project_id: currentProject.id
-        });
-        
-        if (!error && data) {
-          freshPhases = Array.isArray(data) ? data : [];
-        }
-      }
+      // DisplayPhases is already updated with reorderedPhases (optimistic update above)
+      toast.success('Phase order updated and saved');
       
-      if (freshPhases.length > 0) {
-        // Apply sequential ordering and update
-        const validatedPhases = validateAndFixSequentialOrdering(deduplicatePhases(freshPhases));
-        
-        // Update project JSON
-        await supabase
-          .from('projects')
-          .update({ phases: validatedPhases as any })
-          .eq('id', currentProject.id);
-        
-        // Update context and display
-        updateProject({
-          ...currentProject,
-          phases: validatedPhases,
-          updatedAt: new Date()
-        });
-        
-        setDisplayPhases(validatedPhases);
-        toast.success('Phase order updated and saved');
-      } else {
-        toast.error('Error refreshing phases after save');
-      }
+      console.log('✅ Phase order updated without rebuilding - using reordered phases directly:', {
+        count: reorderedPhases.length,
+        phases: reorderedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+      });
+      
+      // Clear the flag after successful update
+      setIsChangingPhaseOrder(false);
+      // Keep skipNextRefresh true for a bit longer to prevent processedPhases from reordering
+      setTimeout(() => {
+        setSkipNextRefresh(false);
+      }, 1000);
     } catch (error) {
       console.error('❌ Error saving phase order to database:', error);
       toast.error('Error saving phase order');
