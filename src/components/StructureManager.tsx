@@ -1037,24 +1037,75 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   // Use currentProject.phases as the primary source (like EditWorkflowView)
   // This ensures all phases are visible immediately, including custom phases
   // Only run if mergedPhases hasn't populated displayPhases yet
+  // CRITICAL: For standard projects, verify phases exist in database to filter out deleted phases
   useEffect(() => {
     if (!phasesLoaded && !rebuildingPhases && currentProject && currentProject.phases && currentProject.phases.length > 0 && displayPhases.length === 0) {
-      const rawPhases = deduplicatePhases(currentProject.phases);
-      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
-      const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
-      const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
-      if (sortedPhases.length > 0) {
-        console.log('🔍 StructureManager initializing displayPhases from currentProject (fallback):', {
-          projectId: currentProject.id,
-          projectName: currentProject.name,
-          phaseCount: sortedPhases.length,
-          phaseNames: sortedPhases.map(p => p.name)
-        });
-        setDisplayPhases(sortedPhases);
-        setPhasesLoaded(true);
-      }
+      const initializePhases = async () => {
+        let phasesToDisplay = deduplicatePhases(currentProject.phases);
+        
+        // CRITICAL: For standard projects, verify phases exist in database
+        // This prevents deleted phases from appearing after page refresh
+        if (isEditingStandardProject) {
+          try {
+            // Get all phase IDs from project_phases table
+            const { data: existingPhases, error } = await supabase
+              .from('project_phases')
+              .select('id')
+              .eq('project_id', currentProject.id);
+            
+            if (error) {
+              console.error('❌ Error verifying phases exist:', error);
+              // Continue with phases from JSON if verification fails
+            } else if (existingPhases) {
+              const existingPhaseIds = new Set(existingPhases.map(p => p.id));
+              const beforeCount = phasesToDisplay.length;
+              
+              // Filter out phases that don't exist in database
+              phasesToDisplay = phasesToDisplay.filter(phase => {
+                const exists = phase.id ? existingPhaseIds.has(phase.id) : false;
+                if (!exists) {
+                  console.log('🚫 Filtering out deleted phase from cached JSON:', {
+                    phaseId: phase.id,
+                    phaseName: phase.name
+                  });
+                }
+                return exists;
+              });
+              
+              const afterCount = phasesToDisplay.length;
+              if (beforeCount !== afterCount) {
+                console.log('✅ Filtered out deleted phases from cached JSON:', {
+                  beforeCount,
+                  afterCount,
+                  filteredCount: beforeCount - afterCount
+                });
+              }
+            }
+          } catch (err) {
+            console.error('❌ Error verifying phases:', err);
+            // Continue with phases from JSON if verification fails
+          }
+        }
+        
+        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(phasesToDisplay);
+        const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
+        const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
+        if (sortedPhases.length > 0) {
+          console.log('🔍 StructureManager initializing displayPhases from currentProject (fallback):', {
+            projectId: currentProject.id,
+            projectName: currentProject.name,
+            phaseCount: sortedPhases.length,
+            phaseNames: sortedPhases.map(p => p.name),
+            isEditingStandardProject
+          });
+          setDisplayPhases(sortedPhases);
+          setPhasesLoaded(true);
+        }
+      };
+      
+      initializePhases();
     }
-  }, [currentProject, phasesLoaded, displayPhases.length, rebuildingPhases]);
+  }, [currentProject, phasesLoaded, displayPhases.length, rebuildingPhases, isEditingStandardProject]);
 
   // Toggle functions for collapsible sections
   const togglePhaseExpansion = (phaseId: string) => {
