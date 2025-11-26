@@ -423,10 +423,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // to prevent reordering after refetch
       const shouldPreserveOrder = justAddedPhaseId !== null;
       const mergedRebuiltPhases = rebuiltPhasesFiltered.map(rebuiltPhase => {
+        // CRITICAL: For regular projects, standard phases come ONLY from get_project_workflow_with_standards
+        // Do NOT override isStandard flag from currentProject.phases for standard phases
+        // The rebuiltPhase already has the correct isStandard flag from Standard Project Foundation
+        const isStandardFromRebuilt = isStandardPhase(rebuiltPhase);
+        
         // First try to match by ID (most reliable)
         const currentPhaseById = rebuiltPhase.id ? currentPhasesById.get(rebuiltPhase.id) : null;
         if (currentPhaseById) {
-          // Preserve isStandard flag from currentProject.phases (source of truth)
+          // CRITICAL: For regular projects, if rebuiltPhase is a standard phase, trust it from Standard Project Foundation
+          // Do NOT override with stale data from currentProject.phases
+          if (!isEditingStandardProject && isStandardFromRebuilt) {
+            // This is a standard phase from Standard Project Foundation - trust it, don't override
+            return {
+              ...rebuiltPhase,
+              isStandard: true, // Trust the Standard Project Foundation
+              isLinked: currentPhaseById.isLinked || rebuiltPhase.isLinked
+            };
+          }
+          
+          // For custom phases or Edit Standard mode, preserve isStandard flag from currentProject.phases
           // BUT: If we're not editing Standard Project Foundation and currentProject says it's not standard,
           // override to false
           if (!isEditingStandardProject && !currentPhaseById.isStandard) {
@@ -446,6 +462,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Fallback to name matching if ID doesn't match (e.g., renamed phases)
         const currentPhaseByName = rebuiltPhase.name ? currentPhasesByName.get(rebuiltPhase.name) : null;
         if (currentPhaseByName) {
+          // CRITICAL: For regular projects, if rebuiltPhase is a standard phase, trust it from Standard Project Foundation
+          // Do NOT override with stale data from currentProject.phases
+          if (!isEditingStandardProject && isStandardFromRebuilt) {
+            // This is a standard phase from Standard Project Foundation - trust it, don't override
+            return {
+              ...rebuiltPhase,
+              isStandard: true, // Trust the Standard Project Foundation
+              isLinked: currentPhaseByName.isLinked || rebuiltPhase.isLinked
+            };
+          }
+          
+          // For custom phases or Edit Standard mode, preserve isStandard flag from currentProject.phases
           // BUT: If we're not editing Standard Project Foundation and currentProject says it's not standard,
           // override to false
           if (!isEditingStandardProject && !currentPhaseByName.isStandard) {
@@ -501,11 +529,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       // Check by both ID and name to catch all cases
       // CRITICAL: Always include phases that were just added (even if not in rebuiltPhases yet)
       // CRITICAL: Exclude phases that are being deleted
+      // CRITICAL: For regular projects, do NOT include standard phases from currentProject.phases
+      // Standard phases should ONLY come from get_project_workflow_with_standards (which pulls from Standard Project Foundation)
+      // Including standard phases from currentProject.phases would preserve old/deleted standard phases (stale data)
       const rebuiltPhaseIds = new Set(rebuiltPhasesFiltered.map(p => p.id).filter(Boolean));
       const rebuiltPhaseNames = new Set(rebuiltPhasesFiltered.map(p => p.name).filter(Boolean));
       const phasesOnlyInJson = currentPhasesFiltered.filter(p => {
         // Exclude deleted phase
         if (phaseToDelete && p.id === phaseToDelete) {
+          return false;
+        }
+        // CRITICAL: For regular projects, exclude standard phases from currentProject.phases
+        // Standard phases should ONLY come from get_project_workflow_with_standards
+        // This ensures regular projects always show the latest standard phases from Standard Project Foundation
+        if (!isEditingStandardProject && isStandardPhase(p) && !p.isLinked) {
+          console.log('🚫 Excluding stale standard phase from currentProject.phases:', {
+            phaseId: p.id,
+            phaseName: p.name,
+            isStandard: p.isStandard,
+            isLinked: p.isLinked
+          });
           return false;
         }
         // Always include if this is the just-added phase

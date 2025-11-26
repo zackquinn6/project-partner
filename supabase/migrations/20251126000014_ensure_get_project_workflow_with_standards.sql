@@ -30,9 +30,23 @@ BEGIN
   INTO standard_phases_json;
 
   -- Get custom phases from the project template (if any)
-  -- Only custom phases are stored in the project's project_phases table
+  -- CRITICAL: Only get custom phases (is_standard = FALSE) from regular projects
+  -- Old projects may have standard phases in their project_phases table from before dynamic linking
+  -- We need to filter those out - standard phases should ONLY come from Standard Project Foundation
   SELECT public.rebuild_phases_json_from_project_phases(p_project_id)
   INTO custom_phases_json;
+
+  -- CRITICAL: Filter out any standard phases from custom_phases_json
+  -- Standard phases should ONLY come from Standard Project Foundation (standard_phases_json)
+  -- This ensures regular projects always show the latest standard phases, not old copied ones
+  IF custom_phases_json IS NOT NULL AND jsonb_array_length(custom_phases_json) > 0 THEN
+    SELECT jsonb_agg(phase)
+    INTO custom_phases_json
+    FROM jsonb_array_elements(custom_phases_json) AS phase
+    WHERE (phase->>'isStandard')::boolean IS DISTINCT FROM TRUE;
+    -- If all phases were filtered out, set to empty array
+    custom_phases_json := COALESCE(custom_phases_json, '[]'::jsonb);
+  END IF;
 
   -- Combine all phases into a single array
   -- We need to merge them properly based on position_rule, not just concatenate
