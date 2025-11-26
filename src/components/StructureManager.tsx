@@ -656,6 +656,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // First try to match by ID (most reliable)
         const currentPhaseById = rebuiltPhase.id ? currentPhasesById.get(rebuiltPhase.id) : null;
         if (currentPhaseById) {
+          // CRITICAL: Preserve phaseOrderNumber from saved JSON (currentProject.phases)
+          // This ensures order numbers persist after window close/reopen
+          const preservedPhaseOrderNumber = currentPhaseById.phaseOrderNumber;
+          
           // CRITICAL: For regular projects, if rebuiltPhase is a standard phase, trust it from Standard Project Foundation
           // Do NOT override with stale data from currentProject.phases
           if (!isEditingStandardProject && isStandardFromRebuilt) {
@@ -663,7 +667,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             return {
               ...rebuiltPhase,
               isStandard: true, // Trust the Standard Project Foundation
-              isLinked: currentPhaseById.isLinked || rebuiltPhase.isLinked
+              isLinked: currentPhaseById.isLinked || rebuiltPhase.isLinked,
+              phaseOrderNumber: preservedPhaseOrderNumber // CRITICAL: Preserve order number from saved JSON
             };
           }
           
@@ -674,19 +679,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             return {
               ...rebuiltPhase,
               isStandard: false, // Force to false for custom phases
-              isLinked: currentPhaseById.isLinked || rebuiltPhase.isLinked
+              isLinked: currentPhaseById.isLinked || rebuiltPhase.isLinked,
+              phaseOrderNumber: preservedPhaseOrderNumber // CRITICAL: Preserve order number from saved JSON
             };
           }
           return {
             ...rebuiltPhase,
             isStandard: currentPhaseById.isStandard, // Use isStandard from currentProject.phases
-            isLinked: currentPhaseById.isLinked || rebuiltPhase.isLinked // Preserve both flags
+            isLinked: currentPhaseById.isLinked || rebuiltPhase.isLinked, // Preserve both flags
+            phaseOrderNumber: preservedPhaseOrderNumber // CRITICAL: Preserve order number from saved JSON
           };
         }
         
         // Fallback to name matching if ID doesn't match (e.g., renamed phases)
         const currentPhaseByName = rebuiltPhase.name ? currentPhasesByName.get(rebuiltPhase.name) : null;
         if (currentPhaseByName) {
+          // CRITICAL: Preserve phaseOrderNumber from saved JSON (currentProject.phases)
+          // This ensures order numbers persist after window close/reopen
+          const preservedPhaseOrderNumber = currentPhaseByName.phaseOrderNumber;
+          
           // CRITICAL: For regular projects, if rebuiltPhase is a standard phase, trust it from Standard Project Foundation
           // Do NOT override with stale data from currentProject.phases
           if (!isEditingStandardProject && isStandardFromRebuilt) {
@@ -694,7 +705,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             return {
               ...rebuiltPhase,
               isStandard: true, // Trust the Standard Project Foundation
-              isLinked: currentPhaseByName.isLinked || rebuiltPhase.isLinked
+              isLinked: currentPhaseByName.isLinked || rebuiltPhase.isLinked,
+              phaseOrderNumber: preservedPhaseOrderNumber // CRITICAL: Preserve order number from saved JSON
             };
           }
           
@@ -705,13 +717,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             return {
               ...rebuiltPhase,
               isStandard: false, // Force to false for custom phases
-              isLinked: currentPhaseByName.isLinked || rebuiltPhase.isLinked
+              isLinked: currentPhaseByName.isLinked || rebuiltPhase.isLinked,
+              phaseOrderNumber: preservedPhaseOrderNumber // CRITICAL: Preserve order number from saved JSON
             };
           }
           return {
             ...rebuiltPhase,
             isStandard: currentPhaseByName.isStandard,
-            isLinked: currentPhaseByName.isLinked || rebuiltPhase.isLinked
+            isLinked: currentPhaseByName.isLinked || rebuiltPhase.isLinked,
+            phaseOrderNumber: preservedPhaseOrderNumber // CRITICAL: Preserve order number from saved JSON
           };
         }
         
@@ -947,13 +961,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
       
       const rawPhases = deduplicatePhases(phasesToProcess);
-      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
+      
+      // CRITICAL: Apply preserved order numbers FIRST, before validation
+      // This ensures saved order numbers are respected and not overwritten by validation
+      const phasesWithPreservedOrder = rawPhases.map(phase => {
+        const preservedOrder = preservedOrderNumbers.get(phase.id);
+        if (preservedOrder !== undefined) {
+          return { ...phase, phaseOrderNumber: preservedOrder };
+        }
+        return phase;
+      });
+      
+      const phasesWithUniqueOrder = ensureUniqueOrderNumbers(phasesWithPreservedOrder);
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
       
       // CRITICAL: Validate and fix phase order numbers when opening StructureManager
       // This ensures all phases have unique order numbers and respects standard phase positions
+      // BUT: Only fix phases that don't have preserved order numbers or have conflicts
       const validationResult = validateAndFixPhaseOrderNumbers(orderedPhases);
       const validatedPhases = validationResult.phases;
+      
+      // CRITICAL: After validation, restore preserved order numbers to ensure they're not overwritten
+      // This ensures saved order numbers persist even after validation
+      const validatedPhasesWithPreservedOrder = validatedPhases.map(phase => {
+        const preservedOrder = preservedOrderNumbers.get(phase.id);
+        if (preservedOrder !== undefined) {
+          // Only restore if validation didn't fix a conflict
+          // If validation fixed a conflict, trust the validation result
+          const wasConflict = validationResult.issues.some(issue => 
+            issue.includes(phase.name) || issue.includes(phase.id || '')
+          );
+          if (!wasConflict) {
+            return { ...phase, phaseOrderNumber: preservedOrder };
+          }
+        }
+        return phase;
+      });
       
       if (validationResult.fixed) {
         console.log('🔧 Phase order validation fixed issues:', {
@@ -963,9 +1006,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         
         // CRITICAL: Persist validation fixes to database
         // This ensures the backend database is properly updated for all phases
-        if (currentProject && validatedPhases.length > 0) {
+        // BUT: Use validatedPhasesWithPreservedOrder to ensure saved order numbers are preserved
+        if (currentProject && validatedPhasesWithPreservedOrder.length > 0) {
           // Sort phases by order number before saving
-          const sortedValidatedPhases = sortPhasesByOrderNumber(validatedPhases);
+          const sortedValidatedPhases = sortPhasesByOrderNumber(validatedPhasesWithPreservedOrder);
           
           // Update project JSON with validated phases
           const updatedProject = {
@@ -994,7 +1038,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
       
-      const sortedPhases = sortPhasesByOrderNumber(validatedPhases);
+      // Use validated phases with preserved order numbers
+      const sortedPhases = sortPhasesByOrderNumber(validatedPhasesWithPreservedOrder);
       
       // CONDITION 5: For regular projects, apply order numbers from Standard Project Foundation AFTER ensureUniqueOrderNumbers
       // This ensures standard project foundation ordering is respected (absolute and relative order numbers)
