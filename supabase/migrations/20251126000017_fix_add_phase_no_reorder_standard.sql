@@ -218,7 +218,8 @@ BEGIN
   END IF;
 
   -- Insert the new phase
-  -- CRITICAL: Use explicit column references to avoid ambiguity with RETURNS TABLE
+  -- CRITICAL: Use column names directly in RETURNING (no table qualifiers allowed)
+  -- Then use column aliases in RETURNING to avoid ambiguity with RETURNS TABLE columns
   WITH inserted_phase AS (
     INSERT INTO public.project_phases (
       project_id,
@@ -238,14 +239,14 @@ BEGIN
       v_position_value
     )
     RETURNING 
-      project_phases.id,
-      project_phases.created_at,
-      project_phases.updated_at
+      id AS phase_id,
+      created_at AS phase_created_at,
+      updated_at AS phase_updated_at
   )
   SELECT 
-    ip.id,
-    ip.created_at,
-    ip.updated_at
+    ip.phase_id,
+    ip.phase_created_at,
+    ip.phase_updated_at
   INTO 
     v_new_phase_id,
     v_created_at,
