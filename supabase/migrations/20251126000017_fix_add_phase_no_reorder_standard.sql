@@ -49,6 +49,8 @@ DECLARE
   v_existing_phase_count INTEGER;
   v_conflicting_phase RECORD;
   v_standard_phases RECORD;
+  v_reserved_position_values INTEGER[] := ARRAY[]::INTEGER[];
+  v_standard_last_minus_n_values INTEGER[] := ARRAY[]::INTEGER[];
 BEGIN
   -- Validate inputs
   IF p_project_id IS NULL THEN
@@ -98,20 +100,53 @@ BEGIN
     -- The new phase uses the next available position_value for 'last_minus_n'
     v_position_rule := 'last_minus_n';
     
-    -- Find the maximum position_value for existing 'last_minus_n' phases in this project
-    -- If no existing phases, start at position_value = 1
-    SELECT COALESCE(MAX(pp.position_value), 0) INTO v_position_value
+    -- CRITICAL: Find the next available position_value that doesn't conflict with:
+    -- 1. Existing 'last_minus_n' phases in this project
+    -- 2. Standard phases from Standard Project Foundation (especially Ordering which uses position_value = 1)
+    
+    -- Get all 'last_minus_n' position_values from standard phases
+    SELECT ARRAY_AGG(pp.position_value) INTO v_standard_last_minus_n_values
+    FROM public.project_phases pp
+    WHERE pp.project_id = v_standard_project_id
+      AND pp.position_rule = 'last_minus_n'
+      AND pp.position_value IS NOT NULL;
+    
+    -- Get all 'last_minus_n' position_values from existing phases in this project
+    SELECT ARRAY_AGG(pp.position_value) INTO v_reserved_position_values
     FROM public.project_phases pp
     WHERE pp.project_id = p_project_id
-      AND pp.position_rule = 'last_minus_n';
+      AND pp.position_rule = 'last_minus_n'
+      AND pp.position_value IS NOT NULL;
     
-    -- Set the new phase's position_value to max + 1
-    -- This ensures it's added at the end without overlapping existing phases
-    v_position_value := v_position_value + 1;
+    -- Combine both arrays to get all reserved values
+    IF v_standard_last_minus_n_values IS NOT NULL THEN
+      IF v_reserved_position_values IS NULL THEN
+        v_reserved_position_values := v_standard_last_minus_n_values;
+      ELSE
+        v_reserved_position_values := v_reserved_position_values || v_standard_last_minus_n_values;
+      END IF;
+    END IF;
     
-    -- CRITICAL: Validate that the new custom phase doesn't use any position occupied by a standard phase
-    -- This includes 'first', 'last', and any 'nth' positions used by standard phases
-    -- Get all standard phases from Standard Project Foundation to check for conflicts
+    -- Find the next available position_value starting from 1
+    v_position_value := 1;
+    LOOP
+      -- Check if this position_value is available (not in reserved list)
+      IF v_reserved_position_values IS NULL OR NOT (v_position_value = ANY(v_reserved_position_values)) THEN
+        -- Found an available position_value
+        EXIT;
+      END IF;
+      
+      -- Try next position_value
+      v_position_value := v_position_value + 1;
+      
+      -- Safety check to prevent infinite loop
+      IF v_position_value > 100 THEN
+        RAISE EXCEPTION 'Could not find available position_value for new custom phase (too many phases)';
+      END IF;
+    END LOOP;
+    
+    -- CRITICAL: Final validation - ensure the position doesn't conflict with any standard phase
+    -- This is a safety check to verify we didn't miss anything
     FOR v_standard_phases IN
       SELECT pp.position_rule, pp.position_value
       FROM public.project_phases pp
@@ -119,49 +154,15 @@ BEGIN
         AND pp.position_rule IS NOT NULL
     LOOP
       -- Check if the new phase's position conflicts with any standard phase position
-      -- We need to check:
-      -- 1. If standard phase uses 'first' or 'last' - these are always reserved
-      -- 2. If standard phase uses 'nth' with a specific value - that value is reserved
-      -- 3. If standard phase uses 'last_minus_n' with a specific value - that value is reserved
-      -- 4. Special case: 'first' and 'nth' with value 1 are equivalent
-      
       IF (
-        -- Standard phase uses 'first' - reserved, cannot be used
-        (v_standard_phases.position_rule = 'first')
-        -- Standard phase uses 'last' - reserved, cannot be used
-        OR (v_standard_phases.position_rule = 'last')
-        -- Standard phase uses 'nth' with a specific value - that value is reserved
-        OR (v_standard_phases.position_rule = 'nth' AND v_standard_phases.position_value IS NOT NULL)
-        -- Standard phase uses 'last_minus_n' with a specific value - that value is reserved
-        OR (v_standard_phases.position_rule = 'last_minus_n' 
-            AND v_standard_phases.position_value IS NOT NULL
-            AND v_standard_phases.position_value = v_position_value)
-        -- Special case: 'first' is equivalent to 'nth' with value 1
-        OR (v_standard_phases.position_rule = 'first' 
-            AND v_position_rule = 'nth' 
-            AND v_position_value = 1)
-        OR (v_standard_phases.position_rule = 'nth' 
-            AND v_standard_phases.position_value = 1
-            AND v_position_rule = 'first')
+        -- Standard phase uses 'last_minus_n' with the same position_value - conflict
+        (v_standard_phases.position_rule = 'last_minus_n' 
+         AND v_standard_phases.position_value IS NOT NULL
+         AND v_standard_phases.position_value = v_position_value)
       ) THEN
-        -- Provide a clear error message indicating the conflict
-        IF v_standard_phases.position_rule = 'first' THEN
-          RAISE EXCEPTION 'Position "first" (or "nth" with position_value = 1) is reserved for the standard "Kickoff" phase and cannot be used by custom phases';
-        ELSIF v_standard_phases.position_rule = 'last' THEN
-          RAISE EXCEPTION 'Position "last" is reserved for the standard "Close Project" phase and cannot be used by custom phases';
-        ELSIF v_standard_phases.position_rule = 'nth' AND v_standard_phases.position_value = 1 THEN
-          RAISE EXCEPTION 'Position "nth" with position_value = 1 (or "first") is reserved for the standard "Kickoff" phase and cannot be used by custom phases';
-        ELSIF v_standard_phases.position_rule = 'nth' THEN
-          RAISE EXCEPTION 'Position "nth" with position_value = % is reserved for standard phases and cannot be used by custom phases',
-            v_standard_phases.position_value;
-        ELSIF v_standard_phases.position_rule = 'last_minus_n' THEN
-          RAISE EXCEPTION 'Position "last_minus_n" with position_value = % is reserved for standard phases and cannot be used by custom phases',
-            v_standard_phases.position_value;
-        ELSE
-          RAISE EXCEPTION 'Position rule "%" with position_value % is reserved for standard phases and cannot be used by custom phases',
-            v_standard_phases.position_rule,
-            COALESCE(v_standard_phases.position_value::TEXT, 'NULL');
-        END IF;
+        -- This should never happen if the loop above worked correctly, but provide error message
+        RAISE EXCEPTION 'Position "last_minus_n" with position_value = % is reserved for standard phases and cannot be used by custom phases',
+          v_standard_phases.position_value;
       END IF;
     END LOOP;
   END IF;
