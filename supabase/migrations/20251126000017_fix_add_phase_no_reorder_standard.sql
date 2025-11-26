@@ -41,6 +41,7 @@ DECLARE
   v_new_phase_id UUID;
   v_created_at TIMESTAMPTZ;
   v_updated_at TIMESTAMPTZ;
+  v_inserted_phase RECORD;
   v_position_rule TEXT;
   v_position_value INTEGER;
   v_new_operation_id UUID;
@@ -218,40 +219,33 @@ BEGIN
   END IF;
 
   -- Insert the new phase
-  -- CRITICAL: Use column names directly in RETURNING (no table qualifiers allowed)
-  -- Then use column aliases in RETURNING to avoid ambiguity with RETURNS TABLE columns
-  WITH inserted_phase AS (
-    INSERT INTO public.project_phases (
-      project_id,
-      name,
-      description,
-      is_standard,
-      standard_phase_id,
-      position_rule,
-      position_value
-    ) VALUES (
-      p_project_id,
-      v_phase_name,
-      v_phase_description,
-      v_is_standard,
-      NULL, -- Custom phases don't have standard_phase_id
-      v_position_rule,
-      v_position_value
-    )
-    RETURNING 
-      id AS phase_id,
-      created_at AS phase_created_at,
-      updated_at AS phase_updated_at
+  -- CRITICAL: Use RECORD variable to capture RETURNING values
+  -- This avoids ambiguity between RETURNS TABLE columns and table columns
+  -- RETURNING * INTO RECORD works because the RECORD type is inferred from the table
+  INSERT INTO public.project_phases (
+    project_id,
+    name,
+    description,
+    is_standard,
+    standard_phase_id,
+    position_rule,
+    position_value
+  ) VALUES (
+    p_project_id,
+    v_phase_name,
+    v_phase_description,
+    v_is_standard,
+    NULL, -- Custom phases don't have standard_phase_id
+    v_position_rule,
+    v_position_value
   )
-  SELECT 
-    ip.phase_id,
-    ip.phase_created_at,
-    ip.phase_updated_at
-  INTO 
-    v_new_phase_id,
-    v_created_at,
-    v_updated_at
-  FROM inserted_phase ip;
+  RETURNING * INTO v_inserted_phase;
+  
+  -- Extract values from the RECORD variable
+  -- This avoids the ambiguity because we're accessing the RECORD's fields, not table columns
+  v_new_phase_id := v_inserted_phase.id;
+  v_created_at := v_inserted_phase.created_at;
+  v_updated_at := v_inserted_phase.updated_at;
 
   -- Create one operation with one step for the new phase
   -- IMPORTANT: is_custom_phase is a GENERATED column (computed automatically)
