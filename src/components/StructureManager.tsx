@@ -1525,6 +1525,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
             }));
             
+            // CRITICAL: Save order positions to database before updating project JSON
+            // This ensures the database is the source of truth for phase ordering
+            (async () => {
+              try {
+                await updatePhaseOrder(phasesWithOrderNumbers);
+              } catch (error) {
+                console.error('❌ Error saving phase order positions:', error);
+                // Continue with JSON update even if position save fails
+              }
+            })();
+            
             // Use setTimeout to break the render cycle
             setTimeout(() => {
               updateProject({
@@ -2321,16 +2332,118 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     // Update display immediately (UI-only change)
     setDisplayPhases(finalSorted);
     
-    // Update project context
-    updateProject({
-      ...currentProject,
-      phases: sortedByOrder,
-      updatedAt: new Date()
-    });
-    
-    // Mark that there are pending order changes (don't save to database yet)
-    setHasPendingOrderChanges(true);
-    console.log('🔄 Phase order changed in UI (pending save)');
+    // CRITICAL: Save order positions to database (project_phases table)
+    // Convert phaseOrderNumber to position_rule/position_value and update database
+    try {
+      const updatePromises: Promise<any>[] = [];
+      
+      for (let i = 0; i < finalSorted.length; i++) {
+        const phase = finalSorted[i];
+        if (phase.isLinked) continue; // Skip linked phases
+        
+        // Get current phase data from database
+        const { data: phaseData } = await supabase
+          .from('project_phases')
+          .select('id, position_rule, is_standard, standard_phase_id')
+          .eq('id', phase.id)
+          .eq('project_id', currentProject.id)
+          .maybeSingle();
+        
+        if (!phaseData) continue;
+        
+        // Determine position_rule and position_value based on phaseOrderNumber
+        let positionRule: string;
+        let positionValue: number | null = null;
+        
+        if (phase.phaseOrderNumber === 'first') {
+          positionRule = 'first';
+          positionValue = null;
+        } else if (phase.phaseOrderNumber === 'last') {
+          positionRule = 'last';
+          positionValue = null;
+        } else if (typeof phase.phaseOrderNumber === 'number') {
+          // For custom phases in regular projects, use 'last_minus_n'
+          // For standard phases, keep their existing position_rule
+          if (isEditingStandardProject || (!phaseData.is_standard && !phaseData.standard_phase_id)) {
+            // Custom phase: calculate position_value based on distance from last
+            const totalPhases = finalSorted.length;
+            const distanceFromLast = totalPhases - i - 1;
+            positionRule = 'last_minus_n';
+            positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
+          } else {
+            // Standard phase: keep existing position_rule, update position_value if needed
+            positionRule = phaseData.position_rule || 'nth';
+            positionValue = phase.phaseOrderNumber;
+          }
+        } else {
+          // Fallback: keep existing position_rule
+          positionRule = phaseData.position_rule || 'last_minus_n';
+          positionValue = phaseData.position_rule === 'last_minus_n' ? (finalSorted.length - i - 1) : null;
+        }
+        
+        // Update the phase in database
+        const updatePromise = supabase
+          .from('project_phases')
+          .update({
+            position_rule: positionRule,
+            position_value: positionValue,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', phase.id)
+          .eq('project_id', currentProject.id);
+        
+        updatePromises.push(updatePromise);
+      }
+      
+      // Wait for all updates to complete
+      await Promise.all(updatePromises);
+      
+      console.log('✅ Phase order positions saved to database');
+      
+      // Rebuild phases JSON from database to ensure consistency
+      const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+        p_project_id: currentProject.id
+      });
+      
+      if (!rebuildError && rebuiltPhases) {
+        // Merge with incorporated phases if any
+        const allPhases = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+        const mergedPhases = [...allPhases];
+        
+        // Add any incorporated phases from current display
+        finalSorted.forEach(p => {
+          if (p.isLinked && !mergedPhases.find(mp => mp.id === p.id)) {
+            mergedPhases.push(p);
+          }
+        });
+        
+        // Apply ordering and update project
+        const orderedPhases = enforceStandardPhaseOrdering(mergedPhases, standardProjectPhases);
+        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
+        const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
+        
+        // Update project JSON
+        await supabase
+          .from('projects')
+          .update({ phases: sortedPhases as any })
+          .eq('id', currentProject.id);
+        
+        // Update project context
+        updateProject({
+          ...currentProject,
+          phases: sortedPhases,
+          updatedAt: new Date()
+        });
+        
+        // Update display state
+        setDisplayPhases(sortedPhases);
+      }
+      
+      toast.success('Phase order saved successfully');
+    } catch (error) {
+      console.error('❌ Error saving phase order to database:', error);
+      toast.error('Error saving phase order');
+    }
   };
   
   // Move step up/down
@@ -2431,72 +2544,76 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   };
   
   // Update phase order in database
-  // Since we're using position_rule/position_value, we update the phases JSON directly
-  // The position_rule/position_value are preserved from when phases were created
+  // Converts phaseOrderNumber to position_rule/position_value and saves to project_phases table
   const updatePhaseOrder = async (reorderedPhases: Phase[]) => {
     if (!currentProject) return;
     
     try {
-      console.log('🔄 updatePhaseOrder - reorderedPhases:', reorderedPhases.map(p => ({ id: p.id, name: p.name, isLinked: p.isLinked })));
+      console.log('🔄 updatePhaseOrder - reorderedPhases:', reorderedPhases.map(p => ({ id: p.id, name: p.name, phaseOrderNumber: p.phaseOrderNumber, isLinked: p.isLinked })));
       
-      // For Standard Project Foundation, update position_rule/position_value for custom phases
-      // Standard phases keep their position_rule/position_value
-      if (isEditingStandardProject) {
-        const updatePromises: Promise<void>[] = [];
+      const updatePromises: Promise<any>[] = [];
+      
+      // Update position_rule/position_value for all phases based on their phaseOrderNumber
+      for (let i = 0; i < reorderedPhases.length; i++) {
+        const phase = reorderedPhases[i];
+        if (phase.isLinked) continue; // Skip linked phases
         
-        // Count custom phases (phases without position_rule or with position_rule = 'last_minus_n')
-        let customPhaseIndex = 0;
-        for (let i = 0; i < reorderedPhases.length; i++) {
-          const phase = reorderedPhases[i];
-          if (!phase.isLinked) {
-            const { data: phaseData } = await supabase
-              .from('project_phases')
-              .select('id, position_rule')
-              .eq('id', phase.id)
-              .eq('project_id', currentProject.id)
-              .maybeSingle();
-            
-            if (phaseData) {
-              // Check if this is a custom phase (NULL position_rule or 'last_minus_n')
-              const isCustomPhase = !phaseData.position_rule || phaseData.position_rule === 'last_minus_n';
-              
-              if (isCustomPhase) {
-                // Update custom phases to use 'last_minus_n' with appropriate position_value
-                // Count how many custom phases come before this one
-                let customCountBefore = 0;
-                for (let j = 0; j < i; j++) {
-                  const prevPhase = reorderedPhases[j];
-                  if (!prevPhase.isLinked) {
-                    const { data: prevPhaseData } = await supabase
-                      .from('project_phases')
-                      .select('position_rule')
-                      .eq('id', prevPhase.id)
-                      .eq('project_id', currentProject.id)
-                      .maybeSingle();
-                    
-                    if (prevPhaseData && (!prevPhaseData.position_rule || prevPhaseData.position_rule === 'last_minus_n')) {
-                      customCountBefore++;
-                    }
-                  }
-                }
-                
-                const updatePromise = supabase
-                  .from('project_phases')
-                  .update({ 
-                    position_rule: 'last_minus_n',
-                    position_value: customCountBefore + 1,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', phaseData.id);
-                
-                updatePromises.push(updatePromise.then(() => {}));
-              }
-            }
+        // Get current phase data from database
+        const { data: phaseData } = await supabase
+          .from('project_phases')
+          .select('id, position_rule, is_standard, standard_phase_id')
+          .eq('id', phase.id)
+          .eq('project_id', currentProject.id)
+          .maybeSingle();
+        
+        if (!phaseData) continue;
+        
+        // Determine position_rule and position_value based on phaseOrderNumber
+        let positionRule: string;
+        let positionValue: number | null = null;
+        
+        if (phase.phaseOrderNumber === 'first') {
+          positionRule = 'first';
+          positionValue = null;
+        } else if (phase.phaseOrderNumber === 'last') {
+          positionRule = 'last';
+          positionValue = null;
+        } else if (typeof phase.phaseOrderNumber === 'number') {
+          // For standard phases, keep their existing position_rule if it's 'nth'
+          // For custom phases, use 'last_minus_n'
+          if (phaseData.is_standard && phaseData.standard_phase_id && phaseData.position_rule === 'nth') {
+            // Standard phase with 'nth' rule - keep it, update position_value
+            positionRule = 'nth';
+            positionValue = phase.phaseOrderNumber;
+          } else {
+            // Custom phase: calculate position_value based on distance from last
+            const totalPhases = reorderedPhases.length;
+            const distanceFromLast = totalPhases - i - 1;
+            positionRule = 'last_minus_n';
+            positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
           }
+        } else {
+          // Fallback: keep existing position_rule or use 'last_minus_n'
+          positionRule = phaseData.position_rule || 'last_minus_n';
+          positionValue = phaseData.position_rule === 'last_minus_n' ? (reorderedPhases.length - i - 1) : null;
         }
         
-        await Promise.all(updatePromises);
+        // Update the phase in database
+        const updatePromise = supabase
+          .from('project_phases')
+          .update({
+            position_rule: positionRule,
+            position_value: positionValue,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', phase.id)
+          .eq('project_id', currentProject.id);
+        
+        updatePromises.push(updatePromise);
       }
+      
+      await Promise.all(updatePromises);
+      console.log('✅ updatePhaseOrder - Saved order positions to database');
       
       // Rebuild phases JSON from project_phases table (this only includes non-incorporated phases)
       const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
