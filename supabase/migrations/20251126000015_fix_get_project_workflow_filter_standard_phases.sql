@@ -31,22 +31,23 @@ BEGIN
   SELECT public.rebuild_phases_json_from_project_phases(standard_project_id)
   INTO standard_phases_json;
 
-  -- CRITICAL: For regular projects, directly query only custom phases (is_standard = FALSE)
-  -- Do NOT use rebuild_phases_json_from_project_phases as it may include old standard phases
-  -- Instead, query project_phases directly and filter by is_standard = FALSE
-  -- Then build the JSON structure ourselves using the same logic as rebuild_phases_json_from_project_phases
+  -- CRITICAL: For regular projects, we need to filter out old standard phases
+  -- The issue: rebuild_phases_json_from_project_phases may include old standard phases from project_phases table
+  -- Solution: Get all phases, then filter by checking the database is_standard column directly
   SELECT public.rebuild_phases_json_from_project_phases(p_project_id)
   INTO custom_phases_json;
 
   -- CRITICAL: Filter out any standard phases from custom_phases_json
   -- Standard phases should ONLY come from Standard Project Foundation (standard_phases_json)
-  -- This ensures regular projects always show the latest standard phases, not old copied ones
-  -- We filter by both isStandard field in JSON AND check if the phase name matches a standard phase name
+  -- We check the database project_phases table directly to see if is_standard = TRUE
+  -- This ensures we filter correctly even if the JSON isStandard flag is wrong/missing
   IF custom_phases_json IS NOT NULL AND jsonb_array_length(custom_phases_json) > 0 THEN
     -- Get list of standard phase names from Standard Project Foundation to exclude
-    -- This ensures that even if isStandard flag is missing/incorrect, we still filter by name
+    -- Also check database is_standard column for each phase
     DECLARE
       standard_phase_names TEXT[] := ARRAY[]::TEXT[];
+      phase_id UUID;
+      phase_is_standard BOOLEAN;
     BEGIN
       -- Extract standard phase names from standard_phases_json
       SELECT ARRAY_AGG(phase->>'name')
@@ -56,12 +57,26 @@ BEGIN
 
       -- Filter out phases that:
       -- 1. Have isStandard = TRUE in JSON, OR
-      -- 2. Have a name that matches a current standard phase name (even if isStandard flag is wrong/missing)
+      -- 2. Have is_standard = TRUE in database project_phases table, OR
+      -- 3. Have a name that matches a current standard phase name
       SELECT jsonb_agg(phase)
       INTO custom_phases_json
       FROM jsonb_array_elements(custom_phases_json) AS phase
-      WHERE (phase->>'isStandard')::boolean IS DISTINCT FROM TRUE
-        AND (phase->>'name' IS NULL OR NOT (phase->>'name' = ANY(standard_phase_names)));
+      WHERE (
+        -- Check JSON isStandard flag
+        (phase->>'isStandard')::boolean IS DISTINCT FROM TRUE
+        -- Check database is_standard column
+        AND (
+          phase->>'id' IS NULL OR
+          NOT EXISTS (
+            SELECT 1 FROM public.project_phases pp
+            WHERE pp.id = (phase->>'id')::UUID
+            AND pp.is_standard = TRUE
+          )
+        )
+        -- Check name matching (exclude if name matches current standard phase)
+        AND (phase->>'name' IS NULL OR NOT (phase->>'name' = ANY(standard_phase_names)))
+      );
       
       -- If all phases were filtered out, set to empty array
       custom_phases_json := COALESCE(custom_phases_json, '[]'::jsonb);
