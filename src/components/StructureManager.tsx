@@ -387,13 +387,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       : rebuiltPhases;
     
     // CRITICAL: Always include standard phases from currentProject.phases even if rebuiltPhases is empty
-    // This prevents standard phases from disappearing during refetch
-    // Extract standard phases from currentProject.phases to ensure they're always visible
-    // For regular projects (not editing standard), standard phases come from get_project_workflow_with_standards
-    // but we should preserve them from currentProject.phases during refetch
-    const standardPhasesFromCurrent = !isEditingStandardProject 
-      ? currentPhasesFiltered.filter(p => isStandardPhase(p) && !p.isLinked)
-      : [];
+    // CRITICAL: For regular projects, standard phases come ONLY from get_project_workflow_with_standards
+    // Do NOT preserve standard phases from currentProject.phases - they might be stale
+    // If a standard phase is deleted from Standard Project Foundation, it should disappear from regular projects
+    // The get_project_workflow_with_standards function dynamically pulls from Standard Project Foundation
+    // so it will always have the current, correct standard phases
+    // We used to preserve standard phases here, but that caused deleted phases to reappear
+    const standardPhasesFromCurrent: Phase[] = []; // Always empty - don't preserve standard phases from currentProject.phases
     
     // If we have rebuilt phases, merge them with currentProject.phases to preserve correct isStandard flags
     // Use rebuiltPhasesFiltered to ensure deleted phase doesn't reappear
@@ -547,19 +547,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         combinedPhases = [...orderedPhases, ...remainingPhases];
       } else {
         // CRITICAL: Filter out deleted phase from combined phases
-        // Also ensure standard phases from currentProject are included even if not in rebuiltPhases
+        // CRITICAL: Do NOT add back standard phases from currentProject.phases
+        // Standard phases should ONLY come from get_project_workflow_with_standards (which dynamically pulls from Standard Project Foundation)
+        // If a standard phase is deleted from Standard Project Foundation, it should NOT appear in regular projects
+        // Adding back standard phases from currentProject.phases would preserve deleted phases (stale data)
         const basePhases = phaseToDelete
           ? [...mergedRebuiltPhases, ...phasesOnlyInJson].filter(p => p.id !== phaseToDelete)
           : [...mergedRebuiltPhases, ...phasesOnlyInJson];
         
-        // Add standard phases from currentProject that might not be in rebuiltPhases yet
-        // This prevents standard phases from disappearing during refetch
-        const existingPhaseIds = new Set(basePhases.map(p => p.id));
-        const missingStandardPhases = standardPhasesFromCurrent.filter(p => 
-          !existingPhaseIds.has(p.id)
-        );
-        
-        combinedPhases = [...basePhases, ...missingStandardPhases];
+        // CRITICAL: For regular projects, standard phases come ONLY from get_project_workflow_with_standards
+        // Do NOT add back standard phases from currentProject.phases - they might be stale/deleted
+        // The rebuiltPhasesFiltered already contains the correct, up-to-date standard phases from Standard Project Foundation
+        combinedPhases = basePhases;
       }
       
       // CRITICAL: In Edit Standard mode, filter to ONLY standard phases
