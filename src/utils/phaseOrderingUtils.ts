@@ -184,8 +184,21 @@ export function validateAndFixSequentialOrdering(phases: Phase[]): Phase[] {
     return [];
   }
 
-  // First, sort phases by their current order (handling 'first', 'last', and numbers)
-  const sortedPhases = [...phases].sort((a, b) => {
+  // CRITICAL: First, ensure all phases have at least a temporary order position
+  // Phases without order positions will be sorted to the end initially
+  const phasesWithTemporaryOrder = phases.map((phase, index) => {
+    // If phase has no order position, assign based on current index
+    if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+      return {
+        ...phase,
+        phaseOrderNumber: index + 1 as number // Temporary order based on current position
+      };
+    }
+    return phase;
+  });
+
+  // Sort phases by their current order (handling 'first', 'last', and numbers)
+  const sortedPhases = [...phasesWithTemporaryOrder].sort((a, b) => {
     const aOrder = a.phaseOrderNumber;
     const bOrder = b.phaseOrderNumber;
     
@@ -198,8 +211,8 @@ export function validateAndFixSequentialOrdering(phases: Phase[]): Phase[] {
     if (bOrder === 'last') return -1;
     
     // Handle numeric ordering
-    const aNum = typeof aOrder === 'number' ? aOrder : 0;
-    const bNum = typeof bOrder === 'number' ? bOrder : 0;
+    const aNum = typeof aOrder === 'number' ? aOrder : Number.MAX_SAFE_INTEGER;
+    const bNum = typeof bOrder === 'number' ? bOrder : Number.MAX_SAFE_INTEGER;
     
     if (aNum !== bNum) {
       return aNum - bNum;
@@ -209,10 +222,10 @@ export function validateAndFixSequentialOrdering(phases: Phase[]): Phase[] {
     return 0;
   });
 
-  // Assign sequential ordering positions (1, 2, 3, ...) based on sorted order
-  // Position 1 is exclusive for the first phase
+  // CRITICAL: Assign sequential ordering positions (1, 2, 3, ...) to ALL phases
+  // This ensures no phase is missing an order position
   return sortedPhases.map((phase, index) => ({
     ...phase,
-    phaseOrderNumber: index + 1 as number // Sequential: 1, 2, 3, 4...
+    phaseOrderNumber: index + 1 as number // Sequential: 1, 2, 3, 4... (all phases must have positions)
   }));
 }

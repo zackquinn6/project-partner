@@ -992,8 +992,63 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
         
         if (freshPhases.length > 0) {
-          // Apply sequential ordering validation
+          // Apply sequential ordering validation - ensures ALL phases have order positions (1, 2, 3, ...)
           const validatedPhases = validateAndFixSequentialOrdering(deduplicatePhases(freshPhases));
+          
+          // CRITICAL: For Edit Standard, immediately persist order positions to database
+          // This ensures missing order positions are saved to the database right away
+          if (isEditingStandardProject && validatedPhases.length > 0) {
+            try {
+              // Update all phases in database with their sequential order positions
+              const updatePromises: Promise<any>[] = [];
+              
+              for (let i = 0; i < validatedPhases.length; i++) {
+                const phase = validatedPhases[i];
+                if (phase.isLinked) continue; // Skip linked phases
+                
+                const sequentialPosition = i + 1; // 1-based position
+                
+                // Determine position_rule and position_value
+                let positionRule: string;
+                let positionValue: number | null = null;
+                
+                if (sequentialPosition === 1) {
+                  positionRule = 'first';
+                  positionValue = null;
+                } else if (sequentialPosition === validatedPhases.length) {
+                  positionRule = 'last';
+                  positionValue = null;
+      } else {
+                  positionRule = 'nth';
+                  positionValue = sequentialPosition;
+                }
+                
+                // Update the phase in database immediately
+                updatePromises.push(
+                  supabase
+                    .from('project_phases')
+                    .update({
+                      position_rule: positionRule,
+                      position_value: positionValue,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', phase.id)
+                    .eq('project_id', currentProject.id)
+                );
+              }
+              
+              // Wait for all updates to complete
+              await Promise.all(updatePromises);
+              
+              console.log('✅ Order positions persisted to database on immediate refresh:', {
+                count: validatedPhases.length,
+                phases: validatedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+              });
+            } catch (error) {
+              console.error('❌ Error persisting order positions to database:', error);
+              // Continue anyway - phases are still valid
+            }
+          }
           
           // Update display immediately
           setDisplayPhases(validatedPhases);
@@ -1010,7 +1065,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             count: validatedPhases.length,
             phases: validatedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
           });
-        } else {
+      } else {
           // No phases found - clear display
           setDisplayPhases([]);
           setPhasesLoaded(true);
@@ -1247,13 +1302,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     }
     
     // Use phase's own order number if available
-    if (phase.phaseOrderNumber !== undefined) {
+    if (phase.phaseOrderNumber !== undefined && phase.phaseOrderNumber !== null) {
       if (phase.phaseOrderNumber === 'first') return 'First';
       if (phase.phaseOrderNumber === 'last') return 'Last';
+      if (typeof phase.phaseOrderNumber === 'number') {
       return phase.phaseOrderNumber;
     }
-    // Default: use index + 1
-    return phaseIndex + 1;
+    }
+    
+    // CRITICAL: If phase is missing order position, assign it based on current position
+    // This ensures dropdown always has a valid value to display
+    const sequentialPosition = phaseIndex + 1; // 1-based position
+    
+    if (sequentialPosition === 1) {
+      return 'First';
+    } else if (sequentialPosition === totalPhases) {
+      return 'Last';
+    } else {
+      return sequentialPosition;
+    }
   };
 
   // Fetch standard phase order from Standard Project Foundation
@@ -1754,21 +1821,47 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   };
   
   // Handle phase order change from dropdown
+  // CRITICAL: This function must work even when phases don't have order positions yet
   const handlePhaseOrderChange = async (phaseId: string, newOrder: string | number) => {
-    if (!currentProject) return;
+    if (!currentProject) {
+      toast.error('No project selected');
+      return;
+    }
     
     const phase = displayPhases.find(p => p.id === phaseId);
-    if (!phase) return;
+    if (!phase) {
+      console.error('❌ Phase not found for order change:', phaseId);
+      toast.error('Phase not found');
+      return;
+    }
+    
+    console.log('🔄 handlePhaseOrderChange called:', {
+      phaseId,
+      phaseName: phase.name,
+      newOrder,
+      currentOrder: phase.phaseOrderNumber,
+      totalPhases: displayPhases.length
+    });
     
     // Convert 'First'/'Last' to numeric positions for sequential ordering
     const targetPosition = newOrder === 'First' ? 1 : newOrder === 'Last' ? displayPhases.length : 
                           typeof newOrder === 'number' ? newOrder : parseInt(String(newOrder), 10);
     
+    // Validate target position
+    if (isNaN(targetPosition) || targetPosition < 1 || targetPosition > displayPhases.length) {
+      console.error('❌ Invalid target position:', targetPosition, 'from newOrder:', newOrder);
+      toast.error('Invalid position selected');
+      return;
+    }
+    
     // Create reordered array by moving the phase to target position
     const phasesArray = [...displayPhases];
     const currentIndex = phasesArray.findIndex(p => p.id === phaseId);
     
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) {
+      console.error('❌ Phase not found in displayPhases:', phaseId);
+      return;
+    }
     
     // Move phase to target position
     const [movedPhase] = phasesArray.splice(currentIndex, 1);
@@ -1776,7 +1869,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     phasesArray.splice(targetIndex, 0, movedPhase);
     
     // CRITICAL: Apply sequential ordering validation (1, 2, 3, ...)
+    // This ensures ALL phases have valid order positions, even if they were missing them
     const reorderedPhases = validateAndFixSequentialOrdering(phasesArray);
+    
+    console.log('✅ Phases reordered:', {
+      movedPhase: phase.name,
+      fromIndex: currentIndex,
+      toIndex: targetIndex,
+      before: displayPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber })),
+      after: reorderedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+    });
     
     // Update display immediately (optimistic UI update)
     setDisplayPhases(reorderedPhases);
@@ -1814,11 +1916,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           const sequentialPosition = i + 1; // 1-based position
           
           if (sequentialPosition === 1) {
-            positionRule = 'first';
-            positionValue = null;
+          positionRule = 'first';
+          positionValue = null;
           } else if (sequentialPosition === reorderedPhases.length) {
-            positionRule = 'last';
-            positionValue = null;
+          positionRule = 'last';
+          positionValue = null;
           } else {
             // Use 'nth' rule with sequential position as value
             positionRule = 'nth';
@@ -1835,11 +1937,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               positionValue = i + 1; // Sequential position
             } else if (existingRule === 'last_minus_n') {
               const distanceFromLast = reorderedPhases.length - i - 1;
-              positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
-            } else {
-              positionValue = null;
-            }
+            positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
           } else {
+              positionValue = null;
+          }
+        } else {
             // Custom phases: use last_minus_n
             if (i === 0) {
               positionRule = 'first';
@@ -1858,13 +1960,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         // Update the phase in database immediately
         updatePromises.push(
           supabase
-            .from('project_phases')
-            .update({
-              position_rule: positionRule,
-              position_value: positionValue,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', phase.id)
+          .from('project_phases')
+          .update({
+            position_rule: positionRule,
+            position_value: positionValue,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', phase.id)
             .eq('project_id', currentProject.id)
         );
       }
@@ -1880,9 +1982,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       if (isEditingStandardProject) {
         // For Edit Standard: fetch directly from database
         const { data: rebuiltPhases, error } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-          p_project_id: currentProject.id
-        });
-        
+        p_project_id: currentProject.id
+      });
+      
         if (!error && rebuiltPhases) {
           freshPhases = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
           freshPhases = freshPhases.filter(p => isStandardPhase(p) && !p.isLinked);
