@@ -944,38 +944,106 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     return validatedPhases;
   }, [mergedPhases, currentProject?.phases, phaseToDelete]);
   
-  // Update displayPhases on initial project load only
-  // CRITICAL: This should only run when the project changes (initial load), not on every data change
-  // This prevents auto-refresh behavior - phases are loaded once and only updated via explicit actions (add/delete/reorder)
+  // CRITICAL: Force immediate refresh on opening StructureManager
+  // For Edit Standard, fetch directly from database without intermediate processes
+  // This ensures fresh data is loaded immediately when opening
+  useEffect(() => {
+    if (!currentProject?.id) return;
+    
+    // Reset state to trigger fresh load
+    setPhasesLoaded(false);
+    
+    const fetchPhasesImmediately = async () => {
+      console.log('🔄 Immediate refresh on open:', {
+        projectId: currentProject.id,
+        isEditingStandardProject
+      });
+      
+      try {
+        let freshPhases: Phase[] = [];
+        
+        if (isEditingStandardProject) {
+          // For Edit Standard: fetch directly from database without intermediate processes
+          const { data: rebuiltPhases, error } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+            p_project_id: currentProject.id
+          });
+          
+          if (error) {
+            console.error('❌ Error fetching phases from database:', error);
+            return;
+          }
+          
+          freshPhases = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+          
+          // Filter to only standard phases for Edit Standard
+          freshPhases = freshPhases.filter(p => isStandardPhase(p) && !p.isLinked);
+        } else {
+          // For regular projects: use get_project_workflow_with_standards
+          const { data, error } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
+            p_project_id: currentProject.id
+          });
+          
+          if (error) {
+            console.error('❌ Error fetching phases:', error);
+            return;
+          }
+          
+          freshPhases = Array.isArray(data) ? data : [];
+        }
+        
+        if (freshPhases.length > 0) {
+          // Apply sequential ordering validation
+          const validatedPhases = validateAndFixSequentialOrdering(deduplicatePhases(freshPhases));
+          
+          // Update display immediately
+          setDisplayPhases(validatedPhases);
+          setPhasesLoaded(true);
+          
+          // Update project context to keep everything in sync
+          updateProject({
+            ...currentProject,
+            phases: validatedPhases,
+            updatedAt: new Date()
+          });
+          
+          console.log('✅ Phases loaded immediately from database:', {
+            count: validatedPhases.length,
+            phases: validatedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+          });
+        } else {
+          // No phases found - clear display
+          setDisplayPhases([]);
+          setPhasesLoaded(true);
+        }
+      } catch (error) {
+        console.error('❌ Error in immediate refresh:', error);
+        setPhasesLoaded(true); // Set loaded even on error to prevent infinite retries
+      }
+    };
+    
+    // Force immediate fetch when project changes or component mounts
+    fetchPhasesImmediately();
+  }, [currentProject?.id, isEditingStandardProject]); // Only run when project changes
+  
+  // Update displayPhases when processedPhases changes (fallback if immediate refresh didn't work)
   useEffect(() => {
     // Skip if we're actively adding or deleting (those functions handle their own updates)
-    if (isAddingPhase || isDeletingPhase || skipNextRefresh) {
+    if (isAddingPhase || isDeletingPhase || skipNextRefresh || phasesLoaded) {
       return;
     }
     
-    // Only update if we have processedPhases and displayPhases is empty (initial load)
-    // This ensures we only refresh on initial load, not on every data change
-    if (processedPhases.length > 0 && displayPhases.length === 0 && !phasesLoaded) {
-      console.log('🔄 Initial load: Setting displayPhases from processedPhases', {
+    // Update if we have processedPhases and displayPhases is empty
+    if (processedPhases.length > 0 && displayPhases.length === 0) {
+      console.log('🔄 Fallback: Setting displayPhases from processedPhases', {
         projectId: currentProject?.id,
         processedPhasesCount: processedPhases.length
       });
       
-      // Filter out deleted phase during deletion process
-      let phasesToDisplay = phaseToDelete 
-        ? processedPhases.filter(p => p.id !== phaseToDelete)
-        : processedPhases;
-      
-      // Apply sequential ordering validation (ensures no gaps, no duplicates)
-      // processedPhases already has sequential ordering applied, but ensure it's sorted correctly
-      const sortedForDisplay = sortPhasesByOrderNumber(phasesToDisplay);
-    
-      // All phases should already have sequential ordering positions from processedPhases
-      // Just set displayPhases - no need for complex change detection on initial load
+      const sortedForDisplay = sortPhasesByOrderNumber(processedPhases);
       setDisplayPhases(sortedForDisplay);
       setPhasesLoaded(true);
     }
-  }, [currentProject?.id, processedPhases, displayPhases.length, phasesLoaded, isAddingPhase, isDeletingPhase, skipNextRefresh, phaseToDelete]); // CRITICAL: Depend on project ID for initial load, but check processedPhases when available
+  }, [processedPhases, displayPhases.length, phasesLoaded, isAddingPhase, isDeletingPhase, skipNextRefresh, currentProject?.id]);
 
   // CRITICAL: Verify phases exist in database for standard projects
   // This prevents deleted phases from appearing after page refresh
@@ -1692,80 +1760,38 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     const phase = displayPhases.find(p => p.id === phaseId);
     if (!phase) return;
     
-    // Convert 'First'/'Last' to 'first'/'last'
-    const normalizedOrder = newOrder === 'First' ? 'first' : newOrder === 'Last' ? 'last' : newOrder;
+    // Convert 'First'/'Last' to numeric positions for sequential ordering
+    const targetPosition = newOrder === 'First' ? 1 : newOrder === 'Last' ? displayPhases.length : 
+                          typeof newOrder === 'number' ? newOrder : parseInt(String(newOrder), 10);
     
-    // Find if another phase already has this order number
-    const conflictingPhase = displayPhases.find(p => 
-      p.id !== phaseId && p.phaseOrderNumber === normalizedOrder
-    );
+    // Create reordered array by moving the phase to target position
+    const phasesArray = [...displayPhases];
+    const currentIndex = phasesArray.findIndex(p => p.id === phaseId);
     
-    // Create new phases array with updated order
-    const reorderedPhases = displayPhases.map(p => {
-      if (p.id === phaseId) {
-        // Update the selected phase's order
-        return { ...p, phaseOrderNumber: normalizedOrder };
-      } else if (conflictingPhase && p.id === conflictingPhase.id) {
-        // Move the conflicting phase to the next available position
-        // Find the next available order number
-        const usedOrders = new Set(displayPhases.map(ph => ph.phaseOrderNumber));
-        let nextOrder: string | number;
-        
-        if (normalizedOrder === 'first') {
-          // If moving to first, move conflicting to second position
-          nextOrder = 2;
-          while (usedOrders.has(nextOrder)) {
-            nextOrder = (nextOrder as number) + 1;
-          }
-        } else if (normalizedOrder === 'last') {
-          // If moving to last, move conflicting to second-to-last
-          const totalPhases = displayPhases.length;
-          nextOrder = totalPhases - 1;
-          while (usedOrders.has(nextOrder) || nextOrder === normalizedOrder) {
-            nextOrder = (nextOrder as number) - 1;
-          }
-          if (nextOrder < 1) nextOrder = 1;
-        } else {
-          // If moving to a number, move conflicting to next available number
-          const targetNum = typeof normalizedOrder === 'number' ? normalizedOrder : parseInt(String(normalizedOrder), 10);
-          nextOrder = targetNum + 1;
-          while (usedOrders.has(nextOrder)) {
-            nextOrder = (nextOrder as number) + 1;
-          }
-        }
-        
-        return { ...p, phaseOrderNumber: nextOrder };
-      }
-      return p;
-    });
+    if (currentIndex === -1) return;
     
-    // CRITICAL: Ensure order numbers are sequential based on actual position
-    // Sort by order number first, then reassign sequentially
-    const sortedByOrder = sortPhasesByOrderNumber(reorderedPhases);
-    sortedByOrder.forEach((phase, index) => {
-      if (index === 0) {
-        phase.phaseOrderNumber = 'first';
-      } else if (index === sortedByOrder.length - 1) {
-        phase.phaseOrderNumber = 'last';
-      } else {
-        phase.phaseOrderNumber = index + 1;
-      }
-    });
+    // Move phase to target position
+    const [movedPhase] = phasesArray.splice(currentIndex, 1);
+    const targetIndex = Math.min(Math.max(0, targetPosition - 1), phasesArray.length);
+    phasesArray.splice(targetIndex, 0, movedPhase);
     
-    // CRITICAL: Sort again after reassigning order numbers to ensure correct display order
-    const finalSorted = sortPhasesByOrderNumber(sortedByOrder);
+    // CRITICAL: Apply sequential ordering validation (1, 2, 3, ...)
+    const reorderedPhases = validateAndFixSequentialOrdering(phasesArray);
     
-    // Update display immediately (UI-only change)
-    setDisplayPhases(finalSorted);
+    // Update display immediately (optimistic UI update)
+    setDisplayPhases(reorderedPhases);
     
-    // CRITICAL: Save order positions to database (project_phases table)
-    // Convert phaseOrderNumber to position_rule/position_value and update database
+    // CRITICAL: Immediately commit to database
     try {
+      // Update all phases in database with new positions
       const updatePromises: Promise<any>[] = [];
       
-      for (let i = 0; i < finalSorted.length; i++) {
-        const phase = finalSorted[i];
+      for (let i = 0; i < reorderedPhases.length; i++) {
+        const phase = reorderedPhases[i];
         if (phase.isLinked) continue; // Skip linked phases
+        
+        const orderPosition = typeof phase.phaseOrderNumber === 'number' ? phase.phaseOrderNumber : 
+                              phase.phaseOrderNumber === 'first' ? 1 : reorderedPhases.length;
         
         // Get current phase data from database
         const { data: phaseData } = await supabase
@@ -1777,98 +1803,128 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         
         if (!phaseData) continue;
         
-        // Determine position_rule and position_value based on phaseOrderNumber
+        // Determine position_rule and position_value
+        // For Edit Standard: use sequential positions (1, 2, 3, ...)
+        // For regular projects: preserve standard phase position rules
         let positionRule: string;
         let positionValue: number | null = null;
         
-        if (phase.phaseOrderNumber === 'first') {
-          positionRule = 'first';
-          positionValue = null;
-        } else if (phase.phaseOrderNumber === 'last') {
-          positionRule = 'last';
-          positionValue = null;
-        } else if (typeof phase.phaseOrderNumber === 'number') {
-          // For custom phases in regular projects, use 'last_minus_n'
-          // For standard phases, keep their existing position_rule
-          if (isEditingStandardProject || (!phaseData.is_standard && !phaseData.standard_phase_id)) {
-            // Custom phase: calculate position_value based on distance from last
-            const totalPhases = finalSorted.length;
-            const distanceFromLast = totalPhases - i - 1;
-            positionRule = 'last_minus_n';
-            positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
+        if (isEditingStandardProject) {
+          // Edit Standard: use simple sequential positions
+          const sequentialPosition = i + 1; // 1-based position
+          
+          if (sequentialPosition === 1) {
+            positionRule = 'first';
+            positionValue = null;
+          } else if (sequentialPosition === reorderedPhases.length) {
+            positionRule = 'last';
+            positionValue = null;
           } else {
-            // Standard phase: keep existing position_rule, update position_value if needed
-            positionRule = phaseData.position_rule || 'nth';
-            positionValue = phase.phaseOrderNumber;
+            // Use 'nth' rule with sequential position as value
+            positionRule = 'nth';
+            positionValue = sequentialPosition;
           }
         } else {
-          // Fallback: keep existing position_rule
-          positionRule = phaseData.position_rule || 'last_minus_n';
-          positionValue = phaseData.position_rule === 'last_minus_n' ? (finalSorted.length - i - 1) : null;
+          // Regular projects: preserve existing position rules for standard phases
+          if (phaseData.is_standard && phaseData.standard_phase_id) {
+            // Keep existing position_rule, update position_value if needed
+            const existingRule = phaseData.position_rule || 'nth';
+            positionRule = existingRule;
+            
+            if (existingRule === 'nth') {
+              positionValue = i + 1; // Sequential position
+            } else if (existingRule === 'last_minus_n') {
+              const distanceFromLast = reorderedPhases.length - i - 1;
+              positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
+            } else {
+              positionValue = null;
+            }
+          } else {
+            // Custom phases: use last_minus_n
+            if (i === 0) {
+              positionRule = 'first';
+              positionValue = null;
+            } else if (i === reorderedPhases.length - 1) {
+              positionRule = 'last';
+              positionValue = null;
+            } else {
+              const distanceFromLast = reorderedPhases.length - i - 1;
+              positionRule = 'last_minus_n';
+              positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
+            }
+          }
         }
         
-        // Update the phase in database
-        const updatePromise = supabase
-          .from('project_phases')
-          .update({
-            position_rule: positionRule,
-            position_value: positionValue,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', phase.id)
-          .eq('project_id', currentProject.id);
-        
-        updatePromises.push(updatePromise);
+        // Update the phase in database immediately
+        updatePromises.push(
+          supabase
+            .from('project_phases')
+            .update({
+              position_rule: positionRule,
+              position_value: positionValue,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', phase.id)
+            .eq('project_id', currentProject.id)
+        );
       }
       
-      // Wait for all updates to complete
+      // Wait for all database updates to complete
       await Promise.all(updatePromises);
       
-      console.log('✅ Phase order positions saved to database');
+      console.log('✅ Phase order positions saved to database immediately');
       
-      // Rebuild phases JSON from database to ensure consistency
-      const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-        p_project_id: currentProject.id
-      });
+      // Rebuild phases from database and refresh UI
+      let freshPhases: Phase[] = [];
       
-      if (!rebuildError && rebuiltPhases) {
-        // Merge with incorporated phases if any
-        const allPhases = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
-        const mergedPhases = [...allPhases];
-        
-        // Add any incorporated phases from current display
-        finalSorted.forEach(p => {
-          if (p.isLinked && !mergedPhases.find(mp => mp.id === p.id)) {
-            mergedPhases.push(p);
-          }
+      if (isEditingStandardProject) {
+        // For Edit Standard: fetch directly from database
+        const { data: rebuiltPhases, error } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+          p_project_id: currentProject.id
         });
         
-        // Apply ordering and update project
-        const orderedPhases = enforceStandardPhaseOrdering(mergedPhases, standardProjectPhases);
-        const phasesWithUniqueOrder = ensureUniqueOrderNumbers(orderedPhases);
-        const sortedPhases = sortPhasesByOrderNumber(phasesWithUniqueOrder);
+        if (!error && rebuiltPhases) {
+          freshPhases = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+          freshPhases = freshPhases.filter(p => isStandardPhase(p) && !p.isLinked);
+        }
+      } else {
+        // For regular projects: use get_project_workflow_with_standards
+        const { data, error } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
+          p_project_id: currentProject.id
+        });
+        
+        if (!error && data) {
+          freshPhases = Array.isArray(data) ? data : [];
+        }
+      }
+      
+      if (freshPhases.length > 0) {
+        // Apply sequential ordering and update
+        const validatedPhases = validateAndFixSequentialOrdering(deduplicatePhases(freshPhases));
         
         // Update project JSON
         await supabase
           .from('projects')
-          .update({ phases: sortedPhases as any })
+          .update({ phases: validatedPhases as any })
           .eq('id', currentProject.id);
         
-        // Update project context
+        // Update context and display
         updateProject({
           ...currentProject,
-          phases: sortedPhases,
+          phases: validatedPhases,
           updatedAt: new Date()
         });
         
-        // Update display state
-        setDisplayPhases(sortedPhases);
+        setDisplayPhases(validatedPhases);
+        toast.success('Phase order updated and saved');
+      } else {
+        toast.error('Error refreshing phases after save');
       }
-      
-      toast.success('Phase order saved successfully');
     } catch (error) {
       console.error('❌ Error saving phase order to database:', error);
       toast.error('Error saving phase order');
+      // Revert to previous state on error
+      refetchDynamicPhases();
     }
   };
   
