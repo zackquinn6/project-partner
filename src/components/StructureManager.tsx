@@ -4925,7 +4925,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                                                               <CardContent className="p-3">
                                                                 <div className="flex items-center justify-between">
                                                                   <div className="flex items-center gap-2 flex-1">
-                                                                    {!phase.isLinked && (!phaseIsStandard || isEditingStandardProject) && phase.name !== 'Close Project' && (
+                                                                    {/* Only show move buttons if step is not standard OR we're editing Standard Project */}
+                                                                    {!phase.isLinked && (!phaseIsStandard || isEditingStandardProject) && phase.name !== 'Close Project' && (!step.isStandard || isEditingStandardProject) && (
                                                                       <div className="flex flex-col gap-0.5">
                                                                         <Button
                                                                           variant="ghost"
