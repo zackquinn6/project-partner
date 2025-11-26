@@ -1304,9 +1304,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   }, [currentProject?.id, isEditingStandardProject]); // Only run when project changes
   
   // Update displayPhases when processedPhases changes (fallback if immediate refresh didn't work)
+  // CRITICAL: Don't override displayPhases if we're in the middle of an order change
   useEffect(() => {
-    // Skip if we're actively adding or deleting (those functions handle their own updates)
-    if (isAddingPhase || isDeletingPhase || skipNextRefresh || phasesLoaded) {
+    // Skip if we're actively adding, deleting, or changing phase order (those functions handle their own updates)
+    if (isAddingPhase || isDeletingPhase || skipNextRefresh || isChangingPhaseOrder || phasesLoaded) {
       return;
     }
     
