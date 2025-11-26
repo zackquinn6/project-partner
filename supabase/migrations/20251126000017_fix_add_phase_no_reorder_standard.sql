@@ -219,9 +219,8 @@ BEGIN
   END IF;
 
   -- Insert the new phase
-  -- CRITICAL: Use RECORD variable to capture RETURNING values
-  -- This avoids ambiguity between RETURNS TABLE columns and table columns
-  -- RETURNING * INTO RECORD works because the RECORD type is inferred from the table
+  -- CRITICAL: Insert first, then query back to avoid RETURNING ambiguity with RETURNS TABLE
+  -- This completely avoids any column name conflicts
   INSERT INTO public.project_phases (
     project_id,
     name,
@@ -238,14 +237,26 @@ BEGIN
     NULL, -- Custom phases don't have standard_phase_id
     v_position_rule,
     v_position_value
-  )
-  RETURNING * INTO v_inserted_phase;
+  );
   
-  -- Extract values from the RECORD variable
-  -- This avoids the ambiguity because we're accessing the RECORD's fields, not table columns
-  v_new_phase_id := v_inserted_phase.id;
-  v_created_at := v_inserted_phase.created_at;
-  v_updated_at := v_inserted_phase.updated_at;
+  -- Query back the inserted row using a unique combination of fields
+  -- This avoids any ambiguity with RETURNS TABLE columns
+  SELECT 
+    pp.id,
+    pp.created_at,
+    pp.updated_at
+  INTO STRICT
+    v_new_phase_id,
+    v_created_at,
+    v_updated_at
+  FROM public.project_phases pp
+  WHERE pp.project_id = p_project_id
+    AND pp.name = v_phase_name
+    AND pp.position_rule = v_position_rule
+    AND COALESCE(pp.position_value, -1) = COALESCE(v_position_value, -1)
+    AND pp.created_at >= NOW() - INTERVAL '1 second'
+  ORDER BY pp.created_at DESC
+  LIMIT 1;
 
   -- Create one operation with one step for the new phase
   -- IMPORTANT: is_custom_phase is a GENERATED column (computed automatically)
@@ -310,6 +321,23 @@ BEGIN
     'Step description'
   )
   RETURNING id INTO v_new_step_id;
+
+  -- CRITICAL: Final validation - ensure the phase wasn't created with a conflicting position
+  -- This is a safety check in case something went wrong earlier
+  IF NOT v_is_standard THEN
+    -- Check if the phase was created with a reserved position
+    IF v_position_rule = 'first' OR (v_position_rule = 'nth' AND v_position_value = 1) THEN
+      -- Delete the phase we just created since it has an invalid position
+      DELETE FROM public.project_phases WHERE id = v_new_phase_id;
+      RAISE EXCEPTION 'Custom phases cannot use position "first" or "nth" with position_value = 1 (reserved for standard "Kickoff" phase)';
+    END IF;
+    
+    IF v_position_rule = 'last' THEN
+      -- Delete the phase we just created since it has an invalid position
+      DELETE FROM public.project_phases WHERE id = v_new_phase_id;
+      RAISE EXCEPTION 'Custom phases cannot use position "last" (reserved for standard "Close Project" phase)';
+    END IF;
+  END IF;
 
   -- Return the new phase
   RETURN QUERY
