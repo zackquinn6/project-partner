@@ -1321,7 +1321,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setDisplayPhases(sortedForDisplay);
       setPhasesLoaded(true);
     }
-  }, [processedPhases, displayPhases.length, phasesLoaded, isAddingPhase, isDeletingPhase, skipNextRefresh, currentProject?.id]);
+  }, [processedPhases, displayPhases.length, phasesLoaded, isAddingPhase, isDeletingPhase, skipNextRefresh, isChangingPhaseOrder, currentProject?.id]);
 
   // CRITICAL: Verify phases exist in database for standard projects
   // This prevents deleted phases from appearing after page refresh
@@ -2244,12 +2244,63 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         phases: reorderedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
       });
       
-      // Clear the flag after successful update
+      // CRITICAL: After database update, rebuild from database to ensure we have fresh data
+      // Then update displayPhases with the fresh order from database
+      let freshPhasesFromDb: Phase[] = [];
+      
+      if (isEditingStandardProject) {
+        // For Edit Standard: fetch directly from database
+        const { data: rebuiltPhases, error } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+          p_project_id: currentProject.id
+        });
+        
+        if (!error && rebuiltPhases) {
+          freshPhasesFromDb = Array.isArray(rebuiltPhases) ? rebuiltPhases : [];
+          freshPhasesFromDb = freshPhasesFromDb.filter(p => isStandardPhase(p) && !p.isLinked);
+        }
+      } else {
+        // For regular projects: use get_project_workflow_with_standards
+        const { data, error } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
+          p_project_id: currentProject.id
+        });
+        
+        if (!error && data) {
+          freshPhasesFromDb = Array.isArray(data) ? data : [];
+        }
+      }
+      
+      if (freshPhasesFromDb.length > 0) {
+        // Sort by order for display
+        const sortedFreshPhases = [...freshPhasesFromDb].sort((a, b) => {
+          const aOrder = typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 
+                        a.phaseOrderNumber === 'first' ? 0 : 
+                        a.phaseOrderNumber === 'last' ? 9999 : 0;
+          const bOrder = typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 
+                        b.phaseOrderNumber === 'first' ? 0 : 
+                        b.phaseOrderNumber === 'last' ? 9999 : 0;
+          return aOrder - bOrder;
+        });
+        
+        // Update displayPhases with fresh data from database (source of truth)
+        setDisplayPhases(sortedFreshPhases);
+        
+        // Update project context with fresh phases
+        updateProject({
+          ...currentProject,
+          phases: sortedFreshPhases,
+          updatedAt: new Date()
+        });
+        
+        console.log('✅ Updated displayPhases from database after order change:', {
+          count: sortedFreshPhases.length,
+          phases: sortedFreshPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+        });
+      }
+      
+      // Clear the flag after successful update and database refresh
       setIsChangingPhaseOrder(false);
-      // Keep skipNextRefresh true for a bit longer to prevent processedPhases from reordering
-      setTimeout(() => {
-        setSkipNextRefresh(false);
-      }, 1000);
+      // Clear skipNextRefresh now that we have fresh data from database
+      setSkipNextRefresh(false);
     } catch (error) {
       console.error('❌ Error saving phase order to database:', error);
       toast.error('Error saving phase order');
