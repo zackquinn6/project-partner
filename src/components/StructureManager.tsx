@@ -191,6 +191,204 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
     return result;
   };
 
+  // Validate and fix phase order numbers
+  // CRITICAL: This function ensures all phases have unique order numbers and respects standard phase positions
+  const validateAndFixPhaseOrderNumbers = (phases: Phase[]): { phases: Phase[]; fixed: boolean; issues: string[] } => {
+    const issues: string[] = [];
+    let fixed = false;
+    const validatedPhases = [...phases];
+    
+    // Step 1: Collect reserved positions from standard phases
+    const reservedByStandardPhases = new Set<string | number>();
+    const standardPhaseOrderMap = new Map<string, string | number>(); // phase name -> order number
+    
+    if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+      standardProjectPhases.forEach(phase => {
+        const orderNumber = phase.phaseOrderNumber;
+        if (orderNumber !== undefined && orderNumber !== null) {
+          reservedByStandardPhases.add(orderNumber);
+          if (phase.name) {
+            standardPhaseOrderMap.set(phase.name, orderNumber);
+          }
+          if (orderNumber === 'first' || orderNumber === 'First') {
+            reservedByStandardPhases.add(1);
+          } else if (orderNumber === 'last' || orderNumber === 'Last') {
+            reservedByStandardPhases.add(validatedPhases.length);
+          }
+        }
+      });
+    }
+    
+    // Also check current phases for standard phase positions
+    validatedPhases.forEach((phase, index) => {
+      if (isStandardPhase(phase) && !phase.isLinked) {
+        const orderNumber = phase.phaseOrderNumber;
+        if (orderNumber !== undefined) {
+          reservedByStandardPhases.add(orderNumber);
+          if (orderNumber === 'first' || orderNumber === 'First') {
+            reservedByStandardPhases.add(1);
+          } else if (orderNumber === 'last' || orderNumber === 'Last') {
+            reservedByStandardPhases.add(validatedPhases.length);
+          } else if (typeof orderNumber === 'number') {
+            reservedByStandardPhases.add(orderNumber);
+          }
+        }
+        // Also reserve the actual numeric position where standard phase appears
+        const numericPosition = index + 1;
+        reservedByStandardPhases.add(numericPosition);
+      }
+    });
+    
+    // Step 2: Check for missing order numbers
+    validatedPhases.forEach((phase, index) => {
+      if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+        issues.push(`Phase "${phase.name}" is missing an order number`);
+        fixed = true;
+        
+        // Assign order number based on position and phase type
+        if (isStandardPhase(phase) && !phase.isLinked) {
+          // Standard phase: use order from Standard Project Foundation if available
+          if (phase.name && standardPhaseOrderMap.has(phase.name)) {
+            phase.phaseOrderNumber = standardPhaseOrderMap.get(phase.name)!;
+          } else if (index === 0) {
+            phase.phaseOrderNumber = 'first';
+          } else if (index === validatedPhases.length - 1) {
+            phase.phaseOrderNumber = 'last';
+          } else {
+            phase.phaseOrderNumber = index + 1;
+          }
+        } else {
+          // Custom/linked phase: assign next available number
+          let candidateNumber = index + 1;
+          while (reservedByStandardPhases.has(candidateNumber) && candidateNumber <= validatedPhases.length + 10) {
+            candidateNumber++;
+          }
+          phase.phaseOrderNumber = candidateNumber;
+        }
+      }
+    });
+    
+    // Step 3: Check for duplicate order numbers
+    const orderNumberUsage = new Map<string | number, Phase[]>();
+    validatedPhases.forEach(phase => {
+      const order = phase.phaseOrderNumber;
+      if (order !== undefined && order !== null) {
+        if (!orderNumberUsage.has(order)) {
+          orderNumberUsage.set(order, []);
+        }
+        orderNumberUsage.get(order)!.push(phase);
+      }
+    });
+    
+    orderNumberUsage.forEach((phasesWithOrder, order) => {
+      if (phasesWithOrder.length > 1) {
+        issues.push(`Duplicate order number "${order}" found for phases: ${phasesWithOrder.map(p => p.name).join(', ')}`);
+        fixed = true;
+        
+        // Fix duplicates: keep the first one, reassign others
+        phasesWithOrder.forEach((phase, dupIndex) => {
+          if (dupIndex === 0) {
+            // Keep first occurrence
+            return;
+          }
+          
+          // Reassign duplicate
+          const phaseIndex = validatedPhases.findIndex(p => p.id === phase.id);
+          if (phaseIndex !== -1) {
+            if (isStandardPhase(phase) && !phase.isLinked) {
+              // Standard phase: use order from Standard Project Foundation
+              if (phase.name && standardPhaseOrderMap.has(phase.name)) {
+                validatedPhases[phaseIndex].phaseOrderNumber = standardPhaseOrderMap.get(phase.name)!;
+              } else {
+                // Find next available number
+                let candidateNumber = phaseIndex + 1;
+                while (orderNumberUsage.has(candidateNumber) && candidateNumber <= validatedPhases.length + 10) {
+                  candidateNumber++;
+                }
+                validatedPhases[phaseIndex].phaseOrderNumber = candidateNumber;
+                orderNumberUsage.set(candidateNumber, [validatedPhases[phaseIndex]]);
+              }
+            } else {
+              // Custom/linked phase: find next available number
+              let candidateNumber = phaseIndex + 1;
+              while (
+                (orderNumberUsage.has(candidateNumber) || reservedByStandardPhases.has(candidateNumber)) &&
+                candidateNumber <= validatedPhases.length + 10
+              ) {
+                candidateNumber++;
+              }
+              validatedPhases[phaseIndex].phaseOrderNumber = candidateNumber;
+              if (!orderNumberUsage.has(candidateNumber)) {
+                orderNumberUsage.set(candidateNumber, []);
+              }
+              orderNumberUsage.get(candidateNumber)!.push(validatedPhases[phaseIndex]);
+            }
+          }
+        });
+      }
+    });
+    
+    // Step 4: Validate standard phase positions are respected
+    if (!isEditingStandardProject) {
+      validatedPhases.forEach((phase, index) => {
+        if (!isStandardPhase(phase) && !phase.isLinked) {
+          const orderNumber = phase.phaseOrderNumber;
+          
+          // Check if custom phase is using a reserved position
+          if (orderNumber === 'first' || orderNumber === 'First' || orderNumber === 1) {
+            if (reservedByStandardPhases.has('First') || reservedByStandardPhases.has(1)) {
+              issues.push(`Custom phase "${phase.name}" is using reserved position "first" or 1`);
+              fixed = true;
+              // Reassign to next available position
+              let candidateNumber = 3; // Start after Kickoff (1) and Planning (2)
+              while (reservedByStandardPhases.has(candidateNumber) && candidateNumber <= validatedPhases.length + 10) {
+                candidateNumber++;
+              }
+              phase.phaseOrderNumber = candidateNumber;
+            }
+          } else if (orderNumber === 'last' || orderNumber === 'Last' || orderNumber === validatedPhases.length) {
+            if (reservedByStandardPhases.has('Last') || reservedByStandardPhases.has(validatedPhases.length)) {
+              issues.push(`Custom phase "${phase.name}" is using reserved position "last"`);
+              fixed = true;
+              // Reassign to position before last
+              phase.phaseOrderNumber = Math.max(3, validatedPhases.length - 1);
+            }
+          } else if (typeof orderNumber === 'number' && reservedByStandardPhases.has(orderNumber)) {
+            issues.push(`Custom phase "${phase.name}" is using reserved position ${orderNumber}`);
+            fixed = true;
+            // Reassign to next available position
+            let candidateNumber = orderNumber + 1;
+            while (reservedByStandardPhases.has(candidateNumber) && candidateNumber <= validatedPhases.length + 10) {
+              candidateNumber++;
+            }
+            phase.phaseOrderNumber = candidateNumber;
+          }
+        }
+      });
+    }
+    
+    // Step 5: Ensure standard phases have correct positions
+    validatedPhases.forEach((phase, index) => {
+      if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
+        const expectedOrder = standardPhaseOrderMap.get(phase.name);
+        if (expectedOrder !== undefined && phase.phaseOrderNumber !== expectedOrder) {
+          issues.push(`Standard phase "${phase.name}" has incorrect order number. Expected: ${expectedOrder}, Found: ${phase.phaseOrderNumber}`);
+          fixed = true;
+          phase.phaseOrderNumber = expectedOrder;
+        }
+      }
+    });
+    
+    if (fixed && issues.length > 0) {
+      console.log('✅ Validated and fixed phase order numbers:', {
+        issuesFixed: issues.length,
+        issues: issues.slice(0, 5) // Log first 5 issues
+      });
+    }
+    
+    return { phases: validatedPhases, fixed, issues };
+  };
+
   // Sort phases by order number while preserving standard phase positions
   const sortPhasesByOrderNumber = (phases: Phase[]): Phase[] => {
     // CRITICAL: Sort ALL phases together by their order numbers
@@ -751,7 +949,52 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       const rawPhases = deduplicatePhases(phasesToProcess);
       const phasesWithUniqueOrder = ensureUniqueOrderNumbers(rawPhases);
       const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
-      const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
+      
+      // CRITICAL: Validate and fix phase order numbers when opening StructureManager
+      // This ensures all phases have unique order numbers and respects standard phase positions
+      const validationResult = validateAndFixPhaseOrderNumbers(orderedPhases);
+      const validatedPhases = validationResult.phases;
+      
+      if (validationResult.fixed) {
+        console.log('🔧 Phase order validation fixed issues:', {
+          issuesCount: validationResult.issues.length,
+          sampleIssues: validationResult.issues.slice(0, 3)
+        });
+        
+        // CRITICAL: Persist validation fixes to database
+        // This ensures the backend database is properly updated for all phases
+        if (currentProject && validatedPhases.length > 0) {
+          // Sort phases by order number before saving
+          const sortedValidatedPhases = sortPhasesByOrderNumber(validatedPhases);
+          
+          // Update project JSON with validated phases
+          const updatedProject = {
+            ...currentProject,
+            phases: sortedValidatedPhases,
+            updatedAt: new Date()
+          };
+          
+          // Update project context (this saves to database via updateProject)
+          updateProject(updatedProject);
+          
+          // CRITICAL: Also update database project_phases table for Standard Project Foundation
+          // For regular projects, the JSON update is sufficient, but for Standard Project Foundation
+          // we need to update position_rule/position_value in the database
+          if (isEditingStandardProject) {
+            // Use setTimeout to avoid state update during render
+            setTimeout(async () => {
+              try {
+                await updatePhaseOrder(sortedValidatedPhases);
+                console.log('✅ Phase order validation fixes persisted to database');
+              } catch (error) {
+                console.error('❌ Error persisting validation fixes to database:', error);
+              }
+            }, 100);
+          }
+        }
+      }
+      
+      const sortedPhases = sortPhasesByOrderNumber(validatedPhases);
       
       // CONDITION 5: For regular projects, apply order numbers from Standard Project Foundation AFTER ensureUniqueOrderNumbers
       // This ensures standard project foundation ordering is respected (absolute and relative order numbers)
@@ -1060,18 +1303,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         !Array.from(currentPhaseIds).every(id => displayPhaseIds.has(id)) ||
         !Array.from(displayPhaseIds).every(id => currentPhaseIds.has(id));
       
-      if (phasesChanged) {
-        console.log('🔧 updateProject called: phases changed', {
+      // CRITICAL: Also check if order numbers changed (validation fixes)
+      const orderNumbersChanged = phasesToDisplay.some((phase, index) => {
+        const currentPhase = currentProject.phases?.find(p => p.id === phase.id);
+        return currentPhase?.phaseOrderNumber !== phase.phaseOrderNumber;
+      });
+      
+      if (phasesChanged || orderNumbersChanged) {
+        console.log('🔧 updateProject called: phases or order numbers changed', {
           projectId: currentProject.id,
           oldCount: currentProject.phases?.length || 0,
-          newCount: phasesToDisplay.length
+          newCount: phasesToDisplay.length,
+          orderNumbersChanged
         });
-      updateProject({
-        ...currentProject,
-        phases: phasesToDisplay,
-        updatedAt: new Date()
-      });
-    }
+        updateProject({
+          ...currentProject,
+          phases: phasesToDisplay,
+          updatedAt: new Date()
+        });
+      }
     }
   }, [processedPhases, rebuildingPhases, currentProject?.id, rebuiltPhases?.length, mergedPhases?.length, justAddedPhaseId, skipNextRefresh, isAddingPhase, isDeletingPhase, phaseToDelete]);
 
@@ -1176,7 +1426,50 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         
         const phasesWithUniqueOrder = ensureUniqueOrderNumbers(phasesToDisplay);
         const orderedPhases = enforceStandardPhaseOrdering(phasesWithUniqueOrder, standardProjectPhases);
-        const sortedPhases = sortPhasesByOrderNumber(orderedPhases);
+        
+        // CRITICAL: Validate and fix phase order numbers when initializing phases
+        // This ensures all phases have unique order numbers and respects standard phase positions
+        const validationResult = validateAndFixPhaseOrderNumbers(orderedPhases);
+        const validatedPhases = validationResult.phases;
+        
+        if (validationResult.fixed) {
+          console.log('🔧 Phase order validation fixed issues during initialization:', {
+            issuesCount: validationResult.issues.length,
+            sampleIssues: validationResult.issues.slice(0, 3)
+          });
+          
+          // CRITICAL: Persist validation fixes to database
+          // This ensures the backend database is properly updated for all phases
+          if (currentProject && validatedPhases.length > 0) {
+            // Sort phases by order number before saving
+            const sortedValidatedPhases = sortPhasesByOrderNumber(validatedPhases);
+            
+            // Update project JSON with validated phases
+            const updatedProject = {
+              ...currentProject,
+              phases: sortedValidatedPhases,
+              updatedAt: new Date()
+            };
+            
+            // Update project context (this saves to database via updateProject)
+            updateProject(updatedProject);
+            
+            // CRITICAL: Also update database project_phases table for Standard Project Foundation
+            if (isEditingStandardProject) {
+              // Use setTimeout to avoid state update during render
+              setTimeout(async () => {
+                try {
+                  await updatePhaseOrder(sortedValidatedPhases);
+                  console.log('✅ Phase order validation fixes persisted to database during initialization');
+                } catch (error) {
+                  console.error('❌ Error persisting validation fixes to database:', error);
+                }
+              }, 100);
+            }
+          }
+        }
+        
+        const sortedPhases = sortPhasesByOrderNumber(validatedPhases);
         if (sortedPhases.length > 0) {
           console.log('🔍 StructureManager initializing displayPhases from currentProject (fallback):', {
             projectId: currentProject.id,
