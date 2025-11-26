@@ -2450,19 +2450,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           } else if (positionRule === 'last_minus_n' && positionValue !== undefined && positionValue !== null) {
             // For 'last_minus_n', calculate the position from the end
             // If there are N total phases and position_value = 1, the phase should be at position N-1
+            // position_value = 2 means position N-2, etc.
             const totalPhases = phasesWithUniqueOrder.length;
-            const calculatedPosition = totalPhases - positionValue;
-            // Ensure it's not less than 1 (which would conflict with 'first')
-            if (calculatedPosition <= 1 && !isStandardPhase(phase)) {
-              console.warn('⚠️ Calculated position for last_minus_n would conflict with first position:', {
-                phaseName: phase.name,
-                calculatedPosition,
-                totalPhases,
-                positionValue
-              });
-              phase.phaseOrderNumber = Math.max(2, calculatedPosition); // Use at least position 2
+            
+            // Find the last phase (should be "Close Project" with position_rule = 'last')
+            const lastPhaseIndex = phasesWithUniqueOrder.findIndex(p => {
+              const pRule = (p as any).positionRule || (p as any).position_rule;
+              return pRule === 'last' || p.phaseOrderNumber === 'last';
+            });
+            
+            if (lastPhaseIndex !== -1) {
+              // Calculate position: last phase is at lastPhaseIndex, so last_minus_n phases come before it
+              // position_value = 1 means second-to-last (before the last phase)
+              // position_value = 2 means third-to-last, etc.
+              const calculatedPosition = lastPhaseIndex - positionValue + 1;
+              
+              // Ensure it's not less than 1 (which would conflict with 'first')
+              if (calculatedPosition <= 1 && !isStandardPhase(phase)) {
+                console.warn('⚠️ Calculated position for last_minus_n would conflict with first position:', {
+                  phaseName: phase.name,
+                  calculatedPosition,
+                  totalPhases,
+                  positionValue,
+                  lastPhaseIndex
+                });
+                phase.phaseOrderNumber = Math.max(2, calculatedPosition); // Use at least position 2
+              } else {
+                phase.phaseOrderNumber = calculatedPosition;
+              }
             } else {
-              phase.phaseOrderNumber = calculatedPosition;
+              // Fallback: if no last phase found, calculate from total phases
+              const calculatedPosition = totalPhases - positionValue;
+              if (calculatedPosition <= 1 && !isStandardPhase(phase)) {
+                phase.phaseOrderNumber = Math.max(2, calculatedPosition);
+              } else {
+                phase.phaseOrderNumber = calculatedPosition;
+              }
             }
           }
         }
@@ -2509,6 +2532,91 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             positionValue
           });
         }
+      });
+      
+      // CRITICAL: Final pass - ensure ALL phases have order numbers assigned
+      // This prevents blank dropdown menus, especially for phases with last_minus_n
+      // Sort phases by their current order numbers to determine correct sequential positions
+      const phasesWithOrderNumbers = phasesWithUniqueOrder.filter(p => 
+        p.phaseOrderNumber !== undefined && p.phaseOrderNumber !== null
+      );
+      const phasesWithoutOrderNumbers = phasesWithUniqueOrder.filter(p => 
+        p.phaseOrderNumber === undefined || p.phaseOrderNumber === null
+      );
+      
+      // Sort phases with order numbers to find gaps
+      phasesWithOrderNumbers.sort((a, b) => {
+        const aOrder = typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 
+                      a.phaseOrderNumber === 'first' ? 0 : 
+                      a.phaseOrderNumber === 'last' ? 9999 : 9998;
+        const bOrder = typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 
+                      b.phaseOrderNumber === 'first' ? 0 : 
+                      b.phaseOrderNumber === 'last' ? 9999 : 9998;
+        return aOrder - bOrder;
+      });
+      
+      // Assign order numbers to phases that don't have them
+      // Insert them in the correct position based on their array index
+      phasesWithoutOrderNumbers.forEach((phase, idx) => {
+        const phaseIndex = phasesWithUniqueOrder.indexOf(phase);
+        
+        // Find the correct order number based on surrounding phases
+        if (phaseIndex === 0) {
+          // First phase - check if 'first' is available
+          const hasFirst = phasesWithOrderNumbers.some(p => 
+            p.phaseOrderNumber === 'first' || p.phaseOrderNumber === 1
+          );
+          if (!hasFirst && (isStandardPhase(phase) || isEditingStandardProject)) {
+            phase.phaseOrderNumber = 'first';
+          } else {
+            phase.phaseOrderNumber = 1;
+          }
+        } else if (phaseIndex === phasesWithUniqueOrder.length - 1) {
+          // Last phase - check if 'last' is available
+          const hasLast = phasesWithOrderNumbers.some(p => p.phaseOrderNumber === 'last');
+          if (!hasLast && !isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+            phase.phaseOrderNumber = 'last';
+          } else {
+            // Find the highest numeric order number and add 1
+            const maxOrder = Math.max(
+              ...phasesWithOrderNumbers
+                .map(p => typeof p.phaseOrderNumber === 'number' ? p.phaseOrderNumber : 0)
+                .filter(n => n > 0)
+            );
+            phase.phaseOrderNumber = maxOrder + 1;
+          }
+        } else {
+          // Middle phase - find a position between surrounding phases
+          const prevPhase = phasesWithUniqueOrder[phaseIndex - 1];
+          const nextPhase = phasesWithUniqueOrder[phaseIndex + 1];
+          
+          const prevOrder = typeof prevPhase?.phaseOrderNumber === 'number' ? prevPhase.phaseOrderNumber :
+                           prevPhase?.phaseOrderNumber === 'first' ? 1 :
+                           prevPhase?.phaseOrderNumber === 'last' ? 9999 : 0;
+          const nextOrder = typeof nextPhase?.phaseOrderNumber === 'number' ? nextPhase.phaseOrderNumber :
+                           nextPhase?.phaseOrderNumber === 'first' ? 1 :
+                           nextPhase?.phaseOrderNumber === 'last' ? 9999 : 9999;
+          
+          // Assign a position between prev and next
+          if (prevOrder > 0 && nextOrder > prevOrder) {
+            phase.phaseOrderNumber = prevOrder + 1;
+          } else {
+            // Fallback: use index + 1, but ensure it's not 1 for custom phases
+            const calculatedOrder = phaseIndex + 1;
+            if (calculatedOrder === 1 && !isStandardPhase(phase) && !phase.isLinked) {
+              phase.phaseOrderNumber = 2; // Skip position 1 for custom phases
+            } else {
+              phase.phaseOrderNumber = calculatedOrder;
+            }
+          }
+        }
+        
+        console.log('🔧 Assigned missing order number in final pass:', {
+          phaseName: phase.name,
+          phaseId: phase.id,
+          assignedOrder: phase.phaseOrderNumber,
+          phaseIndex
+        });
       });
 
       // CRITICAL: Set isStandard flag correctly based on whether we're editing Standard Project Foundation

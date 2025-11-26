@@ -109,33 +109,30 @@ BEGIN
       RAISE EXCEPTION 'Position "nth" with position_value = 1 is reserved for the standard "Kickoff" phase and cannot be used by custom phases';
     END IF;
     
-    -- Check if this position is already taken by another custom phase in this project
+    -- CRITICAL: Reorder existing last_minus_n phases to make room for the new phase
+    -- When a new phase is added at last_minus_n with value 1, all existing last_minus_n phases
+    -- should be incremented (slid forward) to make room
+    -- This ensures phases are properly ordered and don't conflict
+    
+    -- First, check if there are any existing phases with last_minus_n
     SELECT COUNT(*) INTO v_existing_phase_count
     FROM public.project_phases pp
     WHERE pp.project_id = p_project_id
-      AND pp.position_rule = v_position_rule
-      AND pp.position_value = v_position_value;
+      AND pp.position_rule = 'last_minus_n';
     
     IF v_existing_phase_count > 0 THEN
-      -- Find the next available position
-      -- Try last_minus_n with increasing values
-      v_position_value := 2;
-      LOOP
-        SELECT COUNT(*) INTO v_existing_phase_count
-        FROM public.project_phases pp
-        WHERE pp.project_id = p_project_id
-          AND pp.position_rule = v_position_rule
-          AND pp.position_value = v_position_value;
-        
-        EXIT WHEN v_existing_phase_count = 0;
-        v_position_value := v_position_value + 1;
-        
-        -- Safety check to prevent infinite loop
-        IF v_position_value > 100 THEN
-          RAISE EXCEPTION 'Could not find available position for new custom phase';
-        END IF;
-      END LOOP;
+      -- Increment position_value for all existing last_minus_n phases
+      -- This slides them forward to make room for the new phase at position_value = 1
+      UPDATE public.project_phases
+      SET position_value = position_value + 1,
+          updated_at = NOW()
+      WHERE project_id = p_project_id
+        AND position_rule = 'last_minus_n';
+      
+      RAISE NOTICE 'Reordered % existing last_minus_n phases to make room for new phase', v_existing_phase_count;
     END IF;
+    
+    -- The new phase will use position_value = 1 (which is now available after reordering)
     
     -- CRITICAL: Validate that the new custom phase doesn't use position rules that conflict with standard phases
     -- Standard phases have these reserved position rules:
