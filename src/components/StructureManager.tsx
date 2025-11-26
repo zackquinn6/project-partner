@@ -3611,49 +3611,56 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
       
-      // CRITICAL: Update displayPhases immediately with the new phase
-      // This ensures it's visible right away
+      // CRITICAL: Apply sequential ordering validation to ALL phases before displaying
+      // This ensures no duplicate order numbers and proper sequential ordering (1, 2, 3, 4, 5...)
+      // The new phase should be at position (totalPhases - 1), and the prior last phase should move to position totalPhases
+      console.log('🔄 Applying sequential ordering validation after adding phase:', {
+        beforeCount: finalPhases.length,
+        beforeOrders: finalPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+      });
+      
+      const sequentiallyOrderedPhases = validateAndFixSequentialOrdering(finalPhases);
+      
+      console.log('✅ Sequential ordering applied:', {
+        afterCount: sequentiallyOrderedPhases.length,
+        afterOrders: sequentiallyOrderedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+      });
+      
+      // CRITICAL: Update displayPhases immediately with the sequentially ordered phases
+      // This ensures it's visible right away with correct order numbers
       setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
-      setDisplayPhases(finalPhases);
+      setDisplayPhases(sequentiallyOrderedPhases);
       setPhasesLoaded(true);
       
       // CRITICAL: Update phase order in database FIRST to persist order numbers
-      // This ensures the 'last' designation is saved to the database
-      // updatePhaseOrder will preserve the phaseOrderNumber values we set
-      if (isEditingStandardProject) {
-        // CRITICAL: Before calling updatePhaseOrder, ensure the last phase has 'last'
-        const lastPhase = finalPhases[finalPhases.length - 1];
-        if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
-          console.warn('⚠️ Last phase does not have "last" designation, fixing before updatePhaseOrder:', {
-            phaseName: lastPhase.name,
-            currentOrder: lastPhase.phaseOrderNumber
-          });
+      // This ensures sequential ordering is saved to the database for both Edit Standard and regular projects
+      // CRITICAL: Before calling updatePhaseOrder, ensure the last phase has 'last'
+      const lastPhase = sequentiallyOrderedPhases[sequentiallyOrderedPhases.length - 1];
+      if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
+        // If last phase has a numeric position equal to total phases, convert to 'last'
+        // This only applies to standard phases (the "Close Project" phase should be last)
+        if (typeof lastPhase.phaseOrderNumber === 'number' && 
+            lastPhase.phaseOrderNumber === sequentiallyOrderedPhases.length &&
+            (isStandardPhase(lastPhase) || isEditingStandardProject)) {
           lastPhase.phaseOrderNumber = 'last';
         }
-        
-        console.log('🔄 Updating phase order in database to persist order numbers:', {
-          phases: finalPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
-        });
-        try {
-          await updatePhaseOrder(finalPhases);
-          console.log('✅ Phase order updated in database, order numbers preserved');
-          
-          // CRITICAL: After updatePhaseOrder, verify the last phase still has 'last'
-          // updatePhaseOrder returns sorted phases, so we need to check the result
-          // But updatePhaseOrder doesn't return the phases, so we need to ensure finalPhases still has 'last'
-          const lastPhaseAfterUpdate = finalPhases[finalPhases.length - 1];
-          if (lastPhaseAfterUpdate && lastPhaseAfterUpdate.phaseOrderNumber !== 'last') {
-            console.warn('⚠️ Last phase lost "last" designation after updatePhaseOrder, restoring:', {
-              phaseName: lastPhaseAfterUpdate.name,
-              currentOrder: lastPhaseAfterUpdate.phaseOrderNumber
-            });
-            lastPhaseAfterUpdate.phaseOrderNumber = 'last';
-          }
-        } catch (error) {
-          console.error('❌ Error updating phase order in database:', error);
-          // Continue anyway - the JSON update will still work
-        }
       }
+      
+      console.log('🔄 Updating phase order in database with sequential ordering:', {
+        isEditingStandardProject,
+        phases: sequentiallyOrderedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+      });
+      try {
+        // Update database for both Edit Standard and regular projects
+        await updatePhaseOrder(sequentiallyOrderedPhases);
+        console.log('✅ Phase order updated in database with sequential ordering');
+      } catch (error) {
+        console.error('❌ Error updating phase order in database:', error);
+        // Continue anyway - the JSON update will still work
+      }
+      
+      // Update finalPhases to use the sequentially ordered phases
+      finalPhases = sequentiallyOrderedPhases;
       
       // CRITICAL: Before updating project, ensure the last phase has 'last' designation
       const lastPhaseBeforeUpdate = finalPhases[finalPhases.length - 1];
