@@ -1229,10 +1229,27 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       !Array.from(newDisplayIds).every(id => currentDisplayIds.has(id));
     
     // Also check if order numbers changed (even if same phases)
+    // CRITICAL: Compare order numbers properly, handling undefined/null values
     const displayOrderChanged = displayPhases.length !== sortedForDisplay.length ||
       displayPhases.some((phase, index) => {
         const newPhase = sortedForDisplay[index];
-        return !newPhase || phase.id !== newPhase.id || phase.phaseOrderNumber !== newPhase.phaseOrderNumber;
+        if (!newPhase || phase.id !== newPhase.id) {
+          return true; // Phase ID changed or phase missing
+        }
+        // Compare order numbers, treating undefined/null as different from any value
+        const currentOrder = phase.phaseOrderNumber;
+        const newOrder = newPhase.phaseOrderNumber;
+        // If one is undefined/null and the other isn't, they're different
+        if ((currentOrder === undefined || currentOrder === null) !== (newOrder === undefined || newOrder === null)) {
+          return true;
+        }
+        // If both are defined, compare them
+        if (currentOrder !== undefined && currentOrder !== null && newOrder !== undefined && newOrder !== null) {
+          return currentOrder !== newOrder;
+        }
+        // Both are undefined/null - check if they should have values
+        // If a phase should have an order number but doesn't, that's a change
+        return false; // Both undefined - no change detected (will be handled by validation)
       });
     
     const displayNeedsUpdate = displayIdsChanged || displayOrderChanged;
@@ -1278,14 +1295,38 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         return phase;
       });
       
-      console.log('🔄 Updating displayPhases:', {
-        idsChanged: displayIdsChanged,
-        orderChanged: displayOrderChanged,
-        currentCount: displayPhases.length,
-        newCount: phasesWithOrderNumbers.length,
-        phases: phasesWithOrderNumbers.map(p => ({ name: p.name, order: p.phaseOrderNumber, isStandard: p.isStandard }))
-      });
-      setDisplayPhases(phasesWithOrderNumbers);
+      // CRITICAL: Only update if there's an actual meaningful change
+      // Compare the actual order numbers to prevent unnecessary updates
+      const hasMeaningfulChange = displayIdsChanged || 
+        phasesWithOrderNumbers.some((phase, index) => {
+          const currentPhase = displayPhases[index];
+          if (!currentPhase || currentPhase.id !== phase.id) {
+            return true; // Phase ID changed
+          }
+          // Compare order numbers
+          const currentOrder = currentPhase.phaseOrderNumber;
+          const newOrder = phase.phaseOrderNumber;
+          if ((currentOrder === undefined || currentOrder === null) !== (newOrder === undefined || newOrder === null)) {
+            return true; // One has order, other doesn't
+          }
+          if (currentOrder !== undefined && currentOrder !== null && newOrder !== undefined && newOrder !== null) {
+            return currentOrder !== newOrder; // Both have orders, compare them
+          }
+          return false; // Both undefined/null - no change
+        });
+      
+      if (hasMeaningfulChange) {
+        console.log('🔄 Updating displayPhases:', {
+          idsChanged: displayIdsChanged,
+          orderChanged: displayOrderChanged,
+          currentCount: displayPhases.length,
+          newCount: phasesWithOrderNumbers.length,
+          phases: phasesWithOrderNumbers.map(p => ({ name: p.name, order: p.phaseOrderNumber, isStandard: p.isStandard }))
+        });
+        setDisplayPhases(phasesWithOrderNumbers);
+      } else {
+        console.log('⏭️ Skipping displayPhases update - no meaningful changes detected');
+      }
     } else {
       console.log('⏭️ Skipping displayPhases update - no changes detected');
     }
@@ -1304,9 +1345,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         !Array.from(displayPhaseIds).every(id => currentPhaseIds.has(id));
       
       // CRITICAL: Also check if order numbers changed (validation fixes)
-      const orderNumbersChanged = phasesToDisplay.some((phase, index) => {
+      // Compare order numbers properly, handling undefined/null values
+      const orderNumbersChanged = phasesToDisplay.some((phase) => {
         const currentPhase = currentProject.phases?.find(p => p.id === phase.id);
-        return currentPhase?.phaseOrderNumber !== phase.phaseOrderNumber;
+        if (!currentPhase) {
+          return true; // New phase - order number changed
+        }
+        const currentOrder = currentPhase.phaseOrderNumber;
+        const newOrder = phase.phaseOrderNumber;
+        // If one is undefined/null and the other isn't, they're different
+        if ((currentOrder === undefined || currentOrder === null) !== (newOrder === undefined || newOrder === null)) {
+          return true;
+        }
+        // If both are defined, compare them
+        if (currentOrder !== undefined && currentOrder !== null && newOrder !== undefined && newOrder !== null) {
+          return currentOrder !== newOrder;
+        }
+        // Both are undefined/null - no change
+        return false;
       });
       
       if (phasesChanged || orderNumbersChanged) {
@@ -1316,9 +1372,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           newCount: phasesToDisplay.length,
           orderNumbersChanged
         });
+        // CRITICAL: Explicitly include phaseOrderNumber in all phases before saving
+        const phasesWithOrderNumbers = phasesToDisplay.map(phase => ({
+          ...phase,
+          phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
+        }));
+        
         updateProject({
           ...currentProject,
-          phases: phasesToDisplay,
+          phases: phasesWithOrderNumbers,
           updatedAt: new Date()
         });
       }
@@ -2915,7 +2977,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           // Find the standard "Close Project" phase (should be last)
           // Check both phaseOrderNumber (UI ordering) and any positionRule from database
           const lastStandardPhaseIndex = orderedPhases.findIndex(p => 
-            isStandardPhase(p) && !p.isLinked && (p.phaseOrderNumber === 'last' || (p as any).positionRule === 'last')
+            isStandardPhase(p) && !p.isLinked && (p.phaseOrderNumber === 'last' || (p as any).positionRule === 'last' || (p as any).position_rule === 'last')
           );
           if (lastStandardPhaseIndex !== -1) {
             // Find the new phase index
@@ -2929,6 +2991,46 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 phaseName: newPhase.name,
                 oldIndex: newPhaseIndex,
                 newIndex: lastStandardPhaseIndex
+              });
+            }
+            // CRITICAL: Explicitly set phaseOrderNumber for new phase to be "last minus one"
+            // Calculate the correct numeric position (total phases - 1, since last phase is at totalPhases)
+            const totalPhases = orderedPhases.length;
+            const newPhaseFinalIndex = orderedPhases.findIndex(p => p.id === newPhase.id);
+            if (newPhaseFinalIndex !== -1) {
+              // The new phase should be at position (totalPhases - 1) since Close Project is at position totalPhases (or 'last')
+              // But we need to ensure it's not less than the position of the phase before it
+              const phaseBeforeLast = orderedPhases[lastStandardPhaseIndex - 1];
+              if (phaseBeforeLast) {
+                const beforeLastOrder = typeof phaseBeforeLast.phaseOrderNumber === 'number' 
+                  ? phaseBeforeLast.phaseOrderNumber 
+                  : phaseBeforeLast.phaseOrderNumber === 'first' ? 1 
+                  : phaseBeforeLast.phaseOrderNumber === 'last' ? totalPhases 
+                  : newPhaseFinalIndex;
+                // Set new phase to be one position after the phase before last
+                newPhase.phaseOrderNumber = Math.max(beforeLastOrder + 1, totalPhases - 1);
+              } else {
+                // No phase before last, so new phase should be at totalPhases - 1
+                newPhase.phaseOrderNumber = totalPhases - 1;
+              }
+              console.log('🔧 Set phaseOrderNumber for new phase (last minus one):', {
+                phaseName: newPhase.name,
+                phaseOrderNumber: newPhase.phaseOrderNumber,
+                totalPhases,
+                lastStandardPhaseIndex,
+                newPhaseFinalIndex
+              });
+            }
+          } else {
+            // No "Close Project" phase found - set to last position minus one as fallback
+            const totalPhases = orderedPhases.length;
+            const newPhaseIndex = orderedPhases.findIndex(p => p.id === newPhase.id);
+            if (newPhaseIndex !== -1 && totalPhases > 1) {
+              newPhase.phaseOrderNumber = totalPhases - 1;
+              console.log('🔧 Set phaseOrderNumber for new phase (fallback, no Close Project found):', {
+                phaseName: newPhase.name,
+                phaseOrderNumber: newPhase.phaseOrderNumber,
+                totalPhases
               });
             }
           }
@@ -2982,10 +3084,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             });
             
             if (lastPhaseIndex !== -1) {
-              // Calculate position: last phase is at lastPhaseIndex, so last_minus_n phases come before it
-              // position_value = 1 means second-to-last (before the last phase)
-              // position_value = 2 means third-to-last, etc.
-              const calculatedPosition = lastPhaseIndex - positionValue + 1;
+              // Calculate position: last phase is at lastPhaseIndex (0-indexed)
+              // In 1-indexed terms, last phase is at position (lastPhaseIndex + 1)
+              // For last_minus_n with position_value = 1, the phase should be at (lastPhaseIndex + 1) - 1 = lastPhaseIndex
+              // In 1-indexed terms, that's position (lastPhaseIndex) which is second-to-last
+              // For position_value = 2, it should be at (lastPhaseIndex + 1) - 2 = lastPhaseIndex - 1
+              // In 1-indexed terms, that's position (lastPhaseIndex) which is third-to-last
+              const calculatedPosition = (lastPhaseIndex + 1) - positionValue;
               
               // Ensure it's not less than 1 (which would conflict with 'first')
               if (calculatedPosition <= 1 && !isStandardPhase(phase)) {
@@ -3000,6 +3105,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               } else {
                 phase.phaseOrderNumber = calculatedPosition;
               }
+              
+              console.log('✅ Calculated phaseOrderNumber from last_minus_n:', {
+                phaseName: phase.name,
+                phaseOrderNumber: phase.phaseOrderNumber,
+                positionValue,
+                lastPhaseIndex,
+                totalPhases,
+                calculatedPosition
+              });
             } else {
               // Fallback: if no last phase found, calculate from total phases
               const calculatedPosition = totalPhases - positionValue;
@@ -3008,6 +3122,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               } else {
                 phase.phaseOrderNumber = calculatedPosition;
               }
+              console.log('✅ Calculated phaseOrderNumber from last_minus_n (fallback, no last phase):', {
+                phaseName: phase.name,
+                phaseOrderNumber: phase.phaseOrderNumber,
+                positionValue,
+                totalPhases,
+                calculatedPosition
+              });
             }
           }
         }
@@ -3195,9 +3316,52 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       }
 
       // CRITICAL: Ensure all phases have order numbers before saving
+      // Final pass: assign order numbers to any phases that still don't have them
+      const phasesWithAllOrderNumbers = phasesWithCorrectStandardFlag.map((phase, index) => {
+        if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+          // Find the last phase to determine correct position
+          const lastPhaseIndex = phasesWithCorrectStandardFlag.findIndex(p => 
+            p.phaseOrderNumber === 'last' || ((p as any).positionRule === 'last' || (p as any).position_rule === 'last')
+          );
+          
+          if (lastPhaseIndex !== -1 && index === lastPhaseIndex - 1) {
+            // This is the phase right before "Close Project" - should be "last minus one"
+            const totalPhases = phasesWithCorrectStandardFlag.length;
+            phase.phaseOrderNumber = totalPhases - 1;
+          } else if (index === 0) {
+            // First phase
+            const hasStandardFirst = phasesWithCorrectStandardFlag.some(p => 
+              isStandardPhase(p) && !p.isLinked && (p.phaseOrderNumber === 'first' || p.phaseOrderNumber === 1)
+            );
+            if (!hasStandardFirst && (isStandardPhase(phase) || isEditingStandardProject)) {
+              phase.phaseOrderNumber = 'first';
+            } else {
+              phase.phaseOrderNumber = 1;
+            }
+          } else if (index === phasesWithCorrectStandardFlag.length - 1) {
+            // Last phase
+            if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked) {
+              phase.phaseOrderNumber = 'last';
+            } else {
+              phase.phaseOrderNumber = phasesWithCorrectStandardFlag.length;
+            }
+          } else {
+            phase.phaseOrderNumber = index + 1;
+          }
+          
+          console.log('🔧 Final assignment of missing order number:', {
+            phaseName: phase.name,
+            phaseId: phase.id,
+            assignedOrder: phase.phaseOrderNumber,
+            index
+          });
+        }
+        return phase;
+      });
+      
       // Log order numbers to help debug
       console.log('📋 Phases with order numbers before saving:', {
-        phases: phasesWithCorrectStandardFlag.map(p => ({ 
+        phases: phasesWithAllOrderNumbers.map(p => ({ 
           name: p.name, 
           id: p.id,
           order: p.phaseOrderNumber,
@@ -3207,7 +3371,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // Update project with rebuilt phases (using phases with correct isStandard flags)
       // CRITICAL: Explicitly include phaseOrderNumber in the JSON to ensure it's saved
-      const phasesToSave = phasesWithCorrectStandardFlag.map(phase => ({
+      const phasesToSave = phasesWithAllOrderNumbers.map(phase => ({
         ...phase,
         phaseOrderNumber: phase.phaseOrderNumber // Explicitly include phaseOrderNumber
       }));
