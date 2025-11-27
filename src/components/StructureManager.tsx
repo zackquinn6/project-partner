@@ -284,6 +284,58 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   const isLoadingRef = React.useRef(false);
   
   /**
+   * Helper function to reload phases with position data from database
+   * This is used after delete, order change, and other operations
+   */
+  const reloadPhasesWithPositions = useCallback(async (projectId: string): Promise<Phase[]> => {
+    // Load phases from database
+    const loadedPhases = await loadPhases(projectId);
+    
+    // Fetch position_rule and position_value from database
+    const { data: phasePositions, error: positionError } = await supabase
+      .from('project_phases')
+      .select('id, name, position_rule, position_value')
+      .eq('project_id', projectId)
+      .in('id', loadedPhases.map(p => p.id).filter(id => id));
+    
+    if (positionError) {
+      throw new Error(`Failed to fetch phase positions: ${positionError.message}`);
+    }
+    
+    // Attach position data to phases
+    if (phasePositions) {
+      const positionMap = new Map(phasePositions.map(p => [p.id, p]));
+      loadedPhases.forEach(phase => {
+        if (phase.id && positionMap.has(phase.id)) {
+          const pos = positionMap.get(phase.id)! as any;
+          const positionRule = pos?.position_rule;
+          const positionValue = pos?.position_value;
+          
+          (phase as any).position_rule = positionRule;
+          (phase as any).position_value = positionValue;
+          
+          // Derive phaseOrderNumber from position_rule
+          if (positionRule === 'first') {
+            phase.phaseOrderNumber = 1;
+          } else if (positionRule === 'last') {
+            phase.phaseOrderNumber = 'last';
+          } else if (positionRule === 'nth' && positionValue) {
+            phase.phaseOrderNumber = positionValue;
+          }
+        }
+      });
+    }
+    
+    // Validate and sort
+    const validationError = validatePhaseOrdering(loadedPhases);
+    if (validationError) {
+      throw new Error(`Validation failed: ${validationError.message}`);
+    }
+    
+    return sortPhasesByOrderNumber(loadedPhases);
+  }, [loadPhases, validatePhaseOrdering]);
+  
+  /**
    * Load and validate phases on component mount or project change
    */
   useEffect(() => {
@@ -526,23 +578,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           .eq('id', addedPhase.id);
       }
       
-      // Reload phases from database
-      const reloadedPhases = await loadPhases(currentProject.id);
-      const validationError = validatePhaseOrdering(reloadedPhases);
+      // Reload phases with position data from database
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
       
-      if (validationError) {
-        throw new Error(`Validation failed after adding phase: ${validationError.message}`);
-      }
+      // Reset loadedProjectIdRef to allow immediate UI update
+      loadedProjectIdRef.current = null;
       
-      const sortedPhases = sortPhasesByOrderNumber(reloadedPhases);
+      // Update UI immediately
       setPhases(sortedPhases);
-      
-      // Update project context
-      updateProject({
-        ...currentProject,
-        phases: sortedPhases,
-        updatedAt: new Date()
-      });
       
       toast.success('Phase added successfully');
     } catch (error: any) {
@@ -551,7 +594,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     } finally {
       setIsAddingPhase(false);
     }
-  }, [currentProject, phases.length, isEditingStandardProject, loadPhases, validatePhaseOrdering, updateProject]);
+  }, [currentProject, phases.length, isEditingStandardProject, reloadPhasesWithPositions]);
   
   /**
    * Delete a phase from the database
@@ -590,102 +633,85 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         throw deleteError;
       }
       
-      // Reload phases from database after delete
-      const reloadedPhases = await loadPhases();
+      // Reload phases from database after delete (with position data)
+      const reloadedPhases = await reloadPhasesWithPositions(currentProject.id);
       
       // For regular projects: auto-renumber custom phases only, never change standard phases
       if (!isEditingStandardProject) {
-        // Get all phases with their positions
-        const { data: phasePositions } = await supabase
-          .from('project_phases')
-          .select('id, position_rule, position_value, is_standard')
-          .eq('project_id', currentProject.id);
+        // Get custom phases that need renumbering
+        const customPhases = reloadedPhases.filter(p => 
+          !isStandardPhase(p) && !isLinkedPhase(p) && p.id
+        );
         
-        if (phasePositions) {
-          // Separate standard and custom phases
-          const standardPhaseIds = new Set(
-            phasePositions.filter(p => p.is_standard).map(p => p.id)
-          );
-          
-          // Get custom phases that need renumbering
-          const customPhases = reloadedPhases.filter(p => 
-            !isStandardPhase(p) && !isLinkedPhase(p) && p.id
-          );
-          
-          // Renumber custom phases sequentially
-          let customPosition = 1;
-          for (const customPhase of customPhases.sort((a, b) => {
-            const aPos = typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 1000;
-            const bPos = typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 1000;
-            return aPos - bPos;
-          })) {
-            if (customPhase.id) {
-              await supabase
-                .from('project_phases')
-                .update({
-                  position_rule: 'nth',
-                  position_value: customPosition++,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', customPhase.id);
-            }
+        // Renumber custom phases sequentially (preserve standard phase positions)
+        let customPosition = 1;
+        for (const customPhase of customPhases.sort((a, b) => {
+          const aPos = typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 
+                      a.phaseOrderNumber === 'last' ? Infinity : 1000;
+          const bPos = typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 
+                      b.phaseOrderNumber === 'last' ? Infinity : 1000;
+          return aPos - bPos;
+        })) {
+          if (customPhase.id) {
+            await supabase
+              .from('project_phases')
+              .update({
+                position_rule: 'nth',
+                position_value: customPosition++,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', customPhase.id)
+              .eq('project_id', currentProject.id);
           }
         }
       } else {
         // For Edit Standard: renumber all phases sequentially
-        const sorted = sortPhasesByOrderNumber(reloadedPhases);
-        for (let i = 0; i < sorted.length; i++) {
-          const phase = sorted[i];
-          if (phase.id) {
-            if (i === 0) {
-              await supabase
-                .from('project_phases')
-                .update({
-                  position_rule: 'first',
-                  position_value: null,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', phase.id);
-            } else if (i === sorted.length - 1) {
-              await supabase
-                .from('project_phases')
-                .update({
-                  position_rule: 'last',
-                  position_value: null,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', phase.id);
-            } else {
-              await supabase
-                .from('project_phases')
-                .update({
-                  position_rule: 'nth',
-                  position_value: i + 1,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', phase.id);
-            }
+        for (let i = 0; i < reloadedPhases.length; i++) {
+          const phase = reloadedPhases[i];
+          if (!phase.id || isLinkedPhase(phase)) continue;
+          
+          if (i === 0) {
+            await supabase
+              .from('project_phases')
+              .update({
+                position_rule: 'first',
+                position_value: null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', phase.id)
+              .eq('project_id', currentProject.id);
+          } else if (i === reloadedPhases.length - 1) {
+            await supabase
+              .from('project_phases')
+              .update({
+                position_rule: 'last',
+                position_value: null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', phase.id)
+              .eq('project_id', currentProject.id);
+          } else {
+            await supabase
+              .from('project_phases')
+              .update({
+                position_rule: 'nth',
+                position_value: i + 1,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', phase.id)
+              .eq('project_id', currentProject.id);
           }
         }
       }
       
-      // Reload again after renumbering
-      const finalPhases = await loadPhases(currentProject.id);
-      const validationError = validatePhaseOrdering(finalPhases);
+      // Reload phases with position data after renumbering
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
       
-      if (validationError) {
-        throw new Error(`Validation failed after deleting phase: ${validationError.message}`);
-      }
+      // Reset loadedProjectIdRef to allow immediate UI update
+      loadedProjectIdRef.current = null;
       
-      const sortedPhases = sortPhasesByOrderNumber(finalPhases);
+      // Update UI immediately
       setPhases(sortedPhases);
-      
-      // Update project context
-      updateProject({
-        ...currentProject,
-        phases: sortedPhases,
-        updatedAt: new Date()
-      });
       
       toast.success('Phase deleted successfully');
     } catch (error: any) {
@@ -696,7 +722,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       setPhaseToDelete(null);
       setDeletePhaseDialogOpen(false);
     }
-  }, [currentProject, phases, isEditingStandardProject, loadPhases, validatePhaseOrdering, updateProject]);
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
   
   /**
    * Toggle phase expansion
@@ -836,23 +862,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         }
       }
       
-      // Reload phases from database
-      const reloadedPhases = await loadPhases(currentProject.id);
-      const validationError = validatePhaseOrdering(reloadedPhases);
+      // Reload phases with position data from database
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
       
-      if (validationError) {
-        throw new Error(`Validation failed after edit: ${validationError.message}`);
-      }
+      // Reset loadedProjectIdRef to allow immediate UI update
+      loadedProjectIdRef.current = null;
       
-      const sortedPhases = sortPhasesByOrderNumber(reloadedPhases);
+      // Update UI immediately
       setPhases(sortedPhases);
-      
-      // Update project context
-      updateProject({
-        ...currentProject,
-        phases: sortedPhases,
-        updatedAt: new Date()
-      });
       
       setEditingItem(null);
       toast.success(`${editingItem.type.charAt(0).toUpperCase() + editingItem.type.slice(1)} updated successfully`);
@@ -860,7 +877,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       console.error('Error saving edit:', error);
       toast.error(`Failed to save: ${error.message || 'Unknown error'}`);
     }
-  }, [editingItem, currentProject, phases, isEditingStandardProject, loadPhases, validatePhaseOrdering, updateProject]);
+  }, [editingItem, currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
   
   /**
    * Handle delete phase click (opens confirmation dialog)
@@ -945,30 +962,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           .eq('project_id', currentProject.id);
       }
       
-      // Reload phases from database
-      const reloadedPhases = await loadPhases(currentProject.id);
-      const validationError = validatePhaseOrdering(reloadedPhases);
+      // Reload phases with position data from database
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
       
-      if (validationError) {
-        throw new Error(`Validation failed: ${validationError.message}`);
-      }
+      // Reset loadedProjectIdRef to allow immediate UI update
+      loadedProjectIdRef.current = null;
       
-      const sortedPhases = sortPhasesByOrderNumber(reloadedPhases);
+      // Update UI immediately
       setPhases(sortedPhases);
-      
-      // Update project context
-      updateProject({
-        ...currentProject,
-        phases: sortedPhases,
-        updatedAt: new Date()
-      });
       
       toast.success('Phase order updated');
     } catch (error: any) {
       console.error('Error changing phase order:', error);
       toast.error(`Failed to change phase order: ${error.message || 'Unknown error'}`);
     }
-  }, [currentProject, phases, loadPhases, validatePhaseOrdering, updateProject]);
+  }, [currentProject, phases, reloadPhasesWithPositions]);
   
   /**
    * Get available order numbers for dropdown
