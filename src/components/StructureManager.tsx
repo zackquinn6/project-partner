@@ -1142,8 +1142,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 return { ...phase, phaseOrderNumber: positionData.position_value };
               }
               
-              return phase;
-            });
+          return phase;
+        });
           }
         } else {
           // For regular projects: use get_project_workflow_with_standards
@@ -1195,9 +1195,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                       } else if (positionData.position_rule === 'nth' && positionData.position_value) {
                         phase.phaseOrderNumber = positionData.position_value;
                       }
-                    }
-                    return phase;
-                  });
+        }
+        return phase;
+      });
                 }
                 
                 standardPhasesToUse = phases;
@@ -1243,23 +1243,38 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             });
           }
           
-          // CRITICAL: Check for phases missing order positions BEFORE validation
-          const phasesWithoutOrder = phasesToValidate.filter(p => 
-            p.phaseOrderNumber === undefined || 
-            p.phaseOrderNumber === null || 
-            p.phaseOrderNumber === ''
-          );
+          // CRITICAL: For Edit Standard, phases have already been strictly validated
+          // Skip normal validation and use the already-validated phases
+          let validatedPhases: Phase[];
           
-          if (phasesWithoutOrder.length > 0) {
-            console.log('⚠️ Found phases missing order positions:', {
-              count: phasesWithoutOrder.length,
-              phases: phasesWithoutOrder.map(p => ({ name: p.name, id: p.id, hasOrder: p.phaseOrderNumber !== undefined }))
+          if (isEditingStandardProject) {
+            // For Edit Standard: phases were already validated and have correct phaseOrderNumber
+            // Just sort them by order number
+            validatedPhases = sortPhasesByOrderNumber(freshPhases);
+            console.log('✅ Edit Standard: Using strictly validated phases (already sorted):', {
+              count: validatedPhases.length,
+              phases: validatedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
             });
+            } else {
+            // For regular projects: apply normal validation
+            // CRITICAL: Check for phases missing order positions BEFORE validation
+            const phasesWithoutOrder = phasesToValidate.filter(p => 
+              p.phaseOrderNumber === undefined || 
+              p.phaseOrderNumber === null || 
+              p.phaseOrderNumber === ''
+            );
+            
+            if (phasesWithoutOrder.length > 0) {
+              console.log('⚠️ Found phases missing order positions:', {
+                count: phasesWithoutOrder.length,
+                phases: phasesWithoutOrder.map(p => ({ name: p.name, id: p.id, hasOrder: p.phaseOrderNumber !== undefined }))
+              });
+            }
+            
+            // Apply sequential ordering validation - ensures ALL phases have order positions
+            // For regular projects, this will preserve 'first'/'last' for standard phases from Standard Project Foundation
+            validatedPhases = validateAndFixSequentialOrdering(phasesToValidate);
           }
-          
-          // Apply sequential ordering validation - ensures ALL phases have order positions
-          // For regular projects, this will preserve 'first'/'last' for standard phases from Standard Project Foundation
-          const validatedPhases = validateAndFixSequentialOrdering(phasesToValidate);
           
           // CRITICAL: Verify ALL phases now have order positions
           const stillMissingOrder = validatedPhases.filter(p => 
@@ -1308,7 +1323,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 } else if (sequentialPosition === validatedPhases.length) {
                   positionRule = 'last';
                   positionValue = null;
-                } else {
+      } else {
                   positionRule = 'nth';
                   positionValue = sequentialPosition;
                 }
@@ -1524,11 +1539,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           setPhasesLoaded(true);
           
           // Update project context to keep everything in sync
-          updateProject({
-            ...currentProject,
+              updateProject({
+                ...currentProject,
             phases: sortedPhases,
-            updatedAt: new Date()
-          });
+                updatedAt: new Date()
+              });
           
           console.log('✅ Phases loaded immediately from database (final, sorted sequentially):', {
             count: sortedPhases.length,
@@ -1809,8 +1824,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         } else if (phase.phaseOrderNumber === totalPhases && (!isStandardPhase(phase) || phase.isLinked)) {
           return 'Last';
         }
-        return phase.phaseOrderNumber;
-      }
+      return phase.phaseOrderNumber;
+    }
     }
     
     // CRITICAL: If phase is missing order position, assign it based on current position
@@ -1878,29 +1893,29 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 }
                 
                 // Ensure all phases have phaseOrderNumber
-                phases = phases.map((phase, index) => {
-                  if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
-                    if (index === 0) {
-                      phase.phaseOrderNumber = 'first';
-                    } else if (index === phases.length - 1) {
-                      phase.phaseOrderNumber = 'last';
-                    } else {
-                      phase.phaseOrderNumber = index + 1;
-                    }
-                  }
-                  return phase;
-                });
-                
+            phases = phases.map((phase, index) => {
+              if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+                if (index === 0) {
+                  phase.phaseOrderNumber = 'first';
+                } else if (index === phases.length - 1) {
+                  phase.phaseOrderNumber = 'last';
+                } else {
+                  phase.phaseOrderNumber = index + 1;
+                }
+              }
+              return phase;
+            });
+            
                 console.log('📋 Fetched Standard Project Foundation phases (from database):', {
-                  count: phases.length,
-                  phases: phases.map(p => ({ 
-                    name: p.name, 
-                    order: p.phaseOrderNumber,
-                    hasOrder: p.phaseOrderNumber !== undefined,
-                    orderType: typeof p.phaseOrderNumber
-                  }))
-                });
-                setStandardProjectPhases(phases);
+              count: phases.length,
+              phases: phases.map(p => ({ 
+                name: p.name, 
+                order: p.phaseOrderNumber,
+                hasOrder: p.phaseOrderNumber !== undefined,
+                orderType: typeof p.phaseOrderNumber
+              }))
+            });
+            setStandardProjectPhases(phases);
               } else {
                 // Fallback to using phases from JSON
                 let phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
@@ -2518,11 +2533,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               positionValue = i + 1; // Sequential position
             } else if (existingRule === 'last_minus_n') {
               const distanceFromLast = reorderedPhases.length - i - 1;
-              positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
-            } else {
-              positionValue = null;
-            }
+            positionValue = distanceFromLast > 0 ? distanceFromLast : 1;
           } else {
+              positionValue = null;
+          }
+        } else {
             // Custom phases: use last_minus_n
             if (i === 0) {
               positionRule = 'first';
@@ -4100,9 +4115,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       
       // CRITICAL: Update phase order in database FIRST to persist order numbers
       // This ensures sequential ordering is saved to the database for both Edit Standard and regular projects
-      // CRITICAL: Before calling updatePhaseOrder, ensure the last phase has 'last'
+        // CRITICAL: Before calling updatePhaseOrder, ensure the last phase has 'last'
       const lastPhase = sequentiallyOrderedPhases[sequentiallyOrderedPhases.length - 1];
-      if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
+        if (lastPhase && lastPhase.phaseOrderNumber !== 'last') {
         // If last phase has a numeric position equal to total phases, convert to 'last'
         // This only applies to standard phases (the "Close Project" phase should be last)
         if (typeof lastPhase.phaseOrderNumber === 'number' && 
@@ -4110,19 +4125,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             (isStandardPhase(lastPhase) || isEditingStandardProject)) {
           lastPhase.phaseOrderNumber = 'last';
         }
-      }
-      
+        }
+        
       console.log('🔄 Updating phase order in database with sequential ordering:', {
         isEditingStandardProject,
         phases: sequentiallyOrderedPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
-      });
-      try {
+        });
+        try {
         // Update database for both Edit Standard and regular projects
         await updatePhaseOrder(sequentiallyOrderedPhases);
         console.log('✅ Phase order updated in database with sequential ordering');
-      } catch (error) {
-        console.error('❌ Error updating phase order in database:', error);
-        // Continue anyway - the JSON update will still work
+        } catch (error) {
+          console.error('❌ Error updating phase order in database:', error);
+          // Continue anyway - the JSON update will still work
       }
       
       // Update finalPhases to use the sequentially ordered phases
