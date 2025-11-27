@@ -1297,9 +1297,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             });
           }
           
-          // CRITICAL: For Edit Standard, immediately persist order positions to database
-          // This ensures missing order positions are saved to the database right away
+          // CRITICAL: For Edit Standard, strict validation has already passed
+          // Phases are already validated and have correct order positions in database
+          // Skip persistence - phases are already correct
           if (isEditingStandardProject && validatedPhases.length > 0) {
+            // Edit Standard phases were already strictly validated - no need to persist
+            // They are already correct in the database
+            console.log('✅ Edit Standard: Skipping persistence - phases already validated and correct');
+          } else if (false && isEditingStandardProject && validatedPhases.length > 0) {
+            // This block is disabled - Edit Standard phases are validated before reaching here
             try {
               // Update all phases in database with their sequential order positions
               const updatePromises: Promise<any>[] = [];
