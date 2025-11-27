@@ -1041,8 +1041,40 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
         
         if (freshPhases.length > 0) {
+          // CRITICAL: For regular projects, update standard phases' order from Standard Project Foundation
+          // BEFORE applying sequential ordering - this ensures 'first'/'last' designations are preserved
+          let phasesToValidate = deduplicatePhases(freshPhases);
+          
+          if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+            // Update standard phases' phaseOrderNumber from Standard Project Foundation
+            phasesToValidate = phasesToValidate.map(phase => {
+              if (isStandardPhase(phase) && !phase.isLinked) {
+                const standardPhase = standardProjectPhases.find(sp => sp.name === phase.name);
+                if (standardPhase && standardPhase.phaseOrderNumber !== undefined) {
+                  // Preserve 'first'/'last' designations from Standard Project Foundation
+                  if (standardPhase.phaseOrderNumber === 'first') {
+                    return { ...phase, phaseOrderNumber: 'first' };
+                  } else if (standardPhase.phaseOrderNumber === 'last') {
+                    return { ...phase, phaseOrderNumber: 'last' };
+                  } else if (typeof standardPhase.phaseOrderNumber === 'number') {
+                    return { ...phase, phaseOrderNumber: standardPhase.phaseOrderNumber };
+                  }
+                }
+              }
+              return phase;
+            });
+            
+            console.log('📋 Updated standard phases from Standard Project Foundation:', {
+              count: phasesToValidate.filter(p => isStandardPhase(p) && !p.isLinked).length,
+              phases: phasesToValidate.filter(p => isStandardPhase(p) && !p.isLinked).map(p => ({
+                name: p.name,
+                order: p.phaseOrderNumber
+              }))
+            });
+          }
+          
           // CRITICAL: Check for phases missing order positions BEFORE validation
-          const phasesWithoutOrder = freshPhases.filter(p => 
+          const phasesWithoutOrder = phasesToValidate.filter(p => 
             p.phaseOrderNumber === undefined || 
             p.phaseOrderNumber === null || 
             p.phaseOrderNumber === ''
@@ -1055,8 +1087,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             });
           }
           
-          // Apply sequential ordering validation - ensures ALL phases have order positions (1, 2, 3, ...)
-          const validatedPhases = validateAndFixSequentialOrdering(deduplicatePhases(freshPhases));
+          // Apply sequential ordering validation - ensures ALL phases have order positions
+          // For regular projects, this will preserve 'first'/'last' for standard phases from Standard Project Foundation
+          const validatedPhases = validateAndFixSequentialOrdering(phasesToValidate);
           
           // CRITICAL: Verify ALL phases now have order positions
           const stillMissingOrder = validatedPhases.filter(p => 
@@ -1255,8 +1288,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             }
           }
           
-          // CRITICAL: Final verification - ensure ALL phases have order positions before displaying
-          const finalCheck = validatedPhases.map((phase, index) => {
+          // CRITICAL: For regular projects, restore 'first'/'last' designations for standard phases
+          // AFTER validation but BEFORE sorting - this ensures standard phases show correct positions
+          let finalCheck = validatedPhases.map((phase, index) => {
             if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null || phase.phaseOrderNumber === '') {
               console.warn('⚠️ Phase missing order position at final check, assigning:', {
                 name: phase.name,
@@ -1270,8 +1304,35 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             return phase;
           });
           
+          // CRITICAL: For regular projects, restore standard phases' 'first'/'last' from Standard Project Foundation
+          if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+            finalCheck = finalCheck.map(phase => {
+              if (isStandardPhase(phase) && !phase.isLinked) {
+                const standardPhase = standardProjectPhases.find(sp => sp.name === phase.name);
+                if (standardPhase) {
+                  // Restore 'first'/'last' designations from Standard Project Foundation
+                  if (standardPhase.phaseOrderNumber === 'first') {
+                    return { ...phase, phaseOrderNumber: 'first' };
+                  } else if (standardPhase.phaseOrderNumber === 'last') {
+                    return { ...phase, phaseOrderNumber: 'last' };
+                  }
+                }
+              }
+              return phase;
+            });
+            
+            console.log('📋 Restored standard phase designations from Standard Project Foundation:', {
+              count: finalCheck.filter(p => isStandardPhase(p) && !p.isLinked).length,
+              phases: finalCheck.filter(p => isStandardPhase(p) && !p.isLinked).map(p => ({
+                name: p.name,
+                order: p.phaseOrderNumber
+              }))
+            });
+          }
+          
           // CRITICAL: Sort phases sequentially by order number before displaying
           // This ensures phases are shown in correct order for both Edit Standard and regular projects
+          // The sort will handle 'first' and 'last' correctly
           const sortedPhases = sortPhasesByOrderNumber(finalCheck);
           
           // CRITICAL: Set displayPhases directly from database (source of truth)
