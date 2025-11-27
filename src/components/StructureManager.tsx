@@ -1305,16 +1305,30 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           });
           
           // CRITICAL: For regular projects, restore standard phases' 'first'/'last' from Standard Project Foundation
+          // This must happen AFTER validation to override the numeric positions assigned by validateAndFixSequentialOrdering
           if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+            // Create a map of standard phase names to their order numbers from Standard Project Foundation
+            const standardOrderMap = new Map<string, string | number>();
+            standardProjectPhases.forEach(sp => {
+              if (sp.name && sp.phaseOrderNumber !== undefined) {
+                standardOrderMap.set(sp.name, sp.phaseOrderNumber);
+              }
+            });
+            
             finalCheck = finalCheck.map(phase => {
-              if (isStandardPhase(phase) && !phase.isLinked) {
-                const standardPhase = standardProjectPhases.find(sp => sp.name === phase.name);
-                if (standardPhase) {
+              if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
+                const standardOrder = standardOrderMap.get(phase.name);
+                if (standardOrder !== undefined) {
                   // Restore 'first'/'last' designations from Standard Project Foundation
-                  if (standardPhase.phaseOrderNumber === 'first') {
+                  if (standardOrder === 'first' || standardOrder === 1) {
                     return { ...phase, phaseOrderNumber: 'first' };
-                  } else if (standardPhase.phaseOrderNumber === 'last') {
+                  } else if (standardOrder === 'last') {
+                    // Find the actual last position in the current phases array
+                    const lastPosition = finalCheck.length;
                     return { ...phase, phaseOrderNumber: 'last' };
+                  } else if (typeof standardOrder === 'number') {
+                    // For numeric positions from Standard Project Foundation, preserve them
+                    return { ...phase, phaseOrderNumber: standardOrder };
                   }
                 }
               }
@@ -1325,14 +1339,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               count: finalCheck.filter(p => isStandardPhase(p) && !p.isLinked).length,
               phases: finalCheck.filter(p => isStandardPhase(p) && !p.isLinked).map(p => ({
                 name: p.name,
-                order: p.phaseOrderNumber
+                order: p.phaseOrderNumber,
+                orderType: typeof p.phaseOrderNumber
               }))
             });
           }
           
           // CRITICAL: Sort phases sequentially by order number before displaying
           // This ensures phases are shown in correct order for both Edit Standard and regular projects
-          // The sort will handle 'first' and 'last' correctly
+          // The sort will handle 'first' and 'last' correctly (first comes first, last comes last)
           const sortedPhases = sortPhasesByOrderNumber(finalCheck);
           
           // CRITICAL: Set displayPhases directly from database (source of truth)
