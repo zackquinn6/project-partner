@@ -1029,6 +1029,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           // Filter to only standard phases for Edit Standard
           freshPhases = freshPhases.filter(p => isStandardPhase(p) && !p.isLinked);
           
+          // CRITICAL: Map step_title to step.step for all steps
+          // Database uses step_title but interface expects step.step
+          freshPhases = freshPhases.map(phase => ({
+            ...phase,
+            operations: phase.operations?.map(operation => ({
+              ...operation,
+              steps: operation.steps?.map(step => ({
+                ...step,
+                step: step.step || (step as any).step_title || 'Unnamed Step'
+              })) || []
+            })) || []
+          }));
+          
           // CRITICAL: STRICT VALIDATION for Edit Standard - fetch order positions directly from database
           // If ANY phase is missing order position or out of order, BLOCK loading
           if (freshPhases.length > 0) {
@@ -1158,6 +1171,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           
           freshPhases = Array.isArray(data) ? data : [];
         }
+        
+        // CRITICAL: Map step_title to step.step for all steps
+        // Database uses step_title but interface expects step.step
+        freshPhases = freshPhases.map(phase => ({
+          ...phase,
+          operations: phase.operations?.map(operation => ({
+            ...operation,
+            steps: operation.steps?.map(step => ({
+              ...step,
+              step: step.step || (step as any).step_title || 'Unnamed Step'
+            })) || []
+          })) || []
+        }));
         
         if (freshPhases.length > 0) {
           // CRITICAL: For regular projects, load Standard Project Foundation phases if not already loaded
