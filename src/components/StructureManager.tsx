@@ -96,6 +96,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   const [phaseIdPendingDelete, setPhaseIdPendingDelete] = useState<string | null>(null); // Phase ID waiting for confirmation
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null); // Phase ID being deleted (triggers filtering)
   const [isChangingPhaseOrder, setIsChangingPhaseOrder] = useState(false); // Flag to prevent reordering during manual order change
+  const [displayPhasesFromDb, setDisplayPhasesFromDb] = useState(false); // Flag to track if displayPhases was set directly from database
   const [isDeletingPhase, setIsDeletingPhase] = useState(false);
   const [reorderingPhaseId, setReorderingPhaseId] = useState<string | null>(null);
   const [skipNextRefresh, setSkipNextRefresh] = useState(false);
@@ -1269,7 +1270,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             return phase;
           });
           
-          // Update display immediately
+          // CRITICAL: Set displayPhases directly from database (source of truth)
+          setDisplayPhasesFromDb(true);
           setDisplayPhases(finalCheck);
           setPhasesLoaded(true);
           
@@ -1304,8 +1306,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
   }, [currentProject?.id, isEditingStandardProject]); // Only run when project changes
   
   // Update displayPhases when processedPhases changes (fallback if immediate refresh didn't work)
-  // CRITICAL: Don't override displayPhases if we're in the middle of an order change
+  // CRITICAL: NEVER override displayPhases if it was set directly from database
+  // displayPhases is the source of truth when set from database
   useEffect(() => {
+    // CRITICAL: Never overwrite displayPhases if it was set directly from database
+    if (displayPhasesFromDb) {
+      console.log('🔒 Skipping processedPhases update - displayPhases was set directly from database');
+      return;
+    }
+    
     // Skip if we're actively adding, deleting, or changing phase order (those functions handle their own updates)
     if (isAddingPhase || isDeletingPhase || skipNextRefresh || isChangingPhaseOrder || phasesLoaded) {
       return;
@@ -1322,7 +1331,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       setDisplayPhases(sortedForDisplay);
       setPhasesLoaded(true);
     }
-  }, [processedPhases, displayPhases.length, phasesLoaded, isAddingPhase, isDeletingPhase, skipNextRefresh, isChangingPhaseOrder, currentProject?.id]);
+  }, [processedPhases, displayPhases.length, phasesLoaded, isAddingPhase, isDeletingPhase, skipNextRefresh, isChangingPhaseOrder, displayPhasesFromDb, currentProject?.id]);
 
   // CRITICAL: Verify phases exist in database for standard projects
   // This prevents deleted phases from appearing after page refresh
@@ -2282,7 +2291,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           return aOrder - bOrder;
         });
         
-        // Update displayPhases with fresh data from database (source of truth)
+        // CRITICAL: Update displayPhases with fresh data from database (source of truth)
+        // Set flag to prevent any intermediate functions from overwriting it
+        setDisplayPhasesFromDb(true);
         setDisplayPhases(sortedFreshPhases);
         
         // Update project context with fresh phases
@@ -2292,7 +2303,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           updatedAt: new Date()
         });
         
-        console.log('✅ Updated displayPhases from database after order change:', {
+        console.log('✅ Updated displayPhases directly from database (source of truth) after order change:', {
           count: sortedFreshPhases.length,
           phases: sortedFreshPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
         });
@@ -2317,6 +2328,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             const freshArray = Array.isArray(freshPhases) ? freshPhases : [];
             const freshStandard = freshArray.filter(p => isStandardPhase(p) && !p.isLinked);
             if (freshStandard.length > 0) {
+              setDisplayPhasesFromDb(true);
               setDisplayPhases(freshStandard);
             }
           }
@@ -2327,6 +2339,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           if (!freshError && freshPhases) {
             const freshArray = Array.isArray(freshPhases) ? freshPhases : [];
             if (freshArray.length > 0) {
+              setDisplayPhasesFromDb(true);
               setDisplayPhases(freshArray);
             }
           }
@@ -4330,6 +4343,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           if (!freshError && freshPhases) {
             const freshArray = Array.isArray(freshPhases) ? freshPhases : [];
             if (freshArray.length > 0) {
+              setDisplayPhasesFromDb(true);
               setDisplayPhases(freshArray);
               console.log('✅ Updated displayPhases from database after incorporated phase deletion');
             }
@@ -4706,6 +4720,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                   return aOrder - bOrder;
                 });
                 
+                setDisplayPhasesFromDb(true);
                 setDisplayPhases(sortedFreshPhases);
                 console.log('✅ Updated displayPhases from database (source of truth) after deletion:', {
                   count: sortedFreshPhases.length,
@@ -4824,6 +4839,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                 return aOrder - bOrder;
               });
               
+              setDisplayPhasesFromDb(true);
               setDisplayPhases(sortedFreshPhases);
               console.log('✅ Updated displayPhases from database (source of truth) after regular deletion:', {
                 count: sortedFreshPhases.length,
