@@ -932,14 +932,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Insert new operation
+      // For standard phases, link via phase_id. For custom phases, we may need different fields.
       const { data: newOperation, error: insertError } = await supabase
         .from('template_operations')
         .insert({
           phase_id: phaseId,
           project_id: currentProject.id,
           name: operationName,
-          description: 'Operation description',
-          display_order: phase.operations.length
+          description: 'Operation description'
         })
         .select('id')
         .single();
@@ -1014,8 +1014,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           operation_id: operationId,
           step_title: stepName,
           description: 'Step description',
-          step_number: operation.steps.length + 1,
-          display_order: operation.steps.length + 1
+          step_number: operation.steps.length + 1
         });
       
       if (insertError) {
