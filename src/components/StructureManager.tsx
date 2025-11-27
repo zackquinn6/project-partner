@@ -251,15 +251,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       phasesData = Array.isArray(data) ? data : [];
     }
     
-    // Map step_title to step.step for all steps
+    // Map step_title to step.step for all steps (prioritize step_title from database)
     phasesData = phasesData.map(phase => ({
       ...phase,
       operations: phase.operations?.map(operation => ({
         ...operation,
-        steps: operation.steps?.map(step => ({
-          ...step,
-          step: step.step || (step as any).step_title
-        })).filter(step => step.step) || []
+        steps: operation.steps?.map(step => {
+          const stepWithTitle = step as any;
+          return {
+            ...step,
+            step: stepWithTitle.step_title || step.step || 'Unnamed Step'
+          };
+        }).filter(step => step.step && step.step !== 'Unnamed Step') || []
       })) || []
     }));
     
@@ -888,6 +891,150 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   }, []);
   
   /**
+   * Add a new operation to a phase
+   */
+  const handleAddOperation = useCallback(async (phaseId: string) => {
+    if (!currentProject?.id) {
+      toast.error('No project selected');
+      return;
+    }
+    
+    const phase = phases.find(p => p.id === phaseId);
+    if (!phase) {
+      toast.error('Phase not found');
+      return;
+    }
+    
+    // Check if can add operation
+    if (phase.isLinked) {
+      toast.error('Cannot add operations to incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && isStandardPhase(phase)) {
+      toast.error('Cannot add operations to standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    try {
+      // Get unique operation name
+      const { data: existingOperations } = await supabase
+        .from('template_operations')
+        .select('name')
+        .eq('phase_id', phaseId);
+      
+      const existingNames = new Set((existingOperations || []).map(op => op.name.toLowerCase()));
+      let operationName = 'New Operation';
+      let counter = 1;
+      while (existingNames.has(operationName.toLowerCase())) {
+        operationName = `New Operation ${counter}`;
+        counter++;
+      }
+      
+      // Insert new operation
+      const { data: newOperation, error: insertError } = await supabase
+        .from('template_operations')
+        .insert({
+          phase_id: phaseId,
+          project_id: currentProject.id,
+          name: operationName,
+          description: 'Operation description',
+          display_order: phase.operations.length
+        })
+        .select('id')
+        .single();
+      
+      if (insertError) {
+        throw insertError;
+      }
+      
+      // Reload phases with position data
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Operation added successfully');
+    } catch (error: any) {
+      console.error('Error adding operation:', error);
+      toast.error(`Failed to add operation: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
+  
+  /**
+   * Add a new step to an operation
+   */
+  const handleAddStep = useCallback(async (phaseId: string, operationId: string) => {
+    if (!currentProject?.id) {
+      toast.error('No project selected');
+      return;
+    }
+    
+    const phase = phases.find(p => p.id === phaseId);
+    if (!phase) {
+      toast.error('Phase not found');
+      return;
+    }
+    
+    const operation = phase.operations.find(op => op.id === operationId);
+    if (!operation) {
+      toast.error('Operation not found');
+      return;
+    }
+    
+    // Check if can add step
+    if (phase.isLinked) {
+      toast.error('Cannot add steps to incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && isStandardPhase(phase)) {
+      toast.error('Cannot add steps to standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    try {
+      // Get unique step name
+      const { data: existingSteps } = await supabase
+        .from('template_steps')
+        .select('step_title')
+        .eq('operation_id', operationId);
+      
+      const existingNames = new Set((existingSteps || []).map(s => s.step_title?.toLowerCase() || ''));
+      let stepName = 'New Step';
+      let counter = 1;
+      while (existingNames.has(stepName.toLowerCase())) {
+        stepName = `New Step ${counter}`;
+        counter++;
+      }
+      
+      // Insert new step
+      const { error: insertError } = await supabase
+        .from('template_steps')
+        .insert({
+          operation_id: operationId,
+          step_title: stepName,
+          description: 'Step description',
+          step_number: operation.steps.length + 1,
+          display_order: operation.steps.length + 1
+        });
+      
+      if (insertError) {
+        throw insertError;
+      }
+      
+      // Reload phases with position data
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Step added successfully');
+    } catch (error: any) {
+      console.error('Error adding step:', error);
+      toast.error(`Failed to add step: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
+  
+  /**
    * Handle phase order change from dropdown
    */
   const handlePhaseOrderChange = useCallback(async (phaseId: string, newOrder: string | number) => {
@@ -1297,6 +1444,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                     <Collapsible open={isExpanded}>
                       <CollapsibleContent>
                         <CardContent>
+                          {/* Add Operation Button */}
+                          {!phaseIsLinked && (isEditingStandardProject || !phaseIsStandard) && (
+                            <div className="mb-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAddOperation(phase.id)}
+                                className="flex items-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add Operation
+                              </Button>
+                            </div>
+                          )}
+                          
                           {/* Operations List */}
                           <div className="space-y-3">
                             {phase.operations.map((operation, operationIndex) => {
@@ -1400,6 +1562,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                     <Collapsible open={isOperationExpanded}>
                                       <CollapsibleContent>
                                         <CardContent className="pt-0">
+                                          {/* Add Step Button */}
+                                          {!phaseIsLinked && (isEditingStandardProject || !phaseIsStandard) && (
+                                            <div className="mb-2">
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleAddStep(phase.id, operation.id)}
+                                                className="flex items-center gap-1 text-xs"
+                                              >
+                                                <Plus className="w-3 h-3" />
+                                                Add Step
+                                              </Button>
+                                            </div>
+                                          )}
+                                          
                                           {/* Steps List */}
                                           <div className="space-y-2">
                                             {operation.steps.map((step, stepIndex) => {
