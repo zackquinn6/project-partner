@@ -217,9 +217,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    * For Edit Standard: uses rebuild_phases_json_from_project_phases
    * For Regular Projects: uses get_project_workflow_with_standards
    */
-  const loadPhases = useCallback(async (): Promise<Phase[]> => {
-    if (!currentProject?.id) {
-      throw new Error('No project selected');
+  const loadPhases = useCallback(async (projectId: string): Promise<Phase[]> => {
+    if (!projectId) {
+      throw new Error('No project ID provided');
     }
     
     let phasesData: Phase[] = [];
@@ -227,7 +227,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     if (isEditingStandardProject) {
       // Edit Standard: fetch directly from database
       const { data, error } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-        p_project_id: currentProject.id
+        p_project_id: projectId
       });
       
       if (error) {
@@ -241,7 +241,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     } else {
       // Regular projects: get workflow with standards (includes linked standard phases)
       const { data, error } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
-        p_project_id: currentProject.id
+        p_project_id: projectId
       });
       
       if (error) {
@@ -264,7 +264,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }));
     
     return phasesData;
-  }, [currentProject?.id, isEditingStandardProject]);
+  }, [isEditingStandardProject]);
   
   /**
    * Sort phases by order number
@@ -279,30 +279,45 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     });
   };
   
+  // Track loaded project ID to prevent infinite loops
+  const loadedProjectIdRef = React.useRef<string | null>(null);
+  const isLoadingRef = React.useRef(false);
+  
   /**
    * Load and validate phases on component mount or project change
    */
   useEffect(() => {
-    if (!currentProject?.id) {
+    const projectId = currentProject?.id;
+    
+    if (!projectId) {
       setPhases([]);
       setLoading(false);
       setValidationError(null);
+      loadedProjectIdRef.current = null;
+      isLoadingRef.current = false;
+      return;
+    }
+    
+    // Prevent re-loading if we're already loading or have already loaded this project
+    if (isLoadingRef.current || loadedProjectIdRef.current === projectId) {
       return;
     }
     
     const fetchAndValidate = async () => {
+      isLoadingRef.current = true;
       setLoading(true);
       setValidationError(null);
+      loadedProjectIdRef.current = projectId;
       
       try {
-        // Load phases from database
-        const loadedPhases = await loadPhases();
+        // Load phases from database - pass projectId directly to avoid dependency on currentProject
+        const loadedPhases = await loadPhases(projectId);
         
         // Fetch position_rule and position_value from database for validation
         const { data: phasePositions, error: positionError } = await supabase
           .from('project_phases')
           .select('id, name, position_rule, position_value')
-          .eq('project_id', currentProject.id)
+          .eq('project_id', projectId)
           .in('id', loadedPhases.map(p => p.id).filter(id => id));
         
         if (positionError) {
@@ -343,6 +358,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           if (validationError.details) {
             console.error('Validation errors:', validationError.details);
           }
+          loadedProjectIdRef.current = null; // Reset on validation error to allow retry
+          isLoadingRef.current = false;
+          setLoading(false);
           return;
         }
         
@@ -352,12 +370,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         setPhases(sortedPhases);
         setValidationError(null);
         
-        // Update project context
-        updateProject({
-          ...currentProject,
-          phases: sortedPhases,
-          updatedAt: new Date()
-        });
+        // CRITICAL: Do NOT call updateProject here - it causes infinite loops
+        // The phases are already in local state (setPhases), which is sufficient for display
+        // updateProject should only be called when user makes explicit changes, not during initial load
       } catch (error: any) {
         console.error('Error loading phases:', error);
         setValidationError({
@@ -366,13 +381,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         });
         setPhases([]);
         toast.error(`Error loading phases: ${error.message || 'Unknown error'}. Please contact an admin to review the database.`);
+        loadedProjectIdRef.current = null; // Reset on error to allow retry
       } finally {
+        isLoadingRef.current = false;
         setLoading(false);
       }
     };
     
     fetchAndValidate();
-  }, [currentProject?.id, isEditingStandardProject, loadPhases, validatePhaseOrdering, updateProject, currentProject]);
+  }, [currentProject?.id, isEditingStandardProject]);
+  
+  // Reset loaded project ID when project ID changes
+  useEffect(() => {
+    const projectId = currentProject?.id;
+    if (loadedProjectIdRef.current && loadedProjectIdRef.current !== projectId) {
+      loadedProjectIdRef.current = null;
+      isLoadingRef.current = false;
+    }
+  }, [currentProject?.id]);
   
   /**
    * Get phase order number for display
@@ -501,7 +527,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases from database
-      const reloadedPhases = await loadPhases();
+      const reloadedPhases = await loadPhases(currentProject.id);
       const validationError = validatePhaseOrdering(reloadedPhases);
       
       if (validationError) {
@@ -644,7 +670,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload again after renumbering
-      const finalPhases = await loadPhases();
+      const finalPhases = await loadPhases(currentProject.id);
       const validationError = validatePhaseOrdering(finalPhases);
       
       if (validationError) {
@@ -811,7 +837,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases from database
-      const reloadedPhases = await loadPhases();
+      const reloadedPhases = await loadPhases(currentProject.id);
       const validationError = validatePhaseOrdering(reloadedPhases);
       
       if (validationError) {
@@ -920,7 +946,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases from database
-      const reloadedPhases = await loadPhases();
+      const reloadedPhases = await loadPhases(currentProject.id);
       const validationError = validatePhaseOrdering(reloadedPhases);
       
       if (validationError) {
