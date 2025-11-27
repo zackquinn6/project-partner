@@ -294,36 +294,124 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     // Load phases from database
     const loadedPhases = await loadPhases(projectId);
     
-    // Fetch position_rule and position_value from database
-    const { data: phasePositions, error: positionError } = await supabase
-      .from('project_phases')
-      .select('id, name, position_rule, position_value')
-      .eq('project_id', projectId)
-      .in('id', loadedPhases.map(p => p.id).filter(id => id));
+    // For regular projects, standard phases need position data from Standard Project Foundation
+    const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
     
-    if (positionError) {
-      throw new Error(`Failed to fetch phase positions: ${positionError.message}`);
-    }
-    
-    // Attach position data to phases
-    if (phasePositions) {
-      const positionMap = new Map(phasePositions.map(p => [p.id, p]));
+    if (isEditingStandardProject) {
+      // For Edit Standard: fetch position data from current project's project_phases
+      const { data: phasePositions, error: positionError } = await supabase
+        .from('project_phases')
+        .select('id, name, position_rule, position_value')
+        .eq('project_id', projectId)
+        .in('id', loadedPhases.map(p => p.id).filter(id => id));
+      
+      if (positionError) {
+        throw new Error(`Failed to fetch phase positions: ${positionError.message}`);
+      }
+      
+      // Attach position data to phases
+      if (phasePositions) {
+        const positionMap = new Map(phasePositions.map(p => [p.id, p]));
+        loadedPhases.forEach(phase => {
+          if (phase.id && positionMap.has(phase.id)) {
+            const pos = positionMap.get(phase.id)! as any;
+            const positionRule = pos?.position_rule;
+            const positionValue = pos?.position_value;
+            
+            (phase as any).position_rule = positionRule;
+            (phase as any).position_value = positionValue;
+            
+            // Derive phaseOrderNumber from position_rule
+            if (positionRule === 'first') {
+              phase.phaseOrderNumber = 1;
+            } else if (positionRule === 'last') {
+              phase.phaseOrderNumber = 'last';
+            } else if (positionRule === 'nth' && positionValue) {
+              phase.phaseOrderNumber = positionValue;
+            }
+          }
+        });
+      }
+    } else {
+      // For regular projects: fetch position data from both sources
+      // 1. Custom phases: from current project's project_phases
+      // 2. Standard phases: from Standard Project Foundation's project_phases
+      
+      const customPhaseIds = loadedPhases
+        .filter(p => !isStandardPhase(p) && !isLinkedPhase(p))
+        .map(p => p.id)
+        .filter(id => id);
+      
+      const standardPhaseNames = loadedPhases
+        .filter(p => isStandardPhase(p) && !isLinkedPhase(p))
+        .map(p => p.name);
+      
+      // Fetch position data for custom phases from current project
+      let customPhasePositions: any[] = [];
+      if (customPhaseIds.length > 0) {
+        const { data, error } = await supabase
+          .from('project_phases')
+          .select('id, name, position_rule, position_value')
+          .eq('project_id', projectId)
+          .in('id', customPhaseIds);
+        
+        if (error) {
+          throw new Error(`Failed to fetch custom phase positions: ${error.message}`);
+        }
+        customPhasePositions = data || [];
+      }
+      
+      // Fetch position data for standard phases from Standard Project Foundation
+      let standardPhasePositions: any[] = [];
+      if (standardPhaseNames.length > 0) {
+        const { data, error } = await supabase
+          .from('project_phases')
+          .select('id, name, position_rule, position_value')
+          .eq('project_id', STANDARD_PROJECT_ID)
+          .in('name', standardPhaseNames);
+        
+        if (error) {
+          throw new Error(`Failed to fetch standard phase positions: ${error.message}`);
+        }
+        standardPhasePositions = data || [];
+      }
+      
+      // Create position maps
+      const customPositionMap = new Map(customPhasePositions.map(p => [p.id, p]));
+      const standardPositionMap = new Map(standardPhasePositions.map(p => [p.name, p]));
+      
+      // Attach position data to phases
       loadedPhases.forEach(phase => {
-        if (phase.id && positionMap.has(phase.id)) {
-          const pos = positionMap.get(phase.id)! as any;
-          const positionRule = pos?.position_rule;
-          const positionValue = pos?.position_value;
+        if (phase.id) {
+          let positionRule: string | null = null;
+          let positionValue: number | null = null;
           
-          (phase as any).position_rule = positionRule;
-          (phase as any).position_value = positionValue;
+          if (isStandardPhase(phase) && !isLinkedPhase(phase)) {
+            // Standard phase: get position from Standard Project Foundation by name
+            const standardPos = standardPositionMap.get(phase.name);
+            if (standardPos) {
+              positionRule = standardPos.position_rule;
+              positionValue = standardPos.position_value;
+            }
+          } else if (customPositionMap.has(phase.id)) {
+            // Custom phase: get position from current project by ID
+            const customPos = customPositionMap.get(phase.id)!;
+            positionRule = customPos.position_rule;
+            positionValue = customPos.position_value;
+          }
           
-          // Derive phaseOrderNumber from position_rule
-          if (positionRule === 'first') {
-            phase.phaseOrderNumber = 1;
-          } else if (positionRule === 'last') {
-            phase.phaseOrderNumber = 'last';
-          } else if (positionRule === 'nth' && positionValue) {
-            phase.phaseOrderNumber = positionValue;
+          if (positionRule) {
+            (phase as any).position_rule = positionRule;
+            (phase as any).position_value = positionValue;
+            
+            // Derive phaseOrderNumber from position_rule
+            if (positionRule === 'first') {
+              phase.phaseOrderNumber = 1;
+            } else if (positionRule === 'last') {
+              phase.phaseOrderNumber = 'last';
+            } else if (positionRule === 'nth' && positionValue) {
+              phase.phaseOrderNumber = positionValue;
+            }
           }
         }
       });
@@ -336,7 +424,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }
     
     return sortPhasesByOrderNumber(loadedPhases);
-  }, [loadPhases, validatePhaseOrdering]);
+  }, [loadPhases, validatePhaseOrdering, isEditingStandardProject]);
   
   /**
    * Load and validate phases on component mount or project change
@@ -368,37 +456,124 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         // Load phases from database - pass projectId directly to avoid dependency on currentProject
         const loadedPhases = await loadPhases(projectId);
         
-        // Fetch position_rule and position_value from database for validation
-        const { data: phasePositions, error: positionError } = await supabase
-          .from('project_phases')
-          .select('id, name, position_rule, position_value')
-          .eq('project_id', projectId)
-          .in('id', loadedPhases.map(p => p.id).filter(id => id));
+        // For regular projects, standard phases need position data from Standard Project Foundation
+        const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
         
-        if (positionError) {
-          throw new Error(`Failed to fetch phase positions: ${positionError.message}`);
-        }
-        
-        // Attach position data to phases for validation
-        if (phasePositions) {
-          const positionMap = new Map(phasePositions.map(p => [p.id, p]));
+        if (isEditingStandardProject) {
+          // For Edit Standard: fetch position data from current project's project_phases
+          const { data: phasePositions, error: positionError } = await supabase
+            .from('project_phases')
+            .select('id, name, position_rule, position_value')
+            .eq('project_id', projectId)
+            .in('id', loadedPhases.map(p => p.id).filter(id => id));
+          
+          if (positionError) {
+            throw new Error(`Failed to fetch phase positions: ${positionError.message}`);
+          }
+          
+          // Attach position data to phases
+          if (phasePositions) {
+            const positionMap = new Map(phasePositions.map(p => [p.id, p]));
+            loadedPhases.forEach(phase => {
+              if (phase.id && positionMap.has(phase.id)) {
+                const pos = positionMap.get(phase.id)! as any;
+                const positionRule = pos?.position_rule;
+                const positionValue = pos?.position_value;
+                
+                (phase as any).position_rule = positionRule;
+                (phase as any).position_value = positionValue;
+                
+                // Derive phaseOrderNumber from position_rule
+                if (positionRule === 'first') {
+                  phase.phaseOrderNumber = 1;
+                } else if (positionRule === 'last') {
+                  phase.phaseOrderNumber = 'last';
+                } else if (positionRule === 'nth' && positionValue) {
+                  phase.phaseOrderNumber = positionValue;
+                }
+              }
+            });
+          }
+        } else {
+          // For regular projects: fetch position data from both sources
+          // 1. Custom phases: from current project's project_phases
+          // 2. Standard phases: from Standard Project Foundation's project_phases
+          
+          const customPhaseIds = loadedPhases
+            .filter(p => !isStandardPhase(p) && !isLinkedPhase(p))
+            .map(p => p.id)
+            .filter(id => id);
+          
+          const standardPhaseNames = loadedPhases
+            .filter(p => isStandardPhase(p) && !isLinkedPhase(p))
+            .map(p => p.name);
+          
+          // Fetch position data for custom phases from current project
+          let customPhasePositions: any[] = [];
+          if (customPhaseIds.length > 0) {
+            const { data, error } = await supabase
+              .from('project_phases')
+              .select('id, name, position_rule, position_value')
+              .eq('project_id', projectId)
+              .in('id', customPhaseIds);
+            
+            if (error) {
+              throw new Error(`Failed to fetch custom phase positions: ${error.message}`);
+            }
+            customPhasePositions = data || [];
+          }
+          
+          // Fetch position data for standard phases from Standard Project Foundation
+          let standardPhasePositions: any[] = [];
+          if (standardPhaseNames.length > 0) {
+            const { data, error } = await supabase
+              .from('project_phases')
+              .select('id, name, position_rule, position_value')
+              .eq('project_id', STANDARD_PROJECT_ID)
+              .in('name', standardPhaseNames);
+            
+            if (error) {
+              throw new Error(`Failed to fetch standard phase positions: ${error.message}`);
+            }
+            standardPhasePositions = data || [];
+          }
+          
+          // Create position maps
+          const customPositionMap = new Map(customPhasePositions.map(p => [p.id, p]));
+          const standardPositionMap = new Map(standardPhasePositions.map(p => [p.name, p]));
+          
+          // Attach position data to phases
           loadedPhases.forEach(phase => {
-            if (phase.id && positionMap.has(phase.id)) {
-              const pos = positionMap.get(phase.id)! as any;
-              const positionRule = pos?.position_rule;
-              const positionValue = pos?.position_value;
+            if (phase.id) {
+              let positionRule: string | null = null;
+              let positionValue: number | null = null;
               
-              (phase as any).position_rule = positionRule;
-              (phase as any).position_value = positionValue;
+              if (isStandardPhase(phase) && !isLinkedPhase(phase)) {
+                // Standard phase: get position from Standard Project Foundation by name
+                const standardPos = standardPositionMap.get(phase.name);
+                if (standardPos) {
+                  positionRule = standardPos.position_rule;
+                  positionValue = standardPos.position_value;
+                }
+              } else if (customPositionMap.has(phase.id)) {
+                // Custom phase: get position from current project by ID
+                const customPos = customPositionMap.get(phase.id)!;
+                positionRule = customPos.position_rule;
+                positionValue = customPos.position_value;
+              }
               
-              // Derive phaseOrderNumber from position_rule
-              // CRITICAL: Position 1 is stored as number 1, not 'first'
-              if (positionRule === 'first') {
-                phase.phaseOrderNumber = 1; // Simplified: use 1 instead of 'first'
-              } else if (positionRule === 'last') {
-                phase.phaseOrderNumber = 'last';
-              } else if (positionRule === 'nth' && positionValue) {
-                phase.phaseOrderNumber = positionValue;
+              if (positionRule) {
+                (phase as any).position_rule = positionRule;
+                (phase as any).position_value = positionValue;
+                
+                // Derive phaseOrderNumber from position_rule
+                if (positionRule === 'first') {
+                  phase.phaseOrderNumber = 1;
+                } else if (positionRule === 'last') {
+                  phase.phaseOrderNumber = 'last';
+                } else if (positionRule === 'nth' && positionValue) {
+                  phase.phaseOrderNumber = positionValue;
+                }
               }
             }
           });
