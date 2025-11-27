@@ -1270,21 +1270,25 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             return phase;
           });
           
+          // CRITICAL: Sort phases sequentially by order number before displaying
+          // This ensures phases are shown in correct order for both Edit Standard and regular projects
+          const sortedPhases = sortPhasesByOrderNumber(finalCheck);
+          
           // CRITICAL: Set displayPhases directly from database (source of truth)
           setDisplayPhasesFromDb(true);
-          setDisplayPhases(finalCheck);
+          setDisplayPhases(sortedPhases);
           setPhasesLoaded(true);
           
           // Update project context to keep everything in sync
           updateProject({
             ...currentProject,
-            phases: finalCheck,
+            phases: sortedPhases,
             updatedAt: new Date()
           });
           
-          console.log('✅ Phases loaded immediately from database (final):', {
-            count: finalCheck.length,
-            phases: finalCheck.map(p => ({ 
+          console.log('✅ Phases loaded immediately from database (final, sorted sequentially):', {
+            count: sortedPhases.length,
+            phases: sortedPhases.map(p => ({ 
               name: p.name, 
               order: p.phaseOrderNumber,
               hasOrder: p.phaseOrderNumber !== undefined && p.phaseOrderNumber !== null
