@@ -4221,6 +4221,40 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
       }
       
+      // CRITICAL: For Edit Standard, validate that existing phase positions were preserved
+      if (isEditingStandardProject) {
+        const { data: finalPhasePositions, error: finalPositionError } = await supabase
+          .from('project_phases')
+          .select('id, name, position_rule, position_value')
+          .eq('project_id', currentProject.id)
+          .neq('id', addedPhaseId || '');
+        
+        if (!finalPositionError && finalPhasePositions) {
+          // Check if any existing phase positions changed
+          const positionChanged = finalPhasePositions.some(dbPhase => {
+            const phase = finalPhases.find(p => p.id === dbPhase.id);
+            if (!phase) return false;
+            
+            // Check if position rule/value changed
+            const expectedRule = phase.phaseOrderNumber === 'first' ? 'first' :
+                                phase.phaseOrderNumber === 'last' ? 'last' :
+                                'nth';
+            const expectedValue = typeof phase.phaseOrderNumber === 'number' ? phase.phaseOrderNumber : null;
+            
+            return dbPhase.position_rule !== expectedRule || 
+                   (expectedValue !== null && dbPhase.position_value !== expectedValue);
+          });
+          
+          if (positionChanged) {
+            console.error('❌ CRITICAL: Existing phase positions changed when adding new phase!');
+            toast.error('Error: Existing phase positions were changed. Please reload Edit Standard.');
+            throw new Error('Existing phase positions changed unexpectedly');
+          }
+          
+          console.log('✅ Validation passed: All existing phase positions preserved');
+        }
+      }
+      
       // CRITICAL: Update displayPhases immediately with phases (preserved positions for Edit Standard)
       setSkipNextRefresh(true); // Prevent useEffect from triggering another refresh
       setDisplayPhases(finalPhases);
