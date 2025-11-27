@@ -1041,15 +1041,66 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         }
         
         if (freshPhases.length > 0) {
+          // CRITICAL: For regular projects, load Standard Project Foundation phases if not already loaded
+          // This ensures we have the correct 'first'/'last' designations before processing
+          let standardPhasesToUse = standardProjectPhases;
+          
+          if (!isEditingStandardProject && standardPhasesToUse.length === 0) {
+            // Fetch Standard Project Foundation phases directly within this function
+            try {
+              const { data: rebuiltStandardPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+                p_project_id: '00000000-0000-0000-0000-000000000001'
+              });
+              
+              if (!rebuildError && rebuiltStandardPhases) {
+                let phases = Array.isArray(rebuiltStandardPhases) ? rebuiltStandardPhases : [];
+                phases = phases.filter(p => p.isStandard && !p.isLinked);
+                
+                // Fetch position_rule and position_value from database
+                const { data: phasePositions, error: positionError } = await supabase
+                  .from('project_phases')
+                  .select('id, name, position_rule, position_value')
+                  .eq('project_id', '00000000-0000-0000-0000-000000000001')
+                  .in('id', phases.map(p => p.id).filter(id => id));
+                
+                if (!positionError && phasePositions) {
+                  const positionMap = new Map(phasePositions.map(p => [p.id, p]));
+                  
+                  phases = phases.map(phase => {
+                    if (phase.id && positionMap.has(phase.id)) {
+                      const positionData = positionMap.get(phase.id)!;
+                      if (positionData.position_rule === 'first') {
+                        phase.phaseOrderNumber = 'first';
+                      } else if (positionData.position_rule === 'last') {
+                        phase.phaseOrderNumber = 'last';
+                      } else if (positionData.position_rule === 'nth' && positionData.position_value) {
+                        phase.phaseOrderNumber = positionData.position_value;
+                      }
+                    }
+                    return phase;
+                  });
+                }
+                
+                standardPhasesToUse = phases;
+                console.log('📋 Loaded Standard Project Foundation phases inline:', {
+                  count: standardPhasesToUse.length,
+                  phases: standardPhasesToUse.map(p => ({ name: p.name, order: p.phaseOrderNumber }))
+                });
+              }
+            } catch (err) {
+              console.warn('⚠️ Could not load Standard Project Foundation inline:', err);
+            }
+          }
+          
           // CRITICAL: For regular projects, update standard phases' order from Standard Project Foundation
           // BEFORE applying sequential ordering - this ensures 'first'/'last' designations are preserved
           let phasesToValidate = deduplicatePhases(freshPhases);
           
-          if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+          if (!isEditingStandardProject && standardPhasesToUse.length > 0) {
             // Update standard phases' phaseOrderNumber from Standard Project Foundation
             phasesToValidate = phasesToValidate.map(phase => {
               if (isStandardPhase(phase) && !phase.isLinked) {
-                const standardPhase = standardProjectPhases.find(sp => sp.name === phase.name);
+                const standardPhase = standardPhasesToUse.find(sp => sp.name === phase.name);
                 if (standardPhase && standardPhase.phaseOrderNumber !== undefined) {
                   // Preserve 'first'/'last' designations from Standard Project Foundation
                   if (standardPhase.phaseOrderNumber === 'first') {
@@ -1306,10 +1357,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           
           // CRITICAL: For regular projects, restore standard phases' 'first'/'last' from Standard Project Foundation
           // This must happen AFTER validation to override the numeric positions assigned by validateAndFixSequentialOrdering
-          if (!isEditingStandardProject && standardProjectPhases.length > 0) {
+          if (!isEditingStandardProject && standardPhasesToUse.length > 0) {
             // Create a map of standard phase names to their order numbers from Standard Project Foundation
             const standardOrderMap = new Map<string, string | number>();
-            standardProjectPhases.forEach(sp => {
+            standardPhasesToUse.forEach(sp => {
               if (sp.name && sp.phaseOrderNumber !== undefined) {
                 standardOrderMap.set(sp.name, sp.phaseOrderNumber);
               }
@@ -1323,8 +1374,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
                   if (standardOrder === 'first' || standardOrder === 1) {
                     return { ...phase, phaseOrderNumber: 'first' };
                   } else if (standardOrder === 'last') {
-                    // Find the actual last position in the current phases array
-                    const lastPosition = finalCheck.length;
                     return { ...phase, phaseOrderNumber: 'last' };
                   } else if (typeof standardOrder === 'number') {
                     // For numeric positions from Standard Project Foundation, preserve them
