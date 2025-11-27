@@ -1019,6 +1019,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           
           if (error) {
             console.error('❌ Error fetching phases from database:', error);
+            toast.error('Error loading Standard Project Foundation. Please try again.');
+            setPhasesLoaded(true); // Prevent infinite retries
             return;
           }
           
@@ -1026,6 +1028,123 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
           
           // Filter to only standard phases for Edit Standard
           freshPhases = freshPhases.filter(p => isStandardPhase(p) && !p.isLinked);
+          
+          // CRITICAL: STRICT VALIDATION for Edit Standard - fetch order positions directly from database
+          // If ANY phase is missing order position or out of order, BLOCK loading
+          if (freshPhases.length > 0) {
+            // Fetch position_rule and position_value from database for ALL phases
+            const { data: phasePositions, error: positionError } = await supabase
+              .from('project_phases')
+              .select('id, name, position_rule, position_value')
+              .eq('project_id', currentProject.id)
+              .in('id', freshPhases.map(p => p.id).filter(id => id));
+            
+            if (positionError) {
+              console.error('❌ CRITICAL: Error fetching phase positions from database:', positionError);
+              toast.error('Error validating phase order positions. Edit Standard cannot load.');
+              setPhasesLoaded(true);
+              return;
+            }
+            
+            if (!phasePositions || phasePositions.length === 0) {
+              console.error('❌ CRITICAL: No phase positions found in database');
+              toast.error('No phase positions found in database. Edit Standard cannot load.');
+              setPhasesLoaded(true);
+              return;
+            }
+            
+            // Create map of phase positions
+            const positionMap = new Map(phasePositions.map(p => [p.id, p]));
+            
+            // STRICT VALIDATION: Check ALL phases have position_rule
+            const phasesWithoutPositionRule = freshPhases.filter(phase => {
+              if (!phase.id) return true;
+              const positionData = positionMap.get(phase.id);
+              return !positionData || !positionData.position_rule;
+            });
+            
+            if (phasesWithoutPositionRule.length > 0) {
+              console.error('❌ CRITICAL VALIDATION FAILED: Phases missing position_rule:', {
+                count: phasesWithoutPositionRule.length,
+                phases: phasesWithoutPositionRule.map(p => ({ name: p.name, id: p.id }))
+              });
+              toast.error(`Edit Standard cannot load: ${phasesWithoutPositionRule.length} phase(s) missing order positions in database. Please fix the database.`);
+              setPhasesLoaded(true);
+              return;
+            }
+            
+            // Derive phaseOrderNumber from position_rule and position_value for validation
+            const phasesWithOrder: Array<{ phase: Phase; numericOrder: number }> = [];
+            
+            freshPhases.forEach(phase => {
+              if (!phase.id) return;
+              const positionData = positionMap.get(phase.id);
+              if (!positionData) return;
+              
+              let numericOrder: number;
+              if (positionData.position_rule === 'first') {
+                numericOrder = 1;
+              } else if (positionData.position_rule === 'last') {
+                numericOrder = freshPhases.length; // Will be validated after
+              } else if (positionData.position_rule === 'nth' && positionData.position_value) {
+                numericOrder = positionData.position_value;
+              } else if (positionData.position_rule === 'last_minus_n' && positionData.position_value) {
+                numericOrder = freshPhases.length - positionData.position_value;
+              } else {
+                console.error('❌ CRITICAL: Invalid position_rule:', positionData);
+                numericOrder = -1; // Invalid
+              }
+              
+              phasesWithOrder.push({ phase, numericOrder });
+            });
+            
+            // STRICT VALIDATION: Check for sequential ordering (1, 2, 3, ...) with no gaps
+            const sortedByOrder = [...phasesWithOrder].sort((a, b) => a.numericOrder - b.numericOrder);
+            const expectedOrders = Array.from({ length: freshPhases.length }, (_, i) => i + 1);
+            const actualOrders = sortedByOrder.map(p => p.numericOrder).sort((a, b) => a - b);
+            
+            // Check for gaps or duplicates
+            const hasGaps = actualOrders.some((order, index) => order !== expectedOrders[index]);
+            const hasDuplicates = new Set(actualOrders).size !== actualOrders.length;
+            const hasInvalidOrders = actualOrders.some(order => order < 1 || order > freshPhases.length);
+            
+            if (hasGaps || hasDuplicates || hasInvalidOrders) {
+              console.error('❌ CRITICAL VALIDATION FAILED: Phases out of sequential order:', {
+                hasGaps,
+                hasDuplicates,
+                hasInvalidOrders,
+                expected: expectedOrders,
+                actual: actualOrders,
+                phases: sortedByOrder.map(p => ({ name: p.phase.name, order: p.numericOrder }))
+              });
+              toast.error(`Edit Standard cannot load: Phases are out of sequential order or have duplicate positions. Expected order: ${expectedOrders.join(', ')}, Found: ${actualOrders.join(', ')}. Please fix the database.`);
+              setPhasesLoaded(true);
+              return;
+            }
+            
+            console.log('✅ STRICT VALIDATION PASSED: All phases have valid sequential order positions:', {
+              count: freshPhases.length,
+              orders: actualOrders,
+              phases: sortedByOrder.map(p => ({ name: p.phase.name, order: p.numericOrder }))
+            });
+            
+            // Assign phaseOrderNumber to phases for display
+            freshPhases = freshPhases.map(phase => {
+              if (!phase.id) return phase;
+              const positionData = positionMap.get(phase.id);
+              if (!positionData) return phase;
+              
+              if (positionData.position_rule === 'first') {
+                return { ...phase, phaseOrderNumber: 'first' as const };
+              } else if (positionData.position_rule === 'last') {
+                return { ...phase, phaseOrderNumber: 'last' as const };
+              } else if (positionData.position_rule === 'nth' && positionData.position_value) {
+                return { ...phase, phaseOrderNumber: positionData.position_value };
+              }
+              
+              return phase;
+            });
+          }
         } else {
           // For regular projects: use get_project_workflow_with_standards
           const { data, error } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
