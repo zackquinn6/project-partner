@@ -1528,12 +1528,27 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
 
   // Get phase order number (First, Last, or integer)
   const getPhaseOrderNumber = (phase: Phase, phaseIndex: number, totalPhases: number): string | number => {
-    // CRITICAL: For standard phases in regular projects, try to get order number from Standard Project Foundation
+    // CRITICAL: For standard phases in regular projects, ALWAYS use order from Standard Project Foundation
+    // This ensures 'First' and 'Last' positions are shown correctly for standard phases
     if (!isEditingStandardProject && isStandardPhase(phase) && !phase.isLinked && standardProjectPhases.length > 0) {
       const standardPhase = standardProjectPhases.find(sp => sp.name === phase.name);
       if (standardPhase && standardPhase.phaseOrderNumber !== undefined) {
-        if (standardPhase.phaseOrderNumber === 'first') return 'First';
-        if (standardPhase.phaseOrderNumber === 'last') return 'Last';
+        // CRITICAL: Use Standard Project Foundation order as source of truth for standard phases
+        if (standardPhase.phaseOrderNumber === 'first' || standardPhase.phaseOrderNumber === 1) {
+          return 'First';
+        }
+        if (standardPhase.phaseOrderNumber === 'last') {
+          return 'Last';
+        }
+        // Check if it's the last phase in Standard Project Foundation
+        const lastStandardPhase = standardProjectPhases[standardProjectPhases.length - 1];
+        if (lastStandardPhase && lastStandardPhase.name === phase.name && lastStandardPhase.phaseOrderNumber === 'last') {
+          return 'Last';
+        }
+        // For numeric values, return as-is
+        if (typeof standardPhase.phaseOrderNumber === 'number') {
+          return standardPhase.phaseOrderNumber;
+        }
         return standardPhase.phaseOrderNumber;
       }
     }
@@ -1543,11 +1558,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
       if (phase.phaseOrderNumber === 'first') return 'First';
       if (phase.phaseOrderNumber === 'last') return 'Last';
       if (typeof phase.phaseOrderNumber === 'number') {
-        // CRITICAL: Convert numeric positions to 'First'/'Last' for display if appropriate
-        // This ensures the dropdown shows the correct value even when phaseOrderNumber is a number
-        if (phase.phaseOrderNumber === 1) {
+        // For non-standard phases, convert numeric positions to 'First'/'Last' for display if appropriate
+        // But only if Standard Project Foundation check didn't find a match
+        if (phase.phaseOrderNumber === 1 && (!isStandardPhase(phase) || phase.isLinked)) {
           return 'First';
-        } else if (phase.phaseOrderNumber === totalPhases) {
+        } else if (phase.phaseOrderNumber === totalPhases && (!isStandardPhase(phase) || phase.isLinked)) {
           return 'Last';
         }
         return phase.phaseOrderNumber;
@@ -1579,39 +1594,104 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             .single();
 
           if (!error && standardProject?.phases) {
-            let phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
-            
-            // CRITICAL: If phases don't have phaseOrderNumber, derive it from their position
-            // This handles cases where the JSON was rebuilt from project_phases table
-            phases = phases.map((phase, index) => {
-              if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
-                // Derive order number from position
-                if (index === 0) {
-                  phase.phaseOrderNumber = 'first';
-                } else if (index === phases.length - 1) {
-                  phase.phaseOrderNumber = 'last';
-                } else {
-                  phase.phaseOrderNumber = index + 1;
+            // CRITICAL: Rebuild phases from database to get correct position_rule values
+            // This ensures we get the actual 'first'/'last' designations from the database
+            try {
+              const { data: rebuiltStandardPhases, error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+                p_project_id: '00000000-0000-0000-0000-000000000001'
+              });
+              
+              if (!rebuildError && rebuiltStandardPhases) {
+                let phases = Array.isArray(rebuiltStandardPhases) ? rebuiltStandardPhases : [];
+                // Filter to only standard phases
+                phases = phases.filter(p => p.isStandard && !p.isLinked);
+                
+                // Fetch position_rule and position_value from database to derive phaseOrderNumber correctly
+                const { data: phasePositions, error: positionError } = await supabase
+                  .from('project_phases')
+                  .select('id, name, position_rule, position_value')
+                  .eq('project_id', '00000000-0000-0000-0000-000000000001')
+                  .in('id', phases.map(p => p.id).filter(id => id));
+                
+                if (!positionError && phasePositions) {
+                  // Create a map of phase ID to position data
+                  const positionMap = new Map(phasePositions.map(p => [p.id, p]));
+                  
+                  // Update phases with correct phaseOrderNumber from position_rule
+                  phases = phases.map(phase => {
+                    if (phase.id && positionMap.has(phase.id)) {
+                      const positionData = positionMap.get(phase.id)!;
+                      if (positionData.position_rule === 'first') {
+                        phase.phaseOrderNumber = 'first';
+                      } else if (positionData.position_rule === 'last') {
+                        phase.phaseOrderNumber = 'last';
+                      } else if (positionData.position_rule === 'nth' && positionData.position_value) {
+                        phase.phaseOrderNumber = positionData.position_value;
+                      }
+                    }
+                    return phase;
+                  });
                 }
-                console.log('🔧 Derived phaseOrderNumber for phase:', {
-                  name: phase.name,
-                  index,
-                  derivedOrder: phase.phaseOrderNumber
+                
+                // Ensure all phases have phaseOrderNumber
+                phases = phases.map((phase, index) => {
+                  if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+                    if (index === 0) {
+                      phase.phaseOrderNumber = 'first';
+                    } else if (index === phases.length - 1) {
+                      phase.phaseOrderNumber = 'last';
+                    } else {
+                      phase.phaseOrderNumber = index + 1;
+                    }
+                  }
+                  return phase;
                 });
+                
+                console.log('📋 Fetched Standard Project Foundation phases (from database):', {
+                  count: phases.length,
+                  phases: phases.map(p => ({ 
+                    name: p.name, 
+                    order: p.phaseOrderNumber,
+                    hasOrder: p.phaseOrderNumber !== undefined,
+                    orderType: typeof p.phaseOrderNumber
+                  }))
+                });
+                setStandardProjectPhases(phases);
+              } else {
+                // Fallback to using phases from JSON
+                let phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
+                phases = phases.map((phase, index) => {
+                  if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+                    if (index === 0) {
+                      phase.phaseOrderNumber = 'first';
+                    } else if (index === phases.length - 1) {
+                      phase.phaseOrderNumber = 'last';
+                    } else {
+                      phase.phaseOrderNumber = index + 1;
+                    }
+                  }
+                  return phase;
+                });
+                setStandardProjectPhases(phases);
               }
-              return phase;
-            });
-            
-            console.log('📋 Fetched Standard Project Foundation phases:', {
-              count: phases.length,
-              phases: phases.map(p => ({ 
-                name: p.name, 
-                order: p.phaseOrderNumber,
-                hasOrder: p.phaseOrderNumber !== undefined,
-                orderType: typeof p.phaseOrderNumber
-              }))
-            });
-            setStandardProjectPhases(phases);
+            } catch (rebuildErr) {
+              console.warn('⚠️ Could not rebuild Standard Project Foundation phases, using JSON:', rebuildErr);
+              // Fallback to using phases from JSON
+              let phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
+              phases = phases.map((phase, index) => {
+                if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
+                  if (index === 0) {
+                    phase.phaseOrderNumber = 'first';
+                  } else if (index === phases.length - 1) {
+                    phase.phaseOrderNumber = 'last';
+                  } else {
+                    phase.phaseOrderNumber = index + 1;
+                  }
+                }
+                return phase;
+              });
+              setStandardProjectPhases(phases);
+            }
           } else if (error) {
             console.error('❌ Error fetching Standard Project Foundation phases:', error);
           }
