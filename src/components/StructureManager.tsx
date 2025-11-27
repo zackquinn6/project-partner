@@ -1037,8 +1037,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
               ...operation,
               steps: operation.steps?.map(step => ({
                 ...step,
-                step: step.step || (step as any).step_title || 'Unnamed Step'
-              })) || []
+                step: step.step || (step as any).step_title
+              })).filter(step => step.step) || []
             })) || []
           }));
           
@@ -1180,8 +1180,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
             ...operation,
             steps: operation.steps?.map(step => ({
               ...step,
-              step: step.step || (step as any).step_title || 'Unnamed Step'
-            })) || []
+              step: step.step || (step as any).step_title
+            })).filter(step => step.step) || []
           })) || []
         }));
         
