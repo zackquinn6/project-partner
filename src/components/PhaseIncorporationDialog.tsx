@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -177,6 +177,9 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Incorporate Phase from Another Project</DialogTitle>
+          <DialogDescription>
+            Select a project and phase to incorporate into the current project. The phase will be linked to the source project and will update automatically when the source is modified.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">

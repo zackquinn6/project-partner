@@ -2697,9 +2697,136 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         open={showIncorporationDialog} 
         onOpenChange={setShowIncorporationDialog}
         onIncorporatePhase={async (phaseToIncorporate) => {
-          // Handle phase incorporation
-          toast.success('Phase incorporation functionality will be implemented');
-          setShowIncorporationDialog(false);
+          if (!currentProject?.id) {
+            toast.error('No project selected');
+            return;
+          }
+          
+          try {
+            // Check if phase with same name already exists
+            const { data: existingPhases } = await supabase
+              .from('project_phases')
+              .select('name')
+              .eq('project_id', currentProject.id)
+              .eq('name', phaseToIncorporate.name);
+            
+            if (existingPhases && existingPhases.length > 0) {
+              toast.error(`A phase named "${phaseToIncorporate.name}" already exists in this project`);
+              return;
+            }
+            
+            // Get the source phase ID from the source project
+            const { data: sourcePhase } = await supabase
+              .from('project_phases')
+              .select('id')
+              .eq('project_id', phaseToIncorporate.sourceProjectId)
+              .eq('name', phaseToIncorporate.name)
+              .single();
+            
+            if (!sourcePhase?.id) {
+              toast.error('Source phase not found');
+              return;
+            }
+            
+            // Get current phase count to determine position
+            const { count: phaseCount } = await supabase
+              .from('project_phases')
+              .select('*', { count: 'exact', head: true })
+              .eq('project_id', currentProject.id);
+            
+            const totalPhases = phaseCount || 0;
+            const newPosition = totalPhases > 0 ? totalPhases : 1;
+            
+            // Create incorporated phase record
+            // Store source information in description (temporary solution)
+            // The get_project_workflow_with_standards function should handle this
+            const incorporatedDescription = phaseToIncorporate.description 
+              ? `${phaseToIncorporate.description}\n\n[Incorporated from: ${phaseToIncorporate.sourceProjectName} (Revision ${phaseToIncorporate.incorporatedRevision})]`
+              : `[Incorporated from: ${phaseToIncorporate.sourceProjectName} (Revision ${phaseToIncorporate.incorporatedRevision})]`;
+            
+            const { data: newPhase, error: insertError } = await supabase
+              .from('project_phases')
+              .insert({
+                project_id: currentProject.id,
+                name: phaseToIncorporate.name,
+                description: incorporatedDescription,
+                display_order: newPosition,
+                is_standard: false,
+                standard_phase_id: null
+              })
+              .select('id')
+              .single();
+            
+            if (insertError) {
+              throw insertError;
+            }
+            
+            // Set position to "last minus one" (before the last phase if it exists)
+            if (totalPhases > 0) {
+              await supabase
+                .from('project_phases')
+                .update({
+                  position_rule: 'nth',
+                  position_value: totalPhases,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', newPhase.id);
+            } else {
+              // First phase - set to 'first'
+              await supabase
+                .from('project_phases')
+                .update({
+                  position_rule: 'first',
+                  position_value: null,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', newPhase.id);
+            }
+            
+            // Create reference operations that point to source operations
+            // Get operations from source phase
+            const { data: sourceOperations } = await supabase
+              .from('template_operations')
+              .select('id, name, description, display_order, flow_type')
+              .eq('phase_id', sourcePhase.id)
+              .order('display_order', { ascending: true });
+            
+            if (sourceOperations && sourceOperations.length > 0) {
+              for (const sourceOp of sourceOperations) {
+                // Create reference operation
+                const { error: opError } = await supabase
+                  .from('template_operations')
+                  .insert({
+                    project_id: currentProject.id,
+                    phase_id: newPhase.id,
+                    name: sourceOp.name,
+                    description: sourceOp.description,
+                    flow_type: sourceOp.flow_type || 'prime',
+                    display_order: sourceOp.display_order,
+                    is_standard_phase: false,
+                    source_operation_id: sourceOp.id,
+                    is_reference: true,
+                    custom_phase_name: phaseToIncorporate.name,
+                    custom_phase_description: incorporatedDescription
+                  });
+                
+                if (opError) {
+                  console.error('Error creating reference operation:', opError);
+                }
+              }
+            }
+            
+            // Reload phases
+            const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+            loadedProjectIdRef.current = null;
+            setPhases(sortedPhases);
+            
+            setShowIncorporationDialog(false);
+            toast.success(`Phase "${phaseToIncorporate.name}" incorporated successfully`);
+          } catch (error: any) {
+            console.error('Error incorporating phase:', error);
+            toast.error(`Failed to incorporate phase: ${error.message || 'Unknown error'}`);
+          }
         }}
       />
     </div>
