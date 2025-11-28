@@ -140,7 +140,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       position_rule: (p as any)?.position_rule,
       position_value: (p as any)?.position_value,
       isStandard: p.isStandard,
-      isLinked: p.isLinked
+      isLinked: p.isLinked,
+      phaseOrderNumber: p.phaseOrderNumber
     })));
     
     const errors: string[] = [];
@@ -175,8 +176,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     console.log('🔍 Validation Debug - nth phases found:', nthPhases.map(p => ({
       name: p.phase.name,
       position_value: p.numericOrder,
+      position_rule: (p.phase as any)?.position_rule,
       isStandard: p.phase.isStandard,
-      isLinked: p.phase.isLinked
+      isLinked: p.phase.isLinked,
+      phaseOrderNumber: p.phase.phaseOrderNumber
     })));
     
     // Sort by numeric order
@@ -240,6 +243,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           const lastNumberedStandardPhase = numberedStandardPhases[numberedStandardPhases.length - 1];
           const lastNumberedPosition = (lastNumberedStandardPhase as any).position_value || 1;
           
+          // Find the maximum position value among all 'nth' phases (this will be the position before 'last')
+          const allNthPhases = phasesToValidate.filter(p => {
+            const positionRule = (p as any).position_rule;
+            return positionRule === 'nth' && typeof (p as any).position_value === 'number';
+          });
+          const maxNthPosition = allNthPhases.length > 0 
+            ? Math.max(...allNthPhases.map((p: any) => p.position_value))
+            : lastNumberedPosition;
+          
           // Check custom phases with 'nth' rule (include incorporated phases, exclude 'last')
           // Incorporated phases are treated like regular custom phases for ordering
           const customPhases = phasesToValidate.filter(p => {
@@ -248,13 +260,32 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             return positionRule === 'nth'; // Only check 'nth' phases, not 'last'
           });
           
+          // DEBUG: Log custom phase validation details
+          console.log('🔍 Validation Debug - Custom phase range check:', {
+            lastNumberedPosition,
+            maxNthPosition,
+            customPhases: customPhases.map((p: any) => ({
+              name: p.name,
+              position_value: p.position_value,
+              isStandard: p.isStandard,
+              isLinked: p.isLinked
+            })),
+            allNthPhases: allNthPhases.map((p: any) => ({
+              name: p.name,
+              position_value: p.position_value,
+              isStandard: p.isStandard
+            }))
+          });
+          
           const invalidCustomPhases = customPhases.filter(p => {
             const positionValue = (p as any).position_value;
-            return typeof positionValue === 'number' && (positionValue <= lastNumberedPosition || positionValue >= phasesToValidate.length);
+            // Custom phases must be after the last numbered standard phase
+            // They can go up to maxNthPosition (which is the highest nth position, just before 'last')
+            return typeof positionValue === 'number' && (positionValue <= lastNumberedPosition || positionValue > maxNthPosition);
           });
           
           if (invalidCustomPhases.length > 0) {
-            errors.push(`Custom phases must be between position ${lastNumberedPosition + 1} and ${phasesToValidate.length - 1}. Invalid: ${invalidCustomPhases.map(p => p.name).join(', ')}`);
+            errors.push(`Custom phases must be between position ${lastNumberedPosition + 1} and ${maxNthPosition}. Invalid: ${invalidCustomPhases.map(p => p.name).join(', ')}`);
           }
         }
       }
@@ -471,7 +502,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           position_rule: p.position_rule,
           position_value: p.position_value
         })),
-        totalCombined: allPhasesData.length
+        totalCombined: allPhasesData.length,
+        // Show which phases have nth rule and their values
+        nthPhasesFromDB: allPhasesData
+          .filter((p: any) => p.position_rule === 'nth' && typeof p.position_value === 'number')
+          .map((p: any) => ({
+            name: p.name,
+            position_value: p.position_value,
+            is_standard: p.is_standard
+          }))
+          .sort((a: any, b: any) => a.position_value - b.position_value)
       });
       
       // Get source project names for incorporated phases
