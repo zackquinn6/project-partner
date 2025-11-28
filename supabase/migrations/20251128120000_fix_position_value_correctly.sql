@@ -57,7 +57,7 @@ BEGIN
   -- This avoids reading position_value for first/last rules which may contain invalid data
   FOR std_phase IN
     SELECT * FROM (
-      -- First: phases with first/last rules - never read position_value
+      -- First: phases with first/last/last_minus_n rules - never read position_value
       SELECT 
         id,
         project_id,
@@ -66,11 +66,21 @@ BEGIN
         is_standard,
         position_rule,
         NULL::INTEGER AS position_value,
-        1 AS sort_order,
-        CASE WHEN position_rule = 'first' THEN 1 ELSE 999999 END AS order_secondary
-      FROM public.project_phases
+        CASE 
+          WHEN position_rule = 'first' THEN 1
+          WHEN position_rule = 'last_minus_n' THEN 998
+          WHEN position_rule = 'last' THEN 999
+          ELSE 100
+        END AS sort_order,
+        CASE 
+          WHEN position_rule = 'first' THEN 1
+          WHEN position_rule = 'last_minus_n' THEN COALESCE((SELECT position_value::INTEGER FROM public.project_phases WHERE id = pp.id AND position_rule = 'last_minus_n'), 0)
+          WHEN position_rule = 'last' THEN 999999
+          ELSE 0
+        END AS order_secondary
+      FROM public.project_phases pp
       WHERE project_id = standard_project_id
-        AND position_rule IN ('first', 'last')
+        AND position_rule IN ('first', 'last', 'last_minus_n')
       
       UNION ALL
       
@@ -82,9 +92,9 @@ BEGIN
         description,
         is_standard,
         position_rule,
-        position_value,
+        position_value::INTEGER AS position_value,
         100 AS sort_order,
-        COALESCE(position_value, 0) AS order_secondary
+        COALESCE(position_value::INTEGER, 0) AS order_secondary
       FROM public.project_phases
       WHERE project_id = standard_project_id
         AND position_rule = 'nth'
@@ -104,9 +114,9 @@ BEGIN
       std_phase.description,
       std_phase.is_standard,
       std_phase.position_rule,
-      -- Explicitly set NULL for first/last, only use value for nth
+      -- Explicitly set NULL for first/last/last_minus_n, only use value for nth
       CASE 
-        WHEN std_phase.position_rule IN ('first', 'last') THEN NULL::INTEGER
+        WHEN std_phase.position_rule IN ('first', 'last', 'last_minus_n') THEN NULL::INTEGER
         WHEN std_phase.position_rule = 'nth' THEN std_phase.position_value
         ELSE NULL::INTEGER
       END
@@ -262,7 +272,7 @@ BEGIN
   -- This avoids reading position_value for first/last rules which may contain invalid data
   FOR source_phase IN
     SELECT * FROM (
-      -- First: phases with first/last rules - never read position_value
+      -- First: phases with first/last/last_minus_n rules - never read position_value
       SELECT 
         id,
         project_id,
@@ -271,15 +281,25 @@ BEGIN
         is_standard,
         position_rule,
         NULL::INTEGER AS position_value,
-        1 AS sort_order,
-        CASE WHEN position_rule = 'first' THEN 1 ELSE 999999 END AS order_secondary
-      FROM project_phases
+        CASE 
+          WHEN position_rule = 'first' THEN 1
+          WHEN position_rule = 'last_minus_n' THEN 998
+          WHEN position_rule = 'last' THEN 999
+          ELSE 100
+        END AS sort_order,
+        CASE 
+          WHEN position_rule = 'first' THEN 1
+          WHEN position_rule = 'last_minus_n' THEN COALESCE((SELECT position_value::INTEGER FROM project_phases WHERE id = pp.id AND position_rule = 'last_minus_n'), 0)
+          WHEN position_rule = 'last' THEN 999999
+          ELSE 0
+        END AS order_secondary
+      FROM project_phases pp
       WHERE project_id = source_project_id
-        AND position_rule IN ('first', 'last')
+        AND position_rule IN ('first', 'last', 'last_minus_n')
       
       UNION ALL
       
-      -- Second: phases with nth rule - read position_value
+      -- Second: phases with nth rule - read position_value (explicitly cast to INTEGER)
       SELECT 
         id,
         project_id,
@@ -287,9 +307,9 @@ BEGIN
         description,
         is_standard,
         position_rule,
-        position_value,
+        position_value::INTEGER AS position_value,
         100 AS sort_order,
-        COALESCE(position_value, 0) AS order_secondary
+        COALESCE(position_value::INTEGER, 0) AS order_secondary
       FROM project_phases
       WHERE project_id = source_project_id
         AND position_rule = 'nth'
@@ -310,9 +330,9 @@ BEGIN
       source_phase.description,
       source_phase.is_standard,
       source_phase.position_rule,
-      -- Explicitly set NULL for first/last, only use value for nth
+      -- Explicitly set NULL for first/last/last_minus_n, only use value for nth
       CASE 
-        WHEN source_phase.position_rule IN ('first', 'last') THEN NULL::INTEGER
+        WHEN source_phase.position_rule IN ('first', 'last', 'last_minus_n') THEN NULL::INTEGER
         WHEN source_phase.position_rule = 'nth' THEN source_phase.position_value
         ELSE NULL::INTEGER
       END
