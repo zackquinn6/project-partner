@@ -676,6 +676,9 @@ COMMENT ON FUNCTION public.create_project_revision_v2 IS
 'Creates a new project revision. Reads position_rule and sets position_value correctly.';
 
 -- Step 4: Fix add_custom_project_phase function - remove standard_phase_id
+-- Drop existing function first to avoid return type conflicts
+DROP FUNCTION IF EXISTS public.add_custom_project_phase(UUID, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.add_custom_project_phase(
   p_project_id UUID,
   p_phase_name TEXT,
