@@ -74,7 +74,7 @@ BEGIN
       
       UNION ALL
       
-      -- Second: phases with nth rule - read position_value
+      -- Second: phases with nth rule - read position_value with explicit casting
       SELECT 
         id,
         project_id,
@@ -82,9 +82,20 @@ BEGIN
         description,
         is_standard,
         position_rule,
-        position_value,
+        CASE 
+          WHEN position_value IS NULL THEN NULL::INTEGER
+          WHEN position_value::TEXT IN ('first', 'last') THEN NULL::INTEGER
+          ELSE position_value::INTEGER
+        END AS position_value,
         100 AS sort_order,
-        COALESCE(position_value, 0) AS order_secondary
+        COALESCE(
+          CASE 
+            WHEN position_value IS NULL THEN 0
+            WHEN position_value::TEXT IN ('first', 'last') THEN 0
+            ELSE position_value::INTEGER
+          END, 
+          0
+        ) AS order_secondary
       FROM public.project_phases
       WHERE project_id = standard_project_id
         AND position_rule = 'nth'
@@ -279,7 +290,7 @@ BEGIN
       
       UNION ALL
       
-      -- Second: phases with nth rule - read position_value
+      -- Second: phases with nth rule - read position_value with explicit casting
       SELECT 
         id,
         project_id,
@@ -287,9 +298,20 @@ BEGIN
         description,
         is_standard,
         position_rule,
-        position_value,
+        CASE 
+          WHEN position_value IS NULL THEN NULL::INTEGER
+          WHEN position_value::TEXT IN ('first', 'last') THEN NULL::INTEGER
+          ELSE position_value::INTEGER
+        END AS position_value,
         100 AS sort_order,
-        COALESCE(position_value, 0) AS order_secondary
+        COALESCE(
+          CASE 
+            WHEN position_value IS NULL THEN 0
+            WHEN position_value::TEXT IN ('first', 'last') THEN 0
+            ELSE position_value::INTEGER
+          END, 
+          0
+        ) AS order_secondary
       FROM project_phases
       WHERE project_id = source_project_id
         AND position_rule = 'nth'
