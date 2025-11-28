@@ -957,7 +957,6 @@ export async function importGeneratedProject(
                 type: o.type || 'none',
               })) : []),
               apps: [],
-              estimated_time_minutes: Math.round(step.timeEstimates.medium * 60),
               display_order: stepIndex,
             })
             .select('id')
@@ -1168,7 +1167,6 @@ export async function importGeneratedProject(
               tools: [],
               outputs: [],
               apps: [],
-              estimated_time_minutes: 60,
               display_order: 0,
             })
             .select('id')
@@ -1232,7 +1230,6 @@ export async function importGeneratedProject(
               tools: [],
               outputs: [],
               apps: [],
-              estimated_time_minutes: 60,
               display_order: 0,
             })
             .select('id')

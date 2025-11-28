@@ -256,7 +256,6 @@ Deno.serve(async (req) => {
                   tools: standardStep.tools,
                   outputs: standardStep.outputs,
                   apps: standardStep.apps,
-                  estimated_time_minutes: standardStep.estimated_time_minutes,
                   flow_type: standardStep.flow_type,
                   step_type: standardStep.step_type,
                   display_order: standardStep.display_order,

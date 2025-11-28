@@ -692,7 +692,6 @@ export default function EditWorkflowView({
             tools: editingStep.tools || [] as any,
             outputs: editingStep.outputs || [] as any,
             apps: editingStep.apps || [] as any,
-            estimated_time_minutes: (editingStep as any).estimated_time || 0,
             flow_type: (editingStep as any).flowType || null,
             step_type: editingStep.stepType || 'prime',
             time_estimate_low: editingStep.timeEstimation?.variableTime?.low || null,

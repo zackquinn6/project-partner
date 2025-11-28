@@ -128,7 +128,6 @@ async function syncStepsForOperation(
       tools: JSON.stringify(step.tools || []),
       outputs: JSON.stringify(step.outputs || []),
       apps: JSON.stringify(step.apps || []),
-      estimated_time_minutes: step.timeEstimation?.variableTime?.low || 0,
       flow_type: step.flowType || 'prime',
       step_type: step.stepType || 'prime',
       time_estimate_low: step.timeEstimation?.variableTime?.low || null,

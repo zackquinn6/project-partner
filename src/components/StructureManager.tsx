@@ -800,7 +800,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               tools: [],
               outputs: [],
               apps: [],
-              estimated_time_minutes: 0,
               flow_type: 'prime',
               step_type: 'prime'
             });
@@ -846,7 +845,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               tools: [],
               outputs: [],
               apps: [],
-              estimated_time_minutes: 0,
               flow_type: 'prime',
               step_type: 'prime'
             });
@@ -1266,7 +1264,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           tools: [],
           outputs: [],
           apps: [],
-          estimated_time_minutes: 0,
           flow_type: 'prime',
           step_type: 'prime'
         });
@@ -1354,7 +1351,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           tools: [],
           outputs: [],
           apps: [],
-          estimated_time_minutes: 0,
           flow_type: 'prime',
           step_type: 'prime'
         })
