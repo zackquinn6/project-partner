@@ -74,7 +74,7 @@ BEGIN
         END AS sort_order,
         CASE 
           WHEN position_rule = 'first' THEN 1
-          WHEN position_rule = 'last_minus_n' THEN COALESCE((SELECT position_value::INTEGER FROM public.project_phases WHERE id = pp.id AND position_rule = 'last_minus_n'), 0)
+          WHEN position_rule = 'last_minus_n' THEN COALESCE(pp.position_value::INTEGER, 0)
           WHEN position_rule = 'last' THEN 999999
           ELSE 0
         END AS order_secondary
@@ -289,7 +289,7 @@ BEGIN
         END AS sort_order,
         CASE 
           WHEN position_rule = 'first' THEN 1
-          WHEN position_rule = 'last_minus_n' THEN COALESCE((SELECT position_value::INTEGER FROM project_phases WHERE id = pp.id AND position_rule = 'last_minus_n'), 0)
+          WHEN position_rule = 'last_minus_n' THEN COALESCE(pp.position_value::INTEGER, 0)
           WHEN position_rule = 'last' THEN 999999
           ELSE 0
         END AS order_secondary
