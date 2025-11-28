@@ -10,6 +10,72 @@ UPDATE public.project_phases
 SET position_value = NULL
 WHERE position_rule IN ('first', 'last');
 
+-- Step 1.5: DIAGNOSTIC - Check for any bad data in standard project and column type
+DO $$
+DECLARE
+  bad_data_count INTEGER;
+  bad_data_record RECORD;
+  column_type_info RECORD;
+BEGIN
+  -- Check the actual column type
+  SELECT 
+    data_type,
+    udt_name,
+    column_default
+  INTO column_type_info
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name = 'project_phases'
+    AND column_name = 'position_value';
+  
+  RAISE NOTICE 'DIAGNOSTIC: position_value column type: %, UDT: %, Default: %', 
+    column_type_info.data_type,
+    column_type_info.udt_name,
+    column_type_info.column_default;
+  
+  -- Check for any phases with position_rule = 'last' that have non-NULL position_value
+  SELECT COUNT(*) INTO bad_data_count
+  FROM public.project_phases
+  WHERE project_id = '00000000-0000-0000-0000-000000000001'::UUID
+    AND position_rule = 'last'
+    AND position_value IS NOT NULL;
+  
+  IF bad_data_count > 0 THEN
+    RAISE WARNING 'Found % phases in standard project with position_rule=last but non-NULL position_value', bad_data_count;
+    
+    -- Show the bad data
+    FOR bad_data_record IN
+      SELECT id, name, position_rule, position_value, pg_typeof(position_value) as value_type
+      FROM public.project_phases
+      WHERE project_id = '00000000-0000-0000-0000-000000000001'::UUID
+        AND position_rule = 'last'
+        AND position_value IS NOT NULL
+    LOOP
+      RAISE WARNING 'Bad data: Phase % (%), position_rule=%, position_value=%, type=%', 
+        bad_data_record.name, 
+        bad_data_record.id, 
+        bad_data_record.position_rule,
+        bad_data_record.position_value,
+        bad_data_record.value_type;
+    END LOOP;
+  END IF;
+  
+  -- Check ALL phases in standard project
+  RAISE NOTICE 'DIAGNOSTIC: All phases in standard project:';
+  FOR bad_data_record IN
+    SELECT name, position_rule, position_value, pg_typeof(position_value) as value_type
+    FROM public.project_phases
+    WHERE project_id = '00000000-0000-0000-0000-000000000001'::UUID
+    ORDER BY position_rule, name
+  LOOP
+    RAISE NOTICE '  Phase: %, Rule: %, Value: %, Type: %', 
+      bad_data_record.name,
+      bad_data_record.position_rule,
+      bad_data_record.position_value,
+      bad_data_record.value_type;
+  END LOOP;
+END $$;
+
 -- Step 2: Recreate create_project_with_standard_foundation_v2 correctly
 -- Function reads position_rule and sets position_value accordingly
 CREATE OR REPLACE FUNCTION public.create_project_with_standard_foundation_v2(
@@ -349,7 +415,7 @@ BEGIN
       
       UNION ALL
       
-      -- Second: phases with nth rule - read position_value (column is INTEGER, no cast needed)
+      -- Second: phases with nth rule - read position_value with explicit INTEGER cast
       SELECT 
         id AS phase_id,
         project_id AS phase_project_id,
@@ -357,9 +423,12 @@ BEGIN
         description AS phase_description,
         is_standard AS phase_is_standard,
         position_rule AS phase_position_rule,
-        position_value AS phase_position_value,
+        CASE 
+          WHEN position_value IS NULL THEN NULL::INTEGER
+          ELSE position_value::INTEGER
+        END AS phase_position_value,
         100 AS sort_order,
-        COALESCE(position_value, 0) AS order_secondary
+        COALESCE(position_value::INTEGER, 0) AS order_secondary
       FROM project_phases
       WHERE project_id = source_project_id
         AND position_rule = 'nth'
