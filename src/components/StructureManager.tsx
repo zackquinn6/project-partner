@@ -694,78 +694,44 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         throw insertError || new Error('Failed to add phase to database');
       }
       
-      // Verify that the phase has an operation with a step
-      // The add_custom_project_phase function should create both, but verify and fix if needed
-      const { data: phaseOperations } = await supabase
+      // Create default operation and step directly in database
+      const { data: newOperation, error: operationError } = await supabase
         .from('template_operations')
-        .select('id')
-        .eq('phase_id', addedPhase.id);
-      
-      if (phaseOperations && phaseOperations.length > 0) {
-        // Check if the first operation has steps
-        const firstOperationId = phaseOperations[0].id;
-        const { data: operationSteps } = await supabase
-          .from('template_steps')
-          .select('id')
-          .eq('operation_id', firstOperationId);
-        
-        // If no steps exist, create one
-        if (!operationSteps || operationSteps.length === 0) {
-          await supabase
-            .from('template_steps')
-            .insert({
-              operation_id: firstOperationId,
-              step_title: 'New Step',
-              description: 'Step description',
-              display_order: 1,
-              content_sections: [],
-              materials: [],
-              tools: [],
-              outputs: [],
-              apps: [],
-              flow_type: 'prime',
-              step_type: 'prime'
-            });
-        }
-      } else {
-        // If no operations exist, create one with a step
-        // This shouldn't happen if add_custom_project_phase is working, but handle it just in case
-        const phaseIsStandard = isEditingStandardProject;
-        const operationInsertData: any = {
+        .insert({
           phase_id: addedPhase.id,
           project_id: currentProject.id,
-          operation_name: 'New Operation',  // Changed from name
-          operation_description: 'Operation description',  // Changed from description
+          operation_name: 'New Operation',
+          operation_description: 'Operation description',
           flow_type: 'prime',
-          display_order: 1  // Use sequential ordering starting at 1
-        };
-        
-        // Note: is_standard_phase, custom_phase_name, and custom_phase_description removed
-        // Phase standard status comes from project_phases.is_standard
-        
-        const { data: newOperation } = await supabase
-          .from('template_operations')
-          .insert(operationInsertData)
-          .select('id')
-          .single();
-        
-        if (newOperation?.id) {
-          await supabase
-            .from('template_steps')
-            .insert({
-              operation_id: newOperation.id,
-              step_title: 'New Step',
-              description: 'Step description',
-              display_order: 1,
-              content_sections: [],
-              materials: [],
-              tools: [],
-              outputs: [],
-              apps: [],
-              flow_type: 'prime',
-              step_type: 'prime'
-            });
-        }
+          display_order: 1,
+          is_reference: false
+        })
+        .select('id')
+        .single();
+      
+      if (operationError || !newOperation?.id) {
+        throw operationError || new Error('Failed to create default operation');
+      }
+      
+      // Create default step directly in database
+      const { error: stepError } = await supabase
+        .from('template_steps')
+        .insert({
+          operation_id: newOperation.id,
+          step_title: 'New Step',
+          description: 'Step description',
+          display_order: 1,
+          content_sections: [],
+          materials: [],
+          tools: [],
+          outputs: [],
+          apps: [],
+          flow_type: 'prime',
+          step_type: 'prime'
+        });
+      
+      if (stepError) {
+        throw stepError;
       }
       
       // Reload phases with position data from database
