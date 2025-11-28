@@ -110,7 +110,7 @@ export default function ImportTileContent() {
           position_rule: phase.position_rule,
           position_value: phase.position_value,
           is_standard: false,
-          standard_phase_id: null,
+          // Note: standard_phase_id removed, use is_standard flag instead
           display_order: phase.position_value || 0
         })
         .select('id')
@@ -240,9 +240,9 @@ Prime|Finish|Post-install inspection|Inspect grout and tile|Check for cracks in 
             .from('template_operations')
             .insert({
               project_id: PROJECT_ID,
-              standard_phase_id: standardPhaseId,
-              name: operationName,
-              description: steps[0]?.description || operationName,
+              // Note: standard_phase_id removed, use is_standard flag from phase instead
+              operation_name: operationName,  // Changed from name
+              operation_description: steps[0]?.description || operationName,  // Changed from description
               display_order: operationOrder++
             })
             .select('id')
@@ -265,7 +265,7 @@ Prime|Finish|Post-install inspection|Inspect grout and tile|Check for cracks in 
               .from('template_steps')
               .insert({
                 operation_id: operation.id,
-                step_number: stepOrder + 1,
+                display_order: stepOrder + 1,  // Changed from step_number
                 step_title: step.step,
                 description: step.description,
                 content_sections: contentSections,

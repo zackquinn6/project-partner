@@ -794,7 +794,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               operation_id: firstOperationId,
               step_title: 'New Step',
               description: 'Step description',
-              step_number: 1,
+              display_order: 1,
               content_sections: [],
               materials: [],
               tools: [],
@@ -811,20 +811,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         const operationInsertData: any = {
           phase_id: addedPhase.id,
           project_id: currentProject.id,
-          name: 'New Operation',
-          description: 'Operation description',
-          flow_type: 'prime'
+          operation_name: 'New Operation',  // Changed from name
+          operation_description: 'Operation description',  // Changed from description
+          flow_type: 'prime',
+          display_order: 1  // Use sequential ordering starting at 1
         };
         
-        if (phaseIsStandard) {
-          operationInsertData.is_standard_phase = true;
-          operationInsertData.custom_phase_name = null;
-          operationInsertData.custom_phase_description = null;
-        } else {
-          operationInsertData.custom_phase_name = phaseName;
-          operationInsertData.custom_phase_description = 'Phase description';
-          operationInsertData.is_standard_phase = false;
-        }
+        // Note: is_standard_phase, custom_phase_name, and custom_phase_description removed
+        // Phase standard status comes from project_phases.is_standard
         
         const { data: newOperation } = await supabase
           .from('template_operations')
@@ -839,7 +833,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               operation_id: newOperation.id,
               step_title: 'New Step',
               description: 'Step description',
-              step_number: 1,
+              display_order: 1,
               content_sections: [],
               materials: [],
               tools: [],
@@ -1116,8 +1110,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         const { error } = await supabase
           .from('template_operations')
           .update({
-            name: editingItem.data.name,
-            description: editingItem.data.description || null,
+            operation_name: editingItem.data.name,  // Changed from name
+            operation_description: editingItem.data.description || null,  // Changed from description
             updated_at: new Date().toISOString()
           })
           .eq('id', editingItem.id);
@@ -1374,7 +1368,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
   
   /**
-   * Move a step up (decrease step_number)
+   * Move a step up (decrease display_order)
    */
   const handleMoveStepUp = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
     if (!currentProject?.id) {
@@ -1405,10 +1399,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }
     
     try {
-      // Get current step_number values
+      // Get current display_order values
       const { data: steps } = await supabase
         .from('template_steps')
-        .select('id, step_number')
+        .select('id, display_order')
         .in('id', [step.id, prevStep.id]);
       
       if (!steps || steps.length !== 2) return;
@@ -1418,15 +1412,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       if (!s1 || !s2) return;
       
-      // Swap step_number
+      // Swap display_order
       await supabase
         .from('template_steps')
-        .update({ step_number: s2.step_number })
+        .update({ display_order: s2.display_order })
         .eq('id', step.id);
       
       await supabase
         .from('template_steps')
-        .update({ step_number: s1.step_number })
+        .update({ display_order: s1.display_order })
         .eq('id', prevStep.id);
       
       // Reload phases
@@ -1442,7 +1436,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
   
   /**
-   * Move a step down (increase step_number)
+   * Move a step down (increase display_order)
    */
   const handleMoveStepDown = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
     if (!currentProject?.id) {
@@ -1473,10 +1467,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }
     
     try {
-      // Get current step_number values
+      // Get current display_order values
       const { data: steps } = await supabase
         .from('template_steps')
-        .select('id, step_number')
+        .select('id, display_order')
         .in('id', [step.id, nextStep.id]);
       
       if (!steps || steps.length !== 2) return;
@@ -1486,15 +1480,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       if (!s1 || !s2) return;
       
-      // Swap step_number
+      // Swap display_order
       await supabase
         .from('template_steps')
-        .update({ step_number: s2.step_number })
+        .update({ display_order: s2.display_order })
         .eq('id', step.id);
       
       await supabase
         .from('template_steps')
-        .update({ step_number: s1.step_number })
+        .update({ display_order: s1.display_order })
         .eq('id', nextStep.id);
       
       // Reload phases
@@ -1617,10 +1611,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Get unique operation name
       const { data: existingOperations } = await supabase
         .from('template_operations')
-        .select('name')
+        .select('operation_name')  // Changed from name
         .eq('phase_id', phaseId);
       
-      const existingNames = new Set((existingOperations || []).map(op => op.name.toLowerCase()));
+      const existingNames = new Set((existingOperations || []).map(op => (op as any).operation_name?.toLowerCase() || ''));
       let operationName = 'New Operation';
       let counter = 1;
       while (existingNames.has(operationName.toLowerCase())) {
@@ -1636,24 +1630,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       const insertData: any = {
         phase_id: phaseId,
         project_id: currentProject.id,
-        name: operationName,
-        description: 'Operation description',
-        flow_type: 'prime'
+        operation_name: operationName,  // Changed from name
+        operation_description: 'Operation description',  // Changed from description
+        flow_type: 'prime',
+        display_order: 1  // Use sequential ordering starting at 1
       };
       
-      if (isEditingStandardProject && phaseIsStandard) {
-        // Standard phase in Edit Standard: standard operation
-        insertData.is_standard_phase = true;
-        insertData.custom_phase_name = null; // Explicitly set to NULL for constraint
-        insertData.custom_phase_description = null; // Explicitly set to NULL
-        // is_custom_phase will be computed as FALSE
-      } else {
-        // Custom phase: must set custom_phase_name for constraint
-        insertData.custom_phase_name = phase.name;
-        insertData.custom_phase_description = phase.description || null;
-        insertData.is_standard_phase = false;
-        // is_custom_phase will be computed as TRUE
-      }
+      // Note: is_standard_phase, custom_phase_name, and custom_phase_description removed
+      // Phase standard status comes from project_phases.is_standard
       
       const { data: newOperation, error: insertError } = await supabase
         .from('template_operations')
@@ -1685,7 +1669,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           operation_id: newOperation.id,
           step_title: stepName,
           description: 'Step description',
-          step_number: 1,
+          display_order: 1,
           content_sections: [],
           materials: [],
           tools: [],
@@ -1745,12 +1729,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }
     
     try {
-      // Get existing steps to determine step_number and unique name
+      // Get existing steps to determine display_order and unique name
       const { data: existingSteps } = await supabase
         .from('template_steps')
-        .select('step_title, step_number')
+        .select('step_title, display_order')
         .eq('operation_id', operationId)
-        .order('step_number', { ascending: true });
+        .order('display_order', { ascending: true });
       
       const existingNames = new Set((existingSteps || []).map(s => s.step_title?.toLowerCase() || ''));
       let stepName = 'New Step';
@@ -1760,9 +1744,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         counter++;
       }
       
-      // Calculate step_number based on actual database count
+      // Calculate display_order based on actual database count
       const nextStepNumber = existingSteps && existingSteps.length > 0 
-        ? Math.max(...existingSteps.map(s => s.step_number || 0)) + 1
+        ? Math.max(...existingSteps.map(s => s.display_order || 0)) + 1
         : 1;
       
       // Insert new step with all required fields
@@ -1772,7 +1756,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           operation_id: operationId,
           step_title: stepName,
           description: 'Step description',
-          step_number: nextStepNumber,
+          display_order: nextStepNumber,
           content_sections: [],
           materials: [],
           tools: [],
@@ -2754,13 +2738,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 name: phaseToIncorporate.name,
                 description: incorporatedDescription,
                 is_standard: false,
-                is_linked: true,
-                source_project_id: phaseToIncorporate.sourceProjectId,
-                source_project_name: phaseToIncorporate.sourceProjectName,
-                incorporated_revision: phaseToIncorporate.incorporatedRevision,
                 position_rule: positionRule,
-                position_value: positionValue,
-                standard_phase_id: null
+                position_value: positionValue
+                // Note: standard_phase_id removed, use is_standard flag instead
               })
               .select('id')
               .single();
@@ -2785,15 +2765,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   .insert({
                     project_id: currentProject.id,
                     phase_id: newPhase.id,
-                    name: sourceOp.name,
-                    description: sourceOp.description,
+                    operation_name: sourceOp.operation_name || sourceOp.name,  // Changed from name
+                    operation_description: sourceOp.operation_description || sourceOp.description,  // Changed from description
                     flow_type: sourceOp.flow_type || 'prime',
                     display_order: sourceOp.display_order,
-                    is_standard_phase: false,
                     source_operation_id: sourceOp.id,
-                    is_reference: true,
-                    custom_phase_name: phaseToIncorporate.name,
-                    custom_phase_description: incorporatedDescription
+                    is_reference: true
+                    // Note: is_standard_phase, custom_phase_name, and custom_phase_description removed
                   });
                 
                 if (opError) {

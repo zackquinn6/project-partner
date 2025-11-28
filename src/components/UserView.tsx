@@ -2052,16 +2052,26 @@ export default function UserView({
         });
         
         // Now add the grouped steps to the space container
+        // CRITICAL: Filter out phases that don't exist in workflowPhases to prevent orphaned phases
         // Preserve phase order from template by sorting phase names according to original order
-        const phaseNamesOrdered = Array.from(stepsByPhase.keys()).sort((a, b) => {
-          // Find the original order of phases in workflowPhases
-          const aIndex = workflowPhases.findIndex(p => p.name === a);
-          const bIndex = workflowPhases.findIndex(p => p.name === b);
-          if (aIndex === -1 && bIndex === -1) return 0;
-          if (aIndex === -1) return 1;
-          if (bIndex === -1) return -1;
-          return aIndex - bIndex;
-        });
+        const phaseNamesOrdered = Array.from(stepsByPhase.keys())
+          .filter(phaseName => {
+            // Only include phases that actually exist in workflowPhases
+            const exists = workflowPhases.some(p => p.name === phaseName);
+            if (!exists) {
+              console.warn(`⚠️ Filtering out orphaned phase "${phaseName}" - not found in workflowPhases`);
+            }
+            return exists;
+          })
+          .sort((a, b) => {
+            // Find the original order of phases in workflowPhases
+            const aIndex = workflowPhases.findIndex(p => p.name === a);
+            const bIndex = workflowPhases.findIndex(p => p.name === b);
+            if (aIndex === -1 && bIndex === -1) return 0;
+            if (aIndex === -1) return 1;
+            if (bIndex === -1) return -1;
+            return aIndex - bIndex;
+          });
         
         phaseNamesOrdered.forEach(phaseName => {
           const operations = stepsByPhase.get(phaseName)!;
@@ -2072,9 +2082,12 @@ export default function UserView({
           
           // Preserve operation order from original phase
           const originalPhase = workflowPhases.find(p => p.name === phaseName);
-          const operationNamesOrdered = originalPhase 
-            ? originalPhase.operations.map(op => op.name)
-            : Array.from(operations.keys());
+          if (!originalPhase) {
+            console.warn(`⚠️ Phase "${phaseName}" not found in workflowPhases, skipping`);
+            return;
+          }
+          
+          const operationNamesOrdered = originalPhase.operations.map(op => op.name);
           
           // Add operations in their original order
           operationNamesOrdered.forEach(operationName => {

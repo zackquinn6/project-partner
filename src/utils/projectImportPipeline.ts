@@ -645,7 +645,7 @@ export async function importGeneratedProject(
       const standardProjectId = '00000000-0000-0000-0000-000000000001';
       const { data: existingStandardPhase } = await supabase
         .from('project_phases')
-        .select('id, standard_phase_id, is_standard')
+        .select('id, is_standard')
         .eq('project_id', standardProjectId)
         .eq('name', phase.name)
         .eq('is_standard', true)
@@ -658,28 +658,29 @@ export async function importGeneratedProject(
       
       if (existingStandardPhase && isCoreStandardPhase) {
         // Use existing standard phase from Standard Project Foundation
-        // Find or create project_phases entry linked to the same standard_phase_id
+        // Find or create project_phases entry with same name and is_standard flag
         const { data: existingProjectPhase } = await supabase
           .from('project_phases')
           .select('id')
           .eq('project_id', projectId)
-          .eq('standard_phase_id', existingStandardPhase.standard_phase_id)
+          .eq('name', phase.name)
+          .eq('is_standard', true)
           .maybeSingle();
           
         if (existingProjectPhase) {
           phaseId = existingProjectPhase.id;
         } else {
           // Create project_phases entry for standard phase
-          // Link it to the same standard_phase_id as in Standard Project Foundation
+          // Note: standard_phase_id removed, use is_standard flag instead
           const { data: newProjectPhase, error: phaseError } = await supabase
             .from('project_phases')
             .insert({
               project_id: projectId,
               name: phase.name,
               description: phase.description,
-              display_order: baseDisplayOrder + phaseIndex,
               is_standard: true,
-              standard_phase_id: existingStandardPhase.standard_phase_id,
+              position_rule: 'nth',
+              position_value: baseDisplayOrder + phaseIndex
             })
             .select('id')
             .single();
@@ -691,17 +692,17 @@ export async function importGeneratedProject(
           phaseId = newProjectPhase.id;
         }
       } else {
-        // Create custom phase - same as manually created phases (standard_phase_id: null)
-        // This ensures AI-generated phases are treated identically to manually created phases
+        // Create custom phase - same as manually created phases
+        // Note: standard_phase_id removed, use is_standard flag instead
         const { data: newProjectPhase, error: phaseError } = await supabase
           .from('project_phases')
           .insert({
             project_id: projectId,
             name: phase.name,
             description: phase.description,
-            display_order: baseDisplayOrder + phaseIndex,
             is_standard: false,
-            standard_phase_id: null, // Same as manually created phases - no link to standard_phases table
+            position_rule: 'nth',
+            position_value: baseDisplayOrder + phaseIndex
           })
           .select('id')
           .single();
@@ -778,8 +779,8 @@ export async function importGeneratedProject(
           .insert({
             project_id: projectId,
             phase_id: phaseId,
-            name: operation.name,
-            description: operation.description,
+            operation_name: operation.name,  // Changed from name
+            operation_description: operation.description,  // Changed from description
             display_order: opIndex,
             flow_type: flowType,
             alternate_group: alternateGroup,
@@ -930,7 +931,7 @@ export async function importGeneratedProject(
             .from('template_steps')
             .insert({
               operation_id: createdOperation.id,
-              step_number: stepIndex + 1,
+              display_order: stepIndex + 1,  // Changed from step_number
               step_title: step.stepTitle,
               description: step.description,
               content_sections: [
@@ -1155,7 +1156,7 @@ export async function importGeneratedProject(
             .from('template_steps')
             .insert({
               operation_id: createdOperation.id,
-              step_number: 1,
+              display_order: 1,  // Changed from step_number
               step_title: `${operation.name} - Main Step`,
               description: `Main step for ${operation.name}`,
               content_sections: [{
@@ -1200,8 +1201,8 @@ export async function importGeneratedProject(
           .insert({
             project_id: projectId,
             phase_id: phaseId,
-            name: `${phase.name} - Main Operation`,
-            description: `Main operation for ${phase.name}`,
+            operation_name: `${phase.name} - Main Operation`,  // Changed from name
+            operation_description: `Main operation for ${phase.name}`,  // Changed from description
             display_order: 0,
             flow_type: 'prime',
           })
@@ -1218,7 +1219,7 @@ export async function importGeneratedProject(
             .from('template_steps')
             .insert({
               operation_id: defaultOp.id,
-              step_number: 1,
+              display_order: 1,  // Changed from step_number
               step_title: `${phase.name} - Main Step`,
               description: `Main step for ${phase.name}`,
               content_sections: [{

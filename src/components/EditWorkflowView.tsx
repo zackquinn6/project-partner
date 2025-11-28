@@ -28,6 +28,7 @@ import { CompactOutputsTable } from '@/components/CompactOutputsTable';
 import { CompactTimeEstimation } from '@/components/CompactTimeEstimation';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
+import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -365,7 +366,7 @@ export default function EditWorkflowView({
   const [materialsLibraryOpen, setMaterialsLibraryOpen] = useState(false);
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
   const [showStructureManager, setShowStructureManager] = useState(false);
-  const [processImprovementOpen, setProcessImprovementOpen] = useState(false);
+  const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
   const [instructionLevel, setInstructionLevel] = useState<'quick' | 'detailed' | 'new_user'>('detailed');
   const [levelSpecificContent, setLevelSpecificContent] = useState<ContentSection[] | null>(null);
@@ -685,7 +686,7 @@ export default function EditWorkflowView({
           .from('template_steps')
           .update({
             step_title: editingStep.step,
-            step_number: (editingStep as any).stepNumber || 0,
+            display_order: (editingStep as any).display_order || (editingStep as any).stepNumber || 0,  // Changed from step_number
             description: editingStep.description,
             content_sections: (editingStep.contentSections || editingStep.content) as any,
             materials: editingStep.materials || [] as any,
@@ -1005,9 +1006,9 @@ export default function EditWorkflowView({
                       <Upload className="w-4 h-4" />
                       Import
                     </Button>
-                     <Button onClick={() => setProcessImprovementOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
-                       <Brain className="w-4 h-4" />
-                       Process Improvement
+                     <Button onClick={() => setAiProjectGeneratorOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
+                       <Sparkles className="w-4 h-4" />
+                       AI Project Generator
                      </Button>
                      <Button onClick={() => setRiskManagementOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
                        <Shield className="w-4 h-4" />
@@ -1423,27 +1424,15 @@ export default function EditWorkflowView({
       {/* Import Dialog */}
       <ProjectContentImport open={importOpen} onOpenChange={setImportOpen} onImport={handleImport} />
       
-      {/* Process Improvement Coming Soon Dialog */}
-      <Dialog open={processImprovementOpen} onOpenChange={setProcessImprovementOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Brain className="w-5 h-5" />
-              Process Improvement
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-muted-foreground text-center">
-              Feature coming soon. This will streamline creation of process content.
-            </p>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={() => setProcessImprovementOpen(false)}>
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* AI Project Generator Dialog */}
+      <AIProjectGenerator
+        open={aiProjectGeneratorOpen}
+        onOpenChange={setAiProjectGeneratorOpen}
+        onProjectCreated={(projectId) => {
+          toast.success('Project created successfully!');
+          // Optionally refresh or navigate to the new project
+        }}
+      />
       {/* Tools & Materials Library */}
       <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
       

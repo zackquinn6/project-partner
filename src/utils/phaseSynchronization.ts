@@ -31,12 +31,25 @@ export async function syncPhaseToDatabase(
       const operation = phase.operations[opIndex];
       
       // Check if operation already exists in database
+      // Note: custom_phase_name removed, match by phase_id instead
+      const { data: phaseRecord } = await supabase
+        .from('project_phases')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('name', phase.name)
+        .maybeSingle();
+      
+      if (!phaseRecord) {
+        console.warn('⚠️ Phase not found in database:', phase.name);
+        continue;
+      }
+      
       const { data: existingOp, error: checkError } = await supabase
         .from('template_operations')
         .select('id')
         .eq('project_id', projectId)
-        .eq('custom_phase_name', phase.name)
-        .eq('name', operation.name)
+        .eq('phase_id', phaseRecord.id)
+        .eq('operation_name', operation.name)  // Changed from name
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
@@ -53,9 +66,8 @@ export async function syncPhaseToDatabase(
         const { error: updateError } = await supabase
           .from('template_operations')
           .update({
-            description: operation.description || null,
-            custom_phase_description: phase.description || null,
-            custom_phase_display_order: displayOrder,
+            operation_description: operation.description || null,  // Changed from description
+            display_order: displayOrder,  // Changed from custom_phase_display_order
             updated_at: new Date().toISOString()
           })
           .eq('id', existingOp.id);
@@ -66,18 +78,17 @@ export async function syncPhaseToDatabase(
         // Insert new operation
         console.log('➕ Creating new operation:', operation.name);
         
-        // NOTE: is_custom_phase is a GENERATED column (computed from standard_phase_id IS NULL)
-        // Do NOT set it explicitly - it will be automatically computed by the database
+        // Note: is_standard_phase, custom_phase_name, custom_phase_description, and standard_phase_id removed
+        // Phase standard status comes from project_phases.is_standard
         const { data: newOp, error: insertError } = await supabase
           .from('template_operations')
           .insert({
             project_id: projectId,
-            name: operation.name,
-            description: operation.description || null,
-            custom_phase_name: phase.name,
-            custom_phase_description: phase.description || null,
-            custom_phase_display_order: displayOrder,
-            standard_phase_id: null
+            phase_id: phaseRecord.id,
+            operation_name: operation.name,  // Changed from name
+            operation_description: operation.description || null,  // Changed from description
+            display_order: displayOrder,  // Changed from custom_phase_display_order
+            flow_type: operation.flowType || 'prime'
           })
           .select('id')
           .single();
@@ -120,7 +131,7 @@ async function syncStepsForOperation(
 
     const stepData = {
       operation_id: operationId,
-      step_number: stepIndex + 1,
+      display_order: stepIndex + 1,  // Changed from step_number
       step_title: step.step || `Step ${stepIndex + 1}`,
       description: step.description || null,
       content_sections: JSON.stringify(step.content || []),
@@ -208,13 +219,26 @@ export async function deletePhaseFromDatabase(
   console.log('🗑️ Deleting custom phase from database:', { projectId, phaseName });
 
   try {
+    // Get phase ID first
+    const { data: phaseRecord } = await supabase
+      .from('project_phases')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('name', phaseName)
+      .eq('is_standard', false)  // Custom phases have is_standard = false
+      .maybeSingle();
+    
+    if (!phaseRecord) {
+      console.warn('⚠️ Phase not found:', phaseName);
+      return;
+    }
+    
     // Get all operations for this custom phase
     const { data: operations, error: fetchError } = await supabase
       .from('template_operations')
       .select('id')
       .eq('project_id', projectId)
-      .eq('custom_phase_name', phaseName)
-      .eq('is_custom_phase', true);
+      .eq('phase_id', phaseRecord.id);
 
     if (fetchError) throw fetchError;
 
@@ -234,8 +258,7 @@ export async function deletePhaseFromDatabase(
         .from('template_operations')
         .delete()
         .eq('project_id', projectId)
-        .eq('custom_phase_name', phaseName)
-        .eq('is_custom_phase', true);
+        .eq('phase_id', phaseRecord.id);
 
       if (deleteOpsError) throw deleteOpsError;
 

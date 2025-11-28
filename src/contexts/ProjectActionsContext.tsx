@@ -497,9 +497,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       console.log('✅ Project metadata updated successfully');
       
-      // NOTE: display_order columns have been removed from template_operations and template_steps
-      // Ordering is now handled by position_rule/position_value for phases and step_number/created_at for steps
-      // No need to update display_order anymore
+      // NOTE: step_number was renamed to display_order in template_steps
+      // Ordering is handled by position_rule/position_value for phases and display_order for steps
 
       // Optimistically update cache
       const updatedProjects = projects.map(p => p.id === project.id ? project : p);

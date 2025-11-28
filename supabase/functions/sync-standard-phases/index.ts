@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     // Rebuild Standard Project phases from template_steps to ensure phases JSON is current
     console.log('SYNC: Rebuilding Standard Project phases JSON from template_steps...');
     result.details.push('Rebuilding Standard Project phases JSON from template_steps...');
-    const { error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
+    const { error: rebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
       p_project_id: standardProjectId
     });
 
@@ -103,17 +103,17 @@ Deno.serve(async (req) => {
     result.details.push(`Found ${templates?.length || 0} templates to update (including all revisions)`);
     
   // SAFETY CHECK: Verify Standard Project has data to cascade
-  // CRITICAL: Use is_standard flag to identify standard phases, not just standard_phase_id
-  // This ensures newly added standard phases are included
+  // CRITICAL: Use is_standard flag to identify standard phases
+  // Note: standard_phase_id removed from schema
   const { data: standardOpsCheck, error: standardOpsCheckError } = await supabase
     .from('template_operations')
     .select(`
       id,
-      name,
-      project_phases!inner(is_standard, standard_phase_id)
+      operation_name,  // Changed from name
+      project_phases!inner(is_standard)
     `)
     .eq('project_id', standardProjectId)
-    .eq('project_phases.is_standard', true);  // Use is_standard flag, not standard_phase_id
+    .eq('project_phases.is_standard', true);
   
   if (standardOpsCheckError) {
     throw new Error(`Failed to verify standard operations: ${standardOpsCheckError.message}`);
@@ -139,17 +139,17 @@ Deno.serve(async (req) => {
         let stepsMissingCount = 0;
         
         // Get all standard operations from Standard Project
-        // CRITICAL: Use is_standard flag to identify standard phases, not just standard_phase_id
-        // This ensures newly added standard phases are included in the sync
+        // CRITICAL: Use is_standard flag to identify standard phases
+        // Note: standard_phase_id removed from schema
         const { data: standardOps, error: standardOpsError } = await supabase
           .from('template_operations')
           .select(`
             id,
-            name,
-            project_phases!inner(is_standard, standard_phase_id)
+            operation_name,  // Changed from name
+            project_phases!inner(is_standard, name)
           `)
           .eq('project_id', standardProjectId)
-          .eq('project_phases.is_standard', true);  // Use is_standard flag, not standard_phase_id
+          .eq('project_phases.is_standard', true);
 
         if (standardOpsError) {
           throw new Error(`Failed to fetch standard operations: ${standardOpsError.message}`);
@@ -157,55 +157,31 @@ Deno.serve(async (req) => {
 
         // For each standard operation, copy steps to template
         for (const standardOp of standardOps || []) {
-          const standardPhaseId = (standardOp as any).project_phases?.standard_phase_id;
           const standardPhaseName = (standardOp as any).project_phases?.name;
+          const standardOpName = standardOp.operation_name || (standardOp as any).name;  // Changed from name
           
           // Find matching operation in template
-          // CRITICAL: Match by standard_phase_id if available, otherwise match by phase name and is_standard flag
-          // This ensures newly added standard phases without standard_phase_id are still synced
-          let templateOp;
-          let templateOpError;
-          
-          if (standardPhaseId) {
-            // Try matching by standard_phase_id first (for existing standard phases)
-            const { data, error } = await supabase
-              .from('template_operations')
-              .select(`
-                id,
-                project_phases!inner(is_standard, standard_phase_id)
-              `)
-              .eq('project_id', template.id)
-              .eq('project_phases.standard_phase_id', standardPhaseId)
-              .eq('name', standardOp.name)
-              .maybeSingle();
-            templateOp = data;
-            templateOpError = error;
-          }
-          
-          // If no match by standard_phase_id, try matching by phase name and is_standard flag
-          if (!templateOp && !templateOpError && standardPhaseName) {
-            const { data, error } = await supabase
-              .from('template_operations')
-              .select(`
-                id,
-                project_phases!inner(is_standard, name)
-              `)
-              .eq('project_id', template.id)
-              .eq('project_phases.is_standard', true)
-              .eq('project_phases.name', standardPhaseName)
-              .eq('name', standardOp.name)
-              .maybeSingle();
-            templateOp = data;
-            templateOpError = error;
-          }
+          // Match by phase name and is_standard flag, and operation name
+          // Note: standard_phase_id removed from schema
+          const { data: templateOp, error: templateOpError } = await supabase
+            .from('template_operations')
+            .select(`
+              id,
+              project_phases!inner(is_standard, name)
+            `)
+            .eq('project_id', template.id)
+            .eq('project_phases.is_standard', true)
+            .eq('project_phases.name', standardPhaseName)
+            .eq('operation_name', standardOpName)  // Changed from name
+            .maybeSingle();
 
           if (templateOpError) {
-            console.error(`SYNC: Error finding operation "${standardOp.name}":`, templateOpError);
+            console.error(`SYNC: Error finding operation "${standardOpName}":`, templateOpError);
             continue;
           }
 
           if (!templateOp) {
-            console.warn(`SYNC: No matching operation in template for ${standardOp.name}`);
+            console.warn(`SYNC: No matching operation in template for ${standardOpName}`);
             continue;
           }
 
@@ -246,10 +222,11 @@ Deno.serve(async (req) => {
               });
               
               // Update the template step with standard step data
+              // Note: step_number renamed to display_order
               const { error: updateStepError } = await supabase
                 .from('template_steps')
                 .update({
-                  step_number: standardStep.step_number,
+                  display_order: standardStep.display_order,  // Changed from step_number
                   description: standardStep.description,
                   content_sections: standardStep.content_sections,
                   materials: standardStep.materials,
@@ -258,7 +235,11 @@ Deno.serve(async (req) => {
                   apps: standardStep.apps,
                   flow_type: standardStep.flow_type,
                   step_type: standardStep.step_type,
-                  display_order: standardStep.display_order,
+                  time_estimate_low: standardStep.time_estimate_low,
+                  time_estimate_medium: standardStep.time_estimate_medium,
+                  time_estimate_high: standardStep.time_estimate_high,
+                  workers_needed: standardStep.workers_needed,
+                  skill_level: standardStep.skill_level,
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', matchingTemplateStep.id);
@@ -279,7 +260,7 @@ Deno.serve(async (req) => {
 
         // Rebuild this template's phases JSON to reflect changes
         console.log(`SYNC: Rebuilding phases JSON for "${template.name}"${revisionLabel}`);
-        const { error: templateRebuildError } = await supabase.rpc('rebuild_phases_json_from_templates', {
+        const { error: templateRebuildError } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
           p_project_id: template.id
         });
 
