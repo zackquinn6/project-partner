@@ -675,5 +675,68 @@ $$;
 COMMENT ON FUNCTION public.create_project_revision_v2 IS 
 'Creates a new project revision. Reads position_rule and sets position_value correctly.';
 
+-- Step 4: Fix add_custom_project_phase function - remove standard_phase_id
+CREATE OR REPLACE FUNCTION public.add_custom_project_phase(
+  p_project_id UUID,
+  p_phase_name TEXT,
+  p_phase_description TEXT DEFAULT NULL
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  new_phase_id UUID;
+  total_phases INTEGER;
+BEGIN
+  -- Get total number of phases for this project
+  SELECT COUNT(*) INTO total_phases
+  FROM project_phases
+  WHERE project_id = p_project_id;
+  
+  -- Insert new phase
+  INSERT INTO project_phases (
+    project_id,
+    name,
+    description,
+    is_standard,
+    position_rule,
+    position_value
+  ) VALUES (
+    p_project_id,
+    p_phase_name,
+    p_phase_description,
+    false, -- Custom phase, not standard
+    'nth',
+    total_phases + 1 -- Position after existing phases
+  ) RETURNING id INTO new_phase_id;
+  
+  -- Create a default operation for this phase
+  INSERT INTO template_operations (
+    project_id,
+    phase_id,
+    operation_name,
+    operation_description,
+    flow_type,
+    display_order,
+    is_reference
+  ) VALUES (
+    p_project_id,
+    new_phase_id,
+    'New Operation',
+    'Operation description',
+    'prime',
+    1,
+    false
+  );
+  
+  RETURN new_phase_id;
+END;
+$$;
+
+COMMENT ON FUNCTION public.add_custom_project_phase IS 
+'Adds a custom phase to a project. Removed standard_phase_id reference.';
+
 COMMIT;
 
