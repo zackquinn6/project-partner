@@ -238,75 +238,235 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   }, [isEditingStandardProject]);
   
   /**
-   * Load phases from database for the current project
-   * For Edit Standard: uses rebuild_phases_json_from_project_phases
-   * For Regular Projects: uses get_project_workflow_with_standards
+   * Load phases directly from database - NO intermediate steps or copying
+   * Reads directly from project_phases table with position_rule and position_value
    */
   const loadPhases = useCallback(async (projectId: string): Promise<Phase[]> => {
     if (!projectId) {
       throw new Error('No project ID provided');
     }
     
-    let phasesData: Phase[] = [];
+    const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
     
     if (isEditingStandardProject) {
-      // Edit Standard: fetch directly from database
-      const { data, error } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
-        p_project_id: projectId
-      });
+      // Edit Standard: Read directly from project_phases table
+      const { data: phasesData, error } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          name,
+          description,
+          is_standard,
+          position_rule,
+          position_value
+        `)
+        .eq('project_id', projectId)
+        .eq('is_standard', true)
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
       
       if (error) {
         throw new Error(`Failed to load phases: ${error.message}`);
       }
       
-      phasesData = Array.isArray(data) ? data : [];
-      
-      // Filter to only standard phases for Edit Standard
-      phasesData = phasesData.filter(p => isStandardPhase(p) && !isLinkedPhase(p));
-    } else {
-      // Regular projects: get workflow with standards (includes linked standard phases)
-      const { data, error } = await (supabase.rpc as any)('get_project_workflow_with_standards', {
-        p_project_id: projectId
-      });
-      
-      if (error) {
-        throw new Error(`Failed to load phases: ${error.message}`);
-      }
-      
-      phasesData = Array.isArray(data) ? data : [];
-    }
-    
-    // Map step_title to step.step for all steps (prioritize step_title from database)
-    phasesData = phasesData.map(phase => ({
-      ...phase,
-      operations: phase.operations?.map(operation => {
-        const mappedSteps = operation.steps?.map(step => {
-          const stepWithTitle = step as any;
-          // Map step_title to step property, ensuring we always have a value
-          const stepName = stepWithTitle.step_title || step.step || stepWithTitle.step || 'Unnamed Step';
-          return {
-            ...step,
-            step: stepName
-          };
-        }) || [];
+      // Convert to Phase format with operations and steps
+      const phases: Phase[] = await Promise.all((phasesData || []).map(async (phaseData: any) => {
+        // Get operations for this phase
+        const { data: operations } = await supabase
+          .from('template_operations')
+          .select(`
+            id,
+            operation_name,
+            operation_description,
+            flow_type,
+            user_prompt,
+            display_order,
+            is_reference
+          `)
+          .eq('phase_id', phaseData.id)
+          .order('display_order');
         
-        // Debug logging
-        if (mappedSteps.length > 0) {
-          console.log(`Operation ${operation.name} has ${mappedSteps.length} steps:`, mappedSteps.map(s => s.step || s.id));
+        // Get steps for each operation
+        const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+          const { data: steps } = await supabase
+            .from('template_steps')
+            .select(`
+              id,
+              step_title,
+              description,
+              step_type,
+              display_order
+            `)
+            .eq('operation_id', op.id)
+            .order('display_order');
+          
+          return {
+            id: op.id,
+            name: op.operation_name,
+            description: op.operation_description,
+            flowType: op.flow_type,
+            userPrompt: op.user_prompt,
+            displayOrder: op.display_order,
+            isStandard: op.is_reference || phaseData.is_standard,
+            steps: (steps || []).map((s: any) => ({
+              id: s.id,
+              step: s.step_title,
+              description: s.description,
+              stepType: s.step_type,
+              displayOrder: s.display_order
+            }))
+          };
+        }));
+        
+        // Derive phaseOrderNumber from position_rule
+        let phaseOrderNumber: number | string;
+        if (phaseData.position_rule === 'first') {
+          phaseOrderNumber = 1;
+        } else if (phaseData.position_rule === 'last') {
+          phaseOrderNumber = 'last';
+        } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
+          phaseOrderNumber = phaseData.position_value;
+        } else {
+          phaseOrderNumber = 999;
         }
         
         return {
-          ...operation,
-          steps: mappedSteps.filter(step => {
-            // Keep all steps that have an id OR a valid step name
-            // Don't filter out steps just because they don't have a name yet
-            return step.id || (step.step && step.step !== 'Unnamed Step');
-          })
-        };
-      }) || []
-    }));
-    
-    return phasesData;
+          id: phaseData.id,
+          name: phaseData.name,
+          description: phaseData.description,
+          isStandard: phaseData.is_standard,
+          isLinked: false,
+          phaseOrderNumber,
+          position_rule: phaseData.position_rule,
+          position_value: phaseData.position_value,
+          operations: operationsWithSteps
+        } as Phase;
+      }));
+      
+      return phases;
+    } else {
+      // Regular projects: Read directly from project_phases
+      // 1. Get custom phases from current project
+      // 2. Get standard phases from Standard Project Foundation
+      
+      // Get custom phases
+      const { data: customPhasesData, error: customError } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          name,
+          description,
+          is_standard,
+          position_rule,
+          position_value
+        `)
+        .eq('project_id', projectId)
+        .eq('is_standard', false)
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
+      
+      if (customError) {
+        throw new Error(`Failed to load custom phases: ${customError.message}`);
+      }
+      
+      // Get standard phases from Standard Project Foundation
+      const { data: standardPhasesData, error: standardError } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          name,
+          description,
+          is_standard,
+          position_rule,
+          position_value
+        `)
+        .eq('project_id', STANDARD_PROJECT_ID)
+        .eq('is_standard', true)
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
+      
+      if (standardError) {
+        throw new Error(`Failed to load standard phases: ${standardError.message}`);
+      }
+      
+      // Combine both and convert to Phase format
+      const allPhasesData = [...(standardPhasesData || []), ...(customPhasesData || [])];
+      
+      const phases: Phase[] = await Promise.all(allPhasesData.map(async (phaseData: any) => {
+        // Get operations for this phase
+        const { data: operations } = await supabase
+          .from('template_operations')
+          .select(`
+            id,
+            operation_name,
+            operation_description,
+            flow_type,
+            user_prompt,
+            display_order,
+            is_reference
+          `)
+          .eq('phase_id', phaseData.id)
+          .order('display_order');
+        
+        // Get steps for each operation
+        const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+          const { data: steps } = await supabase
+            .from('template_steps')
+            .select(`
+              id,
+              step_title,
+              description,
+              step_type,
+              display_order
+            `)
+            .eq('operation_id', op.id)
+            .order('display_order');
+          
+          return {
+            id: op.id,
+            name: op.operation_name,
+            description: op.operation_description,
+            flowType: op.flow_type,
+            userPrompt: op.user_prompt,
+            displayOrder: op.display_order,
+            isStandard: op.is_reference || phaseData.is_standard,
+            steps: (steps || []).map((s: any) => ({
+              id: s.id,
+              step: s.step_title,
+              description: s.description,
+              stepType: s.step_type,
+              displayOrder: s.display_order
+            }))
+          };
+        }));
+        
+        // Derive phaseOrderNumber from position_rule
+        let phaseOrderNumber: number | string;
+        if (phaseData.position_rule === 'first') {
+          phaseOrderNumber = 1;
+        } else if (phaseData.position_rule === 'last') {
+          phaseOrderNumber = 'last';
+        } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
+          phaseOrderNumber = phaseData.position_value;
+        } else {
+          phaseOrderNumber = 999;
+        }
+        
+        return {
+          id: phaseData.id,
+          name: phaseData.name,
+          description: phaseData.description,
+          isStandard: phaseData.is_standard,
+          isLinked: phaseData.is_standard && phaseData.project_id !== projectId,
+          phaseOrderNumber,
+          position_rule: phaseData.position_rule,
+          position_value: phaseData.position_value,
+          operations: operationsWithSteps
+        } as Phase;
+      }));
+      
+      return phases;
+    }
   }, [isEditingStandardProject]);
   
   /**
@@ -331,131 +491,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    * This is used after delete, order change, and other operations
    */
   const reloadPhasesWithPositions = useCallback(async (projectId: string): Promise<Phase[]> => {
-    // Load phases from database
+    // Load phases directly from database (already includes position data)
     const loadedPhases = await loadPhases(projectId);
-    
-    // For regular projects, standard phases need position data from Standard Project Foundation
-    const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
-    
-    if (isEditingStandardProject) {
-      // For Edit Standard: fetch position data from current project's project_phases
-      const { data: phasePositions, error: positionError } = await supabase
-        .from('project_phases')
-        .select('id, name, position_rule, position_value')
-        .eq('project_id', projectId)
-        .in('id', loadedPhases.map(p => p.id).filter(id => id));
-      
-      if (positionError) {
-        throw new Error(`Failed to fetch phase positions: ${positionError.message}`);
-      }
-      
-      // Attach position data to phases
-      if (phasePositions) {
-        const positionMap = new Map(phasePositions.map(p => [p.id, p]));
-        loadedPhases.forEach(phase => {
-          if (phase.id && positionMap.has(phase.id)) {
-            const pos = positionMap.get(phase.id)! as any;
-            const positionRule = pos?.position_rule;
-            const positionValue = pos?.position_value;
-            
-            (phase as any).position_rule = positionRule;
-            (phase as any).position_value = positionValue;
-            
-            // Derive phaseOrderNumber from position_rule
-            if (positionRule === 'first') {
-              phase.phaseOrderNumber = 1;
-            } else if (positionRule === 'last') {
-              phase.phaseOrderNumber = 'last';
-            } else if (positionRule === 'nth' && positionValue) {
-              phase.phaseOrderNumber = positionValue;
-            }
-          }
-        });
-      }
-    } else {
-      // For regular projects: fetch position data from both sources
-      // 1. Custom phases: from current project's project_phases
-      // 2. Standard phases: from Standard Project Foundation's project_phases
-      
-      const customPhaseIds = loadedPhases
-        .filter(p => !isStandardPhase(p) && !isLinkedPhase(p))
-        .map(p => p.id)
-        .filter(id => id);
-      
-      const standardPhaseNames = loadedPhases
-        .filter(p => isStandardPhase(p) && !isLinkedPhase(p))
-        .map(p => p.name);
-      
-      // Fetch position data for custom phases from current project
-      let customPhasePositions: any[] = [];
-      if (customPhaseIds.length > 0) {
-        const { data, error } = await supabase
-          .from('project_phases')
-          .select('id, name, position_rule, position_value')
-          .eq('project_id', projectId)
-          .in('id', customPhaseIds);
-        
-        if (error) {
-          throw new Error(`Failed to fetch custom phase positions: ${error.message}`);
-        }
-        customPhasePositions = data || [];
-      }
-      
-      // Fetch position data for standard phases from Standard Project Foundation
-      let standardPhasePositions: any[] = [];
-      if (standardPhaseNames.length > 0) {
-        const { data, error } = await supabase
-          .from('project_phases')
-          .select('id, name, position_rule, position_value')
-          .eq('project_id', STANDARD_PROJECT_ID)
-          .in('name', standardPhaseNames);
-        
-        if (error) {
-          throw new Error(`Failed to fetch standard phase positions: ${error.message}`);
-        }
-        standardPhasePositions = data || [];
-      }
-      
-      // Create position maps
-      const customPositionMap = new Map(customPhasePositions.map(p => [p.id, p]));
-      const standardPositionMap = new Map(standardPhasePositions.map(p => [p.name, p]));
-      
-      // Attach position data to phases
-      loadedPhases.forEach(phase => {
-        if (phase.id) {
-          let positionRule: string | null = null;
-          let positionValue: number | null = null;
-          
-          if (isStandardPhase(phase) && !isLinkedPhase(phase)) {
-            // Standard phase: get position from Standard Project Foundation by name
-            const standardPos = standardPositionMap.get(phase.name);
-            if (standardPos) {
-              positionRule = standardPos.position_rule;
-              positionValue = standardPos.position_value;
-            }
-          } else if (customPositionMap.has(phase.id)) {
-            // Custom phase: get position from current project by ID
-            const customPos = customPositionMap.get(phase.id)!;
-            positionRule = customPos.position_rule;
-            positionValue = customPos.position_value;
-          }
-          
-          if (positionRule) {
-            (phase as any).position_rule = positionRule;
-            (phase as any).position_value = positionValue;
-            
-            // Derive phaseOrderNumber from position_rule
-            if (positionRule === 'first') {
-              phase.phaseOrderNumber = 1;
-            } else if (positionRule === 'last') {
-              phase.phaseOrderNumber = 'last';
-            } else if (positionRule === 'nth' && positionValue) {
-              phase.phaseOrderNumber = positionValue;
-            }
-          }
-        }
-      });
-    }
     
     // Validate and sort
     const validationError = validatePhaseOrdering(loadedPhases);
@@ -464,7 +501,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }
     
     return sortPhasesByOrderNumber(loadedPhases);
-  }, [loadPhases, validatePhaseOrdering, isEditingStandardProject]);
+  }, [loadPhases, validatePhaseOrdering]);
   
   /**
    * Load and validate phases on component mount or project change
@@ -493,131 +530,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       loadedProjectIdRef.current = projectId;
       
       try {
-        // Load phases from database - pass projectId directly to avoid dependency on currentProject
+        // Load phases directly from database (already includes position data)
         const loadedPhases = await loadPhases(projectId);
-        
-        // For regular projects, standard phases need position data from Standard Project Foundation
-        const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
-        
-        if (isEditingStandardProject) {
-          // For Edit Standard: fetch position data from current project's project_phases
-          const { data: phasePositions, error: positionError } = await supabase
-            .from('project_phases')
-            .select('id, name, position_rule, position_value')
-            .eq('project_id', projectId)
-            .in('id', loadedPhases.map(p => p.id).filter(id => id));
-          
-          if (positionError) {
-            throw new Error(`Failed to fetch phase positions: ${positionError.message}`);
-          }
-          
-          // Attach position data to phases
-          if (phasePositions) {
-            const positionMap = new Map(phasePositions.map(p => [p.id, p]));
-            loadedPhases.forEach(phase => {
-              if (phase.id && positionMap.has(phase.id)) {
-                const pos = positionMap.get(phase.id)! as any;
-                const positionRule = pos?.position_rule;
-                const positionValue = pos?.position_value;
-                
-                (phase as any).position_rule = positionRule;
-                (phase as any).position_value = positionValue;
-                
-                // Derive phaseOrderNumber from position_rule
-                if (positionRule === 'first') {
-                  phase.phaseOrderNumber = 1;
-                } else if (positionRule === 'last') {
-                  phase.phaseOrderNumber = 'last';
-                } else if (positionRule === 'nth' && positionValue) {
-                  phase.phaseOrderNumber = positionValue;
-                }
-              }
-            });
-          }
-        } else {
-          // For regular projects: fetch position data from both sources
-          // 1. Custom phases: from current project's project_phases
-          // 2. Standard phases: from Standard Project Foundation's project_phases
-          
-          const customPhaseIds = loadedPhases
-            .filter(p => !isStandardPhase(p) && !isLinkedPhase(p))
-            .map(p => p.id)
-            .filter(id => id);
-          
-          const standardPhaseNames = loadedPhases
-            .filter(p => isStandardPhase(p) && !isLinkedPhase(p))
-            .map(p => p.name);
-          
-          // Fetch position data for custom phases from current project
-          let customPhasePositions: any[] = [];
-          if (customPhaseIds.length > 0) {
-            const { data, error } = await supabase
-              .from('project_phases')
-              .select('id, name, position_rule, position_value')
-              .eq('project_id', projectId)
-              .in('id', customPhaseIds);
-            
-            if (error) {
-              throw new Error(`Failed to fetch custom phase positions: ${error.message}`);
-            }
-            customPhasePositions = data || [];
-          }
-          
-          // Fetch position data for standard phases from Standard Project Foundation
-          let standardPhasePositions: any[] = [];
-          if (standardPhaseNames.length > 0) {
-            const { data, error } = await supabase
-              .from('project_phases')
-              .select('id, name, position_rule, position_value')
-              .eq('project_id', STANDARD_PROJECT_ID)
-              .in('name', standardPhaseNames);
-            
-            if (error) {
-              throw new Error(`Failed to fetch standard phase positions: ${error.message}`);
-            }
-            standardPhasePositions = data || [];
-          }
-          
-          // Create position maps
-          const customPositionMap = new Map(customPhasePositions.map(p => [p.id, p]));
-          const standardPositionMap = new Map(standardPhasePositions.map(p => [p.name, p]));
-          
-          // Attach position data to phases
-          loadedPhases.forEach(phase => {
-            if (phase.id) {
-              let positionRule: string | null = null;
-              let positionValue: number | null = null;
-              
-              if (isStandardPhase(phase) && !isLinkedPhase(phase)) {
-                // Standard phase: get position from Standard Project Foundation by name
-                const standardPos = standardPositionMap.get(phase.name);
-                if (standardPos) {
-                  positionRule = standardPos.position_rule;
-                  positionValue = standardPos.position_value;
-                }
-              } else if (customPositionMap.has(phase.id)) {
-                // Custom phase: get position from current project by ID
-                const customPos = customPositionMap.get(phase.id)!;
-                positionRule = customPos.position_rule;
-                positionValue = customPos.position_value;
-              }
-              
-              if (positionRule) {
-                (phase as any).position_rule = positionRule;
-                (phase as any).position_value = positionValue;
-                
-                // Derive phaseOrderNumber from position_rule
-                if (positionRule === 'first') {
-                  phase.phaseOrderNumber = 1;
-                } else if (positionRule === 'last') {
-                  phase.phaseOrderNumber = 'last';
-                } else if (positionRule === 'nth' && positionValue) {
-                  phase.phaseOrderNumber = positionValue;
-                }
-              }
-            }
-          });
-        }
         
         // STRICT VALIDATION - ENFORCE: Block all operations if validation fails
         const validationError = validatePhaseOrdering(loadedPhases);
