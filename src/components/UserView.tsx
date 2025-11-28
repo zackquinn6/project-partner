@@ -62,7 +62,6 @@ import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { RiskManagementWindow } from './RiskManagementWindow';
 import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
-import { useDynamicPhases } from '@/hooks/useDynamicPhases';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 import { PostKickoffNotification } from './PostKickoffNotification';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -384,18 +383,293 @@ export default function UserView({
   }, [currentProjectRun?.id]);
   
   // CRITICAL ARCHITECTURE:
-  // - Project templates use DYNAMIC phases (live updates from standard foundation)
+  // - Project templates use DYNAMIC phases (live updates from database)
   // - Project runs use STATIC phases (immutable snapshot taken at creation)
-  const { phases: dynamicPhases, loading: dynamicPhasesLoading } = useDynamicPhases(
-    currentProject?.id // Only fetch dynamic phases for templates, NOT runs
-  );
+  // Load phases directly from database (matching StructureManager) for templates
+  const [dynamicPhases, setDynamicPhases] = useState<Phase[]>([]);
+  const [dynamicPhasesLoading, setDynamicPhasesLoading] = useState(false);
+  
+  // Load phases directly from database (same as StructureManager)
+  const loadPhasesFromDatabase = React.useCallback(async (projectId: string): Promise<Phase[]> => {
+    if (!projectId) {
+      return [];
+    }
+    
+    const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
+    
+    // Get custom phases (including incorporated phases)
+    const { data: customPhasesData, error: customError } = await supabase
+      .from('project_phases')
+      .select(`
+        id,
+        name,
+        description,
+        is_standard,
+        position_rule,
+        position_value,
+        source_project_id,
+        source_phase_id
+      `)
+      .eq('project_id', projectId)
+      .eq('is_standard', false)
+      .order('position_rule', { ascending: true })
+      .order('position_value', { ascending: true, nullsFirst: false });
+    
+    if (customError) {
+      throw new Error(`Failed to load custom phases: ${customError.message}`);
+    }
+    
+    // Get standard phases from Standard Project Foundation
+    const { data: standardPhasesData, error: standardError } = await supabase
+      .from('project_phases')
+      .select(`
+        id,
+        name,
+        description,
+        is_standard,
+        position_rule,
+        position_value
+      `)
+      .eq('project_id', STANDARD_PROJECT_ID)
+      .eq('is_standard', true)
+      .order('position_rule', { ascending: true })
+      .order('position_value', { ascending: true, nullsFirst: false });
+    
+    if (standardError) {
+      throw new Error(`Failed to load standard phases: ${standardError.message}`);
+    }
+    
+    // Combine both and convert to Phase format
+    const allPhasesData = [...(standardPhasesData || []), ...(customPhasesData || [])];
+    
+    // Get source project names for incorporated phases
+    const sourceProjectIds = new Set(
+      (customPhasesData || [])
+        .filter((p: any) => p.source_project_id)
+        .map((p: any) => p.source_project_id)
+    );
+    
+    const sourceProjectsMap = new Map<string, string>();
+    if (sourceProjectIds.size > 0) {
+      const { data: sourceProjects } = await supabase
+        .from('projects')
+        .select('id, name')
+        .in('id', Array.from(sourceProjectIds));
+      
+      if (sourceProjects) {
+        sourceProjects.forEach((p: any) => {
+          sourceProjectsMap.set(p.id, p.name);
+        });
+      }
+    }
+    
+    const phases: Phase[] = await Promise.all(allPhasesData.map(async (phaseData: any) => {
+      // Check if this is an incorporated phase (has source_project_id and source_phase_id)
+      const isIncorporated = !!(phaseData.source_project_id && phaseData.source_phase_id);
+      
+      let operationsWithSteps: any[] = [];
+      
+      if (isIncorporated) {
+        // For incorporated phases: dynamically fetch operations/steps from source project
+        const { data: operations } = await supabase
+          .from('template_operations')
+          .select(`
+            id,
+            operation_name,
+            operation_description,
+            flow_type,
+            user_prompt,
+            display_order,
+            is_reference
+          `)
+          .eq('phase_id', phaseData.source_phase_id)
+          .order('display_order');
+        
+        operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+          const { data: steps } = await supabase
+            .from('template_steps')
+            .select(`
+              id,
+              step_title,
+              description,
+              step_type,
+              display_order
+            `)
+            .eq('operation_id', op.id)
+            .order('display_order');
+          
+          return {
+            id: op.id,
+            name: op.operation_name,
+            description: op.operation_description,
+            flowType: op.flow_type,
+            userPrompt: op.user_prompt,
+            displayOrder: op.display_order,
+            isStandard: true,
+            steps: (steps || [])
+              .map((s: any) => ({
+                id: s.id,
+                step: s.step_title,
+                description: s.description,
+                stepType: s.step_type,
+                displayOrder: s.display_order
+              }))
+              .sort((a, b) => {
+                // Explicitly sort by displayOrder to ensure correct order
+                const aOrder = a.displayOrder ?? 999;
+                const bOrder = b.displayOrder ?? 999;
+                return aOrder - bOrder;
+              })
+          };
+        }));
+        
+        // Sort operations by displayOrder
+        operationsWithSteps.sort((a, b) => {
+          const aOrder = a.displayOrder ?? 999;
+          const bOrder = b.displayOrder ?? 999;
+          return aOrder - bOrder;
+        });
+      } else {
+        // For regular phases: get operations from current phase
+        const { data: operations } = await supabase
+          .from('template_operations')
+          .select(`
+            id,
+            operation_name,
+            operation_description,
+            flow_type,
+            user_prompt,
+            display_order,
+            is_reference
+          `)
+          .eq('phase_id', phaseData.id)
+          .order('display_order');
+        
+        operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+          const { data: steps } = await supabase
+            .from('template_steps')
+            .select(`
+              id,
+              step_title,
+              description,
+              step_type,
+              display_order
+            `)
+            .eq('operation_id', op.id)
+            .order('display_order');
+          
+          return {
+            id: op.id,
+            name: op.operation_name,
+            description: op.operation_description,
+            flowType: op.flow_type,
+            userPrompt: op.user_prompt,
+            displayOrder: op.display_order,
+            isStandard: op.is_reference || phaseData.is_standard,
+            steps: (steps || [])
+              .map((s: any) => ({
+                id: s.id,
+                step: s.step_title,
+                description: s.description,
+                stepType: s.step_type,
+                displayOrder: s.display_order
+              }))
+              .sort((a, b) => {
+                // Explicitly sort by displayOrder to ensure correct order
+                const aOrder = a.displayOrder ?? 999;
+                const bOrder = b.displayOrder ?? 999;
+                return aOrder - bOrder;
+              })
+          };
+        }));
+        
+        // Sort operations by displayOrder
+        operationsWithSteps.sort((a, b) => {
+          const aOrder = a.displayOrder ?? 999;
+          const bOrder = b.displayOrder ?? 999;
+          return aOrder - bOrder;
+        });
+      }
+      
+      // Derive phaseOrderNumber from position_rule
+      let phaseOrderNumber: number | string;
+      if (phaseData.position_rule === 'first') {
+        phaseOrderNumber = 1;
+      } else if (phaseData.position_rule === 'last') {
+        phaseOrderNumber = 'last';
+      } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
+        phaseOrderNumber = phaseData.position_value;
+      } else {
+        phaseOrderNumber = 999;
+      }
+      
+      return {
+        id: phaseData.id,
+        name: phaseData.name,
+        description: phaseData.description,
+        isStandard: phaseData.is_standard,
+        isLinked: isIncorporated,
+        sourceProjectId: phaseData.source_project_id || undefined,
+        sourceProjectName: isIncorporated ? (sourceProjectsMap.get(phaseData.source_project_id) || 'Unknown Project') : undefined,
+        phaseOrderNumber,
+        position_rule: phaseData.position_rule,
+        position_value: phaseData.position_value,
+        operations: operationsWithSteps
+      } as Phase;
+    }));
+    
+    return phases;
+  }, []);
+  
+  // Load phases for templates (not runs)
+  useEffect(() => {
+    if (currentProject?.id && !currentProjectRun) {
+      setDynamicPhasesLoading(true);
+      loadPhasesFromDatabase(currentProject.id)
+        .then(phases => {
+          setDynamicPhases(phases);
+          setDynamicPhasesLoading(false);
+        })
+        .catch(error => {
+          console.error('Failed to load phases:', error);
+          setDynamicPhases([]);
+          setDynamicPhasesLoading(false);
+        });
+    } else {
+      setDynamicPhases([]);
+      setDynamicPhasesLoading(false);
+    }
+  }, [currentProject?.id, currentProjectRun?.id, loadPhasesFromDatabase]);
+  
+  // Listen for phase updates from StructureManager
+  useEffect(() => {
+    const handlePhaseUpdate = (event: CustomEvent) => {
+      if (currentProject?.id && !currentProjectRun && event.detail?.projectId === currentProject.id) {
+        console.log('🔄 UserView: Refreshing phases after StructureManager update');
+        setDynamicPhasesLoading(true);
+        loadPhasesFromDatabase(currentProject.id)
+          .then(phases => {
+            setDynamicPhases(phases);
+            setDynamicPhasesLoading(false);
+          })
+          .catch(error => {
+            console.error('Failed to refresh phases:', error);
+            setDynamicPhasesLoading(false);
+          });
+      }
+    };
+    
+    window.addEventListener('phasesUpdated' as any, handlePhaseUpdate as EventListener);
+    return () => {
+      window.removeEventListener('phasesUpdated' as any, handlePhaseUpdate as EventListener);
+    };
+  }, [currentProject?.id, currentProjectRun?.id, loadPhasesFromDatabase]);
   
   // Determine which phases to use based on context
-  // CRITICAL: For project runs, use the snapshot. For templates, prefer dynamic phases from RPC
+  // CRITICAL: For project runs, use the snapshot. For templates, use direct database queries
   let rawWorkflowPhases: Phase[] = [];
   if (currentProjectRun) {
     // Project runs: use immutable snapshot from project_runs.phases
-    // Phases might be stored as JSON string, so parse if needed
     let parsedPhases: Phase[] = [];
     try {
       if (Array.isArray(currentProjectRun.phases)) {
@@ -403,7 +677,6 @@ export default function UserView({
       } else if (typeof currentProjectRun.phases === 'string') {
         parsedPhases = JSON.parse(currentProjectRun.phases);
       } else if (currentProjectRun.phases) {
-        // Might already be parsed object
         parsedPhases = currentProjectRun.phases as Phase[];
       }
     } catch (e) {
@@ -412,44 +685,17 @@ export default function UserView({
     }
     rawWorkflowPhases = Array.isArray(parsedPhases) ? parsedPhases : [];
     
-    // CRITICAL: Project runs MUST have phases - they are immutable snapshots of templates
-    // If phases are missing or incomplete, log error and show user message
     if (rawWorkflowPhases.length === 0) {
       console.error('❌ CRITICAL ERROR: Project run has no phases!', {
         runId: currentProjectRun.id,
         runName: currentProjectRun.name,
-        templateId: currentProjectRun.templateId,
-        phasesValue: currentProjectRun.phases,
-        phasesType: typeof currentProjectRun.phases,
-        phasesIsArray: Array.isArray(currentProjectRun.phases)
+        templateId: currentProjectRun.templateId
       });
       toast.error('Project run is missing phases. Please contact support or try creating a new project run.');
     }
-    
-    console.log('📦 Using project run phases:', {
-      runId: currentProjectRun.id,
-      templateId: currentProjectRun.templateId,
-      phasesLength: rawWorkflowPhases.length,
-      phasesType: typeof currentProjectRun.phases,
-      phasesIsArray: Array.isArray(currentProjectRun.phases),
-      hasPhases: rawWorkflowPhases.length > 0,
-    });
   } else if (currentProject) {
-    // Templates: use dynamic phases from RPC
-    if (dynamicPhases.length > 0) {
-      rawWorkflowPhases = dynamicPhases;
-      console.log('🔄 Using dynamic phases from RPC:', { phasesLength: dynamicPhases.length });
-    } else if (dynamicPhasesLoading) {
-      // Still loading, wait for phases
-      rawWorkflowPhases = [];
-    } else {
-      // No phases available
-      console.error('❌ No phases found for project template:', {
-        projectId: currentProject.id,
-        projectName: currentProject.name
-      });
-      rawWorkflowPhases = [];
-    }
+    // Templates: use phases loaded directly from database
+    rawWorkflowPhases = dynamicPhases;
   }
 
   // Apply standard phase ordering to match Structure Manager
@@ -461,7 +707,7 @@ export default function UserView({
     isProjectRun: !!currentProjectRun,
     projectRunId: currentProjectRun?.id,
     currentProjectId: currentProject?.id,
-    dynamicPhasesLength: dynamicPhases.length,
+    dynamicPhasesLength: dynamicPhases?.length || 0,
     currentProjectPhasesLength: currentProject?.phases?.length || 0,
     workflowPhasesLength: workflowPhases.length,
     rawPhasesType: typeof (currentProjectRun?.phases || currentProject?.phases),
@@ -2552,7 +2798,7 @@ export default function UserView({
     rawWorkflowPhasesLength: rawWorkflowPhases.length,
     workflowPhasesLength: workflowPhases.length,
     templatePhasesCount,
-    dynamicPhasesLength: dynamicPhases.length,
+    dynamicPhasesLength: dynamicPhases?.length || 0,
     hasPhases,
     currentProjectRunId: currentProjectRun?.id,
     currentProjectId: currentProject?.id,

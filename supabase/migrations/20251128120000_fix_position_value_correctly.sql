@@ -479,7 +479,7 @@ BEGIN
   SELECT COALESCE(MAX(revision_number), 0) + 1
   INTO new_revision_number
   FROM projects
-  WHERE id = source_project_id OR parent_project_id = source_project_id;
+  WHERE id = create_project_revision_v2.source_project_id OR parent_project_id = create_project_revision_v2.source_project_id;
 
   -- Create new project revision
   INSERT INTO projects (
@@ -504,7 +504,7 @@ BEGIN
     new_revision_number,
     revision_notes_text
   FROM projects
-  WHERE id = source_project_id
+  WHERE id = create_project_revision_v2.source_project_id
   RETURNING id INTO new_project_id;
 
   -- Copy phases
@@ -518,52 +518,58 @@ BEGIN
       phase_description,
       phase_is_standard,
       phase_position_rule,
-      phase_position_value
+      phase_position_value,
+      phase_source_project_id,
+      phase_source_phase_id
     FROM (
       -- First: phases with first/last/last_minus_n rules - never read position_value
       SELECT 
-        id AS phase_id,
-        project_id AS phase_project_id,
-        name AS phase_name,
-        description AS phase_description,
-        is_standard AS phase_is_standard,
-        position_rule AS phase_position_rule,
+        pp.id AS phase_id,
+        pp.project_id AS phase_project_id,
+        pp.name AS phase_name,
+        pp.description AS phase_description,
+        pp.is_standard AS phase_is_standard,
+        pp.position_rule AS phase_position_rule,
         NULL::INTEGER AS phase_position_value,
+        pp.source_project_id AS phase_source_project_id,
+        pp.source_phase_id AS phase_source_phase_id,
         CASE 
-          WHEN position_rule = 'first' THEN 1
-          WHEN position_rule = 'last_minus_n' THEN 998
-          WHEN position_rule = 'last' THEN 999
+          WHEN pp.position_rule = 'first' THEN 1
+          WHEN pp.position_rule = 'last_minus_n' THEN 998
+          WHEN pp.position_rule = 'last' THEN 999
           ELSE 100
         END AS sort_order,
         CASE 
-          WHEN position_rule = 'first' THEN 1
-          WHEN position_rule = 'last_minus_n' THEN 998
-          WHEN position_rule = 'last' THEN 999999
+          WHEN pp.position_rule = 'first' THEN 1
+          WHEN pp.position_rule = 'last_minus_n' THEN 998
+          WHEN pp.position_rule = 'last' THEN 999999
           ELSE 0
         END AS order_secondary
       FROM project_phases pp
-      WHERE project_id = source_project_id
-        AND position_rule IN ('first', 'last', 'last_minus_n')
+      WHERE pp.project_id = create_project_revision_v2.source_project_id
+        AND pp.position_rule IN ('first', 'last', 'last_minus_n')
       
       UNION ALL
       
       -- Second: phases with nth rule - read position_value with explicit INTEGER cast
       SELECT 
-        id AS phase_id,
-        project_id AS phase_project_id,
-        name AS phase_name,
-        description AS phase_description,
-        is_standard AS phase_is_standard,
-        position_rule AS phase_position_rule,
+        pp.id AS phase_id,
+        pp.project_id AS phase_project_id,
+        pp.name AS phase_name,
+        pp.description AS phase_description,
+        pp.is_standard AS phase_is_standard,
+        pp.position_rule AS phase_position_rule,
         CASE 
-          WHEN position_value IS NULL THEN NULL::INTEGER
-          ELSE position_value::INTEGER
+          WHEN pp.position_value IS NULL THEN NULL::INTEGER
+          ELSE pp.position_value::INTEGER
         END AS phase_position_value,
+        pp.source_project_id AS phase_source_project_id,
+        pp.source_phase_id AS phase_source_phase_id,
         100 AS sort_order,
-        COALESCE(position_value::INTEGER, 0) AS order_secondary
-      FROM project_phases
-      WHERE project_id = source_project_id
-        AND position_rule = 'nth'
+        COALESCE(pp.position_value::INTEGER, 0) AS order_secondary
+      FROM project_phases pp
+      WHERE pp.project_id = create_project_revision_v2.source_project_id
+        AND pp.position_rule = 'nth'
     ) AS phase_union
     ORDER BY sort_order, order_secondary
   LOOP
@@ -573,7 +579,9 @@ BEGIN
       description,
       is_standard,
       position_rule,
-      position_value
+      position_value,
+      source_project_id,
+      source_phase_id
     )
     VALUES (
       new_project_id,
@@ -586,7 +594,9 @@ BEGIN
         WHEN source_phase.phase_position_rule IN ('first', 'last', 'last_minus_n') THEN NULL::INTEGER
         WHEN source_phase.phase_position_rule = 'nth' AND source_phase.phase_position_value IS NOT NULL THEN source_phase.phase_position_value
         ELSE NULL::INTEGER
-      END
+      END,
+      source_phase.phase_source_project_id,
+      source_phase.phase_source_phase_id
     )
     RETURNING id INTO new_phase_id;
 

@@ -133,15 +133,29 @@ export default function EditWorkflowView({
             userPrompt: op.user_prompt,
             displayOrder: op.display_order,
             isStandard: op.is_reference || phaseData.is_standard,
-            steps: (steps || []).map((s: any) => ({
-              id: s.id,
-              step: s.step_title,
-              description: s.description,
-              stepType: s.step_type,
-              displayOrder: s.display_order
-            }))
+            steps: (steps || [])
+              .map((s: any) => ({
+                id: s.id,
+                step: s.step_title,
+                description: s.description,
+                stepType: s.step_type,
+                displayOrder: s.display_order
+              }))
+              .sort((a, b) => {
+                // Explicitly sort by displayOrder to ensure correct order
+                const aOrder = a.displayOrder ?? 999;
+                const bOrder = b.displayOrder ?? 999;
+                return aOrder - bOrder;
+              })
           };
         }));
+        
+        // Sort operations by displayOrder
+        operationsWithSteps.sort((a, b) => {
+          const aOrder = a.displayOrder ?? 999;
+          const bOrder = b.displayOrder ?? 999;
+          return aOrder - bOrder;
+        });
         
         // Derive phaseOrderNumber from position_rule
         let phaseOrderNumber: number | string;
@@ -391,15 +405,29 @@ export default function EditWorkflowView({
             userPrompt: op.user_prompt,
             displayOrder: op.display_order,
             isStandard: op.is_reference || phaseData.is_standard,
-            steps: (steps || []).map((s: any) => ({
-              id: s.id,
-              step: s.step_title,
-              description: s.description,
-              stepType: s.step_type,
-              displayOrder: s.display_order
-            }))
+            steps: (steps || [])
+              .map((s: any) => ({
+                id: s.id,
+                step: s.step_title,
+                description: s.description,
+                stepType: s.step_type,
+                displayOrder: s.display_order
+              }))
+              .sort((a, b) => {
+                // Explicitly sort by displayOrder to ensure correct order
+                const aOrder = a.displayOrder ?? 999;
+                const bOrder = b.displayOrder ?? 999;
+                return aOrder - bOrder;
+              })
           };
         }));
+        
+        // Sort operations by displayOrder
+        operationsWithSteps.sort((a, b) => {
+          const aOrder = a.displayOrder ?? 999;
+          const bOrder = b.displayOrder ?? 999;
+          return aOrder - bOrder;
+        });
         
         // Derive phaseOrderNumber from position_rule
         let phaseOrderNumber: number | string;

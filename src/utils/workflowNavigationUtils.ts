@@ -18,7 +18,7 @@ export function getFlowType(projectRun: ProjectRun | null): FlowType {
   if (!projectRun) return 'single-piece-flow';
   
   // Check for schedule_optimization_method (newer field name)
-  const optimizationMethod = projectRun.schedule_optimization_method || projectRun.completion_priority;
+  const optimizationMethod = (projectRun as any).schedule_optimization_method || projectRun.completion_priority;
   
   if (optimizationMethod === 'waterfall' || optimizationMethod === 'batch-flow') {
     return 'batch-flow';
@@ -231,8 +231,22 @@ export function organizeStepsForSinglePieceFlow(
       // Process custom phases in their template order
       customPhases.forEach(phase => {
         const phaseSteps: WorkflowStep[] = [];
-        phase.operations.forEach(operation => {
-          const operationSteps = (operation.steps || []).map(step => ({
+        // Sort operations by displayOrder
+        const sortedOperations = [...phase.operations].sort((a, b) => {
+          const aOrder = (a as any).displayOrder ?? 999;
+          const bOrder = (b as any).displayOrder ?? 999;
+          return aOrder - bOrder;
+        });
+        
+        sortedOperations.forEach(operation => {
+          // Sort steps by displayOrder
+          const sortedSteps = [...(operation.steps || [])].sort((a, b) => {
+            const aOrder = (a as any).displayOrder ?? 999;
+            const bOrder = (b as any).displayOrder ?? 999;
+            return aOrder - bOrder;
+          });
+          
+          const operationSteps = sortedSteps.map(step => ({
             ...step,
             phaseId: phase.id,
             phaseName: phase.name, // CRITICAL: Preserve phase name for grouping
@@ -264,8 +278,22 @@ export function organizeStepsForSinglePieceFlow(
     // No spaces but has custom phases: show as single container with all custom phases
     const allSteps: WorkflowStep[] = [];
     customPhases.forEach(phase => {
-      phase.operations.forEach(operation => {
-        const operationSteps = (operation.steps || []).map(step => ({
+      // Sort operations by displayOrder
+      const sortedOperations = [...phase.operations].sort((a, b) => {
+        const aOrder = (a as any).displayOrder ?? 999;
+        const bOrder = (b as any).displayOrder ?? 999;
+        return aOrder - bOrder;
+      });
+      
+      sortedOperations.forEach(operation => {
+        // Sort steps by displayOrder
+        const sortedSteps = [...(operation.steps || [])].sort((a, b) => {
+          const aOrder = (a as any).displayOrder ?? 999;
+          const bOrder = (b as any).displayOrder ?? 999;
+          return aOrder - bOrder;
+        });
+        
+        const operationSteps = sortedSteps.map(step => ({
           ...step,
           phaseId: phase.id,
           phaseName: phase.name,
@@ -399,9 +427,23 @@ export function organizeStepsForBatchFlow(
       // Collect all steps from all operations, repeated for each space
       const phaseSteps: WorkflowStep[] = [];
       
+      // Sort operations by displayOrder
+      const sortedOperations = [...phase.operations].sort((a, b) => {
+        const aOrder = (a as any).displayOrder ?? 999;
+        const bOrder = (b as any).displayOrder ?? 999;
+        return aOrder - bOrder;
+      });
+      
       sortedSpaces.forEach(space => {
-        phase.operations.forEach(operation => {
-          const operationSteps = (operation.steps || []).map(step => ({
+        sortedOperations.forEach(operation => {
+          // Sort steps by displayOrder
+          const sortedSteps = [...(operation.steps || [])].sort((a, b) => {
+            const aOrder = (a as any).displayOrder ?? 999;
+            const bOrder = (b as any).displayOrder ?? 999;
+            return aOrder - bOrder;
+          });
+          
+          const operationSteps = sortedSteps.map(step => ({
             ...step,
             phaseId: phase.id,
             phaseName: phase.name,
@@ -424,15 +466,29 @@ export function organizeStepsForBatchFlow(
       });
     } else {
       // No spaces: show custom phase without space logic
-      const steps = phase.operations.flatMap(op => 
-        (op.steps || []).map(step => ({
+      // Sort operations by displayOrder
+      const sortedOperations = [...phase.operations].sort((a, b) => {
+        const aOrder = (a as any).displayOrder ?? 999;
+        const bOrder = (b as any).displayOrder ?? 999;
+        return aOrder - bOrder;
+      });
+      
+      const steps = sortedOperations.flatMap(op => {
+        // Sort steps by displayOrder
+        const sortedSteps = [...(op.steps || [])].sort((a, b) => {
+          const aOrder = (a as any).displayOrder ?? 999;
+          const bOrder = (b as any).displayOrder ?? 999;
+          return aOrder - bOrder;
+        });
+        
+        return sortedSteps.map(step => ({
           ...step,
           phaseId: phase.id,
           phaseName: phase.name,
           operationId: op.id,
           operationName: op.name
-        }))
-      );
+        }));
+      });
       result.push({
         type: 'custom-phase',
         id: phase.id,
@@ -488,7 +544,7 @@ export function organizeWorkflowNavigation(
     spacesCount: spaces.length,
     flowType,
     projectRunId: projectRun?.id,
-    schedule_optimization_method: projectRun?.schedule_optimization_method,
+    schedule_optimization_method: (projectRun as any)?.schedule_optimization_method,
     completion_priority: projectRun?.completion_priority,
     phases: phases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
     spaces: spaces.map(s => ({ name: s.name, priority: s.priority }))
@@ -514,7 +570,7 @@ export function organizeWorkflowNavigation(
 export function convertToGroupedSteps(
   organizedNavigation: ReturnType<typeof organizeWorkflowNavigation>
 ): Record<string, Record<string, WorkflowStep[]>> {
-  const grouped: Record<string, Record<string, WorkflowStep[]>> = {};
+  const grouped: Record<string, Record<string, WorkflowStep[]>> = {} as Record<string, Record<string, WorkflowStep[]>>;
   
   organizedNavigation.forEach(item => {
     if (item.type === 'space-container') {
@@ -534,18 +590,22 @@ export function convertToGroupedSteps(
           const operationName = (step as any).operationName || 'General';
           
           // Create nested structure: space → phase → operation → steps
-          if (!grouped[spaceKey][phaseName]) {
-            grouped[spaceKey][phaseName] = {};
+          // Note: This creates a 3-level structure, but the return type is 2-level
+          // The phase name becomes the key, and operation name is nested inside
+          const phaseKey = `${spaceKey} - ${phaseName}`;
+          if (!grouped[phaseKey]) {
+            grouped[phaseKey] = {} as Record<string, WorkflowStep[]>;
           }
           
-          if (!grouped[spaceKey][phaseName][operationName]) {
-            grouped[spaceKey][phaseName][operationName] = [];
+          if (!grouped[phaseKey][operationName]) {
+            grouped[phaseKey][operationName] = [] as WorkflowStep[];
           }
           
           // Dedupe by step ID
-          if (!grouped[spaceKey][phaseName][operationName].some((s: any) => s.id === step.id)) {
-            grouped[spaceKey][phaseName][operationName].push(step);
+          if (!grouped[phaseKey][operationName].some((s: any) => s.id === step.id)) {
+            grouped[phaseKey][operationName].push(step);
           }
+          
         });
       });
     } else if (item.type === 'custom-phase' && item.spaces && item.spaces.length > 0) {
