@@ -53,10 +53,11 @@ BEGIN
   ) RETURNING id INTO new_project_id;
 
   -- Copy phases from standard project
-  -- Use subquery to safely handle position_value - only select it as INTEGER when rule is nth
-  -- Order by position_rule: first=1, nth=100, last=999999
+  -- CRITICAL: Use UNION to completely separate first/last (no position_value) from nth (with position_value)
+  -- This avoids reading position_value for first/last rules which may contain invalid data
   FOR std_phase IN
-    WITH safe_phases AS (
+    (
+      -- First: phases with first/last rules - never read position_value
       SELECT 
         id,
         project_id,
@@ -64,21 +65,35 @@ BEGIN
         description,
         is_standard,
         position_rule,
-        -- Only use position_value if rule is nth and it's a valid integer
-        CASE 
-          WHEN position_rule = 'nth' THEN position_value
-          ELSE NULL
-        END AS position_value
+        NULL::INTEGER AS position_value,
+        1 AS sort_order
       FROM public.project_phases
       WHERE project_id = standard_project_id
+        AND position_rule IN ('first', 'last')
+      
+      UNION ALL
+      
+      -- Second: phases with nth rule - read position_value
+      SELECT 
+        id,
+        project_id,
+        name,
+        description,
+        is_standard,
+        position_rule,
+        position_value,
+        100 AS sort_order
+      FROM public.project_phases
+      WHERE project_id = standard_project_id
+        AND position_rule = 'nth'
     )
-    SELECT * FROM safe_phases
     ORDER BY 
-      CASE position_rule
-        WHEN 'first' THEN 1
-        WHEN 'last' THEN 999999
-        WHEN 'nth' THEN 100
-        ELSE 1000
+      sort_order,
+      CASE 
+        WHEN position_rule = 'first' THEN 1
+        WHEN position_rule = 'last' THEN 999999
+        WHEN position_rule = 'nth' THEN COALESCE(position_value, 0)
+        ELSE 0
       END
   LOOP
     INSERT INTO public.project_phases (
@@ -94,7 +109,7 @@ BEGIN
       std_phase.description,
       std_phase.is_standard,
       std_phase.position_rule,
-      -- position_value is already NULL for first/last, only set for nth
+      -- position_value is NULL for first/last, only set for nth
       std_phase.position_value
     ) RETURNING id INTO new_phase_id;
 
@@ -244,10 +259,11 @@ BEGIN
   RETURNING id INTO new_project_id;
 
   -- Copy phases
-  -- Use subquery to safely handle position_value - only select it as INTEGER when rule is nth
-  -- Order by position_rule: first=1, nth=100, last=999999
+  -- CRITICAL: Use UNION to completely separate first/last (no position_value) from nth (with position_value)
+  -- This avoids reading position_value for first/last rules which may contain invalid data
   FOR source_phase IN
-    WITH safe_phases AS (
+    (
+      -- First: phases with first/last rules - never read position_value
       SELECT 
         id,
         project_id,
@@ -255,21 +271,35 @@ BEGIN
         description,
         is_standard,
         position_rule,
-        -- Only use position_value if rule is nth and it's a valid integer
-        CASE 
-          WHEN position_rule = 'nth' THEN position_value
-          ELSE NULL
-        END AS position_value
+        NULL::INTEGER AS position_value,
+        1 AS sort_order
       FROM project_phases
       WHERE project_id = source_project_id
+        AND position_rule IN ('first', 'last')
+      
+      UNION ALL
+      
+      -- Second: phases with nth rule - read position_value
+      SELECT 
+        id,
+        project_id,
+        name,
+        description,
+        is_standard,
+        position_rule,
+        position_value,
+        100 AS sort_order
+      FROM project_phases
+      WHERE project_id = source_project_id
+        AND position_rule = 'nth'
     )
-    SELECT * FROM safe_phases
     ORDER BY 
-      CASE position_rule
-        WHEN 'first' THEN 1
-        WHEN 'last' THEN 999999
-        WHEN 'nth' THEN 100
-        ELSE 1000
+      sort_order,
+      CASE 
+        WHEN position_rule = 'first' THEN 1
+        WHEN position_rule = 'last' THEN 999999
+        WHEN position_rule = 'nth' THEN COALESCE(position_value, 0)
+        ELSE 0
       END
   LOOP
     INSERT INTO project_phases (
@@ -286,7 +316,7 @@ BEGIN
       source_phase.description,
       source_phase.is_standard,
       source_phase.position_rule,
-      -- position_value is already NULL for first/last, only set for nth
+      -- position_value is NULL for first/last, only set for nth
       source_phase.position_value
     )
     RETURNING id INTO new_phase_id;
