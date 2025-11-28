@@ -100,6 +100,9 @@ DECLARE
   final_position_value INTEGER;
   debug_position_value_text TEXT;
 BEGIN
+  -- DEBUG: Function started
+  RAISE EXCEPTION 'DEBUG: Function create_project_with_standard_foundation_v2 called with name: %', p_project_name;
+  
   -- Convert single category text to array
   category_array := ARRAY[COALESCE(p_category, 'general')];
   
