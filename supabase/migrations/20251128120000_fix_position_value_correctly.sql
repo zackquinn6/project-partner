@@ -31,6 +31,8 @@ DECLARE
   std_operation RECORD;
   new_operation_id UUID;
   category_array TEXT[];
+  final_position_value INTEGER;
+  debug_position_value_text TEXT;
 BEGIN
   -- Convert single category text to array
   category_array := ARRAY[COALESCE(p_category, 'general')];
@@ -109,6 +111,41 @@ BEGIN
     ) AS phase_union
     ORDER BY sort_order, order_secondary
   LOOP
+    -- DEBUG: Log the values before INSERT
+    RAISE NOTICE 'DEBUG: Phase: %, Rule: %, Position Value (raw): %, Type: %', 
+      std_phase.phase_name, 
+      std_phase.phase_position_rule,
+      COALESCE(std_phase.phase_position_value::TEXT, 'NULL'),
+      pg_typeof(std_phase.phase_position_value);
+    
+    -- Calculate position_value with explicit type checking
+    IF std_phase.phase_position_rule IN ('first', 'last', 'last_minus_n') THEN
+      final_position_value := NULL;
+      RAISE NOTICE 'DEBUG: Setting position_value to NULL for rule: %', std_phase.phase_position_rule;
+    ELSIF std_phase.phase_position_rule = 'nth' THEN
+      IF std_phase.phase_position_value IS NULL THEN
+        final_position_value := NULL;
+        RAISE NOTICE 'DEBUG: position_value is NULL for nth rule';
+      ELSE
+        -- Explicitly cast to INTEGER to catch any type errors
+        BEGIN
+          final_position_value := std_phase.phase_position_value::INTEGER;
+          RAISE NOTICE 'DEBUG: Using position_value: % (cast to integer)', final_position_value;
+        EXCEPTION WHEN OTHERS THEN
+          RAISE EXCEPTION 'Cannot cast position_value to INTEGER. Rule: %, Value: %, Type: %, Error: %', 
+            std_phase.phase_position_rule,
+            std_phase.phase_position_value,
+            pg_typeof(std_phase.phase_position_value),
+            SQLERRM;
+        END;
+      END IF;
+    ELSE
+      final_position_value := NULL;
+      RAISE NOTICE 'DEBUG: Unknown position_rule: %, setting position_value to NULL', std_phase.phase_position_rule;
+    END IF;
+    
+    RAISE NOTICE 'DEBUG: Final position_value before INSERT: %', final_position_value;
+    
     INSERT INTO public.project_phases (
       project_id,
       name,
@@ -122,13 +159,10 @@ BEGIN
       std_phase.phase_description,
       std_phase.phase_is_standard,
       std_phase.phase_position_rule,
-      -- Explicitly set NULL for first/last/last_minus_n, only use value for nth
-      CASE 
-        WHEN std_phase.phase_position_rule IN ('first', 'last', 'last_minus_n') THEN NULL::INTEGER
-        WHEN std_phase.phase_position_rule = 'nth' AND std_phase.phase_position_value IS NOT NULL THEN std_phase.phase_position_value
-        ELSE NULL::INTEGER
-      END
+      final_position_value
     ) RETURNING id INTO new_phase_id;
+    
+    RAISE NOTICE 'DEBUG: Successfully inserted phase: % (id: %)', std_phase.phase_name, new_phase_id;
 
     -- Copy operations for this phase
     FOR std_operation IN
