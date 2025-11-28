@@ -618,19 +618,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           });
         }
         
-        // STRICT VALIDATION
+        // STRICT VALIDATION - ENFORCE: Block all operations if validation fails
         const validationError = validatePhaseOrdering(loadedPhases);
         if (validationError) {
           setValidationError(validationError);
           setPhases([]);
-          toast.error(`Validation failed: ${validationError.message}. Please contact an admin to review the database.`);
-          if (validationError.details) {
-            console.error('Validation errors:', validationError.details);
-          }
+          setLoading(false);
+          // Show detailed error message
+          const errorDetails = validationError.details ? validationError.details.join('\n') : validationError.message;
+          toast.error(`Validation failed: ${validationError.message}`, {
+            description: errorDetails,
+            duration: 10000
+          });
+          console.error('Validation errors:', validationError.details || [validationError.message]);
           loadedProjectIdRef.current = null; // Reset on validation error to allow retry
           isLoadingRef.current = false;
-          setLoading(false);
-          return;
+          return; // BLOCK: Do not proceed with loading phases
         }
         
         // Sort phases by order number
@@ -693,6 +696,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   const handleAddPhase = useCallback(async () => {
     if (!currentProject?.id) {
       toast.error('No project selected');
+      return;
+    }
+    
+    // ENFORCE VALIDATION: Block operation if validation fails
+    if (validationError) {
+      toast.error('Cannot add phase: Validation errors must be resolved first', {
+        description: validationError.message
+      });
       return;
     }
     
@@ -894,6 +905,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    */
   const handleDeletePhase = useCallback(async (phaseId: string) => {
     if (!currentProject?.id || !phaseId) {
+      return;
+    }
+    
+    // ENFORCE VALIDATION: Block operation if validation fails
+    if (validationError) {
+      toast.error('Cannot delete phase: Validation errors must be resolved first', {
+        description: validationError.message
+      });
       return;
     }
     
@@ -1911,6 +1930,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return;
     }
     
+    // ENFORCE VALIDATION: Block operation if validation fails
+    if (validationError) {
+      toast.error('Cannot move phase: Validation errors must be resolved first', {
+        description: validationError.message
+      });
+      return;
+    }
+    
     const currentIndex = phases.findIndex(p => p.id === phaseId);
     if (currentIndex <= 0) {
       return; // Already at top
@@ -1958,6 +1985,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   const handleMovePhaseDown = useCallback(async (phaseId: string) => {
     if (!currentProject?.id) {
       toast.error('No project selected');
+      return;
+    }
+    
+    // ENFORCE VALIDATION: Block operation if validation fails
+    if (validationError) {
+      toast.error('Cannot move phase: Validation errors must be resolved first', {
+        description: validationError.message
+      });
       return;
     }
     
