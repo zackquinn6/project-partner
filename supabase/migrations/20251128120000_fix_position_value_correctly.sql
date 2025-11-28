@@ -104,8 +104,12 @@ BEGIN
       std_phase.description,
       std_phase.is_standard,
       std_phase.position_rule,
-      -- position_value is NULL for first/last, only set for nth
-      std_phase.position_value
+      -- Explicitly set NULL for first/last, only use value for nth
+      CASE 
+        WHEN std_phase.position_rule IN ('first', 'last') THEN NULL::INTEGER
+        WHEN std_phase.position_rule = 'nth' THEN std_phase.position_value
+        ELSE NULL::INTEGER
+      END
     ) RETURNING id INTO new_phase_id;
 
     -- Copy operations for this phase
