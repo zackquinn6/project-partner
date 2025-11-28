@@ -213,7 +213,16 @@ BEGIN
       RAISE NOTICE 'DEBUG: Unknown position_rule: %, setting position_value to NULL', std_phase.phase_position_rule;
     END IF;
     
-    RAISE NOTICE 'DEBUG: Final position_value before INSERT: %', final_position_value;
+    RAISE NOTICE 'DEBUG: Final position_value before INSERT: % (type: %)', 
+      final_position_value, 
+      pg_typeof(final_position_value);
+    
+    -- CRITICAL: Ensure final_position_value is actually INTEGER or NULL
+    IF final_position_value IS NOT NULL AND pg_typeof(final_position_value)::text != 'integer' THEN
+      RAISE EXCEPTION 'final_position_value is not INTEGER! Type: %, Value: %', 
+        pg_typeof(final_position_value),
+        final_position_value;
+    END IF;
     
     INSERT INTO public.project_phases (
       project_id,
@@ -228,7 +237,7 @@ BEGIN
       std_phase.phase_description,
       std_phase.phase_is_standard,
       std_phase.phase_position_rule,
-      final_position_value
+      final_position_value::INTEGER  -- Explicit cast to ensure type safety
     ) RETURNING id INTO new_phase_id;
     
     RAISE NOTICE 'DEBUG: Successfully inserted phase: % (id: %)', std_phase.phase_name, new_phase_id;
