@@ -254,16 +254,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     // Map step_title to step.step for all steps (prioritize step_title from database)
     phasesData = phasesData.map(phase => ({
       ...phase,
-      operations: phase.operations?.map(operation => ({
-        ...operation,
-        steps: operation.steps?.map(step => {
+      operations: phase.operations?.map(operation => {
+        const mappedSteps = operation.steps?.map(step => {
           const stepWithTitle = step as any;
+          // Map step_title to step property, ensuring we always have a value
+          const stepName = stepWithTitle.step_title || step.step || stepWithTitle.step || 'Unnamed Step';
           return {
             ...step,
-            step: stepWithTitle.step_title || step.step || 'Unnamed Step'
+            step: stepName
           };
-        }).filter(step => step.step && step.step !== 'Unnamed Step') || []
-      })) || []
+        }) || [];
+        
+        // Debug logging
+        if (mappedSteps.length > 0) {
+          console.log(`Operation ${operation.name} has ${mappedSteps.length} steps:`, mappedSteps.map(s => s.step || s.id));
+        }
+        
+        return {
+          ...operation,
+          steps: mappedSteps.filter(step => {
+            // Keep all steps that have an id OR a valid step name
+            // Don't filter out steps just because they don't have a name yet
+            return step.id || (step.step && step.step !== 'Unnamed Step');
+          })
+        };
+      }) || []
     }));
     
     return phasesData;
@@ -1306,11 +1321,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }
     
     try {
-      // Get unique step name
+      // Get existing steps to determine step_number and unique name
       const { data: existingSteps } = await supabase
         .from('template_steps')
-        .select('step_title')
-        .eq('operation_id', operationId);
+        .select('step_title, step_number')
+        .eq('operation_id', operationId)
+        .order('step_number', { ascending: true });
       
       const existingNames = new Set((existingSteps || []).map(s => s.step_title?.toLowerCase() || ''));
       let stepName = 'New Step';
@@ -1320,19 +1336,38 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         counter++;
       }
       
-      // Insert new step
-      const { error: insertError } = await supabase
+      // Calculate step_number based on actual database count
+      const nextStepNumber = existingSteps && existingSteps.length > 0 
+        ? Math.max(...existingSteps.map(s => s.step_number || 0)) + 1
+        : 1;
+      
+      // Insert new step with all required fields
+      const { data: newStep, error: insertError } = await supabase
         .from('template_steps')
         .insert({
           operation_id: operationId,
           step_title: stepName,
           description: 'Step description',
-          step_number: operation.steps.length + 1
-        });
+          step_number: nextStepNumber,
+          content_sections: [],
+          materials: [],
+          tools: [],
+          outputs: [],
+          apps: [],
+          estimated_time_minutes: 0,
+          flow_type: 'prime',
+          step_type: 'prime'
+        })
+        .select('id, step_title')
+        .single();
       
       if (insertError) {
+        console.error('Error inserting step:', insertError);
+        toast.error(`Failed to add step: ${insertError.message || 'Unknown error'}`);
         throw insertError;
       }
+      
+      console.log('Step created successfully:', newStep);
       
       // Reload phases with position data
       const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
