@@ -56,16 +56,24 @@ BEGIN
   -- CRITICAL: Use UNION to completely separate first/last (no position_value) from nth (with position_value)
   -- This avoids reading position_value for first/last rules which may contain invalid data
   FOR std_phase IN
-    SELECT * FROM (
+    SELECT 
+      phase_id,
+      phase_project_id,
+      phase_name,
+      phase_description,
+      phase_is_standard,
+      phase_position_rule,
+      phase_position_value
+    FROM (
       -- First: phases with first/last/last_minus_n rules - never read position_value
       SELECT 
-        id,
-        project_id,
-        name,
-        description,
-        is_standard,
-        position_rule,
-        NULL::INTEGER AS position_value,
+        id AS phase_id,
+        project_id AS phase_project_id,
+        name AS phase_name,
+        description AS phase_description,
+        is_standard AS phase_is_standard,
+        position_rule AS phase_position_rule,
+        NULL::INTEGER AS phase_position_value,
         CASE 
           WHEN position_rule = 'first' THEN 1
           WHEN position_rule = 'last_minus_n' THEN 998
@@ -86,13 +94,13 @@ BEGIN
       
       -- Second: phases with nth rule - read position_value (column is INTEGER, no cast needed)
       SELECT 
-        id,
-        project_id,
-        name,
-        description,
-        is_standard,
-        position_rule,
-        position_value,
+        id AS phase_id,
+        project_id AS phase_project_id,
+        name AS phase_name,
+        description AS phase_description,
+        is_standard AS phase_is_standard,
+        position_rule AS phase_position_rule,
+        position_value AS phase_position_value,
         100 AS sort_order,
         COALESCE(position_value, 0) AS order_secondary
       FROM public.project_phases
@@ -110,14 +118,14 @@ BEGIN
       position_value
     ) VALUES (
       new_project_id,
-      std_phase.name,
-      std_phase.description,
-      std_phase.is_standard,
-      std_phase.position_rule,
+      std_phase.phase_name,
+      std_phase.phase_description,
+      std_phase.phase_is_standard,
+      std_phase.phase_position_rule,
       -- Explicitly set NULL for first/last/last_minus_n, only use value for nth
       CASE 
-        WHEN std_phase.position_rule IN ('first', 'last', 'last_minus_n') THEN NULL::INTEGER
-        WHEN std_phase.position_rule = 'nth' THEN std_phase.position_value
+        WHEN std_phase.phase_position_rule IN ('first', 'last', 'last_minus_n') THEN NULL::INTEGER
+        WHEN std_phase.phase_position_rule = 'nth' AND std_phase.phase_position_value IS NOT NULL THEN std_phase.phase_position_value
         ELSE NULL::INTEGER
       END
     ) RETURNING id INTO new_phase_id;
@@ -138,7 +146,7 @@ BEGIN
         is_reference
       FROM public.template_operations
       WHERE project_id = standard_project_id
-        AND phase_id = std_phase.id
+        AND phase_id = std_phase.phase_id
       ORDER BY display_order
     LOOP
       INSERT INTO public.template_operations (
@@ -271,16 +279,24 @@ BEGIN
   -- CRITICAL: Use UNION to completely separate first/last (no position_value) from nth (with position_value)
   -- This avoids reading position_value for first/last rules which may contain invalid data
   FOR source_phase IN
-    SELECT * FROM (
+    SELECT 
+      phase_id,
+      phase_project_id,
+      phase_name,
+      phase_description,
+      phase_is_standard,
+      phase_position_rule,
+      phase_position_value
+    FROM (
       -- First: phases with first/last/last_minus_n rules - never read position_value
       SELECT 
-        id,
-        project_id,
-        name,
-        description,
-        is_standard,
-        position_rule,
-        NULL::INTEGER AS position_value,
+        id AS phase_id,
+        project_id AS phase_project_id,
+        name AS phase_name,
+        description AS phase_description,
+        is_standard AS phase_is_standard,
+        position_rule AS phase_position_rule,
+        NULL::INTEGER AS phase_position_value,
         CASE 
           WHEN position_rule = 'first' THEN 1
           WHEN position_rule = 'last_minus_n' THEN 998
@@ -301,13 +317,13 @@ BEGIN
       
       -- Second: phases with nth rule - read position_value (column is INTEGER, no cast needed)
       SELECT 
-        id,
-        project_id,
-        name,
-        description,
-        is_standard,
-        position_rule,
-        position_value,
+        id AS phase_id,
+        project_id AS phase_project_id,
+        name AS phase_name,
+        description AS phase_description,
+        is_standard AS phase_is_standard,
+        position_rule AS phase_position_rule,
+        position_value AS phase_position_value,
         100 AS sort_order,
         COALESCE(position_value, 0) AS order_secondary
       FROM project_phases
@@ -326,14 +342,14 @@ BEGIN
     )
     VALUES (
       new_project_id,
-      source_phase.name,
-      source_phase.description,
-      source_phase.is_standard,
-      source_phase.position_rule,
+      source_phase.phase_name,
+      source_phase.phase_description,
+      source_phase.phase_is_standard,
+      source_phase.phase_position_rule,
       -- Explicitly set NULL for first/last/last_minus_n, only use value for nth
       CASE 
-        WHEN source_phase.position_rule IN ('first', 'last', 'last_minus_n') THEN NULL::INTEGER
-        WHEN source_phase.position_rule = 'nth' THEN source_phase.position_value
+        WHEN source_phase.phase_position_rule IN ('first', 'last', 'last_minus_n') THEN NULL::INTEGER
+        WHEN source_phase.phase_position_rule = 'nth' AND source_phase.phase_position_value IS NOT NULL THEN source_phase.phase_position_value
         ELSE NULL::INTEGER
       END
     )
@@ -342,7 +358,7 @@ BEGIN
     -- Copy operations for this phase
     FOR source_operation IN
       SELECT * FROM template_operations
-      WHERE phase_id = source_phase.id
+      WHERE phase_id = source_phase.phase_id
       ORDER BY display_order
     LOOP
       INSERT INTO template_operations (
