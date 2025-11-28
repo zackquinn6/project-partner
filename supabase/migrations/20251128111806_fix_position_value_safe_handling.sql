@@ -1,20 +1,62 @@
--- Migration: Fix position_value integer error
--- The position_value column is INTEGER, so it must be NULL when position_rule is 'first' or 'last'
--- This fixes the error: invalid input syntax for type integer: "last"
+-- Migration: Fix position_value integer error with safe type handling
+-- This version uses a helper function to safely handle any type errors
 
 BEGIN;
 
--- Step 1: Fix any existing bad data in project_phases
--- Set position_value to NULL when position_rule is 'first' or 'last'
--- Use a safe approach that handles any data type issues
+-- Step 1: Create a helper function to safely convert position_value to INTEGER
+CREATE OR REPLACE FUNCTION safe_position_value(
+  p_position_rule TEXT,
+  p_position_value ANYELEMENT
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+  -- Always NULL for first/last rules
+  IF p_position_rule IN ('first', 'last') THEN
+    RETURN NULL;
+  END IF;
+  
+  -- For nth rule, try to return as INTEGER, NULL on any error
+  IF p_position_rule = 'nth' THEN
+    IF p_position_value IS NULL THEN
+      RETURN NULL;
+    END IF;
+    
+    -- Try to cast to INTEGER
+    BEGIN
+      RETURN p_position_value::INTEGER;
+    EXCEPTION WHEN OTHERS THEN
+      RETURN NULL;
+    END;
+  END IF;
+  
+  RETURN NULL;
+END;
+$$;
 
--- First, update all phases with first/last rules to have NULL position_value
--- This is safe because we're setting it to NULL regardless of current value
+-- Step 2: Fix ALL bad data in project_phases
+-- Set position_value to NULL for any phase with first/last rule
 UPDATE public.project_phases
 SET position_value = NULL
-WHERE position_rule IN ('first', 'last');
+WHERE position_rule IN ('first', 'last')
+  AND position_value IS NOT NULL;
 
--- Step 2: Fix create_project_with_standard_foundation_v2 function
+-- Step 3: Also fix any nth rules that have invalid position_value
+-- This handles cases where position_value might be a string
+UPDATE public.project_phases
+SET position_value = NULL
+WHERE position_rule = 'nth'
+  AND position_value IS NOT NULL
+  AND (
+    -- Check if position_value is not a valid integer
+    position_value::text !~ '^[0-9]+$'
+    OR position_value::text = 'last'
+    OR position_value::text = 'first'
+  );
+
+-- Step 4: Recreate create_project_with_standard_foundation_v2 with safe handling
 CREATE OR REPLACE FUNCTION public.create_project_with_standard_foundation_v2(
   p_project_name TEXT,
   p_project_description TEXT,
@@ -34,6 +76,7 @@ DECLARE
   std_operation RECORD;
   new_operation_id UUID;
   category_array TEXT[];
+  safe_pos_value INTEGER;
 BEGIN
   -- Convert single category text to array
   category_array := ARRAY[COALESCE(p_category, 'general')];
@@ -56,10 +99,11 @@ BEGIN
   ) RETURNING id INTO new_project_id;
 
   -- Copy phases from standard project
-  -- CRITICAL: Use CTE to sanitize position_value before ORDER BY
-  -- This prevents type casting errors in ORDER BY clause
+  -- Use helper function to safely get position_value
+  -- CRITICAL: Order by position_rule first, then by safe position_value
+  -- This avoids type errors in ORDER BY clause
   FOR std_phase IN
-    WITH sanitized_phases AS (
+    WITH phase_data AS (
       SELECT 
         id,
         project_id,
@@ -67,26 +111,26 @@ BEGIN
         description,
         is_standard,
         position_rule,
-        -- Always NULL for first/last, only use actual value for nth (if valid INTEGER)
+        position_value,
+        -- Use helper function to safely get position_value
+        safe_position_value(position_rule, position_value) AS safe_position_value,
+        -- Create a safe ordering value that doesn't require type casting
         CASE 
-          WHEN position_rule IN ('first', 'last') THEN NULL::INTEGER
-          WHEN position_rule = 'nth' AND position_value IS NOT NULL 
-            THEN position_value  -- This will be an INTEGER if valid
-          ELSE NULL::INTEGER
-        END AS position_value
+          WHEN position_rule = 'first' THEN 0
+          WHEN position_rule = 'last' THEN 999999
+          WHEN position_rule = 'nth' THEN 
+            COALESCE(safe_position_value('nth', position_value), 999998)
+          ELSE 999998
+        END AS order_value
       FROM public.project_phases
       WHERE project_id = standard_project_id
     )
-    SELECT * FROM sanitized_phases
-    ORDER BY 
-      CASE 
-        WHEN position_rule = 'first' THEN 0
-        WHEN position_rule = 'last' THEN 999999
-        WHEN position_rule = 'nth' AND position_value IS NOT NULL 
-          THEN position_value  -- Now safe to use, already sanitized
-        ELSE 999998
-      END
+    SELECT * FROM phase_data
+    ORDER BY order_value
   LOOP
+    -- Use the safe_position_value from the SELECT
+    safe_pos_value := std_phase.safe_position_value;
+    
     INSERT INTO public.project_phases (
       project_id,
       name,
@@ -100,8 +144,7 @@ BEGIN
       std_phase.description,
       std_phase.is_standard,
       std_phase.position_rule,
-      -- position_value is already sanitized in the SELECT above
-      std_phase.position_value
+      safe_pos_value
     ) RETURNING id INTO new_phase_id;
 
     -- Copy operations for this phase
@@ -197,9 +240,9 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.create_project_with_standard_foundation_v2 IS 
-'Creates a new project template with standard phases. Fixed position_value handling - must be NULL for first/last rules.';
+'Creates a new project template with standard phases. Uses safe_position_value helper function to handle type errors.';
 
--- Step 3: Also fix create_project_revision_v2
+-- Step 5: Also fix create_project_revision_v2
 CREATE OR REPLACE FUNCTION public.create_project_revision_v2(
   source_project_id UUID,
   revision_notes_text TEXT DEFAULT NULL
@@ -216,6 +259,7 @@ DECLARE
   source_operation RECORD;
   new_operation_id UUID;
   new_revision_number INTEGER;
+  safe_pos_value INTEGER;
 BEGIN
   -- Get the next revision number
   SELECT COALESCE(MAX(revision_number), 0) + 1
@@ -250,10 +294,11 @@ BEGIN
   RETURNING id INTO new_project_id;
 
   -- Copy phases
-  -- CRITICAL: Use CTE to sanitize position_value before ORDER BY
-  -- This prevents type casting errors in ORDER BY clause
+  -- Use helper function to safely get position_value
+  -- CRITICAL: Order by position_rule first, then by safe position_value
+  -- This avoids type errors in ORDER BY clause
   FOR source_phase IN
-    WITH sanitized_phases AS (
+    WITH phase_data AS (
       SELECT 
         id,
         project_id,
@@ -261,26 +306,26 @@ BEGIN
         description,
         is_standard,
         position_rule,
-        -- Always NULL for first/last, only use actual value for nth (if valid INTEGER)
+        position_value,
+        -- Use helper function to safely get position_value
+        safe_position_value(position_rule, position_value) AS safe_position_value,
+        -- Create a safe ordering value that doesn't require type casting
         CASE 
-          WHEN position_rule IN ('first', 'last') THEN NULL::INTEGER
-          WHEN position_rule = 'nth' AND position_value IS NOT NULL 
-            THEN position_value  -- This will be an INTEGER if valid
-          ELSE NULL::INTEGER
-        END AS position_value
+          WHEN position_rule = 'first' THEN 0
+          WHEN position_rule = 'last' THEN 999999
+          WHEN position_rule = 'nth' THEN 
+            COALESCE(safe_position_value('nth', position_value), 999998)
+          ELSE 999998
+        END AS order_value
       FROM project_phases
       WHERE project_id = source_project_id
     )
-    SELECT * FROM sanitized_phases
-    ORDER BY 
-      CASE 
-        WHEN position_rule = 'first' THEN 0
-        WHEN position_rule = 'last' THEN 999999
-        WHEN position_rule = 'nth' AND position_value IS NOT NULL 
-          THEN position_value  -- Now safe to use, already sanitized
-        ELSE 999998
-      END
+    SELECT * FROM phase_data
+    ORDER BY order_value
   LOOP
+    -- Use the safe_position_value from the SELECT
+    safe_pos_value := source_phase.safe_position_value;
+    
     INSERT INTO project_phases (
       project_id,
       name,
@@ -295,8 +340,7 @@ BEGIN
       source_phase.description,
       source_phase.is_standard,
       source_phase.position_rule,
-      -- position_value is already sanitized in the SELECT above
-      source_phase.position_value
+      safe_pos_value
     )
     RETURNING id INTO new_phase_id;
 
@@ -307,25 +351,30 @@ BEGIN
       ORDER BY display_order
     LOOP
       INSERT INTO template_operations (
-        phase_id,
         project_id,
+        phase_id,
         operation_name,
         operation_description,
         flow_type,
-        is_reference,
+        user_prompt,
+        alternate_group,
+        display_order,
         source_operation_id,
-        display_order
+        is_reference
       )
-      VALUES (
-        new_phase_id,
+      SELECT 
         new_project_id,
-        source_operation.operation_name,
-        source_operation.operation_description,
-        source_operation.flow_type,
-        source_operation.is_reference,
-        source_operation.source_operation_id,
-        source_operation.display_order
-      )
+        new_phase_id,
+        operation_name,
+        operation_description,
+        flow_type,
+        user_prompt,
+        alternate_group,
+        display_order,
+        source_operation.id,
+        true
+      FROM template_operations
+      WHERE id = source_operation.id
       RETURNING id INTO new_operation_id;
 
       -- Copy steps for this operation
@@ -378,27 +427,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.create_project_revision_v2 IS 
-'Creates a new revision of a project. Fixed position_value handling - must be NULL for first/last rules.';
+'Creates a new project revision. Uses safe_position_value helper function to handle type errors.';
 
 COMMIT;
-
--- Verify the fix
-DO $$
-DECLARE
-  bad_phases_count INTEGER;
-BEGIN
-  -- Check for any remaining bad data
-  SELECT COUNT(*) INTO bad_phases_count
-  FROM public.project_phases
-  WHERE position_rule IN ('first', 'last')
-    AND position_value IS NOT NULL;
-  
-  IF bad_phases_count > 0 THEN
-    RAISE WARNING 'Found % phases with position_rule first/last but non-NULL position_value', bad_phases_count;
-  ELSE
-    RAISE NOTICE '✅ All phases have correct position_value (NULL for first/last rules)';
-  END IF;
-  
-  RAISE NOTICE '✅ Functions updated to handle position_value correctly';
-END $$;
 

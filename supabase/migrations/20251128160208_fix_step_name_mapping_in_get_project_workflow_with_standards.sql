@@ -1,10 +1,9 @@
--- Migration: Add get_project_workflow_with_standards function and enforce validation
--- This function dynamically links standard phases from Standard Project Foundation to regular projects
+-- Migration: Fix step name mapping in get_project_workflow_with_standards
+-- The function was mapping step_title to 'name' but the interface expects 'step'
 
 BEGIN;
 
--- Step 1: Create get_project_workflow_with_standards function
--- This function returns phases for a project, dynamically linking standard phases from Standard Project Foundation
+-- Update the function to map step_title to 'step' instead of 'name'
 CREATE OR REPLACE FUNCTION public.get_project_workflow_with_standards(p_project_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -59,7 +58,6 @@ BEGIN
         CASE 
           WHEN pp.position_rule = 'first' THEN 1
           WHEN pp.position_rule = 'last' THEN 999999
-          WHEN pp.position_rule = 'last_minus_n' THEN 998
           WHEN pp.position_rule = 'nth' AND pp.position_value IS NOT NULL THEN pp.position_value::INTEGER
           ELSE 999998
         END AS sort_order
@@ -81,7 +79,6 @@ BEGIN
         CASE 
           WHEN std_pp.position_rule = 'first' THEN 1
           WHEN std_pp.position_rule = 'last' THEN 999999
-          WHEN std_pp.position_rule = 'last_minus_n' THEN 998
           WHEN std_pp.position_rule = 'nth' AND std_pp.position_value IS NOT NULL THEN std_pp.position_value::INTEGER
           ELSE 999998
         END AS sort_order
@@ -125,7 +122,7 @@ BEGIN
         steps_json := steps_json || jsonb_build_array(
           jsonb_build_object(
             'id', step_record.id,
-            'step', step_record.step_title,
+            'step', step_record.step_title,  -- FIXED: Changed from 'name' to 'step'
             'description', step_record.description,
             'stepType', step_record.step_type,
             'displayOrder', step_record.display_order
@@ -159,7 +156,6 @@ BEGIN
           CASE 
             WHEN phase_record.phase_position_rule = 'first' THEN 1::INTEGER
             WHEN phase_record.phase_position_rule = 'last' THEN 999999::INTEGER
-            WHEN phase_record.phase_position_rule = 'last_minus_n' THEN 998::INTEGER
             WHEN phase_record.phase_position_rule = 'nth' AND phase_record.phase_position_value IS NOT NULL 
               THEN phase_record.phase_position_value::INTEGER
             ELSE NULL::INTEGER
@@ -176,6 +172,120 @@ $$;
 
 COMMENT ON FUNCTION public.get_project_workflow_with_standards IS 
 'Returns phases for a project, dynamically linking standard phases from Standard Project Foundation. Standard phases are always fetched from Standard Project Foundation to ensure they reflect the latest changes.';
+
+-- Also fix rebuild_phases_json_from_project_phases function
+CREATE OR REPLACE FUNCTION public.rebuild_phases_json_from_project_phases(p_project_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  phases_json JSONB := '[]'::JSONB;
+  phase_record RECORD;
+  operations_json JSONB;
+  operation_record RECORD;
+  steps_json JSONB;
+  step_record RECORD;
+BEGIN
+  FOR phase_record IN
+    SELECT 
+      id,
+      name,
+      description,
+      is_standard,
+      position_rule,
+      position_value
+    FROM project_phases
+    WHERE project_id = p_project_id
+    ORDER BY 
+      CASE 
+        WHEN position_rule = 'first' THEN 1
+        WHEN position_rule = 'last' THEN 999999
+        WHEN position_rule = 'nth' AND position_value IS NOT NULL THEN position_value
+        ELSE 999998
+      END
+  LOOP
+    operations_json := '[]'::JSONB;
+    
+    FOR operation_record IN
+      SELECT 
+        id,
+        operation_name,
+        operation_description,
+        flow_type,
+        user_prompt,
+        display_order,
+        is_reference
+      FROM template_operations
+      WHERE phase_id = phase_record.id
+      ORDER BY display_order
+    LOOP
+      steps_json := '[]'::JSONB;
+      
+      FOR step_record IN
+        SELECT 
+          id,
+          step_title,
+          description,
+          step_type,
+          display_order
+        FROM template_steps
+        WHERE operation_id = operation_record.id
+        ORDER BY display_order
+      LOOP
+        steps_json := steps_json || jsonb_build_array(
+          jsonb_build_object(
+            'id', step_record.id,
+            'step', step_record.step_title,  -- FIXED: Changed from 'name' to 'step'
+            'description', step_record.description,
+            'stepType', step_record.step_type,
+            'displayOrder', step_record.display_order
+          )
+        );
+      END LOOP;
+      
+      operations_json := operations_json || jsonb_build_array(
+        jsonb_build_object(
+          'id', operation_record.id,
+          'name', operation_record.operation_name,
+          'description', operation_record.operation_description,
+          'flowType', operation_record.flow_type,
+          'userPrompt', operation_record.user_prompt,
+          'displayOrder', operation_record.display_order,
+          'isStandard', COALESCE(operation_record.is_reference, false) OR phase_record.is_standard,
+          'steps', steps_json
+        )
+      );
+    END LOOP;
+    
+    phases_json := phases_json || jsonb_build_array(
+      jsonb_build_object(
+        'id', phase_record.id,
+        'name', phase_record.name,
+        'description', phase_record.description,
+        'operations', COALESCE(operations_json, '[]'::JSONB),
+        'isStandard', phase_record.is_standard,
+        'phaseOrderNumber', 
+          CASE 
+            WHEN phase_record.position_rule = 'first' THEN 1::INTEGER
+            WHEN phase_record.position_rule = 'last' THEN 999999::INTEGER
+            WHEN phase_record.position_rule = 'nth' AND phase_record.position_value IS NOT NULL 
+              THEN phase_record.position_value::INTEGER
+            ELSE NULL::INTEGER
+          END,
+        'position_rule', phase_record.position_rule,
+        'position_value', phase_record.position_value
+      )
+    );
+  END LOOP;
+  
+  RETURN phases_json;
+END;
+$$;
+
+COMMENT ON FUNCTION public.rebuild_phases_json_from_project_phases IS 
+'Rebuilds phases JSON from project_phases table. Maps step_title to step property to match WorkflowStep interface.';
 
 COMMIT;
 

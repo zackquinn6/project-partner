@@ -411,7 +411,7 @@ BEGIN
         steps_json := steps_json || jsonb_build_array(
           jsonb_build_object(
             'id', step_record.id,
-            'name', step_record.step_title,
+            'step', step_record.step_title,
             'description', step_record.description,
             'stepType', step_record.step_type,
             'displayOrder', step_record.display_order

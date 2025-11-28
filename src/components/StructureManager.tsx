@@ -200,7 +200,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
     }
     
-    // Check 3: Custom phases must be between last numbered standard phase and 'last'
+    // Check 3: Custom phases with 'nth' rule must be between last numbered standard phase and 'last'
     if (!isEditingStandardProject) {
       const standardPhases = phasesToValidate.filter(p => isStandardPhase(p) && !isLinkedPhase(p));
       if (standardPhases.length > 0) {
@@ -214,7 +214,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           const lastNumberedStandardPhase = numberedStandardPhases[numberedStandardPhases.length - 1];
           const lastNumberedPosition = (lastNumberedStandardPhase as any).position_value || 1;
           
-          const customPhases = phasesToValidate.filter(p => !isStandardPhase(p) && !isLinkedPhase(p));
+          // Check custom phases with 'nth' rule (exclude 'last')
+          const customPhases = phasesToValidate.filter(p => {
+            if (isStandardPhase(p) || isLinkedPhase(p)) return false;
+            const positionRule = (p as any).position_rule;
+            return positionRule === 'nth'; // Only check 'nth' phases, not 'last'
+          });
+          
           const invalidCustomPhases = customPhases.filter(p => {
             const positionValue = (p as any).position_value;
             return typeof positionValue === 'number' && (positionValue <= lastNumberedPosition || positionValue >= phasesToValidate.length);
@@ -489,15 +495,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   /**
    * Helper function to reload phases with position data from database
    * This is used after delete, order change, and other operations
+   * @param skipValidation - If true, skip validation (useful during deletion before renumbering)
    */
-  const reloadPhasesWithPositions = useCallback(async (projectId: string): Promise<Phase[]> => {
+  const reloadPhasesWithPositions = useCallback(async (projectId: string, skipValidation: boolean = false): Promise<Phase[]> => {
     // Load phases directly from database (already includes position data)
     const loadedPhases = await loadPhases(projectId);
     
-    // Validate and sort
-    const validationError = validatePhaseOrdering(loadedPhases);
-    if (validationError) {
-      throw new Error(`Validation failed: ${validationError.message}`);
+    // Validate and sort (unless validation is skipped)
+    if (!skipValidation) {
+      const validationError = validatePhaseOrdering(loadedPhases);
+      if (validationError) {
+        throw new Error(`Validation failed: ${validationError.message}`);
+      }
     }
     
     return sortPhasesByOrderNumber(loadedPhases);
@@ -606,7 +615,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   
   /**
    * Add a new phase to the database
-   * Position: last minus one (e.g., if 5 phases, new phase becomes position 4)
+   * Position: Uses 'nth' rule with position_value set to maxNthValue + 1 (just before 'last')
    */
   const handleAddPhase = useCallback(async () => {
     if (!currentProject?.id) {
@@ -762,14 +771,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return;
     }
     
-    // ENFORCE VALIDATION: Block operation if validation fails
-    if (validationError) {
-      toast.error('Cannot delete phase: Validation errors must be resolved first', {
-        description: validationError.message
-      });
-      return;
-    }
-    
+    // Allow deletion even if validation fails - we'll fix it with renumbering
     const phaseToDelete = phases.find(p => p.id === phaseId);
     if (!phaseToDelete) {
       toast.error('Phase not found');
@@ -798,66 +800,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases from database after delete (with position data)
-      // Skip validation temporarily since we're about to renumber
-      let reloadedPhases: Phase[];
-      try {
-        reloadedPhases = await reloadPhasesWithPositions(currentProject.id);
-      } catch (validationError: any) {
-        // If validation fails after delete, still try to reload without validation
-        // This can happen when phases have gaps after deletion
-        console.warn('Validation failed after delete, will fix with renumbering:', validationError);
-        const { data: phasesData } = await supabase
-          .from('project_phases')
-          .select('*')
-          .eq('project_id', currentProject.id);
-        
-        if (!phasesData) {
-          throw new Error('Failed to reload phases after delete');
-        }
-        
-        // Convert to Phase format manually
-        reloadedPhases = await Promise.all(
-          phasesData.map(async (phaseData) => {
-            const { data: operations } = await supabase
-              .from('template_operations')
-              .select('*')
-              .eq('phase_id', phaseData.id)
-              .order('display_order');
-            
-            const operationsWithSteps = await Promise.all(
-              (operations || []).map(async (op) => {
-                const { data: steps } = await supabase
-                  .from('template_steps')
-                  .select('*')
-                  .eq('operation_id', op.id)
-                  .order('display_order');
-                
-                return {
-                  ...op,
-                  steps: (steps || []).map(s => ({
-                    ...s,
-                    name: s.step_title,
-                    displayOrder: s.display_order
-                  }))
-                };
-              })
-            );
-            
-            return {
-              id: phaseData.id,
-              name: phaseData.name,
-              description: phaseData.description,
-              operations: operationsWithSteps,
-              isStandard: phaseData.is_standard || false,
-              phaseOrderNumber: phaseData.position_rule === 'first' ? 1 :
-                               phaseData.position_rule === 'last' ? 'last' :
-                               phaseData.position_value,
-              position_rule: phaseData.position_rule,
-              position_value: phaseData.position_value
-            } as Phase;
-          })
-        );
-      }
+      // Skip validation since we're about to renumber and fix any gaps
+      const reloadedPhases = await reloadPhasesWithPositions(currentProject.id, true);
       
       // For regular projects: auto-renumber custom phases only, never change standard phases
       if (!isEditingStandardProject) {
@@ -2684,13 +2628,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               return;
             }
             
-            // Get current phase count to determine position
-            const { count: phaseCount } = await supabase
+            // Get current phases to determine position
+            const { data: allPhases } = await supabase
               .from('project_phases')
-              .select('*', { count: 'exact', head: true })
+              .select('id, position_rule, position_value')
               .eq('project_id', currentProject.id);
             
-            const totalPhases = phaseCount || 0;
+            const totalPhases = allPhases?.length || 0;
             
             // Create incorporated phase record
             // Store source information in description (temporary solution)
@@ -2700,8 +2644,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               : `[Incorporated from: ${phaseToIncorporate.sourceProjectName} (Revision ${phaseToIncorporate.incorporatedRevision})]`;
             
             // Determine position rule and value
-            const positionRule = totalPhases > 0 ? 'last_minus_n' : 'first';
-            const positionValue = totalPhases > 0 ? 1 : null; // 1 means before the last one
+            // Use 'nth' rule with position_value = maxNthValue + 1 (just before 'last')
+            // If no phases exist, this becomes the 'first' phase
+            let positionRule: string;
+            let positionValue: number | null = null;
+            
+            if (totalPhases === 0) {
+              positionRule = 'first';
+              positionValue = null;
+            } else {
+              // Find max nth position value
+              const nthPhases = allPhases?.filter(p => p.position_rule === 'nth' && p.position_value) || [];
+              const maxNthValue = nthPhases.length > 0 
+                ? Math.max(...nthPhases.map(p => p.position_value as number))
+                : 0;
+              
+              positionRule = 'nth';
+              positionValue = maxNthValue + 1; // Position just before 'last'
+            }
             
             const { data: newPhase, error: insertError } = await supabase
               .from('project_phases')
