@@ -184,16 +184,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
     }
     
-    // Check 2b: Exactly one 'first' and one 'last' phase
-    const firstPhases = phasesToValidate.filter(p => (p as any)?.position_rule === 'first');
-    const lastPhases = phasesToValidate.filter(p => (p as any)?.position_rule === 'last');
-    
-    if (firstPhases.length !== 1) {
-      errors.push(`Expected exactly 1 'first' phase, found ${firstPhases.length}`);
-    }
-    
-    if (lastPhases.length !== 1) {
-      errors.push(`Expected exactly 1 'last' phase, found ${lastPhases.length}`);
+    // Check 2b: Exactly one 'first' and one 'last' phase (only required for Standard Project Foundation)
+    // Custom projects and revisions may not have 'first'/'last' phases - they can use 'nth' only
+    if (isEditingStandardProject) {
+      const firstPhases = phasesToValidate.filter(p => (p as any)?.position_rule === 'first');
+      const lastPhases = phasesToValidate.filter(p => (p as any)?.position_rule === 'last');
+      
+      if (firstPhases.length !== 1) {
+        errors.push(`Expected exactly 1 'first' phase, found ${firstPhases.length}`);
+      }
+      
+      if (lastPhases.length !== 1) {
+        errors.push(`Expected exactly 1 'last' phase, found ${lastPhases.length}`);
+      }
     }
     
     // Check 3: Custom phases must be between last numbered standard phase and 'last'
