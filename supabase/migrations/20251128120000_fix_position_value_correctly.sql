@@ -403,8 +403,7 @@ BEGIN
           step_title,
           description,
           step_type,
-          display_order,
-          estimated_time_minutes
+          display_order
         FROM template_steps
         WHERE operation_id = operation_record.id
         ORDER BY display_order
@@ -415,8 +414,7 @@ BEGIN
             'name', step_record.step_title,
             'description', step_record.description,
             'stepType', step_record.step_type,
-            'displayOrder', step_record.display_order,
-            'estimatedTimeMinutes', step_record.estimated_time_minutes
+            'displayOrder', step_record.display_order
           )
         );
       END LOOP;
