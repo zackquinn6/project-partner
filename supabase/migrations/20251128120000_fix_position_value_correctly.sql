@@ -100,9 +100,6 @@ DECLARE
   final_position_value INTEGER;
   debug_position_value_text TEXT;
 BEGIN
-  -- DEBUG: Function started
-  RAISE EXCEPTION 'DEBUG: Function create_project_with_standard_foundation_v2 called with name: %', p_project_name;
-  
   -- Convert single category text to array
   category_array := ARRAY[COALESCE(p_category, 'general')];
   
@@ -221,10 +218,18 @@ BEGIN
       pg_typeof(final_position_value);
     
     -- CRITICAL: Ensure final_position_value is actually INTEGER or NULL
-    IF final_position_value IS NOT NULL AND pg_typeof(final_position_value)::text != 'integer' THEN
-      RAISE EXCEPTION 'final_position_value is not INTEGER! Type: %, Value: %', 
-        pg_typeof(final_position_value),
-        final_position_value;
+    -- If it's not NULL and not integer, something is wrong
+    IF final_position_value IS NOT NULL THEN
+      -- Try to cast to integer - this will fail if it's not a valid integer
+      BEGIN
+        final_position_value := final_position_value::INTEGER;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'final_position_value cannot be cast to INTEGER! Rule: %, Value: %, Type: %, Error: %', 
+          std_phase.phase_position_rule,
+          final_position_value,
+          pg_typeof(final_position_value),
+          SQLERRM;
+      END;
     END IF;
     
     INSERT INTO public.project_phases (
@@ -240,7 +245,7 @@ BEGIN
       std_phase.phase_description,
       std_phase.phase_is_standard,
       std_phase.phase_position_rule,
-      final_position_value::INTEGER  -- Explicit cast to ensure type safety
+      final_position_value  -- Already validated as INTEGER or NULL above
     ) RETURNING id INTO new_phase_id;
     
     RAISE NOTICE 'DEBUG: Successfully inserted phase: % (id: %)', std_phase.phase_name, new_phase_id;
