@@ -457,7 +457,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           name: phaseData.name,
           description: phaseData.description,
           isStandard: phaseData.is_standard,
-          isLinked: phaseData.is_standard && phaseData.project_id !== projectId,
+          isLinked: false, // Standard phases are not "linked" - they're dynamically referenced from Standard Project Foundation
           phaseOrderNumber,
           position_rule: phaseData.position_rule,
           position_value: phaseData.position_value,
@@ -2229,7 +2229,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                             <CardTitle className="text-sm flex items-center gap-2">
                               {phase.name}
                               {phaseIsStandard && <span className="text-xs text-blue-600">(Standard - Locked)</span>}
-                              {phaseIsLinked && (
+                              {phaseIsLinked && !phaseIsStandard && (
                                 <Badge variant="outline" className="text-xs flex items-center gap-1">
                                   <Link className="w-3 h-3" />
                                   <span>Linked From {phase.sourceProjectName}</span>
