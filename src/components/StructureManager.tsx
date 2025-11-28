@@ -639,86 +639,59 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         counter++;
       }
       
-      // Add phase to database
-      const { error: addError } = await supabase.rpc('add_custom_project_phase', {
-        p_project_id: currentProject.id,
-        p_phase_name: phaseName,
-        p_phase_description: 'Phase description'
-      });
-      
-      if (addError) {
-        throw addError;
-      }
-      
-      // Get the newly added phase ID
-      const { data: addedPhase } = await supabase
+      // Calculate position: Get total phases and determine position
+      const { data: allPhases } = await supabase
         .from('project_phases')
-        .select('id')
-        .eq('project_id', currentProject.id)
-        .eq('name', phaseName)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .select('id, position_rule, position_value')
+        .eq('project_id', currentProject.id);
       
-      if (!addedPhase?.id) {
-        throw new Error('Failed to get newly added phase ID');
-      }
+      const totalPhases = allPhases?.length || 0;
       
-      // Update is_standard flag
-      await supabase
-        .from('project_phases')
-        .update({ is_standard: isEditingStandardProject })
-        .eq('id', addedPhase.id);
+      // Determine position rule and value
+      let positionRule: string;
+      let positionValue: number | null = null;
       
-      // Calculate position: last minus one
-      const totalPhases = phases.length;
-      const newPosition = totalPhases > 0 ? totalPhases : 1; // last minus one = total (since last is at total + 1)
-      
-      // Set position to "last minus one"
       if (isEditingStandardProject) {
-        // For Edit Standard: preserve existing positions, only update new phase
-        const { data: existingPositions } = await supabase
-          .from('project_phases')
-          .select('id, position_rule, position_value')
-          .eq('project_id', currentProject.id)
-          .neq('id', addedPhase.id);
-        
-        if (existingPositions) {
-          const lastPhase = existingPositions.find(p => p.position_rule === 'last');
-          
-          if (lastPhase) {
-            // Set new phase to position before last
-            const lastNumericPosition = existingPositions.length;
-            await supabase
-              .from('project_phases')
-              .update({
-                position_rule: 'nth',
-                position_value: lastNumericPosition,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', addedPhase.id);
-          } else {
-            await supabase
-              .from('project_phases')
-              .update({
-                position_rule: 'nth',
-                position_value: totalPhases,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', addedPhase.id);
-          }
+        // For Edit Standard: find last phase and place before it
+        const lastPhase = allPhases?.find(p => p.position_rule === 'last');
+        if (lastPhase) {
+          // Place before last phase
+          const nthPhases = allPhases?.filter(p => p.position_rule === 'nth' && p.position_value) || [];
+          const maxNthValue = nthPhases.length > 0 
+            ? Math.max(...nthPhases.map(p => p.position_value as number))
+            : 0;
+          positionRule = 'nth';
+          positionValue = maxNthValue + 1;
+        } else {
+          positionRule = 'nth';
+          positionValue = totalPhases + 1;
         }
       } else {
-        // For regular projects: update new phase position
-        const lastNumericPosition = totalPhases;
-        await supabase
-          .from('project_phases')
-          .update({
-            position_rule: 'nth',
-            position_value: lastNumericPosition,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', addedPhase.id);
+        // For regular projects: place after all existing phases but before 'last'
+        const nthPhases = allPhases?.filter(p => p.position_rule === 'nth' && p.position_value) || [];
+        const maxNthValue = nthPhases.length > 0 
+          ? Math.max(...nthPhases.map(p => p.position_value as number))
+          : 0;
+        positionRule = 'nth';
+        positionValue = maxNthValue + 1;
+      }
+      
+      // Insert phase directly into database
+      const { data: addedPhase, error: insertError } = await supabase
+        .from('project_phases')
+        .insert({
+          project_id: currentProject.id,
+          name: phaseName,
+          description: 'Phase description',
+          is_standard: isEditingStandardProject,
+          position_rule: positionRule,
+          position_value: positionValue
+        })
+        .select('id')
+        .single();
+      
+      if (insertError || !addedPhase?.id) {
+        throw insertError || new Error('Failed to add phase to database');
       }
       
       // Verify that the phase has an operation with a step
