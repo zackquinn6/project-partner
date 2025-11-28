@@ -160,7 +160,7 @@ BEGIN
       
       UNION ALL
       
-      -- Second: phases with nth rule - read position_value (column is INTEGER, no cast needed)
+      -- Second: phases with nth rule - read position_value with explicit INTEGER cast
       SELECT 
         id AS phase_id,
         project_id AS phase_project_id,
@@ -168,9 +168,12 @@ BEGIN
         description AS phase_description,
         is_standard AS phase_is_standard,
         position_rule AS phase_position_rule,
-        position_value AS phase_position_value,
+        CASE 
+          WHEN position_value IS NULL THEN NULL::INTEGER
+          ELSE position_value::INTEGER
+        END AS phase_position_value,
         100 AS sort_order,
-        COALESCE(position_value, 0) AS order_secondary
+        COALESCE(position_value::INTEGER, 0) AS order_secondary
       FROM public.project_phases
       WHERE project_id = standard_project_id
         AND position_rule = 'nth'
