@@ -400,7 +400,7 @@ BEGIN
       FOR step_record IN
         SELECT 
           id,
-          name,
+          step_title,
           description,
           step_type,
           display_order,
@@ -412,7 +412,7 @@ BEGIN
         steps_json := steps_json || jsonb_build_array(
           jsonb_build_object(
             'id', step_record.id,
-            'name', step_record.name,
+            'name', step_record.step_title,
             'description', step_record.description,
             'stepType', step_record.step_type,
             'displayOrder', step_record.display_order,
