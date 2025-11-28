@@ -2735,7 +2735,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               .eq('project_id', currentProject.id);
             
             const totalPhases = phaseCount || 0;
-            const newPosition = totalPhases > 0 ? totalPhases : 1;
             
             // Create incorporated phase record
             // Store source information in description (temporary solution)
@@ -2744,14 +2743,23 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               ? `${phaseToIncorporate.description}\n\n[Incorporated from: ${phaseToIncorporate.sourceProjectName} (Revision ${phaseToIncorporate.incorporatedRevision})]`
               : `[Incorporated from: ${phaseToIncorporate.sourceProjectName} (Revision ${phaseToIncorporate.incorporatedRevision})]`;
             
+            // Determine position rule and value
+            const positionRule = totalPhases > 0 ? 'last_minus_n' : 'first';
+            const positionValue = totalPhases > 0 ? 1 : null; // 1 means before the last one
+            
             const { data: newPhase, error: insertError } = await supabase
               .from('project_phases')
               .insert({
                 project_id: currentProject.id,
                 name: phaseToIncorporate.name,
                 description: incorporatedDescription,
-                display_order: newPosition,
                 is_standard: false,
+                is_linked: true,
+                source_project_id: phaseToIncorporate.sourceProjectId,
+                source_project_name: phaseToIncorporate.sourceProjectName,
+                incorporated_revision: phaseToIncorporate.incorporatedRevision,
+                position_rule: positionRule,
+                position_value: positionValue,
                 standard_phase_id: null
               })
               .select('id')
@@ -2759,28 +2767,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             
             if (insertError) {
               throw insertError;
-            }
-            
-            // Set position to "last minus one" (before the last phase if it exists)
-            if (totalPhases > 0) {
-              await supabase
-                .from('project_phases')
-                .update({
-                  position_rule: 'nth',
-                  position_value: totalPhases,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', newPhase.id);
-            } else {
-              // First phase - set to 'first'
-              await supabase
-                .from('project_phases')
-                .update({
-                  position_rule: 'first',
-                  position_value: null,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', newPhase.id);
             }
             
             // Create reference operations that point to source operations
