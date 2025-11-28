@@ -134,6 +134,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return null; // Empty is valid
     }
     
+    // DEBUG: Log all phases being validated
+    console.log('🔍 Validation Debug - All phases being validated:', phasesToValidate.map(p => ({
+      name: p.name,
+      position_rule: (p as any)?.position_rule,
+      position_value: (p as any)?.position_value,
+      isStandard: p.isStandard,
+      isLinked: p.isLinked
+    })));
+    
     const errors: string[] = [];
     
     // Check 1: All phases must have position_rule
@@ -162,6 +171,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       })
       .filter((item): item is { phase: Phase; numericOrder: number } => item !== null);
     
+    // DEBUG: Log nth phases found
+    console.log('🔍 Validation Debug - nth phases found:', nthPhases.map(p => ({
+      name: p.phase.name,
+      position_value: p.numericOrder,
+      isStandard: p.phase.isStandard,
+      isLinked: p.phase.isLinked
+    })));
+    
     // Sort by numeric order
     nthPhases.sort((a, b) => a.numericOrder - b.numericOrder);
     
@@ -180,6 +197,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       const minOrder = sortedOrders[0];
       const expectedOrders = Array.from({ length: nthPhases.length }, (_, i) => minOrder + i);
       const hasGaps = sortedOrders.some((order, index) => order !== expectedOrders[index]);
+      
+      // DEBUG: Log gap check details
+      console.log('🔍 Validation Debug - Gap check:', {
+        sortedOrders,
+        expectedOrders,
+        hasGaps,
+        minOrder
+      });
       
       if (hasGaps) {
         errors.push(`Phases out of sequential order. Expected consecutive values starting from ${minOrder}, Found: ${sortedOrders.join(', ')}`);
@@ -371,8 +396,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // 1. Get custom phases from current project
       // 2. Get standard phases from Standard Project Foundation
       
-      // Get custom phases (including incorporated phases)
-      const { data: customPhasesData, error: customError } = await supabase
+      // Get ALL phases from current project (both custom and any incorrectly flagged standard phases)
+      // This ensures we don't miss any phases due to data inconsistencies
+      const { data: allProjectPhasesData, error: allPhasesError } = await supabase
         .from('project_phases')
         .select(`
           id,
@@ -385,13 +411,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           source_phase_id
         `)
         .eq('project_id', projectId)
-        .eq('is_standard', false)
         .order('position_rule', { ascending: true })
         .order('position_value', { ascending: true, nullsFirst: false });
       
-      if (customError) {
-        throw new Error(`Failed to load custom phases: ${customError.message}`);
+      if (allPhasesError) {
+        throw new Error(`Failed to load phases from project: ${allPhasesError.message}`);
       }
+      
+      // Filter to get custom phases (is_standard = false) and incorporated phases
+      const customPhasesData = (allProjectPhasesData || []).filter((p: any) => p.is_standard === false);
       
       // Get standard phases from Standard Project Foundation
       const { data: standardPhasesData, error: standardError } = await supabase
@@ -415,6 +443,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Combine both and convert to Phase format
       const allPhasesData = [...(standardPhasesData || []), ...(customPhasesData || [])];
+      
+      // DEBUG: Log phases loaded from database
+      console.log('🔍 loadPhases Debug - Phases loaded from database:', {
+        allProjectPhases: (allProjectPhasesData || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          is_standard: p.is_standard,
+          position_rule: p.position_rule,
+          position_value: p.position_value,
+          source_project_id: p.source_project_id,
+          source_phase_id: p.source_phase_id
+        })),
+        customPhasesFiltered: customPhasesData.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          is_standard: p.is_standard,
+          position_rule: p.position_rule,
+          position_value: p.position_value,
+          source_project_id: p.source_project_id,
+          source_phase_id: p.source_phase_id
+        })),
+        standardPhases: (standardPhasesData || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          is_standard: p.is_standard,
+          position_rule: p.position_rule,
+          position_value: p.position_value
+        })),
+        totalCombined: allPhasesData.length
+      });
       
       // Get source project names for incorporated phases
       const sourceProjectIds = new Set(
