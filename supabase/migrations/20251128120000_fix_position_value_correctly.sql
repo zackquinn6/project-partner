@@ -310,8 +310,12 @@ BEGIN
       source_phase.description,
       source_phase.is_standard,
       source_phase.position_rule,
-      -- position_value is NULL for first/last, only set for nth
-      source_phase.position_value
+      -- Explicitly set NULL for first/last, only use value for nth
+      CASE 
+        WHEN source_phase.position_rule IN ('first', 'last') THEN NULL::INTEGER
+        WHEN source_phase.position_rule = 'nth' THEN source_phase.position_value
+        ELSE NULL::INTEGER
+      END
     )
     RETURNING id INTO new_phase_id;
 
