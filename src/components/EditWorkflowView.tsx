@@ -1214,66 +1214,6 @@ export default function EditWorkflowView({
         </div>
       </div>;
   }
-  if (allSteps.length === 0) {
-    const hasPhases = displayPhases.length > 0;
-    const hasOperations = hasPhases && displayPhases.some(p => p.operations && p.operations.length > 0);
-    
-    return <div className="fixed inset-0 bg-background overflow-auto z-50">
-        <div className="w-full px-6 py-6">
-          <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" onClick={onBackToAdmin} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Project Manager
-            </Button>
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <Button onClick={() => setViewMode('structure')} variant={'default'} size="sm" className="flex items-center gap-2">
-                  <List className="w-4 h-4" />
-                  Structure Manager
-                </Button>
-              </div>
-            </div>
-          </div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Structure Setup Required</CardTitle>
-              <CardDescription>
-                This project needs workflow steps to be added
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <p className="font-medium">Current Status:</p>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>Phases: {hasPhases ? `✓ ${displayPhases.length} phases found` : '✗ No phases'}</li>
-                  <li>Operations: {hasOperations ? '✓ Operations exist' : '✗ No operations in phases'}</li>
-                  <li>Steps: ✗ No workflow steps</li>
-                </ul>
-              </div>
-              
-              <div className="space-y-2">
-                <p className="text-sm">
-                  {!hasPhases && "This project has no phases. "}
-                  {hasPhases && !hasOperations && "This project has phases but no operations. "}
-                  {hasOperations && "This project has operations but no steps. "}
-                  Use the Structure Manager to build your project workflow.
-                </p>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button onClick={() => setViewMode('structure')} className="flex items-center gap-2 flex-1">
-                  <List className="w-4 h-4" />
-                  Open Structure Manager
-                </Button>
-                <Button onClick={onBackToAdmin} variant="outline">
-                  Back to Projects
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>;
-  }
   return <div className="fixed inset-0 bg-background overflow-auto z-50">
       {/* Header with Project Name and Controls */}
       <div className="sticky top-0 z-10 bg-background border-b">

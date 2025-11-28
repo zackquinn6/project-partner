@@ -134,16 +134,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return null; // Empty is valid
     }
     
-    // DEBUG: Log all phases being validated
-    console.log('🔍 Validation Debug - All phases being validated:', phasesToValidate.map(p => ({
-      name: p.name,
-      position_rule: (p as any)?.position_rule,
-      position_value: (p as any)?.position_value,
-      isStandard: p.isStandard,
-      isLinked: p.isLinked,
-      phaseOrderNumber: p.phaseOrderNumber
-    })));
-    
     const errors: string[] = [];
     
     // Check 1: All phases must have position_rule
@@ -156,10 +146,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       errors.push(`${phasesWithoutRule.length} phase(s) missing position_rule: ${phasesWithoutRule.map(p => p.name).join(', ')}`);
     }
     
-    // Check 2: Sequential ordering - check ALL 'nth' phases (standard, custom, and incorporated) for gaps
-    // All phases with position_rule='nth' must have consecutive position_value with no gaps
-    // Only 'first' and 'last' phases are excluded from this check
-    // Incorporated phases are treated like regular phases for ordering validation
+    // Check 2: Check for duplicate position values in 'nth' phases only
     const nthPhases = phasesToValidate
       .map((phase) => {
         const positionRule = (phase as any)?.position_rule;
@@ -172,20 +159,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       })
       .filter((item): item is { phase: Phase; numericOrder: number } => item !== null);
     
-    // DEBUG: Log nth phases found
-    console.log('🔍 Validation Debug - nth phases found:', nthPhases.map(p => ({
-      name: p.phase.name,
-      position_value: p.numericOrder,
-      position_rule: (p.phase as any)?.position_rule,
-      isStandard: p.phase.isStandard,
-      isLinked: p.phase.isLinked,
-      phaseOrderNumber: p.phase.phaseOrderNumber
-    })));
-    
-    // Sort by numeric order
-    nthPhases.sort((a, b) => a.numericOrder - b.numericOrder);
-    
-    // Check for duplicates and gaps in ALL 'nth' phases (standard and custom)
+    // Check for duplicates only
     if (nthPhases.length > 0) {
       const actualOrders = nthPhases.map(p => p.numericOrder);
       const hasDuplicates = new Set(actualOrders).size !== actualOrders.length;
@@ -193,24 +167,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       if (hasDuplicates) {
         errors.push(`Duplicate position values found in 'nth' phases: ${actualOrders.join(', ')}`);
       }
+    }
+    
+    // Check 2a: 'last' phase must be the final phase - cannot be between nth phases
+    const lastPhases = phasesToValidate.filter(p => (p as any)?.position_rule === 'last');
+    if (lastPhases.length > 0) {
+      // Find maximum position_value among all nth phases
+      const maxNthPosition = nthPhases.length > 0 
+        ? Math.max(...nthPhases.map(p => p.numericOrder))
+        : 0;
       
-      // Check for gaps: all 'nth' phases must be consecutive
-      // This includes standard phases, custom phases, and incorporated phases with 'nth' rule
-      const sortedOrders = [...actualOrders].sort((a, b) => a - b);
-      const minOrder = sortedOrders[0];
-      const expectedOrders = Array.from({ length: nthPhases.length }, (_, i) => minOrder + i);
-      const hasGaps = sortedOrders.some((order, index) => order !== expectedOrders[index]);
-      
-      // DEBUG: Log gap check details
-      console.log('🔍 Validation Debug - Gap check:', {
-        sortedOrders,
-        expectedOrders,
-        hasGaps,
-        minOrder
+      // Check if any 'last' phase has a position_value that falls between nth phases
+      const invalidLastPhases = lastPhases.filter(p => {
+        const positionValue = (p as any)?.position_value;
+        // If 'last' phase has a position_value, it must be greater than all nth phase positions
+        // If it's null/undefined, that's fine - it will be sorted to the end
+        if (typeof positionValue === 'number') {
+          return positionValue <= maxNthPosition;
+        }
+        return false; // null/undefined position_value is valid for 'last' phases
       });
       
-      if (hasGaps) {
-        errors.push(`Phases out of sequential order. Expected consecutive values starting from ${minOrder}, Found: ${sortedOrders.join(', ')}`);
+      if (invalidLastPhases.length > 0) {
+        errors.push(`'last' phase(s) cannot be positioned between nth phases. Invalid: ${invalidLastPhases.map(p => p.name).join(', ')}`);
+      }
+      
+      // Also check that no nth phases come after where 'last' should be
+      // This is already handled by the position_value check above, but we can add an explicit check
+      // If there are multiple 'last' phases, that's also an error
+      if (lastPhases.length > 1) {
+        errors.push(`Multiple 'last' phases found: ${lastPhases.map(p => p.name).join(', ')}`);
       }
     }
     
@@ -229,7 +215,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
     }
     
-    // Check 3: Custom phases (including incorporated) with 'nth' rule must be between last numbered standard phase and 'last'
+    // Check 3: Custom phases (including incorporated) with 'nth' rule must be after last numbered standard phase
+    // Removed strict upper bound check - database order is trusted
     if (!isEditingStandardProject) {
       const standardPhases = phasesToValidate.filter(p => isStandardPhase(p) && !isLinkedPhase(p));
       if (standardPhases.length > 0) {
@@ -243,49 +230,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           const lastNumberedStandardPhase = numberedStandardPhases[numberedStandardPhases.length - 1];
           const lastNumberedPosition = (lastNumberedStandardPhase as any).position_value || 1;
           
-          // Find the maximum position value among all 'nth' phases (this will be the position before 'last')
-          const allNthPhases = phasesToValidate.filter(p => {
-            const positionRule = (p as any).position_rule;
-            return positionRule === 'nth' && typeof (p as any).position_value === 'number';
-          });
-          const maxNthPosition = allNthPhases.length > 0 
-            ? Math.max(...allNthPhases.map((p: any) => p.position_value))
-            : lastNumberedPosition;
-          
           // Check custom phases with 'nth' rule (include incorporated phases, exclude 'last')
-          // Incorporated phases are treated like regular custom phases for ordering
           const customPhases = phasesToValidate.filter(p => {
             if (isStandardPhase(p) && !isLinkedPhase(p)) return false; // Exclude standard phases
             const positionRule = (p as any).position_rule;
             return positionRule === 'nth'; // Only check 'nth' phases, not 'last'
           });
           
-          // DEBUG: Log custom phase validation details
-          console.log('🔍 Validation Debug - Custom phase range check:', {
-            lastNumberedPosition,
-            maxNthPosition,
-            customPhases: customPhases.map((p: any) => ({
-              name: p.name,
-              position_value: p.position_value,
-              isStandard: p.isStandard,
-              isLinked: p.isLinked
-            })),
-            allNthPhases: allNthPhases.map((p: any) => ({
-              name: p.name,
-              position_value: p.position_value,
-              isStandard: p.isStandard
-            }))
-          });
-          
+          // Only check that custom phases are after the last numbered standard phase
+          // Database order is trusted for the rest
           const invalidCustomPhases = customPhases.filter(p => {
             const positionValue = (p as any).position_value;
-            // Custom phases must be after the last numbered standard phase
-            // They can go up to maxNthPosition (which is the highest nth position, just before 'last')
-            return typeof positionValue === 'number' && (positionValue <= lastNumberedPosition || positionValue > maxNthPosition);
+            return typeof positionValue === 'number' && positionValue <= lastNumberedPosition;
           });
           
           if (invalidCustomPhases.length > 0) {
-            errors.push(`Custom phases must be between position ${lastNumberedPosition + 1} and ${maxNthPosition}. Invalid: ${invalidCustomPhases.map(p => p.name).join(', ')}`);
+            errors.push(`Custom phases must be after position ${lastNumberedPosition}. Invalid: ${invalidCustomPhases.map(p => p.name).join(', ')}`);
           }
         }
       }
@@ -474,45 +434,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Combine both and convert to Phase format
       const allPhasesData = [...(standardPhasesData || []), ...(customPhasesData || [])];
-      
-      // DEBUG: Log phases loaded from database
-      console.log('🔍 loadPhases Debug - Phases loaded from database:', {
-        allProjectPhases: (allProjectPhasesData || []).map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          is_standard: p.is_standard,
-          position_rule: p.position_rule,
-          position_value: p.position_value,
-          source_project_id: p.source_project_id,
-          source_phase_id: p.source_phase_id
-        })),
-        customPhasesFiltered: customPhasesData.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          is_standard: p.is_standard,
-          position_rule: p.position_rule,
-          position_value: p.position_value,
-          source_project_id: p.source_project_id,
-          source_phase_id: p.source_phase_id
-        })),
-        standardPhases: (standardPhasesData || []).map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          is_standard: p.is_standard,
-          position_rule: p.position_rule,
-          position_value: p.position_value
-        })),
-        totalCombined: allPhasesData.length,
-        // Show which phases have nth rule and their values
-        nthPhasesFromDB: allPhasesData
-          .filter((p: any) => p.position_rule === 'nth' && typeof p.position_value === 'number')
-          .map((p: any) => ({
-            name: p.name,
-            position_value: p.position_value,
-            is_standard: p.is_standard
-          }))
-          .sort((a: any, b: any) => a.position_value - b.position_value)
-      });
       
       // Get source project names for incorporated phases
       const sourceProjectIds = new Set(
