@@ -163,15 +163,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     nthPhases.sort((a, b) => a.numericOrder - b.numericOrder);
     
     // Check for gaps or duplicates in nth phases only
+    // 'nth' phases should be sequential relative to each other (no gaps)
     if (nthPhases.length > 0) {
-      const expectedOrders = Array.from({ length: nthPhases.length }, (_, i) => i + 1);
       const actualOrders = nthPhases.map(p => p.numericOrder);
-      
-      const hasGaps = actualOrders.some((order, index) => order !== expectedOrders[index]);
       const hasDuplicates = new Set(actualOrders).size !== actualOrders.length;
       
-      if (hasGaps || hasDuplicates) {
-        errors.push(`Phases out of sequential order. Expected: ${expectedOrders.join(', ')}, Found: ${actualOrders.join(', ')}`);
+      if (hasDuplicates) {
+        errors.push(`Duplicate position values found in 'nth' phases: ${actualOrders.join(', ')}`);
+      }
+      
+      // Check for gaps: each 'nth' phase should be exactly 1 more than the previous one
+      // (after sorting, they should be consecutive)
+      const sortedOrders = [...actualOrders].sort((a, b) => a - b);
+      const minOrder = sortedOrders[0];
+      const expectedOrders = Array.from({ length: nthPhases.length }, (_, i) => minOrder + i);
+      const hasGaps = sortedOrders.some((order, index) => order !== expectedOrders[index]);
+      
+      if (hasGaps) {
+        errors.push(`Phases out of sequential order. Expected consecutive values starting from ${minOrder}, Found: ${sortedOrders.join(', ')}`);
       }
     }
     
