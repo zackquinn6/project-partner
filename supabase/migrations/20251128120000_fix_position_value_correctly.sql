@@ -345,6 +345,120 @@ $$;
 COMMENT ON FUNCTION public.create_project_with_standard_foundation_v2 IS 
 'Creates a new project template with standard phases. Reads position_rule and sets position_value correctly.';
 
+-- Step 2.5: Fix rebuild_phases_json_from_project_phases function
+-- The function was returning the string 'last' for phaseOrderNumber, which should be INTEGER
+CREATE OR REPLACE FUNCTION public.rebuild_phases_json_from_project_phases(p_project_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  phases_json JSONB := '[]'::JSONB;
+  phase_record RECORD;
+  operations_json JSONB;
+  operation_record RECORD;
+  steps_json JSONB;
+  step_record RECORD;
+BEGIN
+  FOR phase_record IN
+    SELECT 
+      id,
+      name,
+      description,
+      is_standard,
+      position_rule,
+      position_value
+    FROM project_phases
+    WHERE project_id = p_project_id
+    ORDER BY 
+      CASE 
+        WHEN position_rule = 'first' THEN 1
+        WHEN position_rule = 'last' THEN 999999
+        WHEN position_rule = 'last_minus_n' THEN 998
+        WHEN position_rule = 'nth' AND position_value IS NOT NULL THEN position_value
+        ELSE 999998
+      END
+  LOOP
+    operations_json := '[]'::JSONB;
+    
+    FOR operation_record IN
+      SELECT 
+        id,
+        operation_name,
+        operation_description,
+        flow_type,
+        user_prompt,
+        display_order,
+        is_standard
+      FROM template_operations
+      WHERE phase_id = phase_record.id
+      ORDER BY display_order
+    LOOP
+      steps_json := '[]'::JSONB;
+      
+      FOR step_record IN
+        SELECT 
+          id,
+          name,
+          description,
+          step_type,
+          display_order,
+          estimated_time_minutes
+        FROM template_steps
+        WHERE operation_id = operation_record.id
+        ORDER BY display_order
+      LOOP
+        steps_json := steps_json || jsonb_build_array(
+          jsonb_build_object(
+            'id', step_record.id,
+            'name', step_record.name,
+            'description', step_record.description,
+            'stepType', step_record.step_type,
+            'displayOrder', step_record.display_order,
+            'estimatedTimeMinutes', step_record.estimated_time_minutes
+          )
+        );
+      END LOOP;
+      
+      operations_json := operations_json || jsonb_build_array(
+        jsonb_build_object(
+          'id', operation_record.id,
+          'name', operation_record.operation_name,
+          'description', operation_record.operation_description,
+          'flowType', operation_record.flow_type,
+          'userPrompt', operation_record.user_prompt,
+          'displayOrder', operation_record.display_order,
+          'isStandard', operation_record.is_standard,
+          'steps', steps_json
+        )
+      );
+    END LOOP;
+    
+    phases_json := phases_json || jsonb_build_array(
+      jsonb_build_object(
+        'id', phase_record.id,
+        'name', phase_record.name,
+        'description', phase_record.description,
+        'operations', COALESCE(operations_json, '[]'::jsonb),
+        'isStandard', phase_record.is_standard,
+        'phaseOrderNumber', 
+          CASE 
+            WHEN phase_record.position_rule = 'first' THEN 1
+            WHEN phase_record.position_rule = 'last' THEN 999999::INTEGER
+            WHEN phase_record.position_rule = 'last_minus_n' THEN 998::INTEGER
+            WHEN phase_record.position_rule = 'nth' AND phase_record.position_value IS NOT NULL 
+              THEN phase_record.position_value::INTEGER
+            ELSE NULL
+          END
+      )
+    );
+  END LOOP;
+  
+  RETURN phases_json;
+END;
+$$;
+
 -- Step 3: Also fix create_project_revision_v2
 CREATE OR REPLACE FUNCTION public.create_project_revision_v2(
   source_project_id UUID,
