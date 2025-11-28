@@ -146,14 +146,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       errors.push(`${phasesWithoutRule.length} phase(s) missing position_rule: ${phasesWithoutRule.map(p => p.name).join(', ')}`);
     }
     
-    // Check 2: Sequential ordering - positions must be 1, 2, 3... with no gaps
-    const numericPositions = phasesToValidate
+    // Check 2: Sequential ordering - only check 'nth' phases (exclude 'first' and 'last')
+    const nthPhases = phasesToValidate
       .map((phase) => {
         const positionRule = (phase as any)?.position_rule;
         const positionValue = (phase as any)?.position_value;
         
-        if (positionRule === 'first') return { phase, numericOrder: 1 };
-        if (positionRule === 'last') return { phase, numericOrder: phasesToValidate.length };
         if (positionRule === 'nth' && typeof positionValue === 'number') {
           return { phase, numericOrder: positionValue };
         }
@@ -162,17 +160,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       .filter((item): item is { phase: Phase; numericOrder: number } => item !== null);
     
     // Sort by numeric order
-    numericPositions.sort((a, b) => a.numericOrder - b.numericOrder);
+    nthPhases.sort((a, b) => a.numericOrder - b.numericOrder);
     
-    // Check for gaps or duplicates
-    const expectedOrders = Array.from({ length: phasesToValidate.length }, (_, i) => i + 1);
-    const actualOrders = numericPositions.map(p => p.numericOrder);
+    // Check for gaps or duplicates in nth phases only
+    if (nthPhases.length > 0) {
+      const expectedOrders = Array.from({ length: nthPhases.length }, (_, i) => i + 1);
+      const actualOrders = nthPhases.map(p => p.numericOrder);
+      
+      const hasGaps = actualOrders.some((order, index) => order !== expectedOrders[index]);
+      const hasDuplicates = new Set(actualOrders).size !== actualOrders.length;
+      
+      if (hasGaps || hasDuplicates) {
+        errors.push(`Phases out of sequential order. Expected: ${expectedOrders.join(', ')}, Found: ${actualOrders.join(', ')}`);
+      }
+    }
     
-    const hasGaps = actualOrders.some((order, index) => order !== expectedOrders[index]);
-    const hasDuplicates = new Set(actualOrders).size !== actualOrders.length;
+    // Check 2b: Exactly one 'first' and one 'last' phase
+    const firstPhases = phasesToValidate.filter(p => (p as any)?.position_rule === 'first');
+    const lastPhases = phasesToValidate.filter(p => (p as any)?.position_rule === 'last');
     
-    if (hasGaps || hasDuplicates) {
-      errors.push(`Phases out of sequential order. Expected: ${expectedOrders.join(', ')}, Found: ${actualOrders.join(', ')}`);
+    if (firstPhases.length !== 1) {
+      errors.push(`Expected exactly 1 'first' phase, found ${firstPhases.length}`);
+    }
+    
+    if (lastPhases.length !== 1) {
+      errors.push(`Expected exactly 1 'last' phase, found ${lastPhases.length}`);
     }
     
     // Check 3: Custom phases must be between last numbered standard phase and 'last'
