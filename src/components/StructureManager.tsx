@@ -1072,10 +1072,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
     }
     
+    // For steps, ensure step_title is properly set from step property
+    const editData = type === 'step' 
+      ? { ...data, step_title: data.step_title || data.step || '' }
+      : { ...data };
+    
     setEditingItem({
       type,
       id,
-      data: { ...data }
+      data: editData
     });
   }, [phases, isEditingStandardProject]);
   
@@ -1121,10 +1126,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           throw error;
         }
       } else if (editingItem.type === 'step') {
+        // Ensure we use step_title (the actual database field)
+        const stepTitle = editingItem.data.step_title || editingItem.data.step || '';
         const { error } = await supabase
           .from('template_steps')
           .update({
-            step_title: editingItem.data.step || editingItem.data.step_title,
+            step_title: stepTitle,
             description: editingItem.data.description || null,
             updated_at: new Date().toISOString()
           })
@@ -1159,6 +1166,160 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     setPhaseToDelete(phaseId);
     setDeletePhaseDialogOpen(true);
   }, []);
+  
+  /**
+   * Delete an operation from the database
+   */
+  const handleDeleteOperation = useCallback(async (operationId: string) => {
+    if (!currentProject?.id || !operationId) {
+      return;
+    }
+    
+    const operation = phases
+      .flatMap(p => p.operations)
+      .find(op => op.id === operationId);
+    
+    if (!operation) {
+      toast.error('Operation not found');
+      return;
+    }
+    
+    // Check if can delete
+    const parentPhase = phases.find(p => p.operations.some(op => op.id === operationId));
+    if (!parentPhase) {
+      toast.error('Parent phase not found');
+      return;
+    }
+    
+    if (parentPhase.isLinked) {
+      toast.error('Cannot delete operations in incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && isStandardPhase(parentPhase)) {
+      toast.error('Cannot delete operations in standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    if (operation.isStandard && !isEditingStandardProject) {
+      toast.error('Cannot delete standard operations. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete "${operation.name}"? This will also delete all its steps. This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      // Delete all steps for this operation first
+      const { error: deleteStepsError } = await supabase
+        .from('template_steps')
+        .delete()
+        .eq('operation_id', operationId);
+      
+      if (deleteStepsError) {
+        throw deleteStepsError;
+      }
+      
+      // Delete the operation
+      const { error: deleteError } = await supabase
+        .from('template_operations')
+        .delete()
+        .eq('id', operationId);
+      
+      if (deleteError) {
+        throw deleteError;
+      }
+      
+      // Reload phases with position data
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Operation deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting operation:', error);
+      toast.error(`Failed to delete operation: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
+  
+  /**
+   * Delete a step from the database
+   */
+  const handleDeleteStep = useCallback(async (stepId: string) => {
+    if (!currentProject?.id || !stepId) {
+      return;
+    }
+    
+    const step = phases
+      .flatMap(p => p.operations)
+      .flatMap(op => op.steps)
+      .find(s => s.id === stepId);
+    
+    if (!step) {
+      toast.error('Step not found');
+      return;
+    }
+    
+    // Find parent operation and phase
+    const parentOperation = phases
+      .flatMap(p => p.operations)
+      .find(op => op.steps.some(s => s.id === stepId));
+    
+    if (!parentOperation) {
+      toast.error('Parent operation not found');
+      return;
+    }
+    
+    const parentPhase = phases.find(p => p.operations.some(op => op.id === parentOperation.id));
+    
+    if (!parentPhase) {
+      toast.error('Parent phase not found');
+      return;
+    }
+    
+    // Check if can delete
+    if (parentPhase.isLinked) {
+      toast.error('Cannot delete steps in incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && isStandardPhase(parentPhase)) {
+      toast.error('Cannot delete steps in standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    if (step.isStandard && !isEditingStandardProject) {
+      toast.error('Cannot delete standard steps. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete "${step.step || 'this step'}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      // Delete the step
+      const { error: deleteError } = await supabase
+        .from('template_steps')
+        .delete()
+        .eq('id', stepId);
+      
+      if (deleteError) {
+        throw deleteError;
+      }
+      
+      // Reload phases with position data
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Step deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting step:', error);
+      toast.error(`Failed to delete step: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
   
   /**
    * Add a new operation to a phase
@@ -1891,6 +2052,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                     >
                                                       <Edit className="w-3 h-3" />
                                                     </Button>
+                                                    <Button
+                                                      size="sm"
+                                                      variant="ghost"
+                                                      onClick={() => handleDeleteOperation(operation.id)}
+                                                    >
+                                                      <Trash2 className="w-3 h-3" />
+                                                    </Button>
                                                   </>
                                                 )}
                                               </>
@@ -1934,10 +2102,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                         {isStepEditing ? (
                                                           <div className="space-y-1">
                                                             <Input
-                                                              value={editingItem.data.step || ''}
+                                                              value={editingItem.data.step || editingItem.data.step_title || ''}
                                                               onChange={e => setEditingItem({
                                                                 ...editingItem,
-                                                                data: { ...editingItem.data, step: e.target.value }
+                                                                data: { 
+                                                                  ...editingItem.data, 
+                                                                  step: e.target.value,
+                                                                  step_title: e.target.value
+                                                                }
                                                               })}
                                                               placeholder="Step name"
                                                               className="text-xs h-6"
@@ -1983,13 +2155,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                           ) : (
                                                             <>
                                                               {(!stepIsStandard || isEditingStandardProject) && (
-                                                                <Button
-                                                                  size="sm"
-                                                                  variant="ghost"
-                                                                  onClick={() => startEdit('step', step.id, step)}
-                                                                >
-                                                                  <Edit className="w-3 h-3" />
-                                                                </Button>
+                                                                <>
+                                                                  <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => startEdit('step', step.id, step)}
+                                                                  >
+                                                                    <Edit className="w-3 h-3" />
+                                                                  </Button>
+                                                                  <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => handleDeleteStep(step.id)}
+                                                                  >
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                  </Button>
+                                                                </>
                                                               )}
                                                             </>
                                                           )}
