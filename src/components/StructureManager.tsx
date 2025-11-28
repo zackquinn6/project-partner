@@ -146,8 +146,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       errors.push(`${phasesWithoutRule.length} phase(s) missing position_rule: ${phasesWithoutRule.map(p => p.name).join(', ')}`);
     }
     
-    // Check 2: Sequential ordering - check 'nth' phases but allow gaps for standard phases with special rules
-    // Standard phases with 'first', 'last', or 'last_minus_n' can occupy positions between 'nth' phases
+    // Check 2: Sequential ordering - check ALL 'nth' phases (including standard phases) for gaps
+    // All phases with position_rule='nth' must have consecutive position_value with no gaps
+    // Only 'first' and 'last' phases are excluded from this check
     const nthPhases = phasesToValidate
       .map((phase) => {
         const positionRule = (phase as any)?.position_rule;
@@ -163,7 +164,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     // Sort by numeric order
     nthPhases.sort((a, b) => a.numericOrder - b.numericOrder);
     
-    // Check for duplicates in nth phases
+    // Check for duplicates and gaps in ALL 'nth' phases (standard and custom)
     if (nthPhases.length > 0) {
       const actualOrders = nthPhases.map(p => p.numericOrder);
       const hasDuplicates = new Set(actualOrders).size !== actualOrders.length;
@@ -172,21 +173,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         errors.push(`Duplicate position values found in 'nth' phases: ${actualOrders.join(', ')}`);
       }
       
-      // Check for gaps in 'nth' phases, but only if there are no standard phases that could fill the gap
-      // Standard phases with 'first', 'last', or 'last_minus_n' can legitimately occupy positions between 'nth' phases
+      // Check for gaps: all 'nth' phases must be consecutive
+      // This includes standard phases with 'nth' rule (e.g., Planning, Ordering)
       const sortedOrders = [...actualOrders].sort((a, b) => a - b);
       const minOrder = sortedOrders[0];
+      const expectedOrders = Array.from({ length: nthPhases.length }, (_, i) => minOrder + i);
+      const hasGaps = sortedOrders.some((order, index) => order !== expectedOrders[index]);
       
-      // Get all standard phases with special position rules that could occupy positions
-      const standardPhasesWithSpecialRules = phasesToValidate.filter(p => {
-        const rule = (p as any)?.position_rule;
-        return isStandardPhase(p) && (rule === 'first' || rule === 'last' || rule === 'last_minus_n');
-      });
-      
-      // Check for gaps only if we can't explain them with standard phases
-      // For now, we'll be more lenient: only check for duplicates, not gaps
-      // Gaps are allowed because standard phases with special rules can occupy those positions
-      // The actual ordering is validated by the sort order, not by consecutive position values
+      if (hasGaps) {
+        errors.push(`Phases out of sequential order. Expected consecutive values starting from ${minOrder}, Found: ${sortedOrders.join(', ')}`);
+      }
     }
     
     // Check 2b: Exactly one 'first' and one 'last' phase (only required for Standard Project Foundation)
