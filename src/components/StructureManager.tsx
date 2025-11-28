@@ -901,7 +901,66 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases from database after delete (with position data)
-      const reloadedPhases = await reloadPhasesWithPositions(currentProject.id);
+      // Skip validation temporarily since we're about to renumber
+      let reloadedPhases: Phase[];
+      try {
+        reloadedPhases = await reloadPhasesWithPositions(currentProject.id);
+      } catch (validationError: any) {
+        // If validation fails after delete, still try to reload without validation
+        // This can happen when phases have gaps after deletion
+        console.warn('Validation failed after delete, will fix with renumbering:', validationError);
+        const { data: phasesData } = await supabase
+          .from('project_phases')
+          .select('*')
+          .eq('project_id', currentProject.id);
+        
+        if (!phasesData) {
+          throw new Error('Failed to reload phases after delete');
+        }
+        
+        // Convert to Phase format manually
+        reloadedPhases = await Promise.all(
+          phasesData.map(async (phaseData) => {
+            const { data: operations } = await supabase
+              .from('template_operations')
+              .select('*')
+              .eq('phase_id', phaseData.id)
+              .order('display_order');
+            
+            const operationsWithSteps = await Promise.all(
+              (operations || []).map(async (op) => {
+                const { data: steps } = await supabase
+                  .from('template_steps')
+                  .select('*')
+                  .eq('operation_id', op.id)
+                  .order('display_order');
+                
+                return {
+                  ...op,
+                  steps: (steps || []).map(s => ({
+                    ...s,
+                    name: s.step_title,
+                    displayOrder: s.display_order
+                  }))
+                };
+              })
+            );
+            
+            return {
+              id: phaseData.id,
+              name: phaseData.name,
+              description: phaseData.description,
+              operations: operationsWithSteps,
+              isStandard: phaseData.is_standard || false,
+              phaseOrderNumber: phaseData.position_rule === 'first' ? 1 :
+                               phaseData.position_rule === 'last' ? 'last' :
+                               phaseData.position_value,
+              position_rule: phaseData.position_rule,
+              position_value: phaseData.position_value
+            } as Phase;
+          })
+        );
+      }
       
       // For regular projects: auto-renumber custom phases only, never change standard phases
       if (!isEditingStandardProject) {
