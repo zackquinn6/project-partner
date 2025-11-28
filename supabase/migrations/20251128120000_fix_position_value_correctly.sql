@@ -390,7 +390,7 @@ BEGIN
         flow_type,
         user_prompt,
         display_order,
-        is_standard
+        is_reference
       FROM template_operations
       WHERE phase_id = phase_record.id
       ORDER BY display_order
@@ -429,7 +429,7 @@ BEGIN
           'flowType', operation_record.flow_type,
           'userPrompt', operation_record.user_prompt,
           'displayOrder', operation_record.display_order,
-          'isStandard', operation_record.is_standard,
+          'isStandard', COALESCE(operation_record.is_reference, false) OR phase_record.is_standard,
           'steps', steps_json
         )
       );
