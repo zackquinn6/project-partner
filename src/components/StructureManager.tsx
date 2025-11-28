@@ -1403,20 +1403,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    */
   const handleMoveStepUp = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
     if (!currentProject?.id) {
+      console.error('❌ handleMoveStepUp: No project ID');
       return;
     }
     
     const phase = phases.find(p => p.id === phaseId);
-    if (!phase) return;
+    if (!phase) {
+      console.error('❌ handleMoveStepUp: Phase not found', phaseId);
+      return;
+    }
     
     const operation = phase.operations.find(op => op.id === operationId);
-    if (!operation) return;
+    if (!operation) {
+      console.error('❌ handleMoveStepUp: Operation not found', operationId);
+      return;
+    }
     
     const currentIndex = operation.steps.findIndex(s => s.id === stepId);
-    if (currentIndex <= 0) return;
+    if (currentIndex <= 0) {
+      console.log('⚠️ handleMoveStepUp: Step is already at top or not found', { currentIndex, stepId });
+      return;
+    }
     
     const step = operation.steps[currentIndex];
     const prevStep = operation.steps[currentIndex - 1];
+    
+    console.log('🔄 handleMoveStepUp called:', {
+      stepId,
+      operationId,
+      phaseId,
+      isEditingStandardProject,
+      phaseIsLinked: phase.isLinked,
+      phaseIsStandard: isStandardPhase(phase),
+      currentIndex,
+      stepDisplayOrder: (step as any).displayOrder,
+      prevStepDisplayOrder: (prevStep as any).displayOrder
+    });
     
     // Check permissions
     if (phase.isLinked) {
@@ -1424,6 +1446,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return;
     }
     
+    // Allow reordering in Edit Standard mode, or for non-standard phases
     if (!isEditingStandardProject && isStandardPhase(phase)) {
       toast.error('Cannot reorder steps in standard phases. Use Edit Standard to modify standard phases.');
       return;
@@ -1471,20 +1494,42 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    */
   const handleMoveStepDown = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
     if (!currentProject?.id) {
+      console.error('❌ handleMoveStepDown: No project ID');
       return;
     }
     
     const phase = phases.find(p => p.id === phaseId);
-    if (!phase) return;
+    if (!phase) {
+      console.error('❌ handleMoveStepDown: Phase not found', phaseId);
+      return;
+    }
     
     const operation = phase.operations.find(op => op.id === operationId);
-    if (!operation) return;
+    if (!operation) {
+      console.error('❌ handleMoveStepDown: Operation not found', operationId);
+      return;
+    }
     
     const currentIndex = operation.steps.findIndex(s => s.id === stepId);
-    if (currentIndex < 0 || currentIndex >= operation.steps.length - 1) return;
+    if (currentIndex < 0 || currentIndex >= operation.steps.length - 1) {
+      console.log('⚠️ handleMoveStepDown: Step is already at bottom or not found', { currentIndex, stepId, stepsLength: operation.steps.length });
+      return;
+    }
     
     const step = operation.steps[currentIndex];
     const nextStep = operation.steps[currentIndex + 1];
+    
+    console.log('🔄 handleMoveStepDown called:', {
+      stepId,
+      operationId,
+      phaseId,
+      isEditingStandardProject,
+      phaseIsLinked: phase.isLinked,
+      phaseIsStandard: isStandardPhase(phase),
+      currentIndex,
+      stepDisplayOrder: (step as any).displayOrder,
+      nextStepDisplayOrder: (nextStep as any).displayOrder
+    });
     
     // Check permissions
     if (phase.isLinked) {
@@ -1492,6 +1537,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return;
     }
     
+    // Allow reordering in Edit Standard mode, or for non-standard phases
     if (!isEditingStandardProject && isStandardPhase(phase)) {
       toast.error('Cannot reorder steps in standard phases. Use Edit Standard to modify standard phases.');
       return;
@@ -2576,6 +2622,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                             {operation.steps.map((step, stepIndex) => {
                                               const isStepEditing = editingItem?.type === 'step' && editingItem.id === step.id;
                                               const stepIsStandard = step.isStandard === true;
+                                              
+                                              // Debug: Log button visibility conditions
+                                              if (isEditingStandardProject && stepIndex === 0) {
+                                                console.log('🔍 Step button visibility check:', {
+                                                  stepId: step.id,
+                                                  stepName: step.step,
+                                                  stepIsStandard,
+                                                  isEditingStandardProject,
+                                                  isReadOnly,
+                                                  phaseIsLinked,
+                                                  phaseIsStandard: phaseIsStandard,
+                                                  shouldShowButtons: !isReadOnly && !phaseIsLinked && (!stepIsStandard || isEditingStandardProject)
+                                                });
+                                              }
                                               
                                               return (
                                                 <Card key={step.id} className="ml-4">

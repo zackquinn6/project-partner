@@ -1281,7 +1281,7 @@ export default function EditWorkflowView({
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold">
-                {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '') || 'Untitled Project'}`}
+                {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '').replace(/\s*\(Rev\s+\d+\)\s*/gi, '').trim() || 'Untitled Project'}`}
               </h1>
               {!isEditingStandardProject && (
                 <p className="text-xs text-muted-foreground mt-2">
