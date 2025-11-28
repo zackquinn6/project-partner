@@ -73,8 +73,8 @@ BEGIN
       bad_data_record.position_rule,
       bad_data_record.position_value,
       bad_data_record.value_type;
-  END LOOP;
-END $$;
+    END LOOP;
+END $$ LANGUAGE plpgsql;
 
 -- Step 2: Recreate create_project_with_standard_foundation_v2 correctly
 -- Function reads position_rule and sets position_value accordingly
