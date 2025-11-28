@@ -1244,6 +1244,272 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
   
   /**
+   * Move an operation up (decrease display_order)
+   */
+  const handleMoveOperationUp = useCallback(async (operationId: string, phaseId: string) => {
+    if (!currentProject?.id) {
+      return;
+    }
+    
+    const phase = phases.find(p => p.id === phaseId);
+    if (!phase) return;
+    
+    const currentIndex = phase.operations.findIndex(op => op.id === operationId);
+    if (currentIndex <= 0) return;
+    
+    const operation = phase.operations[currentIndex];
+    const prevOperation = phase.operations[currentIndex - 1];
+    
+    // Check permissions
+    if (phase.isLinked) {
+      toast.error('Cannot reorder operations in incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && isStandardPhase(phase)) {
+      toast.error('Cannot reorder operations in standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    try {
+      // Get current display_order values
+      const { data: ops } = await supabase
+        .from('template_operations')
+        .select('id, display_order')
+        .in('id', [operation.id, prevOperation.id]);
+      
+      if (!ops || ops.length !== 2) return;
+      
+      const op1 = ops.find(o => o.id === operation.id);
+      const op2 = ops.find(o => o.id === prevOperation.id);
+      
+      if (!op1 || !op2) return;
+      
+      // Swap display_order
+      await supabase
+        .from('template_operations')
+        .update({ display_order: op2.display_order })
+        .eq('id', operation.id);
+      
+      await supabase
+        .from('template_operations')
+        .update({ display_order: op1.display_order })
+        .eq('id', prevOperation.id);
+      
+      // Reload phases
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Operation moved up');
+    } catch (error: any) {
+      console.error('Error moving operation up:', error);
+      toast.error(`Failed to move operation: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
+  
+  /**
+   * Move an operation down (increase display_order)
+   */
+  const handleMoveOperationDown = useCallback(async (operationId: string, phaseId: string) => {
+    if (!currentProject?.id) {
+      return;
+    }
+    
+    const phase = phases.find(p => p.id === phaseId);
+    if (!phase) return;
+    
+    const currentIndex = phase.operations.findIndex(op => op.id === operationId);
+    if (currentIndex < 0 || currentIndex >= phase.operations.length - 1) return;
+    
+    const operation = phase.operations[currentIndex];
+    const nextOperation = phase.operations[currentIndex + 1];
+    
+    // Check permissions
+    if (phase.isLinked) {
+      toast.error('Cannot reorder operations in incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && isStandardPhase(phase)) {
+      toast.error('Cannot reorder operations in standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    try {
+      // Get current display_order values
+      const { data: ops } = await supabase
+        .from('template_operations')
+        .select('id, display_order')
+        .in('id', [operation.id, nextOperation.id]);
+      
+      if (!ops || ops.length !== 2) return;
+      
+      const op1 = ops.find(o => o.id === operation.id);
+      const op2 = ops.find(o => o.id === nextOperation.id);
+      
+      if (!op1 || !op2) return;
+      
+      // Swap display_order
+      await supabase
+        .from('template_operations')
+        .update({ display_order: op2.display_order })
+        .eq('id', operation.id);
+      
+      await supabase
+        .from('template_operations')
+        .update({ display_order: op1.display_order })
+        .eq('id', nextOperation.id);
+      
+      // Reload phases
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Operation moved down');
+    } catch (error: any) {
+      console.error('Error moving operation down:', error);
+      toast.error(`Failed to move operation: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
+  
+  /**
+   * Move a step up (decrease step_number)
+   */
+  const handleMoveStepUp = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
+    if (!currentProject?.id) {
+      return;
+    }
+    
+    const phase = phases.find(p => p.id === phaseId);
+    if (!phase) return;
+    
+    const operation = phase.operations.find(op => op.id === operationId);
+    if (!operation) return;
+    
+    const currentIndex = operation.steps.findIndex(s => s.id === stepId);
+    if (currentIndex <= 0) return;
+    
+    const step = operation.steps[currentIndex];
+    const prevStep = operation.steps[currentIndex - 1];
+    
+    // Check permissions
+    if (phase.isLinked) {
+      toast.error('Cannot reorder steps in incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && isStandardPhase(phase)) {
+      toast.error('Cannot reorder steps in standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    try {
+      // Get current step_number values
+      const { data: steps } = await supabase
+        .from('template_steps')
+        .select('id, step_number')
+        .in('id', [step.id, prevStep.id]);
+      
+      if (!steps || steps.length !== 2) return;
+      
+      const s1 = steps.find(s => s.id === step.id);
+      const s2 = steps.find(s => s.id === prevStep.id);
+      
+      if (!s1 || !s2) return;
+      
+      // Swap step_number
+      await supabase
+        .from('template_steps')
+        .update({ step_number: s2.step_number })
+        .eq('id', step.id);
+      
+      await supabase
+        .from('template_steps')
+        .update({ step_number: s1.step_number })
+        .eq('id', prevStep.id);
+      
+      // Reload phases
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Step moved up');
+    } catch (error: any) {
+      console.error('Error moving step up:', error);
+      toast.error(`Failed to move step: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
+  
+  /**
+   * Move a step down (increase step_number)
+   */
+  const handleMoveStepDown = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
+    if (!currentProject?.id) {
+      return;
+    }
+    
+    const phase = phases.find(p => p.id === phaseId);
+    if (!phase) return;
+    
+    const operation = phase.operations.find(op => op.id === operationId);
+    if (!operation) return;
+    
+    const currentIndex = operation.steps.findIndex(s => s.id === stepId);
+    if (currentIndex < 0 || currentIndex >= operation.steps.length - 1) return;
+    
+    const step = operation.steps[currentIndex];
+    const nextStep = operation.steps[currentIndex + 1];
+    
+    // Check permissions
+    if (phase.isLinked) {
+      toast.error('Cannot reorder steps in incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && isStandardPhase(phase)) {
+      toast.error('Cannot reorder steps in standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    try {
+      // Get current step_number values
+      const { data: steps } = await supabase
+        .from('template_steps')
+        .select('id, step_number')
+        .in('id', [step.id, nextStep.id]);
+      
+      if (!steps || steps.length !== 2) return;
+      
+      const s1 = steps.find(s => s.id === step.id);
+      const s2 = steps.find(s => s.id === nextStep.id);
+      
+      if (!s1 || !s2) return;
+      
+      // Swap step_number
+      await supabase
+        .from('template_steps')
+        .update({ step_number: s2.step_number })
+        .eq('id', step.id);
+      
+      await supabase
+        .from('template_steps')
+        .update({ step_number: s1.step_number })
+        .eq('id', nextStep.id);
+      
+      // Reload phases
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Step moved down');
+    } catch (error: any) {
+      console.error('Error moving step down:', error);
+      toast.error(`Failed to move step: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
+  
+  /**
    * Delete a step from the database
    */
   const handleDeleteStep = useCallback(async (stepId: string) => {
@@ -1537,6 +1803,137 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       toast.error(`Failed to add step: ${error.message || 'Unknown error'}`);
     }
   }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
+  
+  /**
+   * Helper to update phase position in database
+   */
+  const updatePhasePosition = useCallback(async (phaseId: string, orderNumber: number | 'last', totalPhases: number) => {
+    if (!currentProject?.id) return;
+    
+    let positionRule: string;
+    let positionValue: number | null = null;
+    
+    if (orderNumber === 1) {
+      positionRule = 'first';
+    } else if (orderNumber === 'last') {
+      positionRule = 'last';
+    } else if (typeof orderNumber === 'number') {
+      positionRule = 'nth';
+      positionValue = orderNumber;
+    } else {
+      return;
+    }
+    
+    await supabase
+      .from('project_phases')
+      .update({
+        position_rule: positionRule,
+        position_value: positionValue,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', phaseId)
+      .eq('project_id', currentProject.id);
+  }, [currentProject]);
+  
+  /**
+   * Move a phase up (decrease position)
+   */
+  const handleMovePhaseUp = useCallback(async (phaseId: string) => {
+    if (!currentProject?.id) {
+      toast.error('No project selected');
+      return;
+    }
+    
+    const currentIndex = phases.findIndex(p => p.id === phaseId);
+    if (currentIndex <= 0) {
+      return; // Already at top
+    }
+    
+    const phase = phases[currentIndex];
+    const prevPhase = phases[currentIndex - 1];
+    
+    // Check permissions
+    if (phase.isLinked || prevPhase.isLinked) {
+      toast.error('Cannot reorder incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && (isStandardPhase(phase) || isStandardPhase(prevPhase))) {
+      toast.error('Cannot reorder standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    try {
+      // Swap positions
+      const tempOrder = phase.phaseOrderNumber;
+      phase.phaseOrderNumber = prevPhase.phaseOrderNumber;
+      prevPhase.phaseOrderNumber = tempOrder;
+      
+      // Update database positions
+      await updatePhasePosition(phase.id, phase.phaseOrderNumber, phases.length);
+      await updatePhasePosition(prevPhase.id, prevPhase.phaseOrderNumber, phases.length);
+      
+      // Reload phases
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Phase moved up');
+    } catch (error: any) {
+      console.error('Error moving phase up:', error);
+      toast.error(`Failed to move phase: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions, updatePhasePosition]);
+  
+  /**
+   * Move a phase down (increase position)
+   */
+  const handleMovePhaseDown = useCallback(async (phaseId: string) => {
+    if (!currentProject?.id) {
+      toast.error('No project selected');
+      return;
+    }
+    
+    const currentIndex = phases.findIndex(p => p.id === phaseId);
+    if (currentIndex < 0 || currentIndex >= phases.length - 1) {
+      return; // Already at bottom
+    }
+    
+    const phase = phases[currentIndex];
+    const nextPhase = phases[currentIndex + 1];
+    
+    // Check permissions
+    if (phase.isLinked || nextPhase.isLinked) {
+      toast.error('Cannot reorder incorporated phases');
+      return;
+    }
+    
+    if (!isEditingStandardProject && (isStandardPhase(phase) || isStandardPhase(nextPhase))) {
+      toast.error('Cannot reorder standard phases. Use Edit Standard to modify standard phases.');
+      return;
+    }
+    
+    try {
+      // Swap positions
+      const tempOrder = phase.phaseOrderNumber;
+      phase.phaseOrderNumber = nextPhase.phaseOrderNumber;
+      nextPhase.phaseOrderNumber = tempOrder;
+      
+      // Update database positions
+      await updatePhasePosition(phase.id, phase.phaseOrderNumber, phases.length);
+      await updatePhasePosition(nextPhase.id, nextPhase.phaseOrderNumber, phases.length);
+      
+      // Reload phases
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      loadedProjectIdRef.current = null;
+      setPhases(sortedPhases);
+      
+      toast.success('Phase moved down');
+    } catch (error: any) {
+      console.error('Error moving phase down:', error);
+      toast.error(`Failed to move phase: ${error.message || 'Unknown error'}`);
+    }
+  }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions, updatePhasePosition]);
   
   /**
    * Handle phase order change from dropdown
@@ -1908,7 +2305,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         ) : (
-                          // Project phases OR standard phases in Edit Standard: Show edit/delete buttons
+                          // Project phases OR standard phases in Edit Standard: Show edit/delete/reorder buttons
                           <>
                             {isEditing ? (
                               <>
@@ -1921,6 +2318,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                               </>
                             ) : (
                               <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleMovePhaseUp(phase.id)}
+                                  disabled={phaseIndex === 0}
+                                  title="Move up"
+                                >
+                                  <ChevronUp className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleMovePhaseDown(phase.id)}
+                                  disabled={phaseIndex === phases.length - 1}
+                                  title="Move down"
+                                >
+                                  <ChevronDown className="w-4 h-4" />
+                                </Button>
                                 <Button 
                                   size="sm" 
                                   variant="ghost"
@@ -2048,6 +2463,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                     <Button
                                                       size="sm"
                                                       variant="ghost"
+                                                      onClick={() => handleMoveOperationUp(operation.id, phase.id)}
+                                                      disabled={operationIndex === 0}
+                                                      title="Move up"
+                                                    >
+                                                      <ChevronUp className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button
+                                                      size="sm"
+                                                      variant="ghost"
+                                                      onClick={() => handleMoveOperationDown(operation.id, phase.id)}
+                                                      disabled={operationIndex === phase.operations.length - 1}
+                                                      title="Move down"
+                                                    >
+                                                      <ChevronDown className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button
+                                                      size="sm"
+                                                      variant="ghost"
                                                       onClick={() => startEdit('operation', operation.id, operation)}
                                                     >
                                                       <Edit className="w-3 h-3" />
@@ -2156,6 +2589,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                             <>
                                                               {(!stepIsStandard || isEditingStandardProject) && (
                                                                 <>
+                                                                  <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => handleMoveStepUp(step.id, operation.id, phase.id)}
+                                                                    disabled={stepIndex === 0}
+                                                                    title="Move up"
+                                                                  >
+                                                                    <ChevronUp className="w-3 h-3" />
+                                                                  </Button>
+                                                                  <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => handleMoveStepDown(step.id, operation.id, phase.id)}
+                                                                    disabled={stepIndex === operation.steps.length - 1}
+                                                                    title="Move down"
+                                                                  >
+                                                                    <ChevronDown className="w-3 h-3" />
+                                                                  </Button>
                                                                   <Button
                                                                     size="sm"
                                                                     variant="ghost"
