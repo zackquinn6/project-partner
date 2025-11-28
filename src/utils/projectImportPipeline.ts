@@ -5,6 +5,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { GeneratedProjectStructure } from './aiProjectGenerator';
+import { toast } from 'sonner';
 
 export interface ImportResult {
   success: boolean;
@@ -499,7 +500,9 @@ export async function importGeneratedProject(
       if (existingProjects && existingProjects.length > 0) {
         const exactMatch = existingProjects.find(p => p.name.trim().toLowerCase() === normalizedName);
         if (exactMatch) {
-          result.errors.push(`A project with the name "${projectName}" already exists. Please choose a unique name.`);
+          const errorMessage = `A project with the name "${projectName}" already exists. Please choose a unique name.`;
+          result.errors.push(errorMessage);
+          toast.error(errorMessage);
           return result;
         }
       }
@@ -514,7 +517,16 @@ export async function importGeneratedProject(
         });
 
       if (createError || !newProjectId) {
-        result.errors.push(`Failed to create project: ${createError?.message}`);
+        // Check if error is due to duplicate name constraint
+        if (createError?.code === '23505' && createError?.message?.includes('idx_projects_name_unique')) {
+          const errorMessage = `A project with the name "${projectName}" already exists. Please choose a unique name.`;
+          result.errors.push(errorMessage);
+          toast.error(errorMessage);
+          return result;
+        }
+        const errorMessage = `Failed to create project: ${createError?.message || 'Unknown error'}`;
+        result.errors.push(errorMessage);
+        toast.error(errorMessage);
         return result;
       }
 
