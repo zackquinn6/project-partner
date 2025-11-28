@@ -756,6 +756,88 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           .eq('id', addedPhase.id);
       }
       
+      // Verify that the phase has an operation with a step
+      // The add_custom_project_phase function should create both, but verify and fix if needed
+      const { data: phaseOperations } = await supabase
+        .from('template_operations')
+        .select('id')
+        .eq('phase_id', addedPhase.id);
+      
+      if (phaseOperations && phaseOperations.length > 0) {
+        // Check if the first operation has steps
+        const firstOperationId = phaseOperations[0].id;
+        const { data: operationSteps } = await supabase
+          .from('template_steps')
+          .select('id')
+          .eq('operation_id', firstOperationId);
+        
+        // If no steps exist, create one
+        if (!operationSteps || operationSteps.length === 0) {
+          await supabase
+            .from('template_steps')
+            .insert({
+              operation_id: firstOperationId,
+              step_title: 'New Step',
+              description: 'Step description',
+              step_number: 1,
+              content_sections: [],
+              materials: [],
+              tools: [],
+              outputs: [],
+              apps: [],
+              estimated_time_minutes: 0,
+              flow_type: 'prime',
+              step_type: 'prime'
+            });
+        }
+      } else {
+        // If no operations exist, create one with a step
+        // This shouldn't happen if add_custom_project_phase is working, but handle it just in case
+        const phaseIsStandard = isEditingStandardProject;
+        const operationInsertData: any = {
+          phase_id: addedPhase.id,
+          project_id: currentProject.id,
+          name: 'New Operation',
+          description: 'Operation description',
+          flow_type: 'prime'
+        };
+        
+        if (phaseIsStandard) {
+          operationInsertData.is_standard_phase = true;
+          operationInsertData.custom_phase_name = null;
+          operationInsertData.custom_phase_description = null;
+        } else {
+          operationInsertData.custom_phase_name = phaseName;
+          operationInsertData.custom_phase_description = 'Phase description';
+          operationInsertData.is_standard_phase = false;
+        }
+        
+        const { data: newOperation } = await supabase
+          .from('template_operations')
+          .insert(operationInsertData)
+          .select('id')
+          .single();
+        
+        if (newOperation?.id) {
+          await supabase
+            .from('template_steps')
+            .insert({
+              operation_id: newOperation.id,
+              step_title: 'New Step',
+              description: 'Step description',
+              step_number: 1,
+              content_sections: [],
+              materials: [],
+              tools: [],
+              outputs: [],
+              apps: [],
+              estimated_time_minutes: 0,
+              flow_type: 'prime',
+              step_type: 'prime'
+            });
+        }
+      }
+      
       // Reload phases with position data from database
       const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
       
@@ -1107,20 +1189,76 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Insert new operation
-      // For standard phases, link via phase_id. For custom phases, we may need different fields.
+      // Must comply with custom_phase_metadata_check constraint
+      const phaseIsStandard = isStandardPhase(phase);
+      
+      // Build insert object based on phase type
+      const insertData: any = {
+        phase_id: phaseId,
+        project_id: currentProject.id,
+        name: operationName,
+        description: 'Operation description',
+        flow_type: 'prime'
+      };
+      
+      if (isEditingStandardProject && phaseIsStandard) {
+        // Standard phase in Edit Standard: standard operation
+        insertData.is_standard_phase = true;
+        insertData.custom_phase_name = null; // Explicitly set to NULL for constraint
+        insertData.custom_phase_description = null; // Explicitly set to NULL
+        // is_custom_phase will be computed as FALSE
+      } else {
+        // Custom phase: must set custom_phase_name for constraint
+        insertData.custom_phase_name = phase.name;
+        insertData.custom_phase_description = phase.description || null;
+        insertData.is_standard_phase = false;
+        // is_custom_phase will be computed as TRUE
+      }
+      
       const { data: newOperation, error: insertError } = await supabase
         .from('template_operations')
-        .insert({
-          phase_id: phaseId,
-          project_id: currentProject.id,
-          name: operationName,
-          description: 'Operation description'
-        })
+        .insert(insertData)
         .select('id')
         .single();
       
       if (insertError) {
         throw insertError;
+      }
+      
+      // Automatically create one step for the new operation
+      const { data: existingSteps } = await supabase
+        .from('template_steps')
+        .select('step_title')
+        .eq('operation_id', newOperation.id);
+      
+      const existingStepNames = new Set((existingSteps || []).map(s => s.step_title?.toLowerCase() || ''));
+      let stepName = 'New Step';
+      let stepCounter = 1;
+      while (existingStepNames.has(stepName.toLowerCase())) {
+        stepName = `New Step ${stepCounter}`;
+        stepCounter++;
+      }
+      
+      const { error: stepInsertError } = await supabase
+        .from('template_steps')
+        .insert({
+          operation_id: newOperation.id,
+          step_title: stepName,
+          description: 'Step description',
+          step_number: 1,
+          content_sections: [],
+          materials: [],
+          tools: [],
+          outputs: [],
+          apps: [],
+          estimated_time_minutes: 0,
+          flow_type: 'prime',
+          step_type: 'prime'
+        });
+      
+      if (stepInsertError) {
+        console.error('Error creating default step:', stepInsertError);
+        // Don't throw - operation was created successfully, step can be added manually
       }
       
       // Reload phases with position data
