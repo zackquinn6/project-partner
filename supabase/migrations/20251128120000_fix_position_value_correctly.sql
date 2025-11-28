@@ -56,7 +56,7 @@ BEGIN
   -- CRITICAL: Use UNION to completely separate first/last (no position_value) from nth (with position_value)
   -- This avoids reading position_value for first/last rules which may contain invalid data
   FOR std_phase IN
-    (
+    SELECT * FROM (
       -- First: phases with first/last rules - never read position_value
       SELECT 
         id,
@@ -66,7 +66,8 @@ BEGIN
         is_standard,
         position_rule,
         NULL::INTEGER AS position_value,
-        1 AS sort_order
+        1 AS sort_order,
+        CASE WHEN position_rule = 'first' THEN 1 ELSE 999999 END AS order_secondary
       FROM public.project_phases
       WHERE project_id = standard_project_id
         AND position_rule IN ('first', 'last')
@@ -82,19 +83,13 @@ BEGIN
         is_standard,
         position_rule,
         position_value,
-        100 AS sort_order
+        100 AS sort_order,
+        COALESCE(position_value, 0) AS order_secondary
       FROM public.project_phases
       WHERE project_id = standard_project_id
         AND position_rule = 'nth'
-    )
-    ORDER BY 
-      sort_order,
-      CASE 
-        WHEN position_rule = 'first' THEN 1
-        WHEN position_rule = 'last' THEN 999999
-        WHEN position_rule = 'nth' THEN COALESCE(position_value, 0)
-        ELSE 0
-      END
+    ) AS phase_union
+    ORDER BY sort_order, order_secondary
   LOOP
     INSERT INTO public.project_phases (
       project_id,
@@ -262,7 +257,7 @@ BEGIN
   -- CRITICAL: Use UNION to completely separate first/last (no position_value) from nth (with position_value)
   -- This avoids reading position_value for first/last rules which may contain invalid data
   FOR source_phase IN
-    (
+    SELECT * FROM (
       -- First: phases with first/last rules - never read position_value
       SELECT 
         id,
@@ -272,7 +267,8 @@ BEGIN
         is_standard,
         position_rule,
         NULL::INTEGER AS position_value,
-        1 AS sort_order
+        1 AS sort_order,
+        CASE WHEN position_rule = 'first' THEN 1 ELSE 999999 END AS order_secondary
       FROM project_phases
       WHERE project_id = source_project_id
         AND position_rule IN ('first', 'last')
@@ -288,19 +284,13 @@ BEGIN
         is_standard,
         position_rule,
         position_value,
-        100 AS sort_order
+        100 AS sort_order,
+        COALESCE(position_value, 0) AS order_secondary
       FROM project_phases
       WHERE project_id = source_project_id
         AND position_rule = 'nth'
-    )
-    ORDER BY 
-      sort_order,
-      CASE 
-        WHEN position_rule = 'first' THEN 1
-        WHEN position_rule = 'last' THEN 999999
-        WHEN position_rule = 'nth' THEN COALESCE(position_value, 0)
-        ELSE 0
-      END
+    ) AS phase_union
+    ORDER BY sort_order, order_secondary
   LOOP
     INSERT INTO project_phases (
       project_id,
