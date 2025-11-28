@@ -146,9 +146,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       errors.push(`${phasesWithoutRule.length} phase(s) missing position_rule: ${phasesWithoutRule.map(p => p.name).join(', ')}`);
     }
     
-    // Check 2: Sequential ordering - check ALL 'nth' phases (including standard phases) for gaps
+    // Check 2: Sequential ordering - check ALL 'nth' phases (standard, custom, and incorporated) for gaps
     // All phases with position_rule='nth' must have consecutive position_value with no gaps
     // Only 'first' and 'last' phases are excluded from this check
+    // Incorporated phases are treated like regular phases for ordering validation
     const nthPhases = phasesToValidate
       .map((phase) => {
         const positionRule = (phase as any)?.position_rule;
@@ -174,7 +175,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Check for gaps: all 'nth' phases must be consecutive
-      // This includes standard phases with 'nth' rule (e.g., Planning, Ordering)
+      // This includes standard phases, custom phases, and incorporated phases with 'nth' rule
       const sortedOrders = [...actualOrders].sort((a, b) => a - b);
       const minOrder = sortedOrders[0];
       const expectedOrders = Array.from({ length: nthPhases.length }, (_, i) => minOrder + i);
@@ -200,7 +201,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
     }
     
-    // Check 3: Custom phases with 'nth' rule must be between last numbered standard phase and 'last'
+    // Check 3: Custom phases (including incorporated) with 'nth' rule must be between last numbered standard phase and 'last'
     if (!isEditingStandardProject) {
       const standardPhases = phasesToValidate.filter(p => isStandardPhase(p) && !isLinkedPhase(p));
       if (standardPhases.length > 0) {
@@ -214,9 +215,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           const lastNumberedStandardPhase = numberedStandardPhases[numberedStandardPhases.length - 1];
           const lastNumberedPosition = (lastNumberedStandardPhase as any).position_value || 1;
           
-          // Check custom phases with 'nth' rule (exclude 'last')
+          // Check custom phases with 'nth' rule (include incorporated phases, exclude 'last')
+          // Incorporated phases are treated like regular custom phases for ordering
           const customPhases = phasesToValidate.filter(p => {
-            if (isStandardPhase(p) || isLinkedPhase(p)) return false;
+            if (isStandardPhase(p) && !isLinkedPhase(p)) return false; // Exclude standard phases
             const positionRule = (p as any).position_rule;
             return positionRule === 'nth'; // Only check 'nth' phases, not 'last'
           });
@@ -355,7 +357,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // 1. Get custom phases from current project
       // 2. Get standard phases from Standard Project Foundation
       
-      // Get custom phases
+      // Get custom phases (including incorporated phases)
       const { data: customPhasesData, error: customError } = await supabase
         .from('project_phases')
         .select(`
@@ -364,7 +366,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           description,
           is_standard,
           position_rule,
-          position_value
+          position_value,
+          source_project_id,
+          source_phase_id
         `)
         .eq('project_id', projectId)
         .eq('is_standard', false)
@@ -398,53 +402,129 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Combine both and convert to Phase format
       const allPhasesData = [...(standardPhasesData || []), ...(customPhasesData || [])];
       
-      const phases: Phase[] = await Promise.all(allPhasesData.map(async (phaseData: any) => {
-        // Get operations for this phase
-        const { data: operations } = await supabase
-          .from('template_operations')
-          .select(`
-            id,
-            operation_name,
-            operation_description,
-            flow_type,
-            user_prompt,
-            display_order,
-            is_reference
-          `)
-          .eq('phase_id', phaseData.id)
-          .order('display_order');
+      // Get source project names for incorporated phases
+      const sourceProjectIds = new Set(
+        (customPhasesData || [])
+          .filter((p: any) => p.source_project_id)
+          .map((p: any) => p.source_project_id)
+      );
+      
+      const sourceProjectsMap = new Map<string, string>();
+      if (sourceProjectIds.size > 0) {
+        const { data: sourceProjects } = await supabase
+          .from('projects')
+          .select('id, name')
+          .in('id', Array.from(sourceProjectIds));
         
-        // Get steps for each operation
-        const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
-          const { data: steps } = await supabase
-            .from('template_steps')
+        if (sourceProjects) {
+          sourceProjects.forEach((p: any) => {
+            sourceProjectsMap.set(p.id, p.name);
+          });
+        }
+      }
+      
+      const phases: Phase[] = await Promise.all(allPhasesData.map(async (phaseData: any) => {
+        // Check if this is an incorporated phase (has source_project_id and source_phase_id)
+        const isIncorporated = !!(phaseData.source_project_id && phaseData.source_phase_id);
+        
+        let operationsWithSteps: any[] = [];
+        
+        if (isIncorporated) {
+          // For incorporated phases: dynamically fetch operations/steps from source project
+          // Use source_phase_id to get operations from the source phase
+          const { data: operations } = await supabase
+            .from('template_operations')
             .select(`
               id,
-              step_title,
-              description,
-              step_type,
-              display_order
+              operation_name,
+              operation_description,
+              flow_type,
+              user_prompt,
+              display_order,
+              is_reference
             `)
-            .eq('operation_id', op.id)
+            .eq('phase_id', phaseData.source_phase_id) // Use source phase ID
             .order('display_order');
           
-          return {
-            id: op.id,
-            name: op.operation_name,
-            description: op.operation_description,
-            flowType: op.flow_type,
-            userPrompt: op.user_prompt,
-            displayOrder: op.display_order,
-            isStandard: op.is_reference || phaseData.is_standard,
-            steps: (steps || []).map((s: any) => ({
-              id: s.id,
-              step: s.step_title,
-              description: s.description,
-              stepType: s.step_type,
-              displayOrder: s.display_order
-            }))
-          };
-        }));
+          // Get steps for each operation from source
+          operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+            const { data: steps } = await supabase
+              .from('template_steps')
+              .select(`
+                id,
+                step_title,
+                description,
+                step_type,
+                display_order
+              `)
+              .eq('operation_id', op.id)
+              .order('display_order');
+            
+            return {
+              id: op.id,
+              name: op.operation_name,
+              description: op.operation_description,
+              flowType: op.flow_type,
+              userPrompt: op.user_prompt,
+              displayOrder: op.display_order,
+              isStandard: true, // Mark as standard/read-only for incorporated content
+              steps: (steps || []).map((s: any) => ({
+                id: s.id,
+                step: s.step_title,
+                description: s.description,
+                stepType: s.step_type,
+                displayOrder: s.display_order
+              }))
+            };
+          }));
+        } else {
+          // For regular phases: get operations from current phase
+          const { data: operations } = await supabase
+            .from('template_operations')
+            .select(`
+              id,
+              operation_name,
+              operation_description,
+              flow_type,
+              user_prompt,
+              display_order,
+              is_reference
+            `)
+            .eq('phase_id', phaseData.id)
+            .order('display_order');
+          
+          // Get steps for each operation
+          operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+            const { data: steps } = await supabase
+              .from('template_steps')
+              .select(`
+                id,
+                step_title,
+                description,
+                step_type,
+                display_order
+              `)
+              .eq('operation_id', op.id)
+              .order('display_order');
+            
+            return {
+              id: op.id,
+              name: op.operation_name,
+              description: op.operation_description,
+              flowType: op.flow_type,
+              userPrompt: op.user_prompt,
+              displayOrder: op.display_order,
+              isStandard: op.is_reference || phaseData.is_standard,
+              steps: (steps || []).map((s: any) => ({
+                id: s.id,
+                step: s.step_title,
+                description: s.description,
+                stepType: s.step_type,
+                displayOrder: s.display_order
+              }))
+            };
+          }));
+        }
         
         // Derive phaseOrderNumber from position_rule
         let phaseOrderNumber: number | string;
@@ -463,7 +543,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           name: phaseData.name,
           description: phaseData.description,
           isStandard: phaseData.is_standard,
-          isLinked: false, // Standard phases are not "linked" - they're dynamically referenced from Standard Project Foundation
+          isLinked: isIncorporated, // Mark as linked if incorporated
+          sourceProjectId: phaseData.source_project_id || undefined,
+          sourceProjectName: isIncorporated ? (sourceProjectsMap.get(phaseData.source_project_id) || 'Unknown Project') : undefined,
           phaseOrderNumber,
           position_rule: phaseData.position_rule,
           position_value: phaseData.position_value,
@@ -509,7 +591,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
     }
     
-    return sortPhasesByOrderNumber(loadedPhases);
+    const sortedPhases = sortPhasesByOrderNumber(loadedPhases);
+    
+    // Dispatch event to notify other components (like EditWorkflowView) that phases were updated
+    window.dispatchEvent(new CustomEvent('phasesUpdated', { 
+      detail: { projectId } 
+    }));
+    
+    return sortedPhases;
   }, [loadPhases, validatePhaseOrdering]);
   
   /**
@@ -803,11 +892,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Skip validation since we're about to renumber and fix any gaps
       const reloadedPhases = await reloadPhasesWithPositions(currentProject.id, true);
       
-      // For regular projects: auto-renumber custom phases only, never change standard phases
+      // For regular projects: auto-renumber custom phases (including incorporated) only, never change standard phases
       if (!isEditingStandardProject) {
-        // Get custom phases that need renumbering
+        // Get custom phases that need renumbering (include incorporated phases - they act like regular phases)
         const customPhases = reloadedPhases.filter(p => 
-          !isStandardPhase(p) && !isLinkedPhase(p) && p.id
+          !isStandardPhase(p) && p.id // Include incorporated phases (isLinked) in renumbering
         );
         
         // Renumber custom phases sequentially (preserve standard phase positions)
@@ -832,10 +921,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           }
         }
       } else {
-        // For Edit Standard: renumber all phases sequentially
+        // For Edit Standard: renumber all phases sequentially (including incorporated if any)
         for (let i = 0; i < reloadedPhases.length; i++) {
           const phase = reloadedPhases[i];
-          if (!phase.id || isLinkedPhase(phase)) continue;
+          if (!phase.id) continue; // Include incorporated phases in renumbering
           
           if (i === 0) {
             await supabase
@@ -1744,11 +1833,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     const phase = phases[currentIndex];
     const prevPhase = phases[currentIndex - 1];
     
-    // Check permissions
-    if (phase.isLinked || prevPhase.isLinked) {
-      toast.error('Cannot reorder incorporated phases');
-      return;
-    }
+    // Allow reordering incorporated phases (they can be moved but not edited)
+    // No blocking needed here
     
     if (!isEditingStandardProject && (isStandardPhase(phase) || isStandardPhase(prevPhase))) {
       toast.error('Cannot reorder standard phases. Use Edit Standard to modify standard phases.');
@@ -1802,11 +1888,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     const phase = phases[currentIndex];
     const nextPhase = phases[currentIndex + 1];
     
-    // Check permissions
-    if (phase.isLinked || nextPhase.isLinked) {
-      toast.error('Cannot reorder incorporated phases');
-      return;
-    }
+    // Allow reordering incorporated phases (they can be moved but not edited)
+    // No blocking needed here
     
     if (!isEditingStandardProject && (isStandardPhase(phase) || isStandardPhase(nextPhase))) {
       toast.error('Cannot reorder standard phases. Use Edit Standard to modify standard phases.');
@@ -1882,10 +1965,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         }
       });
       
-      // Update database positions
+      // Update database positions (include incorporated phases - they act like regular phases)
       for (let i = 0; i < phasesArray.length; i++) {
         const p = phasesArray[i];
-        if (!p.id || isLinkedPhase(p)) continue;
+        if (!p.id) continue; // Include incorporated phases in position updates
         
         let positionRule: string;
         let positionValue: number | null = null;
@@ -2099,7 +2182,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               return (
                 <Card 
                   key={phase.id}
-                  className={`border-2 ${phaseIsStandard ? 'bg-blue-50 border-blue-200' : phaseIsLinked ? 'bg-purple-50 border-purple-200' : ''}`}
+                  className={`border-2 ${phaseIsStandard ? 'bg-blue-50 border-blue-200' : phaseIsLinked ? 'bg-purple-100 border-purple-300' : ''}`}
                 >
                   <CardHeader className="py-2 px-4">
                     <div className="flex items-center justify-between">
@@ -2176,7 +2259,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                               {phaseIsLinked && !phaseIsStandard && (
                                 <Badge variant="outline" className="text-xs flex items-center gap-1">
                                   <Link className="w-3 h-3" />
-                                  <span>Linked From {phase.sourceProjectName}</span>
+                                  <span>Linked from: {phase.sourceProjectName}</span>
                                 </Badge>
                               )}
                             </CardTitle>
@@ -2195,15 +2278,35 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                           // Standard phases in regular projects: NO buttons
                           null
                         ) : phaseIsLinked ? (
-                          // Incorporated phases: Show delete button only
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => handleDeletePhaseClick(phase.id)}
-                            disabled={isDeletingPhase}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          // Incorporated phases: Show delete and reorder buttons (no edit)
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleMovePhaseUp(phase.id)}
+                              disabled={phaseIndex === 0}
+                              title="Move up"
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleMovePhaseDown(phase.id)}
+                              disabled={phaseIndex === phases.length - 1}
+                              title="Move down"
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => handleDeletePhaseClick(phase.id)}
+                              disabled={isDeletingPhase}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
                         ) : (
                           // Project phases OR standard phases in Edit Standard: Show edit/delete/reorder buttons
                           <>
@@ -2285,8 +2388,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                               const operationIsStandard = operation.isStandard === true;
                               const isOperationExpanded = expandedOperations.has(operation.id);
                               
-                              // Check if operations/steps in standard phases are read-only in regular projects
-                              const isReadOnly = !isEditingStandardProject && phaseIsStandard;
+                              // Check if operations/steps are read-only:
+                              // - Standard phases in regular projects
+                              // - Incorporated phases (dynamically linked)
+                              const isReadOnly = (!isEditingStandardProject && phaseIsStandard) || phaseIsLinked;
                               
                               return (
                                 <Card key={operation.id} className="ml-4">
@@ -2328,8 +2433,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                           <div className="flex-1">
                                             <p className="text-sm font-medium flex items-center gap-2">
                                               {operation.name}
-                                              {operationIsStandard && !isEditingStandardProject && (
+                                              {operationIsStandard && !isEditingStandardProject && !phaseIsLinked && (
                                                 <Badge variant="secondary" className="text-xs">Standard 🔒</Badge>
+                                              )}
+                                              {phaseIsLinked && (
+                                                <Badge variant="secondary" className="text-xs">Read-only</Badge>
                                               )}
                                             </p>
                                             {operation.description && (
@@ -2462,8 +2570,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                           <div>
                                                             <p className="text-xs font-medium flex items-center gap-2">
                                                               {step.step}
-                                                              {stepIsStandard && !isEditingStandardProject && (
+                                                              {stepIsStandard && !isEditingStandardProject && !phaseIsLinked && (
                                                                 <Badge variant="secondary" className="text-xs">Standard 🔒</Badge>
+                                                              )}
+                                                              {phaseIsLinked && (
+                                                                <Badge variant="secondary" className="text-xs">Read-only</Badge>
                                                               )}
                                                             </p>
                                                             {step.description && (
@@ -2636,13 +2747,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             
             const totalPhases = allPhases?.length || 0;
             
-            // Create incorporated phase record
-            // Store source information in description (temporary solution)
-            // The get_project_workflow_with_standards function should handle this
-            const incorporatedDescription = phaseToIncorporate.description 
-              ? `${phaseToIncorporate.description}\n\n[Incorporated from: ${phaseToIncorporate.sourceProjectName} (Revision ${phaseToIncorporate.incorporatedRevision})]`
-              : `[Incorporated from: ${phaseToIncorporate.sourceProjectName} (Revision ${phaseToIncorporate.incorporatedRevision})]`;
-            
             // Determine position rule and value
             // Use 'nth' rule with position_value = maxNthValue + 1 (just before 'last')
             // If no phases exist, this becomes the 'first' phase
@@ -2663,16 +2767,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               positionValue = maxNthValue + 1; // Position just before 'last'
             }
             
+            // Create incorporated phase record with dynamic linking (no copying)
+            // Just create a reference record that points to the source phase
             const { data: newPhase, error: insertError } = await supabase
               .from('project_phases')
               .insert({
                 project_id: currentProject.id,
                 name: phaseToIncorporate.name,
-                description: incorporatedDescription,
+                description: phaseToIncorporate.description || null, // Keep original description, no revision info
                 is_standard: false,
                 position_rule: positionRule,
-                position_value: positionValue
-                // Note: standard_phase_id removed, use is_standard flag instead
+                position_value: positionValue,
+                source_project_id: phaseToIncorporate.sourceProjectId,
+                source_phase_id: sourcePhase.id
               })
               .select('id')
               .single();
@@ -2681,36 +2788,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               throw insertError;
             }
             
-            // Create reference operations that point to source operations
-            // Get operations from source phase
-            const { data: sourceOperations } = await supabase
-              .from('template_operations')
-              .select('id, name, description, display_order, flow_type')
-              .eq('phase_id', sourcePhase.id)
-              .order('display_order', { ascending: true });
-            
-            if (sourceOperations && sourceOperations.length > 0) {
-              for (const sourceOp of sourceOperations) {
-                // Create reference operation
-                const { error: opError } = await supabase
-                  .from('template_operations')
-                  .insert({
-                    project_id: currentProject.id,
-                    phase_id: newPhase.id,
-                    operation_name: sourceOp.operation_name || sourceOp.name,  // Changed from name
-                    operation_description: sourceOp.operation_description || sourceOp.description,  // Changed from description
-                    flow_type: sourceOp.flow_type || 'prime',
-                    display_order: sourceOp.display_order,
-                    source_operation_id: sourceOp.id,
-                    is_reference: true
-                    // Note: is_standard_phase, custom_phase_name, and custom_phase_description removed
-                  });
-                
-                if (opError) {
-                  console.error('Error creating reference operation:', opError);
-                }
-              }
-            }
+            // NO COPYING: Operations and steps will be dynamically fetched from source project
+            // This is similar to how standard phases work - they're dynamically linked
             
             // Reload phases
             const sortedPhases = await reloadPhasesWithPositions(currentProject.id);

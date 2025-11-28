@@ -32,7 +32,6 @@ import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useDynamicPhases } from '@/hooks/useDynamicPhases';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 
 // Extended interfaces for step-level usage
@@ -62,56 +61,420 @@ export default function EditWorkflowView({
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
   
-  // Rebuild phases from database (like StructureManager does)
-  // This ensures we get fresh data, but we'll merge with currentProject.phases to preserve correct isStandard flags
-  const { phases: rebuiltPhases, loading: rebuildingPhases } = useDynamicPhases(currentProject?.id);
+  // Load phases directly from database - EXACTLY like StructureManager does
+  // This ensures workflow editor and structure manager always match
+  const [rawPhases, setRawPhases] = React.useState<Phase[]>([]);
+  const [loadingPhases, setLoadingPhases] = React.useState(true);
   
-  // Merge rebuilt phases with currentProject.phases to preserve correct isStandard flags
-  // This ensures custom phases aren't incorrectly tagged as standard
-  // Use currentProject.phases as the source of truth for isStandard flags
-  const rawPhases: Phase[] = React.useMemo(() => {
-    if (!currentProject?.phases || currentProject.phases.length === 0) {
-      return rebuiltPhases || [];
+  const loadPhasesFromDatabase = React.useCallback(async (projectId: string): Promise<Phase[]> => {
+    if (!projectId) {
+      return [];
     }
     
-    // If we have rebuilt phases, merge them with currentProject.phases to preserve correct isStandard flags
-    if (rebuiltPhases && rebuiltPhases.length > 0) {
-      const currentPhasesByName = new Map<string, Phase>();
-      currentProject.phases.forEach(phase => {
-        if (phase.name) {
-          currentPhasesByName.set(phase.name, phase);
-        }
-      });
+    const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
+    
+    if (isEditingStandardProject) {
+      // Edit Standard: Read directly from project_phases table
+      const { data: phasesData, error } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          name,
+          description,
+          is_standard,
+          position_rule,
+          position_value
+        `)
+        .eq('project_id', projectId)
+        .eq('is_standard', true)
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
       
-      // Merge: Use rebuilt phases from DB for fresh data, but update isStandard from currentProject.phases
-      // This ensures custom phases aren't incorrectly tagged as standard
-      const mergedRebuiltPhases = rebuiltPhases.map(rebuiltPhase => {
-        const currentPhase = currentPhasesByName.get(rebuiltPhase.name);
-        if (currentPhase) {
-          // Preserve isStandard flag from currentProject.phases (source of truth)
+      if (error) {
+        throw new Error(`Failed to load phases: ${error.message}`);
+      }
+      
+      // Convert to Phase format with operations and steps
+      const phases: Phase[] = await Promise.all((phasesData || []).map(async (phaseData: any) => {
+        // Get operations for this phase
+        const { data: operations } = await supabase
+          .from('template_operations')
+          .select(`
+            id,
+            operation_name,
+            operation_description,
+            flow_type,
+            user_prompt,
+            display_order,
+            is_reference
+          `)
+          .eq('phase_id', phaseData.id)
+          .order('display_order');
+        
+        // Get steps for each operation
+        const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+          const { data: steps } = await supabase
+            .from('template_steps')
+            .select(`
+              id,
+              step_title,
+              description,
+              step_type,
+              display_order
+            `)
+            .eq('operation_id', op.id)
+            .order('display_order');
+          
           return {
-            ...rebuiltPhase,
-            isStandard: currentPhase.isStandard, // Use isStandard from currentProject.phases
-            isLinked: currentPhase.isLinked || rebuiltPhase.isLinked // Preserve both flags
+            id: op.id,
+            name: op.operation_name,
+            description: op.operation_description,
+            flowType: op.flow_type,
+            userPrompt: op.user_prompt,
+            displayOrder: op.display_order,
+            isStandard: op.is_reference || phaseData.is_standard,
+            steps: (steps || []).map((s: any) => ({
+              id: s.id,
+              step: s.step_title,
+              description: s.description,
+              stepType: s.step_type,
+              displayOrder: s.display_order
+            }))
           };
+        }));
+        
+        // Derive phaseOrderNumber from position_rule
+        let phaseOrderNumber: number | string;
+        if (phaseData.position_rule === 'first') {
+          phaseOrderNumber = 1;
+        } else if (phaseData.position_rule === 'last') {
+          phaseOrderNumber = 'last';
+        } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
+          phaseOrderNumber = phaseData.position_value;
+        } else {
+          phaseOrderNumber = 999;
         }
-        return rebuiltPhase;
-      });
+        
+        return {
+          id: phaseData.id,
+          name: phaseData.name,
+          description: phaseData.description,
+          isStandard: phaseData.is_standard,
+          isLinked: false,
+          phaseOrderNumber,
+          position_rule: phaseData.position_rule,
+          position_value: phaseData.position_value,
+          operations: operationsWithSteps
+        } as Phase;
+      }));
       
-      // Get phases from currentProject.phases that aren't in rebuilt phases (by name)
-      // These are phases that exist in JSON but might not be in DB yet
-      const rebuiltPhaseNames = new Set(rebuiltPhases.map(p => p.name));
-      const phasesOnlyInJson = currentProject.phases.filter(p => 
-        p.name && !rebuiltPhaseNames.has(p.name)
-      );
+      return phases;
+    } else {
+      // Regular projects: Read directly from project_phases
+      // 1. Get custom phases from current project
+      // 2. Get standard phases from Standard Project Foundation
       
-      // Combine: merged rebuilt phases (with corrected isStandard) + phases only in JSON
-      return [...mergedRebuiltPhases, ...phasesOnlyInJson];
+      // Get custom phases (including incorporated phases)
+      const { data: customPhasesData, error: customError } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          name,
+          description,
+          is_standard,
+          position_rule,
+          position_value,
+          source_project_id,
+          source_phase_id
+        `)
+        .eq('project_id', projectId)
+        .eq('is_standard', false)
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
+      
+      if (customError) {
+        throw new Error(`Failed to load custom phases: ${customError.message}`);
+      }
+      
+      // Get standard phases from Standard Project Foundation
+      const { data: standardPhasesData, error: standardError } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          name,
+          description,
+          is_standard,
+          position_rule,
+          position_value
+        `)
+        .eq('project_id', STANDARD_PROJECT_ID)
+        .eq('is_standard', true)
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
+      
+      if (standardError) {
+        throw new Error(`Failed to load standard phases: ${standardError.message}`);
+      }
+      
+      // Process custom phases (including incorporated)
+      const customPhases: Phase[] = await Promise.all((customPhasesData || []).map(async (phaseData: any) => {
+        const isLinked = !!phaseData.source_project_id;
+        let operationsWithSteps: any[] = [];
+        let sourceProjectName: string | undefined;
+        
+        if (isLinked) {
+          // For incorporated phases, fetch operations and steps from source project
+          const { data: sourceOperations } = await supabase
+            .from('template_operations')
+            .select(`
+              id,
+              operation_name,
+              operation_description,
+              flow_type,
+              user_prompt,
+              display_order,
+              is_reference
+            `)
+            .eq('phase_id', phaseData.source_phase_id)
+            .order('display_order');
+          
+          operationsWithSteps = await Promise.all((sourceOperations || []).map(async (op: any) => {
+            const { data: steps } = await supabase
+              .from('template_steps')
+              .select(`
+                id,
+                step_title,
+                description,
+                step_type,
+                display_order
+              `)
+              .eq('operation_id', op.id)
+              .order('display_order');
+            
+            return {
+              id: op.id,
+              name: op.operation_name,
+              description: op.operation_description,
+              flowType: op.flow_type,
+              userPrompt: op.user_prompt,
+              displayOrder: op.display_order,
+              isStandard: op.is_reference,
+              steps: (steps || []).map((s: any) => ({
+                id: s.id,
+                step: s.step_title,
+                description: s.description,
+                stepType: s.step_type,
+                displayOrder: s.display_order
+              }))
+            };
+          }));
+          
+          // Get source project name
+          const { data: sourceProject } = await supabase
+            .from('projects')
+            .select('name')
+            .eq('id', phaseData.source_project_id)
+            .single();
+          
+          sourceProjectName = sourceProject?.name;
+        } else {
+          // For regular custom phases, fetch operations and steps normally
+          const { data: operations } = await supabase
+            .from('template_operations')
+            .select(`
+              id,
+              operation_name,
+              operation_description,
+              flow_type,
+              user_prompt,
+              display_order,
+              is_reference
+            `)
+            .eq('phase_id', phaseData.id)
+            .order('display_order');
+          
+          operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+            const { data: steps } = await supabase
+              .from('template_steps')
+              .select(`
+                id,
+                step_title,
+                description,
+                step_type,
+                display_order
+              `)
+              .eq('operation_id', op.id)
+              .order('display_order');
+            
+            return {
+              id: op.id,
+              name: op.operation_name,
+              description: op.operation_description,
+              flowType: op.flow_type,
+              userPrompt: op.user_prompt,
+              displayOrder: op.display_order,
+              isStandard: op.is_reference,
+              steps: (steps || []).map((s: any) => ({
+                id: s.id,
+                step: s.step_title,
+                description: s.description,
+                stepType: s.step_type,
+                displayOrder: s.display_order
+              }))
+            };
+          }));
+        }
+        
+        // Derive phaseOrderNumber from position_rule
+        let phaseOrderNumber: number | string;
+        if (phaseData.position_rule === 'first') {
+          phaseOrderNumber = 1;
+        } else if (phaseData.position_rule === 'last') {
+          phaseOrderNumber = 'last';
+        } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
+          phaseOrderNumber = phaseData.position_value;
+        } else {
+          phaseOrderNumber = 999;
+        }
+        
+        return {
+          id: phaseData.id,
+          name: phaseData.name,
+          description: phaseData.description,
+          isStandard: false,
+          isLinked,
+          sourceProjectId: phaseData.source_project_id,
+          sourceProjectName,
+          phaseOrderNumber,
+          position_rule: phaseData.position_rule,
+          position_value: phaseData.position_value,
+          operations: operationsWithSteps
+        } as Phase;
+      }));
+      
+      // Process standard phases
+      const standardPhases: Phase[] = await Promise.all((standardPhasesData || []).map(async (phaseData: any) => {
+        // Get operations for this phase
+        const { data: operations } = await supabase
+          .from('template_operations')
+          .select(`
+            id,
+            operation_name,
+            operation_description,
+            flow_type,
+            user_prompt,
+            display_order,
+            is_reference
+          `)
+          .eq('phase_id', phaseData.id)
+          .order('display_order');
+        
+        // Get steps for each operation
+        const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+          const { data: steps } = await supabase
+            .from('template_steps')
+            .select(`
+              id,
+              step_title,
+              description,
+              step_type,
+              display_order
+            `)
+            .eq('operation_id', op.id)
+            .order('display_order');
+          
+          return {
+            id: op.id,
+            name: op.operation_name,
+            description: op.operation_description,
+            flowType: op.flow_type,
+            userPrompt: op.user_prompt,
+            displayOrder: op.display_order,
+            isStandard: op.is_reference || phaseData.is_standard,
+            steps: (steps || []).map((s: any) => ({
+              id: s.id,
+              step: s.step_title,
+              description: s.description,
+              stepType: s.step_type,
+              displayOrder: s.display_order
+            }))
+          };
+        }));
+        
+        // Derive phaseOrderNumber from position_rule
+        let phaseOrderNumber: number | string;
+        if (phaseData.position_rule === 'first') {
+          phaseOrderNumber = 1;
+        } else if (phaseData.position_rule === 'last') {
+          phaseOrderNumber = 'last';
+        } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
+          phaseOrderNumber = phaseData.position_value;
+        } else {
+          phaseOrderNumber = 999;
+        }
+        
+        return {
+          id: phaseData.id,
+          name: phaseData.name,
+          description: phaseData.description,
+          isStandard: true,
+          isLinked: false,
+          phaseOrderNumber,
+          position_rule: phaseData.position_rule,
+          position_value: phaseData.position_value,
+          operations: operationsWithSteps
+        } as Phase;
+      }));
+      
+      // Combine custom and standard phases
+      return [...customPhases, ...standardPhases];
     }
+  }, [isEditingStandardProject]);
+  
+  // Load phases when project changes
+  React.useEffect(() => {
+    if (currentProject?.id) {
+      setLoadingPhases(true);
+      loadPhasesFromDatabase(currentProject.id)
+        .then(phases => {
+          setRawPhases(phases);
+          setLoadingPhases(false);
+        })
+        .catch(error => {
+          console.error('Failed to load phases:', error);
+          setRawPhases([]);
+          setLoadingPhases(false);
+        });
+    } else {
+      setRawPhases([]);
+      setLoadingPhases(false);
+    }
+  }, [currentProject?.id, loadPhasesFromDatabase]);
+  
+  // Listen for phase updates from StructureManager
+  React.useEffect(() => {
+    const handlePhaseUpdate = (event: CustomEvent) => {
+      // Refresh phases when StructureManager updates them
+      if (currentProject?.id && event.detail?.projectId === currentProject.id) {
+        console.log('🔄 EditWorkflowView: Refreshing phases after StructureManager update');
+        setLoadingPhases(true);
+        loadPhasesFromDatabase(currentProject.id)
+          .then(phases => {
+            setRawPhases(phases);
+            setLoadingPhases(false);
+          })
+          .catch(error => {
+            console.error('Failed to refresh phases:', error);
+            setLoadingPhases(false);
+          });
+      }
+    };
     
-    // Fallback: use currentProject.phases directly if no rebuilt phases
-    return currentProject.phases;
-  }, [currentProject?.phases, rebuiltPhases]);
+    window.addEventListener('phasesUpdated' as any, handlePhaseUpdate as EventListener);
+    return () => {
+      window.removeEventListener('phasesUpdated' as any, handlePhaseUpdate as EventListener);
+    };
+  }, [currentProject?.id, loadPhasesFromDatabase]);
 
   // Helper to check if a phase is standard - use isStandard flag from phase data
   // No hardcoded names - rely on database flag
@@ -119,49 +482,7 @@ export default function EditWorkflowView({
     return phase.isStandard === true;
   };
 
-  // State to store standard phase order from Standard Project Foundation
-  const [standardProjectPhases, setStandardProjectPhases] = React.useState<Phase[]>([]);
-  
-  // Fetch standard phase order from Standard Project Foundation (like StructureManager does)
-  React.useEffect(() => {
-    if (!isEditingStandardProject && currentProject) {
-      const fetchStandardPhases = async () => {
-        try {
-          const { data: standardProject, error } = await supabase
-            .from('projects')
-            .select('phases')
-            .eq('id', '00000000-0000-0000-0000-000000000001')
-            .single();
-
-          if (!error && standardProject?.phases) {
-            let phases = Array.isArray(standardProject.phases) ? standardProject.phases : [];
-            
-            // CRITICAL: If phases don't have phaseOrderNumber, derive it from their position
-            phases = phases.map((phase, index) => {
-              if (phase.phaseOrderNumber === undefined || phase.phaseOrderNumber === null) {
-                if (index === 0) {
-                  phase.phaseOrderNumber = 'first';
-                } else if (index === phases.length - 1) {
-                  phase.phaseOrderNumber = 'last';
-                } else {
-                  phase.phaseOrderNumber = index + 1;
-                }
-              }
-              return phase;
-            });
-            
-            setStandardProjectPhases(phases);
-          }
-        } catch (error) {
-          console.error('Error fetching standard project phases:', error);
-        }
-      };
-
-      fetchStandardPhases();
-    } else {
-      setStandardProjectPhases([]);
-    }
-  }, [isEditingStandardProject, currentProject?.id]);
+  // No longer needed - we load phases directly from database
 
   // Apply standard phase ordering to match Structure Manager
   // This ensures the workflow editor shows phases in the same order as structure manager
@@ -209,53 +530,8 @@ export default function EditWorkflowView({
   
   const deduplicatedPhases = deduplicatePhases(rawPhases);
   
-  // CRITICAL: Preserve order numbers from currentProject.phases (like StructureManager does)
-  // This ensures order numbers set in StructureManager are preserved in workflow editor
-  const preservedOrderNumbers = new Map<string, string | number>();
-  if (currentProject?.phases && currentProject.phases.length > 0) {
-    currentProject.phases.forEach(phase => {
-      if (phase.phaseOrderNumber !== undefined) {
-        preservedOrderNumbers.set(phase.id, phase.phaseOrderNumber);
-        if (phase.name) {
-          preservedOrderNumbers.set(phase.name, phase.phaseOrderNumber);
-        }
-      }
-    });
-  }
-  
-  // CRITICAL: For regular projects, apply order numbers from Standard Project Foundation
-  // Do this BEFORE sorting to ensure all phases have correct order numbers
-  if (!isEditingStandardProject && standardProjectPhases.length > 0) {
-    const standardOrderMap = new Map<string, string | number>();
-    standardProjectPhases.forEach(sp => {
-      if (sp.name && sp.phaseOrderNumber !== undefined) {
-        standardOrderMap.set(sp.name, sp.phaseOrderNumber);
-      }
-    });
-    
-    // Apply order numbers from Standard Project Foundation to standard phases
-    deduplicatedPhases.forEach(phase => {
-      if (isStandardPhase(phase) && !phase.isLinked && phase.name) {
-        const standardOrder = standardOrderMap.get(phase.name);
-        if (standardOrder !== undefined) {
-          phase.phaseOrderNumber = standardOrder;
-        }
-      }
-    });
-  }
-  
-  // CRITICAL: Restore preserved order numbers from currentProject.phases
-  // This ensures order numbers set in StructureManager are preserved
-  deduplicatedPhases.forEach(phase => {
-    // Try to restore by ID first, then by name
-    const preservedOrder = preservedOrderNumbers.get(phase.id) || (phase.name ? preservedOrderNumbers.get(phase.name) : undefined);
-    if (preservedOrder !== undefined) {
-      // Only restore if it's not a standard phase with a reserved position, or if we're in Edit Standard
-      if (isEditingStandardProject || !isStandardPhase(phase) || phase.isLinked) {
-        phase.phaseOrderNumber = preservedOrder;
-      }
-    }
-  });
+  // Order numbers are already set from database (position_rule/position_value)
+  // No need to preserve or restore from currentProject.phases JSON
   
   // CRITICAL: Sort ALL phases together by order number
   // This ensures 'first' is first, 'last' is last, and numeric orders (2, 3, 4, etc.) are in between sequentially
