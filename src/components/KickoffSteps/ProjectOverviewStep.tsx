@@ -177,7 +177,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const displayScalingUnit = projectInfo?.scalingUnit || (currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit);
   const displayProjectChallenges = projectInfo?.projectChallenges ?? currentProjectRun?.projectChallenges ?? templateProject?.projectChallenges;
   const displaySkillLevel = projectInfo?.skillLevel ?? currentProjectRun?.skillLevel ?? templateProject?.skillLevel;
-  const displayEstimatedTime = projectInfo?.estimatedTime ?? templateProject?.estimatedTime || currentProjectRun?.estimatedTime;
+  const displayEstimatedTime = projectInfo?.estimatedTime ?? (templateProject?.estimatedTime || currentProjectRun?.estimatedTime);
   const displayEffortLevel = projectInfo?.effortLevel ?? templateProject?.effortLevel ?? currentProjectRun?.effortLevel;
   
   // Debug logging to help diagnose missing fields
