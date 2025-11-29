@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2, Eye, ArrowDown } from 'lucide-react';
+import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2, Eye, ArrowDown, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
 import { useNavigate } from 'react-router-dom';
@@ -440,11 +440,51 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               </div>
             </div>
             <div>
-              <Label className="text-sm">Project Skill Level</Label>
+              <div className="flex items-center gap-1.5 mb-0">
+                <Label className="text-sm">Project Skill Level</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">
+                        <strong>Skill Level</strong> indicates the technical expertise required for this project:
+                        <br /><br />
+                        <strong>Beginner:</strong> Basic skills, minimal experience needed
+                        <br />
+                        <strong>Intermediate:</strong> Some experience or guidance recommended
+                        <br />
+                        <strong>Advanced:</strong> Significant experience or professional help may be needed
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               {renderLevelSlider(displaySkillLevel, ['Beginner', 'Intermediate', 'Advanced'], ['Beginner', 'Intermediate', 'Advanced'], userProfile?.skill_level, skillComparison)}
             </div>
             <div>
-              <Label className="text-sm">Project Effort Level</Label>
+              <div className="flex items-center gap-1.5 mb-0">
+                <Label className="text-sm">Project Effort Level</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">
+                        <strong>Effort Level</strong> indicates the physical intensity and time commitment required:
+                        <br /><br />
+                        <strong>Low:</strong> Minimal physical effort, quick completion
+                        <br />
+                        <strong>Medium:</strong> Moderate physical effort, moderate time commitment
+                        <br />
+                        <strong>High:</strong> Significant physical effort, extended time commitment
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               {renderLevelSlider(displayEffortLevel, ['Low', 'Medium', 'High'], ['Low', 'Medium', 'High'], userProfile?.physical_capability, effortComparison)}
             </div>
             <div>
