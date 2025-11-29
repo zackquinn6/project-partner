@@ -437,53 +437,49 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               </div>
             </div>
             <div>
-              <Label className="text-sm mb-3 block">Estimated Time</Label>
-              <div className="mt-2 space-y-3">
-                {/* Display all 4 fields with clear labels */}
-                {/* Field 1: Estimated time per unit */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Time per Unit</Label>
-                  <div className="p-2 bg-muted rounded text-sm">
-                    {displayEstimatedTime || 'Not specified'}
-                  </div>
+              <Label className="text-sm">Estimated Time</Label>
+              <div className="mt-2 space-y-2">
+                {/* Line 1: Estimated time per unit + unit */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {displayEstimatedTime ? (
+                    <Badge variant="outline" className="text-xs sm:text-sm">
+                      {displayEstimatedTime}
+                    </Badge>
+                  ) : null}
+                  {formattedScalingUnit ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground capitalize">
+                      {formattedScalingUnit}
+                    </span>
+                  ) : displayScalingUnit ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground capitalize">
+                      {displayScalingUnit.startsWith('per ') ? displayScalingUnit : `per ${displayScalingUnit}`}
+                    </span>
+                  ) : null}
+                  {!displayEstimatedTime && !formattedScalingUnit && !displayScalingUnit && (
+                    <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
+                  )}
                 </div>
                 
-                {/* Field 2: Unit (scaling unit) */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Unit</Label>
-                  <div className="p-2 bg-muted rounded text-sm">
-                    {formattedScalingUnit ? (
-                      <span className="capitalize">{formattedScalingUnit}</span>
-                    ) : displayScalingUnit ? (
-                      <span className="capitalize">
-                        {displayScalingUnit.startsWith('per ') ? displayScalingUnit : `per ${displayScalingUnit}`}
-                      </span>
-                    ) : (
-                      'Not specified'
-                    )}
-                  </div>
-                </div>
-                
-                {/* Field 3: Total time per typical size */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Estimated Total Time</Label>
-                  <div className="p-2 bg-muted rounded text-sm">
-                    {displayEstimatedTotalTime || 'Not specified'}
-                  </div>
-                </div>
-                
-                {/* Field 4: Typical project size */}
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Typical Project Size</Label>
-                  <div className="p-2 bg-muted rounded text-sm">
-                    {displayTypicalProjectSize ? (
-                      <span>
-                        {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : (displayScalingUnit ? displayScalingUnit.replace('per ', '') : 'units')}
-                      </span>
-                    ) : (
-                      'Not specified'
-                    )}
-                  </div>
+                {/* Line 2: Total time + typical project size */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {displayEstimatedTotalTime ? (
+                    <Badge variant="outline" className="text-xs sm:text-sm">
+                      {displayEstimatedTotalTime}
+                    </Badge>
+                  ) : null}
+                  {displayEstimatedTotalTime && displayTypicalProjectSize ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground">per</span>
+                  ) : null}
+                  {displayTypicalProjectSize ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground">
+                      {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : (displayScalingUnit ? displayScalingUnit.replace('per ', '') : 'units')} typical project size
+                    </span>
+                  ) : displayEstimatedTotalTime ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
+                  ) : null}
+                  {!displayEstimatedTotalTime && !displayTypicalProjectSize && (
+                    <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
+                  )}
                 </div>
               </div>
             </div>
