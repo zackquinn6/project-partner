@@ -108,7 +108,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       if (needsFetch && templateProject.id) {
         try {
           const { data, error } = await supabase
-            .from('project_templates_live')
+            .from('projects')
             .select('skill_level, effort_level, project_challenges, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type')
             .eq('id', templateProject.id)
             .maybeSingle();
@@ -124,6 +124,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               scalingUnit: data.scaling_unit,
               itemType: data.item_type
             });
+          } else if (error) {
+            console.error('Error fetching project info:', error);
           }
         } catch (error) {
           console.error('Error fetching project info:', error);
@@ -435,38 +437,52 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               </div>
             </div>
             <div>
-              <Label className="text-sm">Estimated Time</Label>
-              <div className="mt-2 space-y-2">
-                {/* Display all 4 fields: Estimated time per unit, Unit, Total time per typical size, Typical project size */}
-                {/* Always show all fields, with "Not specified" when blank */}
-                <div className="space-y-2">
-                  {/* Field 1: Estimated time per unit + Field 2: Unit */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="text-xs sm:text-sm">
-                      {displayEstimatedTime || 'Not specified'}
-                    </Badge>
+              <Label className="text-sm mb-3 block">Estimated Time</Label>
+              <div className="mt-2 space-y-3">
+                {/* Display all 4 fields with clear labels */}
+                {/* Field 1: Estimated time per unit */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Time per Unit</Label>
+                  <div className="p-2 bg-muted rounded text-sm">
+                    {displayEstimatedTime || 'Not specified'}
+                  </div>
+                </div>
+                
+                {/* Field 2: Unit (scaling unit) */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Unit</Label>
+                  <div className="p-2 bg-muted rounded text-sm">
                     {formattedScalingUnit ? (
-                      <span className="text-xs sm:text-sm text-muted-foreground capitalize">
-                        {formattedScalingUnit}
-                      </span>
+                      <span className="capitalize">{formattedScalingUnit}</span>
                     ) : displayScalingUnit ? (
-                      <span className="text-xs sm:text-sm text-muted-foreground capitalize">
+                      <span className="capitalize">
                         {displayScalingUnit.startsWith('per ') ? displayScalingUnit : `per ${displayScalingUnit}`}
                       </span>
                     ) : (
-                      <span className="text-xs sm:text-sm text-muted-foreground">
-                        Not specified
-                      </span>
+                      'Not specified'
                     )}
                   </div>
-                  {/* Field 3: Total time per typical size + Field 4: Typical project size */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="text-xs sm:text-sm">
-                      {displayEstimatedTotalTime || 'Not specified'}
-                    </Badge>
-                    <span className="text-xs sm:text-sm text-muted-foreground">
-                      {displayEstimatedTotalTime && displayTypicalProjectSize ? 'for' : ''} {displayTypicalProjectSize ? `${displayTypicalProjectSize} ${formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : (displayScalingUnit ? displayScalingUnit.replace('per ', '') : 'units')}` : 'Not specified'} typical project size
-                    </span>
+                </div>
+                
+                {/* Field 3: Total time per typical size */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Estimated Total Time</Label>
+                  <div className="p-2 bg-muted rounded text-sm">
+                    {displayEstimatedTotalTime || 'Not specified'}
+                  </div>
+                </div>
+                
+                {/* Field 4: Typical project size */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Typical Project Size</Label>
+                  <div className="p-2 bg-muted rounded text-sm">
+                    {displayTypicalProjectSize ? (
+                      <span>
+                        {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : (displayScalingUnit ? displayScalingUnit.replace('per ', '') : 'units')}
+                      </span>
+                    ) : (
+                      'Not specified'
+                    )}
                   </div>
                 </div>
               </div>
