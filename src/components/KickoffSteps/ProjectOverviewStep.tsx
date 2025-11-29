@@ -178,21 +178,22 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   };
 
   // Helper function to render 3-step slider
-  const renderLevelSlider = (currentLevel: string | null | undefined, levels: string[], labels: string[]) => {
+  const renderLevelSlider = (currentLevel: string | null | undefined, levels: string[], labels: string[], userLevel?: string | null, comparison?: { type: string; message: string } | null) => {
     const position = getLevelPosition(currentLevel, levels);
     const hasValue = position >= 0;
 
     return (
       <div className="mt-2 relative">
-        {/* Arrow indicator - positioned above */}
+        {/* Arrow indicator - positioned above with "This project" text */}
         {hasValue && (
           <div
-            className="absolute -top-2 left-0 flex items-center justify-center transition-all duration-200 z-10"
+            className="absolute -top-6 left-0 flex flex-col items-center justify-center transition-all duration-200 z-10"
             style={{
               left: `${(position / (levels.length - 1)) * 100}%`,
               transform: 'translateX(-50%)'
             }}
           >
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">This project</span>
             <ArrowDown className="w-4 h-4 text-foreground drop-shadow-sm" />
           </div>
         )}
@@ -213,6 +214,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         </div>
         {!hasValue && (
           <p className="text-xs text-muted-foreground mt-1 text-center">Not specified</p>
+        )}
+        {/* User level comparison at bottom */}
+        {userLevel && comparison && (
+          <div className="mt-2 flex items-center gap-1.5">
+            {comparison.type === 'error' && <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />}
+            {comparison.type === 'warning' && <AlertTriangle className="w-3 h-3 text-yellow-500 flex-shrink-0" />}
+            {comparison.type === 'success' && <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0" />}
+            <span className={`text-xs ${comparison.type === 'error' ? 'text-red-600' : comparison.type === 'warning' ? 'text-yellow-600' : 'text-green-600'}`}>
+              Your level: {userLevel}
+            </span>
+          </div>
         )}
       </div>
     );
@@ -372,11 +384,11 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         const displayValue = itemType.trim().toLowerCase();
         return displayValue;
       }
-      return 'per item';
+      return 'item';
     }
     
-    // For other scaling units, add "per " prefix if not already present
-    return normalizedScalingUnit.startsWith('per ') ? scalingUnitToUse : `per ${scalingUnitToUse}`;
+    // Remove "per " prefix if present, return lowercase unit
+    return normalizedScalingUnit.startsWith('per ') ? normalizedScalingUnit.replace('per ', '') : normalizedScalingUnit;
   })() : null;
   return <div className="space-y-3">
       <Card>
@@ -429,59 +441,11 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
             <div>
               <Label className="text-sm">Project Skill Level</Label>
-              {renderLevelSlider(displaySkillLevel, ['Beginner', 'Intermediate', 'Advanced'], ['Beginner', 'Intermediate', 'Advanced'])}
-              {userProfile?.skill_level && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span>Your:</span>
-                  <Badge variant="outline" className="text-xs">
-                    {userProfile.skill_level}
-                  </Badge>
-                </div>
-              )}
-              {skillComparison && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="cursor-help flex-shrink-0 mt-1.5">
-                        {skillComparison.type === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                        {skillComparison.type === 'warning' && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
-                        {skillComparison.type === 'error' && <AlertTriangle className="w-4 h-4 text-red-500" />}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs text-xs sm:text-sm">{skillComparison.message}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              {renderLevelSlider(displaySkillLevel, ['Beginner', 'Intermediate', 'Advanced'], ['Beginner', 'Intermediate', 'Advanced'], userProfile?.skill_level, skillComparison)}
             </div>
             <div>
               <Label className="text-sm">Project Effort Level</Label>
-              {renderLevelSlider(displayEffortLevel, ['Low', 'Medium', 'High'], ['Low', 'Medium', 'High'])}
-              {userProfile?.physical_capability && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span>Your:</span>
-                  <Badge variant="outline" className="text-xs">
-                    {userProfile.physical_capability}
-                  </Badge>
-                </div>
-              )}
-              {effortComparison && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="cursor-help flex-shrink-0 mt-1.5">
-                        {effortComparison.type === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                        {effortComparison.type === 'warning' && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
-                        {effortComparison.type === 'error' && <AlertTriangle className="w-4 h-4 text-red-500" />}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs text-xs sm:text-sm">{effortComparison.message}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              {renderLevelSlider(displayEffortLevel, ['Low', 'Medium', 'High'], ['Low', 'Medium', 'High'], userProfile?.physical_capability, effortComparison)}
             </div>
             <div>
               <Label className="text-sm">Estimated Time</Label>
@@ -489,17 +453,20 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                 {/* Line 1: Estimated time per unit + unit */}
                 <div className="flex flex-wrap items-center gap-2">
                   {displayEstimatedTime ? (
-                    <Badge variant="outline" className="text-xs sm:text-sm">
-                      {displayEstimatedTime}
-                    </Badge>
+                    <>
+                      <Badge variant="outline" className="text-xs sm:text-sm">
+                        {displayEstimatedTime}
+                      </Badge>
+                      <span className="text-xs sm:text-sm text-muted-foreground">per</span>
+                    </>
                   ) : null}
                   {formattedScalingUnit ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground capitalize">
+                    <span className="text-xs sm:text-sm text-muted-foreground">
                       {formattedScalingUnit}
                     </span>
                   ) : displayScalingUnit ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground capitalize">
-                      {displayScalingUnit.startsWith('per ') ? displayScalingUnit : `per ${displayScalingUnit}`}
+                    <span className="text-xs sm:text-sm text-muted-foreground">
+                      {displayScalingUnit.toLowerCase().startsWith('per ') ? displayScalingUnit.toLowerCase().replace('per ', '') : displayScalingUnit.toLowerCase()}
                     </span>
                   ) : null}
                   {!displayEstimatedTime && !formattedScalingUnit && !displayScalingUnit && (
@@ -519,7 +486,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   ) : null}
                   {displayTypicalProjectSize ? (
                     <span className="text-xs sm:text-sm text-muted-foreground">
-                      {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : (displayScalingUnit ? displayScalingUnit.replace('per ', '') : 'units')} typical project size
+                      {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit : (displayScalingUnit ? displayScalingUnit.toLowerCase().replace('per ', '') : 'units')} typical project size
                     </span>
                   ) : displayEstimatedTotalTime ? (
                     <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
