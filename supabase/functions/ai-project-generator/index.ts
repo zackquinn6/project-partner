@@ -71,7 +71,14 @@ Generate comprehensive, detailed project structures with phases, operations, ste
     let existingContentContext = '';
     if (isUpdatingExisting && request.existingContent) {
       if (request.existingContent.phases && request.existingContent.phases.length > 0) {
-        existingContentContext += `\n\nEXISTING PROJECT STRUCTURE (DO NOT DUPLICATE - only update content for these):\n`;
+        if (!includeStructure) {
+          existingContentContext += `\n\n═══════════════════════════════════════════════════════════════\n`;
+          existingContentContext += `⚠️  CRITICAL: STRUCTURE GENERATION IS DISABLED ⚠️\n`;
+          existingContentContext += `═══════════════════════════════════════════════════════════════\n`;
+          existingContentContext += `\nYOU MUST USE THIS EXACT STRUCTURE - DO NOT CREATE NEW PHASES/OPERATIONS/STEPS:\n\n`;
+        } else {
+          existingContentContext += `\n\nEXISTING PROJECT STRUCTURE (review before creating new structure):\n`;
+        }
         request.existingContent.phases.forEach(phase => {
           existingContentContext += `- Phase: ${phase.name}\n`;
           if (phase.operations) {
@@ -85,7 +92,17 @@ Generate comprehensive, detailed project structures with phases, operations, ste
             });
           }
         });
-        existingContentContext += `\nIMPORTANT: If structure is not selected, ONLY generate content for the existing phases/operations/steps listed above. DO NOT create new phases, operations, or steps.\n`;
+        if (!includeStructure) {
+          existingContentContext += `\n═══════════════════════════════════════════════════════════════\n`;
+          existingContentContext += `CRITICAL RULES:\n`;
+          existingContentContext += `1. Your response MUST contain ONLY the phases, operations, and steps listed above\n`;
+          existingContentContext += `2. DO NOT add, remove, rename, or modify any phases, operations, or steps\n`;
+          existingContentContext += `3. ONLY generate content (tools, materials, instructions, etc.) for the existing structure\n`;
+          existingContentContext += `4. Any new phases/operations/steps you create will be automatically removed\n`;
+          existingContentContext += `═══════════════════════════════════════════════════════════════\n\n`;
+        } else {
+          existingContentContext += `\nIMPORTANT: Review the existing structure above. You may create new phases/operations/steps if needed, but consider the existing structure first.\n`;
+        }
       }
       
       if (request.existingContent.risks && request.existingContent.risks.length > 0) {
@@ -291,15 +308,20 @@ ${request.contentSelection?.instructions3Level !== false ? '- Make instructions 
 - Focus specifically on ${sanitizeInput(request.projectName)} - do NOT generate content for other project types
 
 ${!includeStructure ? `
-CRITICAL STRUCTURE RESTRICTION:
+CRITICAL STRUCTURE RESTRICTION - READ CAREFULLY:
 - Structure generation is DISABLED (structure checkbox is unchecked)
 - You MUST use the EXACT existing structure provided above in "EXISTING PROJECT STRUCTURE"
 - DO NOT create, modify, rename, or delete any phases, operations, or steps
+- DO NOT add new phases, operations, or steps that are not in the existing structure
+- DO NOT propose alternative structures or suggest structural changes
 - For each existing phase/operation/step, ONLY update the content fields that are SELECTED (checked)
 - For content fields that are NOT selected, leave them empty or unchanged
 - If no existing structure is provided, return an empty phases array: "phases": []
 - The structure names (phase names, operation names, step titles) MUST match exactly what is provided above
-- Review the structure to understand project context, but do not modify it` : ''}
+- Review the structure to understand project context, but do not modify it
+- Your response MUST contain ONLY the phases, operations, and steps listed in "EXISTING PROJECT STRUCTURE"
+- Any phases, operations, or steps not in the existing structure will be automatically removed
+- Focus on generating content (tools, materials, instructions, etc.) for the EXISTING structure only` : ''}
 ${isUpdatingExisting && request.existingContent?.risks && includeRisks ? `
 CRITICAL RISK RESTRICTION:
 - Review the existing risks listed above carefully
@@ -355,6 +377,74 @@ CRITICAL RISK RESTRICTION:
       } else {
         throw new Error('Failed to parse AI response as JSON');
       }
+    }
+
+    // CRITICAL: If structure is deselected, filter out any new phases/operations/steps
+    // Only keep phases/operations/steps that match the existing structure
+    if (!includeStructure && isUpdatingExisting && request.existingContent?.phases && request.existingContent.phases.length > 0) {
+      console.log('Structure deselected - filtering AI response to match existing structure');
+      
+      // Build a map of existing structure for quick lookup
+      const existingStructureMap = new Map<string, Map<string, Set<string>>>();
+      request.existingContent.phases.forEach(phase => {
+        const phaseMap = new Map<string, Set<string>>();
+        if (phase.operations) {
+          phase.operations.forEach(op => {
+            const stepSet = new Set<string>();
+            if (op.steps) {
+              op.steps.forEach(step => {
+                stepSet.add(step.stepTitle.toLowerCase().trim());
+              });
+            }
+            phaseMap.set(op.name.toLowerCase().trim(), stepSet);
+          });
+        }
+        existingStructureMap.set(phase.name.toLowerCase().trim(), phaseMap);
+      });
+
+      // Filter phases to only include existing ones
+      const filteredPhases = projectData.phases?.filter((phase: any) => {
+        const phaseKey = phase.name?.toLowerCase().trim();
+        if (!existingStructureMap.has(phaseKey)) {
+          console.log(`Filtering out new phase: ${phase.name}`);
+          return false;
+        }
+
+        // Filter operations to only include existing ones
+        const phaseMap = existingStructureMap.get(phaseKey)!;
+        if (phase.operations) {
+          phase.operations = phase.operations.filter((op: any) => {
+            const opKey = op.name?.toLowerCase().trim();
+            if (!phaseMap.has(opKey)) {
+              console.log(`Filtering out new operation: ${op.name} in phase ${phase.name}`);
+              return false;
+            }
+
+            // Filter steps to only include existing ones
+            const stepSet = phaseMap.get(opKey)!;
+            if (op.steps) {
+              op.steps = op.steps.filter((step: any) => {
+                const stepKey = step.stepTitle?.toLowerCase().trim();
+                if (!stepSet.has(stepKey)) {
+                  console.log(`Filtering out new step: ${step.stepTitle} in operation ${op.name}`);
+                  return false;
+                }
+                return true;
+              });
+            }
+            return true;
+          });
+        }
+        return true;
+      }) || [];
+
+      // Replace phases with filtered version
+      projectData.phases = filteredPhases;
+      console.log(`Filtered structure: ${filteredPhases.length} phases (from ${projectData.phases?.length || 0} original)`);
+    } else if (!includeStructure) {
+      // If structure is deselected but no existing content, return empty phases
+      console.log('Structure deselected and no existing content - returning empty phases');
+      projectData.phases = [];
     }
 
     // Calculate cost estimate
