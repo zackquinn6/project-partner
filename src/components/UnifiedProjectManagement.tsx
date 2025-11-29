@@ -835,26 +835,22 @@ export function UnifiedProjectManagement({
       console.log('✅ Latest revision found:', latestRevision.id, 'Rev', latestRevision.revision_number);
 
       // Get all other revision IDs to delete
-      const otherRevisionIds = allRevisions.filter(r => r.id !== latestRevision.id).map(r => r.id);
+      // IMPORTANT: If latest revision has a parent, exclude it from deletion to avoid FK constraint
+      // We'll delete the parent after removing the reference in the final update
+      let otherRevisionIds = allRevisions.filter(r => r.id !== latestRevision.id).map(r => r.id);
+      const parentIdToExclude = latestRevision.parent_project_id;
+      
+      if (parentIdToExclude) {
+        // Remove parent from deletion list - we'll handle it after removing the reference
+        otherRevisionIds = otherRevisionIds.filter(id => id !== parentIdToExclude);
+        console.log('⚠️ Excluding parent revision from deletion to avoid FK constraint:', parentIdToExclude);
+      }
+      
       console.log('🗑️ Deleting', otherRevisionIds.length, 'other revisions:', otherRevisionIds);
 
-      // IMPORTANT: First, update the latest revision to remove parent_project_id reference
-      // This must be done BEFORE deleting other revisions to avoid foreign key constraint violations
-      if (latestRevision.parent_project_id) {
-        console.log('🔄 Removing parent_project_id from latest revision before deletion');
-        const { error: updateParentError } = await supabase
-          .from('projects')
-          .update({ parent_project_id: null })
-          .eq('id', latestRevision.id);
-        
-        if (updateParentError) {
-          console.error('❌ Error removing parent_project_id:', updateParentError);
-          throw updateParentError;
-        }
-        console.log('✅ Removed parent_project_id from latest revision');
-      }
-
-      // Delete all other revisions first (to avoid name conflicts)
+      // IMPORTANT: Delete all other revisions FIRST to avoid name constraint violations
+      // We'll handle parent_project_id in the final update after deletions are complete
+      // This avoids triggering the unique name constraint when updating the latest revision
       if (otherRevisionIds.length > 0) {
         for (const revisionId of otherRevisionIds) {
           console.log('🗑️ Deleting revision:', revisionId);
@@ -1001,6 +997,58 @@ export function UnifiedProjectManagement({
       }
 
       console.log('✅ Revision reset complete');
+      
+      // If we excluded a parent from deletion, delete it now (reference is already removed)
+      if (parentIdToExclude) {
+        console.log('🗑️ Deleting excluded parent revision:', parentIdToExclude);
+        
+        // Delete related data for the parent
+        const { data: parentOperations } = await supabase
+          .from('template_operations')
+          .select('id')
+          .eq('project_id', parentIdToExclude);
+        
+        if (parentOperations && parentOperations.length > 0) {
+          const parentOpIds = parentOperations.map(op => op.id);
+          
+          // Delete template steps
+          await supabase
+            .from('template_steps')
+            .delete()
+            .in('operation_id', parentOpIds);
+          
+          // Delete template operations
+          await supabase
+            .from('template_operations')
+            .delete()
+            .eq('project_id', parentIdToExclude);
+        }
+        
+        // Delete project_phases
+        await supabase
+          .from('project_phases')
+          .delete()
+          .eq('project_id', parentIdToExclude);
+        
+        // Delete project_runs
+        await supabase
+          .from('project_runs')
+          .delete()
+          .eq('template_id', parentIdToExclude);
+        
+        // Delete the parent project
+        const { error: parentDeleteError } = await supabase
+          .from('projects')
+          .delete()
+          .eq('id', parentIdToExclude);
+        
+        if (parentDeleteError) {
+          console.error('❌ Error deleting parent revision:', parentDeleteError);
+          throw parentDeleteError;
+        }
+        
+        console.log('✅ Parent revision deleted');
+      }
       
       // Refresh projects list first
       await fetchProjects();
