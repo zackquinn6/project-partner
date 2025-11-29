@@ -557,14 +557,15 @@ export async function importGeneratedProject(
       console.log('📝 Content-only mode: Updating existing step content without modifying structure');
       
       // Fetch all existing steps for this project
-      const { data: allPhases } = await supabase
+      // FIX: Use correct column names - operation_name not name
+      const { data: allPhases, error: fetchError } = await supabase
         .from('project_phases')
         .select(`
           id,
           name,
           template_operations (
             id,
-            name,
+            operation_name,
             template_steps (
               id,
               step_title,
@@ -574,8 +575,14 @@ export async function importGeneratedProject(
         `)
         .eq('project_id', projectId);
 
-      if (!allPhases) {
-        result.errors.push('Failed to fetch existing project structure for content update');
+      if (fetchError) {
+        console.error('Error fetching existing project structure:', fetchError);
+        result.errors.push(`Failed to fetch existing project structure for content update: ${fetchError.message}`);
+        return result;
+      }
+
+      if (!allPhases || allPhases.length === 0) {
+        result.errors.push('No existing project structure found for content update');
         return result;
       }
 
@@ -592,7 +599,7 @@ export async function importGeneratedProject(
 
         for (const generatedOp of generatedPhase.operations) {
           const existingOp = existingPhase.template_operations?.find((op: any) =>
-            op.name.toLowerCase().trim() === generatedOp.name.toLowerCase().trim()
+            op.operation_name?.toLowerCase().trim() === generatedOp.name.toLowerCase().trim()
           );
 
           if (!existingOp) {
