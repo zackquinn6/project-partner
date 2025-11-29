@@ -36,6 +36,7 @@ DECLARE
   quick_instruction TEXT;
   detailed_instruction TEXT;
   contractor_instruction TEXT;
+  phase_order_number JSONB;
 BEGIN
   -- Step 1: Ensure user has a home with at least one room
   -- If p_home_id is provided, use it; otherwise find or create user's primary home
@@ -227,6 +228,17 @@ BEGIN
       );
     END LOOP;
     
+    -- Compute phaseOrderNumber based on position_rule
+    IF template_phase.phase_position_rule = 'first' THEN
+      phase_order_number := to_jsonb(1);
+    ELSIF template_phase.phase_position_rule = 'last' THEN
+      phase_order_number := to_jsonb('last');
+    ELSIF template_phase.phase_position_rule = 'nth' AND template_phase.phase_position_value IS NOT NULL THEN
+      phase_order_number := to_jsonb(template_phase.phase_position_value);
+    ELSE
+      phase_order_number := to_jsonb(999);
+    END IF;
+    
     -- Build phase JSON with all operations
     phase_array := phase_array || jsonb_build_object(
       'id', template_phase.phase_id,
@@ -238,13 +250,7 @@ BEGIN
       'sourcePhaseId', template_phase.phase_source_phase_id,
       'positionRule', template_phase.phase_position_rule,
       'positionValue', template_phase.phase_position_value,
-      'phaseOrderNumber', CASE
-        WHEN template_phase.phase_position_rule = 'first' THEN 1
-        WHEN template_phase.phase_position_rule = 'last' THEN 'last'
-        WHEN template_phase.phase_position_rule = 'nth' AND template_phase.phase_position_value IS NOT NULL 
-          THEN template_phase.phase_position_value::INTEGER
-        ELSE 999
-      END,
+      'phaseOrderNumber', phase_order_number,
       'operations', to_jsonb(operation_array)
     );
   END LOOP;
@@ -260,25 +266,27 @@ BEGIN
   -- Step 8: Create default space for project run
   -- For single-piece flow, custom and incorporated phases are contained under a space
   -- Default to "Room 1" if no spaces exist
-  INSERT INTO project_run_spaces (
-    project_run_id,
-    space_name,
-    space_type,
-    priority,
-    created_at,
-    updated_at
-  )
-  SELECT 
-    new_run_id,
-    'Room 1',
-    'room',
-    1,
-    NOW(),
-    NOW()
-  WHERE NOT EXISTS (
+  IF NOT EXISTS (
     SELECT 1 FROM project_run_spaces 
     WHERE project_run_id = new_run_id
-  );
+  ) THEN
+    INSERT INTO project_run_spaces (
+      project_run_id,
+      space_name,
+      space_type,
+      priority,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      new_run_id,
+      'Room 1',
+      'room',
+      1,
+      NOW(),
+      NOW()
+    );
+  END IF;
   
   RETURN new_run_id;
 END;
