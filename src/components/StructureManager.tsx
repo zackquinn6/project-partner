@@ -262,6 +262,94 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   }, [isEditingStandardProject]);
   
   /**
+   * Validate display_order for operations and steps
+   * - Each display_order must be present (not null/undefined)
+   * - Each display_order must be unique within its container
+   *   - Operation display_order unique within phase
+   *   - Step display_order unique within operation
+   */
+  const validateDisplayOrder = useCallback((phasesToValidate: Phase[]): ValidationError | null => {
+    const errors: string[] = [];
+    
+    for (const phase of phasesToValidate) {
+      // Validate operations within phase
+      if (phase.operations && phase.operations.length > 0) {
+        const operationDisplayOrders: number[] = [];
+        const operationsWithoutOrder: string[] = [];
+        const duplicateOperationOrders: Map<number, string[]> = new Map();
+        
+        for (const operation of phase.operations) {
+          const displayOrder = (operation as any)?.displayOrder;
+          
+          if (displayOrder === null || displayOrder === undefined) {
+            operationsWithoutOrder.push(operation.name || operation.id);
+          } else if (typeof displayOrder === 'number') {
+            if (operationDisplayOrders.includes(displayOrder)) {
+              if (!duplicateOperationOrders.has(displayOrder)) {
+                duplicateOperationOrders.set(displayOrder, []);
+              }
+              duplicateOperationOrders.get(displayOrder)!.push(operation.name || operation.id);
+            } else {
+              operationDisplayOrders.push(displayOrder);
+            }
+          }
+        }
+        
+        if (operationsWithoutOrder.length > 0) {
+          errors.push(`Phase "${phase.name}": ${operationsWithoutOrder.length} operation(s) missing display_order: ${operationsWithoutOrder.join(', ')}`);
+        }
+        
+        duplicateOperationOrders.forEach((operationNames, order) => {
+          errors.push(`Phase "${phase.name}": Duplicate display_order ${order} in operations: ${operationNames.join(', ')}`);
+        });
+        
+        // Validate steps within each operation
+        for (const operation of phase.operations) {
+          const stepDisplayOrders: number[] = [];
+          const stepsWithoutOrder: string[] = [];
+          const duplicateStepOrders: Map<number, string[]> = new Map();
+          
+          if (operation.steps && operation.steps.length > 0) {
+            for (const step of operation.steps) {
+              const displayOrder = (step as any)?.displayOrder;
+              
+              if (displayOrder === null || displayOrder === undefined) {
+                stepsWithoutOrder.push(step.step || step.id);
+              } else if (typeof displayOrder === 'number') {
+                if (stepDisplayOrders.includes(displayOrder)) {
+                  if (!duplicateStepOrders.has(displayOrder)) {
+                    duplicateStepOrders.set(displayOrder, []);
+                  }
+                  duplicateStepOrders.get(displayOrder)!.push(step.step || step.id);
+                } else {
+                  stepDisplayOrders.push(displayOrder);
+                }
+              }
+            }
+          }
+          
+          if (stepsWithoutOrder.length > 0) {
+            errors.push(`Phase "${phase.name}", Operation "${operation.name}": ${stepsWithoutOrder.length} step(s) missing display_order: ${stepsWithoutOrder.join(', ')}`);
+          }
+          
+          duplicateStepOrders.forEach((stepNames, order) => {
+            errors.push(`Phase "${phase.name}", Operation "${operation.name}": Duplicate display_order ${order} in steps: ${stepNames.join(', ')}`);
+          });
+        }
+      }
+    }
+    
+    if (errors.length > 0) {
+      return {
+        message: `Display order validation failed: ${errors.length} error(s) found`,
+        details: errors
+      };
+    }
+    
+    return null;
+  }, []);
+  
+  /**
    * Load phases directly from database - NO intermediate steps or copying
    * Reads directly from project_phases table with position_rule and position_value
    */
@@ -646,9 +734,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     
     // Validate and sort (unless validation is skipped)
     if (!skipValidation) {
-      const validationError = validatePhaseOrdering(loadedPhases);
-      if (validationError) {
-        throw new Error(`Validation failed: ${validationError.message}`);
+      const phaseValidationError = validatePhaseOrdering(loadedPhases);
+      if (phaseValidationError) {
+        throw new Error(`Validation failed: ${phaseValidationError.message}`);
+      }
+      
+      // Validate display_order for operations and steps
+      const displayOrderValidationError = validateDisplayOrder(loadedPhases);
+      if (displayOrderValidationError) {
+        throw new Error(`Display order validation failed: ${displayOrderValidationError.message}`);
       }
     }
     
@@ -693,18 +787,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         const loadedPhases = await loadPhases(projectId);
         
         // STRICT VALIDATION - ENFORCE: Block all operations if validation fails
-        const validationError = validatePhaseOrdering(loadedPhases);
-        if (validationError) {
-          setValidationError(validationError);
+        const phaseValidationError = validatePhaseOrdering(loadedPhases);
+        if (phaseValidationError) {
+          setValidationError(phaseValidationError);
           setPhases([]);
           setLoading(false);
           // Show detailed error message
-          const errorDetails = validationError.details ? validationError.details.join('\n') : validationError.message;
-          toast.error(`Validation failed: ${validationError.message}`, {
+          const errorDetails = phaseValidationError.details ? phaseValidationError.details.join('\n') : phaseValidationError.message;
+          toast.error(`Validation failed: ${phaseValidationError.message}`, {
             description: errorDetails,
             duration: 10000
           });
-          console.error('Validation errors:', validationError.details || [validationError.message]);
+          console.error('Validation errors:', phaseValidationError.details || [phaseValidationError.message]);
+          loadedProjectIdRef.current = null; // Reset on validation error to allow retry
+          isLoadingRef.current = false;
+          return; // BLOCK: Do not proceed with loading phases
+        }
+        
+        // Validate display_order for operations and steps
+        const displayOrderValidationError = validateDisplayOrder(loadedPhases);
+        if (displayOrderValidationError) {
+          setValidationError(displayOrderValidationError);
+          setPhases([]);
+          setLoading(false);
+          // Show detailed error message
+          const errorDetails = displayOrderValidationError.details ? displayOrderValidationError.details.join('\n') : displayOrderValidationError.message;
+          toast.error(`Display order validation failed: ${displayOrderValidationError.message}`, {
+            description: errorDetails,
+            duration: 10000
+          });
+          console.error('Display order validation errors:', displayOrderValidationError.details || [displayOrderValidationError.message]);
           loadedProjectIdRef.current = null; // Reset on validation error to allow retry
           isLoadingRef.current = false;
           return; // BLOCK: Do not proceed with loading phases
@@ -1708,11 +1820,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }
     
     try {
-      // Get unique operation name
+      // Get existing operations to determine next display_order
       const { data: existingOperations } = await supabase
         .from('template_operations')
-        .select('operation_name')  // Changed from name
-        .eq('phase_id', phaseId);
+        .select('operation_name, display_order')
+        .eq('phase_id', phaseId)
+        .order('display_order', { ascending: false })
+        .limit(1);
       
       const existingNames = new Set((existingOperations || []).map(op => (op as any).operation_name?.toLowerCase() || ''));
       let operationName = 'New Operation';
@@ -1721,6 +1835,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         operationName = `New Operation ${counter}`;
         counter++;
       }
+      
+      // Calculate next display_order (max + 1, or 1 if no operations exist)
+      const maxDisplayOrder = existingOperations && existingOperations.length > 0 
+        ? (existingOperations[0] as any).display_order || 0
+        : 0;
+      const nextDisplayOrder = maxDisplayOrder + 1;
       
       // Insert new operation
       // Must comply with custom_phase_metadata_check constraint
@@ -1733,7 +1853,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         operation_name: operationName,  // Changed from name
         operation_description: 'Operation description',  // Changed from description
         flow_type: 'prime',
-        display_order: 1  // Use sequential ordering starting at 1
+        display_order: nextDisplayOrder  // Use next sequential display_order
       };
       
       // Note: is_standard_phase, custom_phase_name, and custom_phase_description removed
