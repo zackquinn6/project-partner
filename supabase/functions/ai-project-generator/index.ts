@@ -128,15 +128,27 @@ CATEGORY: ${request.category.join(', ')}
 ${request.aiInstructions ? `\nSPECIFIC INSTRUCTIONS: ${sanitizeInput(request.aiInstructions)}\n` : ''}
 ${existingContentContext}
 
-CRITICAL CONTENT SELECTION RULES:
+═══════════════════════════════════════════════════════════════
+CRITICAL CONTENT SELECTION RULES - READ CAREFULLY:
+═══════════════════════════════════════════════════════════════
+
 ${includeStructure ? '✓ STRUCTURE: Selected - You may create/modify phases, operations, and steps' : '✗ STRUCTURE: NOT Selected - DO NOT create, modify, or delete any phases, operations, or steps. Only update content fields that are selected below.'}
-${request.contentSelection?.tools !== false ? '✓ TOOLS: Selected - Review and improve tool recommendations for each step' : '✗ TOOLS: NOT Selected - DO NOT search for, suggest, or modify any tools'}
-${request.contentSelection?.materials !== false ? '✓ MATERIALS: Selected - Review and improve material recommendations for each step' : '✗ MATERIALS: NOT Selected - DO NOT search for, suggest, or modify any materials'}
-${request.contentSelection?.instructions3Level !== false ? '✓ INSTRUCTIONS (3-Level): Selected - Review and improve quick/detailed/contractor instructions' : '✗ INSTRUCTIONS (3-Level): NOT Selected - DO NOT create or modify instructions'}
-${request.contentSelection?.outputs !== false ? '✓ OUTPUTS: Selected - Review and improve output definitions for each step' : '✗ OUTPUTS: NOT Selected - DO NOT create or modify outputs'}
-${request.contentSelection?.processVariables !== false ? '✓ PROCESS VARIABLES: Selected - Review and improve process variables for each step' : '✗ PROCESS VARIABLES: NOT Selected - DO NOT create or modify process variables'}
-${request.contentSelection?.timeEstimation !== false ? '✓ TIME ESTIMATION: Selected - Review and improve time estimates for each step' : '✗ TIME ESTIMATION: NOT Selected - DO NOT create or modify time estimates'}
-${includeRisks ? '✓ RISKS: Selected - Review and improve project risk assessment' : '✗ RISKS: NOT Selected - DO NOT create or modify risks'}
+
+${request.contentSelection?.tools !== false ? '✓ TOOLS: Selected - REQUIRED - You MUST generate tools for EVERY step. Include 2-5 tools per step.' : '✗ TOOLS: NOT Selected - DO NOT search for, suggest, or modify any tools. Omit tools field entirely.'}
+
+${request.contentSelection?.materials !== false ? '✓ MATERIALS: Selected - REQUIRED - You MUST generate materials for EVERY step. Include 1-4 materials per step.' : '✗ MATERIALS: NOT Selected - DO NOT search for, suggest, or modify any materials. Omit materials field entirely.'}
+
+${request.contentSelection?.instructions3Level !== false ? '✓ INSTRUCTIONS (3-Level): Selected - REQUIRED - You MUST generate quick, detailed, and contractor instructions for EVERY step. All three levels required.' : '✗ INSTRUCTIONS (3-Level): NOT Selected - DO NOT create or modify instructions. Omit instructions field entirely.'}
+
+${request.contentSelection?.outputs !== false ? '✓ OUTPUTS: Selected - REQUIRED - You MUST generate at least 1 output for EVERY step. All outputs must be quantified.' : '✗ OUTPUTS: NOT Selected - DO NOT create or modify outputs. Omit outputs field entirely.'}
+
+${request.contentSelection?.processVariables !== false ? '✓ PROCESS VARIABLES: Selected - REQUIRED - You MUST generate process variables for relevant steps (prep, execution). Include 1-3 variables per applicable step.' : '✗ PROCESS VARIABLES: NOT Selected - DO NOT create or modify process variables. Omit processVariables field entirely.'}
+
+${request.contentSelection?.timeEstimation !== false ? '✓ TIME ESTIMATION: Selected - REQUIRED - You MUST generate time estimates (low, medium, high) for EVERY step.' : '✗ TIME ESTIMATION: NOT Selected - DO NOT create or modify time estimates. Omit timeEstimates field entirely.'}
+
+${includeRisks ? '✓ RISKS: Selected - REQUIRED - You MUST generate 5-10 comprehensive risks for the project. Cover all major risk categories.' : '✗ RISKS: NOT Selected - DO NOT create or modify risks. Omit risks field entirely.'}
+
+═══════════════════════════════════════════════════════════════
 
 IMPORTANT: Even when content types are NOT selected, you MUST still review the project information (name, description, existing structure) to understand the project's intent and context. This understanding helps you make better improvements to the selected content types.
 
@@ -225,7 +237,16 @@ ${includeDecisionTrees ? `8. DECISION TREES AND ALTERNATIVE OPERATIONS:
    - STANDARD OPERATIONS: Normal operations in the workflow
      - Set flowType: "standard" or omit` : ''}
 
-Return ONLY valid JSON in this exact structure:
+MANDATORY CONTENT REQUIREMENTS SUMMARY:
+${request.contentSelection?.tools !== false ? '✓ Tools: REQUIRED for every step - include 2-5 tools per step' : '✗ Tools: NOT required - omit tools field'}
+${request.contentSelection?.materials !== false ? '✓ Materials: REQUIRED for every step - include 1-4 materials per step' : '✗ Materials: NOT required - omit materials field'}
+${request.contentSelection?.instructions3Level !== false ? '✓ Instructions: REQUIRED for every step - include quick, detailed, and contractor (all 3 levels)' : '✗ Instructions: NOT required - omit instructions field'}
+${request.contentSelection?.outputs !== false ? '✓ Outputs: REQUIRED for every step - include at least 1 output per step' : '✗ Outputs: NOT required - omit outputs field'}
+${request.contentSelection?.processVariables !== false ? '✓ Process Variables: REQUIRED for relevant steps - include 1-3 variables per applicable step' : '✗ Process Variables: NOT required - omit processVariables field'}
+${request.contentSelection?.timeEstimation !== false ? '✓ Time Estimates: REQUIRED for every step - include low, medium, and high values' : '✗ Time Estimates: NOT required - omit timeEstimates field'}
+${includeRisks ? '✓ Risks: REQUIRED - include 5-10 comprehensive risks in the risks array' : '✗ Risks: NOT required - omit risks field'}
+
+Return ONLY valid JSON in this exact structure (include ALL fields marked as REQUIRED above):
 {
   "phases": [
     {
@@ -297,15 +318,35 @@ IMPORTANT CONTEXT UNDERSTANDING:
 - This context helps you make better improvements to the selected content types
 - Even if you're not generating certain content types, understanding the project helps you improve what you ARE generating
 
+CRITICAL CONTENT GENERATION REQUIREMENTS - YOU MUST GENERATE ALL SELECTED CONTENT TYPES:
+${request.contentSelection?.tools !== false ? '✓ TOOLS: REQUIRED - You MUST generate tools for EVERY step. Do not skip any steps. Include 2-5 tools per step where appropriate.' : ''}
+${request.contentSelection?.materials !== false ? '✓ MATERIALS: REQUIRED - You MUST generate materials for EVERY step. Do not skip any steps. Include 1-4 materials per step where appropriate.' : ''}
+${request.contentSelection?.instructions3Level !== false ? '✓ INSTRUCTIONS: REQUIRED - You MUST generate quick, detailed, and contractor instructions for EVERY step. Do not skip any steps or instruction levels.' : ''}
+${request.contentSelection?.outputs !== false ? '✓ OUTPUTS: REQUIRED - You MUST generate at least 1 output for EVERY step. Do not skip any steps. Ensure all outputs are quantified.' : ''}
+${request.contentSelection?.processVariables !== false ? '✓ PROCESS VARIABLES: REQUIRED - You MUST generate process variables for steps that need them (prep, execution steps). Include 1-3 variables per relevant step.' : ''}
+${request.contentSelection?.timeEstimation !== false ? '✓ TIME ESTIMATES: REQUIRED - You MUST generate time estimates (low, medium, high) for EVERY step. Do not skip any steps.' : ''}
+${includeRisks ? '✓ RISKS: REQUIRED - You MUST generate 5-10 comprehensive risks for the project. Cover all major risk categories (safety, quality, cost, timeline, materials, tools).' : ''}
+
 CONTENT GENERATION RULES:
-- Be comprehensive and detailed for selected content types
+- Be comprehensive and detailed for ALL selected content types - do not skip or omit any
 - Use professional terminology appropriate for ${request.category.join(', ')} projects
-${request.contentSelection?.outputs !== false ? '- Ensure all outputs are quantified' : ''}
-${request.contentSelection?.tools !== false || request.contentSelection?.materials !== false ? '- Match tools/materials to library when possible' : ''}
-${request.contentSelection?.timeEstimation !== false ? '- Include realistic time estimates' : ''}
-${includeRisks ? '- Cover all major risks with practical mitigations' : ''}
-${request.contentSelection?.instructions3Level !== false ? '- Make instructions appropriate for each skill level' : ''}
+${request.contentSelection?.outputs !== false ? '- Ensure all outputs are quantified with specific requirements' : ''}
+${request.contentSelection?.tools !== false || request.contentSelection?.materials !== false ? '- Match tools/materials to library when possible, but include all necessary items' : ''}
+${request.contentSelection?.timeEstimation !== false ? '- Include realistic time estimates based on step complexity' : ''}
+${includeRisks ? '- Cover all major risks with practical mitigations - aim for 5-10 risks minimum' : ''}
+${request.contentSelection?.instructions3Level !== false ? '- Make instructions appropriate for each skill level - all three levels required for every step' : ''}
 - Focus specifically on ${sanitizeInput(request.projectName)} - do NOT generate content for other project types
+- DO NOT leave selected content types empty or incomplete - generate comprehensive content for each
+
+FINAL CHECKLIST - BEFORE RETURNING YOUR RESPONSE, VERIFY:
+${request.contentSelection?.tools !== false ? '□ Every step has a "tools" array with at least 1 tool' : ''}
+${request.contentSelection?.materials !== false ? '□ Every step has a "materials" array with at least 1 material' : ''}
+${request.contentSelection?.instructions3Level !== false ? '□ Every step has "instructions" object with "quick", "detailed", and "contractor" fields (all non-empty)' : ''}
+${request.contentSelection?.outputs !== false ? '□ Every step has an "outputs" array with at least 1 output' : ''}
+${request.contentSelection?.processVariables !== false ? '□ Relevant steps have "processVariables" array' : ''}
+${request.contentSelection?.timeEstimation !== false ? '□ Every step has "timeEstimates" object with "low", "medium", and "high" values' : ''}
+${includeRisks ? '□ The "risks" array contains at least 5-10 comprehensive risks' : ''}
+${!includeStructure ? '□ Structure matches EXACTLY the existing structure provided above - no new phases/operations/steps' : ''}
 
 ${!includeStructure ? `
 CRITICAL STRUCTURE RESTRICTION - READ CAREFULLY:
@@ -348,9 +389,10 @@ CRITICAL RISK RESTRICTION:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.7,
-        max_tokens: 8000,
-        response_format: { type: "json_object" }
+        temperature: 0.3, // Lower temperature for more consistent results
+        max_tokens: 16000, // Increased to allow comprehensive content generation
+        response_format: { type: "json_object" },
+        top_p: 0.9 // Add top_p for more focused responses
       }),
     });
 
@@ -447,6 +489,81 @@ CRITICAL RISK RESTRICTION:
       projectData.phases = [];
     }
 
+    // Validate that all selected content types are present
+    const validationErrors: string[] = [];
+    const allSteps: any[] = [];
+    
+    // Collect all steps from all phases
+    if (projectData.phases && Array.isArray(projectData.phases)) {
+      projectData.phases.forEach((phase: any) => {
+        if (phase.operations && Array.isArray(phase.operations)) {
+          phase.operations.forEach((op: any) => {
+            if (op.steps && Array.isArray(op.steps)) {
+              allSteps.push(...op.steps);
+            }
+          });
+        }
+      });
+    }
+
+    // Validate each selected content type
+    if (request.contentSelection?.tools !== false && allSteps.length > 0) {
+      const stepsWithoutTools = allSteps.filter((step: any) => !step.tools || !Array.isArray(step.tools) || step.tools.length === 0);
+      if (stepsWithoutTools.length > 0) {
+        validationErrors.push(`TOOLS: ${stepsWithoutTools.length} step(s) missing tools`);
+      }
+    }
+
+    if (request.contentSelection?.materials !== false && allSteps.length > 0) {
+      const stepsWithoutMaterials = allSteps.filter((step: any) => !step.materials || !Array.isArray(step.materials) || step.materials.length === 0);
+      if (stepsWithoutMaterials.length > 0) {
+        validationErrors.push(`MATERIALS: ${stepsWithoutMaterials.length} step(s) missing materials`);
+      }
+    }
+
+    if (request.contentSelection?.instructions3Level !== false && allSteps.length > 0) {
+      const stepsWithoutInstructions = allSteps.filter((step: any) => 
+        !step.instructions || 
+        !step.instructions.quick || 
+        !step.instructions.detailed || 
+        !step.instructions.contractor
+      );
+      if (stepsWithoutInstructions.length > 0) {
+        validationErrors.push(`INSTRUCTIONS: ${stepsWithoutInstructions.length} step(s) missing instructions`);
+      }
+    }
+
+    if (request.contentSelection?.outputs !== false && allSteps.length > 0) {
+      const stepsWithoutOutputs = allSteps.filter((step: any) => !step.outputs || !Array.isArray(step.outputs) || step.outputs.length === 0);
+      if (stepsWithoutOutputs.length > 0) {
+        validationErrors.push(`OUTPUTS: ${stepsWithoutOutputs.length} step(s) missing outputs`);
+      }
+    }
+
+    if (request.contentSelection?.timeEstimation !== false && allSteps.length > 0) {
+      const stepsWithoutTime = allSteps.filter((step: any) => 
+        !step.timeEstimates || 
+        step.timeEstimates.low === undefined || 
+        step.timeEstimates.medium === undefined || 
+        step.timeEstimates.high === undefined
+      );
+      if (stepsWithoutTime.length > 0) {
+        validationErrors.push(`TIME ESTIMATES: ${stepsWithoutTime.length} step(s) missing time estimates`);
+      }
+    }
+
+    if (includeRisks) {
+      const riskCount = projectData.risks && Array.isArray(projectData.risks) ? projectData.risks.length : 0;
+      if (riskCount < 3) {
+        validationErrors.push(`RISKS: Only ${riskCount} risk(s) generated, expected at least 3-5 risks`);
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      console.warn('⚠️ Content validation warnings:', validationErrors);
+      // Log warnings but don't fail - the content might still be usable
+    }
+
     // Calculate cost estimate
     const inputTokens = data.usage?.prompt_tokens || 0;
     const outputTokens = data.usage?.completion_tokens || 0;
@@ -473,6 +590,17 @@ CRITICAL RISK RESTRICTION:
       tokensUsed: {
         input: inputTokens,
         output: outputTokens,
+      },
+      validationWarnings: validationErrors.length > 0 ? validationErrors : undefined,
+      contentSummary: {
+        phasesCount: projectData.phases?.length || 0,
+        totalSteps: allSteps.length,
+        risksCount: projectData.risks?.length || 0,
+        stepsWithTools: allSteps.filter((s: any) => s.tools && s.tools.length > 0).length,
+        stepsWithMaterials: allSteps.filter((s: any) => s.materials && s.materials.length > 0).length,
+        stepsWithInstructions: allSteps.filter((s: any) => s.instructions?.quick && s.instructions?.detailed && s.instructions?.contractor).length,
+        stepsWithOutputs: allSteps.filter((s: any) => s.outputs && s.outputs.length > 0).length,
+        stepsWithTimeEstimates: allSteps.filter((s: any) => s.timeEstimates?.low !== undefined && s.timeEstimates?.medium !== undefined && s.timeEstimates?.high !== undefined).length,
       },
     };
 
