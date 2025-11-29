@@ -69,10 +69,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     }
   };
   const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.templateId) || null;
-  const displaySkillLevel = currentProjectRun?.skillLevel ?? templateProject?.skillLevel;
-  const displayEffortLevel = templateProject?.effortLevel ?? currentProjectRun?.effortLevel;
-  // Use manually entered estimated time from project information editor (no calculation)
-  const displayEstimatedTime = templateProject?.estimatedTime || currentProjectRun?.estimatedTime;
+  
   // Handle both camelCase (from transformed Project interface) and snake_case (from raw database)
   // estimated_total_time is the "Total time for typical project size" field from project info editor
   // Check for both null/undefined and empty string, and handle string trimming
@@ -82,17 +79,22 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     : (rawEstimatedTotalTime || null);
   const rawTypicalProjectSize = templateProject?.typicalProjectSize || (templateProject as any)?.typical_project_size;
   const displayTypicalProjectSize = rawTypicalProjectSize != null ? rawTypicalProjectSize : null;
-  const displayProjectChallenges = currentProjectRun?.projectChallenges ?? templateProject?.projectChallenges;
   
-  // Fetch scaling_unit and item_type directly from database
-  const [scalingUnit, setScalingUnit] = useState<string | null>(null);
-  const [itemType, setItemType] = useState<string | null>(null);
+  // Fetch ALL project information directly from database
+  const [projectInfo, setProjectInfo] = useState<{
+    scalingUnit: string | null;
+    itemType: string | null;
+    projectChallenges: string | null;
+    skillLevel: string | null;
+    estimatedTime: string | null;
+    effortLevel: string | null;
+  } | null>(null);
   
   useEffect(() => {
-    const fetchScalingUnitAndItemType = async () => {
+    const fetchProjectInfo = async () => {
       const templateId = templateProject?.id || currentProjectRun?.templateId;
       
-      console.log('📊 ProjectOverviewStep - fetchScalingUnitAndItemType called:', {
+      console.log('📊 ProjectOverviewStep - fetchProjectInfo called:', {
         templateId,
         hasTemplateProject: !!templateProject,
         templateProjectId: templateProject?.id,
@@ -103,60 +105,80 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         try {
           const { data, error } = await supabase
             .from('projects')
-            .select('scaling_unit, item_type')
+            .select('scaling_unit, item_type, project_challenges, skill_level, estimated_time, effort_level')
             .eq('id', templateId)
             .single();
           
           if (!error && data) {
-            const fetchedScalingUnit = data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null;
-            const fetchedItemType = data.item_type || null;
+            const fetchedInfo = {
+              scalingUnit: data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null,
+              itemType: data.item_type || null,
+              projectChallenges: data.project_challenges || templateProject?.projectChallenges || (currentProjectRun as any)?.projectChallenges || null,
+              skillLevel: data.skill_level || templateProject?.skillLevel || (currentProjectRun as any)?.skillLevel || null,
+              estimatedTime: data.estimated_time || templateProject?.estimatedTime || (currentProjectRun as any)?.estimatedTime || null,
+              effortLevel: data.effort_level || templateProject?.effortLevel || (currentProjectRun as any)?.effortLevel || null
+            };
             
-            setScalingUnit(fetchedScalingUnit);
-            setItemType(fetchedItemType);
+            setProjectInfo(fetchedInfo);
             
-            console.log('✅ ProjectOverviewStep - Fetched scaling_unit and item_type:', {
+            console.log('✅ ProjectOverviewStep - Fetched project info from database:', {
               scaling_unit: data.scaling_unit,
               item_type: data.item_type,
-              finalScalingUnit: fetchedScalingUnit,
-              finalItemType: fetchedItemType,
-              willUseItemType: fetchedScalingUnit?.toLowerCase().trim() === 'per item' && fetchedItemType ? fetchedItemType.toLowerCase() : null
+              project_challenges: data.project_challenges,
+              skill_level: data.skill_level,
+              estimated_time: data.estimated_time,
+              effort_level: data.effort_level,
+              fetchedInfo
             });
           } else if (error) {
-            console.error('❌ Error fetching scaling_unit and item_type:', error);
-            // Fallback to templateProject values
-            const fallbackScalingUnit = templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null;
-            const fallbackItemType = (templateProject as any)?.item_type || (templateProject as any)?.itemType || null;
-            setScalingUnit(fallbackScalingUnit);
-            setItemType(fallbackItemType);
+            console.error('❌ Error fetching project info:', error);
+            // Fallback to templateProject/currentProjectRun values
+            setProjectInfo({
+              scalingUnit: templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null,
+              itemType: (templateProject as any)?.item_type || (templateProject as any)?.itemType || null,
+              projectChallenges: templateProject?.projectChallenges || (currentProjectRun as any)?.projectChallenges || null,
+              skillLevel: templateProject?.skillLevel || (currentProjectRun as any)?.skillLevel || null,
+              estimatedTime: templateProject?.estimatedTime || (currentProjectRun as any)?.estimatedTime || null,
+              effortLevel: templateProject?.effortLevel || (currentProjectRun as any)?.effortLevel || null
+            });
           }
         } catch (error) {
-          console.error('❌ Exception fetching scaling_unit and item_type:', error);
-          // Fallback to templateProject values
-          const fallbackScalingUnit = templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null;
-          const fallbackItemType = (templateProject as any)?.item_type || (templateProject as any)?.itemType || null;
-          setScalingUnit(fallbackScalingUnit);
-          setItemType(fallbackItemType);
+          console.error('❌ Exception fetching project info:', error);
+          // Fallback to templateProject/currentProjectRun values
+          setProjectInfo({
+            scalingUnit: templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null,
+            itemType: (templateProject as any)?.item_type || (templateProject as any)?.itemType || null,
+            projectChallenges: templateProject?.projectChallenges || (currentProjectRun as any)?.projectChallenges || null,
+            skillLevel: templateProject?.skillLevel || (currentProjectRun as any)?.skillLevel || null,
+            estimatedTime: templateProject?.estimatedTime || (currentProjectRun as any)?.estimatedTime || null,
+            effortLevel: templateProject?.effortLevel || (currentProjectRun as any)?.effortLevel || null
+          });
         }
       } else {
         // No template ID, use fallback values
-        const fallbackScalingUnit = (currentProjectRun as any)?.scalingUnit || templateProject?.scalingUnit || null;
-        const fallbackItemType = (templateProject as any)?.item_type || (templateProject as any)?.itemType || null;
-        setScalingUnit(fallbackScalingUnit);
-        setItemType(fallbackItemType);
-        console.log('📊 ProjectOverviewStep - No template ID, using fallback values:', {
-          fallbackScalingUnit,
-          fallbackItemType
+        setProjectInfo({
+          scalingUnit: (currentProjectRun as any)?.scalingUnit || templateProject?.scalingUnit || null,
+          itemType: (templateProject as any)?.item_type || (templateProject as any)?.itemType || null,
+          projectChallenges: (currentProjectRun as any)?.projectChallenges || templateProject?.projectChallenges || null,
+          skillLevel: (currentProjectRun as any)?.skillLevel || templateProject?.skillLevel || null,
+          estimatedTime: (currentProjectRun as any)?.estimatedTime || templateProject?.estimatedTime || null,
+          effortLevel: (currentProjectRun as any)?.effortLevel || templateProject?.effortLevel || null
         });
+        console.log('📊 ProjectOverviewStep - No template ID, using fallback values');
       }
     };
     
     if (currentProjectRun?.templateId || templateProject?.id) {
-      fetchScalingUnitAndItemType();
+      fetchProjectInfo();
     }
   }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun, templateProject]);
   
-  // Use fetched scaling unit or fallback
-  const displayScalingUnit = scalingUnit || (currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit);
+  // Use fetched project info or fallback
+  const displayScalingUnit = projectInfo?.scalingUnit || (currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit);
+  const displayProjectChallenges = projectInfo?.projectChallenges ?? currentProjectRun?.projectChallenges ?? templateProject?.projectChallenges;
+  const displaySkillLevel = projectInfo?.skillLevel ?? currentProjectRun?.skillLevel ?? templateProject?.skillLevel;
+  const displayEstimatedTime = projectInfo?.estimatedTime ?? templateProject?.estimatedTime || currentProjectRun?.estimatedTime;
+  const displayEffortLevel = projectInfo?.effortLevel ?? templateProject?.effortLevel ?? currentProjectRun?.effortLevel;
   
   // Debug logging to help diagnose missing fields
   useEffect(() => {
@@ -337,23 +359,23 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   
   // Format scaling unit, using item_type if scaling unit is "per item"
   const formattedScalingUnit = displayScalingUnit ? (() => {
-    // Use the fetched scalingUnit state if available, otherwise use displayScalingUnit
-    const scalingUnitToUse = scalingUnit || displayScalingUnit;
+    // Use the fetched projectInfo if available, otherwise use displayScalingUnit
+    const scalingUnitToUse = projectInfo?.scalingUnit || displayScalingUnit;
     const normalizedScalingUnit = scalingUnitToUse.toLowerCase().trim();
     
     console.log('🔍 ProjectOverviewStep - Formatting scaling unit:', {
-      scalingUnit,
+      projectInfoScalingUnit: projectInfo?.scalingUnit,
       displayScalingUnit,
       scalingUnitToUse,
       normalizedScalingUnit,
-      itemType,
+      projectInfoItemType: projectInfo?.itemType,
       templateProjectItemType: (templateProject as any)?.item_type || (templateProject as any)?.itemType
     });
     
     // If scaling unit is "per item" and we have an item_type, use the item_type
     if (normalizedScalingUnit === 'per item') {
-      // Check state first, then templateProject as fallback
-      const currentItemType = itemType || (templateProject as any)?.item_type || (templateProject as any)?.itemType;
+      // Check projectInfo first, then templateProject as fallback
+      const currentItemType = projectInfo?.itemType || (templateProject as any)?.item_type || (templateProject as any)?.itemType;
       
       if (currentItemType && typeof currentItemType === 'string' && currentItemType.trim().length > 0) {
         const displayValue = currentItemType.trim().toLowerCase();
@@ -362,7 +384,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       }
       
       console.log('⚠️ ProjectOverviewStep - No item_type available, using "per item":', {
-        itemType,
+        projectInfoItemType: projectInfo?.itemType,
         currentItemType,
         templateProjectItemType: (templateProject as any)?.item_type,
         templateProjectItemTypeCamel: (templateProject as any)?.itemType
