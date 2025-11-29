@@ -19,6 +19,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useProject } from '@/contexts/ProjectContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Output, Project, AppReference, Phase } from '@/interfaces/Project';
+import { ProjectRun } from '@/interfaces/ProjectRun';
 import ProjectListing from './ProjectListing';
 import { MobileProjectListing } from './MobileProjectListing';
 import { MobileWorkflowView } from './MobileWorkflowView';
@@ -798,7 +799,120 @@ export default function UserView({
         setCurrentProjectRun(projectRun);
         setViewMode('workflow');
       } else {
-        console.log('❌ UserView: Project run not found with ID:', projectRunId);
+        // Project run not in array yet - fetch directly from database
+        console.log('⚠️ UserView: Project run not in array, fetching from database:', projectRunId);
+        const fetchProjectRun = async () => {
+          try {
+            const { data: freshRun, error } = await supabase
+              .from('project_runs')
+              .select('*')
+              .eq('id', projectRunId)
+              .single();
+            
+            if (error) {
+              console.error('❌ Error fetching project run from database:', error);
+              return;
+            }
+            
+            if (!freshRun) {
+              console.error('❌ Project run not found in database:', projectRunId);
+              return;
+            }
+            
+            // Transform database data to ProjectRun format (same as ProjectDataContext)
+            let parsedPhases: any[] = [];
+            if (freshRun.phases) {
+              if (Array.isArray(freshRun.phases)) {
+                parsedPhases = freshRun.phases;
+              } else if (typeof freshRun.phases === 'string') {
+                try {
+                  parsedPhases = JSON.parse(freshRun.phases);
+                } catch (e) {
+                  console.error('❌ Error parsing phases JSON:', e);
+                }
+              }
+            }
+            
+            let parsedCompletedSteps: string[] = [];
+            if (freshRun.completed_steps) {
+              if (Array.isArray(freshRun.completed_steps)) {
+                parsedCompletedSteps = freshRun.completed_steps;
+              } else if (typeof freshRun.completed_steps === 'string') {
+                try {
+                  parsedCompletedSteps = JSON.parse(freshRun.completed_steps);
+                } catch (e) {
+                  console.error('❌ Error parsing completed_steps JSON:', e);
+                }
+              }
+            }
+            
+            let customizationDecisions: any = null;
+            if (freshRun.customization_decisions) {
+              try {
+                customizationDecisions = typeof freshRun.customization_decisions === 'string'
+                  ? JSON.parse(freshRun.customization_decisions)
+                  : freshRun.customization_decisions;
+              } catch (e) {
+                console.error('Failed to parse customization_decisions JSON:', e);
+              }
+            }
+            
+            const transformedRun: ProjectRun = {
+              id: freshRun.id,
+              templateId: freshRun.template_id,
+              name: freshRun.name,
+              description: freshRun.description || '',
+              projectChallenges: freshRun.project_challenges,
+              isManualEntry: freshRun.is_manual_entry || false,
+              createdAt: new Date(freshRun.created_at),
+              updatedAt: new Date(freshRun.updated_at),
+              startDate: new Date(freshRun.start_date),
+              planEndDate: new Date(freshRun.plan_end_date),
+              endDate: freshRun.end_date ? new Date(freshRun.end_date) : undefined,
+              status: freshRun.status as 'not-started' | 'in-progress' | 'complete' | 'cancelled',
+              projectLeader: freshRun.project_leader,
+              accountabilityPartner: freshRun.accountability_partner,
+              customProjectName: freshRun.custom_project_name,
+              home_id: freshRun.home_id,
+              currentPhaseId: freshRun.current_phase_id,
+              currentOperationId: freshRun.current_operation_id,
+              currentStepId: freshRun.current_step_id,
+              completedSteps: Array.isArray(parsedCompletedSteps) ? parsedCompletedSteps : [],
+              progress: freshRun.progress,
+              phases: Array.isArray(parsedPhases) ? parsedPhases : [],
+              category: freshRun.category,
+              effortLevel: freshRun.effort_level as Project['effortLevel'],
+              skillLevel: freshRun.skill_level as Project['skillLevel'],
+              estimatedTime: freshRun.estimated_time,
+              scalingUnit: freshRun.scaling_unit as Project['scalingUnit'],
+              customization_decisions: customizationDecisions,
+              instruction_level_preference: (freshRun.instruction_level_preference as 'quick' | 'detailed' | 'new_user') || 'detailed',
+              initial_budget: freshRun.initial_budget,
+              initial_timeline: freshRun.initial_timeline,
+              initial_sizing: freshRun.initial_sizing,
+              progress_reporting_style: (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
+            };
+            
+            console.log('✅ UserView: Fetched project run from database:', {
+              runId: transformedRun.id,
+              runName: transformedRun.name,
+              phasesCount: transformedRun.phases?.length || 0,
+              hasPhases: !!(transformedRun.phases && transformedRun.phases.length > 0)
+            });
+            
+            if (transformedRun.status === 'cancelled') {
+              console.log('❌ UserView: Project run is cancelled, not opening:', transformedRun.name);
+              return;
+            }
+            
+            setCurrentProjectRun(transformedRun);
+            setViewMode('workflow');
+          } catch (error) {
+            console.error('❌ Error in fetchProjectRun:', error);
+          }
+        };
+        
+        fetchProjectRun();
       }
     }
   }, [projectRunId, projectRuns, setCurrentProjectRun]);
