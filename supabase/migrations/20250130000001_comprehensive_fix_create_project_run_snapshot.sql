@@ -154,49 +154,6 @@ BEGIN
     FROM projects
     WHERE id = p_template_id;
   END IF;
-      
-      -- Check if rebuild was successful
-      IF rebuilt_phases_json IS NOT NULL 
-         AND rebuilt_phases_json != '[]'::JSONB 
-         AND jsonb_array_length(rebuilt_phases_json) > 0 THEN
-        -- Verify rebuild has operations with steps
-        SELECT EXISTS (
-          SELECT 1
-          FROM jsonb_array_elements(rebuilt_phases_json) AS phase
-          WHERE jsonb_typeof(COALESCE(phase->'operations', 'null'::jsonb)) = 'array'
-            AND jsonb_array_length(COALESCE(phase->'operations', '[]'::jsonb)) > 0
-            AND EXISTS (
-              SELECT 1
-              FROM jsonb_array_elements(phase->'operations') AS operation
-              WHERE jsonb_typeof(COALESCE(operation->'steps', 'null'::jsonb)) = 'array'
-                AND jsonb_array_length(COALESCE(operation->'steps', '[]'::jsonb)) > 0
-            )
-        ) INTO existing_has_operations_with_steps;
-        
-        IF existing_has_operations_with_steps THEN
-          -- Rebuild succeeded with valid phases - use it and update template
-          UPDATE projects
-          SET phases = rebuilt_phases_json
-          WHERE id = p_template_id;
-          
-          template_phases_json := rebuilt_phases_json;
-        ELSE
-          -- Rebuild returned phases but they're incomplete - this is an error
-          RAISE EXCEPTION 'Template project % rebuild returned phases without operations/steps. Cannot create project run. Template structure is invalid.', p_template_id;
-        END IF;
-      ELSE
-        -- Rebuild failed or returned empty - this is a critical error
-        RAISE EXCEPTION 'Template project % has no phases. Rebuild failed or returned empty. Cannot create project run. Please ensure the template has phases with operations and steps in the database.', p_template_id;
-      END IF;
-    EXCEPTION
-      WHEN undefined_function THEN
-        -- Rebuild function doesn't exist - cannot proceed without valid phases
-        RAISE EXCEPTION 'Template project % has no valid phases and rebuild function is not available. Cannot create project run. Please ensure the template has complete phases (with operations and steps) in the database.', p_template_id;
-      WHEN OTHERS THEN
-        -- Other error during rebuild - cannot proceed
-        RAISE EXCEPTION 'Template project % has no valid phases and rebuild failed: %. Cannot create project run. Please ensure the template has complete phases in the database.', p_template_id, SQLERRM;
-    END;
-  END IF;
   
   -- Final validation: ensure we have valid phases with operations and steps
   IF template_phases_json IS NULL 
