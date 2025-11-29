@@ -78,30 +78,47 @@ BEGIN
     ) INTO existing_has_operations_with_steps;
   END IF;
   
-  -- If existing JSONB is empty or has no phases, always rebuild
+  -- If existing JSONB is empty or has no phases, try to rebuild
   -- If existing has phases but no operations/steps, try to rebuild to fix it
   IF NOT existing_has_phases OR NOT existing_has_operations_with_steps THEN
-    -- Try to rebuild from relational tables
-    SELECT public.rebuild_phases_json_from_project_phases(p_template_id) INTO rebuilt_phases_json;
-    
-    -- Check if rebuild was successful
-    IF rebuilt_phases_json IS NOT NULL 
-       AND rebuilt_phases_json != '[]'::JSONB 
-       AND jsonb_array_length(rebuilt_phases_json) > 0 THEN
-      -- Rebuild succeeded - use it and update template
-      UPDATE projects
-      SET phases = rebuilt_phases_json
-      WHERE id = p_template_id;
+    -- Try to rebuild from relational tables (function may not exist, so handle gracefully)
+    BEGIN
+      SELECT public.rebuild_phases_json_from_project_phases(p_template_id) INTO rebuilt_phases_json;
       
-      template_phases_json := rebuilt_phases_json;
-    ELSIF existing_has_phases THEN
-      -- Rebuild failed but existing has phases - use existing (even if incomplete)
-      -- This allows project runs to be created, frontend will handle missing operations
-      RAISE WARNING 'Template % phases JSONB has phases but rebuild failed. Using existing JSONB which may have empty operations.', p_template_id;
-    ELSE
-      -- Both failed - this is a critical error
-      RAISE EXCEPTION 'Template project % has no phases. Cannot create project run. Please ensure the template has phases in the database.', p_template_id;
-    END IF;
+      -- Check if rebuild was successful
+      IF rebuilt_phases_json IS NOT NULL 
+         AND rebuilt_phases_json != '[]'::JSONB 
+         AND jsonb_array_length(rebuilt_phases_json) > 0 THEN
+        -- Rebuild succeeded - use it and update template
+        UPDATE projects
+        SET phases = rebuilt_phases_json
+        WHERE id = p_template_id;
+        
+        template_phases_json := rebuilt_phases_json;
+      ELSIF existing_has_phases THEN
+        -- Rebuild failed but existing has phases - use existing (even if incomplete)
+        -- This allows project runs to be created, frontend will handle missing operations
+        RAISE WARNING 'Template % phases JSONB has phases but rebuild failed. Using existing JSONB which may have empty operations.', p_template_id;
+      ELSE
+        -- Both failed - this is a critical error
+        RAISE EXCEPTION 'Template project % has no phases. Cannot create project run. Please ensure the template has phases in the database.', p_template_id;
+      END IF;
+    EXCEPTION
+      WHEN undefined_function THEN
+        -- Rebuild function doesn't exist - use existing phases if available
+        IF existing_has_phases THEN
+          RAISE WARNING 'Rebuild function not found, using existing phases JSONB for template %', p_template_id;
+        ELSE
+          RAISE EXCEPTION 'Template project % has no phases and rebuild function is not available. Cannot create project run.', p_template_id;
+        END IF;
+      WHEN OTHERS THEN
+        -- Other error during rebuild - use existing phases if available
+        IF existing_has_phases THEN
+          RAISE WARNING 'Rebuild failed with error: %, using existing phases JSONB for template %', SQLERRM, p_template_id;
+        ELSE
+          RAISE EXCEPTION 'Template project % has no phases and rebuild failed: %. Cannot create project run.', p_template_id, SQLERRM;
+        END IF;
+    END;
   END IF;
   
   -- Final validation: ensure we have at least some phases
