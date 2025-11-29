@@ -1,13 +1,8 @@
--- ROOT CAUSE FIX: create_project_run_snapshot function
+-- create_project_run_snapshot function
 -- 
--- REAL ROOT CAUSE: We were rebuilding phases from relational tables, which keeps failing
--- because the schema doesn't match our assumptions.
---
--- REAL SOLUTION: Templates already have a projects.phases JSONB column with the complete
--- phase structure. Just copy it directly instead of rebuilding!
---
--- This avoids ALL schema mismatch issues because we're copying data that already exists
--- and is already in the correct format.
+-- Design: Uses relational tables (project_phases, template_operations, template_steps) as the ONLY source of truth
+-- No fallbacks - if rebuild fails, the function fails with a clear error
+-- This ensures project runs always have complete phases (standard + custom) from relational data
 
 CREATE OR REPLACE FUNCTION public.create_project_run_snapshot(
   p_template_id UUID,
@@ -26,9 +21,7 @@ DECLARE
   new_run_id UUID;
   user_home_id UUID;
   template_phases_json JSONB;
-  rebuilt_phases_json JSONB;
-  existing_has_phases BOOLEAN := false;
-  existing_has_operations_with_steps BOOLEAN := false;
+  has_operations_with_steps BOOLEAN;
 BEGIN
   -- Step 1: Ensure user has a home with at least one room
   -- If p_home_id is provided, use it; otherwise find or create user's primary home
@@ -49,120 +42,18 @@ BEGIN
     END IF;
   END IF;
   
-  -- Step 2: Get template's phases JSONB and ensure it's valid
-  -- Strategy: Try existing JSONB first, rebuild if empty/invalid, use best available
-  SELECT COALESCE(phases, '[]'::JSONB) INTO template_phases_json
-  FROM projects
-  WHERE id = p_template_id;
+  -- Step 2: Rebuild phases JSON from relational tables (ONLY source of truth)
+  -- This includes BOTH standard and custom phases from project_phases table
+  SELECT public.rebuild_phases_json_from_project_phases(p_template_id) INTO template_phases_json;
   
-  -- Check if existing JSONB has at least some phases (even if operations are empty)
-  -- This handles cases where JSONB is out of sync with relational tables
-  -- Check if existing JSONB has any phases at all
-  IF template_phases_json IS NOT NULL 
-     AND template_phases_json != '[]'::JSONB 
-     AND jsonb_array_length(template_phases_json) > 0 THEN
-    existing_has_phases := true;
-    
-    -- Check if at least one phase has operations with steps
-    SELECT EXISTS (
-      SELECT 1
-      FROM jsonb_array_elements(template_phases_json) AS phase
-      WHERE jsonb_typeof(COALESCE(phase->'operations', 'null'::jsonb)) = 'array'
-        AND jsonb_array_length(COALESCE(phase->'operations', '[]'::jsonb)) > 0
-        AND EXISTS (
-          SELECT 1
-          FROM jsonb_array_elements(phase->'operations') AS operation
-          WHERE jsonb_typeof(COALESCE(operation->'steps', 'null'::jsonb)) = 'array'
-            AND jsonb_array_length(COALESCE(operation->'steps', '[]'::jsonb)) > 0
-        )
-    ) INTO existing_has_operations_with_steps;
-  END IF;
-  
-  -- CRITICAL: Always try to rebuild from relational tables to ensure we have ALL phases (standard + custom)
-  -- The relational tables (project_phases, template_operations, template_steps) are the source of truth
-  -- This ensures standard phases are included even if the JSONB only has custom phases
-  BEGIN
-    SELECT public.rebuild_phases_json_from_project_phases(p_template_id) INTO rebuilt_phases_json;
-    
-    -- If rebuild succeeded and returned phases, use it (it has the complete picture from relational tables)
-    IF rebuilt_phases_json IS NOT NULL 
-       AND rebuilt_phases_json != '[]'::JSONB 
-       AND jsonb_array_length(rebuilt_phases_json) > 0 THEN
-      -- Verify rebuild has operations with steps
-      SELECT EXISTS (
-        SELECT 1
-        FROM jsonb_array_elements(rebuilt_phases_json) AS phase
-        WHERE jsonb_typeof(COALESCE(phase->'operations', 'null'::jsonb)) = 'array'
-          AND jsonb_array_length(COALESCE(phase->'operations', '[]'::jsonb)) > 0
-          AND EXISTS (
-            SELECT 1
-            FROM jsonb_array_elements(phase->'operations') AS operation
-            WHERE jsonb_typeof(COALESCE(operation->'steps', 'null'::jsonb)) = 'array'
-              AND jsonb_array_length(COALESCE(operation->'steps', '[]'::jsonb)) > 0
-          )
-      ) INTO existing_has_operations_with_steps;
-      
-      IF existing_has_operations_with_steps THEN
-        -- Rebuild succeeded with valid phases - use it and update template
-        UPDATE projects
-        SET phases = rebuilt_phases_json
-        WHERE id = p_template_id;
-        
-        template_phases_json := rebuilt_phases_json;
-      ELSE
-        -- Rebuild returned phases but they're incomplete - fall back to existing if available
-        IF existing_has_phases AND existing_has_operations_with_steps THEN
-          -- Use existing JSONB (it has operations/steps even if incomplete)
-          RAISE WARNING 'Rebuild returned incomplete phases, using existing JSONB for template %', p_template_id;
-        ELSE
-          -- Both are incomplete - this is an error
-          RAISE EXCEPTION 'Template project % rebuild returned phases without operations/steps. Cannot create project run. Template structure is invalid.', p_template_id;
-        END IF;
-      END IF;
-    ELSE
-      -- Rebuild failed or returned empty - use existing if available, otherwise error
-      IF existing_has_phases AND existing_has_operations_with_steps THEN
-        -- Use existing JSONB (it has operations/steps)
-        RAISE WARNING 'Rebuild failed for template %, using existing JSONB', p_template_id;
-      ELSE
-        -- Both failed - this is a critical error
-        RAISE EXCEPTION 'Template project % has no phases. Rebuild failed or returned empty. Cannot create project run. Please ensure the template has phases with operations and steps in the database.', p_template_id;
-      END IF;
-    END IF;
-  EXCEPTION
-    WHEN undefined_function THEN
-      -- Rebuild function doesn't exist - use existing JSONB if available
-      IF NOT existing_has_phases OR NOT existing_has_operations_with_steps THEN
-        RAISE EXCEPTION 'Template project % has no valid phases and rebuild function is not available. Cannot create project run. Please ensure the template has complete phases (with operations and steps) in the database.', p_template_id;
-      END IF;
-      -- If existing has phases, continue with it (even if incomplete)
-      RAISE WARNING 'Rebuild function not available for template %, using existing JSONB', p_template_id;
-    WHEN OTHERS THEN
-      -- Other error during rebuild - use existing if available, otherwise error
-      IF NOT existing_has_phases OR NOT existing_has_operations_with_steps THEN
-        RAISE EXCEPTION 'Template project % has no valid phases and rebuild failed: %. Cannot create project run. Please ensure the template has complete phases in the database.', p_template_id, SQLERRM;
-      END IF;
-      -- If existing has phases, continue with it (even if incomplete)
-      RAISE WARNING 'Rebuild failed for template %: %, using existing JSONB', p_template_id, SQLERRM;
-  END;
-  
-  -- If we still don't have phases after rebuild attempt, check if we should use existing
-  IF (template_phases_json IS NULL OR template_phases_json = '[]'::JSONB OR jsonb_array_length(template_phases_json) = 0)
-     AND existing_has_phases THEN
-    -- Use existing JSONB as fallback
-    SELECT COALESCE(phases, '[]'::JSONB) INTO template_phases_json
-    FROM projects
-    WHERE id = p_template_id;
-  END IF;
-  
-  -- Final validation: ensure we have valid phases with operations and steps
+  -- Validate that rebuild returned phases
   IF template_phases_json IS NULL 
      OR template_phases_json = '[]'::JSONB 
      OR jsonb_array_length(template_phases_json) = 0 THEN
-    RAISE EXCEPTION 'Template project % has no phases. Cannot create project run.', p_template_id;
+    RAISE EXCEPTION 'Template project % has no phases in relational tables. Cannot create project run. Please ensure the template has phases in project_phases table.', p_template_id;
   END IF;
   
-  -- Verify phases have operations with steps (final check before creating run)
+  -- Validate that phases have operations with steps
   SELECT EXISTS (
     SELECT 1
     FROM jsonb_array_elements(template_phases_json) AS phase
@@ -174,13 +65,18 @@ BEGIN
         WHERE jsonb_typeof(COALESCE(operation->'steps', 'null'::jsonb)) = 'array'
           AND jsonb_array_length(COALESCE(operation->'steps', '[]'::jsonb)) > 0
       )
-  ) INTO existing_has_operations_with_steps;
+  ) INTO has_operations_with_steps;
   
-  IF NOT existing_has_operations_with_steps THEN
-    RAISE EXCEPTION 'Template project % phases exist but have no operations with steps. Cannot create project run. Template structure is incomplete.', p_template_id;
+  IF NOT has_operations_with_steps THEN
+    RAISE EXCEPTION 'Template project % phases exist but have no operations with steps in relational tables. Cannot create project run. Template structure is incomplete.', p_template_id;
   END IF;
   
-  -- Step 3: Create project run record with phases JSON copied directly
+  -- Update template's phases JSONB with the rebuilt version (for consistency)
+  UPDATE projects
+  SET phases = template_phases_json
+  WHERE id = p_template_id;
+  
+  -- Step 3: Create project run record with phases JSON from relational tables
   INSERT INTO project_runs (
     template_id,
     user_id,
@@ -207,7 +103,7 @@ BEGIN
     user_home_id,
     0,
     '[]'::JSONB,
-    template_phases_json, -- Copy phases JSON directly from template
+    template_phases_json,
     NOW(),
     NOW()
   FROM projects
@@ -240,6 +136,8 @@ BEGIN
   
   RETURN new_run_id;
 EXCEPTION
+  WHEN undefined_function THEN
+    RAISE EXCEPTION 'rebuild_phases_json_from_project_phases function is not available. Cannot create project run. Please ensure the function exists in the database.';
   WHEN OTHERS THEN
     -- Clean up project run if something went wrong
     IF new_run_id IS NOT NULL THEN
@@ -250,4 +148,4 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.create_project_run_snapshot IS 
-'ROOT CAUSE FIX: Copies template phases JSONB directly (it already has correct structure). Only rebuilds if existing JSONB is empty/invalid. Validates that phases have operations with steps before creating project run.';
+'Creates project run by rebuilding phases from relational tables (project_phases, template_operations, template_steps). No fallbacks - uses relational tables as the ONLY source of truth. Fails clearly if rebuild fails or returns incomplete data.';
