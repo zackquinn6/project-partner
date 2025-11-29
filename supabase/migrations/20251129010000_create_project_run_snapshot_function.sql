@@ -33,9 +33,9 @@ DECLARE
   phase_array JSONB[];
   operation_array JSONB[];
   step_array JSONB[];
-  quick_instruction TEXT;
-  detailed_instruction TEXT;
-  contractor_instruction TEXT;
+  quick_instruction JSONB;
+  detailed_instruction JSONB;
+  contractor_instruction JSONB;
   phase_order_number JSONB;
 BEGIN
   -- Step 1: Ensure user has a home with at least one room
@@ -161,30 +161,30 @@ BEGIN
         WHERE s.operation_id = template_operation.operation_id
         ORDER BY s.display_order
       LOOP
-        -- Fetch instructions for this step (initialize to empty strings first)
-        quick_instruction := '';
-        detailed_instruction := '';
-        contractor_instruction := '';
+        -- Fetch instructions for this step (initialize to empty arrays first)
+        quick_instruction := '[]'::JSONB;
+        detailed_instruction := '[]'::JSONB;
+        contractor_instruction := '[]'::JSONB;
         
-        SELECT COALESCE(instruction_content, '') INTO quick_instruction
+        SELECT COALESCE(content, '[]'::JSONB) INTO quick_instruction
         FROM step_instructions
         WHERE template_step_id = template_step.step_id AND instruction_level = 'quick'
         LIMIT 1;
         
-        SELECT COALESCE(instruction_content, '') INTO detailed_instruction
+        SELECT COALESCE(content, '[]'::JSONB) INTO detailed_instruction
         FROM step_instructions
         WHERE template_step_id = template_step.step_id AND instruction_level = 'detailed'
         LIMIT 1;
         
-        SELECT COALESCE(instruction_content, '') INTO contractor_instruction
+        SELECT COALESCE(content, '[]'::JSONB) INTO contractor_instruction
         FROM step_instructions
         WHERE template_step_id = template_step.step_id AND instruction_level = 'contractor'
         LIMIT 1;
         
         -- Ensure values are not null
-        quick_instruction := COALESCE(quick_instruction, '');
-        detailed_instruction := COALESCE(detailed_instruction, '');
-        contractor_instruction := COALESCE(contractor_instruction, '');
+        quick_instruction := COALESCE(quick_instruction, '[]'::JSONB);
+        detailed_instruction := COALESCE(detailed_instruction, '[]'::JSONB);
+        contractor_instruction := COALESCE(contractor_instruction, '[]'::JSONB);
         
         -- Build step JSON with all content including instructions
         step_array := step_array || jsonb_build_object(
