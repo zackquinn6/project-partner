@@ -1421,6 +1421,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    * Move a step up (decrease display_order)
    */
   const handleMoveStepUp = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
+    console.log('🚀 handleMoveStepUp START:', { stepId, operationId, phaseId, hasProject: !!currentProject?.id });
+    
     if (!currentProject?.id) {
       console.error('❌ handleMoveStepUp: No project ID');
       return;
@@ -1512,6 +1514,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    * Move a step down (increase display_order)
    */
   const handleMoveStepDown = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
+    console.log('🚀 handleMoveStepDown START:', { stepId, operationId, phaseId, hasProject: !!currentProject?.id });
+    
     if (!currentProject?.id) {
       console.error('❌ handleMoveStepDown: No project ID');
       return;
@@ -2726,7 +2730,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                   <Button
                                                                     size="sm"
                                                                     variant="ghost"
-                                                                    onClick={() => handleMoveStepUp(step.id, operation.id, phase.id)}
+                                                                    onClick={() => {
+                                                                      console.log('🔘 Move Step Up button clicked:', { stepId: step.id, operationId: operation.id, phaseId: phase.id, isEditingStandardProject });
+                                                                      handleMoveStepUp(step.id, operation.id, phase.id);
+                                                                    }}
                                                                     disabled={stepIndex === 0}
                                                                     title="Move up"
                                                                   >
@@ -2735,7 +2742,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                   <Button
                                                                     size="sm"
                                                                     variant="ghost"
-                                                                    onClick={() => handleMoveStepDown(step.id, operation.id, phase.id)}
+                                                                    onClick={() => {
+                                                                      console.log('🔘 Move Step Down button clicked:', { stepId: step.id, operationId: operation.id, phaseId: phase.id, isEditingStandardProject });
+                                                                      handleMoveStepDown(step.id, operation.id, phase.id);
+                                                                    }}
                                                                     disabled={stepIndex === operation.steps.length - 1}
                                                                     title="Move down"
                                                                   >
