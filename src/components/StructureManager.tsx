@@ -2706,7 +2706,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                       </div>
                                                       
                                                       {/* Button visibility for steps */}
-                                                      {!isReadOnly && !phaseIsLinked && (
+                                                      {/* Allow step operations in Edit Standard mode, or for non-read-only, non-linked phases */}
+                                                      {((isEditingStandardProject && !phaseIsLinked) || (!isReadOnly && !phaseIsLinked)) && (
                                                         <>
                                                           {isStepEditing ? (
                                                             <>
@@ -2719,6 +2720,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                             </>
                                                           ) : (
                                                             <>
+                                                              {/* In Edit Standard mode, allow reordering all steps. Otherwise, only non-standard steps */}
                                                               {(!stepIsStandard || isEditingStandardProject) && (
                                                                 <>
                                                                   <Button
