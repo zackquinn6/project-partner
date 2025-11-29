@@ -951,10 +951,26 @@ export function UnifiedProjectManagement({
       // This ensures project name and other metadata are preserved
       const projectInfoToPreserve = parentProjectInfo || latestRevision;
       
-      // CRITICAL: If there's a parent, we must remove the reference FIRST (minimal update)
-      // then delete the parent, THEN do the full update. This avoids name constraint violations.
-      if (parentIdToExclude) {
-        console.log('🔄 Step 1: Removing parent_project_id reference (minimal update)');
+      // CRITICAL: If there's a parent, we must temporarily rename it to avoid name constraint
+      // violations when updating the latest revision. The database constraint checks on ANY
+      // update, not just when the name field is updated.
+      if (parentIdToExclude && parentProjectInfo) {
+        // Step 1: Temporarily rename the parent to avoid duplicate name constraint
+        const tempParentName = `${parentProjectInfo.name}_DELETING_${Date.now()}`;
+        console.log('🔄 Step 1: Temporarily renaming parent to avoid name constraint:', tempParentName);
+        const { error: renameParentError } = await supabase
+          .from('projects')
+          .update({ name: tempParentName })
+          .eq('id', parentIdToExclude);
+        
+        if (renameParentError) {
+          console.error('❌ Error renaming parent:', renameParentError);
+          throw renameParentError;
+        }
+        console.log('✅ Parent temporarily renamed');
+        
+        // Step 2: Now we can safely remove the parent reference from latest revision
+        console.log('🔄 Step 2: Removing parent_project_id reference');
         const { error: removeParentRefError } = await supabase
           .from('projects')
           .update({ parent_project_id: null })
@@ -962,12 +978,17 @@ export function UnifiedProjectManagement({
         
         if (removeParentRefError) {
           console.error('❌ Error removing parent_project_id reference:', removeParentRefError);
+          // Try to restore parent name before throwing
+          await supabase
+            .from('projects')
+            .update({ name: parentProjectInfo.name })
+            .eq('id', parentIdToExclude);
           throw removeParentRefError;
         }
         console.log('✅ Parent reference removed');
         
-        // Now delete the parent (reference is removed, so this is safe)
-        console.log('🗑️ Step 2: Deleting excluded parent revision:', parentIdToExclude);
+        // Step 3: Now delete the parent (reference is removed, so this is safe)
+        console.log('🗑️ Step 3: Deleting excluded parent revision:', parentIdToExclude);
         
         // Delete related data for the parent
         const { data: parentOperations } = await supabase
