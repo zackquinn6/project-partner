@@ -107,8 +107,8 @@ BEGIN
       phase_position_rule::TEXT,
       phase_position_value::INTEGER,
       phase_project_id::UUID,
-      COALESCE(phase_source_project_id::UUID, NULL::UUID) AS phase_source_project_id,
-      COALESCE(phase_source_phase_id::UUID, NULL::UUID) AS phase_source_phase_id,
+      phase_source_project_id::UUID,
+      phase_source_phase_id::UUID,
       sort_order::INTEGER
     FROM (
       SELECT 
@@ -119,8 +119,8 @@ BEGIN
         pp.position_rule AS phase_position_rule,
         pp.position_value AS phase_position_value,
         pp.project_id AS phase_project_id,
-        pp.source_project_id,
-        pp.source_phase_id,
+        pp.source_project_id AS phase_source_project_id,
+        pp.source_phase_id AS phase_source_phase_id,
         CAST(
           CASE 
             WHEN pp.position_rule = 'first' THEN 1
