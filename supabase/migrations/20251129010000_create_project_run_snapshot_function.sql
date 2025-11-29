@@ -99,50 +99,56 @@ BEGIN
   -- Custom and incorporated phases come from the template project
   -- Order by position_rule and position_value to maintain correct order
   FOR template_phase IN
-    WITH all_phases AS (
-      -- Get standard phases from Standard Project Foundation
+    WITH standard_phases AS (
       SELECT 
-        pp.id::UUID AS phase_id,
-        pp.name::TEXT AS phase_name,
-        pp.description::TEXT AS phase_description,
-        pp.is_standard::BOOLEAN AS phase_is_standard,
-        pp.position_rule::TEXT AS phase_position_rule,
-        pp.position_value::INTEGER AS phase_position_value,
-        CAST(NULL AS UUID) AS phase_source_project_id,
-        CAST(NULL AS UUID) AS phase_source_phase_id,
-        CASE 
-          WHEN pp.position_rule = 'first' THEN 1
-          WHEN pp.position_rule = 'last' THEN 999999
-          WHEN pp.position_rule = 'nth' AND pp.position_value IS NOT NULL THEN pp.position_value::INTEGER
-          ELSE 100
-        END::INTEGER AS sort_order
+        pp.id AS phase_id,
+        pp.name AS phase_name,
+        pp.description AS phase_description,
+        pp.is_standard AS phase_is_standard,
+        pp.position_rule AS phase_position_rule,
+        pp.position_value AS phase_position_value,
+        NULL::UUID AS phase_source_project_id,
+        NULL::UUID AS phase_source_phase_id
       FROM project_phases pp
       WHERE pp.project_id = '00000000-0000-0000-0000-000000000001'::UUID
         AND pp.is_standard = true
-      
-      UNION ALL
-      
-      -- Get custom and incorporated phases from template project
+    ),
+    custom_phases AS (
       SELECT 
-        pp.id::UUID AS phase_id,
-        pp.name::TEXT AS phase_name,
-        pp.description::TEXT AS phase_description,
-        pp.is_standard::BOOLEAN AS phase_is_standard,
-        pp.position_rule::TEXT AS phase_position_rule,
-        pp.position_value::INTEGER AS phase_position_value,
-        CAST(pp.source_project_id AS UUID) AS phase_source_project_id,
-        CAST(pp.source_phase_id AS UUID) AS phase_source_phase_id,
-        CASE 
-          WHEN pp.position_rule = 'first' THEN 1
-          WHEN pp.position_rule = 'last' THEN 999999
-          WHEN pp.position_rule = 'nth' AND pp.position_value IS NOT NULL THEN pp.position_value::INTEGER
-          ELSE 100
-        END::INTEGER AS sort_order
+        pp.id AS phase_id,
+        pp.name AS phase_name,
+        pp.description AS phase_description,
+        pp.is_standard AS phase_is_standard,
+        pp.position_rule AS phase_position_rule,
+        pp.position_value AS phase_position_value,
+        pp.source_project_id AS phase_source_project_id,
+        pp.source_phase_id AS phase_source_phase_id
       FROM project_phases pp
       WHERE pp.project_id = p_template_id
         AND pp.is_standard = false
+    ),
+    all_phases AS (
+      SELECT * FROM standard_phases
+      UNION ALL
+      SELECT * FROM custom_phases
     )
-    SELECT * FROM all_phases ORDER BY sort_order
+    SELECT 
+      phase_id,
+      phase_name,
+      phase_description,
+      phase_is_standard,
+      phase_position_rule,
+      phase_position_value,
+      phase_source_project_id,
+      phase_source_phase_id,
+      CASE 
+        WHEN phase_position_rule = 'first' THEN 1
+        WHEN phase_position_rule = 'last' THEN 999999
+        WHEN phase_position_rule = 'nth' AND phase_position_value IS NOT NULL THEN phase_position_value
+        ELSE 100
+      END AS sort_order
+    FROM all_phases
+    ORDER BY sort_order
   LOOP
     -- Reset operation array for this phase
     operation_array := ARRAY[]::JSONB[];
