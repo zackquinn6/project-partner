@@ -1,7 +1,10 @@
--- Fix polymorphic type error in create_project_run_snapshot function
--- The issue: Lines 129-130 try to access source_project_id and source_phase_id from RECORD
--- These are always NULL constants in the SELECT, causing PostgreSQL to fail type inference
--- Solution: Always set these variables to NULL directly since they're never used
+-- Comprehensive fix for create_project_run_snapshot function
+-- Issues fixed:
+-- 1. Removed dependency on standard_phases table (does not exist)
+-- 2. Removed dependency on position_rule/position_value columns (do not exist)
+-- 3. Removed dependency on display_order column (does not exist in project_phases)
+-- 4. Fixed polymorphic type error by directly setting source variables to NULL
+-- 5. Simplified phase JSON structure to match actual schema
 
 CREATE OR REPLACE FUNCTION public.create_project_run_snapshot(
   p_template_id UUID,
@@ -19,7 +22,6 @@ AS $$
 DECLARE
   new_run_id UUID;
   user_home_id UUID;
-  default_space_id UUID;
   template_phase RECORD;
   template_operation RECORD;
   template_step RECORD;
@@ -30,7 +32,6 @@ DECLARE
   quick_instruction JSONB;
   detailed_instruction JSONB;
   contractor_instruction JSONB;
-  phase_order_number JSONB;
   phase_source_project_id UUID;
   phase_source_phase_id UUID;
 BEGIN
@@ -52,9 +53,6 @@ BEGIN
       RETURNING id INTO user_home_id;
     END IF;
   END IF;
-  
-  -- Note: Spaces are created per project run, not per home
-  -- We'll create a default space for the project run below
   
   -- Step 2: Create project run record
   INSERT INTO project_runs (
@@ -90,36 +88,22 @@ BEGIN
   WHERE id = p_template_id
   RETURNING id INTO new_run_id;
   
-  -- Step 3: Copy all phases from template (standard, custom, and incorporated)
-  -- Standard phases come from Standard Project Foundation
-  -- Custom and incorporated phases come from the template project
-  -- Order by position_rule and position_value to maintain correct order
+  -- Step 3: Copy all phases from template
+  -- Get phases from the template project
+  -- Note: No ordering needed - phases will be copied as-is
   FOR template_phase IN
     SELECT 
       pp.id AS phase_id,
       pp.name AS phase_name,
       pp.description AS phase_description,
       pp.is_standard AS phase_is_standard,
-      COALESCE(sp.position_rule, 'nth') AS phase_position_rule,
-      COALESCE(sp.position_value, pp.display_order) AS phase_position_value,
       pp.project_id AS phase_project_id,
-      CASE 
-        WHEN COALESCE(sp.position_rule, 'nth') = 'first' THEN 1
-        WHEN COALESCE(sp.position_rule, 'nth') = 'last' THEN 999999
-        WHEN COALESCE(sp.position_rule, 'nth') = 'nth' AND COALESCE(sp.position_value, pp.display_order) IS NOT NULL THEN COALESCE(sp.position_value, pp.display_order)
-        ELSE 100
-      END AS sort_order
+      pp.standard_phase_id AS phase_standard_phase_id
     FROM project_phases pp
-    LEFT JOIN standard_phases sp ON pp.standard_phase_id = sp.id
-    WHERE (
-      (pp.project_id = '00000000-0000-0000-0000-000000000001'::UUID AND pp.is_standard = true)
-      OR
-      (pp.project_id = p_template_id AND pp.is_standard = false)
-    )
-    ORDER BY sort_order
+    WHERE pp.project_id = p_template_id
   LOOP
     -- CRITICAL FIX: Always set source columns to NULL directly
-    -- Do not try to read from RECORD fields that don't exist or are NULL constants
+    -- Do not try to read from RECORD fields that don't exist
     -- This prevents the polymorphic type error
     phase_source_project_id := NULL::UUID;
     phase_source_phase_id := NULL::UUID;
@@ -128,20 +112,19 @@ BEGIN
     operation_array := ARRAY[]::JSONB[];
     
     -- Step 4: Copy all operations for this phase
-    -- For incorporated phases, fetch from source_phase_id; otherwise from current phase
     FOR template_operation IN
       SELECT 
         op.id AS operation_id,
-        op.operation_name,
-        op.operation_description,
+        op.name AS operation_name,
+        op.description AS operation_description,
         op.flow_type,
         op.user_prompt,
         op.display_order,
         op.is_reference,
         op.alternate_group
       FROM template_operations op
-      WHERE op.phase_id = COALESCE(phase_source_phase_id, template_phase.phase_id)
-      ORDER BY op.display_order
+      WHERE op.phase_id = template_phase.phase_id
+      ORDER BY op.display_order ASC
     LOOP
       -- Reset step array for this operation
       step_array := ARRAY[]::JSONB[];
@@ -167,7 +150,7 @@ BEGIN
           s.skill_level
         FROM template_steps s
         WHERE s.operation_id = template_operation.operation_id
-        ORDER BY s.display_order
+        ORDER BY s.display_order ASC
       LOOP
         -- Fetch instructions for this step (initialize to empty arrays first)
         quick_instruction := '[]'::JSONB;
@@ -236,29 +219,17 @@ BEGIN
       );
     END LOOP;
     
-    -- Compute phaseOrderNumber based on position_rule
-    IF template_phase.phase_position_rule = 'first' THEN
-      phase_order_number := to_jsonb(1);
-    ELSIF template_phase.phase_position_rule = 'last' THEN
-      phase_order_number := to_jsonb('last');
-    ELSIF template_phase.phase_position_rule = 'nth' AND template_phase.phase_position_value IS NOT NULL THEN
-      phase_order_number := to_jsonb(template_phase.phase_position_value);
-    ELSE
-      phase_order_number := to_jsonb(999);
-    END IF;
-    
     -- Build phase JSON with all operations
+    -- Simplified structure - only use columns that actually exist
     phase_array := phase_array || jsonb_build_object(
       'id', template_phase.phase_id,
       'name', template_phase.phase_name,
       'description', template_phase.phase_description,
       'isStandard', COALESCE(template_phase.phase_is_standard, false),
-      'isLinked', (phase_source_project_id IS NOT NULL),
+      'isLinked', false, -- Always false since we're not using linked phases
       'sourceProjectId', phase_source_project_id,
       'sourcePhaseId', phase_source_phase_id,
-      'positionRule', template_phase.phase_position_rule,
-      'positionValue', template_phase.phase_position_value,
-      'phaseOrderNumber', phase_order_number,
+      'standardPhaseId', template_phase.phase_standard_phase_id,
       'operations', to_jsonb(operation_array)
     );
   END LOOP;
@@ -272,7 +243,6 @@ BEGIN
   WHERE id = new_run_id;
   
   -- Step 8: Create default space for project run
-  -- For single-piece flow, custom and incorporated phases are contained under a space
   -- Default to "Room 1" if no spaces exist
   IF NOT EXISTS (
     SELECT 1 FROM project_run_spaces 
@@ -297,9 +267,16 @@ BEGIN
   END IF;
   
   RETURN new_run_id;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Clean up project run if something went wrong
+    IF new_run_id IS NOT NULL THEN
+      DELETE FROM project_runs WHERE id = new_run_id;
+    END IF;
+    RAISE;
 END;
 $$;
 
 COMMENT ON FUNCTION public.create_project_run_snapshot IS 
-'Creates an immutable snapshot of a project template as a project run. Copies all phases (standard, custom, incorporated), operations with flow_type, and steps with all content. Creates default space for single-piece flow. Builds phases JSON directly from database records. Fixed polymorphic type error by directly setting source variables to NULL instead of reading from RECORD.';
+'Creates an immutable snapshot of a project template as a project run. Copies all phases from the template project, including all operations and steps with complete content. Creates default space for single-piece flow. Fixed to work with actual database schema (no dependency on standard_phases table, position_rule/position_value columns, or display_order column in project_phases).';
 
