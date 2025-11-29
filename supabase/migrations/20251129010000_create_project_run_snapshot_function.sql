@@ -130,8 +130,8 @@ BEGIN
         pp.is_standard AS phase_is_standard,
         pp.position_rule AS phase_position_rule,
         pp.position_value AS phase_position_value,
-        pp.source_project_id AS phase_source_project_id,
-        pp.source_phase_id AS phase_source_phase_id,
+        pp.source_project_id::UUID AS phase_source_project_id,
+        pp.source_phase_id::UUID AS phase_source_phase_id,
         CASE 
           WHEN pp.position_rule = 'first' THEN 1
           WHEN pp.position_rule = 'last' THEN 999999
