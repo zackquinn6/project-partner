@@ -70,152 +70,102 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   };
   const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.templateId) || null;
   
+  // Fetch from database as backup if templateProject doesn't have the fields
+  const [fetchedProjectInfo, setFetchedProjectInfo] = useState<{
+    skillLevel?: string | null;
+    effortLevel?: string | null;
+    projectChallenges?: string | null;
+    estimatedTime?: string | null;
+    estimatedTotalTime?: string | null;
+    typicalProjectSize?: number | null;
+    scalingUnit?: string | null;
+    itemType?: string | null;
+  } | null>(null);
+  
   // Handle both camelCase (from transformed Project interface) and snake_case (from raw database)
   // estimated_total_time is the "Total time for typical project size" field from project info editor
   // Check for both null/undefined and empty string, and handle string trimming
-  const rawEstimatedTotalTime = templateProject?.estimatedTotalTime || (templateProject as any)?.estimated_total_time;
+  // Priority: templateProject (transformed) > fetchedProjectInfo (from DB) > currentProjectRun
+  const rawEstimatedTotalTime = templateProject?.estimatedTotalTime ?? fetchedProjectInfo?.estimatedTotalTime ?? (templateProject as any)?.estimated_total_time ?? (currentProjectRun as any)?.estimatedTotalTime;
   const displayEstimatedTotalTime = rawEstimatedTotalTime && typeof rawEstimatedTotalTime === 'string' 
     ? (rawEstimatedTotalTime.trim() || null)
     : (rawEstimatedTotalTime || null);
-  const rawTypicalProjectSize = templateProject?.typicalProjectSize || (templateProject as any)?.typical_project_size;
+  const rawTypicalProjectSize = templateProject?.typicalProjectSize ?? fetchedProjectInfo?.typicalProjectSize ?? (templateProject as any)?.typical_project_size ?? (currentProjectRun as any)?.typicalProjectSize;
   const displayTypicalProjectSize = rawTypicalProjectSize != null ? rawTypicalProjectSize : null;
-  
-  // Fetch ALL project information directly from database
-  const [projectInfo, setProjectInfo] = useState<{
-    scalingUnit: string | null;
-    itemType: string | null;
-    projectChallenges: string | null;
-    skillLevel: string | null;
-    estimatedTime: string | null;
-    effortLevel: string | null;
-  } | null>(null);
-  
+
   useEffect(() => {
-    const fetchProjectInfo = async () => {
-      const templateId = templateProject?.id || currentProjectRun?.templateId;
+    const fetchIfNeeded = async () => {
+      // Only fetch if templateProject exists but doesn't have the required fields
+      const needsFetch = templateProject && 
+        (!templateProject.skillLevel || 
+         !templateProject.effortLevel || 
+         !templateProject.projectChallenges || 
+         !templateProject.estimatedTime ||
+         !templateProject.estimatedTotalTime ||
+         !templateProject.typicalProjectSize ||
+         !templateProject.scalingUnit);
       
-      console.log('📊 ProjectOverviewStep - fetchProjectInfo called:', {
-        templateId,
-        hasTemplateProject: !!templateProject,
-        templateProjectId: templateProject?.id,
-        currentProjectRunTemplateId: currentProjectRun?.templateId
-      });
-      
-      if (templateId) {
+      if (needsFetch && templateProject.id) {
         try {
           const { data, error } = await supabase
-            .from('projects')
-            .select('scaling_unit, item_type, project_challenges, skill_level, estimated_time, effort_level')
-            .eq('id', templateId)
-            .single();
+            .from('project_templates_live')
+            .select('skill_level, effort_level, project_challenges, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type')
+            .eq('id', templateProject.id)
+            .maybeSingle();
           
           if (!error && data) {
-            const fetchedInfo = {
-              scalingUnit: data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null,
-              itemType: data.item_type || null,
-              projectChallenges: data.project_challenges || templateProject?.projectChallenges || (currentProjectRun as any)?.projectChallenges || null,
-              skillLevel: data.skill_level || templateProject?.skillLevel || (currentProjectRun as any)?.skillLevel || null,
-              estimatedTime: data.estimated_time || templateProject?.estimatedTime || (currentProjectRun as any)?.estimatedTime || null,
-              effortLevel: data.effort_level || templateProject?.effortLevel || (currentProjectRun as any)?.effortLevel || null
-            };
-            
-            setProjectInfo(fetchedInfo);
-            
-            console.log('✅ ProjectOverviewStep - Fetched project info from database:', {
-              scaling_unit: data.scaling_unit,
-              item_type: data.item_type,
-              project_challenges: data.project_challenges,
-              skill_level: data.skill_level,
-              estimated_time: data.estimated_time,
-              effort_level: data.effort_level,
-              fetchedInfo
-            });
-          } else if (error) {
-            console.error('❌ Error fetching project info:', error);
-            // Fallback to templateProject/currentProjectRun values
-            setProjectInfo({
-              scalingUnit: templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null,
-              itemType: (templateProject as any)?.item_type || (templateProject as any)?.itemType || null,
-              projectChallenges: templateProject?.projectChallenges || (currentProjectRun as any)?.projectChallenges || null,
-              skillLevel: templateProject?.skillLevel || (currentProjectRun as any)?.skillLevel || null,
-              estimatedTime: templateProject?.estimatedTime || (currentProjectRun as any)?.estimatedTime || null,
-              effortLevel: templateProject?.effortLevel || (currentProjectRun as any)?.effortLevel || null
+            setFetchedProjectInfo({
+              skillLevel: data.skill_level,
+              effortLevel: data.effort_level,
+              projectChallenges: data.project_challenges,
+              estimatedTime: data.estimated_time,
+              estimatedTotalTime: data.estimated_total_time,
+              typicalProjectSize: data.typical_project_size,
+              scalingUnit: data.scaling_unit,
+              itemType: data.item_type
             });
           }
         } catch (error) {
-          console.error('❌ Exception fetching project info:', error);
-          // Fallback to templateProject/currentProjectRun values
-          setProjectInfo({
-            scalingUnit: templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || null,
-            itemType: (templateProject as any)?.item_type || (templateProject as any)?.itemType || null,
-            projectChallenges: templateProject?.projectChallenges || (currentProjectRun as any)?.projectChallenges || null,
-            skillLevel: templateProject?.skillLevel || (currentProjectRun as any)?.skillLevel || null,
-            estimatedTime: templateProject?.estimatedTime || (currentProjectRun as any)?.estimatedTime || null,
-            effortLevel: templateProject?.effortLevel || (currentProjectRun as any)?.effortLevel || null
-          });
+          console.error('Error fetching project info:', error);
         }
-      } else {
-        // No template ID, use fallback values
-        setProjectInfo({
-          scalingUnit: (currentProjectRun as any)?.scalingUnit || templateProject?.scalingUnit || null,
-          itemType: (templateProject as any)?.item_type || (templateProject as any)?.itemType || null,
-          projectChallenges: (currentProjectRun as any)?.projectChallenges || templateProject?.projectChallenges || null,
-          skillLevel: (currentProjectRun as any)?.skillLevel || templateProject?.skillLevel || null,
-          estimatedTime: (currentProjectRun as any)?.estimatedTime || templateProject?.estimatedTime || null,
-          effortLevel: (currentProjectRun as any)?.effortLevel || templateProject?.effortLevel || null
-        });
-        console.log('📊 ProjectOverviewStep - No template ID, using fallback values');
       }
     };
     
-    if (currentProjectRun?.templateId || templateProject?.id) {
-      fetchProjectInfo();
-    }
-  }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun, templateProject]);
-  
-  // Use fetched project info or fallback
-  const displayScalingUnit = projectInfo?.scalingUnit || (currentProjectRun?.scalingUnit ?? templateProject?.scalingUnit);
-  const displayProjectChallenges = projectInfo?.projectChallenges ?? currentProjectRun?.projectChallenges ?? templateProject?.projectChallenges;
-  const displaySkillLevel = projectInfo?.skillLevel ?? currentProjectRun?.skillLevel ?? templateProject?.skillLevel;
-  const displayEstimatedTime = projectInfo?.estimatedTime ?? (templateProject?.estimatedTime || currentProjectRun?.estimatedTime);
-  const displayEffortLevel = projectInfo?.effortLevel ?? templateProject?.effortLevel ?? currentProjectRun?.effortLevel;
+    fetchIfNeeded();
+  }, [templateProject?.id, templateProject?.skillLevel, templateProject?.effortLevel, templateProject?.projectChallenges, templateProject?.estimatedTime, templateProject?.estimatedTotalTime, templateProject?.typicalProjectSize, templateProject?.scalingUnit]);
+
+  // Use templateProject fields first (already transformed), then fetched info, then currentProjectRun
+  const displayScalingUnit = templateProject?.scalingUnit ?? fetchedProjectInfo?.scalingUnit ?? (currentProjectRun as any)?.scalingUnit;
+  const displayProjectChallenges = templateProject?.projectChallenges ?? fetchedProjectInfo?.projectChallenges ?? (currentProjectRun as any)?.projectChallenges;
+  const displaySkillLevel = templateProject?.skillLevel ?? fetchedProjectInfo?.skillLevel ?? (currentProjectRun as any)?.skillLevel;
+  const displayEstimatedTime = templateProject?.estimatedTime ?? fetchedProjectInfo?.estimatedTime ?? (currentProjectRun as any)?.estimatedTime;
+  const displayEffortLevel = templateProject?.effortLevel ?? fetchedProjectInfo?.effortLevel ?? (currentProjectRun as any)?.effortLevel;
   
   // Debug logging to help diagnose missing fields
   useEffect(() => {
-    if (templateProject) {
-      console.log('🔍 ProjectOverviewStep - Template Project Data:', {
-        projectId: templateProject.id,
-        projectName: templateProject.name,
-        estimatedTime: displayEstimatedTime,
-        templateEstimatedTime: templateProject?.estimatedTime,
-        currentProjectRunEstimatedTime: currentProjectRun?.estimatedTime,
-        estimatedTotalTime: displayEstimatedTotalTime,
-        typicalProjectSize: displayTypicalProjectSize,
-        rawEstimatedTotalTime: (templateProject as any)?.estimated_total_time,
-        rawTypicalProjectSize: (templateProject as any)?.typical_project_size,
-        camelCaseEstimatedTotalTime: templateProject?.estimatedTotalTime,
-        camelCaseTypicalProjectSize: templateProject?.typicalProjectSize,
-        // Check all time-related fields to see what's available
-        allTimeFields: {
-          estimated_time: (templateProject as any)?.estimated_time,
-          estimatedTime: templateProject?.estimatedTime,
-          estimated_total_time: (templateProject as any)?.estimated_total_time,
-          estimatedTotalTime: templateProject?.estimatedTotalTime,
-          estimated_time_per_unit: (templateProject as any)?.estimated_time_per_unit,
-          estimatedTimePerUnit: templateProject?.estimatedTimePerUnit
-        },
-        allTemplateProjectKeys: Object.keys(templateProject),
-        templateProjectRaw: templateProject
-      });
-    } else {
-      console.log('⚠️ ProjectOverviewStep - No template project found:', {
-        currentProject: currentProject?.id,
-        currentProjectRunTemplateId: currentProjectRun?.templateId,
-        projectsCount: projects.length,
-        projectsIds: projects.map(p => p.id)
-      });
-    }
-  }, [templateProject, displayEstimatedTotalTime, displayTypicalProjectSize, currentProject, currentProjectRun, projects]);
+    console.log('📊 ProjectOverviewStep - Display Values:', {
+      hasTemplateProject: !!templateProject,
+      templateProjectId: templateProject?.id,
+      templateProjectName: templateProject?.name,
+      displaySkillLevel,
+      templateSkillLevel: templateProject?.skillLevel,
+      displayEffortLevel,
+      templateEffortLevel: templateProject?.effortLevel,
+      displayProjectChallenges,
+      templateProjectChallenges: templateProject?.projectChallenges,
+      // All 4 estimated time fields
+      displayEstimatedTime, // Field 1: Estimated time per unit
+      displayScalingUnit, // Field 2: Unit (scaling unit)
+      displayEstimatedTotalTime, // Field 3: Total time per typical size
+      displayTypicalProjectSize, // Field 4: Typical project size (number of units)
+      templateEstimatedTime: templateProject?.estimatedTime,
+      templateEstimatedTotalTime: templateProject?.estimatedTotalTime,
+      templateTypicalProjectSize: templateProject?.typicalProjectSize,
+      templateScalingUnit: templateProject?.scalingUnit,
+      fetchedProjectInfo,
+      currentProjectRunEstimatedTime: (currentProjectRun as any)?.estimatedTime
+    });
+  }, [templateProject, displaySkillLevel, displayEffortLevel, displayProjectChallenges, displayEstimatedTime, displayScalingUnit, displayEstimatedTotalTime, displayTypicalProjectSize, fetchedProjectInfo, currentProjectRun]);
 
   // Helper function to get skill level comparison
   const getSkillLevelComparison = () => {
@@ -358,37 +308,19 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const categories = parseCategories(currentProjectRun?.category || templateProject?.category);
   
   // Format scaling unit, using item_type if scaling unit is "per item"
+  // Priority: templateProject > fetchedProjectInfo > currentProjectRun
+  const itemType = (templateProject as any)?.item_type ?? (templateProject as any)?.itemType ?? fetchedProjectInfo?.itemType ?? (currentProjectRun as any)?.itemType;
+  
   const formattedScalingUnit = displayScalingUnit ? (() => {
-    // Use the fetched projectInfo if available, otherwise use displayScalingUnit
-    const scalingUnitToUse = projectInfo?.scalingUnit || displayScalingUnit;
+    const scalingUnitToUse = displayScalingUnit;
     const normalizedScalingUnit = scalingUnitToUse.toLowerCase().trim();
-    
-    console.log('🔍 ProjectOverviewStep - Formatting scaling unit:', {
-      projectInfoScalingUnit: projectInfo?.scalingUnit,
-      displayScalingUnit,
-      scalingUnitToUse,
-      normalizedScalingUnit,
-      projectInfoItemType: projectInfo?.itemType,
-      templateProjectItemType: (templateProject as any)?.item_type || (templateProject as any)?.itemType
-    });
     
     // If scaling unit is "per item" and we have an item_type, use the item_type
     if (normalizedScalingUnit === 'per item') {
-      // Check projectInfo first, then templateProject as fallback
-      const currentItemType = projectInfo?.itemType || (templateProject as any)?.item_type || (templateProject as any)?.itemType;
-      
-      if (currentItemType && typeof currentItemType === 'string' && currentItemType.trim().length > 0) {
-        const displayValue = currentItemType.trim().toLowerCase();
-        console.log('✅ ProjectOverviewStep - Using item_type for display:', displayValue);
+      if (itemType && typeof itemType === 'string' && itemType.trim().length > 0) {
+        const displayValue = itemType.trim().toLowerCase();
         return displayValue;
       }
-      
-      console.log('⚠️ ProjectOverviewStep - No item_type available, using "per item":', {
-        projectInfoItemType: projectInfo?.itemType,
-        currentItemType,
-        templateProjectItemType: (templateProject as any)?.item_type,
-        templateProjectItemTypeCamel: (templateProject as any)?.itemType
-      });
       return 'per item';
     }
     
@@ -505,89 +437,38 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             <div>
               <Label className="text-sm">Estimated Time</Label>
               <div className="mt-2 space-y-2">
-                {/* Show both pieces of information together if we have estimatedTime and (estimatedTotalTime or typicalProjectSize) */}
-                {displayEstimatedTime && (displayEstimatedTotalTime || displayTypicalProjectSize) ? (
-                  <div className="space-y-1">
-                    {/* Time per scaling unit */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className="text-xs sm:text-sm">
-                        {displayEstimatedTime}
-                      </Badge>
-                      {formattedScalingUnit ? (
-                        <span className="text-xs sm:text-sm text-muted-foreground capitalize">
-                          {formattedScalingUnit}
-                        </span>
-                      ) : (
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          per unit
-                        </span>
-                      )}
-                    </div>
-                    {/* Total time for typical project size */}
-                    {(displayEstimatedTotalTime || displayTypicalProjectSize) && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        {displayEstimatedTotalTime && (
-                          <Badge variant="outline" className="text-xs sm:text-sm">
-                            {displayEstimatedTotalTime}
-                          </Badge>
-                        )}
-                        {displayTypicalProjectSize && (
-                          <span className="text-xs sm:text-sm text-muted-foreground">
-                            {displayEstimatedTotalTime ? 'for' : 'Typical size:'} {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'} typical project size
-                          </span>
-                        )}
-                        {displayEstimatedTotalTime && !displayTypicalProjectSize && (
-                          <span className="text-xs sm:text-sm text-muted-foreground">
-                            total time
-                          </span>
-                        )}
-                      </div>
+                {/* Display all 4 fields: Estimated time per unit, Unit, Total time per typical size, Typical project size */}
+                {/* Always show all fields, with "Not specified" when blank */}
+                <div className="space-y-2">
+                  {/* Field 1: Estimated time per unit + Field 2: Unit */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className="text-xs sm:text-sm">
+                      {displayEstimatedTime || 'Not specified'}
+                    </Badge>
+                    {formattedScalingUnit ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground capitalize">
+                        {formattedScalingUnit}
+                      </span>
+                    ) : displayScalingUnit ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground capitalize">
+                        {displayScalingUnit.startsWith('per ') ? displayScalingUnit : `per ${displayScalingUnit}`}
+                      </span>
+                    ) : (
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        Not specified
+                      </span>
                     )}
                   </div>
-                ) : (
-                  <>
-                    {/* Estimated time per scaling unit */}
-                    {displayEstimatedTime && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="text-xs sm:text-sm">
-                          {displayEstimatedTime}
-                        </Badge>
-                        {formattedScalingUnit ? (
-                          <span className="text-xs sm:text-sm text-muted-foreground capitalize">
-                            {formattedScalingUnit}
-                          </span>
-                        ) : (
-                          <span className="text-xs sm:text-sm text-muted-foreground">
-                            per unit
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {/* Estimated total time for typical size */}
-                    {(displayEstimatedTotalTime || displayTypicalProjectSize) && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        {displayEstimatedTotalTime && (
-                          <Badge variant="outline" className="text-xs sm:text-sm">
-                            {displayEstimatedTotalTime}
-                          </Badge>
-                        )}
-                        {displayTypicalProjectSize && (
-                          <span className="text-xs sm:text-sm text-muted-foreground">
-                            {displayEstimatedTotalTime ? 'for' : 'Typical size:'} {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : 'units'} typical project size
-                          </span>
-                        )}
-                        {displayEstimatedTotalTime && !displayTypicalProjectSize && (
-                          <span className="text-xs sm:text-sm text-muted-foreground">
-                            total time
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
-                {!displayEstimatedTime && !displayEstimatedTotalTime && !displayTypicalProjectSize && (
-                  <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
-                )}
+                  {/* Field 3: Total time per typical size + Field 4: Typical project size */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className="text-xs sm:text-sm">
+                      {displayEstimatedTotalTime || 'Not specified'}
+                    </Badge>
+                    <span className="text-xs sm:text-sm text-muted-foreground">
+                      {displayEstimatedTotalTime && displayTypicalProjectSize ? 'for' : ''} {displayTypicalProjectSize ? `${displayTypicalProjectSize} ${formattedScalingUnit ? formattedScalingUnit.replace('per ', '') : (displayScalingUnit ? displayScalingUnit.replace('per ', '') : 'units')}` : 'Not specified'} typical project size
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

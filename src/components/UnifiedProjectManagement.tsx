@@ -470,6 +470,51 @@ export function UnifiedProjectManagement({
       setPublishDialogOpen(true);
     }
   };
+  // Validation function for production release
+  const validateProjectForProduction = (project: Project): { isValid: boolean; missingFields: string[] } => {
+    const missingFields: string[] = [];
+    const isValidField = (value: any): boolean => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        // Empty string is invalid
+        if (trimmed === '') return false;
+        // Allow "-", "N/A", "NA" as valid values (case insensitive)
+        const upperTrimmed = trimmed.toUpperCase();
+        if (['-', 'N/A', 'NA'].includes(upperTrimmed)) return true;
+        // Any other non-empty string is valid
+        return true;
+      }
+      if (typeof value === 'number') return true;
+      if (Array.isArray(value)) return value.length > 0;
+      return Boolean(value);
+    };
+
+    // Check all required project information fields
+    if (!isValidField(project.name)) missingFields.push('Project Name');
+    if (!isValidField(project.description)) missingFields.push('Description');
+    if (!isValidField(project.category) || (Array.isArray(project.category) && project.category.length === 0)) {
+      missingFields.push('Category');
+    }
+    if (!isValidField(project.effort_level)) missingFields.push('Effort Level');
+    if (!isValidField(project.skill_level)) missingFields.push('Skill Level');
+    if (!isValidField(project.estimated_time)) missingFields.push('Estimated Time');
+    if (!isValidField(project.scaling_unit)) missingFields.push('Scaling Unit');
+    if (!isValidField(project.estimated_total_time)) missingFields.push('Estimated Total Time');
+    if (!isValidField(project.typical_project_size)) missingFields.push('Typical Project Size');
+    if (!isValidField(project.project_challenges)) missingFields.push('Project Challenges');
+    
+    // If scaling unit is "per item", item_type is required
+    if (project.scaling_unit === 'per item' && !isValidField(project.item_type)) {
+      missingFields.push('Item Type');
+    }
+
+    return {
+      isValid: missingFields.length === 0,
+      missingFields
+    };
+  };
+
   const confirmStatusChangeDirect = async (revision: Project, status: 'beta-testing' | 'published', notes: string) => {
     console.log('🎯 confirmStatusChangeDirect called:', {
       revisionId: revision.id,
@@ -481,6 +526,20 @@ export function UnifiedProjectManagement({
       toast.error("Release notes are required");
       return;
     }
+
+    // Validate project fields before allowing production release (not for beta)
+    if (status === 'published') {
+      const validation = validateProjectForProduction(revision);
+      if (!validation.isValid) {
+        console.error('❌ Project validation failed:', validation.missingFields);
+        toast.error(
+          `Cannot publish to production. Missing or empty fields: ${validation.missingFields.join(', ')}. ` +
+          `Please ensure all project information fields are filled. You can use "-" or "N/A" if a field is not applicable.`
+        );
+        return;
+      }
+    }
+
     try {
       console.log('🚀 Updating project status...');
       const {

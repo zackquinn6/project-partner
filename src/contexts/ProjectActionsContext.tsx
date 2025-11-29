@@ -127,7 +127,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         const { error: updateError } = await supabase
           .from('projects')
           .update({
-            skill_level: projectData.skillLevel || null,
+            skill_level: projectData.skillLevel || 'Intermediate',
+            effort_level: projectData.effortLevel || 'Medium',
             scaling_unit: projectData.scalingUnit || null,
             project_challenges: projectData.projectChallenges || null,
             estimated_time_per_unit: projectData.estimatedTimePerUnit || null,
