@@ -445,7 +445,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      <button type="button" className="inline-flex items-center">
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <p className="text-sm">
@@ -469,7 +471,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      <button type="button" className="inline-flex items-center">
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <p className="text-sm">
