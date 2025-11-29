@@ -106,8 +106,9 @@ BEGIN
       phase_is_standard::BOOLEAN,
       phase_position_rule::TEXT,
       phase_position_value::INTEGER,
-      phase_source_project_id::UUID,
-      phase_source_phase_id::UUID,
+      phase_project_id::UUID,
+      COALESCE(phase_source_project_id::UUID, NULL::UUID) AS phase_source_project_id,
+      COALESCE(phase_source_phase_id::UUID, NULL::UUID) AS phase_source_phase_id,
       sort_order::INTEGER
     FROM (
       SELECT 
@@ -117,20 +118,9 @@ BEGIN
         pp.is_standard AS phase_is_standard,
         pp.position_rule AS phase_position_rule,
         pp.position_value AS phase_position_value,
-        (
-          CASE 
-            WHEN pp.project_id = '00000000-0000-0000-0000-000000000001'::UUID 
-            THEN NULL::UUID
-            ELSE (pp.source_project_id)::UUID
-          END
-        ) AS phase_source_project_id,
-        (
-          CASE 
-            WHEN pp.project_id = '00000000-0000-0000-0000-000000000001'::UUID 
-            THEN NULL::UUID
-            ELSE (pp.source_phase_id)::UUID
-          END
-        ) AS phase_source_phase_id,
+        pp.project_id AS phase_project_id,
+        pp.source_project_id,
+        pp.source_phase_id,
         CAST(
           CASE 
             WHEN pp.position_rule = 'first' THEN 1
@@ -148,6 +138,12 @@ BEGIN
     ) AS phase_data
     ORDER BY sort_order
   LOOP
+    -- For standard phases, set source columns to NULL
+    IF template_phase.phase_project_id = '00000000-0000-0000-0000-000000000001'::UUID THEN
+      template_phase.phase_source_project_id := NULL;
+      template_phase.phase_source_phase_id := NULL;
+    END IF;
+    
     -- Reset operation array for this phase
     operation_array := ARRAY[]::JSONB[];
     
