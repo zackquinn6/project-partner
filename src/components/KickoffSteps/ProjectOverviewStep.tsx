@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2, Eye } from 'lucide-react';
+import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2, Eye, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
 import { useNavigate } from 'react-router-dom';
@@ -168,6 +168,55 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       currentProjectRunEstimatedTime: (currentProjectRun as any)?.estimatedTime
     });
   }, [templateProject, displaySkillLevel, displayEffortLevel, displayProjectChallenges, displayEstimatedTime, displayScalingUnit, displayEstimatedTotalTime, displayTypicalProjectSize, fetchedProjectInfo, currentProjectRun]);
+
+  // Helper function to get position index for slider (0, 1, or 2)
+  const getLevelPosition = (level: string | null | undefined, levels: string[]): number => {
+    if (!level) return -1;
+    const normalized = level.toLowerCase();
+    const index = levels.findIndex(l => l.toLowerCase() === normalized);
+    return index >= 0 ? index : -1;
+  };
+
+  // Helper function to render 3-step slider
+  const renderLevelSlider = (currentLevel: string | null | undefined, levels: string[], labels: string[]) => {
+    const position = getLevelPosition(currentLevel, levels);
+    const hasValue = position >= 0;
+
+    return (
+      <div className="mt-2 relative">
+        {/* Arrow indicator - positioned above */}
+        {hasValue && (
+          <div
+            className="absolute -top-2 left-0 flex items-center justify-center transition-all duration-200 z-10"
+            style={{
+              left: `${(position / (levels.length - 1)) * 100)}%`,
+              transform: 'translateX(-50%)'
+            }}
+          >
+            <ArrowDown className="w-4 h-4 text-foreground drop-shadow-sm" />
+          </div>
+        )}
+        
+        {/* Slider track */}
+        <div className="relative h-8 bg-muted rounded-full flex items-center mt-2">
+          {/* Three segments */}
+          {levels.map((_, index) => (
+            <div
+              key={index}
+              className="flex-1 h-full flex items-center justify-center border-r last:border-r-0 border-border/50"
+            >
+              <span className="text-[10px] sm:text-xs text-muted-foreground px-1 text-center">
+                {labels[index]}
+              </span>
+            </div>
+          ))}
+        </div>
+        {!hasValue && (
+          <p className="text-xs text-muted-foreground mt-1 text-center">Not specified</p>
+        )}
+      </div>
+    );
+  };
 
   // Helper function to get skill level comparison
   const getSkillLevelComparison = () => {
@@ -380,61 +429,59 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
             <div>
               <Label className="text-sm">Project Skill Level</Label>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <Badge variant="outline" className={`text-xs sm:text-sm ${displaySkillLevel === 'Beginner' ? 'bg-green-100 text-green-800' : displaySkillLevel === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' : displaySkillLevel === 'Advanced' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-                  {displaySkillLevel || 'Not specified'}
-                </Badge>
-                {userProfile?.skill_level && <>
-                    <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">•</span>
-                    <span className="text-xs sm:text-sm text-muted-foreground">Your:</span>
-                    <Badge variant="outline" className="text-xs sm:text-sm">
-                      {userProfile.skill_level}
-                    </Badge>
-                  </>}
-                {skillComparison && <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help flex-shrink-0">
-                          {skillComparison.type === 'success' && <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />}
-                          {skillComparison.type === 'warning' && <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />}
-                          {skillComparison.type === 'error' && <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs text-xs sm:text-sm">{skillComparison.message}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>}
-              </div>
+              {renderLevelSlider(displaySkillLevel, ['Beginner', 'Intermediate', 'Advanced'], ['Beginner', 'Intermediate', 'Advanced'])}
+              {userProfile?.skill_level && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>Your:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {userProfile.skill_level}
+                  </Badge>
+                </div>
+              )}
+              {skillComparison && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="cursor-help flex-shrink-0 mt-1.5">
+                        {skillComparison.type === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                        {skillComparison.type === 'warning' && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
+                        {skillComparison.type === 'error' && <AlertTriangle className="w-4 h-4 text-red-500" />}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs text-xs sm:text-sm">{skillComparison.message}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             <div>
               <Label className="text-sm">Project Effort Level</Label>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <Badge variant="outline" className={`text-xs sm:text-sm ${displayEffortLevel === 'Low' ? 'bg-blue-100 text-blue-800' : displayEffortLevel === 'Medium' ? 'bg-orange-100 text-orange-800' : displayEffortLevel === 'High' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-                  {displayEffortLevel || 'Not specified'}
-                </Badge>
-                {userProfile?.physical_capability && <>
-                    <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">•</span>
-                    <span className="text-xs sm:text-sm text-muted-foreground">Your:</span>
-                    <Badge variant="outline" className="text-xs sm:text-sm">
-                      {userProfile.physical_capability}
-                    </Badge>
-                  </>}
-                {effortComparison && <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help flex-shrink-0">
-                          {effortComparison.type === 'success' && <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />}
-                          {effortComparison.type === 'warning' && <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />}
-                          {effortComparison.type === 'error' && <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs text-xs sm:text-sm">{effortComparison.message}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>}
-              </div>
+              {renderLevelSlider(displayEffortLevel, ['Low', 'Medium', 'High'], ['Low', 'Medium', 'High'])}
+              {userProfile?.physical_capability && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>Your:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {userProfile.physical_capability}
+                  </Badge>
+                </div>
+              )}
+              {effortComparison && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="cursor-help flex-shrink-0 mt-1.5">
+                        {effortComparison.type === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                        {effortComparison.type === 'warning' && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
+                        {effortComparison.type === 'error' && <AlertTriangle className="w-4 h-4 text-red-500" />}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs text-xs sm:text-sm">{effortComparison.message}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             <div>
               <Label className="text-sm">Estimated Time</Label>
