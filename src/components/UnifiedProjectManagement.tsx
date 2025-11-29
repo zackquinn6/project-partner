@@ -956,7 +956,9 @@ export function UnifiedProjectManagement({
       const projectInfoToPreserve = parentProjectInfo || latestRevision;
       
       // Update the latest revision to be revision 1, draft, with no parent
-      // BUT preserve all project information (name, description, etc.)
+      // BUT preserve all project information (description, etc.)
+      // NOTE: Do NOT update the name field - it's already correct and updating it triggers
+      // duplicate name validation which is not needed when resetting revisions
       console.log('🔄 Updating latest revision to revision 1, preserving project info:', latestRevision.id);
       const updateData: any = {
         revision_number: 1,
@@ -969,8 +971,7 @@ export function UnifiedProjectManagement({
         beta_released_at: null,
         archived_at: null,
         created_from_revision: null,
-        // PRESERVE all project information fields
-        name: projectInfoToPreserve.name, // CRITICAL: Preserve project name
+        // PRESERVE all project information fields (except name - it's already correct)
         description: projectInfoToPreserve.description || latestRevision.description,
         category: projectInfoToPreserve.category || latestRevision.category,
         effort_level: projectInfoToPreserve.effort_level || latestRevision.effort_level,
