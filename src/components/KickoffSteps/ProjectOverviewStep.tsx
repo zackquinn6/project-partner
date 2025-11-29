@@ -189,7 +189,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           <div
             className="absolute -top-2 left-0 flex items-center justify-center transition-all duration-200 z-10"
             style={{
-              left: `${(position / (levels.length - 1)) * 100)}%`,
+              left: `${(position / (levels.length - 1)) * 100}%`,
               transform: 'translateX(-50%)'
             }}
           >
