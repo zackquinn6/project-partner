@@ -106,8 +106,15 @@ BEGIN
       phase_is_standard::BOOLEAN,
       phase_position_rule::TEXT,
       phase_position_value::INTEGER,
-      phase_source_project_id::UUID,
-      phase_source_phase_id::UUID,
+      phase_project_id::UUID,
+      CASE 
+        WHEN phase_project_id = '00000000-0000-0000-0000-000000000001'::UUID THEN NULL::UUID
+        ELSE COALESCE(phase_source_project_id::UUID, NULL::UUID)
+      END AS phase_source_project_id,
+      CASE 
+        WHEN phase_project_id = '00000000-0000-0000-0000-000000000001'::UUID THEN NULL::UUID
+        ELSE COALESCE(phase_source_phase_id::UUID, NULL::UUID)
+      END AS phase_source_phase_id,
       sort_order::INTEGER
     FROM (
       SELECT 
@@ -117,18 +124,9 @@ BEGIN
         pp.is_standard AS phase_is_standard,
         pp.position_rule AS phase_position_rule,
         pp.position_value AS phase_position_value,
-        CAST(
-          CASE 
-            WHEN pp.project_id = '00000000-0000-0000-0000-000000000001'::UUID THEN NULL
-            ELSE pp.source_project_id
-          END AS UUID
-        ) AS phase_source_project_id,
-        CAST(
-          CASE 
-            WHEN pp.project_id = '00000000-0000-0000-0000-000000000001'::UUID THEN NULL
-            ELSE pp.source_phase_id
-          END AS UUID
-        ) AS phase_source_phase_id,
+        pp.project_id AS phase_project_id,
+        pp.source_project_id,
+        pp.source_phase_id,
         CAST(
           CASE 
             WHEN pp.position_rule = 'first' THEN 1
