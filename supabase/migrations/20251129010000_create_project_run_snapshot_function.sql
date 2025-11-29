@@ -37,6 +37,8 @@ DECLARE
   detailed_instruction JSONB;
   contractor_instruction JSONB;
   phase_order_number JSONB;
+  phase_source_project_id UUID;
+  phase_source_phase_id UUID;
 BEGIN
   -- Step 1: Ensure user has a home with at least one room
   -- If p_home_id is provided, use it; otherwise find or create user's primary home
@@ -107,8 +109,6 @@ BEGIN
       pp.position_rule AS phase_position_rule,
       pp.position_value AS phase_position_value,
       pp.project_id AS phase_project_id,
-      pp.source_project_id AS phase_source_project_id,
-      pp.source_phase_id AS phase_source_phase_id,
       CASE 
         WHEN pp.position_rule = 'first' THEN 1
         WHEN pp.position_rule = 'last' THEN 999999
@@ -123,10 +123,16 @@ BEGIN
     )
     ORDER BY sort_order
   LOOP
-    -- For standard phases, set source columns to NULL
+    -- Handle source columns for incorporated phases
     IF template_phase.phase_project_id = '00000000-0000-0000-0000-000000000001'::UUID THEN
-      template_phase.phase_source_project_id := NULL;
-      template_phase.phase_source_phase_id := NULL;
+      phase_source_project_id := NULL;
+      phase_source_phase_id := NULL;
+    ELSE
+      -- Fetch source columns from the same row we're processing
+      SELECT COALESCE(pp2.source_project_id, NULL), COALESCE(pp2.source_phase_id, NULL)
+      INTO phase_source_project_id, phase_source_phase_id
+      FROM project_phases pp2
+      WHERE pp2.id = template_phase.phase_id;
     END IF;
     
     -- Reset operation array for this phase
@@ -145,7 +151,7 @@ BEGIN
         op.is_reference,
         op.alternate_group
       FROM template_operations op
-      WHERE op.phase_id = COALESCE(template_phase.phase_source_phase_id, template_phase.phase_id)
+      WHERE op.phase_id = COALESCE(phase_source_phase_id, template_phase.phase_id)
       ORDER BY op.display_order
     LOOP
       -- Reset step array for this operation
@@ -258,9 +264,9 @@ BEGIN
       'name', template_phase.phase_name,
       'description', template_phase.phase_description,
       'isStandard', COALESCE(template_phase.phase_is_standard, false),
-      'isLinked', (template_phase.phase_source_project_id IS NOT NULL),
-      'sourceProjectId', template_phase.phase_source_project_id,
-      'sourcePhaseId', template_phase.phase_source_phase_id,
+      'isLinked', (phase_source_project_id IS NOT NULL),
+      'sourceProjectId', phase_source_project_id,
+      'sourcePhaseId', phase_source_phase_id,
       'positionRule', template_phase.phase_position_rule,
       'positionValue', template_phase.phase_position_value,
       'phaseOrderNumber', phase_order_number,
