@@ -109,11 +109,11 @@ BEGIN
       phase_project_id::UUID,
       CASE 
         WHEN phase_project_id = '00000000-0000-0000-0000-000000000001'::UUID THEN NULL::UUID
-        ELSE COALESCE(phase_source_project_id::UUID, NULL::UUID)
+        ELSE phase_source_project_id
       END AS phase_source_project_id,
       CASE 
         WHEN phase_project_id = '00000000-0000-0000-0000-000000000001'::UUID THEN NULL::UUID
-        ELSE COALESCE(phase_source_phase_id::UUID, NULL::UUID)
+        ELSE phase_source_phase_id
       END AS phase_source_phase_id,
       sort_order::INTEGER
     FROM (
@@ -125,8 +125,8 @@ BEGIN
         pp.position_rule AS phase_position_rule,
         pp.position_value AS phase_position_value,
         pp.project_id AS phase_project_id,
-        pp.source_project_id AS phase_source_project_id,
-        pp.source_phase_id AS phase_source_phase_id,
+        pp.source_project_id::UUID AS phase_source_project_id,
+        pp.source_phase_id::UUID AS phase_source_phase_id,
         CAST(
           CASE 
             WHEN pp.position_rule = 'first' THEN 1
