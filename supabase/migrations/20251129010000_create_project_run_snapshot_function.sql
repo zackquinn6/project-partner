@@ -125,8 +125,8 @@ BEGIN
         pp.position_rule AS phase_position_rule,
         pp.position_value AS phase_position_value,
         pp.project_id AS phase_project_id,
-        pp.source_project_id,
-        pp.source_phase_id,
+        pp.source_project_id AS phase_source_project_id,
+        pp.source_phase_id AS phase_source_phase_id,
         CAST(
           CASE 
             WHEN pp.position_rule = 'first' THEN 1
