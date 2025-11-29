@@ -192,6 +192,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       // Use database function to create project run snapshot with properly built phases
       // This ensures phases include operations and steps from the template
+      console.log('🔄 Calling create_project_run_snapshot with:', {
+        templateId: project.id,
+        templateName: project.name,
+        templatePhasesCount: project.phases?.length || 0,
+        templatePhases: project.phases ? (Array.isArray(project.phases) ? `${project.phases.length} phases` : typeof project.phases) : 'null/undefined',
+        userId: user.id,
+        runName: customName || project.name
+      });
+
       const { data, error } = await supabase.rpc('create_project_run_snapshot', {
         p_template_id: project.id,
         p_user_id: user.id,
@@ -220,14 +229,18 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       }
 
       if (!data) {
+        console.error('❌ create_project_run_snapshot returned no ID');
         throw new Error('Project run creation returned no ID');
       }
 
+      console.log('✅ create_project_run_snapshot returned run ID:', data);
+
       // CRITICAL: Verify that phases were copied to the project run
       // Project runs MUST be immutable snapshots with their own copy of phases
+      console.log('🔍 Fetching created project run to verify phases...');
       const { data: createdRun, error: fetchError } = await supabase
         .from('project_runs')
-        .select('id, phases, template_id')
+        .select('id, phases, template_id, name')
         .eq('id', data)
         .single();
 
@@ -235,6 +248,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         console.error('❌ Error fetching created project run:', fetchError);
         throw fetchError;
       }
+
+      console.log('📋 Created project run data:', {
+        runId: createdRun.id,
+        runName: createdRun.name,
+        hasPhases: !!createdRun.phases,
+        phasesType: typeof createdRun.phases,
+        phasesIsArray: Array.isArray(createdRun.phases),
+        phasesValue: createdRun.phases ? (Array.isArray(createdRun.phases) ? `${createdRun.phases.length} phases` : String(createdRun.phases).substring(0, 100)) : 'null/undefined'
+      });
 
       // CRITICAL: Validate phases exist AND match template phase count
       let parsedPhases: any[] = [];
@@ -277,7 +299,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .delete()
           .eq('id', data);
         
-        throw new Error('Project run was created without phases. This indicates a problem with the create_project_run_snapshot function. Please ensure the template has phases before creating a project run.');
+        throw new Error('Project run was created without phases. The create_project_run_snapshot database function failed. Please ensure the template has phases in the database and the function is working correctly.');
       }
 
       // CRITICAL: Validate that all phases from template were copied

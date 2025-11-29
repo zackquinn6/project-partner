@@ -54,9 +54,12 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
     const criticalOutputs: { step: string; outputs: Output[] }[] = [];
     
     operation.steps.forEach(step => {
-      const critical = step.outputs.filter(output => output.type !== 'none');
-      if (critical.length > 0) {
-        criticalOutputs.push({ step: step.step, outputs: critical });
+      // Handle case where outputs might be undefined or null
+      if (step.outputs && Array.isArray(step.outputs)) {
+        const critical = step.outputs.filter(output => output.type !== 'none');
+        if (critical.length > 0) {
+          criticalOutputs.push({ step: step.step, outputs: critical });
+        }
       }
     });
     
