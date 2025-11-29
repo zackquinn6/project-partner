@@ -109,6 +109,8 @@ BEGIN
       pp.position_rule AS phase_position_rule,
       pp.position_value AS phase_position_value,
       pp.project_id AS phase_project_id,
+      pp.source_project_id::UUID AS source_project_id,
+      pp.source_phase_id::UUID AS source_phase_id,
       CASE 
         WHEN pp.position_rule = 'first' THEN 1
         WHEN pp.position_rule = 'last' THEN 999999
@@ -124,15 +126,15 @@ BEGIN
     ORDER BY sort_order
   LOOP
     -- Handle source columns for incorporated phases
+    -- For standard phases, always set to NULL
+    -- For custom/incorporated phases, use the values from the RECORD
     IF template_phase.phase_project_id = '00000000-0000-0000-0000-000000000001'::UUID THEN
       phase_source_project_id := NULL;
       phase_source_phase_id := NULL;
     ELSE
-      -- Fetch source columns from the same row we're processing
-      SELECT COALESCE(pp2.source_project_id, NULL), COALESCE(pp2.source_phase_id, NULL)
-      INTO phase_source_project_id, phase_source_phase_id
-      FROM project_phases pp2
-      WHERE pp2.id = template_phase.phase_id;
+      -- Assign RECORD fields directly to UUID variables
+      phase_source_project_id := template_phase.source_project_id;
+      phase_source_phase_id := template_phase.source_phase_id;
     END IF;
     
     -- Reset operation array for this phase
