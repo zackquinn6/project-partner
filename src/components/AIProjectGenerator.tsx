@@ -191,6 +191,8 @@ export function AIProjectGenerator({
         setGenerationProgress(10);
         try {
           // Fetch existing phases, operations, steps
+          // CRITICAL: When structure is deselected, we need the full structure to use as context
+          // and to preserve during import
           const { data: existingPhases } = await supabase
             .from('project_phases')
             .select(`
@@ -199,14 +201,17 @@ export function AIProjectGenerator({
               template_operations (
                 id,
                 name,
+                display_order,
                 template_steps (
                   id,
-                  step_title
+                  step_title,
+                  display_order
                 )
               )
             `)
             .eq('project_id', selectedExistingProject)
-            .order('display_order', { ascending: true });
+            .order('position_rule', { ascending: true })
+            .order('position_value', { ascending: true, nullsFirst: false });
 
           // Fetch existing risks from relational table
           const { data: existingRisksData } = await supabase
@@ -261,6 +266,43 @@ export function AIProjectGenerator({
       });
 
       const result = await generateProjectWithAI(request);
+      
+      // If structure is deselected but we have existing content, merge it into the result
+      // This ensures the existing structure is preserved and used as context for other content
+      if (!contentSelection.structure && existingContent && existingContent.phases && existingContent.phases.length > 0) {
+        // Convert existing structure to match GeneratedProjectStructure format
+        // CRITICAL: This structure will be used by the import function to match and update content
+        const existingPhases = existingContent.phases.map(phase => ({
+          name: phase.name,
+          description: '', // Will be preserved from existing
+          operations: phase.operations?.map((op: any) => ({
+            name: op.name,
+            description: '', // Will be preserved from existing
+            steps: (op.steps || []).map((step: any) => ({
+              stepTitle: step.stepTitle || step.step_title || '',
+              description: '', // Will be preserved from existing
+              materials: [],
+              tools: [],
+              outputs: [],
+              processVariables: [],
+              timeEstimates: { low: 0, medium: 0, high: 0 },
+              instructions: { quick: '', detailed: '', contractor: '' }
+            }))
+          })) || []
+        }));
+        
+        // Merge existing phases into result - this ensures import function has structure to match against
+        result.phases = existingPhases;
+        
+        console.log('📋 Merged existing structure into result (structure deselected):', {
+          phasesCount: result.phases.length,
+          operationsCount: result.phases.reduce((sum, p) => sum + (p.operations?.length || 0), 0),
+          stepsCount: result.phases.reduce((sum, p) => 
+            sum + (p.operations?.reduce((opSum: number, op: any) => opSum + (op.steps?.length || 0), 0) || 0), 0
+          ),
+          structureDeselected: !contentSelection.structure
+        });
+      }
       
       clearInterval(progressInterval);
       // Smoothly animate to 100%
@@ -475,11 +517,20 @@ export function AIProjectGenerator({
                     </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="new">Create New Project</SelectItem>
-                    {projectTemplates.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
+                    {projectTemplates.map((project) => {
+                      // Clean project name: remove revision number, publish status, etc.
+                      const cleanName = project.name
+                        ?.replace(/\s*\(Rev\s+\d+\)\s*/gi, '')
+                        ?.replace(/\s*\([Dd]raft\)\s*/g, '')
+                        ?.replace(/\s*\([Pp]ublished\)\s*/g, '')
+                        ?.replace(/\s*\([Bb]eta\)\s*/g, '')
+                        ?.trim() || project.name;
+                      return (
+                        <SelectItem key={project.id} value={project.id}>
+                          {cleanName}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
