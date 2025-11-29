@@ -951,56 +951,23 @@ export function UnifiedProjectManagement({
       // This ensures project name and other metadata are preserved
       const projectInfoToPreserve = parentProjectInfo || latestRevision;
       
-      // Update the latest revision to be revision 1, draft, with no parent
-      // BUT preserve all project information (description, etc.)
-      // NOTE: Do NOT update the name field - it's already correct and updating it triggers
-      // duplicate name validation which is not needed when resetting revisions
-      console.log('🔄 Updating latest revision to revision 1, preserving project info:', latestRevision.id);
-      const updateData: any = {
-        revision_number: 1,
-        parent_project_id: null,
-        publish_status: 'draft',
-        is_current_version: true,
-        revision_notes: null,
-        release_notes: null,
-        published_at: null,
-        beta_released_at: null,
-        archived_at: null,
-        created_from_revision: null,
-        // PRESERVE all project information fields (except name - it's already correct)
-        description: projectInfoToPreserve.description || latestRevision.description,
-        category: projectInfoToPreserve.category || latestRevision.category,
-        effort_level: projectInfoToPreserve.effort_level || latestRevision.effort_level,
-        skill_level: projectInfoToPreserve.skill_level || latestRevision.skill_level,
-        estimated_time: projectInfoToPreserve.estimated_time || latestRevision.estimated_time,
-        estimated_total_time: projectInfoToPreserve.estimated_total_time || latestRevision.estimated_total_time,
-        typical_project_size: projectInfoToPreserve.typical_project_size || latestRevision.typical_project_size,
-        scaling_unit: projectInfoToPreserve.scaling_unit || latestRevision.scaling_unit,
-        item_type: projectInfoToPreserve.item_type || latestRevision.item_type,
-        project_challenges: projectInfoToPreserve.project_challenges || projectInfoToPreserve.diy_length_challenges || latestRevision.project_challenges || latestRevision.diy_length_challenges,
-        project_type: projectInfoToPreserve.project_type || latestRevision.project_type,
-        owner_id: projectInfoToPreserve.owner_id || latestRevision.owner_id,
-        created_by: projectInfoToPreserve.created_by || latestRevision.created_by,
-        // Preserve images
-        images: projectInfoToPreserve.images || latestRevision.images,
-        cover_image: projectInfoToPreserve.cover_image || latestRevision.cover_image
-      };
-      
-      const { error: updateError } = await supabase
-        .from('projects')
-        .update(updateData)
-        .eq('id', latestRevision.id);
-
-      if (updateError) {
-        console.error('❌ Error updating revision:', updateError);
-        throw updateError;
-      }
-
-      console.log('✅ Revision reset complete');
-      
-      // If we excluded a parent from deletion, delete it now (reference is already removed)
+      // CRITICAL: If there's a parent, we must remove the reference FIRST (minimal update)
+      // then delete the parent, THEN do the full update. This avoids name constraint violations.
       if (parentIdToExclude) {
-        console.log('🗑️ Deleting excluded parent revision:', parentIdToExclude);
+        console.log('🔄 Step 1: Removing parent_project_id reference (minimal update)');
+        const { error: removeParentRefError } = await supabase
+          .from('projects')
+          .update({ parent_project_id: null })
+          .eq('id', latestRevision.id);
+        
+        if (removeParentRefError) {
+          console.error('❌ Error removing parent_project_id reference:', removeParentRefError);
+          throw removeParentRefError;
+        }
+        console.log('✅ Parent reference removed');
+        
+        // Now delete the parent (reference is removed, so this is safe)
+        console.log('🗑️ Step 2: Deleting excluded parent revision:', parentIdToExclude);
         
         // Delete related data for the parent
         const { data: parentOperations } = await supabase
@@ -1049,6 +1016,54 @@ export function UnifiedProjectManagement({
         
         console.log('✅ Parent revision deleted');
       }
+      
+      // Now do the full update (parent is gone, so no name conflict)
+      // Update the latest revision to be revision 1, draft, with no parent
+      // BUT preserve all project information (description, etc.)
+      // NOTE: Do NOT update the name field - it's already correct and updating it triggers
+      // duplicate name validation which is not needed when resetting revisions
+      console.log('🔄 Step 3: Updating latest revision to revision 1, preserving project info:', latestRevision.id);
+      const updateData: any = {
+        revision_number: 1,
+        parent_project_id: null,
+        publish_status: 'draft',
+        is_current_version: true,
+        revision_notes: null,
+        release_notes: null,
+        published_at: null,
+        beta_released_at: null,
+        archived_at: null,
+        created_from_revision: null,
+        // PRESERVE all project information fields (except name - it's already correct)
+        description: projectInfoToPreserve.description || latestRevision.description,
+        category: projectInfoToPreserve.category || latestRevision.category,
+        effort_level: projectInfoToPreserve.effort_level || latestRevision.effort_level,
+        skill_level: projectInfoToPreserve.skill_level || latestRevision.skill_level,
+        estimated_time: projectInfoToPreserve.estimated_time || latestRevision.estimated_time,
+        estimated_total_time: projectInfoToPreserve.estimated_total_time || latestRevision.estimated_total_time,
+        typical_project_size: projectInfoToPreserve.typical_project_size || latestRevision.typical_project_size,
+        scaling_unit: projectInfoToPreserve.scaling_unit || latestRevision.scaling_unit,
+        item_type: projectInfoToPreserve.item_type || latestRevision.item_type,
+        project_challenges: projectInfoToPreserve.project_challenges || projectInfoToPreserve.diy_length_challenges || latestRevision.project_challenges || latestRevision.diy_length_challenges,
+        project_type: projectInfoToPreserve.project_type || latestRevision.project_type,
+        owner_id: projectInfoToPreserve.owner_id || latestRevision.owner_id,
+        created_by: projectInfoToPreserve.created_by || latestRevision.created_by,
+        // Preserve images
+        images: projectInfoToPreserve.images || latestRevision.images,
+        cover_image: projectInfoToPreserve.cover_image || latestRevision.cover_image
+      };
+      
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update(updateData)
+        .eq('id', latestRevision.id);
+
+      if (updateError) {
+        console.error('❌ Error updating revision:', updateError);
+        throw updateError;
+      }
+
+      console.log('✅ Revision reset complete');
       
       // Refresh projects list first
       await fetchProjects();
