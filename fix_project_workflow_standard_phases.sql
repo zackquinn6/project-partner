@@ -124,7 +124,6 @@ BEGIN
       pp.name,
       pp.description,
       pp.is_standard,
-      pp.standard_phase_id,
       pp.created_at
     FROM public.project_phases pp
     WHERE pp.project_id = p_project_id
