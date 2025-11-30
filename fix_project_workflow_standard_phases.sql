@@ -119,16 +119,16 @@ DECLARE
 BEGIN
   FOR phase_record IN
     SELECT 
-      id,
-      project_id,
-      name,
-      description,
-      display_order,
-      is_standard,
-      standard_phase_id
-    FROM public.project_phases
-    WHERE project_id = p_project_id
-    ORDER BY display_order
+      pp.id,
+      pp.project_id,
+      pp.name,
+      pp.description,
+      pp.display_order,
+      pp.is_standard,
+      pp.standard_phase_id
+    FROM public.project_phases pp
+    WHERE pp.project_id = p_project_id
+    ORDER BY pp.display_order
   LOOP
     operations_json := '[]'::jsonb;
 
