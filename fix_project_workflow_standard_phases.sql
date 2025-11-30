@@ -143,13 +143,13 @@ BEGIN
   -- Create default space for project run
   INSERT INTO public.project_run_spaces (
     project_run_id,
-    name,
-    display_order,
+    space_name,
+    space_type,
     created_at
   ) VALUES (
     new_run_id,
     'Room 1',
-    1,
+    'room',
     NOW()
   ) RETURNING id INTO default_space_id;
 
