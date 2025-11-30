@@ -191,23 +191,23 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     };
 
     return (
-      <div className="mt-2 relative">
+      <div className="mt-2 relative pb-1">
         {/* Arrow indicator - positioned above with "This project" text */}
         {hasValue && (
           <div
-            className="absolute -top-6 left-0 flex flex-col items-center justify-center transition-all duration-200 z-10"
+            className="absolute -top-8 left-0 flex flex-col items-center justify-center transition-all duration-200 z-10"
             style={{
               left: `${getArrowPosition(position)}%`,
               transform: 'translateX(-50%)'
             }}
           >
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">This project</span>
-            <ArrowDown className="w-4 h-4 text-foreground drop-shadow-sm" />
+            <span className="text-[9px] text-muted-foreground whitespace-nowrap">This project</span>
+            <ArrowDown className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
           </div>
         )}
         
         {/* Slider track with colored sections */}
-        <div className="relative h-8 rounded-full flex items-center mt-2 overflow-hidden">
+        <div className="relative h-6 rounded-full flex items-center overflow-hidden">
           {/* Color blocks background - green, blue, black */}
           <div className="absolute inset-0 flex">
             <div className="w-1/3 bg-green-500"></div>
@@ -220,7 +220,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               key={index}
               className="flex-1 h-full flex items-center justify-center border-r last:border-r-0 border-border/50 relative z-10"
             >
-              <span className="text-[10px] sm:text-xs text-white font-medium px-1 text-center drop-shadow-sm">
+              <span className="text-[9px] text-white font-medium px-0.5 text-center drop-shadow-sm leading-tight">
                 {labels[index]}
               </span>
             </div>
