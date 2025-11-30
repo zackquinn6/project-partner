@@ -803,6 +803,11 @@ export default function UserView({
 
   // Load project run if projectRunId is provided
   useEffect(() => {
+    // Don't try to load project run if we're in listing mode (e.g., after exit from kickoff)
+    if (viewMode === 'listing') {
+      return;
+    }
+    
     if (projectRunId) {
       console.log('🎯 UserView: Loading project run with ID:', projectRunId);
       const projectRun = projectRuns.find(run => run.id === projectRunId);
@@ -828,11 +833,23 @@ export default function UserView({
             
             if (error) {
               console.error('❌ Error fetching project run from database:', error);
+              // If project run doesn't exist (was deleted), clear it and go to listing
+              if (error.code === 'PGRST116' || error.message?.includes('0 rows')) {
+                console.log('🚪 Project run was deleted, returning to listing');
+                setCurrentProjectRun(null);
+                setViewMode('listing');
+                onProjectSelected?.('listing' as any);
+              }
               return;
             }
             
             if (!freshRun) {
               console.error('❌ Project run not found in database:', projectRunId);
+              // Project run was deleted, clear it and go to listing
+              console.log('🚪 Project run was deleted, returning to listing');
+              setCurrentProjectRun(null);
+              setViewMode('listing');
+              onProjectSelected?.('listing' as any);
               return;
             }
             
@@ -932,7 +949,7 @@ export default function UserView({
         fetchProjectRun();
       }
     }
-  }, [projectRunId, projectRuns, setCurrentProjectRun]);
+  }, [projectRunId, projectRuns, setCurrentProjectRun, viewMode, onProjectSelected]);
 
   // SIMPLIFIED VIEW MODE LOGIC - Single effect to prevent race conditions
   useEffect(() => {
@@ -2606,7 +2623,16 @@ export default function UserView({
         }}
         onExit={() => {
           console.log("🚪 Exit kickoff - returning to project listing");
+          // Clear current project run to prevent UserView from trying to load deleted project
+          setCurrentProjectRun(null);
+          // Clear view mode to show listing
           setViewMode('listing');
+          // Clear URL parameters if any
+          window.history.replaceState({}, document.title, window.location.pathname);
+          // Notify parent component to return to listing
+          onProjectSelected?.('listing' as any);
+          // Clear reset flags
+          window.dispatchEvent(new CustomEvent('clear-reset-flags'));
         }}
       />
     );
