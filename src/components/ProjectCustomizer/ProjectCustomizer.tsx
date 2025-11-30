@@ -32,13 +32,13 @@ interface ProjectCustomizerProps {
 
 interface ProjectSpace {
   id: string;
-  name: string;
+  space_name: string; // Changed from 'name' to 'space_name' for clarity and consistency with database
   spaceType: string;
   homeSpaceId?: string;
   scaleValue?: number;
   scaleUnit?: string;
   isFromHome: boolean;
-  priority?: number; // Lower number = higher priority (1 is highest)
+  priority?: number; // Lower number = higher priority (1 is highest) - used for display order in workflow navigation
 }
 
 interface CustomizationState {
@@ -136,7 +136,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   // Helper function to create default "Room 1" placeholder
   const createDefaultSpace = (): ProjectSpace => ({
     id: 'default-space-1',
-    name: 'Room 1',
+    space_name: 'Room 1',
     spaceType: 'general',
     isFromHome: false
   });
@@ -158,7 +158,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
         const loadedSpaces: ProjectSpace[] = (dbSpaces || []).map(space => ({
           id: space.id,
-          name: space.space_name,
+          space_name: space.space_name,
           spaceType: space.space_type,
           homeSpaceId: space.home_space_id || undefined,
           scaleValue: space.scale_value || undefined,

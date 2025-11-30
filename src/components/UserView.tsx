@@ -313,14 +313,14 @@ export default function UserView({
         // If space_name changes in database, this will reflect it immediately
         const spaces: WorkflowProjectSpace[] = (spacesData || []).map(space => ({
           id: space.id,
-          name: space.space_name, // Dynamic: always reads from database
+          space_name: space.space_name, // Dynamic: always reads from database
           priority: space.priority,
           spaceType: space.space_type
         }));
         
         console.log('✅ Loaded project spaces (dynamic linkage):', {
           spacesCount: spaces.length,
-          spaces: spaces.map(s => ({ id: s.id, name: s.name, priority: s.priority })),
+          spaces: spaces.map(s => ({ id: s.id, space_name: s.space_name, priority: s.priority })),
           projectRunId: currentProjectRun.id
         });
         
@@ -510,7 +510,7 @@ export default function UserView({
       projectSpacesCount: projectSpaces.length,
       projectRunId: currentProjectRun.id,
       workflowPhases: workflowPhases.map(p => ({ name: p.name, isStandard: p.isStandard, phaseOrderNumber: p.phaseOrderNumber })),
-      projectSpaces: projectSpaces.map(s => ({ name: s.name, priority: s.priority }))
+      projectSpaces: projectSpaces.map(s => ({ space_name: s.space_name, priority: s.priority }))
     });
     
     const result = organizeWorkflowNavigation(workflowPhases, projectSpaces, currentProjectRun);
@@ -2083,7 +2083,7 @@ export default function UserView({
         // Space container: Create nested structure Space → Phase → Operation → Steps
         // Each space container contains steps from potentially multiple phases
         const space = item.spaces[0];
-        const spaceKey = space.name;
+        const spaceKey = space.space_name;
         
         // Initialize space if it doesn't exist
         if (!grouped[spaceKey]) {

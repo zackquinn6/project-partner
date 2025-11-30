@@ -114,7 +114,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   // Space priority state with sizing values
   const [spaces, setSpaces] = useState<Array<{ 
     id: string; 
-    name: string; 
+    space_name: string; // Changed from 'name' to 'space_name' for clarity and consistency with database
     priority: number | null;
     scaleValue?: number | null;
     scaleUnit?: string | null;
@@ -296,7 +296,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           }
           return {
             id: space.id,
-            name: space.space_name,
+            space_name: space.space_name,
             priority: space.priority,
             scaleValue: space.scale_value,
             scaleUnit: space.scale_unit,
@@ -455,7 +455,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               
               tasks.push({
                 id: `${operation.id}-step-${index}-space-${space.id}`,
-                title: `${step.step} - ${space.name}`,
+                title: `${step.step} - ${space.space_name}`,
                 estimatedHours: selectedTimeEstimate,
                 minContiguousHours: Math.min(adjustedMed, 2),
                 dependencies,

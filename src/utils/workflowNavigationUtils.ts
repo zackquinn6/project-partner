@@ -3,7 +3,7 @@ import { ProjectRun } from '@/interfaces/ProjectRun';
 
 export interface ProjectSpace {
   id: string;
-  name: string;
+  space_name: string; // Changed from 'name' to 'space_name' for clarity and consistency with database
   priority: number | null;
   spaceType?: string;
 }
@@ -187,7 +187,7 @@ export function organizeStepsForSinglePieceFlow(
     customPhasesCount: customPhases.length,
     customPhases: customPhases.map(p => p.name),
     sortedSpacesCount: sortedSpaces.length,
-    sortedSpaces: sortedSpaces.map(s => s.name),
+    sortedSpaces: sortedSpaces.map(s => s.space_name),
     hasCloseProject: !!closeProjectPhase
   });
   
@@ -219,7 +219,7 @@ export function organizeStepsForSinglePieceFlow(
     console.log('🔧 Creating space containers for single-piece-flow:', {
       spacesCount: sortedSpaces.length,
       customPhasesCount: customPhases.length,
-      spaces: sortedSpaces.map(s => s.name),
+      spaces: sortedSpaces.map(s => s.space_name),
       customPhases: customPhases.map(p => p.name)
     });
     
@@ -253,21 +253,21 @@ export function organizeStepsForSinglePieceFlow(
             operationId: operation.id,
             operationName: operation.name,
             spaceId: space.id,
-            spaceName: space.name
+            spaceName: space.space_name
           }));
           phaseSteps.push(...operationSteps);
           allSpaceSteps.push(...operationSteps);
         });
         
-        console.log(`  - Space "${space.name}": Phase "${phase.name}" = ${phaseSteps.length} steps`);
+        console.log(`  - Space "${space.space_name}": Phase "${phase.name}" = ${phaseSteps.length} steps`);
       });
       
-      console.log(`  - Created space container "${space.name}" with ${allSpaceSteps.length} total steps from ${customPhases.length} phases`);
+      console.log(`  - Created space container "${space.space_name}" with ${allSpaceSteps.length} total steps from ${customPhases.length} phases`);
       
       result.push({
         type: 'space-container',
         id: `space-${space.id}`,
-        name: space.name, // Space name only - contains all custom phases
+        name: space.space_name, // Space name only - contains all custom phases
         spaces: [space],
         // CRITICAL: Don't include phase here - space container has steps from multiple phases
         // The groupedSteps function will extract phases from step phaseName properties
@@ -450,7 +450,7 @@ export function organizeStepsForBatchFlow(
             operationId: operation.id,
             operationName: operation.name,
             spaceId: space.id,
-            spaceName: space.name
+            spaceName: space.space_name
           }));
           phaseSteps.push(...operationSteps);
         });
@@ -547,7 +547,7 @@ export function organizeWorkflowNavigation(
     schedule_optimization_method: (projectRun as any)?.schedule_optimization_method,
     completion_priority: projectRun?.completion_priority,
     phases: phases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
-    spaces: spaces.map(s => ({ name: s.name, priority: s.priority }))
+    spaces: spaces.map(s => ({ name: s.space_name, priority: s.priority }))
   });
   
   if (flowType === 'batch-flow') {
@@ -578,7 +578,7 @@ export function convertToGroupedSteps(
       // Group by space name, then by phase name, then by operation name
       // Structure: { "Room 1": { "Phase Name": { "Operation Name": [steps...] } } }
       item.spaces?.forEach(space => {
-        const spaceKey = space.name; // Use space name directly
+        const spaceKey = space.space_name; // Use space name directly
         if (!grouped[spaceKey]) {
           grouped[spaceKey] = {};
         }
@@ -626,9 +626,9 @@ export function convertToGroupedSteps(
           });
           
           if (operationSteps.length > 0) {
-            // CRITICAL: Use space.name which is dynamically linked to database
+            // CRITICAL: Use space.space_name which is dynamically linked to database
             // If space_name changes in project_run_spaces, this will automatically reflect it
-            const operationKey = `${space.name} - ${operation.name}`;
+            const operationKey = `${space.space_name} - ${operation.name}`;
             if (!grouped[phaseName][operationKey]) {
               grouped[phaseName][operationKey] = [];
             }

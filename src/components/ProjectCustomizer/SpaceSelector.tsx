@@ -11,13 +11,13 @@ import { toast } from '@/components/ui/use-toast';
 
 export interface ProjectSpace {
   id: string;
-  name: string;
+  space_name: string; // Changed from 'name' to 'space_name' for clarity and consistency with database
   spaceType: string;
   homeSpaceId?: string;
   scaleValue?: number;
   scaleUnit?: string;
   isFromHome: boolean;
-  priority?: number; // Lower number = higher priority (1 is highest)
+  priority?: number; // Lower number = higher priority (1 is highest) - used for display order in workflow navigation
 }
 
 export interface SpaceSelectorProps {
@@ -198,7 +198,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
 
           return {
             id: space.id,
-            name: space.space_name,
+            space_name: space.space_name,
             spaceType: space.space_type,
             homeSpaceId: space.home_space_id || undefined,
             scaleValue: primaryValue || undefined,
@@ -303,7 +303,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
 
       const newSpace: ProjectSpace = {
         id: data.id,
-        name: data.space_name,
+        space_name: data.space_name,
         spaceType: data.space_type,
         homeSpaceId: homeSpace.id, // Keep reference to original home space
         scaleValue: data.scale_value || homeSpace.square_footage,
@@ -387,7 +387,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
 
       const newSpace: ProjectSpace = {
         id: data.id,
-        name: data.space_name,
+        space_name: data.space_name,
         spaceType: data.space_type,
         scaleValue: data.scale_value,
         scaleUnit: projectScaleUnit,
@@ -651,7 +651,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
                     
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-sm">{space.name}</h4>
+                        <h4 className="font-medium text-sm">{space.space_name}</h4>
                         {space.isFromHome && (
                           <Badge variant="default" className="text-xs">
                             From Home

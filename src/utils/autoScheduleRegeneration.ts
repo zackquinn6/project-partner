@@ -91,7 +91,7 @@ export async function autoRegenerateSchedule(
       }
       return {
         id: space.id,
-        name: space.space_name,
+        space_name: space.space_name,
         priority: space.priority,
         sizingValues: relationalSizing
       };
@@ -156,7 +156,7 @@ export async function autoRegenerateSchedule(
             
             tasks.push({
               id: `${operation.id}-step-${stepIndex}-space-${space.id}`,
-              title: `${step.step} - ${space.name}`,
+              title: `${step.step} - ${space.space_name}`,
               estimatedHours: selectedTimeEstimate,
               minContiguousHours: Math.min(adjustedMed, 2),
               dependencies,

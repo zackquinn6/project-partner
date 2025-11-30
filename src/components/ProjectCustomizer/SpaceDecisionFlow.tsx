@@ -10,7 +10,7 @@ import { useProject } from '@/contexts/ProjectContext';
 
 interface ProjectSpace {
   id: string;
-  name: string;
+  space_name: string; // Changed from 'name' to 'space_name' for clarity and consistency with database
   spaceType: string;
   scaleValue?: number;
   scaleUnit?: string;
@@ -167,7 +167,7 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span>{space.name}</span>
+                <span>{space.space_name}</span>
               </div>
               {isSpaceComplete(space.id) && (
                 <Badge variant="default" className="bg-green-500">
