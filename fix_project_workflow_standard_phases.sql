@@ -187,13 +187,24 @@ BEGIN
       );
     END LOOP;
 
+    -- Convert position_rule and position_value to phaseOrderNumber (matching Structure Manager logic)
+    -- This is critical for frontend sorting to work correctly
     phases_json := phases_json || jsonb_build_array(
       jsonb_build_object(
         'id', phase_record.id,
         'name', phase_record.name,
         'description', phase_record.description,
         'operations', COALESCE(operations_json, '[]'::jsonb),
-        'isStandard', phase_record.is_standard
+        'isStandard', phase_record.is_standard,
+        'phaseOrderNumber', 
+          CASE 
+            WHEN phase_record.position_rule = 'first' THEN to_jsonb(1)
+            WHEN phase_record.position_rule = 'last' THEN '"last"'::jsonb
+            WHEN phase_record.position_rule = 'nth' AND phase_record.position_value IS NOT NULL THEN to_jsonb(phase_record.position_value)
+            ELSE to_jsonb(999)
+          END,
+        'position_rule', phase_record.position_rule,
+        'position_value', phase_record.position_value
       )
     );
   END LOOP;
