@@ -83,6 +83,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   const [isDeletingPhase, setIsDeletingPhase] = useState(false);
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
   const [isAddingPhase, setIsAddingPhase] = useState(false);
+  const [isReorderingPhase, setIsReorderingPhase] = useState<string | null>(null);
   
   // UI state
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -2219,6 +2220,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return;
     }
     
+    setIsReorderingPhase(phaseId);
+    
     try {
       // Swap positions
       const tempOrder = phase.phaseOrderNumber;
@@ -2238,6 +2241,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     } catch (error: any) {
       console.error('Error moving phase up:', error);
       toast.error(`Failed to move phase: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsReorderingPhase(null);
     }
   }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions, updatePhasePosition]);
   
@@ -2274,6 +2279,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return;
     }
     
+    setIsReorderingPhase(phaseId);
+    
     try {
       // Swap positions
       const tempOrder = phase.phaseOrderNumber;
@@ -2293,6 +2300,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     } catch (error: any) {
       console.error('Error moving phase down:', error);
       toast.error(`Failed to move phase: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsReorderingPhase(null);
     }
   }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions, updatePhasePosition]);
   
@@ -2310,6 +2319,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       toast.error('Phase not found');
       return;
     }
+    
+    setIsReorderingPhase(phaseId);
     
     try {
       // Convert 'First'/'Last' to numeric positions
@@ -2416,34 +2427,55 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     } catch (error: any) {
       console.error('Error changing phase order:', error);
       toast.error(`Failed to change phase order: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsReorderingPhase(null);
     }
-  }, [currentProject, phases, reloadPhasesWithPositions]);
+  }, [currentProject, phases, reloadPhasesWithPositions, isEditingStandardProject]);
   
   /**
    * Get available order numbers for dropdown
+   * Filters out positions occupied by standard phases when not editing standard project
    */
-  const getAvailableOrderNumbers = (currentPhase: Phase, currentIndex: number, totalPhases: number): (string | number)[] => {
+  const getAvailableOrderNumbers = useCallback((currentPhase: Phase, currentIndex: number, totalPhases: number): (string | number)[] => {
     const options: (string | number)[] = [];
     
     if (totalPhases <= 0) {
       return ['First', 1, 'Last'];
     }
     
-    // Add 'First' (position 1)
-    options.push('First');
-    
-    // Add integer options (2 to totalPhases-1)
-    for (let i = 2; i < totalPhases; i++) {
-      options.push(i);
+    // Get standard phase positions if not editing standard project
+    let standardPositions = new Set<number>();
+    if (!isEditingStandardProject) {
+      // Find standard phases and get their positions
+      const standardPhases = phases.filter(p => isStandardPhase(p) && !isLinkedPhase(p));
+      standardPhases.forEach(p => {
+        const positionRule = (p as any)?.position_rule;
+        const positionValue = (p as any)?.position_value;
+        if (positionRule === 'nth' && typeof positionValue === 'number') {
+          standardPositions.add(positionValue);
+        }
+      });
     }
     
-    // Add 'Last'
+    // Add 'First' (position 1) only if not occupied by a standard phase (or if editing standard project)
+    if (isEditingStandardProject || !standardPositions.has(1)) {
+      options.push('First');
+    }
+    
+    // Add integer options (2 to totalPhases-1), excluding standard phase positions
+    for (let i = 2; i < totalPhases; i++) {
+      if (isEditingStandardProject || !standardPositions.has(i)) {
+        options.push(i);
+      }
+    }
+    
+    // Add 'Last' (always available)
     if (totalPhases > 1) {
       options.push('Last');
     }
     
     return options;
-  };
+  }, [phases, isEditingStandardProject]);
   
   // Render loading state
   if (loading) {
@@ -2622,10 +2654,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                              parseInt(value, 10);
                               handlePhaseOrderChange(phase.id, newOrder);
                             }}
-                            disabled={isDeletingPhase || isAddingPhase}
+                            disabled={isDeletingPhase || isAddingPhase || isReorderingPhase === phase.id}
                           >
                             <SelectTrigger className="w-16 h-6 text-xs px-1">
-                              <SelectValue />
+                              <div className="flex items-center gap-1 w-full">
+                                {isReorderingPhase === phase.id && (
+                                  <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
+                                )}
+                                <SelectValue />
+                              </div>
                             </SelectTrigger>
                             <SelectContent>
                               {getAvailableOrderNumbers(phase, phaseIndex, phases.length).map((order) => (
@@ -2694,27 +2731,39 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                               size="sm"
                               variant="ghost"
                               onClick={() => handleMovePhaseUp(phase.id)}
-                              disabled={phaseIndex === 0}
+                              disabled={phaseIndex === 0 || isDeletingPhase || isAddingPhase || isReorderingPhase !== null}
                               title="Move up"
                             >
-                              <ChevronUp className="w-4 h-4" />
+                              {isReorderingPhase === phase.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <ChevronUp className="w-4 h-4" />
+                              )}
                             </Button>
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => handleMovePhaseDown(phase.id)}
-                              disabled={phaseIndex === phases.length - 1}
+                              disabled={phaseIndex === phases.length - 1 || isDeletingPhase || isAddingPhase || isReorderingPhase !== null}
                               title="Move down"
                             >
-                              <ChevronDown className="w-4 h-4" />
+                              {isReorderingPhase === phase.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
                             </Button>
                             <Button 
                               size="sm" 
                               variant="ghost"
                               onClick={() => handleDeletePhaseClick(phase.id)}
-                              disabled={isDeletingPhase}
+                              disabled={isDeletingPhase || isAddingPhase || isReorderingPhase !== null}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              {isDeletingPhase && phaseToDelete === phase.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
                             </Button>
                           </>
                         ) : (
@@ -2735,24 +2784,33 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleMovePhaseUp(phase.id)}
-                                  disabled={phaseIndex === 0}
+                                  disabled={phaseIndex === 0 || isDeletingPhase || isAddingPhase || isReorderingPhase !== null}
                                   title="Move up"
                                 >
-                                  <ChevronUp className="w-4 h-4" />
+                                  {isReorderingPhase === phase.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <ChevronUp className="w-4 h-4" />
+                                  )}
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleMovePhaseDown(phase.id)}
-                                  disabled={phaseIndex === phases.length - 1}
+                                  disabled={phaseIndex === phases.length - 1 || isDeletingPhase || isAddingPhase || isReorderingPhase !== null}
                                   title="Move down"
                                 >
-                                  <ChevronDown className="w-4 h-4" />
+                                  {isReorderingPhase === phase.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4" />
+                                  )}
                                 </Button>
                                 <Button 
                                   size="sm" 
                                   variant="ghost"
                                   onClick={() => startEdit('phase', phase.id, phase)}
+                                  disabled={isDeletingPhase || isAddingPhase || isReorderingPhase !== null}
                                 >
                                   <Edit className="w-4 h-4" />
                                 </Button>
@@ -2760,9 +2818,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                   size="sm" 
                                   variant="ghost"
                                   onClick={() => handleDeletePhaseClick(phase.id)}
-                                  disabled={isDeletingPhase}
+                                  disabled={isDeletingPhase || isAddingPhase || isReorderingPhase !== null}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  {isDeletingPhase && phaseToDelete === phase.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
                                 </Button>
                               </>
                             )}
