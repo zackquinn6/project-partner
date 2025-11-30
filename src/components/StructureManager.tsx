@@ -919,41 +919,74 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Calculate position: Get total phases and determine position
-      const { data: allPhases } = await supabase
-        .from('project_phases')
-        .select('id, position_rule, position_value')
-        .eq('project_id', currentProject.id);
-      
-      const totalPhases = allPhases?.length || 0;
-      
-      // Determine position rule and value
-      let positionRule: string;
-      let positionValue: number | null = null;
+      // Need to get all phases including standard phases if not editing standard project
+      let allPhases: any[] = [];
       
       if (isEditingStandardProject) {
-        // For Edit Standard: find last phase and place before it
-        const lastPhase = allPhases?.find(p => p.position_rule === 'last');
-        if (lastPhase) {
-          // Place before last phase
-          const nthPhases = allPhases?.filter(p => p.position_rule === 'nth' && p.position_value) || [];
-          const maxNthValue = nthPhases.length > 0 
-            ? Math.max(...nthPhases.map(p => p.position_value as number))
-            : 0;
-          positionRule = 'nth';
-          positionValue = maxNthValue + 1;
-        } else {
-          positionRule = 'nth';
-          positionValue = totalPhases + 1;
-        }
+        // For Edit Standard: only get phases from current project
+        const { data: projectPhases } = await supabase
+          .from('project_phases')
+          .select('id, position_rule, position_value')
+          .eq('project_id', currentProject.id);
+        allPhases = projectPhases || [];
       } else {
-        // For regular projects: place after all existing phases but before 'last'
-        const nthPhases = allPhases?.filter(p => p.position_rule === 'nth' && p.position_value) || [];
-        const maxNthValue = nthPhases.length > 0 
-          ? Math.max(...nthPhases.map(p => p.position_value as number))
-          : 0;
-        positionRule = 'nth';
-        positionValue = maxNthValue + 1;
+        // For regular projects: get both standard phases and custom phases
+        const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
+        
+        // Get standard phases
+        const { data: standardPhases } = await supabase
+          .from('project_phases')
+          .select('id, position_rule, position_value')
+          .eq('project_id', STANDARD_PROJECT_ID)
+          .eq('is_standard', true);
+        
+        // Get custom phases from current project
+        const { data: customPhases } = await supabase
+          .from('project_phases')
+          .select('id, position_rule, position_value')
+          .eq('project_id', currentProject.id)
+          .eq('is_standard', false);
+        
+        allPhases = [...(standardPhases || []), ...(customPhases || [])];
       }
+      
+      const totalPhases = allPhases.length;
+      
+      // Determine position rule and value
+      // New phase should be placed at position: last - 1 (just before the 'last' phase)
+      // Count total phases, then set position_value to totalPhases - 1
+      let positionRule: string = 'nth';
+      let positionValue: number;
+      
+      // Find the maximum position_value among all 'nth' phases
+      const nthPhases = allPhases.filter(p => p.position_rule === 'nth' && typeof p.position_value === 'number');
+      const maxNthValue = nthPhases.length > 0 
+        ? Math.max(...nthPhases.map(p => p.position_value as number))
+        : 0;
+      
+      // Check if there's a 'last' phase
+      const hasLastPhase = allPhases.some(p => p.position_rule === 'last');
+      
+      // Calculate position: last minus one
+      // If there's a 'last' phase, place new phase just before it (maxNthValue + 1)
+      // Otherwise, use totalPhases - 1, but ensure it's after all existing nth phases
+      if (hasLastPhase) {
+        // If there's a 'last' phase, place new phase just before it
+        // Use maxNthValue + 1 to ensure it's after all existing nth phases but before 'last'
+        positionValue = maxNthValue + 1;
+      } else {
+        // If no 'last' phase, place at totalPhases - 1 (last position minus one)
+        // But ensure it's after all existing nth phases
+        positionValue = Math.max(totalPhases - 1, maxNthValue + 1);
+      }
+      
+      console.log('📍 Adding new phase at position:', {
+        totalPhases,
+        maxNthValue,
+        hasLastPhase,
+        positionValue,
+        positionRule
+      });
       
       // Insert phase directly into database
       const { data: addedPhase, error: insertError } = await supabase
