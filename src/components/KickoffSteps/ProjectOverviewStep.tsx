@@ -182,6 +182,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     const position = getLevelPosition(currentLevel, levels);
     const hasValue = position >= 0;
 
+    // Map position to center of section: 0 -> 16.66%, 1 -> 50%, 2 -> 83.33%
+    const getArrowPosition = (pos: number): number => {
+      if (pos === 0) return 16.66; // Center of first section (0-33.33%)
+      if (pos === 1) return 50;    // Center of middle section (33.33-66.66%)
+      if (pos === 2) return 83.33; // Center of third section (66.66-100%)
+      return 50; // Default to middle
+    };
+
     return (
       <div className="mt-2 relative">
         {/* Arrow indicator - positioned above with "This project" text */}
@@ -189,7 +197,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           <div
             className="absolute -top-6 left-0 flex flex-col items-center justify-center transition-all duration-200 z-10"
             style={{
-              left: `${(position / (levels.length - 1)) * 100}%`,
+              left: `${getArrowPosition(position)}%`,
               transform: 'translateX(-50%)'
             }}
           >
