@@ -131,10 +131,10 @@ BEGIN
     WHERE pp.project_id = p_project_id
     ORDER BY 
       CASE 
-        WHEN pp.position_rule = 'first' THEN 0
+        WHEN pp.position_rule = 'first' THEN 1
         WHEN pp.position_rule = 'nth' THEN COALESCE(pp.position_value, 999)
-        WHEN pp.position_rule = 'last' THEN 999999
-        ELSE 500  -- Custom phases without position rules go in the middle
+        WHEN pp.position_rule = 'last' THEN 2147483647  -- Max integer (Infinity equivalent)
+        ELSE 999  -- Custom phases without position rules
       END ASC,
       pp.created_at ASC  -- Secondary sort for phases with same position
   LOOP
