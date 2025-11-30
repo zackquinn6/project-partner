@@ -60,6 +60,100 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
+-- PART 1.5: Ensure rebuild_phases_json_from_project_phases exists and is correct
+-- ============================================
+-- This function must exist and work correctly for get_project_workflow_with_standards to function
+-- If it doesn't exist or has errors, this will recreate it with the correct column references
+
+CREATE OR REPLACE FUNCTION public.rebuild_phases_json_from_project_phases(p_project_id UUID)
+RETURNS JSONB AS $$
+DECLARE
+  phases_json JSONB := '[]'::jsonb;
+  phase_record RECORD;
+  operations_json JSONB;
+  operation_record RECORD;
+  effective_operation_id UUID;
+  steps_json JSONB;
+BEGIN
+  FOR phase_record IN
+    SELECT 
+      id,
+      project_id,
+      name,
+      description,
+      display_order,
+      is_standard,
+      standard_phase_id
+    FROM public.project_phases
+    WHERE project_id = p_project_id
+    ORDER BY display_order
+  LOOP
+    operations_json := '[]'::jsonb;
+
+    -- Use explicit column list to avoid any column reference issues
+    FOR operation_record IN
+      SELECT DISTINCT
+        op.id,
+        op.project_id,
+        op.phase_id,
+        op.name,
+        op.description,
+        op.flow_type,
+        op.user_prompt,
+        op.alternate_group,
+        op.display_order,
+        op.is_standard_phase,
+        op.source_operation_id,
+        op.is_reference,
+        src.name AS source_name,
+        src.description AS source_description,
+        src.flow_type AS source_flow_type,
+        src.user_prompt AS source_user_prompt,
+        src.alternate_group AS source_alternate_group
+      FROM public.template_operations op
+      LEFT JOIN public.template_operations src ON op.source_operation_id = src.id
+      WHERE op.project_id = p_project_id
+        AND op.phase_id = phase_record.id
+      ORDER BY op.display_order
+    LOOP
+      effective_operation_id := COALESCE(operation_record.source_operation_id, operation_record.id);
+
+      steps_json := public.get_operation_steps_json(
+        effective_operation_id,
+        COALESCE(operation_record.is_reference, false)
+      );
+
+      operations_json := operations_json || jsonb_build_array(
+        jsonb_build_object(
+          'id', operation_record.id,
+          'name', COALESCE(operation_record.name, operation_record.source_name),
+          'description', COALESCE(operation_record.description, operation_record.source_description),
+          'flowType', COALESCE(operation_record.flow_type, operation_record.source_flow_type, 'prime'),
+          'userPrompt', COALESCE(operation_record.user_prompt, operation_record.source_user_prompt),
+          'alternateGroup', COALESCE(operation_record.alternate_group, operation_record.source_alternate_group),
+          'steps', COALESCE(steps_json, '[]'::jsonb),
+          'isStandard', COALESCE(operation_record.is_reference, false) OR phase_record.is_standard,
+          'sourceOperationId', operation_record.source_operation_id
+        )
+      );
+    END LOOP;
+
+    phases_json := phases_json || jsonb_build_array(
+      jsonb_build_object(
+        'id', phase_record.id,
+        'name', phase_record.name,
+        'description', phase_record.description,
+        'operations', COALESCE(operations_json, '[]'::jsonb),
+        'isStandard', phase_record.is_standard
+      )
+    );
+  END LOOP;
+
+  RETURN phases_json;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- ============================================
 -- PART 2: Fix create_project_run_snapshot
 -- ============================================
 -- This function now uses get_project_workflow_with_standards to get complete workflow
