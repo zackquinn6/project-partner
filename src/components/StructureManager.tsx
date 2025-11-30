@@ -736,13 +736,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     if (!skipValidation) {
       const phaseValidationError = validatePhaseOrdering(loadedPhases);
       if (phaseValidationError) {
-        throw new Error(`Validation failed: ${phaseValidationError.message}`);
+        // Use the error message directly to avoid double-wrapping
+        const errorMessage = phaseValidationError.details && phaseValidationError.details.length > 0
+          ? `${phaseValidationError.message}\n${phaseValidationError.details.join('\n')}`
+          : phaseValidationError.message;
+        throw new Error(errorMessage);
       }
       
       // Validate display_order for operations and steps
       const displayOrderValidationError = validateDisplayOrder(loadedPhases);
       if (displayOrderValidationError) {
-        throw new Error(`Display order validation failed: ${displayOrderValidationError.message}`);
+        // Use the error message directly to avoid double-wrapping
+        const errorMessage = displayOrderValidationError.details && displayOrderValidationError.details.length > 0
+          ? `${displayOrderValidationError.message}\n${displayOrderValidationError.details.join('\n')}`
+          : displayOrderValidationError.message;
+        throw new Error(errorMessage);
       }
     }
     
@@ -1006,7 +1014,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases with position data from database
+      console.log('🔄 Reloading phases after adding new phase...');
       const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      console.log('✅ Successfully reloaded phases:', sortedPhases.length);
       
       // Reset loadedProjectIdRef to allow immediate UI update
       loadedProjectIdRef.current = null;
@@ -1017,7 +1027,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       toast.success('Phase added successfully');
     } catch (error: any) {
       console.error('Error adding phase:', error);
-      toast.error(`Failed to add phase: ${error.message || 'Unknown error'}`);
+      // Check if this is a validation error and show details
+      if (error.message && error.message.includes('Validation failed')) {
+        toast.error(`Failed to add phase: ${error.message}`, {
+          description: 'Please check the console for detailed validation errors.',
+          duration: 10000
+        });
+        // Also set validation error state so user can see it in the UI
+        setValidationError({
+          message: error.message,
+          details: error.message.split('\n').filter((line: string) => line.trim())
+        });
+      } else {
+        toast.error(`Failed to add phase: ${error.message || 'Unknown error'}`);
+      }
     } finally {
       setIsAddingPhase(false);
     }
