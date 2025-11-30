@@ -125,10 +125,18 @@ BEGIN
       pp.name,
       pp.description,
       pp.is_standard,
-      pp.created_at
+      pp.position_rule,
+      pp.position_value
     FROM public.project_phases pp
     WHERE pp.project_id = p_project_id
-    ORDER BY pp.created_at ASC
+    ORDER BY 
+      CASE 
+        WHEN pp.position_rule = 'first' THEN 0
+        WHEN pp.position_rule = 'nth' THEN COALESCE(pp.position_value, 999)
+        WHEN pp.position_rule = 'last' THEN 999999
+        ELSE 500  -- Custom phases without position rules go in the middle
+      END ASC,
+      pp.created_at ASC  -- Secondary sort for phases with same position
   LOOP
     operations_json := '[]'::jsonb;
 
