@@ -60,7 +60,46 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
--- PART 1.5: Ensure rebuild_phases_json_from_project_phases exists and is correct
+-- PART 1.5: Ensure get_operation_steps_json exists and is correct
+-- ============================================
+-- This function must exist and work correctly for rebuild_phases_json_from_project_phases to function
+-- It retrieves steps for an operation, using explicit column references to avoid ambiguity
+
+CREATE OR REPLACE FUNCTION public.get_operation_steps_json(
+  p_operation_id UUID,
+  p_is_reference BOOLEAN DEFAULT false
+)
+RETURNS JSONB AS $$
+DECLARE
+  steps_json JSONB;
+BEGIN
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'id', ts.id,
+      'stepTitle', ts.step_title,
+      'stepNumber', ts.step_number,
+      'description', ts.description,
+      'stepType', ts.step_type,
+      'stepTypeId', ts.step_type_id,
+      'flowType', ts.flow_type,
+      'estimatedTimeMinutes', ts.estimated_time_minutes,
+      'contentSections', ts.content_sections,
+      'materials', ts.materials,
+      'tools', ts.tools,
+      'apps', ts.apps,
+      'outputs', ts.outputs
+    ) ORDER BY ts.display_order, ts.step_number
+  ), '[]'::jsonb)
+  INTO steps_json
+  FROM public.template_steps ts
+  WHERE ts.operation_id = p_operation_id;
+  
+  RETURN COALESCE(steps_json, '[]'::jsonb);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- ============================================
+-- PART 1.6: Ensure rebuild_phases_json_from_project_phases exists and is correct
 -- ============================================
 -- This function must exist and work correctly for get_project_workflow_with_standards to function
 -- If it doesn't exist or has errors, this will recreate it with the correct column references
