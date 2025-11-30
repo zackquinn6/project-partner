@@ -410,6 +410,47 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       if (error) throw error;
 
+      // Update project run with additional fields that aren't copied by the RPC function
+      // The RPC function only copies phases, so we need to update description and other metadata
+      if (newProjectRunId) {
+        const updateFields: any = {
+          updated_at: new Date().toISOString()
+        };
+        
+        // Update description (even if empty string - ensures it's set from template)
+        if (projectRunData.description !== undefined) {
+          updateFields.description = projectRunData.description || null;
+        }
+        
+        // Only update other fields if they are provided in projectRunData
+        if (projectRunData.category !== undefined) {
+          updateFields.category = Array.isArray(projectRunData.category) 
+            ? projectRunData.category 
+            : (projectRunData.category ? [projectRunData.category] : null);
+        }
+        if (projectRunData.effortLevel !== undefined) updateFields.effort_level = projectRunData.effortLevel || null;
+        if (projectRunData.skillLevel !== undefined) updateFields.skill_level = projectRunData.skillLevel || null;
+        if (projectRunData.estimatedTime !== undefined) updateFields.estimated_time = projectRunData.estimatedTime || null;
+        if (projectRunData.estimatedTotalTime !== undefined) updateFields.estimated_total_time = projectRunData.estimatedTotalTime || null;
+        if (projectRunData.typicalProjectSize !== undefined) updateFields.typical_project_size = projectRunData.typicalProjectSize || null;
+        if (projectRunData.scalingUnit !== undefined) updateFields.scaling_unit = projectRunData.scalingUnit || null;
+        if (projectRunData.itemType !== undefined) updateFields.item_type = projectRunData.itemType || null;
+        if (projectRunData.projectChallenges !== undefined) updateFields.project_challenges = projectRunData.projectChallenges || null;
+        
+        // Always update (at minimum updated_at, but usually description and other fields too)
+        const { error: updateError } = await supabase
+          .from('project_runs')
+          .update(updateFields)
+          .eq('id', newProjectRunId);
+        
+        if (updateError) {
+          console.error('⚠️ Error updating project run metadata:', updateError);
+          // Don't throw - project run was created successfully, just metadata update failed
+        } else {
+          console.log('✅ Project run metadata updated:', Object.keys(updateFields).filter(k => k !== 'updated_at'));
+        }
+      }
+
       // Refetch to get the complete project run data
       await refetchProjectRuns();
       
