@@ -138,7 +138,6 @@ BEGIN
         op.project_id,
         op.phase_id,
         op.operation_name,
-        op.description,
         op.flow_type,
         op.user_prompt,
         op.alternate_group,
@@ -147,7 +146,6 @@ BEGIN
         op.source_operation_id,
         op.is_reference,
         src.operation_name AS source_operation_name,
-        src.description AS source_description,
         src.flow_type AS source_flow_type,
         src.user_prompt AS source_user_prompt,
         src.alternate_group AS source_alternate_group
@@ -168,7 +166,6 @@ BEGIN
         jsonb_build_object(
           'id', operation_record.id,
           'name', COALESCE(operation_record.operation_name, operation_record.source_operation_name),
-          'description', COALESCE(operation_record.description, operation_record.source_description),
           'flowType', COALESCE(operation_record.flow_type, operation_record.source_flow_type, 'prime'),
           'userPrompt', COALESCE(operation_record.user_prompt, operation_record.source_user_prompt),
           'alternateGroup', COALESCE(operation_record.alternate_group, operation_record.source_alternate_group),
