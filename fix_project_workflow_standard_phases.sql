@@ -137,6 +137,7 @@ BEGIN
         op.id,
         op.project_id,
         op.phase_id,
+        op.operation_name,
         op.description,
         op.flow_type,
         op.user_prompt,
@@ -145,6 +146,7 @@ BEGIN
         op.is_standard_phase,
         op.source_operation_id,
         op.is_reference,
+        src.operation_name AS source_operation_name,
         src.description AS source_description,
         src.flow_type AS source_flow_type,
         src.user_prompt AS source_user_prompt,
@@ -165,7 +167,7 @@ BEGIN
       operations_json := operations_json || jsonb_build_array(
         jsonb_build_object(
           'id', operation_record.id,
-          'name', COALESCE(operation_record.description, operation_record.source_description, 'Operation'),
+          'name', COALESCE(operation_record.operation_name, operation_record.source_operation_name),
           'description', COALESCE(operation_record.description, operation_record.source_description),
           'flowType', COALESCE(operation_record.flow_type, operation_record.source_flow_type, 'prime'),
           'userPrompt', COALESCE(operation_record.user_prompt, operation_record.source_user_prompt),
