@@ -992,7 +992,7 @@ export function UnifiedProjectManagement({
             }
           }
           
-          // Delete project_phases
+          // Delete project_phases for this revision (NOT for latest revision - those are preserved)
           const { error: phasesError } = await supabase
             .from('project_phases')
             .delete()
@@ -1002,6 +1002,8 @@ export function UnifiedProjectManagement({
             console.error('Error deleting project_phases:', phasesError);
             throw phasesError;
           }
+          
+          console.log('✅ Deleted phases for revision:', revisionId, '(latest revision phases are preserved)');
           
           // Delete project_runs that reference this template
           const { error: runsError } = await supabase
@@ -1111,11 +1113,13 @@ export function UnifiedProjectManagement({
             .eq('project_id', parentIdToExclude);
         }
         
-        // Delete project_phases
+        // Delete project_phases for parent (latest revision phases are preserved)
         await supabase
           .from('project_phases')
           .delete()
           .eq('project_id', parentIdToExclude);
+        
+        console.log('✅ Deleted phases for parent revision:', parentIdToExclude, '(latest revision phases are preserved)');
         
         // Delete project_runs
         await supabase
@@ -1139,10 +1143,9 @@ export function UnifiedProjectManagement({
       
       // Now do the full update (parent is gone, so no name conflict)
       // Update the latest revision to be revision 1, draft, with no parent
-      // BUT preserve all project information (description, etc.)
-      // NOTE: Do NOT update the name field - it's already correct and updating it triggers
-      // duplicate name validation which is not needed when resetting revisions
-      console.log('🔄 Step 3: Updating latest revision to revision 1, preserving project info:', latestRevision.id);
+      // BUT preserve all project information including name (no "(draft)" or revision_number suffix)
+      // IMPORTANT: Do NOT create new phases - keep existing phases/structure
+      console.log('🔄 Step 3: Updating latest revision to revision 1, preserving project info and phases:', latestRevision.id);
       const updateData: any = {
         revision_number: 1,
         parent_project_id: null,
@@ -1154,7 +1157,9 @@ export function UnifiedProjectManagement({
         beta_released_at: null,
         archived_at: null,
         created_from_revision: null,
-        // PRESERVE all project information fields (except name - it's already correct)
+        // PRESERVE project name - do NOT add "(draft)" or revision_number suffix
+        name: projectInfoToPreserve.name || latestRevision.name,
+        // PRESERVE all other project information fields
         description: projectInfoToPreserve.description || latestRevision.description,
         category: projectInfoToPreserve.category || latestRevision.category,
         effort_level: projectInfoToPreserve.effort_level || latestRevision.effort_level,
@@ -1171,6 +1176,8 @@ export function UnifiedProjectManagement({
         // Preserve images
         images: projectInfoToPreserve.images || latestRevision.images,
         cover_image: projectInfoToPreserve.cover_image || latestRevision.cover_image
+        // NOTE: Do NOT update phases - existing phases/structure are preserved
+        // Do NOT call rebuild_phases_json or create new phases
       };
       
       const { error: updateError } = await supabase
@@ -1184,6 +1191,11 @@ export function UnifiedProjectManagement({
       }
 
       console.log('✅ Revision reset complete');
+      console.log('✅ Phases preserved - no new phases created');
+      console.log('✅ Project name preserved:', projectInfoToPreserve.name || latestRevision.name);
+      
+      // IMPORTANT: Do NOT call rebuild_phases_json or any function that creates phases
+      // Existing phases/structure are preserved and should remain unchanged
       
       // Refresh projects list first
       await fetchProjects();
@@ -1194,17 +1206,17 @@ export function UnifiedProjectManagement({
         .select('*')
         .eq('id', latestRevision.id)
         .single();
-      
+
       if (selectError) {
         console.error('❌ Error fetching updated project:', selectError);
         throw selectError;
       }
-      
+
       if (!updatedProject) {
         console.error('❌ Updated project not found');
         throw new Error('Updated project not found');
       }
-      
+
       // Update selected project with the new revision 1 data
       const mappedProject = {
         ...updatedProject,
@@ -1213,9 +1225,9 @@ export function UnifiedProjectManagement({
         images: updatedProject.images || [],
         cover_image: updatedProject.cover_image || null
       } as Project;
-      
+
       setSelectedProject(mappedProject);
-      
+
       // Refresh project revisions list (should now only show revision 1)
       await fetchProjectRevisions();
       
