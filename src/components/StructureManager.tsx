@@ -200,14 +200,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
     }
     
-    // Check 2b: Exactly one 'first' and one 'last' phase (only required for Standard Project Foundation)
-    // Custom projects and revisions may not have 'first'/'last' phases - they can use 'nth' only
+    // Check 2b: Exactly one phase at position 1 (nth with position_value = 1) and one 'last' phase (only required for Standard Project Foundation)
+    // Custom projects and revisions may not have position 1 or 'last' phases - they can use 'nth' only
     if (isEditingStandardProject) {
-      const firstPhases = phasesToValidate.filter(p => (p as any)?.position_rule === 'first');
+      const position1Phases = phasesToValidate.filter(p => {
+        const positionRule = (p as any)?.position_rule;
+        const positionValue = (p as any)?.position_value;
+        return positionRule === 'nth' && positionValue === 1;
+      });
       const lastPhases = phasesToValidate.filter(p => (p as any)?.position_rule === 'last');
       
-      if (firstPhases.length !== 1) {
-        errors.push(`Expected exactly 1 'first' phase, found ${firstPhases.length}`);
+      if (position1Phases.length !== 1) {
+        errors.push(`Expected exactly 1 phase at position 1 (nth with position_value = 1), found ${position1Phases.length}`);
       }
       
       if (lastPhases.length !== 1) {
@@ -221,9 +225,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       const standardPhases = phasesToValidate.filter(p => isStandardPhase(p) && !isLinkedPhase(p));
       if (standardPhases.length > 0) {
         // Find the last numbered standard phase (not 'last')
+        // 'first' is now 'nth' with position_value = 1
         const numberedStandardPhases = standardPhases.filter(p => {
           const positionRule = (p as any).position_rule;
-          return positionRule === 'nth' || positionRule === 'first';
+          return positionRule === 'nth';
         });
         
         if (numberedStandardPhases.length > 0) {
@@ -445,10 +450,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         });
         
         // Derive phaseOrderNumber from position_rule
+        // 'first' is now 'nth' with position_value = 1
         let phaseOrderNumber: number | string;
-        if (phaseData.position_rule === 'first') {
-          phaseOrderNumber = 1;
-        } else if (phaseData.position_rule === 'last') {
+        if (phaseData.position_rule === 'last') {
           phaseOrderNumber = 'last';
         } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
           phaseOrderNumber = phaseData.position_value;
@@ -1123,20 +1127,41 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // For regular projects: auto-renumber custom phases (including incorporated) only, never change standard phases
       if (!isEditingStandardProject) {
+        // Find the last standard phase position to determine where custom phases should start
+        const standardPhases = reloadedPhases.filter(p => isStandardPhase(p) && !isLinkedPhase(p));
+        const standardNthPhases = standardPhases.filter(p => {
+          const positionRule = (p as any)?.position_rule;
+          return positionRule === 'nth' || positionRule === 'first';
+        });
+        
+        // Find max position among standard phases (treat 'first' as position 1)
+        const maxStandardPosition = standardNthPhases.length > 0
+          ? Math.max(...standardNthPhases.map(p => {
+              const positionRule = (p as any)?.position_rule;
+              const positionValue = (p as any)?.position_value;
+              if (positionRule === 'first') return 1;
+              return typeof positionValue === 'number' ? positionValue : 0;
+            }))
+          : 0;
+        
         // Get custom phases that need renumbering (include incorporated phases - they act like regular phases)
         const customPhases = reloadedPhases.filter(p => 
           !isStandardPhase(p) && p.id // Include incorporated phases (isLinked) in renumbering
         );
         
-        // Renumber custom phases sequentially (preserve standard phase positions)
-        let customPosition = 1;
-        for (const customPhase of customPhases.sort((a, b) => {
+        // Renumber custom phases sequentially starting after the last standard phase
+        // Sort by current position to maintain order
+        const sortedCustomPhases = customPhases.sort((a, b) => {
           const aPos = typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 
                       a.phaseOrderNumber === 'last' ? Infinity : 1000;
           const bPos = typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 
                       b.phaseOrderNumber === 'last' ? Infinity : 1000;
           return aPos - bPos;
-        })) {
+        });
+        
+        // Renumber starting from maxStandardPosition + 1
+        let customPosition = maxStandardPosition + 1;
+        for (const customPhase of sortedCustomPhases) {
           if (customPhase.id) {
             await supabase
               .from('project_phases')
@@ -1151,21 +1176,15 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         }
       } else {
         // For Edit Standard: renumber all phases sequentially (including incorporated if any)
+        // First phase uses 'nth' at position 1 (not 'first')
+        // Last phase uses 'last'
+        // All others use 'nth' with sequential position values
         for (let i = 0; i < reloadedPhases.length; i++) {
           const phase = reloadedPhases[i];
           if (!phase.id) continue; // Include incorporated phases in renumbering
           
-          if (i === 0) {
-            await supabase
-              .from('project_phases')
-              .update({
-                position_rule: 'first',
-                position_value: null,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', phase.id)
-              .eq('project_id', currentProject.id);
-          } else if (i === reloadedPhases.length - 1) {
+          if (i === reloadedPhases.length - 1) {
+            // Last phase uses 'last'
             await supabase
               .from('project_phases')
               .update({
@@ -1176,6 +1195,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               .eq('id', phase.id)
               .eq('project_id', currentProject.id);
           } else {
+            // All other phases (including first) use 'nth' with sequential position values starting at 1
             await supabase
               .from('project_phases')
               .update({
@@ -2073,11 +2093,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     let positionRule: string;
     let positionValue: number | null = null;
     
-    if (orderNumber === 1) {
-      positionRule = 'first';
-    } else if (orderNumber === 'last') {
+    if (orderNumber === 'last') {
       positionRule = 'last';
+      positionValue = null;
     } else if (typeof orderNumber === 'number') {
+      // Position 1 now uses 'nth' with position_value = 1 (not 'first')
       positionRule = 'nth';
       positionValue = orderNumber;
     } else {
@@ -2260,11 +2280,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         let positionRule: string;
         let positionValue: number | null = null;
         
-        if (i === 0) {
-          positionRule = 'first';
-        } else if (i === phasesArray.length - 1) {
+        if (i === phasesArray.length - 1) {
+          // Last phase uses 'last'
           positionRule = 'last';
+          positionValue = null;
         } else {
+          // All other phases (including first at i === 0) use 'nth' with sequential position values
           positionRule = 'nth';
           positionValue = i + 1;
         }
@@ -3058,13 +3079,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             
             // Determine position rule and value
             // Use 'nth' rule with position_value = maxNthValue + 1 (just before 'last')
-            // If no phases exist, this becomes the 'first' phase
-            let positionRule: string;
-            let positionValue: number | null = null;
+            // If no phases exist, this becomes position 1 (nth with position_value = 1)
+            let positionRule: string = 'nth';
+            let positionValue: number;
             
             if (totalPhases === 0) {
-              positionRule = 'first';
-              positionValue = null;
+              // First phase uses 'nth' at position 1 (not 'first')
+              positionValue = 1;
             } else {
               // Find max nth position value
               const nthPhases = allPhases?.filter(p => p.position_rule === 'nth' && p.position_value) || [];
@@ -3072,7 +3093,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 ? Math.max(...nthPhases.map(p => p.position_value as number))
                 : 0;
               
-              positionRule = 'nth';
               positionValue = maxNthValue + 1; // Position just before 'last'
             }
             

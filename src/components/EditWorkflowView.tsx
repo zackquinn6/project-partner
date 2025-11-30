@@ -158,10 +158,9 @@ export default function EditWorkflowView({
         });
         
         // Derive phaseOrderNumber from position_rule
+        // 'first' is now 'nth' with position_value = 1
         let phaseOrderNumber: number | string;
-        if (phaseData.position_rule === 'first') {
-          phaseOrderNumber = 1;
-        } else if (phaseData.position_rule === 'last') {
+        if (phaseData.position_rule === 'last') {
           phaseOrderNumber = 'last';
         } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
           phaseOrderNumber = phaseData.position_value;
@@ -340,10 +339,9 @@ export default function EditWorkflowView({
         }
         
         // Derive phaseOrderNumber from position_rule
+        // 'first' is now 'nth' with position_value = 1
         let phaseOrderNumber: number | string;
-        if (phaseData.position_rule === 'first') {
-          phaseOrderNumber = 1;
-        } else if (phaseData.position_rule === 'last') {
+        if (phaseData.position_rule === 'last') {
           phaseOrderNumber = 'last';
         } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
           phaseOrderNumber = phaseData.position_value;
@@ -430,10 +428,9 @@ export default function EditWorkflowView({
         });
         
         // Derive phaseOrderNumber from position_rule
+        // 'first' is now 'nth' with position_value = 1
         let phaseOrderNumber: number | string;
-        if (phaseData.position_rule === 'first') {
-          phaseOrderNumber = 1;
-        } else if (phaseData.position_rule === 'last') {
+        if (phaseData.position_rule === 'last') {
           phaseOrderNumber = 'last';
         } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
           phaseOrderNumber = phaseData.position_value;

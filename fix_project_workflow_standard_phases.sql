@@ -131,7 +131,6 @@ BEGIN
     WHERE pp.project_id = p_project_id
     ORDER BY 
       CASE 
-        WHEN pp.position_rule = 'first' THEN 1
         WHEN pp.position_rule = 'nth' THEN COALESCE(pp.position_value, 999)
         WHEN pp.position_rule = 'last' THEN 2147483647  -- Max integer (Infinity equivalent)
         ELSE 999  -- Custom phases without position rules
@@ -198,7 +197,6 @@ BEGIN
         'isStandard', phase_record.is_standard,
         'phaseOrderNumber', 
           CASE 
-            WHEN phase_record.position_rule = 'first' THEN to_jsonb(1)
             WHEN phase_record.position_rule = 'last' THEN '"last"'::jsonb
             WHEN phase_record.position_rule = 'nth' AND phase_record.position_value IS NOT NULL THEN to_jsonb(phase_record.position_value)
             ELSE to_jsonb(999)
