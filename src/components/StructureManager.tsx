@@ -219,13 +219,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
     }
     
-    // Check 3: Custom phases (including incorporated) with 'nth' rule must be after last numbered standard phase
-    // Removed strict upper bound check - database order is trusted
+    // Check 3: Custom phases (including incorporated) with 'nth' rule cannot occupy standard phase positions
+    // Custom phases must be after the last numbered standard phase
     if (!isEditingStandardProject) {
       const standardPhases = phasesToValidate.filter(p => isStandardPhase(p) && !isLinkedPhase(p));
       if (standardPhases.length > 0) {
-        // Find the last numbered standard phase (not 'last')
-        // 'first' is now 'nth' with position_value = 1
+        // Find all standard phase positions
+        const standardPositions = new Set<number>();
+        standardPhases.forEach(p => {
+          const positionRule = (p as any).position_rule;
+          const positionValue = (p as any).position_value;
+          if (positionRule === 'nth' && typeof positionValue === 'number') {
+            standardPositions.add(positionValue);
+          }
+        });
+        
+        // Find the last numbered standard phase position
         const numberedStandardPhases = standardPhases.filter(p => {
           const positionRule = (p as any).position_rule;
           return positionRule === 'nth';
@@ -242,11 +251,20 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             return positionRule === 'nth'; // Only check 'nth' phases, not 'last'
           });
           
-          // Only check that custom phases are after the last numbered standard phase
-          // Database order is trusted for the rest
+          // Check for conflicts: custom phases cannot occupy standard phase positions
+          const conflictingCustomPhases = customPhases.filter(p => {
+            const positionValue = (p as any).position_value;
+            return typeof positionValue === 'number' && standardPositions.has(positionValue);
+          });
+          
+          if (conflictingCustomPhases.length > 0) {
+            errors.push(`Custom phases cannot occupy standard phase positions. Invalid: ${conflictingCustomPhases.map(p => `${p.name} (position ${(p as any).position_value})`).join(', ')}`);
+          }
+          
+          // Also check that custom phases are after the last numbered standard phase
           const invalidCustomPhases = customPhases.filter(p => {
             const positionValue = (p as any).position_value;
-            return typeof positionValue === 'number' && positionValue <= lastNumberedPosition;
+            return typeof positionValue === 'number' && positionValue <= lastNumberedPosition && !standardPositions.has(positionValue);
           });
           
           if (invalidCustomPhases.length > 0) {
@@ -925,6 +943,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Calculate position: Get total phases and determine position
       // Need to get all phases including standard phases if not editing standard project
       let allPhases: any[] = [];
+      let standardPhases: any[] = [];
       
       if (isEditingStandardProject) {
         // For Edit Standard: only get phases from current project
@@ -938,11 +957,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
         
         // Get standard phases
-        const { data: standardPhases } = await supabase
+        const { data: fetchedStandardPhases } = await supabase
           .from('project_phases')
           .select('id, position_rule, position_value')
           .eq('project_id', STANDARD_PROJECT_ID)
           .eq('is_standard', true);
+        
+        standardPhases = fetchedStandardPhases || [];
         
         // Get custom phases from current project
         const { data: customPhases } = await supabase
@@ -951,7 +972,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           .eq('project_id', currentProject.id)
           .eq('is_standard', false);
         
-        allPhases = [...(standardPhases || []), ...(customPhases || [])];
+        allPhases = [...standardPhases, ...(customPhases || [])];
       }
       
       const totalPhases = allPhases.length;
@@ -982,6 +1003,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         // If no 'last' phase, place at totalPhases - 1 (last position minus one)
         // But ensure it's after all existing nth phases
         positionValue = Math.max(totalPhases - 1, maxNthValue + 1);
+      }
+      
+      // VALIDATION: For regular projects, ensure new custom phase doesn't occupy a standard phase position
+      if (!isEditingStandardProject && standardPhases) {
+        // Get all standard phase positions from the standardPhases we fetched
+        const standardPositions = new Set<number>();
+        (standardPhases || []).forEach((p: any) => {
+          const positionRule = p.position_rule;
+          const positionValue = p.position_value;
+          if (positionRule === 'nth' && typeof positionValue === 'number') {
+            standardPositions.add(positionValue);
+          }
+        });
+        
+        // Check if calculated position conflicts with standard phase position
+        if (standardPositions.has(positionValue)) {
+          // Find the next available position after all standard phases
+          const maxStandardPosition = standardPositions.size > 0 
+            ? Math.max(...Array.from(standardPositions))
+            : 0;
+          positionValue = maxStandardPosition + 1;
+          
+          // If there's a 'last' phase, ensure we're still before it
+          if (hasLastPhase && positionValue > maxNthValue) {
+            // This shouldn't happen, but if it does, place after maxNthValue
+            positionValue = maxNthValue + 1;
+          }
+          
+          console.log('⚠️ Position conflict detected, adjusted to:', positionValue);
+        }
       }
       
       console.log('📍 Adding new phase at position:', {
@@ -1131,15 +1182,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         const standardPhases = reloadedPhases.filter(p => isStandardPhase(p) && !isLinkedPhase(p));
         const standardNthPhases = standardPhases.filter(p => {
           const positionRule = (p as any)?.position_rule;
-          return positionRule === 'nth' || positionRule === 'first';
+          return positionRule === 'nth'; // 'first' is now 'nth' with position_value = 1
         });
         
-        // Find max position among standard phases (treat 'first' as position 1)
+        // Find max position among standard phases
         const maxStandardPosition = standardNthPhases.length > 0
           ? Math.max(...standardNthPhases.map(p => {
-              const positionRule = (p as any)?.position_rule;
               const positionValue = (p as any)?.position_value;
-              if (positionRule === 'first') return 1;
               return typeof positionValue === 'number' ? positionValue : 0;
             }))
           : 0;
@@ -1160,9 +1209,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         });
         
         // Renumber starting from maxStandardPosition + 1
+        // VALIDATION: Ensure we don't conflict with standard phase positions
+        const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
+        const { data: standardPhasesForValidation } = await supabase
+          .from('project_phases')
+          .select('id, position_rule, position_value')
+          .eq('project_id', STANDARD_PROJECT_ID)
+          .eq('is_standard', true);
+        
+        const standardPositions = new Set<number>();
+        (standardPhasesForValidation || []).forEach((p: any) => {
+          const positionRule = p.position_rule;
+          const positionValue = p.position_value;
+          if (positionRule === 'nth' && typeof positionValue === 'number') {
+            standardPositions.add(positionValue);
+          }
+        });
+        
         let customPosition = maxStandardPosition + 1;
         for (const customPhase of sortedCustomPhases) {
           if (customPhase.id) {
+            // Ensure position doesn't conflict with standard phases
+            while (standardPositions.has(customPosition)) {
+              customPosition++;
+            }
+            
             await supabase
               .from('project_phases')
               .update({
@@ -2260,6 +2331,37 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       const [movedPhase] = phasesArray.splice(currentIndex, 1);
       const targetIndex = Math.min(Math.max(0, targetPosition - 1), phasesArray.length);
       phasesArray.splice(targetIndex, 0, movedPhase);
+      
+      // VALIDATION: For regular projects, ensure custom phases don't occupy standard phase positions
+      if (!isEditingStandardProject) {
+        // Get standard phase positions
+        const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
+        const { data: standardPhasesForValidation } = await supabase
+          .from('project_phases')
+          .select('id, position_rule, position_value')
+          .eq('project_id', STANDARD_PROJECT_ID)
+          .eq('is_standard', true);
+        
+        const standardPositions = new Set<number>();
+        (standardPhasesForValidation || []).forEach((p: any) => {
+          const positionRule = p.position_rule;
+          const positionValue = p.position_value;
+          if (positionRule === 'nth' && typeof positionValue === 'number') {
+            standardPositions.add(positionValue);
+          }
+        });
+        
+        // Check if moving a custom phase would place it in a standard phase position
+        const isMovedPhaseCustom = !isStandardPhase(movedPhase) || isLinkedPhase(movedPhase);
+        if (isMovedPhaseCustom) {
+          // Check if target position conflicts with standard phase position
+          const targetNumericPosition = targetPosition === phases.length ? Infinity : targetPosition;
+          if (standardPositions.has(targetNumericPosition)) {
+            toast.error(`Cannot move custom phase to position ${targetNumericPosition} - this position is occupied by a standard phase. Standard phase positions can only be edited in Edit Standard mode.`);
+            return;
+          }
+        }
+      }
       
       // Update order numbers sequentially (1, 2, 3...)
       phasesArray.forEach((p, index) => {
