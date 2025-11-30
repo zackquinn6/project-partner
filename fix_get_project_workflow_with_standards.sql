@@ -14,9 +14,9 @@ DECLARE
   is_standard_template BOOLEAN;
 BEGIN
   -- Check if this is the Standard Project Foundation itself
-  SELECT COALESCE(is_standard_template, false) INTO is_standard_template
-  FROM public.projects
-  WHERE id = p_project_id;
+  SELECT COALESCE(p.is_standard_template, false) INTO is_standard_template
+  FROM public.projects p
+  WHERE p.id = p_project_id;
   
   -- If this is the Standard Project Foundation, just return its phases directly
   IF is_standard_template = true OR p_project_id = standard_project_id THEN
