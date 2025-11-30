@@ -201,11 +201,131 @@ ${request.contentSelection?.processVariables !== false ? `5. PROCESS VARIABLES: 
    - DO NOT search for, create, or modify any process variables
    - Leave process variables field empty or unchanged`}
 
-${request.contentSelection?.timeEstimation !== false ? `6. TIME ESTIMATES: Review and improve high, medium, low time ranges in hours
-   - Low: Fastest possible time for experienced person
-   - Medium: Average time for intermediate skill level
-   - High: Time for beginner or complex scenarios
-   - Review existing time estimates and refine them based on project context and step complexity` : `6. TIME ESTIMATES: DO NOT MODIFY
+${request.contentSelection?.timeEstimation !== false ? `6. TIME ESTIMATES: CRITICAL - Research and generate accurate high, medium, low time ranges in hours
+   
+   ═══════════════════════════════════════════════════════════════
+   TIME ESTIMATION REQUIREMENTS - READ CAREFULLY:
+   ═══════════════════════════════════════════════════════════════
+   
+   STEP 1: REVIEW PROJECT STRUCTURE AS-IS
+   - Carefully examine the project name, description, and category
+   - Review ALL phases, operations, and steps in the existing structure
+   - Understand the complete workflow sequence and dependencies
+   - Identify the project type, scale, and complexity level
+   - Note any special requirements, tools, or materials mentioned
+   
+   STEP 2: UNDERSTAND CONTEXT AND STEPS DEEPLY
+   For EACH step, analyze:
+   - Step title and description - what exactly is being done?
+   - Phase context - what stage of the project is this?
+   - Operation context - what broader task does this step support?
+   - Step complexity - simple task, moderate complexity, or complex?
+   - Required tools - do tools affect time (power tools vs manual)?
+   - Required materials - do materials affect time (prep work, mixing, etc.)?
+   - Skill level required - beginner-friendly or requires expertise?
+   - Physical effort - light, moderate, or heavy work?
+   - Environmental factors - indoor/outdoor, weather-dependent, etc.?
+   - Dependencies - does this step depend on previous steps completing?
+   - Quality requirements - basic completion or high-quality finish?
+   
+   STEP 3: RESEARCH HIGH-MED-LOW TIMELINES
+   ⚠️ CRITICAL: Use web scraping extensively to find REAL-WORLD time estimates
+   
+   For EACH step, you MUST:
+   1. Use web scraping to search for:
+      - Industry standards and professional time estimates for this specific task
+      - DIY guides, tutorials, and how-to articles with time estimates
+      - Contractor websites and service estimates
+      - Home improvement forums and community discussions
+      - Product installation guides and manufacturer recommendations
+      - YouTube tutorials and video descriptions with time estimates
+      - Home improvement blogs and expert articles
+   
+   2. Cross-reference multiple sources to validate estimates:
+      - Compare DIY estimates vs professional estimates
+      - Look for patterns across different sources
+      - Identify common time ranges for similar tasks
+      - Note any outliers and understand why they differ
+   
+   3. Consider variations based on:
+      * Project size/scale (small room vs large area, single item vs multiple)
+      * Material types (different materials have different work times - e.g., tile vs vinyl)
+      * Tool availability (power tools vs manual tools - power tools save significant time)
+      * Experience level (beginner vs experienced DIYer - beginners take 2-3x longer)
+      * Working conditions (ideal vs challenging - weather, access, obstacles)
+      * Complexity factors (simple layout vs complex cuts, straight lines vs curves)
+      * Quality requirements (basic completion vs high-quality finish)
+      * Setup/cleanup time (often 20-30% of total time, don't forget this!)
+   
+   4. Apply research findings:
+      - Use the LOWEST realistic estimate from research for "low"
+      - Use the AVERAGE/MEDIAN estimate from research for "medium"
+      - Use the HIGHEST realistic estimate from research for "high"
+      - Ensure low < medium < high (always)
+      - Be realistic - don't underestimate complexity
+   
+   TIME ESTIMATE GUIDELINES:
+   
+   LOW (Best Case - 10th percentile):
+   - Fastest possible time for an experienced DIYer
+   - Ideal conditions, all tools/materials ready
+   - No interruptions, optimal workflow
+   - Example: "Measure Room" - Low: 0.25h (15 min) for experienced person with laser measure
+   
+   MEDIUM (Typical - 50th percentile):
+   - Average time for intermediate skill level
+   - Normal working conditions
+   - Standard tools and materials
+   - Includes reasonable breaks and minor interruptions
+   - Example: "Measure Room" - Medium: 0.5h (30 min) for typical DIYer with tape measure
+   
+   HIGH (Worst Case - 90th percentile):
+   - Time for beginner or complex scenarios
+   - Challenging conditions, learning curve
+   - Suboptimal tools or materials
+   - Includes troubleshooting, rework, and unexpected delays
+   - Example: "Measure Room" - High: 1.0h (60 min) for beginner, complex room layout, multiple re-measurements
+   
+   CRITICAL RULES:
+   - ALL three values (low, medium, high) MUST be provided for EVERY step
+   - Values MUST be realistic and based on research, not guesses
+   - Low < Medium < High (always)
+   - Consider step type: scaled steps (per unit) vs fixed-time steps
+   - For scaled steps: provide time PER UNIT (e.g., hours per square foot)
+   - For fixed steps: provide total time regardless of project size
+   - Review existing time estimates if updating - improve them with better research
+   - Account for setup/cleanup time in estimates
+   - Consider learning curve for complex steps
+   
+   EXAMPLES OF GOOD TIME ESTIMATES:
+   
+   Simple Step: "Measure Room Dimensions"
+   - Low: 0.25h (experienced, laser measure, simple rectangular room)
+   - Medium: 0.5h (typical DIYer, tape measure, standard room)
+   - High: 1.0h (beginner, complex room with obstacles, multiple re-measurements)
+   
+   Moderate Step: "Apply Primer to Walls"
+   - Low: 1.5h (experienced, sprayer, 200 sq ft, optimal conditions)
+   - Medium: 2.5h (typical DIYer, roller, 200 sq ft, normal conditions)
+   - High: 4.0h (beginner, brush, 200 sq ft, learning curve, touch-ups)
+   
+   Complex Step: "Install Tile Flooring"
+   - Low: 8.0h (experienced professional, 100 sq ft, optimal layout)
+   - Medium: 12.0h (experienced DIYer, 100 sq ft, standard layout)
+   - High: 20.0h (beginner, 100 sq ft, complex cuts, learning curve, rework)
+   
+   Scaled Step: "Paint Walls" (per square foot)
+   - Low: 0.01h/sqft (0.6 min/sqft) - experienced, sprayer, optimal
+   - Medium: 0.015h/sqft (0.9 min/sqft) - typical DIYer, roller, normal
+   - High: 0.025h/sqft (1.5 min/sqft) - beginner, brush, learning curve
+   
+   ═══════════════════════════════════════════════════════════════
+   
+   Review existing time estimates and refine them based on:
+   - Deep understanding of project context
+   - Step-by-step analysis of each task
+   - Research from web scraping and industry standards
+   - Realistic assessment of skill levels and conditions` : `6. TIME ESTIMATES: DO NOT MODIFY
    - Time estimation is NOT selected (checkbox unchecked)
    - DO NOT create or modify any time estimates
    - Leave time estimates field empty or unchanged`}

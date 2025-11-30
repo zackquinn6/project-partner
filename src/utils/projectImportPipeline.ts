@@ -342,6 +342,30 @@ async function updateStepContent(
       }
     }
   }
+
+  // Update time estimates if selected
+  if (contentSelection?.timeEstimation !== false && generatedStep.timeEstimates) {
+    const timeEstimates = generatedStep.timeEstimates;
+    
+    // Validate time estimates
+    const low = typeof timeEstimates.low === 'number' && timeEstimates.low >= 0 ? timeEstimates.low : null;
+    const medium = typeof timeEstimates.medium === 'number' && timeEstimates.medium >= 0 ? timeEstimates.medium : null;
+    const high = typeof timeEstimates.high === 'number' && timeEstimates.high >= 0 ? timeEstimates.high : null;
+
+    // Update step with time estimates
+    const { error: updateError } = await supabase
+      .from('template_steps')
+      .update({
+        time_estimate_low: low,
+        time_estimate_medium: medium,
+        time_estimate_high: high,
+      })
+      .eq('id', stepId);
+
+    if (updateError) {
+      result.warnings.push(`Failed to update time estimates for step: ${updateError.message}`);
+    }
+  }
 }
 
 /**
@@ -946,6 +970,18 @@ export async function importGeneratedProject(
             result.warnings.push(`⚠️ Materials not found in library (${unmatchedMaterials.length}): ${unmatchedMaterials.join(', ')}. Please add these to the materials library to ensure proper nomenclature.`);
           }
 
+          // Prepare time estimates - validate and ensure they're numbers
+          const timeEstimates = step.timeEstimates || { low: 0.5, medium: 1.0, high: 2.0 };
+          const timeEstimateLow = (contentSelection?.timeEstimation !== false && typeof timeEstimates.low === 'number' && timeEstimates.low >= 0) 
+            ? timeEstimates.low 
+            : null;
+          const timeEstimateMedium = (contentSelection?.timeEstimation !== false && typeof timeEstimates.medium === 'number' && timeEstimates.medium >= 0) 
+            ? timeEstimates.medium 
+            : null;
+          const timeEstimateHigh = (contentSelection?.timeEstimation !== false && typeof timeEstimates.high === 'number' && timeEstimates.high >= 0) 
+            ? timeEstimates.high 
+            : null;
+
           const { data: createdStep, error: stepError } = await supabase
             .from('template_steps')
             .insert({
@@ -978,6 +1014,9 @@ export async function importGeneratedProject(
               })) : []),
               apps: [],
               display_order: stepIndex,
+              time_estimate_low: timeEstimateLow,
+              time_estimate_medium: timeEstimateMedium,
+              time_estimate_high: timeEstimateHigh,
             })
             .select('id')
             .single();
