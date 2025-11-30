@@ -73,8 +73,10 @@ RETURNS JSONB AS $$
 DECLARE
   steps_json JSONB;
 BEGIN
-  SELECT COALESCE(jsonb_agg(
-    jsonb_build_object(
+  SELECT COALESCE(jsonb_agg(step_obj ORDER BY step_obj->>'displayOrder', (step_obj->>'stepNumber')::int), '[]'::jsonb)
+  INTO steps_json
+  FROM (
+    SELECT jsonb_build_object(
       'id', ts.id,
       'stepTitle', ts.step_title,
       'stepNumber', ts.step_number,
@@ -87,12 +89,13 @@ BEGIN
       'materials', ts.materials,
       'tools', ts.tools,
       'apps', ts.apps,
-      'outputs', ts.outputs
-    ) ORDER BY ts.display_order, ts.step_number
-  ), '[]'::jsonb)
-  INTO steps_json
-  FROM public.template_steps ts
-  WHERE ts.operation_id = p_operation_id;
+      'outputs', ts.outputs,
+      'displayOrder', ts.display_order
+    ) as step_obj
+    FROM public.template_steps ts
+    WHERE ts.operation_id = p_operation_id
+    ORDER BY ts.display_order, ts.step_number
+  ) ordered_steps;
   
   RETURN COALESCE(steps_json, '[]'::jsonb);
 END;
