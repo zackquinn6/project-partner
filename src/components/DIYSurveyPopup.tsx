@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ArrowRight, ArrowLeft, Sparkles, Wrench, CheckCircle2, Trophy, Target, Star } from "lucide-react";
+import { ArrowRight, ArrowLeft, ArrowUp, Sparkles, Wrench, CheckCircle2, Trophy, Target, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -859,40 +859,59 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                          "Select your level"}
                       </span>
                     </div>
-                    <Slider
-                      value={[skillLevelSliderValue]}
-                      onValueChange={(value) => {
-                        // Store continuous value for smooth slider movement
-                        const sliderValue = value[0];
-                        setSkillLevelSliderValue(sliderValue);
-                        
-                        // Round to nearest step (0, 50, or 100) for the answer
-                        let roundedValue: number;
-                        if (sliderValue < 25) {
-                          roundedValue = 0; // Beginner
-                        } else if (sliderValue < 75) {
-                          roundedValue = 50; // Intermediate
-                        } else {
-                          roundedValue = 100; // Advanced
-                        }
-                        const levelMap: Record<number, string> = { 0: "newbie", 50: "confident", 100: "hero" };
-                        setAnswers(prev => ({ ...prev, skillLevel: levelMap[roundedValue] }));
-                      }}
-                      min={0}
-                      max={100}
-                      step={1}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <div className="text-center">
+                    <div className="relative py-2">
+                      {/* Color sections background - positioned to align with slider track */}
+                      <div className="absolute top-1/2 left-0 right-0 flex h-2 -translate-y-1/2 rounded-full overflow-hidden pointer-events-none">
+                        <div className="w-1/3 bg-green-500"></div>
+                        <div className="w-1/3 bg-blue-500"></div>
+                        <div className="w-1/3 bg-black"></div>
+                      </div>
+                      <Slider
+                        value={[skillLevelSliderValue]}
+                        onValueChange={(value) => {
+                          // Store continuous value for smooth slider movement
+                          const sliderValue = value[0];
+                          setSkillLevelSliderValue(sliderValue);
+                          
+                          // Round to nearest step (0, 50, or 100) for the answer
+                          let roundedValue: number;
+                          if (sliderValue < 25) {
+                            roundedValue = 0; // Beginner
+                          } else if (sliderValue < 75) {
+                            roundedValue = 50; // Intermediate
+                          } else {
+                            roundedValue = 100; // Advanced
+                          }
+                          const levelMap: Record<number, string> = { 0: "newbie", 50: "confident", 100: "hero" };
+                          setAnswers(prev => ({ ...prev, skillLevel: levelMap[roundedValue] }));
+                        }}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="w-full relative z-10 [&_[role=slider]]:bg-background [&_[role=slider]]:border-2 [&_[role=slider]]:border-primary [&>div>div]:bg-transparent"
+                      />
+                      {/* Arrows positioned at 16.66% and 83.33% centered above descriptive text */}
+                      <div className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none">
+                        <div className="relative w-full">
+                          <div className="absolute left-[16.66%] transform -translate-x-1/2 flex flex-col items-center">
+                            <ArrowUp className="w-4 h-4 text-foreground" />
+                          </div>
+                          <div className="absolute left-[83.33%] transform -translate-x-1/2 flex flex-col items-center">
+                            <ArrowUp className="w-4 h-4 text-foreground" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground relative">
+                      <div className="text-center" style={{ width: '33.33%' }}>
                         <div className="font-medium">🔰 Beginner</div>
                         <div className="text-[10px]">Just getting started</div>
                       </div>
-                      <div className="text-center">
+                      <div className="text-center" style={{ width: '33.33%' }}>
                         <div className="font-medium">🧰 Intermediate</div>
                         <div className="text-[10px]">Done a few projects</div>
                       </div>
-                      <div className="text-center">
+                      <div className="text-center" style={{ width: '33.33%' }}>
                         <div className="font-medium">🛠️ Advanced</div>
                         <div className="text-[10px]">Tackled big stuff</div>
                       </div>
@@ -927,40 +946,59 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                          "Select your level"}
                       </span>
                     </div>
-                    <Slider
-                      value={[physicalCapabilitySliderValue]}
-                      onValueChange={(value) => {
-                        // Store continuous value for smooth slider movement
-                        const sliderValue = value[0];
-                        setPhysicalCapabilitySliderValue(sliderValue);
-                        
-                        // Round to nearest step (0, 50, or 100) for the answer
-                        let roundedValue: number;
-                        if (sliderValue < 25) {
-                          roundedValue = 0; // Light-duty
-                        } else if (sliderValue < 75) {
-                          roundedValue = 50; // Medium-duty
-                        } else {
-                          roundedValue = 100; // Heavy-duty
-                        }
-                        const levelMap: Record<number, string> = { 0: "light", 50: "medium", 100: "heavy" };
-                        setAnswers(prev => ({ ...prev, physicalCapability: levelMap[roundedValue] }));
-                      }}
-                      min={0}
-                      max={100}
-                      step={1}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <div className="text-center">
+                    <div className="relative py-2">
+                      {/* Color sections background - positioned to align with slider track */}
+                      <div className="absolute top-1/2 left-0 right-0 flex h-2 -translate-y-1/2 rounded-full overflow-hidden pointer-events-none">
+                        <div className="w-1/3 bg-green-500"></div>
+                        <div className="w-1/3 bg-blue-500"></div>
+                        <div className="w-1/3 bg-black"></div>
+                      </div>
+                      <Slider
+                        value={[physicalCapabilitySliderValue]}
+                        onValueChange={(value) => {
+                          // Store continuous value for smooth slider movement
+                          const sliderValue = value[0];
+                          setPhysicalCapabilitySliderValue(sliderValue);
+                          
+                          // Round to nearest step (0, 50, or 100) for the answer
+                          let roundedValue: number;
+                          if (sliderValue < 25) {
+                            roundedValue = 0; // Light-duty
+                          } else if (sliderValue < 75) {
+                            roundedValue = 50; // Medium-duty
+                          } else {
+                            roundedValue = 100; // Heavy-duty
+                          }
+                          const levelMap: Record<number, string> = { 0: "light", 50: "medium", 100: "heavy" };
+                          setAnswers(prev => ({ ...prev, physicalCapability: levelMap[roundedValue] }));
+                        }}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="w-full relative z-10 [&_[role=slider]]:bg-background [&_[role=slider]]:border-2 [&_[role=slider]]:border-primary [&>div>div]:bg-transparent"
+                      />
+                      {/* Arrows positioned at 16.66% and 83.33% centered above descriptive text */}
+                      <div className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none">
+                        <div className="relative w-full">
+                          <div className="absolute left-[16.66%] transform -translate-x-1/2 flex flex-col items-center">
+                            <ArrowUp className="w-4 h-4 text-foreground" />
+                          </div>
+                          <div className="absolute left-[83.33%] transform -translate-x-1/2 flex flex-col items-center">
+                            <ArrowUp className="w-4 h-4 text-foreground" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground relative">
+                      <div className="text-center" style={{ width: '33.33%' }}>
                         <div className="font-medium">Light-duty only</div>
                         <div className="text-[10px]">Short sessions</div>
                       </div>
-                      <div className="text-center">
+                      <div className="text-center" style={{ width: '33.33%' }}>
                         <div className="font-medium">Medium-duty</div>
                         <div className="text-[10px]">60lb+, 1/2-day projects</div>
                       </div>
-                      <div className="text-center">
+                      <div className="text-center" style={{ width: '33.33%' }}>
                         <div className="font-medium">Heavy-duty</div>
                         <div className="text-[10px]">Full-day, heavy lifting</div>
                       </div>
