@@ -32,45 +32,20 @@ BEGIN
   INTO standard_phases_json;
   
   -- Get custom phases from the template (non-standard phases only)
-  -- Build custom phases directly from project_phases where is_standard = false
-  custom_phases_json := (
-    SELECT COALESCE(jsonb_agg(phase_obj), '[]'::jsonb)
-    FROM (
-      SELECT 
-        jsonb_build_object(
-          'id', pp.id::text,
-          'name', pp.name,
-          'description', pp.description,
-          'isStandard', false,
-          'display_order', pp.display_order,
-          'operations', COALESCE(
-            (
-              SELECT jsonb_agg(op_obj)
-              FROM (
-                SELECT 
-                  jsonb_build_object(
-                    'id', op.id::text,
-                    'name', op.name,
-                    'description', op.description,
-                    'flowType', op.flow_type,
-                    'display_order', op.display_order,
-                    'steps', public.get_operation_steps_json(op.id, COALESCE(op.is_reference, false))
-                  ) as op_obj
-                FROM public.template_operations op
-                WHERE op.phase_id = pp.id
-                  AND op.project_id = p_project_id
-                ORDER BY op.display_order
-              ) op_data
-            ),
-            '[]'::jsonb
-          )
-        ) as phase_obj
-      FROM public.project_phases pp
-      WHERE pp.project_id = p_project_id
-        AND pp.is_standard = false
-      ORDER BY pp.display_order
-    ) phase_data
-  );
+  -- Use rebuild_phases_json_from_project_phases and filter out standard phases
+  -- This avoids manual JSON building and potential column reference issues
+  SELECT 
+    COALESCE(
+      jsonb_agg(phase ORDER BY (phase->>'display_order')::int),
+      '[]'::jsonb
+    )
+  INTO custom_phases_json
+  FROM (
+    SELECT public.rebuild_phases_json_from_project_phases(p_project_id) as all_phases
+  ) phases_data,
+  jsonb_array_elements(phases_data.all_phases) as phase
+  WHERE (phase->>'isStandard')::boolean = false 
+     OR phase->>'isStandard' IS NULL;
   
   -- Merge: standard phases (from Standard Project Foundation) + custom phases (from template)
   -- Standard phases are copied fresh with all their step content at the same time as custom phases
