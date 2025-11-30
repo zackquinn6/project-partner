@@ -517,6 +517,69 @@ export const addStandardPhasesToProjectRun = (phases: Phase[]): Phase[] => {
  */
 export const addKickoffPhaseToProjectRun = addStandardPhasesToProjectRun;
 
+/**
+ * Gets the completion key for a step, using composite key format when spaceId exists
+ * Format: "stepId:spaceId" when spaceId exists, "stepId" otherwise
+ * This enables per-space completion tracking for multi-space projects
+ */
+export const getStepCompletionKey = (stepId: string, spaceId?: string | null): string => {
+  if (spaceId) {
+    return `${stepId}:${spaceId}`;
+  }
+  return stepId;
+};
+
+/**
+ * Checks if a step is completed, handling both composite keys (stepId:spaceId) and simple keys (stepId)
+ * Supports backward compatibility with old format (simple stepId)
+ * Also checks if step is completed globally (without spaceId) for backward compatibility
+ */
+export const isStepCompleted = (
+  completedSteps: Set<string> | string[],
+  stepId: string,
+  spaceId?: string | null
+): boolean => {
+  const completedSet = Array.isArray(completedSteps) ? new Set(completedSteps) : completedSteps;
+  
+  // If spaceId exists, check for composite key first
+  if (spaceId) {
+    const compositeKey = getStepCompletionKey(stepId, spaceId);
+    if (completedSet.has(compositeKey)) {
+      return true;
+    }
+    // Backward compatibility: also check if step is marked complete globally (without spaceId)
+    if (completedSet.has(stepId)) {
+      return true;
+    }
+    return false;
+  }
+  
+  // No spaceId: check simple key
+  return completedSet.has(stepId);
+};
+
+/**
+ * Extracts step ID from a completion key (handles both "stepId" and "stepId:spaceId" formats)
+ */
+export const extractStepIdFromCompletionKey = (completionKey: string): string => {
+  const colonIndex = completionKey.indexOf(':');
+  if (colonIndex === -1) {
+    return completionKey; // Simple format: just stepId
+  }
+  return completionKey.substring(0, colonIndex); // Composite format: stepId:spaceId
+};
+
+/**
+ * Extracts space ID from a completion key (returns null if not a composite key)
+ */
+export const extractSpaceIdFromCompletionKey = (completionKey: string): string | null => {
+  const colonIndex = completionKey.indexOf(':');
+  if (colonIndex === -1) {
+    return null; // Simple format: no spaceId
+  }
+  return completionKey.substring(colonIndex + 1); // Composite format: extract spaceId
+};
+
 export const isKickoffPhaseComplete = (completedSteps: string[]): boolean => {
   const kickoffStepIds = [
     'kickoff-step-1',

@@ -210,8 +210,9 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
     if (!dependentOperation) return true;
     
     // Check if all steps in the dependent operation are completed
+    // Note: EditableUserView doesn't have spaceId context, so check globally
     const dependentSteps = dependentOperation.steps.map(s => s.id);
-    return dependentSteps.every(stepId => completedSteps.has(stepId));
+    return dependentSteps.every(stepId => isStepCompleted(completedSteps, stepId));
   };
 
   // Check if all outputs are completed (required for step completion)
@@ -292,13 +293,25 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
     setStepCompletionPercentages(newPercentages);
 
     // Only mark as completed if 100%
+    // Note: EditableUserView doesn't have spaceId context, so use simple key
+    // This is fine for admin editing where per-space tracking isn't needed
     let newCompletedSteps = new Set(completedSteps);
     if (percentage === 100) {
-      newCompletedSteps.add(currentStep.id);
+      const completionKey = getStepCompletionKey(currentStep.id); // No spaceId for admin view
+      newCompletedSteps.add(completionKey);
       setCompletedSteps(newCompletedSteps);
     } else {
       // Remove from completed if less than 100%
+      // Remove both simple and composite keys for this step
       newCompletedSteps.delete(currentStep.id);
+      // Also remove any composite keys (stepId:spaceId)
+      const keysToRemove: string[] = [];
+      newCompletedSteps.forEach(key => {
+        if (key.startsWith(`${currentStep.id}:`)) {
+          keysToRemove.push(key);
+        }
+      });
+      keysToRemove.forEach(key => newCompletedSteps.delete(key));
       setCompletedSteps(newCompletedSteps);
     }
 
@@ -555,7 +568,9 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
             <div className="space-y-4">
               {currentProject ? currentProject.phases.map((phase) => {
                 const phaseSteps = getAllStepsInPhase(phase);
-                const completedPhaseSteps = phaseSteps.filter(step => completedSteps.has(step.id));
+                const completedPhaseSteps = phaseSteps.filter(step => 
+                  isStepCompleted(completedSteps, step.id)
+                );
                 const isPhaseComplete = phaseSteps.length > 0 && completedPhaseSteps.length === phaseSteps.length;
                 const isCollapsed = collapsedPhases.has(phase.id);
                 
@@ -598,7 +613,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                               const stepIndex = allSteps.findIndex(s => s.id === step.id);
                               const completionPercentage = stepCompletionPercentages[step.id] || 0;
                               const isInProgress = completionPercentage > 0 && completionPercentage < 100;
-                              const isCompleted = completedSteps.has(step.id);
+                              const isCompleted = isStepCompleted(completedSteps, step.id);
                               const hasUnmetPrerequisites = !arePrerequisitesMet(step);
                               
                               return (
@@ -783,7 +798,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                     // Mark this planning step as complete when sizing is done
                     handleStepCompletion(100);
                   }}
-                  isCompleted={completedSteps.has(currentStep.id)}
+                  isCompleted={isStepCompleted(completedSteps, currentStep.id)}
                 />
               ) : (
                 renderEditableContent(currentStep)

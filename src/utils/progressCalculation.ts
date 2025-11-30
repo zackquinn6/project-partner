@@ -101,6 +101,21 @@ export function calculateProjectProgress(
   
   const completedStepIds = new Set(projectRun.completedSteps || []);
   
+  // Helper to check if a step is completed (handles both simple and composite keys)
+  const isStepCompletedInSet = (stepId: string): boolean => {
+    // Check simple key first (backward compatible)
+    if (completedStepIds.has(stepId)) {
+      return true;
+    }
+    // Check if any composite key exists for this step (stepId:spaceId)
+    for (const key of completedStepIds) {
+      if (key.startsWith(`${stepId}:`)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  
   // LINEAR: Simple step count-based progress
   if (style === 'linear') {
     let totalSteps = 0;
@@ -110,7 +125,7 @@ export function calculateProjectProgress(
       phase.operations?.forEach(op => {
         op.steps?.forEach(step => {
           totalSteps++;
-          if (completedStepIds.has(step.id)) {
+          if (isStepCompletedInSet(step.id)) {
             completedSteps++;
           }
         });
@@ -137,7 +152,7 @@ export function calculateProjectProgress(
           const stepTime = getStepTimeEstimate(step, speedSetting);
           totalTime += stepTime;
           
-          if (completedStepIds.has(step.id)) {
+          if (isStepCompletedInSet(step.id)) {
             completedTime += stepTime;
           }
         });
@@ -160,7 +175,7 @@ export function calculateProjectProgress(
         const weight = getStepWeight(step.stepType);
         totalWeight += weight;
         
-        if (completedStepIds.has(step.id)) {
+        if (isStepCompletedInSet(step.id)) {
           completedWeight += weight;
         }
       });

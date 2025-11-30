@@ -54,7 +54,12 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useStepInstructions } from '@/hooks/useStepInstructions';
 import { ToolRentalsWindow } from './ToolRentalsWindow';
 import { HomeManager } from './HomeManager';
-import { isKickoffPhaseComplete } from '@/utils/projectUtils';
+import { 
+  isKickoffPhaseComplete,
+  getStepCompletionKey,
+  isStepCompleted,
+  extractStepIdFromCompletionKey
+} from '@/utils/projectUtils';
 import { useUserRole } from '@/hooks/useUserRole';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
 import { MobileDIYDropdown } from './MobileDIYDropdown';
@@ -610,6 +615,10 @@ export default function UserView({
           apps = [];
         }
         
+        // Preserve spaceId and spaceName if they exist (from workflowNavigationUtils)
+        const spaceId = (step as any).spaceId;
+        const spaceName = (step as any).spaceName;
+        
         return {
           ...step,
           phaseName,
@@ -620,8 +629,10 @@ export default function UserView({
           tools,
           apps, // Ensure apps are properly parsed array
           navigationType: item.type, // Track navigation type for display
-          spaceId: item.type === 'space-container' ? item.spaces?.[0]?.id : undefined,
-          spaceName: item.type === 'space-container' ? item.spaces?.[0]?.name : undefined,
+          // Preserve spaceId and spaceName from step if they exist (from workflowNavigationUtils)
+          // Fallback to item.spaces for space-container type
+          spaceId: spaceId || (item.type === 'space-container' ? item.spaces?.[0]?.id : undefined),
+          spaceName: spaceName || (item.type === 'space-container' ? item.spaces?.[0]?.space_name : undefined),
           originalIndex: stepIndex++
         };
       });
@@ -724,7 +735,9 @@ export default function UserView({
   // Navigate to first incomplete step when workflow opens - ENHANCED DEBUG VERSION
   useEffect(() => {
     if (viewMode === 'workflow' && allSteps.length > 0 && isKickoffComplete) {
-      const firstIncompleteIndex = allSteps.findIndex(step => !completedSteps.has(step.id));
+      const firstIncompleteIndex = allSteps.findIndex(step => 
+        !isStepCompleted(completedSteps, step.id, (step as any).spaceId)
+      );
       
       console.log("🎯 Step navigation initialization:", {
         totalSteps: allSteps.length,
@@ -742,7 +755,7 @@ export default function UserView({
             index,
             id: step.id,
             name: step.step,
-            completed: completedSteps.has(step.id)
+            completed: isStepCompleted(completedSteps, step.id, (step as any).spaceId)
           });
           return acc;
         }, {} as Record<string, any[]>)
@@ -752,7 +765,11 @@ export default function UserView({
       // Only auto-navigate on initial load or when no specific step is selected
       const shouldAutoNavigate = firstIncompleteIndex !== -1 && (
         currentStepIndex === 0 || // Initial load
-        allSteps[currentStepIndex] && completedSteps.has(allSteps[currentStepIndex].id) // Current step is completed
+        allSteps[currentStepIndex] && isStepCompleted(
+          completedSteps, 
+          allSteps[currentStepIndex].id, 
+          (allSteps[currentStepIndex] as any).spaceId
+        ) // Current step is completed
       );
       
       if (shouldAutoNavigate) {
@@ -1406,17 +1423,35 @@ export default function UserView({
         console.log("🎯 Completing step:", currentStep.step, "ID:", currentStep.id);
         
         // Add step to completed steps with immediate persistence
-        const newCompletedSteps = [...new Set([...completedSteps, currentStep.id])];
+        // Use composite key (stepId:spaceId) when spaceId exists for per-space tracking
+        const stepCompletionKey = getStepCompletionKey(
+          currentStep.id, 
+          (currentStep as any).spaceId
+        );
+        const newCompletedSteps = [...new Set([...completedSteps, stepCompletionKey])];
         setCompletedSteps(new Set(newCompletedSteps));
+        
+        console.log("🎯 Step completion key:", {
+          stepId: currentStep.id,
+          spaceId: (currentStep as any).spaceId,
+          completionKey: stepCompletionKey,
+          isCompositeKey: !!(currentStep as any).spaceId
+        });
         
         // Immediately update the project run to persist the step completion
         if (currentProjectRun) {
           const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
-          const preservedKickoffSteps = currentProjectRun.completedSteps.filter(stepId => 
-            kickoffStepIds.includes(stepId)
-          );
+          // Filter kickoff steps (handle both simple and composite keys)
+          const preservedKickoffSteps = currentProjectRun.completedSteps.filter(stepId => {
+            const extractedStepId = extractStepIdFromCompletionKey(stepId);
+            return kickoffStepIds.includes(extractedStepId);
+          });
           
-          const workflowCompletedSteps = newCompletedSteps.filter(stepId => !stepId.startsWith('kickoff-'));
+          // Filter out kickoff steps from new completed steps (handle both simple and composite keys)
+          const workflowCompletedSteps = newCompletedSteps.filter(stepId => {
+            const extractedStepId = extractStepIdFromCompletionKey(stepId);
+            return !extractedStepId.startsWith('kickoff-');
+          });
           const allCompletedSteps = [...preservedKickoffSteps, ...workflowCompletedSteps];
           const uniqueCompletedSteps = [...new Set(allCompletedSteps)];
           
