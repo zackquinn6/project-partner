@@ -78,7 +78,7 @@ BEGIN
   FROM (
     SELECT jsonb_build_object(
       'id', ts.id,
-      'stepTitle', ts.step_title,
+      'step', ts.step_title,
       'description', ts.description,
       'stepType', ts.step_type,
       'stepTypeId', ts.step_type_id,
