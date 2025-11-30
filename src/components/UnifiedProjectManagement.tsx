@@ -466,6 +466,22 @@ export function UnifiedProjectManagement({
       await confirmStatusChangeDirect(revision, status, 'Initial Release');
     } else {
       // For revision 2+, show dialog and require notes
+      // Refresh revision data before opening dialog to ensure we have latest values
+      try {
+        const { data: refreshedRevision, error: refreshError } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', revision.id)
+          .single();
+        
+        if (!refreshError && refreshedRevision) {
+          setSelectedRevision(refreshedRevision as Project);
+          console.log('✅ Refreshed revision data before opening dialog');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error refreshing revision data:', error);
+      }
+      
       setReleaseNotes('');
       setPublishDialogOpen(true);
     }
@@ -491,17 +507,27 @@ export function UnifiedProjectManagement({
     };
 
     // Check all required project information fields
+    // Use explicit property access to ensure we're checking the right fields
     if (!isValidField(project.name)) missingFields.push('Project Name');
     if (!isValidField(project.description)) missingFields.push('Description');
-    if (!isValidField(project.category) || (Array.isArray(project.category) && project.category.length === 0)) {
+    
+    // Category can be array or null
+    const category = project.category;
+    if (!category || (Array.isArray(category) && category.length === 0)) {
       missingFields.push('Category');
     }
+    
     if (!isValidField(project.effort_level)) missingFields.push('Effort Level');
     if (!isValidField(project.skill_level)) missingFields.push('Skill Level');
     if (!isValidField(project.estimated_time)) missingFields.push('Estimated Time');
     if (!isValidField(project.scaling_unit)) missingFields.push('Scaling Unit');
     if (!isValidField(project.estimated_total_time)) missingFields.push('Estimated Total Time');
-    if (!isValidField(project.typical_project_size)) missingFields.push('Typical Project Size');
+    
+    // typical_project_size can be number or null
+    if (project.typical_project_size === null || project.typical_project_size === undefined) {
+      missingFields.push('Typical Project Size');
+    }
+    
     if (!isValidField(project.project_challenges)) missingFields.push('Project Challenges');
     
     // If scaling unit is "per item", item_type is required
@@ -529,12 +555,49 @@ export function UnifiedProjectManagement({
 
     // Validate project fields before allowing production release (not for beta)
     if (status === 'published') {
-      const validation = validateProjectForProduction(revision);
+      // Refresh revision data from database to ensure we have the latest values
+      let latestRevision = revision;
+      try {
+        const { data: refreshedRevision, error: refreshError } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', revision.id)
+          .single();
+        
+        if (!refreshError && refreshedRevision) {
+          latestRevision = refreshedRevision as Project;
+          console.log('✅ Refreshed revision data before validation');
+        } else {
+          console.warn('⚠️ Could not refresh revision data, using provided revision');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error refreshing revision data:', error);
+      }
+      
+      const validation = validateProjectForProduction(latestRevision);
       if (!validation.isValid) {
         console.error('❌ Project validation failed:', validation.missingFields);
+        console.error('🔍 Revision data:', {
+          id: latestRevision.id,
+          name: latestRevision.name,
+          description: latestRevision.description,
+          effort_level: latestRevision.effort_level,
+          skill_level: latestRevision.skill_level,
+          estimated_time: latestRevision.estimated_time,
+          scaling_unit: latestRevision.scaling_unit,
+          estimated_total_time: latestRevision.estimated_total_time,
+          typical_project_size: latestRevision.typical_project_size,
+          project_challenges: latestRevision.project_challenges,
+          category: latestRevision.category
+        });
+        
+        // Show detailed error notification with missing fields
+        const missingFieldsList = validation.missingFields.map(field => `• ${field}`).join('\n');
         toast.error(
-          `Cannot publish to production. Missing or empty fields: ${validation.missingFields.join(', ')}. ` +
-          `Please ensure all project information fields are filled. You can use "-" or "N/A" if a field is not applicable.`
+          `Cannot publish to production. Missing ${validation.missingFields.length} required field(s):\n\n${missingFieldsList}\n\nPlease fill in all required fields in the Project Information section. You can use "-" or "N/A" if a field is not applicable.`,
+          {
+            duration: 12000
+          }
         );
         return;
       }
@@ -2012,6 +2075,33 @@ export function UnifiedProjectManagement({
               {newStatus === 'beta-testing' ? 'This will release the project to beta testing. Beta projects are visible to users but marked as experimental.' : 'This will publish the project for all users. This action will archive all previous versions.'}
             </p>
             
+            {newStatus === 'published' && selectedRevision && (() => {
+              const validation = validateProjectForProduction(selectedRevision);
+              if (!validation.isValid) {
+                return (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-red-900 dark:text-red-100 mb-2">
+                          Missing Required Fields ({validation.missingFields.length})
+                        </p>
+                        <ul className="text-xs text-red-800 dark:text-red-200 space-y-1 list-disc list-inside">
+                          {validation.missingFields.map(field => (
+                            <li key={field}>{field}</li>
+                          ))}
+                        </ul>
+                        <p className="text-xs text-red-700 dark:text-red-300 mt-2">
+                          Please fill in all required fields in the Project Information section before publishing.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            
             <div className="space-y-2">
               <Label htmlFor="release-notes">Release Notes *</Label>
               <Textarea id="release-notes" placeholder={`Describe what's new in this ${newStatus} release...`} value={releaseNotes} onChange={e => setReleaseNotes(e.target.value)} rows={4} />
@@ -2026,7 +2116,7 @@ export function UnifiedProjectManagement({
               e.stopPropagation();
               console.log('🎯 Confirm button clicked in dialog');
               confirmStatusChange();
-            }} disabled={!releaseNotes.trim()} className={newStatus === 'published' ? 'bg-green-600 hover:bg-green-700' : ''}>
+            }} disabled={!releaseNotes.trim() || (newStatus === 'published' && selectedRevision && !validateProjectForProduction(selectedRevision).isValid)} className={newStatus === 'published' ? 'bg-green-600 hover:bg-green-700' : ''}>
                 {newStatus === 'beta-testing' ? 'Release to Beta' : 'Publish'}
               </Button>
             </div>
