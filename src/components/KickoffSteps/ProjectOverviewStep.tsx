@@ -198,15 +198,21 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           </div>
         )}
         
-        {/* Slider track */}
-        <div className="relative h-8 bg-muted rounded-full flex items-center mt-2">
-          {/* Three segments */}
+        {/* Slider track with colored sections */}
+        <div className="relative h-8 rounded-full flex items-center mt-2 overflow-hidden">
+          {/* Color blocks background - green, blue, black */}
+          <div className="absolute inset-0 flex">
+            <div className="w-1/3 bg-green-500"></div>
+            <div className="w-1/3 bg-blue-500"></div>
+            <div className="w-1/3 bg-black"></div>
+          </div>
+          {/* Three segments with labels */}
           {levels.map((_, index) => (
             <div
               key={index}
-              className="flex-1 h-full flex items-center justify-center border-r last:border-r-0 border-border/50"
+              className="flex-1 h-full flex items-center justify-center border-r last:border-r-0 border-border/50 relative z-10"
             >
-              <span className="text-[10px] sm:text-xs text-muted-foreground px-1 text-center">
+              <span className="text-[10px] sm:text-xs text-white font-medium px-1 text-center drop-shadow-sm">
                 {labels[index]}
               </span>
             </div>
