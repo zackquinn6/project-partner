@@ -872,29 +872,171 @@ export function AIProjectGenerator({
                 </Alert>
 
                 <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Phases: {generatedProject.phases.length}</h3>
-                    <ScrollArea className="h-[300px] border rounded p-4">
-                      {generatedProject.phases.map((phase, idx) => (
-                        <div key={idx} className="mb-4 pb-4 border-b last:border-0">
-                          <h4 className="font-medium">{phase.name}</h4>
-                          <p className="text-sm text-muted-foreground mb-2">{phase.description}</p>
-                          <div className="ml-4 space-y-2">
-                            {phase.operations.map((op, opIdx) => (
-                              <div key={opIdx} className="text-sm">
-                                <span className="font-medium">{op.name}</span>
-                                <span className="text-muted-foreground ml-2">
-                                  ({op.steps.length} steps)
-                                </span>
-                              </div>
-                            ))}
+                  {/* Structure - only show if structure was selected */}
+                  {contentSelection.structure && generatedProject.phases && generatedProject.phases.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold mb-2">Phases: {generatedProject.phases.length}</h3>
+                      <ScrollArea className="h-[300px] border rounded p-4">
+                        {generatedProject.phases.map((phase, idx) => (
+                          <div key={idx} className="mb-4 pb-4 border-b last:border-0">
+                            <h4 className="font-medium">{phase.name}</h4>
+                            <p className="text-sm text-muted-foreground mb-2">{phase.description}</p>
+                            <div className="ml-4 space-y-2">
+                              {phase.operations.map((op, opIdx) => (
+                                <div key={opIdx} className="text-sm">
+                                  <span className="font-medium">{op.name}</span>
+                                  <span className="text-muted-foreground ml-2">
+                                    ({op.steps.length} steps)
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </ScrollArea>
-                  </div>
+                        ))}
+                      </ScrollArea>
+                    </div>
+                  )}
 
-                  {generatedProject.risks && generatedProject.risks.length > 0 && (
+                  {/* Show all collected content for each step */}
+                  {contentSelection.structure && generatedProject.phases && generatedProject.phases.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold mb-2">Step Content Details</h3>
+                      <ScrollArea className="h-[400px] border rounded p-4">
+                        {generatedProject.phases.map((phase, phaseIdx) => (
+                          phase.operations.map((op, opIdx) => (
+                            op.steps.map((step, stepIdx) => (
+                              <Card key={`${phaseIdx}-${opIdx}-${stepIdx}`} className="mb-4 p-3">
+                                <div className="space-y-2">
+                                  <div className="font-medium text-sm">
+                                    {phase.name} → {op.name} → {step.stepTitle}
+                                  </div>
+                                  
+                                  {step.description && (
+                                    <div>
+                                      <span className="text-xs font-semibold">Description: </span>
+                                      <span className="text-xs text-muted-foreground">{step.description}</span>
+                                    </div>
+                                  )}
+
+                                  {contentSelection.tools && step.tools && step.tools.length > 0 && (
+                                    <div>
+                                      <span className="text-xs font-semibold">Tools ({step.tools.length}): </span>
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {step.tools.map((tool, toolIdx) => (
+                                          <Badge key={toolIdx} variant="outline" className="text-xs">
+                                            {typeof tool === 'string' ? tool : tool.name}
+                                            {typeof tool === 'object' && tool.alternates && tool.alternates.length > 0 && (
+                                              <span className="text-muted-foreground ml-1">
+                                                (alt: {tool.alternates.join(', ')})
+                                              </span>
+                                            )}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {contentSelection.materials && step.materials && step.materials.length > 0 && (
+                                    <div>
+                                      <span className="text-xs font-semibold">Materials ({step.materials.length}): </span>
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {step.materials.map((material, matIdx) => (
+                                          <Badge key={matIdx} variant="outline" className="text-xs">
+                                            {material}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {contentSelection.outputs && step.outputs && step.outputs.length > 0 && (
+                                    <div>
+                                      <span className="text-xs font-semibold">Outputs ({step.outputs.length}): </span>
+                                      <div className="space-y-1 mt-1">
+                                        {step.outputs.map((output, outIdx) => (
+                                          <div key={outIdx} className="text-xs">
+                                            <span className="font-medium">{output.name}</span>
+                                            {output.type && (
+                                              <Badge variant="outline" className="ml-1 text-xs">{output.type}</Badge>
+                                            )}
+                                            {output.description && (
+                                              <span className="text-muted-foreground ml-1">- {output.description}</span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {contentSelection.processVariables && step.processVariables && step.processVariables.length > 0 && (
+                                    <div>
+                                      <span className="text-xs font-semibold">Process Variables ({step.processVariables.length}): </span>
+                                      <div className="space-y-1 mt-1">
+                                        {step.processVariables.map((pv, pvIdx) => (
+                                          <div key={pvIdx} className="text-xs">
+                                            <span className="font-medium">{pv.displayName || pv.name}</span>
+                                            {pv.variableType && (
+                                              <Badge variant="outline" className="ml-1 text-xs">{pv.variableType}</Badge>
+                                            )}
+                                            {pv.unit && (
+                                              <span className="text-muted-foreground ml-1">({pv.unit})</span>
+                                            )}
+                                            {pv.description && (
+                                              <span className="text-muted-foreground ml-1">- {pv.description}</span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {contentSelection.timeEstimation && step.timeEstimates && (
+                                    <div>
+                                      <span className="text-xs font-semibold">Time Estimates: </span>
+                                      <span className="text-xs text-muted-foreground">
+                                        Low: {step.timeEstimates.low}h, 
+                                        Medium: {step.timeEstimates.medium}h, 
+                                        High: {step.timeEstimates.high}h
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {contentSelection.instructions3Level && step.instructions && (
+                                    <div>
+                                      <span className="text-xs font-semibold">Instructions: </span>
+                                      <div className="space-y-1 mt-1 text-xs">
+                                        {step.instructions.quick && (
+                                          <div>
+                                            <span className="font-medium">Quick: </span>
+                                            <span className="text-muted-foreground">{step.instructions.quick.substring(0, 100)}...</span>
+                                          </div>
+                                        )}
+                                        {step.instructions.detailed && (
+                                          <div>
+                                            <span className="font-medium">Detailed: </span>
+                                            <span className="text-muted-foreground">{step.instructions.detailed.substring(0, 100)}...</span>
+                                          </div>
+                                        )}
+                                        {step.instructions.contractor && (
+                                          <div>
+                                            <span className="font-medium">Contractor: </span>
+                                            <span className="text-muted-foreground">{step.instructions.contractor.substring(0, 100)}...</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </Card>
+                            ))
+                          ))
+                        ))}
+                      </ScrollArea>
+                    </div>
+                  )}
+
+                  {/* Risks - only show if risks were selected */}
+                  {contentSelection.risks && generatedProject.risks && generatedProject.risks.length > 0 && (
                     <div>
                       <h3 className="font-semibold mb-2">Risks: {generatedProject.risks.length}</h3>
                       <div className="space-y-2">
@@ -915,6 +1057,81 @@ export function AIProjectGenerator({
                       </div>
                     </div>
                   )}
+
+                  {/* Show summary of what was collected */}
+                  <Card className="p-3 bg-muted/50">
+                    <h3 className="font-semibold mb-2 text-sm">Content Summary</h3>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {contentSelection.structure && (
+                        <div>
+                          <span className="font-medium">Structure: </span>
+                          <span className="text-muted-foreground">
+                            {generatedProject.phases?.length || 0} phases, {' '}
+                            {generatedProject.phases?.reduce((sum, p) => sum + (p.operations?.length || 0), 0) || 0} operations, {' '}
+                            {generatedProject.phases?.reduce((sum, p) => 
+                              sum + (p.operations?.reduce((opSum: number, op: any) => opSum + (op.steps?.length || 0), 0) || 0), 0
+                            ) || 0} steps
+                          </span>
+                        </div>
+                      )}
+                      {contentSelection.tools && (
+                        <div>
+                          <span className="font-medium">Tools: </span>
+                          <span className="text-muted-foreground">
+                            {generatedProject.phases?.reduce((sum, p) => 
+                              sum + (p.operations?.reduce((opSum: number, op: any) => 
+                                opSum + (op.steps?.reduce((stepSum: number, step: any) => 
+                                  stepSum + (step.tools?.length || 0), 0) || 0), 0) || 0), 0
+                            ) || 0} total
+                          </span>
+                        </div>
+                      )}
+                      {contentSelection.materials && (
+                        <div>
+                          <span className="font-medium">Materials: </span>
+                          <span className="text-muted-foreground">
+                            {generatedProject.phases?.reduce((sum, p) => 
+                              sum + (p.operations?.reduce((opSum: number, op: any) => 
+                                opSum + (op.steps?.reduce((stepSum: number, step: any) => 
+                                  stepSum + (step.materials?.length || 0), 0) || 0), 0) || 0), 0
+                            ) || 0} total
+                          </span>
+                        </div>
+                      )}
+                      {contentSelection.outputs && (
+                        <div>
+                          <span className="font-medium">Outputs: </span>
+                          <span className="text-muted-foreground">
+                            {generatedProject.phases?.reduce((sum, p) => 
+                              sum + (p.operations?.reduce((opSum: number, op: any) => 
+                                opSum + (op.steps?.reduce((stepSum: number, step: any) => 
+                                  stepSum + (step.outputs?.length || 0), 0) || 0), 0) || 0), 0
+                            ) || 0} total
+                          </span>
+                        </div>
+                      )}
+                      {contentSelection.processVariables && (
+                        <div>
+                          <span className="font-medium">Process Variables: </span>
+                          <span className="text-muted-foreground">
+                            {generatedProject.phases?.reduce((sum, p) => 
+                              sum + (p.operations?.reduce((opSum: number, op: any) => 
+                                opSum + (op.steps?.reduce((stepSum: number, step: any) => 
+                                  stepSum + (step.processVariables?.length || 0), 0) || 0), 0) || 0), 0
+                            ) || 0} total
+                          </span>
+                        </div>
+                      )}
+                      {contentSelection.risks && (
+                        <div>
+                          <span className="font-medium">Risks: </span>
+                          <span className="text-muted-foreground">
+                            {generatedProject.risks?.length || 0} total
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
 
                   {importResult && (
                     <Alert variant={importResult.success ? 'default' : 'destructive'}>
