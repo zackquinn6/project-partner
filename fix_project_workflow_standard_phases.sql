@@ -143,7 +143,6 @@ BEGIN
         op.user_prompt,
         op.alternate_group,
         op.display_order,
-        op.is_standard_phase,
         op.source_operation_id,
         op.is_reference,
         src.operation_name AS source_operation_name,
