@@ -123,12 +123,12 @@ BEGIN
       pp.project_id,
       pp.name,
       pp.description,
-      pp.display_order,
       pp.is_standard,
-      pp.standard_phase_id
+      pp.standard_phase_id,
+      pp.created_at
     FROM public.project_phases pp
     WHERE pp.project_id = p_project_id
-    ORDER BY pp.display_order
+    ORDER BY pp.created_at ASC
   LOOP
     operations_json := '[]'::jsonb;
 
