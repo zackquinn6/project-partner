@@ -40,11 +40,9 @@ BEGIN
   -- Get custom phases from the template (non-standard phases only)
   -- Use rebuild_phases_json_from_project_phases and filter out standard phases
   -- This avoids manual JSON building and potential column reference issues
+  -- Phases are already ordered by rebuild_phases_json_from_project_phases, so we preserve that order
   SELECT 
-    COALESCE(
-      jsonb_agg(phase ORDER BY (phase->>'display_order')::int),
-      '[]'::jsonb
-    )
+    COALESCE(jsonb_agg(phase), '[]'::jsonb)
   INTO custom_phases_json
   FROM (
     SELECT public.rebuild_phases_json_from_project_phases(p_project_id) as all_phases
