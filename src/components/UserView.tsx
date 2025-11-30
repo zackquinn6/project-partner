@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -107,7 +108,8 @@ export default function UserView({
     projectRuns,
     projects,
     setCurrentProjectRun,
-    updateProjectRun
+    updateProjectRun,
+    deleteProjectRun
   } = useProject();
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -940,6 +942,8 @@ export default function UserView({
             }
             
             setCurrentProjectRun(transformedRun);
+            // CRITICAL: Set viewMode to 'workflow' for new project runs so kickoff can display
+            // Kickoff only shows when viewMode === 'workflow' and !isKickoffComplete
             setViewMode('workflow');
           } catch (error) {
             console.error('❌ Error in fetchProjectRun:', error);
@@ -947,9 +951,16 @@ export default function UserView({
         };
         
         fetchProjectRun();
+      } else if (projectRunId && currentProjectRun && currentProjectRun.id === projectRunId) {
+        // Project run is already loaded - ensure viewMode is 'workflow' for kickoff
+        // This handles the case where project run was loaded but viewMode wasn't set correctly
+        if (viewMode === 'listing' && !isKickoffComplete) {
+          console.log('🔄 UserView: Project run loaded but in listing mode - switching to workflow for kickoff');
+          setViewMode('workflow');
+        }
       }
     }
-  }, [projectRunId, projectRuns, setCurrentProjectRun, viewMode, onProjectSelected]);
+  }, [projectRunId, projectRuns, setCurrentProjectRun, viewMode, onProjectSelected, currentProjectRun, isKickoffComplete]);
 
   // SIMPLIFIED VIEW MODE LOGIC - Single effect to prevent race conditions
   useEffect(() => {
@@ -983,7 +994,8 @@ export default function UserView({
     // Only auto-open project workflow if not in listing mode and not showing profile
     if (currentProjectRun && !showProfile) {
       console.log('🔄 UserView: Have current project run - checking kickoff completion');
-      // Only proceed to workflow if kickoff is complete
+      // CRITICAL: For new project runs (kickoff incomplete), we MUST be in 'workflow' mode
+      // so that the kickoff component can render (it only renders when viewMode === 'workflow')
       if (isKickoffComplete) {
         console.log('🔄 UserView: Kickoff complete - allowing workflow mode');
         if (viewMode !== 'workflow') {
@@ -991,7 +1003,9 @@ export default function UserView({
           onProjectSelected?.();
         }
       } else {
-        console.log('🔄 UserView: Kickoff incomplete - staying in workflow for kickoff');
+        console.log('🔄 UserView: Kickoff incomplete - MUST be in workflow mode for kickoff to display');
+        // CRITICAL: Kickoff component only renders when viewMode === 'workflow'
+        // So we must ensure viewMode is 'workflow' for incomplete kickoff
         if (viewMode !== 'workflow') {
           setViewMode('workflow');
         }
@@ -2621,16 +2635,32 @@ export default function UserView({
             }
           }
         }}
-        onExit={() => {
-          console.log("🚪 Exit kickoff - returning to project listing");
+        onExit={async () => {
+          console.log("🚪 Exit kickoff - returning to project catalog");
+          // Delete the project run since user said "not a fit"
+          if (currentProjectRun) {
+            try {
+              await deleteProjectRun(currentProjectRun.id);
+              console.log('✅ Project run deleted after "not a fit"');
+            } catch (error) {
+              console.error('⚠️ Error deleting project run:', error);
+            }
+          }
+          
           // Clear current project run to prevent UserView from trying to load deleted project
           setCurrentProjectRun(null);
           // Clear view mode to show listing
           setViewMode('listing');
-          // Clear URL parameters if any
-          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // Navigate back to project catalog
+          navigate('/projects', { replace: true });
+          
+          // Clear URL parameters
+          window.history.replaceState({}, document.title, '/projects');
+          
           // Notify parent component to return to listing
           onProjectSelected?.('listing' as any);
+          
           // Clear reset flags
           window.dispatchEvent(new CustomEvent('clear-reset-flags'));
         }}
