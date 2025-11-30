@@ -555,40 +555,76 @@ export function UnifiedProjectManagement({
 
     // Validate project fields before allowing production release (not for beta)
     if (status === 'published') {
-      // Refresh revision data from database to ensure we have the latest values
-      let latestRevision = revision;
-      try {
-        const { data: refreshedRevision, error: refreshError } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('id', revision.id)
-          .single();
-        
-        if (!refreshError && refreshedRevision) {
-          latestRevision = refreshedRevision as Project;
-          console.log('✅ Refreshed revision data before validation');
-        } else {
-          console.warn('⚠️ Could not refresh revision data, using provided revision');
+      // Get the parent project for validation (revisions inherit from parent)
+      let projectToValidate = revision;
+      const parentId = revision.parent_project_id || revision.id;
+      
+      // If this is a revision (has parent_project_id), fetch the parent project for validation
+      if (revision.parent_project_id) {
+        try {
+          const { data: parentProject, error: parentError } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', parentId)
+            .single();
+          
+          if (!parentError && parentProject) {
+            projectToValidate = parentProject as Project;
+            console.log('✅ Using parent project for validation:', parentProject.id);
+          } else {
+            console.warn('⚠️ Could not fetch parent project, using revision data');
+            // Fallback: refresh revision data
+            const { data: refreshedRevision, error: refreshError } = await supabase
+              .from('projects')
+              .select('*')
+              .eq('id', revision.id)
+              .single();
+            
+            if (!refreshError && refreshedRevision) {
+              projectToValidate = refreshedRevision as Project;
+              console.log('✅ Refreshed revision data before validation');
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Error fetching parent project:', error);
+          // Fallback: use revision data
+          projectToValidate = revision;
         }
-      } catch (error) {
-        console.warn('⚠️ Error refreshing revision data:', error);
+      } else {
+        // This is the parent project itself, refresh it
+        try {
+          const { data: refreshedProject, error: refreshError } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', revision.id)
+            .single();
+          
+          if (!refreshError && refreshedProject) {
+            projectToValidate = refreshedProject as Project;
+            console.log('✅ Refreshed parent project data before validation');
+          }
+        } catch (error) {
+          console.warn('⚠️ Error refreshing project data:', error);
+        }
       }
       
-      const validation = validateProjectForProduction(latestRevision);
+      const validation = validateProjectForProduction(projectToValidate);
       if (!validation.isValid) {
         console.error('❌ Project validation failed:', validation.missingFields);
-        console.error('🔍 Revision data:', {
-          id: latestRevision.id,
-          name: latestRevision.name,
-          description: latestRevision.description,
-          effort_level: latestRevision.effort_level,
-          skill_level: latestRevision.skill_level,
-          estimated_time: latestRevision.estimated_time,
-          scaling_unit: latestRevision.scaling_unit,
-          estimated_total_time: latestRevision.estimated_total_time,
-          typical_project_size: latestRevision.typical_project_size,
-          project_challenges: latestRevision.project_challenges,
-          category: latestRevision.category
+        console.error('🔍 Project data used for validation:', {
+          id: projectToValidate.id,
+          name: projectToValidate.name,
+          isParent: !revision.parent_project_id || projectToValidate.id === (revision.parent_project_id || revision.id),
+          parent_project_id: revision.parent_project_id,
+          description: projectToValidate.description,
+          effort_level: projectToValidate.effort_level,
+          skill_level: projectToValidate.skill_level,
+          estimated_time: projectToValidate.estimated_time,
+          scaling_unit: projectToValidate.scaling_unit,
+          estimated_total_time: projectToValidate.estimated_total_time,
+          typical_project_size: projectToValidate.typical_project_size,
+          project_challenges: projectToValidate.project_challenges,
+          category: projectToValidate.category
         });
         
         // Show detailed error notification with missing fields
@@ -2076,7 +2112,27 @@ export function UnifiedProjectManagement({
             </p>
             
             {newStatus === 'published' && selectedRevision && (() => {
-              const validation = validateProjectForProduction(selectedRevision);
+              // For validation in dialog, check parent project if revision has one
+              // Revisions inherit project information from the parent project
+              let projectForValidation = selectedRevision;
+              if (selectedRevision.parent_project_id) {
+                // Find parent project in revisions list
+                const parentProject = projectRevisions.find(p => p.id === selectedRevision.parent_project_id);
+                if (parentProject) {
+                  projectForValidation = parentProject;
+                  console.log('✅ Using parent project for dialog validation:', parentProject.id);
+                } else {
+                  // Parent not in list, use selectedProject (which should be the parent)
+                  if (selectedProject && (selectedProject.id === selectedRevision.parent_project_id || !selectedProject.parent_project_id)) {
+                    projectForValidation = selectedProject;
+                    console.log('✅ Using selectedProject (parent) for dialog validation:', selectedProject.id);
+                  }
+                }
+              } else {
+                // This is the parent project itself
+                console.log('✅ Using revision as parent project for dialog validation:', selectedRevision.id);
+              }
+              const validation = validateProjectForProduction(projectForValidation);
               if (!validation.isValid) {
                 return (
                   <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
@@ -2116,7 +2172,20 @@ export function UnifiedProjectManagement({
               e.stopPropagation();
               console.log('🎯 Confirm button clicked in dialog');
               confirmStatusChange();
-            }} disabled={!releaseNotes.trim() || (newStatus === 'published' && selectedRevision && !validateProjectForProduction(selectedRevision).isValid)} className={newStatus === 'published' ? 'bg-green-600 hover:bg-green-700' : ''}>
+            }} disabled={!releaseNotes.trim() || (newStatus === 'published' && selectedRevision && (() => {
+              // For validation, check parent project if revision has one
+              // Revisions inherit project information from the parent project
+              let projectForValidation = selectedRevision;
+              if (selectedRevision.parent_project_id) {
+                const parentProject = projectRevisions.find(p => p.id === selectedRevision.parent_project_id);
+                if (parentProject) {
+                  projectForValidation = parentProject;
+                } else if (selectedProject && (selectedProject.id === selectedRevision.parent_project_id || !selectedProject.parent_project_id)) {
+                  projectForValidation = selectedProject;
+                }
+              }
+              return !validateProjectForProduction(projectForValidation).isValid;
+            })())} className={newStatus === 'published' ? 'bg-green-600 hover:bg-green-700' : ''}>
                 {newStatus === 'beta-testing' ? 'Release to Beta' : 'Publish'}
               </Button>
             </div>
