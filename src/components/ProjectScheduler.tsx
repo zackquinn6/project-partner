@@ -845,6 +845,37 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     }
   };
 
+  // Apply optimization method (updates workflow navigation without generating schedule)
+  const handleApplyOptimization = async () => {
+    if (!projectRun) return;
+    
+    try {
+      const updatedProjectRun = {
+        ...projectRun,
+        completion_priority: completionPriority
+      };
+      
+      await updateProjectRun(updatedProjectRun);
+      
+      // Dispatch refresh event for workflow navigation
+      window.dispatchEvent(new CustomEvent('project-scheduler-updated', {
+        detail: { projectRunId: projectRun.id }
+      }));
+      
+      toast({
+        title: "Optimization method applied",
+        description: `Workflow navigation updated to ${completionPriority === 'agile' ? 'single-piece flow' : 'batch flow'}.`
+      });
+    } catch (error) {
+      toast({
+        title: "Error applying optimization",
+        description: "There was a problem updating the workflow navigation. Please try again.",
+        variant: "destructive"
+      });
+      console.error('Error applying optimization:', error);
+    }
+  };
+
   // Save draft
   const saveDraft = () => {
     toast({
@@ -1071,7 +1102,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
 
             {/* New Wizard Interface */}
-            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} completionPriority={completionPriority} setCompletionPriority={setCompletionPriority} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} />
+            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} completionPriority={completionPriority} setCompletionPriority={setCompletionPriority} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} />
 
             {/* Results */}
             {schedulingResult && <>
@@ -1322,25 +1353,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               
               
 
-              {/* Action Buttons - shown after schedule is generated */}
-              {schedulingResult && <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Button variant="outline" onClick={saveDraft} className="h-10">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Save Draft
-                  </Button>
-                  <Button onClick={saveSchedule} className="h-10">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save & Commit
-                  </Button>
-                  <Button variant="outline" onClick={printToPDF} className="h-10">
-                    <Printer className="w-4 h-4 mr-2" />
-                    Print to PDF
-                  </Button>
-                  <Button variant="outline" onClick={emailSchedule} className="h-10">
-                    <Mail className="w-4 h-4 mr-2" />
-                    Email Me
-                  </Button>
-                </div>}
+              {/* Action Buttons removed - shown in main results section instead */}
 
               {schedulingResult && <>
                   <Alert>

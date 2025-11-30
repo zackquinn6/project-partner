@@ -21,7 +21,8 @@ import {
   Trash2,
   Users,
   Brain,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays } from 'date-fns';
@@ -74,6 +75,7 @@ interface SchedulerWizardProps {
   openCalendar: (memberId: string) => void;
   onGenerateSchedule: () => void;
   isComputing: boolean;
+  onApplyOptimization?: () => void;
 }
 
 export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
@@ -94,7 +96,8 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   updateTeamMember,
   openCalendar,
   onGenerateSchedule,
-  isComputing
+  isComputing,
+  onApplyOptimization
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -313,6 +316,16 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       </Label>
                     </div>
                   </div>
+                  {onApplyOptimization && (
+                    <Button
+                      onClick={onApplyOptimization}
+                      size="sm"
+                      className="w-full mt-3 h-8 text-xs"
+                      variant="outline"
+                    >
+                      Apply
+                    </Button>
+                  )}
                 </div>
 
                 {/* Team Members Section */}
@@ -479,8 +492,17 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
             className="w-full h-9 text-sm"
             disabled={isComputing || teamMembers.length === 0 || !targetDate}
           >
-            <Zap className="w-3.5 h-3.5 mr-1.5" />
-            {isComputing ? 'Computing...' : 'Generate Schedule'}
+            {isComputing ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                Computing...
+              </>
+            ) : (
+              <>
+                <Zap className="w-3.5 h-3.5 mr-1.5" />
+                Generate Schedule
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
