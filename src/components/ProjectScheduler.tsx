@@ -1540,8 +1540,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     {/* Phase Assignment Dialog */}
     <Dialog open={showPhaseAssignment} onOpenChange={setShowPhaseAssignment}>
       <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-6xl h-[85vh] p-0 gap-0">
-        <DialogHeader className="p-4 border-b">
+        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between">
           <DialogTitle>Assign Phases to Team Members</DialogTitle>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowPhaseAssignment(false)}
+            className="h-6 w-6"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </DialogHeader>
         <div className="p-4 flex-1 overflow-auto">
           {user && projectRun?.id && (

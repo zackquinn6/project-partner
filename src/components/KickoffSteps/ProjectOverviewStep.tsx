@@ -442,14 +442,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             <div>
               <div className="flex items-center gap-1.5 mb-0">
                 <Label className="text-sm">Project Skill Level</Label>
-                <TooltipProvider>
+                <TooltipProvider delayDuration={100}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity">
+                      <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none">
                         <HelpCircle className="w-4 h-4 text-muted-foreground" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
+                    <TooltipContent className="max-w-xs z-50">
                       <p className="text-sm">
                         <strong>Skill Level</strong> indicates the technical expertise required for this project:
                         <br /><br />
@@ -468,14 +468,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             <div>
               <div className="flex items-center gap-1.5 mb-0">
                 <Label className="text-sm">Project Effort Level</Label>
-                <TooltipProvider>
+                <TooltipProvider delayDuration={100}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity">
+                      <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none">
                         <HelpCircle className="w-4 h-4 text-muted-foreground" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
+                    <TooltipContent className="max-w-xs z-50">
                       <p className="text-sm">
                         <strong>Effort Level</strong> indicates the physical intensity and time commitment required:
                         <br /><br />
