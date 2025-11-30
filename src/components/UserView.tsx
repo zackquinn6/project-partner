@@ -3015,7 +3015,7 @@ export default function UserView({
                     </>
                   )}
 
-                  {currentStep && !completedSteps.has(currentStep.id) && (
+                  {currentStep && !isStepCompleted(completedSteps, currentStep.id, (currentStep as any).spaceId) && (
                     areAllOutputsCompleted(currentStep) ? (
                       currentStep.stepType === 'scaled' ? (
                         <Button 
@@ -3599,6 +3599,7 @@ export default function UserView({
           projectRunId={currentProjectRun.id}
           stepId={currentScaledStep.id}
           stepTitle={currentScaledStep.title}
+          scalingUnit={currentProjectRun.scalingUnit}
           onProgressComplete={handleStepComplete}
         />
       )}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -28,6 +28,7 @@ interface ScaledStepProgressDialogProps {
   projectRunId: string;
   stepId: string;
   stepTitle: string;
+  scalingUnit?: string; // Project scaling unit (e.g., 'per square foot', 'per item')
   onProgressComplete: () => void;
 }
 
@@ -37,10 +38,12 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
   projectRunId,
   stepId,
   stepTitle,
+  scalingUnit = 'per item',
   onProgressComplete
 }) => {
   const [spaces, setSpaces] = useState<ProjectRunSpace[]>([]);
   const [progressData, setProgressData] = useState<Map<string, number>>(new Map());
+  const [completedAmounts, setCompletedAmounts] = useState<Map<string, number>>(new Map()); // Track completed amounts per space
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -73,13 +76,24 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
 
       setSpaces(spacesData || []);
 
-      // Initialize progress map
+      // Initialize progress map and completed amounts
       const progressMap = new Map<string, number>();
+      const amountsMap = new Map<string, number>();
       (spacesData || []).forEach(space => {
         const existingProgress = progressData?.find(p => p.space_id === space.id);
-        progressMap.set(space.id, existingProgress?.progress_percentage || 0);
+        const percentage = existingProgress?.progress_percentage || 0;
+        progressMap.set(space.id, percentage);
+        
+        // Calculate completed amount from percentage and space scale_value
+        if (space.scale_value && percentage > 0) {
+          const completedAmount = (space.scale_value * percentage) / 100;
+          amountsMap.set(space.id, completedAmount);
+        } else {
+          amountsMap.set(space.id, 0);
+        }
       });
       setProgressData(progressMap);
+      setCompletedAmounts(amountsMap);
     } catch (error) {
       console.error('Error loading spaces and progress:', error);
       toast.error('Failed to load space data');
@@ -88,7 +102,28 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
     }
   };
 
-  const handleProgressChange = (spaceId: string, percentage: number) => {
+  // Get display name for scaling unit
+  const getScalingUnitDisplay = () => {
+    switch (scalingUnit) {
+      case 'per square foot': return 'Square Feet';
+      case 'per 10x10 room': return 'Rooms (10x10)';
+      case 'per linear foot': return 'Linear Feet';
+      case 'per cubic yard': return 'Cubic Yards';
+      case 'per item': return 'Items';
+      default: return 'Units';
+    }
+  };
+
+  const handleAmountChange = (spaceId: string, amount: number) => {
+    const space = spaces.find(s => s.id === spaceId);
+    if (!space || !space.scale_value) {
+      return;
+    }
+    
+    // Calculate percentage based on completed amount vs total scale_value
+    const percentage = Math.min(100, Math.max(0, (amount / space.scale_value) * 100));
+    
+    setCompletedAmounts(prev => new Map(prev).set(spaceId, amount));
     setProgressData(prev => new Map(prev).set(spaceId, percentage));
   };
 
@@ -133,8 +168,6 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
 
   const allSpacesComplete = spaces.length > 0 && 
     spaces.every(space => progressData.get(space.id) === 100);
-
-  const percentageOptions = Array.from({ length: 11 }, (_, i) => i * 10);
 
   if (loading) {
     return (
@@ -181,7 +214,7 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
             Report Progress: {stepTitle}
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-2">
-            Update completion percentage for each space. The step will be marked complete when all spaces reach 100%.
+            Enter the completed amount for each space in {getScalingUnitDisplay().toLowerCase()}. The step will be marked complete when all spaces reach 100%.
           </p>
         </DialogHeader>
 
@@ -199,15 +232,19 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[40%]">Space Name</TableHead>
-                  <TableHead className="w-[20%]">Type</TableHead>
-                  <TableHead className="w-[20%]">Scale</TableHead>
-                  <TableHead className="w-[20%]">% Complete</TableHead>
+                  <TableHead className="w-[30%]">Space Name</TableHead>
+                  <TableHead className="w-[15%]">Type</TableHead>
+                  <TableHead className="w-[20%]">Total ({getScalingUnitDisplay()})</TableHead>
+                  <TableHead className="w-[20%]">Completed ({getScalingUnitDisplay()})</TableHead>
+                  <TableHead className="w-[15%]">% Complete</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {spaces.map((space) => {
                   const currentProgress = progressData.get(space.id) || 0;
+                  const completedAmount = completedAmounts.get(space.id) || 0;
+                  const totalAmount = space.scale_value || 0;
+                  
                   return (
                     <TableRow key={space.id}>
                       <TableCell className="font-medium">
@@ -226,24 +263,27 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {space.scale_value ? `${space.scale_value} ${space.scale_unit}` : '-'}
+                        {totalAmount > 0 ? totalAmount.toLocaleString() : '-'}
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={currentProgress.toString()}
-                          onValueChange={(value) => handleProgressChange(space.id, parseInt(value))}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {percentageOptions.map((percentage) => (
-                              <SelectItem key={percentage} value={percentage.toString()}>
-                                {percentage}%
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            max={totalAmount}
+                            step="0.01"
+                            value={completedAmount || ''}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value) || 0;
+                              handleAmountChange(space.id, value);
+                            }}
+                            className="w-full"
+                            placeholder="0"
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">
+                        {currentProgress.toFixed(0)}%
                       </TableCell>
                     </TableRow>
                   );
