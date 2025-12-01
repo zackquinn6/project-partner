@@ -460,7 +460,15 @@ export function AppManager({
     }
   };
   const iconOptions = ['ExternalLink', 'Link', 'Globe', 'Sparkles', 'Zap', 'Tool', 'Settings', 'FileText', 'Image', 'Video', 'Home', 'User', 'Calendar', 'ShoppingCart', 'DollarSign', 'TrendingUp', 'Wrench', 'Hammer', 'ListChecks', 'BookOpen', 'FolderOpen', 'Package'];
-  const combinedApps = useMemo(() => [...nativeApps, ...externalApps], [nativeApps, externalApps]);
+  const combinedApps = useMemo(() => {
+    const allApps = [...nativeApps, ...externalApps];
+    // Sort alphabetically by app name
+    return allApps.sort((a, b) => {
+      const nameA = (a.appName || '').toLowerCase();
+      const nameB = (b.appName || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+  }, [nativeApps, externalApps]);
 
   if (loading) {
     return <Dialog open={open} onOpenChange={onOpenChange}>
