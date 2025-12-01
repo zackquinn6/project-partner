@@ -2661,12 +2661,28 @@ export default function UserView({
               
               console.log("✅ Auto-rating kickoff phase:", kickoffRating);
               
+              // CRITICAL: Preserve initial_budget, initial_timeline, initial_sizing from current context
+              // These values were saved in ProjectProfileStep and must not be lost
+              const preservedBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+              const preservedTimeline = (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
+              const preservedSizing = (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+              
+              console.log('💾 onKickoffComplete: Preserving budget fields:', {
+                initial_budget: preservedBudget,
+                initial_timeline: preservedTimeline,
+                initial_sizing: preservedSizing
+              });
+              
               // Update project status to in-progress with all steps and phase rating
               const updatedRun = {
                 ...currentProjectRun,
                 completedSteps: uniqueSteps,
                 status: 'in-progress',
                 phase_ratings: updatedPhaseRatings,
+                // CRITICAL: Explicitly preserve initial_budget, initial_timeline, initial_sizing
+                ...(preservedBudget !== null && { initial_budget: preservedBudget }),
+                ...(preservedTimeline !== null && { initial_timeline: preservedTimeline }),
+                ...(preservedSizing !== null && { initial_sizing: preservedSizing }),
                 progress: Math.round((uniqueSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
                   return total + phase.operations.reduce((opTotal, operation) => {
                     return opTotal + operation.steps.length;
