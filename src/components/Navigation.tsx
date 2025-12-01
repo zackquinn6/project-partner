@@ -194,6 +194,10 @@ export default function Navigation({
       hasPhases: !!(projectRun.phases && Array.isArray(projectRun.phases) && projectRun.phases.length > 0)
     });
     
+    // CRITICAL: Clear reset flags immediately BEFORE setting project run
+    // This prevents UserView useEffect from forcing listing mode
+    window.dispatchEvent(new CustomEvent('clear-reset-flags'));
+    
     // CRITICAL: Update URL state with projectRunId so UserView can properly load it
     // This ensures UserView's useEffect that watches projectRunId will trigger
     navigate('/', {
@@ -204,6 +208,7 @@ export default function Navigation({
       replace: true
     });
     
+    // Set project run in context
     setCurrentProjectRun(projectRun);
     onViewChange('user');
     onProjectSelected?.();

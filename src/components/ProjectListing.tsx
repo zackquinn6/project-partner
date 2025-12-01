@@ -79,13 +79,22 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     // This prevents UserView useEffect from forcing listing mode
     window.dispatchEvent(new CustomEvent('clear-reset-flags'));
     
-    // SYNCHRONOUS navigation - no setTimeout delays
+    // CRITICAL: Navigate with projectRunId in state so UserView can properly load it
+    // This ensures UserView's useEffect that watches projectRunId will trigger
+    navigate('/', {
+      state: {
+        view: 'user',
+        projectRunId: projectRun.id
+      },
+      replace: true
+    });
+    
+    // Set project run in context
     setCurrentProjectRun(projectRun);
-    window.history.replaceState({}, document.title, window.location.pathname);
     onProjectSelect?.('workflow' as any);
     
     console.log("🎯 Project run navigation completed:", projectRun.name);
-  }, [setCurrentProjectRun, onProjectSelect]);
+  }, [setCurrentProjectRun, onProjectSelect, navigate]);
 
   const handleDeleteProjectRun = async (projectRunId: string) => {
     // Clear projectRunId from location state FIRST to prevent UserView from trying to load it
