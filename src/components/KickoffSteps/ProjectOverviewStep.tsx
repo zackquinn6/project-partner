@@ -97,17 +97,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
   useEffect(() => {
     const fetchIfNeeded = async () => {
-      // Only fetch if templateProject exists but doesn't have the required fields
-      const needsFetch = templateProject && 
-        (!templateProject.skillLevel || 
-         !templateProject.effortLevel || 
-         !templateProject.projectChallenges || 
-         !templateProject.estimatedTime ||
-         !templateProject.estimatedTotalTime ||
-         !templateProject.typicalProjectSize ||
-         !templateProject.scalingUnit);
-      
-      if (needsFetch && templateProject.id) {
+      // Always try to fetch from database to ensure we have the latest values, especially for estimated_total_time and typical_project_size
+      if (templateProject && templateProject.id) {
         try {
           // Try project_templates_live first, but if it doesn't have the fields, query projects directly
           let data = null;
@@ -120,8 +111,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             .eq('id', templateProject.id)
             .maybeSingle();
           
-          // If view doesn't have the fields or has an error, try projects table directly
-          if (viewError || !viewData || (!viewData.estimated_total_time && !viewData.typical_project_size)) {
+          // If view doesn't have the fields, has an error, or has null/empty values for critical fields, try projects table directly
+          const viewHasValidTimeFields = viewData && viewData.estimated_total_time && viewData.typical_project_size;
+          if (viewError || !viewData || !viewHasValidTimeFields) {
+            console.log('📊 Fetching from projects table directly for time fields:', {
+              viewError,
+              hasViewData: !!viewData,
+              viewHasValidTimeFields,
+              estimated_total_time: viewData?.estimated_total_time,
+              typical_project_size: viewData?.typical_project_size
+            });
+            
             const { data: projectsData, error: projectsError } = await supabase
               .from('projects')
               .select('skill_level, effort_level, project_challenges, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type, budget_per_unit, budget_per_typical_size')
@@ -130,6 +130,13 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             
             data = projectsData;
             error = projectsError;
+            
+            console.log('📊 Projects table data:', {
+              hasData: !!data,
+              estimated_total_time: data?.estimated_total_time,
+              typical_project_size: data?.typical_project_size,
+              error
+            });
           } else {
             data = viewData;
             error = viewError;
@@ -147,6 +154,11 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               itemType: data.item_type,
               budgetPerUnit: data.budget_per_unit,
               budgetPerTypicalSize: data.budget_per_typical_size
+            });
+            
+            console.log('📊 Set fetchedProjectInfo:', {
+              estimatedTotalTime: data.estimated_total_time,
+              typicalProjectSize: data.typical_project_size
             });
           } else if (error) {
             console.error('Error fetching project info:', error);
