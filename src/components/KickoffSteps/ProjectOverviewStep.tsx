@@ -80,6 +80,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     typicalProjectSize?: number | null;
     scalingUnit?: string | null;
     itemType?: string | null;
+    budgetPerUnit?: string | null;
+    budgetPerTypicalSize?: string | null;
   } | null>(null);
   
   // Handle both camelCase (from transformed Project interface) and snake_case (from raw database)
@@ -134,7 +136,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     };
     
     fetchIfNeeded();
-  }, [templateProject?.id, templateProject?.skillLevel, templateProject?.effortLevel, templateProject?.projectChallenges, templateProject?.estimatedTime, templateProject?.estimatedTotalTime, templateProject?.typicalProjectSize, templateProject?.scalingUnit]);
+  }, [templateProject?.id, templateProject?.skillLevel, templateProject?.effortLevel, templateProject?.projectChallenges, templateProject?.estimatedTime, templateProject?.estimatedTotalTime, templateProject?.typicalProjectSize, templateProject?.scalingUnit, (templateProject as any)?.budgetPerUnit, (templateProject as any)?.budgetPerTypicalSize]);
 
   // Use templateProject fields first (already transformed), then fetched info, then currentProjectRun
   const displayScalingUnit = templateProject?.scalingUnit ?? fetchedProjectInfo?.scalingUnit ?? (currentProjectRun as any)?.scalingUnit;
@@ -142,6 +144,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const displaySkillLevel = templateProject?.skillLevel ?? fetchedProjectInfo?.skillLevel ?? (currentProjectRun as any)?.skillLevel;
   const displayEstimatedTime = templateProject?.estimatedTime ?? fetchedProjectInfo?.estimatedTime ?? (currentProjectRun as any)?.estimatedTime;
   const displayEffortLevel = templateProject?.effortLevel ?? fetchedProjectInfo?.effortLevel ?? (currentProjectRun as any)?.effortLevel;
+  
+  // Budget fields - handle both camelCase and snake_case
+  const rawBudgetPerUnit = (templateProject as any)?.budgetPerUnit ?? (templateProject as any)?.budget_perUnit ?? fetchedProjectInfo?.budgetPerUnit ?? (currentProjectRun as any)?.budgetPerUnit ?? (currentProjectRun as any)?.budget_perUnit;
+  const displayBudgetPerUnit = rawBudgetPerUnit && typeof rawBudgetPerUnit === 'string' 
+    ? (rawBudgetPerUnit.trim() || null)
+    : (rawBudgetPerUnit || null);
+  
+  const rawBudgetPerTypicalSize = (templateProject as any)?.budgetPerTypicalSize ?? (templateProject as any)?.budget_perTypicalsize ?? fetchedProjectInfo?.budgetPerTypicalSize ?? (currentProjectRun as any)?.budgetPerTypicalSize ?? (currentProjectRun as any)?.budget_perTypicalsize;
+  const displayBudgetPerTypicalSize = rawBudgetPerTypicalSize && typeof rawBudgetPerTypicalSize === 'string' 
+    ? (rawBudgetPerTypicalSize.trim() || null)
+    : (rawBudgetPerTypicalSize || null);
   
   // Debug logging to help diagnose missing fields
   useEffect(() => {
@@ -547,6 +560,56 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                     <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
                   ) : null}
                   {!displayEstimatedTotalTime && !displayTypicalProjectSize && (
+                    <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm">Estimated Budget</Label>
+              <div className="mt-2 space-y-2">
+                {/* Line 1: Budget per unit + unit */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {displayBudgetPerUnit ? (
+                    <>
+                      <Badge variant="outline" className="text-xs sm:text-sm">
+                        ${displayBudgetPerUnit}
+                      </Badge>
+                      <span className="text-xs sm:text-sm text-muted-foreground">per</span>
+                    </>
+                  ) : null}
+                  {formattedScalingUnit ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground">
+                      {formattedScalingUnit}
+                    </span>
+                  ) : displayScalingUnit ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground">
+                      {displayScalingUnit.toLowerCase().startsWith('per ') ? displayScalingUnit.toLowerCase().replace('per ', '') : displayScalingUnit.toLowerCase()}
+                    </span>
+                  ) : null}
+                  {!displayBudgetPerUnit && !formattedScalingUnit && !displayScalingUnit && (
+                    <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
+                  )}
+                </div>
+                
+                {/* Line 2: Budget per typical project size */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {displayBudgetPerTypicalSize ? (
+                    <Badge variant="outline" className="text-xs sm:text-sm">
+                      ${displayBudgetPerTypicalSize}
+                    </Badge>
+                  ) : null}
+                  {displayBudgetPerTypicalSize && displayTypicalProjectSize ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground">per</span>
+                  ) : null}
+                  {displayTypicalProjectSize ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground">
+                      {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit : (displayScalingUnit ? displayScalingUnit.toLowerCase().replace('per ', '') : 'units')} typical project size
+                    </span>
+                  ) : displayBudgetPerTypicalSize ? (
+                    <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
+                  ) : null}
+                  {!displayBudgetPerTypicalSize && !displayTypicalProjectSize && (
                     <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
                   )}
                 </div>
