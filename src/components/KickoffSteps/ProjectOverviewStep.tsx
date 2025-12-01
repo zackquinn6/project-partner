@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2, Eye, ArrowDown, HelpCircle } from 'lucide-react';
+import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2, Eye, ArrowUp, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
 import { useNavigate } from 'react-router-dom';
@@ -192,20 +192,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
     return (
       <div className="mt-2 relative pb-1">
-        {/* Arrow indicator - positioned above with "This project" text */}
-        {hasValue && (
-          <div
-            className="absolute -top-8 left-0 flex flex-col items-center justify-center transition-all duration-200 z-10"
-            style={{
-              left: `${getArrowPosition(position)}%`,
-              transform: 'translateX(-50%)'
-            }}
-          >
-            <span className="text-[9px] text-muted-foreground whitespace-nowrap">This project</span>
-            <ArrowDown className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
-          </div>
-        )}
-        
         {/* Slider track with colored sections */}
         <div className="relative h-6 rounded-full flex items-center overflow-hidden">
           {/* Color blocks background - green, blue, black */}
@@ -226,6 +212,21 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
           ))}
         </div>
+        
+        {/* Arrow indicator - positioned below with "This project" text */}
+        {hasValue && (
+          <div
+            className="absolute top-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mt-1"
+            style={{
+              left: `${getArrowPosition(position)}%`,
+              transform: 'translateX(-50%)'
+            }}
+          >
+            <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
+            <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5">This project</span>
+          </div>
+        )}
+        
         {!hasValue && (
           <p className="text-xs text-muted-foreground mt-1 text-center">Not specified</p>
         )}
@@ -408,7 +409,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       <Card>
         <CardHeader className="p-3 sm:p-4">
           <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
-            Project Overview
+            Project Overview: {currentProjectRun.name}
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm mt-0.5">
@@ -416,32 +417,28 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <div className="flex-1 min-w-0">
-              <Label className="text-xs sm:text-sm">Project Name</Label>
-              <p className="text-sm font-medium mt-0.5">{currentProjectRun.name}</p>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="flex-1 min-w-0">
               <Label className="text-xs sm:text-sm">Description</Label>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{currentProjectRun.description}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{currentProjectRun.description || 'No description provided'}</p>
             </div>
-          </div>
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <Label className="text-xs sm:text-sm">Project Challenges</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRiskManagementOpen(true)}
-                className="h-7 px-2.5 text-xs bg-muted/50 hover:bg-muted border-muted"
-              >
-                <Eye className="w-3 h-3 mr-1.5" />
-                See All Potential Challenges
-              </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <Label className="text-xs sm:text-sm">Project Challenges</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRiskManagementOpen(true)}
+                  className="h-7 px-2.5 text-xs bg-muted/50 hover:bg-muted border-muted"
+                >
+                  <Eye className="w-3 h-3 mr-1.5" />
+                  See All Potential Challenges
+                </Button>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-line mt-0.5">
+                {displayProjectChallenges || 'None specified'}
+              </p>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-line mt-0.5">
-              {displayProjectChallenges || 'None specified'}
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-3 pt-3 border-t">
