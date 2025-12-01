@@ -29,7 +29,13 @@ export const AppsLibraryDialog = ({
   onAppsSelected
 }: AppsLibraryDialogProps) => {
   const [tempSelected, setTempSelected] = useState<AppReference[]>(selectedApps);
-  const nativeApps = getAllNativeApps();
+  const allNativeApps = getAllNativeApps();
+  // Sort native apps alphabetically by name
+  const nativeApps = [...allNativeApps].sort((a, b) => {
+    const nameA = (a.appName || '').toLowerCase();
+    const nameB = (b.appName || '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
   
   // Reset temp selection when dialog opens or selectedApps changes
   useEffect(() => {
@@ -113,7 +119,7 @@ export const AppsLibraryDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-[90vw] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Apps to Workflow Step</DialogTitle>
           <DialogDescription>
@@ -286,6 +292,11 @@ export const AppsLibraryDialog = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {tempSelected
                   .filter(app => app.appType !== 'native')
+                  .sort((a, b) => {
+                    const nameA = (a.appName || '').toLowerCase();
+                    const nameB = (b.appName || '').toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  })
                   .map((app) => {
                     const IconComponent = getIconComponent(app.icon);
                     return (
