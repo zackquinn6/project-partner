@@ -1443,10 +1443,6 @@ export function UnifiedProjectManagement({
                   <Sparkles className="w-4 h-4" />
                   AI Generator
                 </Button>
-                <Button onClick={() => setPfmeaOpen(true)} variant="outline" className="flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  PFMEA
-                </Button>
                 <Button onClick={fetchProjects} variant="outline" className="flex items-center gap-2">
                   <RefreshCw className="w-4 h-4" />
                   Refresh
@@ -1508,6 +1504,10 @@ export function UnifiedProjectManagement({
                                 <Button onClick={startProjectEdit} className="flex items-center gap-1">
                                   <Edit className="w-4 h-4" />
                                   Edit Project
+                                </Button>
+                                <Button onClick={() => setPfmeaOpen(true)} variant="outline" className="flex items-center gap-1">
+                                  <Shield className="w-4 h-4" />
+                                  PFMEA
                                 </Button>
                                 <Button onClick={() => handleDeleteProjectClick(selectedProject.id, selectedProject.name)} variant="ghost" size="sm" className="text-destructive hover:text-destructive">
                                   <Trash2 className="w-4 h-4" />
@@ -2626,7 +2626,7 @@ export function UnifiedProjectManagement({
             </div>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
-            <PFMEAManagement />
+            <PFMEAManagement projectId={selectedProject?.id} />
           </div>
         </DialogContent>
       </Dialog>

@@ -84,7 +84,11 @@ interface PFMEAActionItem {
   completion_notes?: string;
 }
 
-export const PFMEAManagement: React.FC = () => {
+interface PFMEAManagementProps {
+  projectId?: string; // Optional project ID to bypass selection and go directly to editor
+}
+
+export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) => {
   const [pfmeaProjects, setPfmeaProjects] = useState<PFMEAProject[]>([]);
   const [selectedPfmeaProject, setSelectedPfmeaProject] = useState<PFMEAProject | null>(null);
   const [projects, setProjects] = useState<DatabaseProject[]>([]);
@@ -99,6 +103,17 @@ export const PFMEAManagement: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // If projectId is provided, automatically find and select the PFMEA project
+  useEffect(() => {
+    if (projectId && pfmeaProjects.length > 0) {
+      const pfmeaProject = pfmeaProjects.find(p => p.project_id === projectId);
+      if (pfmeaProject) {
+        setSelectedPfmeaProject(pfmeaProject);
+        fetchPfmeaDetails(pfmeaProject.id);
+      }
+    }
+  }, [projectId, pfmeaProjects]);
 
   const fetchData = async () => {
     try {
@@ -520,6 +535,11 @@ export const PFMEAManagement: React.FC = () => {
   };
 
   const renderProjectSelector = () => {
+    // If projectId is provided, skip the project selection screen
+    if (projectId) {
+      return null;
+    }
+    
     // If no project is selected, show the full card
     if (!selectedPfmeaProject) {
       return (
