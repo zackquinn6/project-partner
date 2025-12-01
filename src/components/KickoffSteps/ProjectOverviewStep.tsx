@@ -500,7 +500,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">per</span>
                       <Badge variant="outline" className="text-xs sm:text-sm">
-                        ({formattedScalingUnit})
+                        {formattedScalingUnit}
                       </Badge>
                     </div>
                   ) : null}
@@ -513,7 +513,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">per</span>
                       <Badge variant="outline" className="text-xs sm:text-sm">
-                        ({displayTypicalProjectSize} {formattedScalingUnit})
+                        {displayTypicalProjectSize} {formattedScalingUnit}
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
                     </div>
@@ -565,7 +565,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">per</span>
                       <Badge variant="outline" className="text-xs sm:text-sm">
-                        ({formattedScalingUnit})
+                        {formattedScalingUnit}
                       </Badge>
                     </div>
                   ) : null}
@@ -578,7 +578,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">per</span>
                       <Badge variant="outline" className="text-xs sm:text-sm">
-                        ({displayTypicalProjectSize} {formattedScalingUnit})
+                        {displayTypicalProjectSize} {formattedScalingUnit}
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
                     </div>
