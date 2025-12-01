@@ -411,29 +411,6 @@ export default function UserView({
   // This ensures workflow navigation follows the same order as structure manager
   const workflowPhases = enforceStandardPhaseOrdering(rawWorkflowPhases);
   
-    isUsingImmutableSnapshot: !!currentProjectRun,
-    rawProjectRunPhases: currentProjectRun?.phases ? 'exists' : 'missing',
-    rawProjectRunPhasesType: typeof currentProjectRun?.phases,
-    rawProjectRunPhasesIsArray: Array.isArray(currentProjectRun?.phases),
-    phasesLength: workflowPhases?.length || 0,
-    workflowPhasesType: typeof workflowPhases,
-    workflowPhasesIsArray: Array.isArray(workflowPhases),
-    firstPhase: workflowPhases?.[0] ? {
-      id: workflowPhases[0].id,
-      name: workflowPhases[0].name,
-      operationsExists: !!workflowPhases[0].operations,
-      operationsIsArray: Array.isArray(workflowPhases[0].operations),
-      operationsCount: workflowPhases[0].operations?.length || 0,
-      firstOperation: workflowPhases[0].operations?.[0] ? {
-        id: workflowPhases[0].operations[0].id,
-        name: workflowPhases[0].operations[0].name,
-        stepsExists: !!workflowPhases[0].operations[0].steps,
-        stepsIsArray: Array.isArray(workflowPhases[0].operations[0].steps),
-        stepsCount: workflowPhases[0].operations[0].steps?.length || 0
-      } : null
-    } : null
-  });
-  
   // CRITICAL: Project runs should preserve exact template phase structure
   // Template structure: Standard phases → Custom phases → Standard phases (Ordering) → Close Project
   // Navigation logic:
@@ -448,15 +425,6 @@ export default function UserView({
     // Use organizeWorkflowNavigation to properly structure based on flow type
     // This handles single-piece-flow vs batch-flow correctly
     const result = organizeWorkflowNavigation(workflowPhases, projectSpaces, currentProjectRun);
-        phaseName: item.phase?.name,
-        spacesCount: item.spaces?.length || 0,
-        stepsCount: item.steps?.length || 0,
-        hasPhase: !!item.phase
-      })),
-      workflowPhasesCount: workflowPhases.length,
-      projectSpacesCount: projectSpaces.length,
-      hasProjectRun: !!currentProjectRun
-    });
     
     return result;
   }, [workflowPhases, projectSpaces, currentProjectRun]);
@@ -647,11 +615,6 @@ export default function UserView({
         setCurrentStepIndex(firstIncompleteIndex);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
-    } else {
-        viewMode,
-        allStepsLength: allSteps.length,
-        isKickoffComplete
-      });
     }
   }, [viewMode, allSteps.length, isKickoffComplete, completedSteps]);
 
@@ -832,16 +795,6 @@ export default function UserView({
   // SIMPLIFIED VIEW MODE LOGIC - Single effect to prevent race conditions
   useEffect(() => {
     // View mode logic
-    { 
-      resetToListing, 
-      forceListingMode,
-      showProfile,
-      currentProjectRun: !!currentProjectRun,
-      currentProjectRunStatus: currentProjectRun?.status,
-      projectRunId,
-      viewMode
-    });
-
     // CRITICAL FIX: Don't open cancelled projects - clear them completely
     if (currentProjectRun && currentProjectRun.status === 'cancelled') {
       setCurrentProjectRun(null);
@@ -1055,18 +1008,6 @@ export default function UserView({
     : 0;
   
   // Progress calculation
-  {
-    totalPhases: activeProject?.phases?.length || 0,
-    phasesWithSteps: activeProject?.phases?.filter(p => p.operations?.some(o => o.steps?.length > 0)).length || 0,
-    totalSteps: totalSteps,
-    workflowCompletedSteps: completedStepsCount,
-    completedStepsFromState: completedSteps.size,
-    completedStepsArray: Array.from(completedSteps).slice(0, 10),
-    calculatedProgress: progress,
-    projectRunProgress: currentProjectRun?.progress,
-    projectRunCompletedSteps: currentProjectRun?.completedSteps?.length,
-    projectRunCompletedStepsPreview: currentProjectRun?.completedSteps?.slice(0, 10) || []
-  });
   
   
   // CRITICAL: Update database progress to match calculated progress
@@ -1270,31 +1211,6 @@ export default function UserView({
     isCompletingStepRef.current = true;
     
     try {
-      // handleStepComplete
-      {
-        stepId: currentStep.id,
-        stepName: currentStep.step,
-        stepPhase: currentStep.phaseName,
-        currentStepIndex,
-        totalSteps: allSteps.length,
-        allStepNames: allSteps.map((s, i) => ({ index: i, id: s.id, name: s.step, phase: s.phaseName }))
-      });
-      
-      // CRITICAL DEBUG: Check if we're actually on the step the user thinks we're on
-      {
-        userExpectedPhase: "Ordering", // User says they're completing ordering
-        actualCurrentStep: {
-          id: currentStep.id,
-          name: currentStep.step,
-          phase: currentStep.phaseName,
-          index: currentStepIndex
-        },
-        orderingSteps: allSteps.filter(s => s.phaseName === 'Ordering').map((s, i) => ({
-          stepId: s.id,
-          stepName: s.step,
-          globalIndex: allSteps.findIndex(step => step.id === s.id)
-        }))
-      });
       
       // Check if all outputs for this step are completed
       const stepOutputs = currentStep.outputs || [];
@@ -1348,11 +1264,6 @@ export default function UserView({
           };
           
           // Immediately persisting step completion
-          {
-            stepId: currentStep.id,
-            newCompletedSteps: uniqueCompletedSteps,
-            progress: calculatedProgress
-          });
           
           // CRITICAL: Wait for database update to complete before clearing flag
           await updateProjectRun(updatedProjectRun);
@@ -1428,14 +1339,6 @@ export default function UserView({
           const isPhaseComplete = phaseSteps.every(step => newCompletedStepsSet.has(step.id));
           
           // Phase completion check
-          {
-            phaseName: currentPhase.name,
-            totalPhaseSteps: phaseSteps.length,
-            completedPhaseSteps: phaseSteps.filter(step => newCompletedStepsSet.has(step.id)).length,
-            isPhaseComplete,
-            currentStepName: currentStep.step,
-            currentStepPhase: currentStep.phaseName
-          });
           
           if (isPhaseComplete) {
             
@@ -1484,18 +1387,9 @@ export default function UserView({
             // No need to store separately - it's inferred from all steps being complete
           } else {
             // Phase not yet complete
-            {
-              phaseName: currentPhase.name,
-              remainingSteps: phaseSteps.filter(step => !newCompletedStepsSet.has(step.id)).map(s => s.step)
-            });
           }
         } else {
           // No current phase found for step
-          {
-            stepId: currentStep.id,
-            stepName: currentStep.step,
-            expectedPhase: currentStep.phaseName
-          });
         }
         
         // Check if all steps are now complete
