@@ -813,11 +813,8 @@ export default function UserView({
       return;
     }
     
-    // Don't try to load project run if we're in listing mode (e.g., after exit from kickoff)
-    if (viewMode === 'listing') {
-      return;
-    }
-    
+    // CRITICAL: If projectRunId is provided, we MUST load it regardless of current viewMode
+    // This ensures new projects from ProjectCatalog open to kickoff even if we're in listing mode
     if (projectRunId) {
       console.log('🎯 UserView: Loading project run with ID:', projectRunId);
       const projectRun = projectRuns.find(run => run.id === projectRunId);
@@ -1018,7 +1015,8 @@ export default function UserView({
     }
 
     // CRITICAL FIX: ALWAYS respect forceListingMode - Progress Board must show listing
-    if (forceListingMode) {
+    // BUT: Don't force listing if we have a projectRunId (new project from catalog)
+    if (forceListingMode && !projectRunId) {
       console.log('🔄 UserView: forceListingMode active - staying in listing mode');
       if (viewMode !== 'listing') {
         setViewMode('listing');
@@ -1051,13 +1049,15 @@ export default function UserView({
     // Determine new view mode based on priority
     let newViewMode: 'listing' | 'workflow' = viewMode;
 
-    if (showProfile || forceListingMode) {
+    // CRITICAL: If projectRunId is provided (new project from catalog), prioritize opening to workflow
+    // Don't force listing mode if we're trying to open a new project
+    if (projectRunId && currentProjectRun) {
+      newViewMode = 'workflow';
+    } else if (showProfile || (forceListingMode && !projectRunId)) {
       newViewMode = 'listing';
     } else if (resetToListing && !currentProjectRun) {
       newViewMode = 'listing';
       setShowProfileManager(false);
-    } else if (projectRunId && currentProjectRun) {
-      newViewMode = 'workflow';
     }
 
     // Only update if view mode actually changed
