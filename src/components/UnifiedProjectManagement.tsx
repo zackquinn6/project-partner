@@ -243,8 +243,12 @@ export function UnifiedProjectManagement({
         typical_project_size: editedProject.typical_project_size !== undefined ? editedProject.typical_project_size : selectedProject.typical_project_size,
         scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
         item_type: editedProject.item_type !== undefined ? editedProject.item_type : selectedProject.item_type,
-        budget_per_unit: (editedProject as any).budget_per_unit !== undefined ? ((editedProject as any).budget_per_unit === '' ? null : (editedProject as any).budget_per_unit) : ((selectedProject as any).budget_per_unit || null),
-        budget_per_typical_size: (editedProject as any).budget_per_typical_size !== undefined ? ((editedProject as any).budget_per_typical_size === '' ? null : (editedProject as any).budget_per_typical_size) : ((selectedProject as any).budget_per_typical_size || null),
+        budget_per_unit: (editedProject as any).hasOwnProperty('budget_per_unit') 
+          ? ((editedProject as any).budget_per_unit === '' ? null : (editedProject as any).budget_per_unit)
+          : ((selectedProject as any).budget_per_unit ?? null),
+        budget_per_typical_size: (editedProject as any).hasOwnProperty('budget_per_typical_size')
+          ? ((editedProject as any).budget_per_typical_size === '' ? null : (editedProject as any).budget_per_typical_size)
+          : ((selectedProject as any).budget_per_typical_size ?? null),
         project_type: editedProject.project_type || selectedProject.project_type || 'primary',
         updated_at: new Date().toISOString(),
         // Always include project_challenges - determine value below
@@ -294,7 +298,17 @@ export function UnifiedProjectManagement({
       console.log('💾 Saving project edit:', {
         projectId: selectedProject.id,
         fields: Object.keys(updateData),
-        changes: updateData
+        changes: updateData,
+        budget_per_unit: {
+          edited: (editedProject as any).budget_per_unit,
+          selected: (selectedProject as any).budget_per_unit,
+          final: updateData.budget_per_unit
+        },
+        budget_per_typical_size: {
+          edited: (editedProject as any).budget_per_typical_size,
+          selected: (selectedProject as any).budget_per_typical_size,
+          final: updateData.budget_per_typical_size
+        }
       });
 
       const {
