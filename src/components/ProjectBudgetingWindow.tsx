@@ -419,16 +419,14 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
       modal={false}
     >
       <DialogPortal>
-        {open && (
-          <DialogOverlay 
-            className={cn(
-              "bg-black/60 backdrop-blur-md fixed inset-0 z-[90]",
-              "data-[state=open]:animate-in data-[state=closed]:animate-out",
-              "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-            )}
-            style={{ pointerEvents: 'auto' }}
-          />
-        )}
+        <DialogOverlay 
+          className={cn(
+            "bg-black/60 backdrop-blur-md fixed inset-0 z-[90]",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+          )}
+          style={{ pointerEvents: 'auto' }}
+        />
         <DialogPrimitive.Content
           className={cn(
             "w-full h-screen max-w-full max-h-full",

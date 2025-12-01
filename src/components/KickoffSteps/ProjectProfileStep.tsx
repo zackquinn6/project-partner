@@ -420,9 +420,17 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
       // CRITICAL: Update local cache/state with the exact data we just saved to database
       // This ensures the context has the latest initial_budget immediately
+      // CRITICAL: Update context with the latest data including initial_budget
+      // This ensures ProjectBudgetingWindow can immediately read initial_budget from context
       // The updateProjectRun function will also update the database, but we've already done that above
       // This ensures the context is in sync with the database
-      await updateProjectRun(updatedProjectRun);
+      const contextUpdatedRun = {
+        ...updatedProjectRun,
+        initial_budget: projectForm.initialBudget.trim() || null,
+        initial_timeline: projectForm.initialTimeline || null,
+        initial_sizing: projectForm.initialSizing.trim() || null
+      };
+      await updateProjectRun(contextUpdatedRun);
       
       console.log('🎯 ProjectProfileStep: All requirements met - calling onComplete');
       onComplete();
