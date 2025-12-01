@@ -700,7 +700,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             budget_data: projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : null,
             issue_reports: projectRun.issue_reports ? JSON.stringify(projectRun.issue_reports) : null,
             time_tracking: projectRun.time_tracking ? JSON.stringify(projectRun.time_tracking) : null,
-            progress_reporting_style: projectRun.progress_reporting_style || 'linear'
+            progress_reporting_style: projectRun.progress_reporting_style || 'linear',
+            initial_budget: (projectRun as any).initial_budget || null,
+            initial_timeline: (projectRun as any).initial_timeline || null,
+            initial_sizing: (projectRun as any).initial_sizing || null
           })
           .eq('id', projectRun.id)
           .eq('user_id', user.id);

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { cn } from '@/lib/utils';
+import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,7 +60,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
 
   useEffect(() => {
     // Debug: Log initial_budget value to help diagnose the issue
-    if (currentProjectRun) {
+    if (currentProjectRun && open) {
       const budgetValue = (currentProjectRun as any)?.initial_budget || (currentProjectRun as any)?.initialBudget;
       console.log('💰 ProjectBudgetingWindow: Checking initial_budget:', {
         hasCurrentProjectRun: !!currentProjectRun,
@@ -65,7 +68,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         initialBudget: (currentProjectRun as any)?.initialBudget,
         budgetValue,
         budgetValueType: typeof budgetValue,
-        allKeys: Object.keys(currentProjectRun).filter(k => k.toLowerCase().includes('budget'))
+        allKeys: Object.keys(currentProjectRun).filter(k => k.toLowerCase().includes('budget')),
+        projectRunId: currentProjectRun.id
       });
     }
     
@@ -299,8 +303,27 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     : [];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden md:!top-[50%] md:!left-[50%] md:!translate-x-[-50%] md:!translate-y-[-50%] z-[91] [&>div:first-child]:z-[90] [&>div:first-child]:bg-black/60 [&>div:first-child]:backdrop-blur-md">
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      // Only close if explicitly set to false (user clicked close)
+      // Don't close when other dialogs open
+      if (!newOpen) {
+        onOpenChange(false);
+      }
+    }} modal={false}>
+      <DialogPortal>
+        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-[90] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Content
+          className={cn(
+            "w-full h-screen max-w-full max-h-full",
+            "md:max-w-[90vw] md:h-[90vh] md:rounded-lg",
+            "p-0 overflow-hidden flex flex-col",
+            "fixed left-[50%] top-[50%] z-[91] translate-x-[-50%] translate-y-[-50%]",
+            "border bg-background shadow-lg",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          )}
+        >
         <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-lg md:text-xl font-bold">Project Budgeting</DialogTitle>
@@ -647,7 +670,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         </TabsContent>
       </Tabs>
         </div>
-      </DialogContent>
+        </DialogPrimitive.Content>
+    </DialogPortal>
     </Dialog>
   );
 };
