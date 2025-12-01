@@ -14,14 +14,17 @@ interface CompactProcessVariablesTableProps {
 }
 
 export function CompactProcessVariablesTable({ variables, onVariablesChange, onAddVariable }: CompactProcessVariablesTableProps) {
+  // Ensure variables is always an array to prevent undefined errors
+  const safeVariables = variables || [];
+  
   const handleVariableChange = (index: number, field: keyof StepInput, value: any) => {
-    const updatedVariables = [...variables];
+    const updatedVariables = [...safeVariables];
     updatedVariables[index] = { ...updatedVariables[index], [field]: value };
     onVariablesChange(updatedVariables);
   };
 
   const handleRemoveVariable = (index: number) => {
-    const updatedVariables = variables.filter((_, i) => i !== index);
+    const updatedVariables = safeVariables.filter((_, i) => i !== index);
     onVariablesChange(updatedVariables);
   };
 
@@ -30,7 +33,7 @@ export function CompactProcessVariablesTable({ variables, onVariablesChange, onA
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Settings className="w-4 h-4" />
-          Process Variables ({variables.length})
+          Process Variables ({safeVariables.length})
         </h3>
         <Button size="sm" variant="outline" onClick={onAddVariable}>
           <Plus className="w-3 h-3 mr-1" />
@@ -38,7 +41,7 @@ export function CompactProcessVariablesTable({ variables, onVariablesChange, onA
         </Button>
       </div>
 
-      {variables.length > 0 && (
+      {safeVariables.length > 0 && (
         <div className="border rounded-md">
           <Table>
             <TableHeader>
@@ -50,7 +53,7 @@ export function CompactProcessVariablesTable({ variables, onVariablesChange, onA
               </TableRow>
             </TableHeader>
             <TableBody>
-              {variables.map((variable, index) => (
+              {safeVariables.map((variable, index) => (
                 <TableRow key={variable.id} className="text-xs">
                   <TableCell className="py-2">
                     <div className="flex items-center gap-2">
@@ -134,7 +137,7 @@ export function CompactProcessVariablesTable({ variables, onVariablesChange, onA
         </div>
       )}
 
-      {variables.length === 0 && (
+      {safeVariables.length === 0 && (
         <div className="text-center py-4 text-xs text-muted-foreground border border-dashed rounded-md">
           No process variables defined
         </div>

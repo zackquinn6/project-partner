@@ -15,14 +15,17 @@ interface CompactOutputsTableProps {
 }
 
 export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onEditOutput }: CompactOutputsTableProps) {
+  // Ensure outputs is always an array to prevent undefined errors
+  const safeOutputs = outputs || [];
+  
   const handleOutputChange = (index: number, field: keyof Output, value: any) => {
-    const updatedOutputs = [...outputs];
+    const updatedOutputs = [...safeOutputs];
     updatedOutputs[index] = { ...updatedOutputs[index], [field]: value };
     onOutputsChange(updatedOutputs);
   };
 
   const handleRemoveOutput = (index: number) => {
-    const updatedOutputs = outputs.filter((_, i) => i !== index);
+    const updatedOutputs = safeOutputs.filter((_, i) => i !== index);
     onOutputsChange(updatedOutputs);
   };
 
@@ -49,7 +52,7 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <FileOutput className="w-4 h-4" />
-          Step Outputs ({outputs.length})
+          Step Outputs ({safeOutputs.length})
         </h3>
         <Button size="sm" variant="outline" onClick={onAddOutput}>
           <Plus className="w-3 h-3 mr-1" />
@@ -57,7 +60,7 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
         </Button>
       </div>
 
-      {outputs.length > 0 && (
+      {safeOutputs.length > 0 && (
         <div className="border rounded-md">
           <Table>
             <TableHeader>
@@ -69,7 +72,7 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
               </TableRow>
             </TableHeader>
             <TableBody>
-              {outputs.map((output, index) => (
+              {safeOutputs.map((output, index) => (
                 <TableRow key={output.id} className="text-xs">
                   <TableCell className="py-2">
                     <Input
@@ -138,7 +141,7 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
         </div>
       )}
 
-      {outputs.length === 0 && (
+      {safeOutputs.length === 0 && (
         <div className="text-center py-4 text-xs text-muted-foreground border border-dashed rounded-md">
           No outputs defined yet
         </div>
