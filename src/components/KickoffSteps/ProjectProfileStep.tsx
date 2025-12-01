@@ -418,7 +418,10 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         updatedAt: new Date()
       };
 
-      // Update local cache/state (this doesn't hit the database)
+      // CRITICAL: Update local cache/state with the exact data we just saved to database
+      // This ensures the context has the latest initial_budget immediately
+      // The updateProjectRun function will also update the database, but we've already done that above
+      // This ensures the context is in sync with the database
       await updateProjectRun(updatedProjectRun);
       
       console.log('🎯 ProjectProfileStep: All requirements met - calling onComplete');
