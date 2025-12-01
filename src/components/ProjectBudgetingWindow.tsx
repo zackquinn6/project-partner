@@ -223,12 +223,25 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         lastUpdated: new Date().toISOString()
       };
 
-      await updateProjectRun({
+      console.log('💾 ProjectBudgetingWindow: Saving budget data:', {
+        itemsCount: items.length,
+        entriesCount: entries.length,
+        projectRunId: currentProjectRun.id
+      });
+
+      const updatedProjectRun = {
         ...currentProjectRun,
         budget_data: budgetData
-      });
+      };
+
+      await updateProjectRun(updatedProjectRun);
       
-      console.log('✅ Budget data saved successfully');
+      // CRITICAL: Update local state immediately to reflect the saved data
+      // This ensures the UI shows the saved data even if context hasn't updated yet
+      setBudgetItems(items);
+      setActualEntries(entries);
+      
+      console.log('✅ Budget data saved successfully to database');
     } catch (error) {
       console.error('❌ Error saving budget data:', error);
       toast({ 
@@ -236,6 +249,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive' 
       });
+      throw error; // Re-throw so calling function knows save failed
     }
   };
 

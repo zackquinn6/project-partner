@@ -636,7 +636,11 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     if (!user) return;
 
     // Create a unique key for this update to detect duplicates
-    const updateKey = `${projectRun.id}-${projectRun.progress}-${JSON.stringify(projectRun.completedSteps)}`;
+    // Include budget_data, issue_reports, and time_tracking to ensure these updates are never skipped
+    const budgetDataKey = projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : 'null';
+    const issueReportsKey = projectRun.issue_reports ? JSON.stringify(projectRun.issue_reports) : 'null';
+    const timeTrackingKey = projectRun.time_tracking ? JSON.stringify(projectRun.time_tracking) : 'null';
+    const updateKey = `${projectRun.id}-${projectRun.progress}-${JSON.stringify(projectRun.completedSteps)}-${budgetDataKey}-${issueReportsKey}-${timeTrackingKey}`;
     
     // Skip if this is the exact same update as the last one
     if (lastUpdateRef.current === updateKey) {
