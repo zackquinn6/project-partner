@@ -229,29 +229,52 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
     try {
       // Update project run in database with new fields
-      // CRITICAL: Only update initial_sizing if it has a value to avoid triggering space_sizing inserts with null space_id
-      // DO NOT include initial_sizing in update if empty - this prevents database triggers from trying to create space_sizing records
-      const updateData: any = {
+      // CRITICAL: Update home_id and initial_sizing separately to avoid trigger issues
+      // First update: fields that don't trigger space_sizing creation
+      const baseUpdateData: any = {
         custom_project_name: projectForm.customProjectName.trim(),
-        home_id: selectedHomeId || homes[0]?.id || null,
         initial_timeline: projectForm.initialTimeline || null,
         initial_budget: projectForm.initialBudget.trim() || null,
         updated_at: new Date().toISOString()
       };
       
-      // Only include initial_sizing if it has a value - DO NOT set to null as this triggers database functions
-      if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0) {
-        updateData.initial_sizing = projectForm.initialSizing.trim();
-      }
-      // If empty, simply don't include it in the update - this prevents the constraint violation
-      
-      const { error: dbError } = await supabase
+      const { error: baseError } = await supabase
         .from('project_runs')
-        .update(updateData)
+        .update(baseUpdateData)
         .eq('id', currentProjectRun.id);
 
-      if (dbError) throw dbError;
+      if (baseError) throw baseError;
+      
+      // Second update: home_id (this might trigger space processing, so do it separately)
+      const homeId = selectedHomeId || homes[0]?.id || null;
+      if (homeId !== currentProjectRun.home_id) {
+        const { error: homeError } = await supabase
+          .from('project_runs')
+          .update({ home_id: homeId, updated_at: new Date().toISOString() })
+          .eq('id', currentProjectRun.id);
+        
+        if (homeError) throw homeError;
+      }
+      
+      // Third update: initial_sizing ONLY if it has a value and only after home_id is set
+      // This prevents the trigger from trying to create space_sizing records with null space_id
+      if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0) {
+        const { error: sizingError } = await supabase
+          .from('project_runs')
+          .update({ 
+            initial_sizing: projectForm.initialSizing.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentProjectRun.id);
+        
+        if (sizingError) {
+          console.error('Error updating initial_sizing:', sizingError);
+          // Don't throw - this is optional and might fail if no spaces exist yet
+          // The project can still proceed without initial_sizing
+        }
+      }
 
+      // Update local state for optimistic UI update
       const updatedProjectRun = {
         ...currentProjectRun,
         customProjectName: projectForm.customProjectName.trim(),
@@ -262,6 +285,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         updatedAt: new Date()
       };
 
+      // Update local cache/state (this doesn't hit the database)
+      // The database updates were already done above
       await updateProjectRun(updatedProjectRun);
       
       // CRITICAL FIX: Call onComplete to mark step 3 as complete
