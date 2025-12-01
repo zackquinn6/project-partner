@@ -120,7 +120,8 @@ export default function EditWorkflowView({
               step_title,
               description,
               step_type,
-              display_order
+              display_order,
+              apps
             `)
             .eq('operation_id', op.id)
             .order('display_order');
@@ -134,13 +135,31 @@ export default function EditWorkflowView({
             displayOrder: op.display_order,
             isStandard: op.is_reference || phaseData.is_standard,
             steps: (steps || [])
-              .map((s: any) => ({
-                id: s.id,
-                step: s.step_title,
-                description: s.description,
-                stepType: s.step_type,
-                displayOrder: s.display_order
-              }))
+              .map((s: any) => {
+                // Parse apps field - handle both JSON string and array
+                let parsedApps: any[] = [];
+                if (s.apps) {
+                  if (typeof s.apps === 'string') {
+                    try {
+                      parsedApps = JSON.parse(s.apps);
+                    } catch (e) {
+                      console.error('Error parsing apps JSON:', e);
+                      parsedApps = [];
+                    }
+                  } else if (Array.isArray(s.apps)) {
+                    parsedApps = s.apps;
+                  }
+                }
+                
+                return {
+                  id: s.id,
+                  step: s.step_title,
+                  description: s.description,
+                  stepType: s.step_type,
+                  displayOrder: s.display_order,
+                  apps: parsedApps
+                };
+              })
               .sort((a, b) => {
                 // Explicitly sort by displayOrder to ensure correct order
                 const aOrder = a.displayOrder ?? 999;
@@ -259,7 +278,8 @@ export default function EditWorkflowView({
                 step_title,
                 description,
                 step_type,
-                display_order
+                display_order,
+                apps
               `)
               .eq('operation_id', op.id)
               .order('display_order');
@@ -272,13 +292,31 @@ export default function EditWorkflowView({
               userPrompt: op.user_prompt,
               displayOrder: op.display_order,
               isStandard: op.is_reference,
-              steps: (steps || []).map((s: any) => ({
-                id: s.id,
-                step: s.step_title,
-                description: s.description,
-                stepType: s.step_type,
-                displayOrder: s.display_order
-              }))
+              steps: (steps || []).map((s: any) => {
+                // Parse apps field - handle both JSON string and array
+                let parsedApps: any[] = [];
+                if (s.apps) {
+                  if (typeof s.apps === 'string') {
+                    try {
+                      parsedApps = JSON.parse(s.apps);
+                    } catch (e) {
+                      console.error('Error parsing apps JSON:', e);
+                      parsedApps = [];
+                    }
+                  } else if (Array.isArray(s.apps)) {
+                    parsedApps = s.apps;
+                  }
+                }
+                
+                return {
+                  id: s.id,
+                  step: s.step_title,
+                  description: s.description,
+                  stepType: s.step_type,
+                  displayOrder: s.display_order,
+                  apps: parsedApps
+                };
+              })
             };
           }));
           
@@ -314,7 +352,8 @@ export default function EditWorkflowView({
                 step_title,
                 description,
                 step_type,
-                display_order
+                display_order,
+                apps
               `)
               .eq('operation_id', op.id)
               .order('display_order');
@@ -327,13 +366,31 @@ export default function EditWorkflowView({
               userPrompt: op.user_prompt,
               displayOrder: op.display_order,
               isStandard: op.is_reference,
-              steps: (steps || []).map((s: any) => ({
-                id: s.id,
-                step: s.step_title,
-                description: s.description,
-                stepType: s.step_type,
-                displayOrder: s.display_order
-              }))
+              steps: (steps || []).map((s: any) => {
+                // Parse apps field - handle both JSON string and array
+                let parsedApps: any[] = [];
+                if (s.apps) {
+                  if (typeof s.apps === 'string') {
+                    try {
+                      parsedApps = JSON.parse(s.apps);
+                    } catch (e) {
+                      console.error('Error parsing apps JSON:', e);
+                      parsedApps = [];
+                    }
+                  } else if (Array.isArray(s.apps)) {
+                    parsedApps = s.apps;
+                  }
+                }
+                
+                return {
+                  id: s.id,
+                  step: s.step_title,
+                  description: s.description,
+                  stepType: s.step_type,
+                  displayOrder: s.display_order,
+                  apps: parsedApps
+                };
+              })
             };
           }));
         }
@@ -1374,7 +1431,7 @@ export default function EditWorkflowView({
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Sparkles className="w-5 h-5" />
-                      Apps & Tools
+                      Apps for this step
                     </CardTitle>
                     
                   </CardHeader>
