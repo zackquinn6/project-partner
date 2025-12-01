@@ -1269,6 +1269,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                             </Label>
                           </div>
                         </div>
+                        <p className="text-[10px] text-muted-foreground mt-2 italic">
+                          The trade-off is between visible progress early (single-piece) and overall efficiency (batch).
+                        </p>
                       </div>
                     </div>
                   </CardContent>
