@@ -318,6 +318,9 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       </Label>
                     </div>
                   </div>
+                  <p className="text-[9px] text-muted-foreground mt-2 italic">
+                    The trade-off is between visible progress early (single-piece) and overall efficiency (batch).
+                  </p>
                   {onApplyOptimization && (
                     <Button
                       onClick={onApplyOptimization}
