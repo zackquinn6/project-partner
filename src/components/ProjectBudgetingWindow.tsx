@@ -549,39 +549,43 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-4">
-          <div>
-            <div className="text-sm text-muted-foreground">Total Budget</div>
-            <div className="text-2xl font-bold">${totalBudgeted.toFixed(2)}</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Total Actual</div>
-            <div className="text-2xl font-bold">${totalActual.toFixed(2)}</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Variance</div>
-            <div className={`text-2xl font-bold ${variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${variance.toFixed(2)}
+          {/* Summary Section - Stacked on mobile, side-by-side on desktop */}
+          <div className="mb-4 space-y-3 md:space-y-0">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+              <div className="grid grid-cols-3 gap-3 md:gap-4 flex-1">
+                <div>
+                  <div className="text-xs md:text-sm text-muted-foreground">Total Budget</div>
+                  <div className="text-xl md:text-2xl font-bold">${totalBudgeted.toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-xs md:text-sm text-muted-foreground">Total Actual</div>
+                  <div className="text-xl md:text-2xl font-bold">${totalActual.toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-xs md:text-sm text-muted-foreground">Variance</div>
+                  <div className={`text-xl md:text-2xl font-bold ${variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${variance.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Signal that performance window is opening
+                  setPerformanceWindowOpen(true);
+                  window.dispatchEvent(new CustomEvent('performance-window-open'));
+                  // Open performance window without closing budgeting window
+                  window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'project-performance' } }));
+                }}
+                className="w-full md:w-auto h-11 md:h-9"
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                View Performance
+              </Button>
             </div>
           </div>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            // Signal that performance window is opening
-            setPerformanceWindowOpen(true);
-            window.dispatchEvent(new CustomEvent('performance-window-open'));
-            // Open performance window without closing budgeting window
-            window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'project-performance' } }));
-          }}
-        >
-          <TrendingUp className="w-4 h-4 mr-2" />
-          View Performance
-        </Button>
-      </div>
 
       <Tabs defaultValue="budget" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -595,14 +599,14 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
               <CardTitle className="text-lg">Add Budget Line Item</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Section/Phase</Label>
                   <Select
                     value={newItemSection}
                     onValueChange={setNewItemSection}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 md:h-10">
                       <SelectValue placeholder="Select a phase" />
                     </SelectTrigger>
                     <SelectContent>
@@ -624,10 +628,11 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
                     placeholder="e.g., 2x4 Lumber"
+                    className="h-11 md:h-10"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Budget Amount</Label>
                   <Input
@@ -635,12 +640,13 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                     value={newItemAmount}
                     onChange={(e) => setNewItemAmount(e.target.value)}
                     placeholder="0.00"
+                    className="h-11 md:h-10"
                   />
                 </div>
                 <div>
                   <Label>Category</Label>
                   <Select value={newItemCategory} onValueChange={(value: any) => setNewItemCategory(value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 md:h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -653,19 +659,22 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                   </Select>
                 </div>
               </div>
-              <Button onClick={async () => {
-                try {
-                  console.log('🎯 ProjectBudgetingWindow: Add Line Item button clicked');
-                  await addBudgetItem();
-                } catch (error) {
-                  console.error('❌ Error adding budget item:', error);
-                  toast({
-                    title: 'Failed to add budget item',
-                    description: error instanceof Error ? error.message : 'Unknown error',
-                    variant: 'destructive'
-                  });
-                }
-              }}>
+              <Button 
+                onClick={async () => {
+                  try {
+                    console.log('🎯 ProjectBudgetingWindow: Add Line Item button clicked');
+                    await addBudgetItem();
+                  } catch (error) {
+                    console.error('❌ Error adding budget item:', error);
+                    toast({
+                      title: 'Failed to add budget item',
+                      description: error instanceof Error ? error.message : 'Unknown error',
+                      variant: 'destructive'
+                    });
+                  }
+                }}
+                className="h-11 md:h-10 w-full md:w-auto"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Line Item
               </Button>
@@ -690,9 +699,9 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                 return (
                   <Card key={section}>
                     <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{section}</CardTitle>
-                        <div className="text-sm text-muted-foreground">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                        <CardTitle className="text-base md:text-lg">{section}</CardTitle>
+                        <div className="text-xs md:text-sm text-muted-foreground">
                           Budget: ${sectionTotals.budgeted.toFixed(2)} | Actual: ${sectionTotals.actual.toFixed(2)}
                         </div>
                       </div>
@@ -708,18 +717,21 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                             const actualAmount = typeof item.actualAmount === 'number' ? item.actualAmount : parseFloat(String(item.actualAmount || 0)) || 0;
                             
                             return (
-                              <div key={item.id} className="flex items-center justify-between p-2 border rounded">
-                                <div className="flex-1">
-                                  <div className="font-medium">{item.item || 'Untitled Item'}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    <Badge variant="outline" className="mr-2">{item.category || 'other'}</Badge>
-                                    Budget: ${budgetedAmount.toFixed(2)} | Actual: ${actualAmount.toFixed(2)}
+                              <div key={item.id} className="flex items-center justify-between p-2 md:p-3 border rounded gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm md:text-base truncate">{item.item || 'Untitled Item'}</div>
+                                  <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                                    <Badge variant="outline" className="mr-2 text-[10px] md:text-xs">{item.category || 'other'}</Badge>
+                                    <span className="block md:inline">Budget: ${budgetedAmount.toFixed(2)}</span>
+                                    <span className="hidden md:inline"> | </span>
+                                    <span className="block md:inline">Actual: ${actualAmount.toFixed(2)}</span>
                                   </div>
                                 </div>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeBudgetItem(item.id)}
+                                  className="h-11 w-11 md:h-9 md:w-9 p-0 flex-shrink-0"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
@@ -742,13 +754,14 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
               <CardTitle className="text-lg">Record Actual Spend</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Description</Label>
                   <Input
                     value={newActualDescription}
                     onChange={(e) => setNewActualDescription(e.target.value)}
                     placeholder="What did you buy?"
+                    className="h-11 md:h-10"
                   />
                 </div>
                 <div>
@@ -758,22 +771,24 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                     value={newActualAmount}
                     onChange={(e) => setNewActualAmount(e.target.value)}
                     placeholder="0.00"
+                    className="h-11 md:h-10"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Date</Label>
                   <Input
                     type="date"
                     value={newActualDate}
                     onChange={(e) => setNewActualDate(e.target.value)}
+                    className="h-11 md:h-10"
                   />
                 </div>
                 <div>
                   <Label>Category</Label>
                   <Select value={newActualCategory} onValueChange={(value: any) => setNewActualCategory(value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 md:h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -788,7 +803,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                 <div>
                   <Label>Match to Budget Item (Optional)</Label>
                   <Select value={selectedLineItemForActual || 'none'} onValueChange={(value) => setSelectedLineItemForActual(value === 'none' ? '' : value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 md:h-10">
                       <SelectValue placeholder="Select item" />
                     </SelectTrigger>
                     <SelectContent>
@@ -804,18 +819,21 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                   </Select>
                 </div>
               </div>
-              <Button onClick={async () => {
-                try {
-                  await addActualEntry();
-                } catch (error) {
-                  console.error('❌ Error adding actual entry:', error);
-                  toast({
-                    title: 'Failed to record spend',
-                    description: error instanceof Error ? error.message : 'Unknown error',
-                    variant: 'destructive'
-                  });
-                }
-              }}>
+              <Button 
+                onClick={async () => {
+                  try {
+                    await addActualEntry();
+                  } catch (error) {
+                    console.error('❌ Error adding actual entry:', error);
+                    toast({
+                      title: 'Failed to record spend',
+                      description: error instanceof Error ? error.message : 'Unknown error',
+                      variant: 'destructive'
+                    });
+                  }
+                }}
+                className="h-11 md:h-10 w-full md:w-auto"
+              >
                 <DollarSign className="w-4 h-4 mr-2" />
                 Record Spend
               </Button>
@@ -841,20 +859,22 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                       : null;
                     
                     return (
-                      <div key={entry.id} className="flex items-center justify-between p-3 border rounded">
-                        <div className="flex-1">
-                          <div className="font-medium">{entry.description || 'Untitled Entry'}</div>
-                          <div className="text-sm text-muted-foreground">
-                            <Badge variant="outline" className="mr-2">{entry.category || 'other'}</Badge>
-                            {date} | ${amount.toFixed(2)}
+                      <div key={entry.id} className="flex items-center justify-between p-2 md:p-3 border rounded gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm md:text-base truncate">{entry.description || 'Untitled Entry'}</div>
+                          <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                            <Badge variant="outline" className="mr-2 text-[10px] md:text-xs">{entry.category || 'other'}</Badge>
+                            <span className="block md:inline">{date}</span>
+                            <span className="hidden md:inline"> | </span>
+                            <span className="block md:inline">${amount.toFixed(2)}</span>
                             {matchedItem && (
-                              <span className="ml-2 text-blue-600">
+                              <span className="ml-2 text-blue-600 block md:inline">
                                 (Matched to: {matchedItem.item || 'Unknown Item'})
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0">
                           <label>
                             <input
                               type="file"
@@ -862,14 +882,14 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                               accept="image/*,.pdf"
                               onChange={(e) => e.target.files?.[0] && handleReceiptUpload(entry.id, e.target.files[0])}
                             />
-                            <Button variant="outline" size="sm" asChild>
+                            <Button variant="outline" size="sm" asChild className="h-11 w-11 md:h-9 md:w-9 p-0">
                               <span>
                                 <Upload className="w-4 h-4" />
                               </span>
                             </Button>
                           </label>
                           {entry.receiptUrl && (
-                            <Badge variant="secondary">Receipt</Badge>
+                            <Badge variant="secondary" className="text-[10px] md:text-xs">Receipt</Badge>
                           )}
                         </div>
                       </div>

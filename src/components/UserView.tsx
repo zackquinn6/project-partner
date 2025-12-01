@@ -150,9 +150,7 @@ export default function UserView({
 
   // Handle showProfile prop - don't switch to workflow if profile should be shown
   useEffect(() => {
-    console.log('🔍 UserView: showProfile effect triggered:', { showProfile, showProfileManager });
     if (showProfile && !showProfileManager) {
-      console.log('👤 UserView: Opening profile manager due to showProfile prop');
       setShowProfileManager(true);
     }
   }, [showProfile, showProfileManager]);
@@ -230,7 +228,6 @@ export default function UserView({
   // Add event listener for Progress Board force listing
   useEffect(() => {
     const handleForceProgressBoardListing = () => {
-      console.log('🎯 UserView: Force Progress Board listing event received');
       setViewMode('listing');
       setCurrentProjectRun(null);
     };
@@ -245,19 +242,15 @@ export default function UserView({
   // Add event listeners for Re-plan window actions
   useEffect(() => {
     const handleOpenProjectScheduler = () => {
-      console.log('🎯 UserView: Opening Project Scheduler');
       setProjectSchedulerOpen(true);
     };
     const handleOpenMaterialsSelection = () => {
-      console.log('🎯 UserView: Opening Materials Selection');
       setMaterialsSelectionOpen(true);
     };
     const handleOpenOrderingWindow = () => {
-      console.log('🎯 UserView: Opening Ordering Window');
       setOrderingWindowOpen(true);
     };
     const handleOpenProjectCustomizer = (event?: any) => {
-      console.log('🎯 UserView: Opening Project Customizer', event?.detail);
       const mode = event?.detail?.mode || 'replan';
       setProjectCustomizerMode(mode);
       setProjectCustomizerOpen(true);
@@ -284,21 +277,12 @@ export default function UserView({
   // CRITICAL: Always read space names directly from database - never copy/store them
   // This ensures workflow navigation automatically updates when space names change
   useEffect(() => {
-    console.log('🔄 Spaces useEffect triggered:', {
-      hasCurrentProjectRun: !!currentProjectRun,
-      projectRunId: currentProjectRun?.id
-    });
-    
     if (!currentProjectRun?.id) {
-      console.log('⚠️ Spaces useEffect: No currentProjectRun.id, clearing spaces');
       setProjectSpaces([]);
       return;
     }
     
     const loadSpaces = async () => {
-      console.log('🔄 Starting to load spaces from database...', {
-        projectRunId: currentProjectRun.id
-      });
       setSpacesLoading(true);
       try {
         const { data: spacesData, error } = await supabase
@@ -312,11 +296,6 @@ export default function UserView({
           throw error;
         }
         
-        console.log('📦 Raw spaces data from database:', {
-          spacesDataCount: spacesData?.length || 0,
-          spacesData: spacesData
-        });
-        
         // CRITICAL: Map space_name directly from database - this is dynamic linkage
         // If space_name changes in database, this will reflect it immediately
         const spaces: WorkflowProjectSpace[] = (spacesData || []).map(space => ({
@@ -325,12 +304,6 @@ export default function UserView({
           priority: space.priority,
           spaceType: space.space_type
         }));
-        
-        console.log('✅ Loaded project spaces (dynamic linkage):', {
-          spacesCount: spaces.length,
-          spaces: spaces.map(s => ({ id: s.id, space_name: s.space_name, priority: s.priority })),
-          projectRunId: currentProjectRun.id
-        });
         
         setProjectSpaces(spaces);
         
@@ -361,7 +334,6 @@ export default function UserView({
           filter: `project_run_id=eq.${currentProjectRun.id}`
         },
         (payload) => {
-          console.log('🔄 Space change detected in database:', payload.eventType, payload);
           
           // Reload spaces from database to get updated names
           // This ensures workflow navigation always shows current space names
@@ -439,36 +411,6 @@ export default function UserView({
   // This ensures workflow navigation follows the same order as structure manager
   const workflowPhases = enforceStandardPhaseOrdering(rawWorkflowPhases);
   
-  // Debug active project structure - CRITICAL DEBUGGING
-  console.log('🔍 WorkflowPhases source (RAW DATA PULL):', {
-    isProjectRun: !!currentProjectRun,
-    projectRunId: currentProjectRun?.id,
-    workflowPhasesLength: workflowPhases.length,
-    rawPhasesType: typeof currentProjectRun?.phases,
-    rawPhasesIsArray: Array.isArray(currentProjectRun?.phases),
-    rawPhases: currentProjectRun?.phases,
-    workflowPhasesSample: workflowPhases.slice(0, 2).map(p => ({
-      name: p?.name,
-      id: p?.id,
-      hasOperations: !!p?.operations,
-      operationsType: typeof p?.operations,
-      operationsIsArray: Array.isArray(p?.operations),
-      operationsCount: Array.isArray(p?.operations) ? p.operations.length : (p?.operations ? 1 : 0),
-      operationsRaw: p?.operations,
-      firstOperation: Array.isArray(p?.operations) ? p.operations[0] : p?.operations,
-      firstOperationSteps: Array.isArray(p?.operations) 
-        ? (p.operations[0]?.steps ? (Array.isArray(p.operations[0].steps) ? p.operations[0].steps : [p.operations[0].steps]) : [])
-        : ((p?.operations as any)?.steps ? (Array.isArray((p.operations as any).steps) ? (p.operations as any).steps : [(p.operations as any).steps]) : [])
-    }))
-  });
-  
-  // Debug active project structure - CRITICAL DEBUGGING
-  console.log('🔍 UserView Active project debug:', {
-    hasCurrentProjectRun: !!currentProjectRun,
-    currentProjectRunId: currentProjectRun?.id,
-    currentProjectRunName: currentProjectRun?.name,
-    activeProjectId: activeProject?.id,
-    activeProjectName: activeProject?.name,
     isUsingImmutableSnapshot: !!currentProjectRun,
     rawProjectRunPhases: currentProjectRun?.phases ? 'exists' : 'missing',
     rawProjectRunPhasesType: typeof currentProjectRun?.phases,
@@ -498,36 +440,14 @@ export default function UserView({
   // - Single-piece-flow (default): Standard phases show once, custom phases repeated per space
   // - Batch-flow: Standard phases show once, spaces nested inside custom phases
   const organizedNavigation = React.useMemo(() => {
-    console.log('🔄 organizedNavigation memo recalculating:', {
-      hasWorkflowPhases: !!workflowPhases,
-      workflowPhasesLength: workflowPhases?.length || 0,
-      hasCurrentProjectRun: !!currentProjectRun,
-      projectSpacesLength: projectSpaces?.length || 0
-    });
-    
     if (!workflowPhases || workflowPhases.length === 0) {
-      console.warn('⚠️ organizedNavigation: No workflow phases, returning empty array');
       return [];
     }
     
     // UserView ONLY displays project runs (immutable snapshots)
     // Use organizeWorkflowNavigation to properly structure based on flow type
     // This handles single-piece-flow vs batch-flow correctly
-    console.log('🔄 About to call organizeWorkflowNavigation:', {
-      workflowPhasesCount: workflowPhases.length,
-      projectSpacesCount: projectSpaces.length,
-      projectRunId: currentProjectRun.id,
-      workflowPhases: workflowPhases.map(p => ({ name: p.name, isStandard: p.isStandard, phaseOrderNumber: p.phaseOrderNumber })),
-      projectSpaces: projectSpaces.map(s => ({ space_name: s.space_name, priority: s.priority }))
-    });
-    
     const result = organizeWorkflowNavigation(workflowPhases, projectSpaces, currentProjectRun);
-    
-    console.log('✅ organizeWorkflowNavigation completed:', {
-      totalItems: result.length,
-      items: result.map(item => ({
-        type: item.type,
-        name: item.name,
         phaseName: item.phase?.name,
         spacesCount: item.spaces?.length || 0,
         stepsCount: item.steps?.length || 0,
@@ -678,46 +598,6 @@ export default function UserView({
   const operationsLength = Array.isArray(firstPhase?.operations) ? firstPhase.operations.length : (firstPhase?.operations ? 1 : 0);
   const stepsLength = Array.isArray(firstOperation?.steps) ? firstOperation.steps.length : (firstOperation?.steps ? 1 : 0);
   
-  console.log('🔍 ROOT CAUSE - First Phase Structure:', {
-    phaseName: firstPhase?.name,
-    phaseId: firstPhase?.id,
-    hasOperations: !!firstPhase?.operations,
-    operationsType: typeof firstPhase?.operations,
-    operationsIsArray: Array.isArray(firstPhase?.operations),
-    operationsLength: operationsLength,
-    firstOperationName: firstOperation?.name,
-    firstOperationId: firstOperation?.id,
-    hasSteps: !!firstOperation?.steps,
-    stepsType: typeof firstOperation?.steps,
-    stepsIsArray: Array.isArray(firstOperation?.steps),
-    stepsLength: stepsLength,
-    firstStepId: firstStep?.id,
-    firstStepTitle: firstStep?.step,
-    RAW_FIRST_PHASE: firstPhase,
-    RAW_FIRST_OPERATION: firstOperation,
-    RAW_FIRST_STEP: firstStep
-  });
-  
-  // Log the actual structure more explicitly - FORCE OUTPUT
-  console.log('🔍 ROOT CAUSE - Operations and Steps Count:', {
-    phaseName: firstPhase?.name,
-    operationsCount: operationsLength,
-    stepsCount: stepsLength,
-    firstOperationName: firstOperation?.name,
-    firstOperationId: firstOperation?.id,
-    firstStepId: firstStep?.id,
-    firstStepTitle: firstStep?.step,
-    operationsArray: firstPhase?.operations,
-    stepsArray: firstOperation?.steps,
-    FULL_FIRST_PHASE_JSON: JSON.stringify(firstPhase, null, 2),
-    FULL_FIRST_OPERATION_JSON: JSON.stringify(firstOperation, null, 2),
-    FULL_FIRST_STEP_JSON: JSON.stringify(firstStep, null, 2)
-  });
-  
-  console.log('🔍 UserView allSteps calculation:', {
-    workflowPhasesLength: workflowPhases?.length || 0,
-    allStepsLength: allSteps.length
-  });
   
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
@@ -727,38 +607,20 @@ export default function UserView({
   useEffect(() => {
     // Don't overwrite local state while completing a step
     if (isCompletingStepRef.current) {
-      console.log("⏸️ UserView: Skipping completed steps initialization during step completion");
       return;
     }
     
     if (currentProjectRun?.completedSteps && Array.isArray(currentProjectRun.completedSteps)) {
-      console.log("🔄 UserView: Initializing completed steps from project run:", {
-        projectRunId: currentProjectRun.id,
-        projectName: currentProjectRun.name,
-        completedStepsCount: currentProjectRun.completedSteps.length,
-        completedSteps: currentProjectRun.completedSteps,
-        allStepsCount: allSteps.length
-      });
-      
       // Only update if the data is actually different to avoid unnecessary re-renders
       const currentCompleted = Array.from(completedSteps).sort().join(',');
       const dbCompleted = [...currentProjectRun.completedSteps].sort().join(',');
       
       if (currentCompleted !== dbCompleted) {
-        console.log("🔄 UserView: Database has different completed steps, updating local state");
         const newCompletedSteps = new Set(currentProjectRun.completedSteps);
         setCompletedSteps(newCompletedSteps);
-        
-        console.log("✅ UserView: Completed steps SET updated:", {
-          setSize: newCompletedSteps.size,
-          setContents: Array.from(newCompletedSteps)
-        });
-      } else {
-        console.log("✅ UserView: Completed steps already in sync with database");
       }
     } else if (currentProjectRun && completedSteps.size > 0) {
       // Clear completed steps if project run has no completed steps
-      console.log("🔄 UserView: Clearing completed steps for new project run");
       setCompletedSteps(new Set());
     }
   }, [currentProjectRun?.id]); // CRITICAL FIX: Only depend on project ID, not completedSteps
@@ -769,28 +631,6 @@ export default function UserView({
       const firstIncompleteIndex = allSteps.findIndex(step => 
         !isStepCompleted(completedSteps, step.id, (step as any).spaceId)
       );
-      
-      console.log("🎯 Step navigation initialization:", {
-        totalSteps: allSteps.length,
-        completedStepsCount: completedSteps.size,
-        firstIncompleteIndex,
-        currentStepIndex,
-        firstIncompleteStep: allSteps[firstIncompleteIndex] ? {
-          id: allSteps[firstIncompleteIndex].id,
-          name: allSteps[firstIncompleteIndex].step,
-          phaseName: allSteps[firstIncompleteIndex].phaseName
-        } : null,
-        stepsByPhase: allSteps.reduce((acc, step, index) => {
-          if (!acc[step.phaseName]) acc[step.phaseName] = [];
-          acc[step.phaseName].push({
-            index,
-            id: step.id,
-            name: step.step,
-            completed: isStepCompleted(completedSteps, step.id, (step as any).spaceId)
-          });
-          return acc;
-        }, {} as Record<string, any[]>)
-      });
       
       // CRITICAL FIX: Don't auto-navigate if user manually selected a step
       // Only auto-navigate on initial load or when no specific step is selected
@@ -804,27 +644,10 @@ export default function UserView({
       );
       
       if (shouldAutoNavigate) {
-        console.log("🎯 Auto-navigating to first incomplete step:", {
-          newIndex: firstIncompleteIndex,
-          stepName: allSteps[firstIncompleteIndex]?.step,
-          stepPhase: allSteps[firstIncompleteIndex]?.phaseName,
-          reason: currentStepIndex === 0 ? 'Initial load' : 'Current step completed'
-        });
         setCurrentStepIndex(firstIncompleteIndex);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        console.log("🎯 Keeping current step:", {
-          currentIndex: currentStepIndex,
-          currentStep: allSteps[currentStepIndex] ? {
-            id: allSteps[currentStepIndex].id,
-            name: allSteps[currentStepIndex].step,
-            phase: allSteps[currentStepIndex].phaseName
-          } : null,
-          reason: 'User manually selected or no incomplete steps'
-        });
       }
     } else {
-      console.log("🎯 Step navigation blocked:", {
         viewMode,
         allStepsLength: allSteps.length,
         isKickoffComplete
@@ -836,7 +659,6 @@ export default function UserView({
   useEffect(() => {
     // If projectRunId is cleared/null, ensure we're in listing mode
     if (!projectRunId && currentProjectRun) {
-      console.log('🔄 UserView: projectRunId cleared - going to listing');
       setCurrentProjectRun(null);
       setViewMode('listing');
       return;
@@ -845,7 +667,6 @@ export default function UserView({
     // CRITICAL: If projectRunId is provided, we MUST load it regardless of current viewMode
     // This ensures new projects from ProjectCatalog open to kickoff even if we're in listing mode
     if (projectRunId) {
-      console.log('🎯 UserView: Loading project run with ID:', projectRunId);
       const projectRun = projectRuns.find(run => run.id === projectRunId);
       
       // If projectRunId doesn't exist in projectRuns, it might have been deleted
@@ -853,7 +674,6 @@ export default function UserView({
       // If projectRuns is an empty array, it means they haven't loaded yet, so we should try to fetch
       // If projectRuns has items but this one isn't there, it was likely deleted
       if (!projectRun && projectRuns.length > 0) {
-        console.log('⚠️ UserView: Project run not found in loaded runs and other runs exist - likely deleted, going to listing');
         setCurrentProjectRun(null);
         setViewMode('listing');
         onProjectSelected?.('listing' as any);
@@ -865,21 +685,17 @@ export default function UserView({
       if (projectRun) {
         // Don't open cancelled projects
         if (projectRun.status === 'cancelled') {
-          console.log('❌ UserView: Project run is cancelled, not opening:', projectRun.name);
           return;
         }
-        console.log('✅ UserView: Found and setting project run:', projectRun.name);
         setCurrentProjectRun(projectRun);
         // CRITICAL: Set viewMode to 'workflow' for new project runs so kickoff can display
         // Kickoff only shows when viewMode === 'workflow' and !isKickoffComplete
         // Use setTimeout to ensure state updates are processed
         setTimeout(() => {
           setViewMode('workflow');
-          console.log('✅ UserView: Set viewMode to workflow for project run from array');
         }, 0);
       } else {
         // Project run not in array yet - fetch directly from database
-        console.log('⚠️ UserView: Project run not in array, fetching from database:', projectRunId);
         const fetchProjectRun = async () => {
           try {
             const { data: freshRun, error } = await supabase
@@ -892,7 +708,6 @@ export default function UserView({
               console.error('❌ Error fetching project run from database:', error);
               // If project run doesn't exist (was deleted), clear it and go to listing
               if (error.code === 'PGRST116' || error.message?.includes('0 rows')) {
-                console.log('🚪 Project run was deleted, returning to listing');
                 setCurrentProjectRun(null);
                 setViewMode('listing');
                 onProjectSelected?.('listing' as any);
@@ -984,15 +799,7 @@ export default function UserView({
               progress_reporting_style: (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
             };
             
-            console.log('✅ UserView: Fetched project run from database:', {
-              runId: transformedRun.id,
-              runName: transformedRun.name,
-              phasesCount: transformedRun.phases?.length || 0,
-              hasPhases: !!(transformedRun.phases && transformedRun.phases.length > 0)
-            });
-            
             if (transformedRun.status === 'cancelled') {
-              console.log('❌ UserView: Project run is cancelled, not opening:', transformedRun.name);
               return;
             }
             
@@ -1002,7 +809,6 @@ export default function UserView({
             // Use setTimeout to ensure state updates are processed
             setTimeout(() => {
               setViewMode('workflow');
-              console.log('✅ UserView: Set viewMode to workflow for new project run');
             }, 0);
           } catch (error) {
             console.error('❌ Error in fetchProjectRun:', error);
@@ -1016,7 +822,6 @@ export default function UserView({
         // Project run is already loaded - ensure viewMode is 'workflow'
         // This handles the case where project run was loaded but viewMode wasn't set correctly
         if (viewMode === 'listing') {
-          console.log('🔄 UserView: Project run loaded but in listing mode - switching to workflow');
           setViewMode('workflow');
           onProjectSelected?.();
         }
@@ -1026,7 +831,8 @@ export default function UserView({
 
   // SIMPLIFIED VIEW MODE LOGIC - Single effect to prevent race conditions
   useEffect(() => {
-    console.log('🔄 UserView: View mode logic triggered:', { 
+    // View mode logic
+    { 
       resetToListing, 
       forceListingMode,
       showProfile,
@@ -1038,7 +844,6 @@ export default function UserView({
 
     // CRITICAL FIX: Don't open cancelled projects - clear them completely
     if (currentProjectRun && currentProjectRun.status === 'cancelled') {
-      console.log('🔄 UserView: Current project run is cancelled - clearing it and forcing listing mode');
       setCurrentProjectRun(null);
       setViewMode('listing');
       return;
@@ -1048,7 +853,6 @@ export default function UserView({
     // BUT: Don't force listing if we have a projectRunId (project selected from dropdown or catalog)
     // When projectRunId is provided, we should directly open the project, not go to listing
     if (forceListingMode && !projectRunId) {
-      console.log('🔄 UserView: forceListingMode active - staying in listing mode');
       if (viewMode !== 'listing') {
         setViewMode('listing');
       }
@@ -1058,24 +862,20 @@ export default function UserView({
     // CRITICAL: If projectRunId is provided, prioritize opening the project directly
     // This ensures project selection from dropdown opens the project, not listing
     if (projectRunId && !currentProjectRun) {
-      console.log('🎯 UserView: projectRunId provided but currentProjectRun not loaded yet - waiting for load');
       // Don't set viewMode yet - wait for project run to load in the other useEffect
       return;
     }
 
     // Only auto-open project workflow if not in listing mode and not showing profile
     if (currentProjectRun && !showProfile) {
-      console.log('🔄 UserView: Have current project run - checking kickoff completion');
       // CRITICAL: For new project runs (kickoff incomplete), we MUST be in 'workflow' mode
       // so that the kickoff component can render (it only renders when viewMode === 'workflow')
       if (isKickoffComplete) {
-        console.log('🔄 UserView: Kickoff complete - allowing workflow mode');
         if (viewMode !== 'workflow') {
           setViewMode('workflow');
           onProjectSelected?.();
         }
       } else {
-        console.log('🔄 UserView: Kickoff incomplete - MUST be in workflow mode for kickoff to display');
         // CRITICAL: Kickoff component only renders when viewMode === 'workflow'
         // So we must ensure viewMode is 'workflow' for incomplete kickoff
         if (viewMode !== 'workflow') {
@@ -1091,7 +891,6 @@ export default function UserView({
     // CRITICAL: If projectRunId is provided (project selected from dropdown or catalog), prioritize opening to workflow
     // This ensures direct project opening, not going to listing mode
     if (projectRunId && currentProjectRun) {
-      console.log('🎯 UserView: projectRunId and currentProjectRun both present - opening to workflow');
       newViewMode = 'workflow';
     } else if (showProfile || (forceListingMode && !projectRunId)) {
       newViewMode = 'listing';
@@ -1102,7 +901,6 @@ export default function UserView({
 
     // Only update if view mode actually changed
     if (newViewMode !== viewMode) {
-      console.log(`🔄 UserView: Changing view mode from ${viewMode} to ${newViewMode}`);
       setViewMode(newViewMode);
     }
     
@@ -1193,7 +991,6 @@ export default function UserView({
     
     // Check if schedule needs regeneration (older than 1 day)
     if (shouldRegenerateSchedule(currentProjectRun)) {
-      console.log('🔄 Schedule is older than 1 day, auto-regenerating...');
       
       // Get completed steps from project run (ensure we have latest data)
       const completedStepsFromRun = new Set<string>(
@@ -1257,7 +1054,8 @@ export default function UserView({
     ? calculateProjectProgress(currentProjectRun)
     : 0;
   
-  console.log('📊 Progress Calculation (DETAILED):', {
+  // Progress calculation
+  {
     totalPhases: activeProject?.phases?.length || 0,
     phasesWithSteps: activeProject?.phases?.filter(p => p.operations?.some(o => o.steps?.length > 0)).length || 0,
     totalSteps: totalSteps,
@@ -1270,24 +1068,6 @@ export default function UserView({
     projectRunCompletedStepsPreview: currentProjectRun?.completedSteps?.slice(0, 10) || []
   });
   
-  // Debug current step to identify materials/tools/apps issue
-  console.log('🔧 Current step debug:', {
-    stepIndex: currentStepIndex,
-    stepId: currentStep?.id,
-    stepName: currentStep?.step,
-    phaseName: currentStep?.phaseName,
-    materialsLength: currentStep?.materials?.length || 0,
-    toolsLength: currentStep?.tools?.length || 0,
-    appsLength: currentStep?.apps?.length || 0,
-    hasApps: !!currentStep?.apps,
-    appsType: typeof currentStep?.apps,
-    appsIsArray: Array.isArray(currentStep?.apps),
-    appsValue: currentStep?.apps,
-    // Check if apps exist in the original step from phases
-    originalStepFromPhases: workflowPhases
-      .flatMap(p => p.operations.flatMap(op => op.steps))
-      .find(s => s.id === currentStep?.id)
-  });
   
   // CRITICAL: Update database progress to match calculated progress
   // Remove the automatic progress update - it causes infinite loops
@@ -1307,7 +1087,6 @@ export default function UserView({
   const navigateToStep = (stepId: string) => {
     const stepIndex = allSteps.findIndex(step => step.id === stepId);
     if (stepIndex !== -1) {
-      console.log(`🎯 Navigating to step: ${stepId} at index ${stepIndex}`);
       setCurrentStepIndex(stepIndex);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return true;
@@ -1359,7 +1138,6 @@ export default function UserView({
             if (updateError) {
               console.error('Error updating project_run_step started_at:', updateError);
             } else {
-              console.log('✅ Step start timestamp recorded in project_run_steps');
             }
           } else {
             // Insert new record with started_at
@@ -1370,7 +1148,6 @@ export default function UserView({
             if (insertError) {
               console.error('Error inserting project_run_step started_at:', insertError);
             } else {
-              console.log('✅ Step start timestamp recorded in project_run_steps');
             }
           }
         }
@@ -1493,7 +1270,8 @@ export default function UserView({
     isCompletingStepRef.current = true;
     
     try {
-      console.log("🎯 handleStepComplete called for step:", {
+      // handleStepComplete
+      {
         stepId: currentStep.id,
         stepName: currentStep.step,
         stepPhase: currentStep.phaseName,
@@ -1503,7 +1281,7 @@ export default function UserView({
       });
       
       // CRITICAL DEBUG: Check if we're actually on the step the user thinks we're on
-      console.log("🔍 STEP MISMATCH DEBUG:", {
+      {
         userExpectedPhase: "Ordering", // User says they're completing ordering
         actualCurrentStep: {
           id: currentStep.id,
@@ -1526,7 +1304,6 @@ export default function UserView({
       );
       
       if (allOutputsCompleted) {
-        console.log("🎯 Completing step:", currentStep.step, "ID:", currentStep.id);
         
         // Add step to completed steps with immediate persistence
         // Use composite key (stepId:spaceId) when spaceId exists for per-space tracking
@@ -1537,12 +1314,6 @@ export default function UserView({
         const newCompletedSteps = [...new Set([...completedSteps, stepCompletionKey])];
         setCompletedSteps(new Set(newCompletedSteps));
         
-        console.log("🎯 Step completion key:", {
-          stepId: currentStep.id,
-          spaceId: (currentStep as any).spaceId,
-          completionKey: stepCompletionKey,
-          isCompositeKey: !!(currentStep as any).spaceId
-        });
         
         // Immediately update the project run to persist the step completion
         if (currentProjectRun) {
@@ -1576,7 +1347,8 @@ export default function UserView({
             updatedAt: new Date()
           };
           
-          console.log("🎯 Immediately persisting step completion:", {
+          // Immediately persisting step completion
+          {
             stepId: currentStep.id,
             newCompletedSteps: uniqueCompletedSteps,
             progress: calculatedProgress
@@ -1621,7 +1393,6 @@ export default function UserView({
               if (updateError) {
                 console.error('Error updating project_run_step:', updateError);
               } else {
-                console.log('✅ Step completion timestamp recorded in project_run_steps');
               }
             } else {
               // Insert new record
@@ -1635,7 +1406,6 @@ export default function UserView({
               if (insertError) {
                 console.error('Error inserting project_run_step:', insertError);
               } else {
-                console.log('✅ Step completion timestamp recorded in project_run_steps');
               }
             }
           } catch (error) {
@@ -1643,25 +1413,22 @@ export default function UserView({
             // Don't fail the step completion if timestamp recording fails
           }
           
-          console.log("✅ Step completion persisted to database successfully");
         }
         
         // End time tracking for step
         endTimeTracking('step', currentStep.id);
         
         // Check if this completes a phase - FIXED VERSION
-        console.log("🔍 Checking if step completion triggers phase completion...");
         const currentPhase = getCurrentPhase();
         
         if (currentPhase) {
-          console.log("🔍 Current phase found:", currentPhase.name);
           const phaseSteps = getAllStepsInPhase(currentPhase);
-          console.log("🔍 Phase steps:", phaseSteps.map(s => ({ id: s.id, name: s.step })));
           
           const newCompletedStepsSet = new Set(newCompletedSteps);
           const isPhaseComplete = phaseSteps.every(step => newCompletedStepsSet.has(step.id));
           
-          console.log("🔍 Phase completion check:", {
+          // Phase completion check
+          {
             phaseName: currentPhase.name,
             totalPhaseSteps: phaseSteps.length,
             completedPhaseSteps: phaseSteps.filter(step => newCompletedStepsSet.has(step.id)).length,
@@ -1671,7 +1438,6 @@ export default function UserView({
           });
           
           if (isPhaseComplete) {
-            console.log("🎯 Phase completed:", currentPhase.name);
             
             // CRITICAL FIX: Store completed phase BEFORE navigation changes currentStep
             setCompletedPhase(currentPhase);
@@ -1685,7 +1451,6 @@ export default function UserView({
             
             // Auto-regenerate schedule on phase completion
             if (currentProjectRun && currentProject && workflowPhases.length > 0) {
-              console.log('🔄 Phase completed, auto-regenerating schedule...');
               
               // Use the updated completed steps set (includes the step just completed)
               autoRegenerateSchedule(
@@ -1718,13 +1483,15 @@ export default function UserView({
             // Note: Phase completion is automatically determined by completed steps
             // No need to store separately - it's inferred from all steps being complete
           } else {
-            console.log("🔍 Phase not yet complete:", {
+            // Phase not yet complete
+            {
               phaseName: currentPhase.name,
               remainingSteps: phaseSteps.filter(step => !newCompletedStepsSet.has(step.id)).map(s => s.step)
             });
           }
         } else {
-          console.log("❌ No current phase found for step:", {
+          // No current phase found for step
+          {
             stepId: currentStep.id,
             stepName: currentStep.step,
             expectedPhase: currentStep.phaseName
@@ -1735,7 +1502,6 @@ export default function UserView({
         const allStepsComplete = allSteps.every(step => newCompletedSteps.includes(step.id));
         
         if (allStepsComplete) {
-          console.log("🎉 All steps completed! Project finished.");
           
           // Update project run with completion data
           const completionUpdate = {
@@ -1748,7 +1514,6 @@ export default function UserView({
           };
           
           await updateProjectRun(completionUpdate);
-          console.log("✅ Project completion saved with end_date:", completionUpdate.end_date);
           
           setProjectCompletionOpen(true);
         } else if (currentStepIndex < allSteps.length - 1) {

@@ -951,8 +951,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               <div className="flex-1 min-w-[80px]">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-[10px] h-7 px-2 relative">
-                      <Filter className="w-2.5 h-2.5 mr-0.5" />
+                    <Button variant="outline" size="sm" className="w-full text-xs md:text-[10px] h-11 md:h-7 px-2 relative">
+                      <Filter className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 md:mr-0.5" />
                       <span className="truncate">Skill{selectedDifficulties.length > 0 && ` (${selectedDifficulties.length})`}</span>
                     </Button>
                   </DropdownMenuTrigger>
@@ -976,8 +976,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               <div className="flex-1 min-w-[80px]">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-[10px] h-7 px-2 relative">
-                      <Filter className="w-2.5 h-2.5 mr-0.5" />
+                    <Button variant="outline" size="sm" className="w-full text-xs md:text-[10px] h-11 md:h-7 px-2 relative">
+                      <Filter className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 md:mr-0.5" />
                       <span className="truncate">Effort{selectedEffortLevels.length > 0 && ` (${selectedEffortLevels.length})`}</span>
                     </Button>
                   </DropdownMenuTrigger>
@@ -1001,8 +1001,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               <div className="flex-1 min-w-[100px]">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-[10px] h-7 px-2 relative">
-                      <Filter className="w-2.5 h-2.5 mr-0.5" />
+                    <Button variant="outline" size="sm" className="w-full text-xs md:text-[10px] h-11 md:h-7 px-2 relative">
+                      <Filter className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 md:mr-0.5" />
                       <span className="truncate">Type{projectTypeLabel && ` (${projectTypeLabel})`}</span>
                     </Button>
                   </DropdownMenuTrigger>

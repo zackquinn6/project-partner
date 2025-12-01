@@ -1100,28 +1100,28 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowPhaseAssignment(true)}
-                className="flex-1"
+                className="flex-1 h-11 md:h-9 text-xs md:text-sm"
               >
-                <Layers className="w-4 h-4 mr-2" />
-                Assign Phases
+                <Layers className="w-4 h-4 mr-1 md:mr-2" />
+                <span className="truncate">Assign Phases</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowTeamAvailability(true)}
-                className="flex-1"
+                className="flex-1 h-11 md:h-9 text-xs md:text-sm"
               >
-                <Users className="w-4 h-4 mr-2" />
-                Team Availability
+                <Users className="w-4 h-4 mr-1 md:mr-2" />
+                <span className="truncate">Team Availability</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowContractors(true)}
-                className="flex-1"
+                className="flex-1 h-11 md:h-9 text-xs md:text-sm"
               >
-                <Briefcase className="w-4 h-4 mr-2" />
-                Contractors
+                <Briefcase className="w-4 h-4 mr-1 md:mr-2" />
+                <span className="truncate">Contractors</span>
               </Button>
             </div>
 
@@ -1134,21 +1134,21 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Button variant="outline" onClick={saveDraft} className="h-10">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Save Draft
+                  <Button variant="outline" onClick={saveDraft} className="h-11 md:h-10 text-xs md:text-sm">
+                    <FileText className="w-4 h-4 mr-1 md:mr-2" />
+                    <span className="truncate">Save Draft</span>
                   </Button>
-                  <Button onClick={saveSchedule} className="h-10">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save & Commit
+                  <Button onClick={saveSchedule} className="h-11 md:h-10 text-xs md:text-sm">
+                    <Save className="w-4 h-4 mr-1 md:mr-2" />
+                    <span className="truncate">Save & Commit</span>
                   </Button>
-                  <Button variant="outline" onClick={printToPDF} className="h-10">
-                    <Printer className="w-4 h-4 mr-2" />
-                    Print to PDF
+                  <Button variant="outline" onClick={printToPDF} className="h-11 md:h-10 text-xs md:text-sm">
+                    <Printer className="w-4 h-4 mr-1 md:mr-2" />
+                    <span className="truncate">Print PDF</span>
                   </Button>
-                  <Button variant="outline" onClick={emailSchedule} className="h-10">
-                    <Mail className="w-4 h-4 mr-2" />
-                    Email Me
+                  <Button variant="outline" onClick={emailSchedule} className="h-11 md:h-10 text-xs md:text-sm">
+                    <Mail className="w-4 h-4 mr-1 md:mr-2" />
+                    <span className="truncate">Email Me</span>
                   </Button>
                 </div>
               </>}

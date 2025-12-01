@@ -306,33 +306,33 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       <Card>
         <CardContent className="p-2 sm:p-3 md:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide">
+            <div className="flex items-center space-x-2 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide">
               {kickoffSteps.map((step, index) => <div key={step.id} className="flex items-center flex-shrink-0">
                   <div className={`
-                    flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full border-2 transition-colors flex-shrink-0
+                    flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full border-2 transition-colors flex-shrink-0
                     ${index === currentKickoffStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
                   `}>
-                    {isStepCompleted(index) ? <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" /> : <span className="text-[10px] sm:text-xs md:text-sm font-medium">{index + 1}</span>}
+                    {isStepCompleted(index) ? <CheckCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" /> : <span className="text-xs sm:text-xs md:text-sm font-medium">{index + 1}</span>}
                   </div>
-                  <div className="ml-1 sm:ml-1.5 md:ml-2 hidden lg:block">
+                  <div className="ml-1.5 sm:ml-1.5 md:ml-2 hidden sm:block">
                     <p className={`text-xs sm:text-sm font-medium whitespace-nowrap ${index === currentKickoffStep ? 'text-primary' : isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'}`}>
                       {step.title}
                     </p>
                   </div>
-                  {index < kickoffSteps.length - 1 && <div className="mx-1 sm:mx-2 md:mx-4 w-3 sm:w-4 md:w-8 h-0.5 bg-muted-foreground/20 flex-shrink-0" />}
+                  {index < kickoffSteps.length - 1 && <div className="mx-2 sm:mx-2 md:mx-4 w-4 sm:w-4 md:w-8 h-0.5 bg-muted-foreground/20 flex-shrink-0" />}
                 </div>)}
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentKickoffStep === 0} className="flex-1 sm:flex-initial text-xs h-8 sm:h-9">
-                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentKickoffStep === 0} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
+                <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4 mr-1" />
                 <span className="hidden sm:inline">Previous</span>
                 <span className="sm:hidden">Prev</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentKickoffStep === kickoffSteps.length - 1} className="flex-1 sm:flex-initial text-xs h-8 sm:h-9">
+              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentKickoffStep === kickoffSteps.length - 1} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
                 <span className="hidden sm:inline">Next</span>
                 <span className="sm:hidden">Next</span>
-                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />
+                <ChevronRight className="w-4 h-4 sm:w-4 sm:h-4 ml-1" />
               </Button>
             </div>
           </div>
@@ -360,7 +360,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                         }
                       }} 
                       variant="outline" 
-                      className="w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-[10px] sm:text-sm h-7 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight"
+                      className="w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight"
                     >
                       <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
                       <span className="hidden sm:inline sm:block">Not a match -<br />take me back to catalog</span>
@@ -383,7 +383,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       }
                       handleStepComplete(currentKickoffStep);
                     }} 
-                    className={`${currentKickoffStep === 0 ? "w-3/4" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-7 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight`}
+                    className={`${currentKickoffStep === 0 ? "w-3/4" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight`}
                   >
                     <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                     <span className="hidden sm:inline">Complete & Continue</span>

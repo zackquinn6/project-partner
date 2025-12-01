@@ -63,13 +63,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       // This ensures we can fetch even if projects array hasn't loaded yet
       const templateId = templateProject?.id || currentProjectRun?.templateId;
       
-      console.log('📊 fetchScalingUnitAndItemType called:', {
-        hasTemplateProject: !!templateProject,
-        templateProjectId: templateProject?.id,
-        currentProjectRunTemplateId: currentProjectRun?.templateId,
-        templateIdToUse: templateId,
-        projectsArrayLength: projects?.length || 0
-      });
       
       if (templateId) {
         try {
@@ -85,31 +78,10 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             // CRITICAL: Ensure item_type is properly extracted - check both snake_case and camelCase
             const fetchedItemType = data.item_type || (data as any).itemType || null;
             
-            console.log('📊 Raw database response:', {
-              scaling_unit: data.scaling_unit,
-              item_type: data.item_type,
-              itemType: (data as any).itemType,
-              allKeys: Object.keys(data)
-            });
             
             setScalingUnit(fetchedScalingUnit);
             setItemType(fetchedItemType);
             
-            console.log('✅ Fetched and set scaling unit and item type:', {
-              templateId,
-              scaling_unit: data.scaling_unit,
-              item_type: data.item_type,
-              item_type_type: typeof data.item_type,
-              item_type_length: data.item_type?.length,
-              item_type_truthy: !!data.item_type,
-              item_type_trimmed: data.item_type?.trim(),
-              templateProjectScalingUnit: templateProject?.scalingUnit,
-              finalScalingUnit: fetchedScalingUnit,
-              finalItemType: fetchedItemType,
-              willUseItemType: fetchedScalingUnit?.toLowerCase().trim() === 'per item' && fetchedItemType ? fetchedItemType.toLowerCase() : null,
-              stateScalingUnit: scalingUnit,
-              stateItemType: itemType
-            });
           } else if (error) {
             console.error('❌ Error fetching scaling_unit and item_type:', error);
             // Fallback to templateProject values if database fetch fails
@@ -117,12 +89,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             const fallbackItemType = (templateProject as any)?.itemType || (templateProject as any)?.item_type || null;
             setScalingUnit(fallbackScalingUnit);
             setItemType(fallbackItemType);
-            console.log('📊 Using fallback values (error case):', {
-              fallbackScalingUnit,
-              fallbackItemType,
-              templateProjectItemType: (templateProject as any)?.itemType,
-              templateProjectItem_type: (templateProject as any)?.item_type
-            });
           }
         } catch (error) {
           console.error('❌ Exception fetching scaling_unit and item_type:', error);
@@ -131,12 +97,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           const fallbackItemType = (templateProject as any)?.itemType || (templateProject as any)?.item_type || null;
           setScalingUnit(fallbackScalingUnit);
           setItemType(fallbackItemType);
-          console.log('📊 Using fallback values (exception case):', {
-            fallbackScalingUnit,
-            fallbackItemType,
-            templateProjectItemType: (templateProject as any)?.itemType,
-            templateProjectItem_type: (templateProject as any)?.item_type
-          });
         }
       } else {
         // No template ID available, use currentProjectRun values or fallback
@@ -144,12 +104,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         const fallbackItemType = (currentProjectRun as any)?.itemType || (currentProjectRun as any)?.item_type || null;
         setScalingUnit(fallbackScalingUnit);
         setItemType(fallbackItemType);
-        console.log('📊 No template ID available, using currentProjectRun values:', {
-          fallbackScalingUnit,
-          fallbackItemType,
-          hasCurrentProjectRun: !!currentProjectRun,
-          hasTemplateProject: !!templateProject
-        });
       }
     };
     
@@ -233,7 +187,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       
       // If no home exists, create default home
       if (!homeId && user) {
-        console.log('🏠 No home found - creating default home');
         const { data: newHome, error: homeCreateError } = await supabase
           .from('homes')
           .insert({
@@ -269,12 +222,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       const budgetValue = projectForm.initialBudget?.trim() || '';
       const finalBudgetValue = budgetValue === '' ? null : budgetValue;
       
-      console.log('💾 ProjectProfileStep: Saving initial_budget:', {
-        rawValue: projectForm.initialBudget,
-        trimmedValue: budgetValue,
-        finalValue: finalBudgetValue,
-        type: typeof finalBudgetValue
-      });
       
       const baseUpdateData: any = {
         custom_project_name: projectForm.customProjectName.trim(),
@@ -283,11 +230,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         updated_at: new Date().toISOString()
       };
       
-      console.log('💾 ProjectProfileStep: Attempting database update with:', {
-        projectRunId: currentProjectRun.id,
-        updateData: baseUpdateData,
-        initial_budget_value: finalBudgetValue
-      });
       
       const { error: baseError, data: updateResult } = await supabase
         .from('project_runs')
@@ -310,13 +252,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       // CRITICAL: Verify the value was actually saved
       if (updateResult && updateResult.length > 0) {
         const savedRecord = updateResult[0];
-        console.log('✅ ProjectProfileStep: Database update successful:', {
-          savedRecord,
-          savedInitialBudget: savedRecord.initial_budget,
-          expectedValue: finalBudgetValue,
-          valuesMatch: savedRecord.initial_budget === finalBudgetValue,
-          savedRecordKeys: Object.keys(savedRecord)
-        });
         
         // If the saved value doesn't match, log a warning
         if (savedRecord.initial_budget !== finalBudgetValue) {
@@ -357,7 +292,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
       if (!room1Exists) {
         // REQUIREMENT 5: Create "Room 1" space
-        console.log('🏠 Creating Room 1 space for project');
         const { data: newSpace, error: spaceCreateError } = await supabase
           .from('project_run_spaces')
           .insert({
@@ -375,7 +309,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         }
 
         room1SpaceId = newSpace.id;
-        console.log('✅ Room 1 space created:', room1SpaceId);
       } else {
         // Find existing Room 1 space
         room1SpaceId = existingSpaces?.find(space => space.space_name === 'Room 1')?.id || null;
@@ -437,7 +370,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               console.error('Error upserting space sizing:', sizingUpsertError);
               // Don't throw - sizing is optional, but log the error
             } else {
-              console.log('✅ Applied initial sizing to Room 1:', parsedSizing, projectScaleUnit);
             }
           }
         }
@@ -459,7 +391,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           console.error('Error updating initial_sizing:', sizingError);
           // Don't throw - this is optional
         } else {
-          console.log('✅ ProjectProfileStep: Preserved initial_budget in sizing update:', finalBudgetValue);
         }
       }
 
@@ -471,13 +402,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         .single();
       
       if (!verificationError && verificationData) {
-        console.log('🔍 ProjectProfileStep: Final verification of saved values:', {
-          initial_budget: verificationData.initial_budget,
-          initial_timeline: verificationData.initial_timeline,
-          initial_sizing: verificationData.initial_sizing,
-          expectedBudget: finalBudgetValue,
-          budgetMatches: verificationData.initial_budget === finalBudgetValue
-        });
         
         if (verificationData.initial_budget !== finalBudgetValue) {
           console.error('❌ ProjectProfileStep: CRITICAL - initial_budget mismatch after save!', {
@@ -493,7 +417,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           if (retryError) {
             console.error('❌ ProjectProfileStep: Retry save failed:', retryError);
           } else {
-            console.log('✅ ProjectProfileStep: Successfully saved initial_budget on retry');
           }
         }
       } else if (verificationError) {
@@ -525,7 +448,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         initial_sizing: projectForm.initialSizing.trim() || null
       };
       
-      console.log('🔄 ProjectProfileStep: Updating context with initial_budget:', finalBudgetValue);
       await updateProjectRun(contextUpdatedRun);
       
       // CRITICAL: Final database verification - ensure initial_budget is actually in the database
@@ -536,7 +458,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         .single();
       
       if (!finalVerificationError && finalVerification) {
-        console.log('✅ ProjectProfileStep: Final database verification - initial_budget in DB:', finalVerification.initial_budget);
         if (finalVerification.initial_budget !== finalBudgetValue) {
           console.error('❌ ProjectProfileStep: CRITICAL - initial_budget mismatch in final verification!', {
             expected: finalBudgetValue,
@@ -553,14 +474,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             toast.error('Failed to save budget. Please try again.');
             return; // Don't proceed if we can't save
           } else {
-            console.log('✅ ProjectProfileStep: Force save succeeded');
           }
         }
       } else if (finalVerificationError) {
         console.error('❌ ProjectProfileStep: Final verification error:', finalVerificationError);
       }
       
-      console.log('🎯 ProjectProfileStep: All requirements met - calling onComplete');
       onComplete();
     } catch (error) {
       console.error('Error saving project profile:', error);
@@ -629,7 +548,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   customProjectName: e.target.value
                 }))}
                 placeholder="Enter your custom project name"
-                className="text-xs sm:text-sm h-9 sm:h-10"
+                className="text-xs sm:text-sm h-11 sm:h-10"
               />
             </div>
 
@@ -658,7 +577,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       initialSizing: e.target.value
                     }))}
                     placeholder="0"
-                    className="text-xs sm:text-sm h-9 sm:h-10 w-[80px]"
+                    className="text-xs sm:text-sm h-11 sm:h-10 w-[100px] sm:w-[80px]"
                     step="1"
                     min="0"
                   />
@@ -681,31 +600,10 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                         
                         if (validItemType) {
                           const displayValue = currentItemType.trim().toLowerCase();
-                          console.log('✅ Using item_type for display:', { 
-                            itemType, 
-                            currentItemType,
-                            displayValue, 
-                            scalingUnit,
-                            normalizedScalingUnit,
-                            itemTypeLength: currentItemType.length,
-                            itemTypeTrimmedLength: currentItemType.trim().length,
-                            fromTemplate: !!(templateProject as any)?.item_type || !!(templateProject as any)?.itemType
-                          });
                           return displayValue;
                         }
                         
-                        console.log('⚠️ No item_type available, using "per item":', { 
-                          itemType, 
-                          currentItemType,
-                          scalingUnit,
-                          normalizedScalingUnit,
-                          itemTypeType: typeof itemType,
-                          itemTypeValue: itemType,
-                          templateProjectId: templateProject?.id,
-                          templateProjectItemType: (templateProject as any)?.item_type,
-                          templateProjectItemTypeCamel: (templateProject as any)?.itemType,
-                          currentProjectRunTemplateId: currentProjectRun?.templateId
-                        });
+                        // No item_type available, using "per item"
                         return 'per item';
                       }
                       

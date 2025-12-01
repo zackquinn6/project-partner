@@ -372,43 +372,54 @@ export function RiskManagementWindow({
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[200px]">Risk</TableHead>
-                        <TableHead className="w-[100px]">Likelihood</TableHead>
-                        <TableHead className="w-[100px]">Impact</TableHead>
-                        <TableHead className="w-[200px]">Mitigation</TableHead>
-                        <TableHead className="w-[200px]">Notes</TableHead>
-                        {mode === 'run' && <TableHead className="w-[120px]">Status</TableHead>}
-                        <TableHead className="w-[100px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {risks.map((risk) => (
-                        <TableRow key={risk.id}>
-                          <TableCell className="font-medium">
-                            {risk.risk}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getRiskLevelColor(risk.likelihood, 'low')}>
-                              {risk.likelihood}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getRiskLevelColor('low', risk.impact)}>
-                              {risk.impact}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {risk.mitigation || '-'}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground break-words max-w-[200px]">
-                            {risk.notes || '-'}
-                          </TableCell>
+                <>
+                  {/* Mobile: Card Layout */}
+                  <div className="md:hidden space-y-3">
+                    {risks.map((risk) => (
+                      <Card key={risk.id} className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-semibold text-sm flex-1">{risk.risk}</h3>
+                            {!readOnly && (
+                              <div className="flex gap-1 flex-shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditRisk(risk)}
+                                  className="h-11 w-11 p-0"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                {!(mode === 'run' && risk.is_template_risk) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteRisk(risk)}
+                                    className="h-11 w-11 p-0 text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Likelihood</div>
+                              <Badge className={getRiskLevelColor(risk.likelihood, 'low')}>
+                                {risk.likelihood}
+                              </Badge>
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Impact</div>
+                              <Badge className={getRiskLevelColor('low', risk.impact)}>
+                                {risk.impact}
+                              </Badge>
+                            </div>
+                          </div>
                           {mode === 'run' && (
-                            <TableCell>
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Status</div>
                               {readOnly ? (
                                 <Badge className={getStatusColor(risk.status || 'open')}>
                                   {risk.status || 'open'}
@@ -418,7 +429,7 @@ export function RiskManagementWindow({
                                   value={risk.status || 'open'}
                                   onValueChange={(value) => handleUpdateStatus(risk, value as any)}
                                 >
-                                  <SelectTrigger className="h-8 text-xs">
+                                  <SelectTrigger className="h-11 text-sm">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -429,37 +440,115 @@ export function RiskManagementWindow({
                                   </SelectContent>
                                 </Select>
                               )}
-                            </TableCell>
+                            </div>
                           )}
-                          <TableCell>
-                            {!readOnly && (
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditRisk(risk)}
-                                  className="h-7 w-7 p-0"
-                                >
-                                  <Edit className="w-3.5 h-3.5" />
-                                </Button>
-                                {!(mode === 'run' && risk.is_template_risk) && (
+                          {risk.mitigation && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Mitigation</div>
+                              <p className="text-sm">{risk.mitigation}</p>
+                            </div>
+                          )}
+                          {risk.notes && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Notes</div>
+                              <p className="text-sm break-words">{risk.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Desktop: Table Layout */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[200px]">Risk</TableHead>
+                          <TableHead className="w-[100px]">Likelihood</TableHead>
+                          <TableHead className="w-[100px]">Impact</TableHead>
+                          <TableHead className="w-[200px]">Mitigation</TableHead>
+                          <TableHead className="w-[200px]">Notes</TableHead>
+                          {mode === 'run' && <TableHead className="w-[120px]">Status</TableHead>}
+                          <TableHead className="w-[100px]">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {risks.map((risk) => (
+                          <TableRow key={risk.id}>
+                            <TableCell className="font-medium">
+                              {risk.risk}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getRiskLevelColor(risk.likelihood, 'low')}>
+                                {risk.likelihood}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getRiskLevelColor('low', risk.impact)}>
+                                {risk.impact}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {risk.mitigation || '-'}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground break-words max-w-[200px]">
+                              {risk.notes || '-'}
+                            </TableCell>
+                            {mode === 'run' && (
+                              <TableCell>
+                                {readOnly ? (
+                                  <Badge className={getStatusColor(risk.status || 'open')}>
+                                    {risk.status || 'open'}
+                                  </Badge>
+                                ) : (
+                                  <Select
+                                    value={risk.status || 'open'}
+                                    onValueChange={(value) => handleUpdateStatus(risk, value as any)}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="open">Open</SelectItem>
+                                      <SelectItem value="mitigated">Mitigated</SelectItem>
+                                      <SelectItem value="monitoring">Monitoring</SelectItem>
+                                      <SelectItem value="closed">Closed</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              {!readOnly && (
+                                <div className="flex gap-1">
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleDeleteRisk(risk)}
-                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                    onClick={() => handleEditRisk(risk)}
+                                    className="h-7 w-7 p-0"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <Edit className="w-3.5 h-3.5" />
                                   </Button>
-                                )}
-                              </div>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                                  {!(mode === 'run' && risk.is_template_risk) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteRisk(risk)}
+                                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )}
             </div>
           )}
