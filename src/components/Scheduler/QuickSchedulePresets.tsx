@@ -3,8 +3,20 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Moon, Sun, Zap, Clock } from 'lucide-react';
 
+interface TeamMember {
+  id: string;
+  name: string;
+  weekendsOnly: boolean;
+  weekdaysAfterFivePm: boolean;
+  workingHours: {
+    start: string;
+    end: string;
+  };
+}
+
 interface QuickSchedulePresetsProps {
   onPresetSelect: (preset: SchedulePreset) => void;
+  teamMembers: TeamMember[];
 }
 
 export interface SchedulePreset {
@@ -74,7 +86,29 @@ const presets: SchedulePreset[] = [
   }
 ];
 
-export const QuickSchedulePresets: React.FC<QuickSchedulePresetsProps> = ({ onPresetSelect }) => {
+export const QuickSchedulePresets: React.FC<QuickSchedulePresetsProps> = ({ onPresetSelect, teamMembers }) => {
+  // Determine which preset matches the current team member settings
+  const getSelectedPresetId = (): string | null => {
+    if (teamMembers.length === 0) return null;
+    
+    const firstMember = teamMembers[0];
+    
+    // Find preset that matches current settings
+    const matchingPreset = presets.find(preset => {
+      const settings = preset.settings;
+      return (
+        settings.weekendsOnly === firstMember.weekendsOnly &&
+        settings.weekdaysAfterFivePm === firstMember.weekdaysAfterFivePm &&
+        settings.workingHours.start === firstMember.workingHours.start &&
+        settings.workingHours.end === firstMember.workingHours.end
+      );
+    });
+    
+    return matchingPreset?.id || null;
+  };
+  
+  const selectedPresetId = getSelectedPresetId();
+  
   return (
     <div className="space-y-3">
       <div>
@@ -83,35 +117,57 @@ export const QuickSchedulePresets: React.FC<QuickSchedulePresetsProps> = ({ onPr
       </div>
       
       <div className="grid grid-cols-4 gap-2">
-        {presets.map((preset) => (
-          <Card 
-            key={preset.id}
-            className="group cursor-pointer hover:border-primary hover:shadow-md transition-all duration-200"
-            onClick={() => onPresetSelect(preset)}
-          >
-            <CardContent className="p-3">
-              <div className="flex flex-col items-center text-center gap-2">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 text-primary group-hover:scale-110 transition-transform">
-                  {preset.icon}
-                </div>
-                <div className="flex-1 min-w-0 w-full">
-                  <h4 className="font-semibold text-xs group-hover:text-primary transition-colors">
-                    {preset.name}
-                  </h4>
-                  <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
-                    {preset.description}
-                  </p>
-                  <div className="flex items-center justify-center gap-1 mt-2">
-                    <Badge variant="secondary" className="text-[10px] font-medium px-1.5 py-0.5">
-                      <Clock className="w-2.5 h-2.5 mr-1" />
-                      {preset.settings.hoursPerWeek}h
-                    </Badge>
+        {presets.map((preset) => {
+          const isSelected = selectedPresetId === preset.id;
+          return (
+            <Card 
+              key={preset.id}
+              className={`group cursor-pointer transition-all duration-200 ${
+                isSelected 
+                  ? 'border-primary bg-primary/5 shadow-md' 
+                  : 'hover:border-primary hover:shadow-md'
+              }`}
+              onClick={() => onPresetSelect(preset)}
+            >
+              <CardContent className="p-3">
+                <div className="flex flex-col items-center text-center gap-2">
+                  <div className={`p-2 rounded-lg transition-transform ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground scale-110'
+                      : 'bg-gradient-to-br from-primary/20 to-primary/10 text-primary group-hover:scale-110'
+                  }`}>
+                    {preset.icon}
+                  </div>
+                  <div className="flex-1 min-w-0 w-full">
+                    <h4 className={`font-semibold text-xs transition-colors ${
+                      isSelected 
+                        ? 'text-primary' 
+                        : 'group-hover:text-primary'
+                    }`}>
+                      {preset.name}
+                    </h4>
+                    <p className={`text-[10px] mt-1 leading-tight ${
+                      isSelected 
+                        ? 'text-primary/80' 
+                        : 'text-muted-foreground'
+                    }`}>
+                      {preset.description}
+                    </p>
+                    <div className="flex items-center justify-center gap-1 mt-2">
+                      <Badge 
+                        variant={isSelected ? 'default' : 'secondary'} 
+                        className="text-[10px] font-medium px-1.5 py-0.5"
+                      >
+                        <Clock className={`w-2.5 h-2.5 mr-1 ${isSelected ? 'text-primary-foreground' : ''}`} />
+                        {preset.settings.hoursPerWeek}h
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

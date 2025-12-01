@@ -869,6 +869,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       
       await updateProjectRun(updatedProjectRun);
       
+      // CRITICAL: Update local state to reflect the saved value
+      // This ensures the selection persists after applying
+      setCompletionPriority(completionPriority);
+      
       // Dispatch refresh event for workflow navigation
       window.dispatchEvent(new CustomEvent('project-scheduler-updated', {
         detail: { projectRunId: projectRun.id }

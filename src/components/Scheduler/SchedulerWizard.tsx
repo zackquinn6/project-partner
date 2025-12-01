@@ -106,7 +106,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
       {/* Quick Presets */}
       <Card>
         <CardContent className="p-4">
-          <QuickSchedulePresets onPresetSelect={onPresetApply} />
+          <QuickSchedulePresets onPresetSelect={onPresetApply} teamMembers={teamMembers} />
         </CardContent>
       </Card>
 
