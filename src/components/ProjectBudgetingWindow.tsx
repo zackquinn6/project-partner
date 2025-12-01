@@ -143,6 +143,38 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
       setActualEntries([]);
     }
   }, [currentProjectRun]);
+  
+  // Refresh project run data when window opens to ensure we have latest initial_budget
+  useEffect(() => {
+    if (open && currentProjectRun?.id) {
+      // Fetch fresh project run data to ensure initial_budget is up to date
+      const fetchFreshProjectRun = async () => {
+        try {
+          const { data: freshRun, error } = await supabase
+            .from('project_runs')
+            .select('initial_budget, initial_timeline, initial_sizing')
+            .eq('id', currentProjectRun.id)
+            .single();
+          
+          if (!error && freshRun) {
+            // Update the project run in context with fresh data
+            const updatedRun = {
+              ...currentProjectRun,
+              initial_budget: freshRun.initial_budget,
+              initial_timeline: freshRun.initial_timeline,
+              initial_sizing: freshRun.initial_sizing
+            };
+            await updateProjectRun(updatedRun);
+            console.log('✅ ProjectBudgetingWindow: Refreshed project run with fresh initial_budget:', freshRun.initial_budget);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching fresh project run:', error);
+        }
+      };
+      
+      fetchFreshProjectRun();
+    }
+  }, [open, currentProjectRun?.id, updateProjectRun]);
 
   const saveBudgetData = async (items: BudgetLineItem[], entries: ActualEntry[]) => {
     if (!currentProjectRun) {
