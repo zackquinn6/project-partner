@@ -1059,34 +1059,55 @@ export default function EditWorkflowView({
     if (isEditingStandardProject) {
       console.log('💾 SaveEdit: Also updating template_steps table for Standard Project');
       try {
-        const { error } = await supabase
+        // Ensure apps is properly formatted - handle both array and ensure it's not undefined
+        const appsToSave = Array.isArray(editingStep.apps) ? editingStep.apps : (editingStep.apps ? [editingStep.apps] : []);
+        
+        console.log('💾 SaveEdit: Saving apps to database:', {
+          stepId: editingStep.id,
+          appsCount: appsToSave.length,
+          apps: appsToSave
+        });
+        
+        const updateData: any = {
+          step_title: editingStep.step,
+          display_order: (editingStep as any).display_order || (editingStep as any).stepNumber || 0,
+          description: editingStep.description,
+          content_sections: (editingStep.contentSections || editingStep.content) as any,
+          materials: editingStep.materials || [] as any,
+          tools: editingStep.tools || [] as any,
+          outputs: editingStep.outputs || [] as any,
+          apps: appsToSave, // Use properly formatted apps array
+          flow_type: (editingStep as any).flowType || null,
+          step_type: editingStep.stepType || 'prime',
+          time_estimate_low: editingStep.timeEstimation?.variableTime?.low || null,
+          time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || null,
+          time_estimate_high: editingStep.timeEstimation?.variableTime?.high || null,
+          workers_needed: editingStep.workersNeeded ?? 1,
+          skill_level: editingStep.skillLevel || null,
+          updated_at: new Date().toISOString()
+        };
+        
+        const { error, data } = await supabase
           .from('template_steps')
-          .update({
-            step_title: editingStep.step,
-            display_order: (editingStep as any).display_order || (editingStep as any).stepNumber || 0,  // Changed from step_number
-            description: editingStep.description,
-            content_sections: (editingStep.contentSections || editingStep.content) as any,
-            materials: editingStep.materials || [] as any,
-            tools: editingStep.tools || [] as any,
-            outputs: editingStep.outputs || [] as any,
-            apps: editingStep.apps || [] as any,
-            flow_type: (editingStep as any).flowType || null,
-            step_type: editingStep.stepType || 'prime',
-            time_estimate_low: editingStep.timeEstimation?.variableTime?.low || null,
-            time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || null,
-            time_estimate_high: editingStep.timeEstimation?.variableTime?.high || null,
-            workers_needed: editingStep.workersNeeded ?? 1,
-            skill_level: editingStep.skillLevel || null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingStep.id);
+          .update(updateData)
+          .eq('id', editingStep.id)
+          .select('apps'); // Select apps to verify it was saved
         
         if (error) {
           console.error('SaveEdit: Error updating template_steps:', error);
           toast.error("Warning: Step saved to project but failed to sync to template. Changes may not appear in new projects.");
         } else {
-          console.log('SaveEdit: Successfully synced to template_steps');
+          console.log('SaveEdit: Successfully synced to template_steps', {
+            savedApps: data?.[0]?.apps,
+            appsCount: Array.isArray(data?.[0]?.apps) ? data[0].apps.length : 0
+          });
           toast.success('Step saved to Standard Project');
+          
+          // Reload phases to reflect the changes
+          if (currentProject?.id) {
+            const reloadedPhases = await loadPhasesFromDatabase(currentProject.id);
+            setRawPhases(reloadedPhases);
+          }
         }
       } catch (err) {
         console.error('SaveEdit: Exception updating template_steps:', err);
