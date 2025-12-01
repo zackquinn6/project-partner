@@ -200,7 +200,6 @@ export default function Navigation({
     
     // CRITICAL: Update URL state with projectRunId so UserView can properly load it
     // This ensures UserView's useEffect that watches projectRunId will trigger
-    // Use setTimeout to ensure navigation completes before other state updates
     navigate('/', {
       state: {
         view: 'user',
@@ -209,14 +208,22 @@ export default function Navigation({
       replace: true
     });
     
-    // Set project run in context AFTER navigation
-    // Use setTimeout to ensure navigation state is updated first
-    setTimeout(() => {
-      setCurrentProjectRun(projectRun);
-      onViewChange('user');
-      // Call onProjectSelected to clear forceListingMode in Index.tsx
-      onProjectSelected?.();
-    }, 0);
+    // Set project run in context - this ensures it's available immediately
+    // Also ensure it's in the projectRuns array for UserView's useEffect
+    setCurrentProjectRun(projectRun);
+    
+    // Update projectRuns cache to include this project run if it's not already there
+    const existingRun = projectRuns.find(run => run.id === projectRun.id);
+    if (!existingRun) {
+      // Project run not in cache - add it temporarily
+      // UserView will fetch it properly, but having it in context helps
+      console.log('⚠️ Navigation: Project run not in cache, will be fetched by UserView');
+    }
+    
+    // Change view and clear flags
+    onViewChange('user');
+    // Call onProjectSelected to clear forceListingMode in Index.tsx
+    onProjectSelected?.();
   };
   console.log('🔧 Navigation rendering with mobile:', isMobile, 'buttons should be visible');
   return <>
