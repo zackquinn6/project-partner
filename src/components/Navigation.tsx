@@ -198,6 +198,10 @@ export default function Navigation({
     // This prevents UserView useEffect from forcing listing mode
     window.dispatchEvent(new CustomEvent('clear-reset-flags'));
     
+    // CRITICAL: Set project run in context FIRST, before navigation
+    // This ensures it's available when UserView checks for currentProjectRun
+    setCurrentProjectRun(projectRun);
+    
     // CRITICAL: Update URL state with projectRunId so UserView can properly load it
     // This ensures UserView's useEffect that watches projectRunId will trigger
     navigate('/', {
@@ -207,10 +211,6 @@ export default function Navigation({
       },
       replace: true
     });
-    
-    // Set project run in context - this ensures it's available immediately
-    // Also ensure it's in the projectRuns array for UserView's useEffect
-    setCurrentProjectRun(projectRun);
     
     // Update projectRuns cache to include this project run if it's not already there
     const existingRun = projectRuns.find(run => run.id === projectRun.id);

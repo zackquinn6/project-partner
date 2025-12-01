@@ -1015,12 +1015,21 @@ export default function UserView({
     }
 
     // CRITICAL FIX: ALWAYS respect forceListingMode - Progress Board must show listing
-    // BUT: Don't force listing if we have a projectRunId (new project from catalog)
+    // BUT: Don't force listing if we have a projectRunId (project selected from dropdown or catalog)
+    // When projectRunId is provided, we should directly open the project, not go to listing
     if (forceListingMode && !projectRunId) {
       console.log('🔄 UserView: forceListingMode active - staying in listing mode');
       if (viewMode !== 'listing') {
         setViewMode('listing');
       }
+      return;
+    }
+    
+    // CRITICAL: If projectRunId is provided, prioritize opening the project directly
+    // This ensures project selection from dropdown opens the project, not listing
+    if (projectRunId && !currentProjectRun) {
+      console.log('🎯 UserView: projectRunId provided but currentProjectRun not loaded yet - waiting for load');
+      // Don't set viewMode yet - wait for project run to load in the other useEffect
       return;
     }
 
@@ -1049,9 +1058,10 @@ export default function UserView({
     // Determine new view mode based on priority
     let newViewMode: 'listing' | 'workflow' = viewMode;
 
-    // CRITICAL: If projectRunId is provided (new project from catalog), prioritize opening to workflow
-    // Don't force listing mode if we're trying to open a new project
+    // CRITICAL: If projectRunId is provided (project selected from dropdown or catalog), prioritize opening to workflow
+    // This ensures direct project opening, not going to listing mode
     if (projectRunId && currentProjectRun) {
+      console.log('🎯 UserView: projectRunId and currentProjectRun both present - opening to workflow');
       newViewMode = 'workflow';
     } else if (showProfile || (forceListingMode && !projectRunId)) {
       newViewMode = 'listing';
