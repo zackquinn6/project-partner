@@ -216,7 +216,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const handleSave = useCallback(async () => {
     if (!currentProjectRun) return;
     
-    // Only require home selection if user has multiple homes
+    // REQUIREMENT 4: Only require home selection if user has multiple homes
     if (homes.length > 1 && !selectedHomeId) {
       toast.error('Please select a home for this project');
       return;
@@ -228,8 +228,42 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     }
 
     try {
+      // REQUIREMENT 1 & 3: Ensure home exists - use selected home or first home or create default
+      let homeId = selectedHomeId || homes[0]?.id || null;
+      
+      // If no home exists, create default home
+      if (!homeId && user) {
+        console.log('🏠 No home found - creating default home');
+        const { data: newHome, error: homeCreateError } = await supabase
+          .from('homes')
+          .insert({
+            user_id: user.id,
+            name: 'My Home',
+            is_primary: true,
+            home_ownership: 'own'
+          })
+          .select('id')
+          .single();
+
+        if (homeCreateError) {
+          console.error('Error creating default home:', homeCreateError);
+          toast.error('Failed to create default home');
+          return;
+        }
+
+        homeId = newHome.id;
+        setSelectedHomeId(homeId);
+        // Refresh homes list
+        await fetchHomes();
+      }
+
+      // REQUIREMENT 3: Don't proceed without a home
+      if (!homeId) {
+        toast.error('A home is required to start a project. Please create a home first.');
+        return;
+      }
+
       // Update project run in database with new fields
-      // CRITICAL: Update home_id and initial_sizing separately to avoid trigger issues
       // First update: fields that don't trigger space_sizing creation
       const baseUpdateData: any = {
         custom_project_name: projectForm.customProjectName.trim(),
@@ -245,8 +279,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
       if (baseError) throw baseError;
       
-      // Second update: home_id (this might trigger space processing, so do it separately)
-      const homeId = selectedHomeId || homes[0]?.id || null;
+      // Second update: home_id (must be set before creating spaces)
       if (homeId !== currentProjectRun.home_id) {
         const { error: homeError } = await supabase
           .from('project_runs')
@@ -255,9 +288,95 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         
         if (homeError) throw homeError;
       }
-      
-      // Third update: initial_sizing ONLY if it has a value and only after home_id is set
-      // This prevents the trigger from trying to create space_sizing records with null space_id
+
+      // REQUIREMENT 2 & 5: Ensure "Room 1" space exists for this project run
+      const { data: existingSpaces, error: spacesCheckError } = await supabase
+        .from('project_run_spaces')
+        .select('id, space_name')
+        .eq('project_run_id', currentProjectRun.id);
+
+      if (spacesCheckError) {
+        console.error('Error checking spaces:', spacesCheckError);
+        throw spacesCheckError;
+      }
+
+      let room1SpaceId: string | null = null;
+      const room1Exists = existingSpaces?.some(space => space.space_name === 'Room 1');
+
+      if (!room1Exists) {
+        // REQUIREMENT 5: Create "Room 1" space
+        console.log('🏠 Creating Room 1 space for project');
+        const { data: newSpace, error: spaceCreateError } = await supabase
+          .from('project_run_spaces')
+          .insert({
+            project_run_id: currentProjectRun.id,
+            space_name: 'Room 1',
+            space_type: 'general',
+            is_from_home: false
+          })
+          .select('id')
+          .single();
+
+        if (spaceCreateError) {
+          console.error('Error creating Room 1 space:', spaceCreateError);
+          throw spaceCreateError;
+        }
+
+        room1SpaceId = newSpace.id;
+        console.log('✅ Room 1 space created:', room1SpaceId);
+      } else {
+        // Find existing Room 1 space
+        room1SpaceId = existingSpaces?.find(space => space.space_name === 'Room 1')?.id || null;
+      }
+
+      // REQUIREMENT 3: Validate Room 1 exists before proceeding
+      if (!room1SpaceId) {
+        toast.error('Failed to create Room 1 space. Please try again.');
+        return;
+      }
+
+      // REQUIREMENT 2: Apply initial_sizing to Room 1 if provided
+      if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0) {
+        const parsedSizing = parseFloat(projectForm.initialSizing.trim());
+        if (!isNaN(parsedSizing) && parsedSizing > 0) {
+          // Get project scaling unit
+          const projectScaleUnit = scalingUnit || 'per item';
+          
+          // Update Room 1 space with sizing
+          const { error: spaceUpdateError } = await supabase
+            .from('project_run_spaces')
+            .update({ 
+              scale_value: parsedSizing,
+              scale_unit: projectScaleUnit
+            })
+            .eq('id', room1SpaceId);
+
+          if (spaceUpdateError) {
+            console.error('Error updating Room 1 sizing:', spaceUpdateError);
+            // Don't throw - sizing is optional
+          } else {
+            // Also update project_run_space_sizing table
+            const { error: sizingUpsertError } = await supabase
+              .from('project_run_space_sizing')
+              .upsert({
+                space_id: room1SpaceId,
+                scaling_unit: projectScaleUnit,
+                size_value: parsedSizing
+              }, {
+                onConflict: 'space_id,scaling_unit'
+              });
+
+            if (sizingUpsertError) {
+              console.error('Error upserting space sizing:', sizingUpsertError);
+              // Don't throw - sizing is optional
+            } else {
+              console.log('✅ Applied initial sizing to Room 1:', parsedSizing, projectScaleUnit);
+            }
+          }
+        }
+      }
+
+      // Update initial_sizing in project_runs table
       if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0) {
         const { error: sizingError } = await supabase
           .from('project_runs')
@@ -269,8 +388,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         
         if (sizingError) {
           console.error('Error updating initial_sizing:', sizingError);
-          // Don't throw - this is optional and might fail if no spaces exist yet
-          // The project can still proceed without initial_sizing
+          // Don't throw - this is optional
         }
       }
 
@@ -278,7 +396,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       const updatedProjectRun = {
         ...currentProjectRun,
         customProjectName: projectForm.customProjectName.trim(),
-        home_id: selectedHomeId || homes[0]?.id || null,
+        home_id: homeId,
         initial_sizing: projectForm.initialSizing.trim() || null,
         initial_timeline: projectForm.initialTimeline || null,
         initial_budget: projectForm.initialBudget.trim() || null,
@@ -286,17 +404,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       };
 
       // Update local cache/state (this doesn't hit the database)
-      // The database updates were already done above
       await updateProjectRun(updatedProjectRun);
       
-      // CRITICAL FIX: Call onComplete to mark step 3 as complete
-      console.log('🎯 ProjectProfileStep: Calling onComplete after save');
+      console.log('🎯 ProjectProfileStep: All requirements met - calling onComplete');
       onComplete();
     } catch (error) {
       console.error('Error saving project profile:', error);
       toast.error('Failed to save project profile');
     }
-  }, [currentProjectRun, selectedHomeId, projectForm, homes, updateProjectRun, onComplete]);
+  }, [currentProjectRun, selectedHomeId, projectForm, homes, updateProjectRun, onComplete, user, scalingUnit, fetchHomes]);
 
   // Expose handleSave via window for parent component
   useEffect(() => {

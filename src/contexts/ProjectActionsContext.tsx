@@ -397,13 +397,49 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     if (!user) return;
 
     try {
+      // REQUIREMENT 1: Check if user has homes - if not, create default home
+      const { data: existingHomes, error: homesCheckError } = await supabase
+        .from('homes')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (homesCheckError) {
+        console.error('Error checking homes:', homesCheckError);
+        throw homesCheckError;
+      }
+
+      let defaultHomeId: string | null = null;
+      if (!existingHomes || existingHomes.length === 0) {
+        // Create default home for new user
+        console.log('🏠 No homes found - creating default home for user');
+        const { data: newHome, error: homeCreateError } = await supabase
+          .from('homes')
+          .insert({
+            user_id: user.id,
+            name: 'My Home',
+            is_primary: true,
+            home_ownership: 'own' // Default value
+          })
+          .select('id')
+          .single();
+
+        if (homeCreateError) {
+          console.error('Error creating default home:', homeCreateError);
+          throw homeCreateError;
+        }
+
+        defaultHomeId = newHome.id;
+        console.log('✅ Default home created:', defaultHomeId);
+      }
+
       // Use new RPC function to create immutable project run snapshot
       const { data: newProjectRunId, error } = await supabase
         .rpc('create_project_run_snapshot', {
           p_template_id: projectRunData.templateId,
           p_user_id: user.id,
           p_run_name: projectRunData.name,
-          p_home_id: null, // Will be added later
+          p_home_id: defaultHomeId, // Use default home if created, otherwise null (will be set in kickoff step 3)
           p_start_date: projectRunData.startDate.toISOString(),
           p_plan_end_date: projectRunData.planEndDate.toISOString()
         });
