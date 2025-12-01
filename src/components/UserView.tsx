@@ -78,6 +78,7 @@ import {
   getFlowType,
   type ProjectSpace as WorkflowProjectSpace
 } from '@/utils/workflowNavigationUtils';
+import { getNativeAppById } from '@/utils/appsRegistry';
 import { 
   formatEstimatedFinishDate,
   shouldRefreshEstimatedFinishDate
@@ -2978,6 +2979,34 @@ export default function UserView({
             
             // Filter out any invalid app objects
             apps = apps.filter(app => app && app.id && app.appName);
+            
+            // Enrich apps with icon data from registry if missing
+            apps = apps.map(app => {
+              // If app already has icon, use it
+              if (app.icon) {
+                return app;
+              }
+              
+              // Try to get icon from native apps registry using actionKey
+              const actionKey = app.actionKey || app.id?.replace('app-', '');
+              if (actionKey) {
+                const nativeApp = getNativeAppById(actionKey);
+                if (nativeApp) {
+                  return {
+                    ...app,
+                    icon: nativeApp.icon,
+                    appName: app.appName || nativeApp.appName,
+                    description: app.description || nativeApp.description
+                  };
+                }
+              }
+              
+              // If no icon found, use Sparkles as fallback
+              return {
+                ...app,
+                icon: app.icon || 'Sparkles'
+              };
+            });
             
             if (apps.length === 0) return null;
             
