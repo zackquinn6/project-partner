@@ -850,10 +850,22 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     if (!projectRun) return;
     
     try {
+      // Map completion priority to schedule_optimization_method values
+      // 'agile' → 'single-piece-flow', 'waterfall' → 'batch-flow'
+      const scheduleOptimizationMethod = completionPriority === 'agile' ? 'single-piece-flow' : 'batch-flow';
+      
       const updatedProjectRun = {
         ...projectRun,
-        completion_priority: completionPriority
-      };
+        completion_priority: completionPriority,
+        // CRITICAL: Also update schedule_optimization_method which is what workflow navigation actually uses
+        schedule_optimization_method: scheduleOptimizationMethod
+      } as any;
+      
+      console.log('💾 ProjectScheduler: Applying optimization method:', {
+        completionPriority,
+        scheduleOptimizationMethod,
+        projectRunId: projectRun.id
+      });
       
       await updateProjectRun(updatedProjectRun);
       
@@ -864,7 +876,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       
       toast({
         title: "Optimization method applied",
-        description: `Workflow navigation updated to ${completionPriority === 'agile' ? 'single-piece flow' : 'batch flow'}.`
+        description: `Workflow navigation updated to ${scheduleOptimizationMethod === 'single-piece-flow' ? 'single-piece flow' : 'batch flow'}.`
       });
     } catch (error) {
       toast({

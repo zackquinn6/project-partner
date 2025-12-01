@@ -729,7 +729,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             progress_reporting_style: projectRun.progress_reporting_style || 'linear',
             initial_budget: (projectRun as any).initial_budget || null,
             initial_timeline: (projectRun as any).initial_timeline || null,
-            initial_sizing: (projectRun as any).initial_sizing || null
+            initial_sizing: (projectRun as any).initial_sizing || null,
+            schedule_optimization_method: (projectRun as any).schedule_optimization_method || null,
+            completion_priority: (projectRun as any).completion_priority || null
           })
           .eq('id', projectRun.id)
           .eq('user_id', user.id);
