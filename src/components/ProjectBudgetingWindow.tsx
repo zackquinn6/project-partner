@@ -56,6 +56,19 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   const [selectedLineItemForActual, setSelectedLineItemForActual] = useState<string>('');
 
   useEffect(() => {
+    // Debug: Log initial_budget value to help diagnose the issue
+    if (currentProjectRun) {
+      const budgetValue = (currentProjectRun as any)?.initial_budget || (currentProjectRun as any)?.initialBudget;
+      console.log('💰 ProjectBudgetingWindow: Checking initial_budget:', {
+        hasCurrentProjectRun: !!currentProjectRun,
+        initial_budget: (currentProjectRun as any)?.initial_budget,
+        initialBudget: (currentProjectRun as any)?.initialBudget,
+        budgetValue,
+        budgetValueType: typeof budgetValue,
+        allKeys: Object.keys(currentProjectRun).filter(k => k.toLowerCase().includes('budget'))
+      });
+    }
+    
     if (currentProjectRun?.budget_data) {
       try {
         // Handle both object and parsed JSON string
@@ -308,19 +321,37 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Project Budget Goal</div>
                 <div className="text-xl font-bold text-primary">
-                  {currentProjectRun?.initial_budget && String(currentProjectRun.initial_budget).trim() !== '' && parseFloat(String(currentProjectRun.initial_budget)) > 0
-                    ? `$${parseFloat(String(currentProjectRun.initial_budget)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                    : 'Not set'}
+                  {(() => {
+                    // Try multiple property names to handle both snake_case and camelCase
+                    const budgetValue = (currentProjectRun as any)?.initial_budget || (currentProjectRun as any)?.initialBudget;
+                    const budgetStr = budgetValue ? String(budgetValue).trim() : '';
+                    const budgetNum = budgetStr ? parseFloat(budgetStr) : NaN;
+                    
+                    if (budgetStr && !isNaN(budgetNum) && budgetNum > 0) {
+                      return `$${budgetNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    }
+                    return 'Not set';
+                  })()}
                 </div>
               </div>
-              {currentProjectRun?.initial_budget && String(currentProjectRun.initial_budget).trim() !== '' && parseFloat(String(currentProjectRun.initial_budget)) > 0 && totalBudgeted > 0 && (
-                <div className="text-right">
-                  <div className="text-xs text-muted-foreground mb-1">Budgeted vs Goal</div>
-                  <div className={`text-lg font-semibold ${totalBudgeted > parseFloat(String(currentProjectRun.initial_budget)) ? 'text-red-600' : 'text-green-600'}`}>
-                    ${totalBudgeted.toFixed(2)} / ${parseFloat(String(currentProjectRun.initial_budget)).toFixed(2)}
-                  </div>
-                </div>
-              )}
+              {(() => {
+                // Try multiple property names to handle both snake_case and camelCase
+                const budgetValue = (currentProjectRun as any)?.initial_budget || (currentProjectRun as any)?.initialBudget;
+                const budgetStr = budgetValue ? String(budgetValue).trim() : '';
+                const budgetNum = budgetStr ? parseFloat(budgetStr) : NaN;
+                
+                if (budgetStr && !isNaN(budgetNum) && budgetNum > 0 && totalBudgeted > 0) {
+                  return (
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground mb-1">Budgeted vs Goal</div>
+                      <div className={`text-lg font-semibold ${totalBudgeted > budgetNum ? 'text-red-600' : 'text-green-600'}`}>
+                        ${totalBudgeted.toFixed(2)} / ${budgetNum.toFixed(2)}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
 
