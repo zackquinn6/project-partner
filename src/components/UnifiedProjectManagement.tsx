@@ -628,13 +628,28 @@ export function UnifiedProjectManagement({
         });
         
         // Show detailed error notification with missing fields
-        const missingFieldsList = validation.missingFields.map(field => `• ${field}`).join('\n');
+        // Format message for better visibility - use alert as fallback to ensure user sees it
+        const missingFieldsList = validation.missingFields.map(f => `• ${f}`).join('\n');
+        const errorMessage = `Cannot publish to production.\n\nMissing ${validation.missingFields.length} required field(s):\n\n${missingFieldsList}\n\nPlease fill in all required fields in the Project Information section. You can use "-" or "N/A" if a field is not applicable.`;
+        
+        // Show alert to ensure user sees the error (toast might not be visible)
+        alert(errorMessage);
+        
+        // Also show toast error for consistency
         toast.error(
-          `Cannot publish to production. Missing ${validation.missingFields.length} required field(s):\n\n${missingFieldsList}\n\nPlease fill in all required fields in the Project Information section. You can use "-" or "N/A" if a field is not applicable.`,
+          `Cannot publish to production. Missing ${validation.missingFields.length} required field(s). See alert for details.`,
           {
-            duration: 12000
+            duration: 10000
           }
         );
+        
+        // Also log to console for debugging
+        console.error('❌ Production release validation failed:', {
+          missingFields: validation.missingFields,
+          projectId: projectToValidate.id,
+          projectName: projectToValidate.name
+        });
+        
         return;
       }
     }
