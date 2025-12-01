@@ -384,9 +384,5 @@ export function scheduleHomeTasksOptimized(
     warnings.push(`${unassigned.length} work item(s) could not be fully scheduled`);
   }
 
-  if (professionalTasks.length > 0) {
-    warnings.push(`${professionalTasks.length} professional task(s) require contractor/pro - see Professional Tasks section`);
-  }
-
   return { assignments, unassigned, professionalTasks, warnings };
 }

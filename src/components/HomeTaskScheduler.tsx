@@ -147,6 +147,16 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
     setIsGenerating(true);
 
     try {
+      // Ensure start date is today or later - never in the past
+      // Use today's date or the selected start date, whichever is later
+      const today = getToday();
+      const effectiveStartDate = isBefore(startDate, today) ? today : startDate;
+      
+      // Update startDate state if it was in the past
+      if (isBefore(startDate, today)) {
+        setStartDate(today);
+      }
+
       // Fetch tasks with subtasks
       let tasksQuery = supabase
         .from('home_tasks')
@@ -199,11 +209,11 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
         subtasks: subtasks?.filter(st => st.task_id === task.id) || []
       })) || [];
 
-      // Generate schedule with existing assignments
+      // Generate schedule with existing assignments - use effectiveStartDate (today or selected, whichever is later)
       const result = scheduleHomeTasksOptimized(
         tasksWithSubtasks as any,
         people as any,
-        startDate,
+        effectiveStartDate,
         existingAssignments as any
       );
 
@@ -223,11 +233,15 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
     try {
       const taskIds = [...new Set(scheduleData.assignments.map((a: any) => a.taskId))] as string[];
       
+      // Ensure start date is today or later when saving
+      const today = getToday();
+      const effectiveStartDate = isBefore(startDate, today) ? today : startDate;
+      
       // Save schedule metadata
       const scheduleRecord = {
         user_id: userId,
         home_id: homeId,
-        start_date: startDate.toISOString().split('T')[0],
+        start_date: effectiveStartDate.toISOString().split('T')[0],
         schedule_data: {
           assignments: scheduleData.assignments.map((a: any) => ({
             ...a,
@@ -368,7 +382,7 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
       )}
       
       <div className="space-y-2">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
+        <div className="flex flex-row items-end gap-2">
           <div className="flex-1">
             <Label className="text-[10px] md:text-xs">Start Date</Label>
             <Popover>
@@ -412,23 +426,21 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
             </Popover>
           </div>
           
-          <div className="flex-1 flex items-end">
-            <Button onClick={handleGenerateSchedule} disabled={isGenerating} size="sm" className="w-full h-7 text-[10px] md:text-xs">
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1 animate-spin" />
-                  <span className="hidden md:inline">Generating...</span>
-                  <span className="md:hidden">Gen...</span>
-                </>
-              ) : (
-                <>
-                  <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
-                  <span className="hidden md:inline">Generate Schedule</span>
-                  <span className="md:hidden">Generate</span>
-                </>
-              )}
-            </Button>
-          </div>
+          <Button onClick={handleGenerateSchedule} disabled={isGenerating} size="sm" className="h-7 text-[10px] md:text-xs whitespace-nowrap">
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1 animate-spin" />
+                <span className="hidden md:inline">Generating...</span>
+                <span className="md:hidden">Gen...</span>
+              </>
+            ) : (
+              <>
+                <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
+                <span className="hidden md:inline">Generate Schedule</span>
+                <span className="md:hidden">Generate</span>
+              </>
+            )}
+          </Button>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="text-[10px] md:text-xs text-muted-foreground">

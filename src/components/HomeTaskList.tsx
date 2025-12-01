@@ -444,11 +444,11 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <div className="flex-shrink-0 px-2 md:px-4 pt-3 pb-4 md:pb-5 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="mb-0 overflow-hidden">
-                  <TabsList className={`w-full grid ${canAccessPaidFeatures ? 'grid-cols-3' : 'grid-cols-2'} text-xs md:text-sm h-9 md:h-10 p-0.5 md:p-1 gap-0.5 md:gap-1 bg-muted/50 rounded-lg`}>
-                    <TabsTrigger value="tasks" className="text-xs md:text-sm px-1.5 md:px-2.5 py-1.5 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md flex-1 min-w-0">Tasks</TabsTrigger>
-                    <TabsTrigger value="shopping" className="text-xs md:text-sm px-1.5 md:px-2.5 py-1.5 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md flex-1 min-w-0">Shopping</TabsTrigger>
+                  <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-9 md:h-10' : 'h-9 md:h-10'} p-0.5 md:p-1 gap-0.5 md:gap-1 bg-muted/50 rounded-lg`}>
+                    <TabsTrigger value="tasks" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md flex-1 min-w-0 truncate">Tasks</TabsTrigger>
+                    <TabsTrigger value="shopping" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md flex-1 min-w-0 truncate">Shopping</TabsTrigger>
                     {canAccessPaidFeatures && (
-                      <TabsTrigger value="schedule" className="text-xs md:text-sm px-1.5 md:px-2.5 py-1.5 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md flex-1 min-w-0">Schedule</TabsTrigger>
+                      <TabsTrigger value="schedule" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md flex-1 min-w-0 truncate">Schedule</TabsTrigger>
                     )}
                   </TabsList>
                 </div>
