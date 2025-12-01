@@ -197,6 +197,11 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
 
       await syncProjectOutputsToRequirements(data.id, projectId);
       await fetchData();
+      
+      // Automatically select the newly created PFMEA project
+      setSelectedPfmeaProject(data);
+      await fetchPfmeaDetails(data.id);
+      
       setShowCreateProject(false);
       toast.success('PFMEA project created successfully');
     } catch (error) {
