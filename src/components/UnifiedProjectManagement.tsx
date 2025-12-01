@@ -243,10 +243,11 @@ export function UnifiedProjectManagement({
         typical_project_size: editedProject.typical_project_size !== undefined ? editedProject.typical_project_size : selectedProject.typical_project_size,
         scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
         item_type: editedProject.item_type !== undefined ? editedProject.item_type : selectedProject.item_type,
-        budget_per_unit: (editedProject as any).budget_per_unit !== undefined 
+        // Always include budget fields - use edited value if it exists, otherwise preserve existing
+        budget_per_unit: (editedProject as any).hasOwnProperty('budget_per_unit')
           ? ((editedProject as any).budget_per_unit === '' ? null : (editedProject as any).budget_per_unit)
           : ((selectedProject as any).budget_per_unit ?? null),
-        budget_per_typical_size: (editedProject as any).budget_per_typical_size !== undefined
+        budget_per_typical_size: (editedProject as any).hasOwnProperty('budget_per_typical_size')
           ? ((editedProject as any).budget_per_typical_size === '' ? null : (editedProject as any).budget_per_typical_size)
           : ((selectedProject as any).budget_per_typical_size ?? null),
         project_type: editedProject.project_type || selectedProject.project_type || 'primary',
@@ -301,13 +302,19 @@ export function UnifiedProjectManagement({
         changes: updateData,
         budget_per_unit: {
           edited: (editedProject as any).budget_per_unit,
+          editedType: typeof (editedProject as any).budget_per_unit,
+          hasOwnProperty: (editedProject as any).hasOwnProperty('budget_per_unit'),
           selected: (selectedProject as any).budget_per_unit,
-          final: updateData.budget_per_unit
+          final: updateData.budget_per_unit,
+          finalType: typeof updateData.budget_per_unit
         },
         budget_per_typical_size: {
           edited: (editedProject as any).budget_per_typical_size,
+          editedType: typeof (editedProject as any).budget_per_typical_size,
+          hasOwnProperty: (editedProject as any).hasOwnProperty('budget_per_typical_size'),
           selected: (selectedProject as any).budget_per_typical_size,
-          final: updateData.budget_per_typical_size
+          final: updateData.budget_per_typical_size,
+          finalType: typeof updateData.budget_per_typical_size
         }
       });
 
@@ -407,6 +414,8 @@ export function UnifiedProjectManagement({
         };
         console.log('🔄 Fresh project data after save:', mappedData);
         console.log('🔄 Fresh project_challenges:', mappedData.project_challenges);
+        console.log('🔄 Fresh budget_per_unit:', mappedData.budget_per_unit, 'type:', typeof mappedData.budget_per_unit);
+        console.log('🔄 Fresh budget_per_typical_size:', mappedData.budget_per_typical_size, 'type:', typeof mappedData.budget_per_typical_size);
         setSelectedProject(mappedData as Project);
         toast.success("Project updated successfully!");
       } else if (data && data[0]) {
