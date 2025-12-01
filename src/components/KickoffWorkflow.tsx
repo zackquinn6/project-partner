@@ -127,13 +127,29 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       setCompletedKickoffSteps(newCompletedKickoffSteps);
       console.log("KickoffWorkflow - Updating project run with steps:", newCompletedSteps);
 
+      // CRITICAL: Preserve initial_budget, initial_timeline, initial_sizing from current context
+      // These values were saved in ProjectProfileStep and must not be lost
+      const preservedBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+      const preservedTimeline = (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
+      const preservedSizing = (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+      
       // Update project run with completed step - WAIT for completion
       const updatedProjectRun = {
         ...currentProjectRun,
         completedSteps: newCompletedSteps,
         progress: Math.round(newCompletedSteps.length / getTotalStepsCount() * 100),
+        // CRITICAL: Explicitly preserve initial_budget, initial_timeline, initial_sizing
+        ...(preservedBudget !== null && { initial_budget: preservedBudget }),
+        ...(preservedTimeline !== null && { initial_timeline: preservedTimeline }),
+        ...(preservedSizing !== null && { initial_sizing: preservedSizing }),
         updatedAt: new Date()
       };
+
+      console.log('💾 KickoffWorkflow handleStepComplete: Preserving budget fields:', {
+        initial_budget: preservedBudget,
+        initial_timeline: preservedTimeline,
+        initial_sizing: preservedSizing
+      });
 
       // Wait for database update to complete
       await updateProjectRun(updatedProjectRun);
