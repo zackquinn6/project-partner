@@ -813,6 +813,16 @@ export default function UserView({
     if (projectRunId) {
       console.log('🎯 UserView: Loading project run with ID:', projectRunId);
       const projectRun = projectRuns.find(run => run.id === projectRunId);
+      
+      // If projectRunId doesn't exist in projectRuns and we have other runs loaded,
+      // it might have been deleted - go to listing instead of trying to fetch
+      if (!projectRun && projectRuns.length > 0) {
+        console.log('⚠️ UserView: Project run not found in loaded runs and other runs exist - likely deleted, going to listing');
+        setCurrentProjectRun(null);
+        setViewMode('listing');
+        onProjectSelected?.('listing' as any);
+        return;
+      }
       if (projectRun) {
         // Don't open cancelled projects
         if (projectRun.status === 'cancelled') {
@@ -821,6 +831,8 @@ export default function UserView({
         }
         console.log('✅ UserView: Found and setting project run:', projectRun.name);
         setCurrentProjectRun(projectRun);
+        // CRITICAL: Set viewMode to 'workflow' for new project runs so kickoff can display
+        // Kickoff only shows when viewMode === 'workflow' and !isKickoffComplete
         setViewMode('workflow');
       } else {
         // Project run not in array yet - fetch directly from database

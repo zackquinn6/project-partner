@@ -91,9 +91,13 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     deleteProjectRun(projectRunId);
     // Ensure we don't auto-select another project run after deletion
     setCurrentProjectRun(null);
-    // Clear projectRunId from URL if this was the current one
+    // Clear projectRunId from location state to prevent UserView from trying to load it
     if (currentProjectRun?.id === projectRunId) {
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Clear location state projectRunId by navigating without it
+      navigate(window.location.pathname, { 
+        replace: true,
+        state: { view: 'user' } // Keep view but remove projectRunId
+      });
     }
     // Communicate to parent component that we want to stay in listing mode
     onProjectSelect?.(null as any);
