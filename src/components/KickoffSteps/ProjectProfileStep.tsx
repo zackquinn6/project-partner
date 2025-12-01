@@ -429,9 +429,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
       // Update local state for optimistic UI update
       // CRITICAL: Use the same finalBudgetValue we saved to database
-      const budgetValue = projectForm.initialBudget?.trim() || '';
-      const finalBudgetValue = budgetValue === '' ? null : budgetValue;
-      
       const updatedProjectRun = {
         ...currentProjectRun,
         customProjectName: projectForm.customProjectName.trim(),
