@@ -182,13 +182,24 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
       if (subtasksError) throw subtasksError;
 
       // Fetch existing manual assignments
-      const { data: existingAssignments, error: assignmentsError } = await supabase
+      const { data: existingAssignmentsRaw, error: assignmentsError } = await supabase
         .from('home_task_assignments')
         .select('task_id, subtask_id, person_id, scheduled_date, scheduled_hours')
         .in('task_id', taskIds)
         .eq('user_id', userId);
 
       if (assignmentsError) throw assignmentsError;
+
+      // Filter out existing assignments with dates in the past - only keep assignments on or after effectiveStartDate
+      const today = getToday();
+      const effectiveStartDate = isBefore(startDate, today) ? today : startDate;
+      const existingAssignments = (existingAssignmentsRaw || []).filter(assignment => {
+        const assignmentDate = new Date(assignment.scheduled_date);
+        assignmentDate.setHours(0, 0, 0, 0);
+        const startDateMidnight = new Date(effectiveStartDate);
+        startDateMidnight.setHours(0, 0, 0, 0);
+        return !isBefore(assignmentDate, startDateMidnight);
+      });
 
       // Fetch people
       let peopleQuery = supabase

@@ -95,12 +95,24 @@ export function scheduleHomeTasksOptimized(
   }
 
   // Convert existing manual assignments to Assignment format
+  // Only include assignments on or after the startDate - never in the past
+  const startDateMidnight = new Date(startDate);
+  startDateMidnight.setHours(0, 0, 0, 0);
+  
   for (const [key, manualAssignment] of manualAssignments) {
     const task = tasks.find(t => t.id === manualAssignment.task_id);
     if (!task) continue;
 
     const person = people.find(p => p.id === manualAssignment.person_id);
     if (!person) continue;
+
+    const assignmentDate = new Date(manualAssignment.scheduled_date);
+    assignmentDate.setHours(0, 0, 0, 0);
+    
+    // Skip assignments in the past - only include assignments on or after startDate
+    if (assignmentDate < startDateMidnight) {
+      continue;
+    }
 
     let subtaskTitle = task.title;
     if (manualAssignment.subtask_id) {
