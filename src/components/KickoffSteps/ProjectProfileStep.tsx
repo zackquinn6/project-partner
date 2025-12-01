@@ -336,26 +336,41 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       }
 
       // REQUIREMENT 2: Apply initial_sizing to Room 1 if provided
-      if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0) {
+      if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0 && room1SpaceId) {
         const parsedSizing = parseFloat(projectForm.initialSizing.trim());
         if (!isNaN(parsedSizing) && parsedSizing > 0) {
           // Get project scaling unit
           const projectScaleUnit = scalingUnit || 'per item';
+          
+          // CRITICAL: Ensure room1SpaceId is valid before any operations
+          if (!room1SpaceId) {
+            console.error('❌ Cannot apply sizing: room1SpaceId is null');
+            toast.error('Failed to apply sizing: Room 1 space not found');
+            return;
+          }
           
           // Update Room 1 space with sizing
           const { error: spaceUpdateError } = await supabase
             .from('project_run_spaces')
             .update({ 
               scale_value: parsedSizing,
-              scale_unit: projectScaleUnit
+              scale_unit: projectScaleUnit,
+              updated_at: new Date().toISOString()
             })
             .eq('id', room1SpaceId);
 
           if (spaceUpdateError) {
             console.error('Error updating Room 1 sizing:', spaceUpdateError);
-            // Don't throw - sizing is optional
+            toast.error('Failed to update Room 1 sizing');
+            // Don't throw - sizing is optional, but log the error
           } else {
             // Also update project_run_space_sizing table
+            // CRITICAL: Double-check room1SpaceId is still valid
+            if (!room1SpaceId) {
+              console.error('❌ room1SpaceId became null before upsert');
+              return;
+            }
+            
             const { error: sizingUpsertError } = await supabase
               .from('project_run_space_sizing')
               .upsert({
@@ -368,7 +383,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
             if (sizingUpsertError) {
               console.error('Error upserting space sizing:', sizingUpsertError);
-              // Don't throw - sizing is optional
+              // Don't throw - sizing is optional, but log the error
             } else {
               console.log('✅ Applied initial sizing to Room 1:', parsedSizing, projectScaleUnit);
             }
