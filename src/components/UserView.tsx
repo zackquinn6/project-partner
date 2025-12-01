@@ -951,7 +951,9 @@ export default function UserView({
         };
         
         fetchProjectRun();
-      } else if (projectRunId && currentProjectRun && currentProjectRun.id === projectRunId) {
+      }
+      
+      if (projectRunId && currentProjectRun && currentProjectRun.id === projectRunId) {
         // Project run is already loaded - ensure viewMode is 'workflow' for kickoff
         // This handles the case where project run was loaded but viewMode wasn't set correctly
         if (viewMode === 'listing' && !isKickoffComplete) {
