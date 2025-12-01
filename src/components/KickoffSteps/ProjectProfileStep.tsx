@@ -265,19 +265,39 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
       // Update project run in database with new fields
       // First update: fields that don't trigger space_sizing creation
+      // CRITICAL: Handle initial_budget properly - trim and convert empty string to null
+      const budgetValue = projectForm.initialBudget?.trim() || '';
+      const finalBudgetValue = budgetValue === '' ? null : budgetValue;
+      
+      console.log('💾 ProjectProfileStep: Saving initial_budget:', {
+        rawValue: projectForm.initialBudget,
+        trimmedValue: budgetValue,
+        finalValue: finalBudgetValue,
+        type: typeof finalBudgetValue
+      });
+      
       const baseUpdateData: any = {
         custom_project_name: projectForm.customProjectName.trim(),
         initial_timeline: projectForm.initialTimeline || null,
-        initial_budget: projectForm.initialBudget.trim() || null,
+        initial_budget: finalBudgetValue,
         updated_at: new Date().toISOString()
       };
       
-      const { error: baseError } = await supabase
+      const { error: baseError, data: updateResult } = await supabase
         .from('project_runs')
         .update(baseUpdateData)
-        .eq('id', currentProjectRun.id);
+        .eq('id', currentProjectRun.id)
+        .select('initial_budget');
 
-      if (baseError) throw baseError;
+      if (baseError) {
+        console.error('❌ ProjectProfileStep: Error saving initial_budget:', baseError);
+        throw baseError;
+      }
+      
+      console.log('✅ ProjectProfileStep: Successfully saved initial_budget:', {
+        savedValue: updateResult?.[0]?.initial_budget,
+        updateResult
+      });
       
       // Second update: home_id (must be set before creating spaces)
       if (homeId !== currentProjectRun.home_id) {
@@ -408,13 +428,17 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       }
 
       // Update local state for optimistic UI update
+      // CRITICAL: Use the same finalBudgetValue we saved to database
+      const budgetValue = projectForm.initialBudget?.trim() || '';
+      const finalBudgetValue = budgetValue === '' ? null : budgetValue;
+      
       const updatedProjectRun = {
         ...currentProjectRun,
         customProjectName: projectForm.customProjectName.trim(),
         home_id: homeId,
         initial_sizing: projectForm.initialSizing.trim() || null,
         initial_timeline: projectForm.initialTimeline || null,
-        initial_budget: projectForm.initialBudget.trim() || null,
+        initial_budget: finalBudgetValue,
         updatedAt: new Date()
       };
 
@@ -426,10 +450,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       // This ensures the context is in sync with the database
       const contextUpdatedRun = {
         ...updatedProjectRun,
-        initial_budget: projectForm.initialBudget.trim() || null,
+        initial_budget: finalBudgetValue,
         initial_timeline: projectForm.initialTimeline || null,
         initial_sizing: projectForm.initialSizing.trim() || null
       };
+      
+      console.log('🔄 ProjectProfileStep: Updating context with initial_budget:', finalBudgetValue);
       await updateProjectRun(contextUpdatedRun);
       
       console.log('🎯 ProjectProfileStep: All requirements met - calling onComplete');
