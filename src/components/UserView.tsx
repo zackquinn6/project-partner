@@ -2785,8 +2785,15 @@ export default function UserView({
   const isStillLoading = (projectRunId && !currentProjectRun) || 
                          (projectRunId && currentProjectRun && currentProjectRun.id !== projectRunId);
   
+  // Check if currentProjectRun has phases data that needs to be processed
+  const hasPhasesData = currentProjectRun && (
+    (currentProjectRun.phases && Array.isArray(currentProjectRun.phases) && currentProjectRun.phases.length > 0) ||
+    (typeof currentProjectRun.phases === 'string' && currentProjectRun.phases.trim() !== '' && currentProjectRun.phases !== '[]')
+  );
+  
   // Also check if we're waiting for phases to be processed
-  const isProcessingPhases = currentProjectRun && rawWorkflowPhases.length === 0 && workflowPhases.length === 0;
+  // Only consider it processing if we have phases data but they haven't been parsed yet
+  const isProcessingPhases = currentProjectRun && hasPhasesData && rawWorkflowPhases.length === 0 && workflowPhases.length === 0;
   
   console.log('🔍 Phase detection check:', {
     activeProjectPhasesCount,
@@ -2796,17 +2803,22 @@ export default function UserView({
     hasPhases,
     isStillLoading,
     isProcessingPhases,
+    hasPhasesData,
     currentProjectRunId: currentProjectRun?.id,
     activeProjectId: activeProject?.id,
     templateId: currentProjectRun?.templateId,
     projectRunId,
     hasCurrentProjectRun: !!currentProjectRun,
-    projectRunIdMatches: projectRunId && currentProjectRun ? currentProjectRun.id === projectRunId : false
+    projectRunIdMatches: projectRunId && currentProjectRun ? currentProjectRun.id === projectRunId : false,
+    phasesDataType: typeof currentProjectRun?.phases,
+    phasesDataIsArray: Array.isArray(currentProjectRun?.phases),
+    phasesDataLength: Array.isArray(currentProjectRun?.phases) ? currentProjectRun.phases.length : (typeof currentProjectRun?.phases === 'string' ? currentProjectRun.phases.length : 0)
   });
   
   // If there are no phases in the project run snapshot, show "under construction"
   // BUT: Don't show it if we're still loading the project run or processing phases
-  const shouldShowUnderConstruction = !hasPhases && !isStillLoading && !isProcessingPhases;
+  // Also don't show it if we have phases data that just needs to be parsed
+  const shouldShowUnderConstruction = !hasPhases && !isStillLoading && !isProcessingPhases && !hasPhasesData;
   
   if (shouldShowUnderConstruction) {
     return <div className="container mx-auto px-6 py-8">
