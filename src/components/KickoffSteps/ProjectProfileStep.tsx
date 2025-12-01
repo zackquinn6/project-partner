@@ -230,6 +230,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     try {
       // Update project run in database with new fields
       // CRITICAL: Only update initial_sizing if it has a value to avoid triggering space_sizing inserts with null space_id
+      // DO NOT include initial_sizing in update if empty - this prevents database triggers from trying to create space_sizing records
       const updateData: any = {
         custom_project_name: projectForm.customProjectName.trim(),
         home_id: selectedHomeId || homes[0]?.id || null,
@@ -238,13 +239,11 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         updated_at: new Date().toISOString()
       };
       
-      // Only include initial_sizing if it has a value
+      // Only include initial_sizing if it has a value - DO NOT set to null as this triggers database functions
       if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0) {
         updateData.initial_sizing = projectForm.initialSizing.trim();
-      } else {
-        // Set to null explicitly if empty
-        updateData.initial_sizing = null;
       }
+      // If empty, simply don't include it in the update - this prevents the constraint violation
       
       const { error: dbError } = await supabase
         .from('project_runs')
