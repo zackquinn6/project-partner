@@ -48,7 +48,7 @@ interface Project {
   skill_level: string | null;
   estimated_time: string | null;
   estimated_total_time: string | null;
-  typical_project_size: string | null;
+  typical_project_size: number | null;
   scaling_unit: string | null;
   item_type: string | null;
   project_challenges: string | null;
@@ -552,8 +552,8 @@ export function UnifiedProjectManagement({
     if (!isValidField(project.scaling_unit)) missingFields.push('Scaling Unit');
     if (!isValidField(project.estimated_total_time)) missingFields.push('Estimated Total Time');
     
-    // typical_project_size can be text or null
-    if (!isValidField(project.typical_project_size)) {
+    // typical_project_size can be number or null
+    if (project.typical_project_size === null || project.typical_project_size === undefined) {
       missingFields.push('Typical Project Size');
     }
     
@@ -1699,10 +1699,10 @@ export function UnifiedProjectManagement({
 
                           <div className="space-y-1">
                             <Label className="text-sm">Typical Project Size</Label>
-                            {editingProject ? <Input value={editedProject.typical_project_size || ''} onChange={e => setEditedProject(prev => ({
+                            {editingProject ? <Input type="number" value={editedProject.typical_project_size || ''} onChange={e => setEditedProject(prev => ({
                           ...prev,
-                          typical_project_size: e.target.value
-                        }))} className="text-sm" placeholder="e.g., 100 sqft" /> : <div className="p-2 bg-muted rounded text-sm">{selectedProject.typical_project_size || 'Not specified'}</div>}
+                          typical_project_size: e.target.value ? parseFloat(e.target.value) : null
+                        }))} className="text-sm" placeholder="e.g., 100" /> : <div className="p-2 bg-muted rounded text-sm">{selectedProject.typical_project_size || 'Not specified'}</div>}
                             <p className="text-xs text-muted-foreground">Size used for estimated total time</p>
                           </div>
 
