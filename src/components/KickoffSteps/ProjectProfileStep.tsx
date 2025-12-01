@@ -528,6 +528,38 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       console.log('🔄 ProjectProfileStep: Updating context with initial_budget:', finalBudgetValue);
       await updateProjectRun(contextUpdatedRun);
       
+      // CRITICAL: Final database verification - ensure initial_budget is actually in the database
+      const { data: finalVerification, error: finalVerificationError } = await supabase
+        .from('project_runs')
+        .select('initial_budget')
+        .eq('id', currentProjectRun.id)
+        .single();
+      
+      if (!finalVerificationError && finalVerification) {
+        console.log('✅ ProjectProfileStep: Final database verification - initial_budget in DB:', finalVerification.initial_budget);
+        if (finalVerification.initial_budget !== finalBudgetValue) {
+          console.error('❌ ProjectProfileStep: CRITICAL - initial_budget mismatch in final verification!', {
+            expected: finalBudgetValue,
+            actual: finalVerification.initial_budget
+          });
+          // Force one more save attempt
+          const { error: forceSaveError } = await supabase
+            .from('project_runs')
+            .update({ initial_budget: finalBudgetValue })
+            .eq('id', currentProjectRun.id);
+          
+          if (forceSaveError) {
+            console.error('❌ ProjectProfileStep: Force save failed:', forceSaveError);
+            toast.error('Failed to save budget. Please try again.');
+            return; // Don't proceed if we can't save
+          } else {
+            console.log('✅ ProjectProfileStep: Force save succeeded');
+          }
+        }
+      } else if (finalVerificationError) {
+        console.error('❌ ProjectProfileStep: Final verification error:', finalVerificationError);
+      }
+      
       console.log('🎯 ProjectProfileStep: All requirements met - calling onComplete');
       onComplete();
     } catch (error) {
