@@ -657,11 +657,25 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     // Ensure progress is always a number (handle null, undefined, or missing)
     const safeProgress = Math.round(projectRun.progress ?? 0);
     const updatedProjectRun = { ...projectRun, progress: safeProgress };
+    
+    // CRITICAL: Ensure initial_budget, initial_timeline, initial_sizing are preserved
+    // These come from the database as snake_case but need to be in the context object
+    if ((projectRun as any).initial_budget !== undefined) {
+      (updatedProjectRun as any).initial_budget = (projectRun as any).initial_budget;
+    }
+    if ((projectRun as any).initial_timeline !== undefined) {
+      (updatedProjectRun as any).initial_timeline = (projectRun as any).initial_timeline;
+    }
+    if ((projectRun as any).initial_sizing !== undefined) {
+      (updatedProjectRun as any).initial_sizing = (projectRun as any).initial_sizing;
+    }
+    
     const updatedProjectRuns = projectRuns.map(run => run.id === projectRun.id ? updatedProjectRun : run);
     updateProjectRunsCache(updatedProjectRuns);
     
     if (currentProjectRun?.id === projectRun.id) {
       setCurrentProjectRun(updatedProjectRun);
+      console.log('✅ ProjectActions: Updated currentProjectRun with initial_budget:', (updatedProjectRun as any).initial_budget);
     }
 
     // CRITICAL: For budget_data, issue_reports, and time_tracking updates, save immediately
