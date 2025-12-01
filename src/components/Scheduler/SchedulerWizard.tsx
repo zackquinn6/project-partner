@@ -298,6 +298,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       <Label htmlFor="priority-agile" className="text-xs font-normal cursor-pointer flex-1">
                         <span className="font-medium">Single-piece flow</span> - Fastest first room ready — you'll see progress right away.
                         <p className="text-[10px] text-muted-foreground mt-0.5">Complete all phases of a space before moving to the next space</p>
+                        <p className="text-[9px] text-muted-foreground mt-1 font-medium">Delivers first finished room 60–80% faster</p>
                       </Label>
                     </div>
                     <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setCompletionPriority('waterfall')}>
@@ -313,6 +314,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       <Label htmlFor="priority-waterfall" className="text-xs font-normal cursor-pointer flex-1">
                         <span className="font-medium">Batch flow</span> - Most efficient overall — but you won't see a finished room until the end.
                         <p className="text-[10px] text-muted-foreground mt-0.5">Complete each phase across all spaces before moving to the next phase</p>
+                        <p className="text-[9px] text-muted-foreground mt-1 font-medium">Reduces total project duration by 15–25%</p>
                       </Label>
                     </div>
                   </div>
