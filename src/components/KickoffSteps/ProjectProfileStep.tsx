@@ -283,21 +283,53 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         updated_at: new Date().toISOString()
       };
       
+      console.log('💾 ProjectProfileStep: Attempting database update with:', {
+        projectRunId: currentProjectRun.id,
+        updateData: baseUpdateData,
+        initial_budget_value: finalBudgetValue
+      });
+      
       const { error: baseError, data: updateResult } = await supabase
         .from('project_runs')
         .update(baseUpdateData)
         .eq('id', currentProjectRun.id)
-        .select('initial_budget');
+        .select('id, initial_budget, custom_project_name, initial_timeline');
 
       if (baseError) {
-        console.error('❌ ProjectProfileStep: Error saving initial_budget:', baseError);
+        console.error('❌ ProjectProfileStep: Error saving initial_budget:', {
+          error: baseError,
+          code: baseError.code,
+          message: baseError.message,
+          details: baseError.details,
+          hint: baseError.hint,
+          updateData: baseUpdateData
+        });
         throw baseError;
       }
       
-      console.log('✅ ProjectProfileStep: Successfully saved initial_budget:', {
-        savedValue: updateResult?.[0]?.initial_budget,
-        updateResult
-      });
+      // CRITICAL: Verify the value was actually saved
+      if (updateResult && updateResult.length > 0) {
+        const savedRecord = updateResult[0];
+        console.log('✅ ProjectProfileStep: Database update successful:', {
+          savedRecord,
+          savedInitialBudget: savedRecord.initial_budget,
+          expectedValue: finalBudgetValue,
+          valuesMatch: savedRecord.initial_budget === finalBudgetValue,
+          savedRecordKeys: Object.keys(savedRecord)
+        });
+        
+        // If the saved value doesn't match, log a warning
+        if (savedRecord.initial_budget !== finalBudgetValue) {
+          console.warn('⚠️ ProjectProfileStep: Saved value does not match expected value!', {
+            expected: finalBudgetValue,
+            actual: savedRecord.initial_budget,
+            typeExpected: typeof finalBudgetValue,
+            typeActual: typeof savedRecord.initial_budget
+          });
+        }
+      } else {
+        console.warn('⚠️ ProjectProfileStep: Update succeeded but no data returned');
+      }
       
       // Second update: home_id (must be set before creating spaces)
       if (homeId !== currentProjectRun.home_id) {
