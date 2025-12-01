@@ -33,7 +33,6 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
   const [isSaving, setIsSaving] = useState(false);
   const [isEmailing, setIsEmailing] = useState(false);
   const [currentScheduleId, setCurrentScheduleId] = useState<string | null>(null);
-  const [existingAssignments, setExistingAssignments] = useState<any[]>([]);
 
   useEffect(() => {
     const today = getToday();
@@ -42,7 +41,6 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
       setStartDate(today);
     }
     loadLatestSchedule();
-    loadExistingAssignments();
   }, [userId, homeId]);
 
   // Reset start date to today whenever schedule tab becomes active
@@ -62,35 +60,6 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
     }
   }, []);
 
-  const loadExistingAssignments = async () => {
-    try {
-      let query = supabase
-        .from('home_task_assignments')
-        .select('task_id, subtask_id, person_id, scheduled_date, scheduled_hours')
-        .eq('user_id', userId);
-
-      if (homeId) {
-        // Get tasks for this home first
-        const { data: homeTasks } = await supabase
-          .from('home_tasks')
-          .select('id')
-          .eq('home_id', homeId);
-        
-        if (homeTasks && homeTasks.length > 0) {
-          const taskIds = homeTasks.map(t => t.id);
-          query = query.in('task_id', taskIds);
-        }
-      }
-
-      const { data, error } = await query;
-      
-      if (!error && data) {
-        setExistingAssignments(data);
-      }
-    } catch (error) {
-      console.error('Error loading existing assignments:', error);
-    }
-  };
 
   const loadLatestSchedule = async () => {
     try {
@@ -171,7 +140,7 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
       const { data: tasks, error: tasksError } = await tasksQuery;
       if (tasksError) throw tasksError;
 
-      // Fetch all subtasks for these tasks
+      // Fetch all subtasks for these tasks - only incomplete work
       const taskIds = tasks?.map(t => t.id) || [];
       const { data: subtasks, error: subtasksError } = await supabase
         .from('home_task_subtasks')
@@ -180,26 +149,6 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
         .eq('completed', false);
 
       if (subtasksError) throw subtasksError;
-
-      // Fetch existing manual assignments
-      const { data: existingAssignmentsRaw, error: assignmentsError } = await supabase
-        .from('home_task_assignments')
-        .select('task_id, subtask_id, person_id, scheduled_date, scheduled_hours')
-        .in('task_id', taskIds)
-        .eq('user_id', userId);
-
-      if (assignmentsError) throw assignmentsError;
-
-      // Filter out existing assignments with dates in the past - only keep assignments on or after effectiveStartDate
-      const today = getToday();
-      const effectiveStartDate = isBefore(startDate, today) ? today : startDate;
-      const existingAssignments = (existingAssignmentsRaw || []).filter(assignment => {
-        const assignmentDate = new Date(assignment.scheduled_date);
-        assignmentDate.setHours(0, 0, 0, 0);
-        const startDateMidnight = new Date(effectiveStartDate);
-        startDateMidnight.setHours(0, 0, 0, 0);
-        return !isBefore(assignmentDate, startDateMidnight);
-      });
 
       // Fetch people
       let peopleQuery = supabase
@@ -220,12 +169,13 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
         subtasks: subtasks?.filter(st => st.task_id === task.id) || []
       })) || [];
 
-      // Generate schedule with existing assignments - use effectiveStartDate (today or selected, whichever is later)
+      // Generate schedule - always in the future, only schedules incomplete work
+      // Don't use historical assignments - only current state (incomplete subtasks)
       const result = scheduleHomeTasksOptimized(
         tasksWithSubtasks as any,
         people as any,
         effectiveStartDate,
-        existingAssignments as any
+        [] // No existing assignments - fresh schedule based on current completion state
       );
 
       setSchedule(result);
@@ -289,8 +239,10 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
       }
 
       // Save assignments to database
+      // Clear all existing assignments for these tasks - we don't track historical plans
+      // Only the latest schedule with current state completion data
       if (scheduleData.assignments.length > 0) {
-        // Clear existing assignments for these tasks
+        // Clear all existing assignments for these tasks
         await supabase
           .from('home_task_assignments')
           .delete()
@@ -383,15 +335,6 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
 
   return (
     <div className="space-y-3">
-      {existingAssignments && existingAssignments.length > 0 && (
-        <Alert>
-          <Info className="h-3 w-3 md:h-4 md:w-4" />
-          <AlertDescription className="text-[10px] md:text-xs">
-            Using {existingAssignments.length} manual assignment(s) from the Assign tab. Remaining work will be auto-assigned.
-          </AlertDescription>
-        </Alert>
-      )}
-      
       <div className="space-y-2">
         <div className="flex flex-row items-end gap-2">
           <div className="flex-1">
