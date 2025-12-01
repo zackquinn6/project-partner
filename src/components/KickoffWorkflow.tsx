@@ -8,6 +8,7 @@ import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
 import { ProjectProfileStep } from './KickoffSteps/ProjectProfileStep';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 interface KickoffWorkflowProps {
   onKickoffComplete: () => void;
   onExit?: () => void; // Add optional exit handler
@@ -127,29 +128,49 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       setCompletedKickoffSteps(newCompletedKickoffSteps);
       console.log("KickoffWorkflow - Updating project run with steps:", newCompletedSteps);
 
-      // CRITICAL: Preserve initial_budget, initial_timeline, initial_sizing from current context
-      // These values were saved in ProjectProfileStep and must not be lost
-      const preservedBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
-      const preservedTimeline = (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
-      const preservedSizing = (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+      // CRITICAL: Fetch initial_budget, initial_timeline, initial_sizing directly from database
+      // This ensures we get the latest values that were just saved by ProjectProfileStep
+      // The context might not be updated yet, so we fetch from the source of truth
+      const { data: freshRun, error: fetchError } = await supabase
+        .from('project_runs')
+        .select('initial_budget, initial_timeline, initial_sizing')
+        .eq('id', currentProjectRun.id)
+        .single();
+      
+      const preservedBudget = freshRun?.initial_budget ?? (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+      const preservedTimeline = freshRun?.initial_timeline ?? (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
+      const preservedSizing = freshRun?.initial_sizing ?? (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+      
+      console.log('💾 KickoffWorkflow handleStepComplete: Fetched budget fields from database:', {
+        fromDatabase: {
+          initial_budget: freshRun?.initial_budget,
+          initial_timeline: freshRun?.initial_timeline,
+          initial_sizing: freshRun?.initial_sizing
+        },
+        fromContext: {
+          initial_budget: (currentProjectRun as any)?.initial_budget,
+          initial_timeline: (currentProjectRun as any)?.initial_timeline,
+          initial_sizing: (currentProjectRun as any)?.initial_sizing
+        },
+        final: {
+          initial_budget: preservedBudget,
+          initial_timeline: preservedTimeline,
+          initial_sizing: preservedSizing
+        }
+      });
       
       // Update project run with completed step - WAIT for completion
       const updatedProjectRun = {
         ...currentProjectRun,
         completedSteps: newCompletedSteps,
         progress: Math.round(newCompletedSteps.length / getTotalStepsCount() * 100),
-        // CRITICAL: Explicitly preserve initial_budget, initial_timeline, initial_sizing
-        ...(preservedBudget !== null && { initial_budget: preservedBudget }),
-        ...(preservedTimeline !== null && { initial_timeline: preservedTimeline }),
-        ...(preservedSizing !== null && { initial_sizing: preservedSizing }),
-        updatedAt: new Date()
-      };
-
-      console.log('💾 KickoffWorkflow handleStepComplete: Preserving budget fields:', {
+        // CRITICAL: Always include initial_budget, initial_timeline, initial_sizing (even if null)
+        // This ensures they are preserved in the update
         initial_budget: preservedBudget,
         initial_timeline: preservedTimeline,
-        initial_sizing: preservedSizing
-      });
+        initial_sizing: preservedSizing,
+        updatedAt: new Date()
+      };
 
       // Wait for database update to complete
       await updateProjectRun(updatedProjectRun);
