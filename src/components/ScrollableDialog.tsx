@@ -58,7 +58,7 @@ export function ScrollableDialog({
       modal={false}
     >
       <DialogPortal>
-        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-[100]" />
+        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-[100] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <div
           data-dialog-content
           onClick={(e) => e.stopPropagation()}

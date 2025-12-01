@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -299,8 +299,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     : [];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden md:!top-[50%] md:!left-[50%] md:!translate-x-[-50%] md:!translate-y-[-50%]">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden md:!top-[50%] md:!left-[50%] md:!translate-x-[-50%] md:!translate-y-[-50%] z-[91] [&>div:first-child]:z-[90] [&>div:first-child]:bg-black/60 [&>div:first-child]:backdrop-blur-md">
         <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-lg md:text-xl font-bold">Project Budgeting</DialogTitle>
@@ -375,7 +375,11 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         <Button
           variant="outline"
           size="sm"
-          onClick={() => window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'project-performance' } }))}
+          onClick={(e) => {
+            e.stopPropagation();
+            // Open performance window without closing budgeting window
+            window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'project-performance' } }));
+          }}
         >
           <TrendingUp className="w-4 h-4 mr-2" />
           View Performance
