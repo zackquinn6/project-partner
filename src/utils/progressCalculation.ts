@@ -116,24 +116,27 @@ export function calculateProjectProgress(
     return false;
   };
   
-  // LINEAR: Simple step count-based progress
+  // LINEAR: Weighted step-based progress
+  // Prime steps = 0.1 points, Scaled steps = 1.0 points
   if (style === 'linear') {
-    let totalSteps = 0;
-    let completedSteps = 0;
+    let totalWeight = 0;
+    let completedWeight = 0;
     
     projectRun.phases.forEach(phase => {
       phase.operations?.forEach(op => {
         op.steps?.forEach(step => {
-          totalSteps++;
+          const weight = getStepWeight(step.stepType);
+          totalWeight += weight;
+          
           if (isStepCompletedInSet(step.id)) {
-            completedSteps++;
+            completedWeight += weight;
           }
         });
       });
     });
     
-    if (totalSteps === 0) return 0;
-    return Math.round((completedSteps / totalSteps) * 100);
+    if (totalWeight === 0) return 0;
+    return Math.round((completedWeight / totalWeight) * 100);
   }
   
   // TIME-BASED: Uses time estimates with speed setting
