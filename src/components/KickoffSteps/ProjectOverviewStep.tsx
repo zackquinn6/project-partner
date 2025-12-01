@@ -109,11 +109,31 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       
       if (needsFetch && templateProject.id) {
         try {
-          const { data, error } = await supabase
+          // Try project_templates_live first, but if it doesn't have the fields, query projects directly
+          let data = null;
+          let error = null;
+          
+          // First try project_templates_live
+          const { data: viewData, error: viewError } = await supabase
             .from('project_templates_live')
             .select('skill_level, effort_level, project_challenges, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type, budget_per_unit, budget_per_typical_size')
             .eq('id', templateProject.id)
             .maybeSingle();
+          
+          // If view doesn't have the fields or has an error, try projects table directly
+          if (viewError || !viewData || (!viewData.estimated_total_time && !viewData.typical_project_size)) {
+            const { data: projectsData, error: projectsError } = await supabase
+              .from('projects')
+              .select('skill_level, effort_level, project_challenges, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type, budget_per_unit, budget_per_typical_size')
+              .eq('id', templateProject.id)
+              .maybeSingle();
+            
+            data = projectsData;
+            error = projectsError;
+          } else {
+            data = viewData;
+            error = viewError;
+          }
           
           if (!error && data) {
             setFetchedProjectInfo({
