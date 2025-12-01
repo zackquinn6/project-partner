@@ -106,14 +106,14 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
 
   // If projectId is provided, automatically find and select the PFMEA project
   useEffect(() => {
-    if (projectId && pfmeaProjects.length > 0) {
+    if (projectId && pfmeaProjects.length > 0 && !loading) {
       const pfmeaProject = pfmeaProjects.find(p => p.project_id === projectId);
       if (pfmeaProject) {
         setSelectedPfmeaProject(pfmeaProject);
         fetchPfmeaDetails(pfmeaProject.id);
       }
     }
-  }, [projectId, pfmeaProjects]);
+  }, [projectId, pfmeaProjects, loading]);
 
   const fetchData = async () => {
     try {
@@ -535,8 +535,56 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
   };
 
   const renderProjectSelector = () => {
-    // If projectId is provided, skip the project selection screen
-    if (projectId) {
+    // If projectId is provided but no PFMEA project exists, show create option
+    if (projectId && !loading && !selectedPfmeaProject) {
+      const sourceProject = projects.find(p => p.id === projectId);
+      if (sourceProject) {
+        return (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Create PFMEA Project
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              No PFMEA project exists for "{sourceProject.name}". Create one to get started.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Pre-fill the create dialog with the project
+                setShowCreateProject(true);
+              }}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create PFMEA Project for {sourceProject.name}
+            </Button>
+          </CardContent>
+        </Card>
+        );
+      }
+      return (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              PFMEA Project Not Found
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              No PFMEA project found for the selected project. Please create one to continue.
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    // If projectId is provided and we have a selected project, don't show selector
+    if (projectId && selectedPfmeaProject) {
       return null;
     }
     
@@ -948,6 +996,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
           projects={projects}
           onSubmit={createPfmeaProject}
           onCancel={() => setShowCreateProject(false)}
+          preSelectedProjectId={projectId}
         />
       </DialogContent>
     </Dialog>
@@ -1167,16 +1216,30 @@ interface CreatePfmeaProjectFormProps {
   projects: DatabaseProject[];
   onSubmit: (projectId: string, name: string, description: string) => void;
   onCancel: () => void;
+  preSelectedProjectId?: string;
 }
 
 const CreatePfmeaProjectForm: React.FC<CreatePfmeaProjectFormProps> = ({
   projects,
   onSubmit,
-  onCancel
+  onCancel,
+  preSelectedProjectId
 }) => {
-  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState(preSelectedProjectId || '');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+
+  // Update selectedProjectId when preSelectedProjectId changes
+  useEffect(() => {
+    if (preSelectedProjectId) {
+      setSelectedProjectId(preSelectedProjectId);
+      // Pre-fill name from the project
+      const project = projects.find(p => p.id === preSelectedProjectId);
+      if (project) {
+        setName(`${project.name} - PFMEA`);
+      }
+    }
+  }, [preSelectedProjectId, projects]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1191,7 +1254,7 @@ const CreatePfmeaProjectForm: React.FC<CreatePfmeaProjectFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="text-sm font-medium mb-2 block">Source Project *</label>
-        <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+        <Select value={selectedProjectId} onValueChange={setSelectedProjectId} disabled={!!preSelectedProjectId}>
           <SelectTrigger>
             <SelectValue placeholder="Select a project to analyze" />
           </SelectTrigger>
@@ -1203,6 +1266,9 @@ const CreatePfmeaProjectForm: React.FC<CreatePfmeaProjectFormProps> = ({
             ))}
           </SelectContent>
         </Select>
+        {preSelectedProjectId && (
+          <p className="text-xs text-muted-foreground mt-1">Project is pre-selected from project management</p>
+        )}
       </div>
 
       <div>
