@@ -1091,7 +1091,7 @@ export default function EditWorkflowView({
           .from('template_steps')
           .update(updateData)
           .eq('id', editingStep.id)
-          .select('apps'); // Select apps to verify it was saved
+          .select('apps, step_type'); // Select apps and step_type to verify they were saved
         
         if (error) {
           console.error('SaveEdit: Error updating template_steps:', error);
@@ -1099,7 +1099,8 @@ export default function EditWorkflowView({
         } else {
           console.log('SaveEdit: Successfully synced to template_steps', {
             savedApps: data?.[0]?.apps,
-            appsCount: Array.isArray(data?.[0]?.apps) ? data[0].apps.length : 0
+            appsCount: Array.isArray(data?.[0]?.apps) ? data[0].apps.length : 0,
+            savedStepType: data?.[0]?.step_type
           });
           toast.success('Step saved to Standard Project');
           

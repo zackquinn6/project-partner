@@ -67,7 +67,7 @@ export async function syncPhaseToDatabase(
           .from('template_operations')
           .update({
             operation_description: operation.description || null,  // Changed from description
-            display_order: displayOrder,  // Changed from custom_phase_display_order
+            display_order: opIndex + 1,  // Sequential display_order within phase (1, 2, 3...)
             updated_at: new Date().toISOString()
           })
           .eq('id', existingOp.id);
@@ -87,7 +87,7 @@ export async function syncPhaseToDatabase(
             phase_id: phaseRecord.id,
             operation_name: operation.name,  // Changed from name
             operation_description: operation.description || null,  // Changed from description
-            display_order: displayOrder,  // Changed from custom_phase_display_order
+            display_order: opIndex + 1,  // Sequential display_order within phase (1, 2, 3...)
             flow_type: operation.flowType || 'prime'
           })
           .select('id')

@@ -1968,13 +1968,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }
     
     try {
-      // Get existing operations to determine next display_order
+      // Get ALL existing operations to renumber them sequentially
       const { data: existingOperations } = await supabase
         .from('template_operations')
-        .select('operation_name, display_order')
+        .select('id, operation_name, display_order')
         .eq('phase_id', phaseId)
-        .order('display_order', { ascending: false })
-        .limit(1);
+        .order('display_order', { ascending: true });
+      
+      // First, renumber all existing operations to be sequential (1, 2, 3...)
+      if (existingOperations && existingOperations.length > 0) {
+        for (let i = 0; i < existingOperations.length; i++) {
+          const op = existingOperations[i];
+          const correctOrder = i + 1;
+          if (op.display_order !== correctOrder) {
+            await supabase
+              .from('template_operations')
+              .update({ display_order: correctOrder })
+              .eq('id', op.id);
+          }
+        }
+      }
       
       const existingNames = new Set((existingOperations || []).map(op => (op as any).operation_name?.toLowerCase() || ''));
       let operationName = 'New Operation';
@@ -1984,11 +1997,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         counter++;
       }
       
-      // Calculate next display_order (max + 1, or 1 if no operations exist)
-      const maxDisplayOrder = existingOperations && existingOperations.length > 0 
-        ? (existingOperations[0] as any).display_order || 0
-        : 0;
-      const nextDisplayOrder = maxDisplayOrder + 1;
+      // Calculate next display_order (count + 1, ensuring sequential)
+      const nextDisplayOrder = (existingOperations?.length || 0) + 1;
       
       // Insert new operation
       // Must comply with custom_phase_metadata_check constraint
@@ -2097,12 +2107,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     }
     
     try {
-      // Get existing steps to determine display_order and unique name
+      // Get ALL existing steps to renumber them sequentially
       const { data: existingSteps } = await supabase
         .from('template_steps')
-        .select('step_title, display_order')
+        .select('id, step_title, display_order')
         .eq('operation_id', operationId)
         .order('display_order', { ascending: true });
+      
+      // First, renumber all existing steps to be sequential (1, 2, 3...)
+      if (existingSteps && existingSteps.length > 0) {
+        for (let i = 0; i < existingSteps.length; i++) {
+          const step = existingSteps[i];
+          const correctOrder = i + 1;
+          if (step.display_order !== correctOrder) {
+            await supabase
+              .from('template_steps')
+              .update({ display_order: correctOrder })
+              .eq('id', step.id);
+          }
+        }
+      }
       
       const existingNames = new Set((existingSteps || []).map(s => s.step_title?.toLowerCase() || ''));
       let stepName = 'New Step';
@@ -2112,10 +2136,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         counter++;
       }
       
-      // Calculate display_order based on actual database count
-      const nextStepNumber = existingSteps && existingSteps.length > 0 
-        ? Math.max(...existingSteps.map(s => s.display_order || 0)) + 1
-        : 1;
+      // Calculate display_order based on actual count (ensuring sequential)
+      const nextStepNumber = (existingSteps?.length || 0) + 1;
       
       // Insert new step with all required fields
       const { data: newStep, error: insertError } = await supabase

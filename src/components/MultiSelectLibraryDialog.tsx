@@ -120,6 +120,8 @@ export function MultiSelectLibraryDialog({
     }
   };
 
+  // For materials in edit workflow, show all items (no filtering by user ownership)
+  // For tools, filter out items the user already owns
   const filteredItems = items
     .filter(item => {
       const matchesSearch = item.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -127,18 +129,14 @@ export function MultiSelectLibraryDialog({
       
       if (!matchesSearch) return false;
 
+      // For materials, always show all items (no ownership filtering)
+      if (type === 'materials') {
+        return true;
+      }
+
+      // For tools, filter by ownership (existing logic)
       // Get all variations for this core item
       const variations = itemVariations[item.id] || [];
-      
-      // Debug logging for air compressor
-      if (item.item.toLowerCase().includes('air compressor')) {
-        console.log(`Checking ${item.item}:`, {
-          coreItemId: item.id,
-          variations,
-          userOwnedItems,
-          ownedItemIds: userOwnedItems.map(ownedItem => ownedItem.id)
-        });
-      }
       
       // If item has no variations, check if core item itself is owned
       if (variations.length === 0) {
@@ -154,15 +152,6 @@ export function MultiSelectLibraryDialog({
       
       // Also check if the core item itself is owned (for items that have both core and variations)
       const coreItemOwned = ownedItemIds.has(item.id);
-      
-      // Debug logging for air compressor
-      if (item.item.toLowerCase().includes('air compressor')) {
-        console.log(`Air compressor filtering result:`, {
-          allVariationsOwned,
-          coreItemOwned,
-          shouldShow: !allVariationsOwned && !coreItemOwned
-        });
-      }
       
       // Show item only if:
       // 1. Not all variations are owned AND

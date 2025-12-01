@@ -147,6 +147,9 @@ export default function UserView({
   const [outputPopupOpen, setOutputPopupOpen] = useState(false);
   const [expertHelpOpen, setExpertHelpOpen] = useState(false);
   const [showProfileManager, setShowProfileManager] = useState(false);
+  
+  // App overrides state - loaded from database to get custom app names/icons
+  const [appOverrides, setAppOverrides] = useState<Map<string, { app_name: string; description?: string; icon?: string; }>>(new Map());
 
   // Handle showProfile prop - don't switch to workflow if profile should be shown
   useEffect(() => {
@@ -238,6 +241,38 @@ export default function UserView({
       window.removeEventListener('force-progress-board-listing', handleForceProgressBoardListing);
     };
   }, [setCurrentProjectRun]);
+
+  // Load app overrides from database to get custom app names/icons
+  useEffect(() => {
+    const loadAppOverrides = async () => {
+      try {
+        const { data: appOverridesData, error } = await supabase
+          .from('app_overrides')
+          .select('*');
+        
+        if (error) {
+          console.error('Error loading app overrides:', error);
+          return;
+        }
+        
+        const overrideMap = new Map<string, { app_name: string; description?: string; icon?: string; }>();
+        if (appOverridesData) {
+          appOverridesData.forEach(override => {
+            overrideMap.set(override.app_id, {
+              app_name: override.app_name,
+              description: override.description || undefined,
+              icon: override.icon || undefined
+            });
+          });
+        }
+        setAppOverrides(overrideMap);
+      } catch (error) {
+        console.error('Error loading app overrides:', error);
+      }
+    };
+    
+    loadAppOverrides();
+  }, []);
 
   // Add event listeners for Re-plan window actions
   useEffect(() => {
@@ -506,31 +541,23 @@ export default function UserView({
           apps = [];
         }
         
-        // Enrich apps with icon data from registry if missing
+        // Enrich apps with icon data from registry and overrides if missing
         apps = apps.map(app => {
-          // If app already has icon, use it
-          if (app.icon) {
-            return app;
-          }
-          
-          // Try to get icon from native apps registry using actionKey
+          // Extract actionKey for lookup
           const actionKey = app.actionKey || app.id?.replace('app-', '');
-          if (actionKey) {
-            const nativeApp = getNativeAppById(actionKey);
-            if (nativeApp) {
-              return {
-                ...app,
-                icon: nativeApp.icon,
-                appName: app.appName || nativeApp.appName,
-                description: app.description || nativeApp.description
-              };
-            }
-          }
           
-          // If no icon found, use Sparkles as fallback
+          // Check for app override first (custom names/icons from database)
+          const override = actionKey ? appOverrides.get(actionKey) : null;
+          
+          // Get base app from registry
+          const nativeApp = actionKey ? getNativeAppById(actionKey) : null;
+          
+          // Build enriched app with priority: override > existing app data > native app > fallback
           return {
             ...app,
-            icon: app.icon || 'Sparkles'
+            icon: app.icon || override?.icon || nativeApp?.icon || 'Sparkles',
+            appName: app.appName || override?.app_name || nativeApp?.appName || app.appName,
+            description: app.description || override?.description || nativeApp?.description || app.description
           };
         });
         
@@ -556,7 +583,7 @@ export default function UserView({
         };
       });
     });
-  }, [organizedNavigation]);
+  }, [organizedNavigation, appOverrides]);
   
   // CRITICAL DEBUG: Log what's actually in the data - simplified output
   const firstPhase = workflowPhases?.[0];
@@ -2703,31 +2730,23 @@ export default function UserView({
             // Filter out any invalid app objects
             apps = apps.filter(app => app && app.id && app.appName);
             
-            // Enrich apps with icon data from registry if missing
+            // Enrich apps with icon data from registry and overrides if missing
             apps = apps.map(app => {
-              // If app already has icon, use it
-              if (app.icon) {
-                return app;
-              }
-              
-              // Try to get icon from native apps registry using actionKey
+              // Extract actionKey for lookup
               const actionKey = app.actionKey || app.id?.replace('app-', '');
-              if (actionKey) {
-                const nativeApp = getNativeAppById(actionKey);
-                if (nativeApp) {
-                  return {
-                    ...app,
-                    icon: nativeApp.icon,
-                    appName: app.appName || nativeApp.appName,
-                    description: app.description || nativeApp.description
-                  };
-                }
-              }
               
-              // If no icon found, use Sparkles as fallback
+              // Check for app override first (custom names/icons from database)
+              const override = actionKey ? appOverrides.get(actionKey) : null;
+              
+              // Get base app from registry
+              const nativeApp = actionKey ? getNativeAppById(actionKey) : null;
+              
+              // Build enriched app with priority: override > existing app data > native app > fallback
               return {
                 ...app,
-                icon: app.icon || 'Sparkles'
+                icon: app.icon || override?.icon || nativeApp?.icon || 'Sparkles',
+                appName: app.appName || override?.app_name || nativeApp?.appName || app.appName,
+                description: app.description || override?.description || nativeApp?.description || app.description
               };
             });
             

@@ -216,15 +216,17 @@ export function MaterialsLibrary() {
           </DialogTrigger>
           <DialogPortal>
             <DialogOverlay className="z-[100]" />
-            <DialogContent className="z-[101]">
+            <DialogContent className="z-[101] max-w-[90vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Material</DialogTitle>
               </DialogHeader>
-          <LibraryItemForm
-            type="materials"
-            onSave={handleSave}
-            onCancel={() => setShowAddDialog(false)}
-          />
+              <div className="overflow-y-auto">
+                <LibraryItemForm
+                  type="materials"
+                  onSave={handleSave}
+                  onCancel={() => setShowAddDialog(false)}
+                />
+              </div>
             </DialogContent>
           </DialogPortal>
         </Dialog>
@@ -344,20 +346,22 @@ export function MaterialsLibrary() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
-          <DialogContent className="z-[101]">
+          <DialogContent className="z-[101] max-w-[90vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Material</DialogTitle>
             </DialogHeader>
             {editingMaterial && (
-              <LibraryItemForm
-                type="materials"
-                item={editingMaterial}
-                onSave={handleSave}
-                onCancel={() => {
-                  setShowEditDialog(false);
-                  setEditingMaterial(null);
-                }}
-              />
+              <div className="overflow-y-auto">
+                <LibraryItemForm
+                  type="materials"
+                  item={editingMaterial}
+                  onSave={handleSave}
+                  onCancel={() => {
+                    setShowEditDialog(false);
+                    setEditingMaterial(null);
+                  }}
+                />
+              </div>
             )}
           </DialogContent>
         </DialogPortal>
