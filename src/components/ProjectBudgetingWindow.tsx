@@ -51,6 +51,26 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
   const [newItemCategory, setNewItemCategory] = useState<'material' | 'labor' | 'other'>('material');
+  
+  // Get available phases for dropdown (custom and incorporated phases only, no standard phases)
+  const availablePhases = React.useMemo(() => {
+    if (!currentProjectRun?.phases || !Array.isArray(currentProjectRun.phases)) {
+      return [];
+    }
+    
+    // Filter to only show custom phases (not isStandard) and incorporated phases (isLinked)
+    // Exclude standard phases (isStandard === true && !isLinked)
+    return currentProjectRun.phases
+      .filter(phase => {
+        // Include if it's a custom phase (not standard) or an incorporated phase (linked)
+        return !phase.isStandard || phase.isLinked === true;
+      })
+      .map(phase => ({
+        id: phase.id,
+        name: phase.name
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+  }, [currentProjectRun?.phases]);
   const [newActualDescription, setNewActualDescription] = useState('');
   const [newActualAmount, setNewActualAmount] = useState('');
   const [newActualCategory, setNewActualCategory] = useState<'material' | 'labor' | 'other'>('material');
@@ -578,11 +598,25 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Section/Phase</Label>
-                  <Input
+                  <Select
                     value={newItemSection}
-                    onChange={(e) => setNewItemSection(e.target.value)}
-                    placeholder="e.g., Demo, Framing"
-                  />
+                    onValueChange={setNewItemSection}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a phase" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availablePhases.length === 0 ? (
+                        <SelectItem value="" disabled>No phases available</SelectItem>
+                      ) : (
+                        availablePhases.map(phase => (
+                          <SelectItem key={phase.id} value={phase.name}>
+                            {phase.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label>Item Description</Label>
