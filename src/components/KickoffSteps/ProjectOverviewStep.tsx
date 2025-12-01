@@ -110,8 +110,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       if (needsFetch && templateProject.id) {
         try {
           const { data, error } = await supabase
-            .from('projects')
-            .select('skill_level, effort_level, project_challenges, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type')
+            .from('project_templates_live')
+            .select('skill_level, effort_level, project_challenges, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type, budget_per_unit, budget_per_typical_size')
             .eq('id', templateProject.id)
             .maybeSingle();
           
@@ -124,7 +124,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               estimatedTotalTime: data.estimated_total_time,
               typicalProjectSize: data.typical_project_size,
               scalingUnit: data.scaling_unit,
-              itemType: data.item_type
+              itemType: data.item_type,
+              budgetPerUnit: data.budget_per_unit,
+              budgetPerTypicalSize: data.budget_per_typical_size
             });
           } else if (error) {
             console.error('Error fetching project info:', error);
