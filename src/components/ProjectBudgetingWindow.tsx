@@ -56,6 +56,25 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   const [newActualCategory, setNewActualCategory] = useState<'material' | 'labor' | 'other'>('material');
   const [newActualDate, setNewActualDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedLineItemForActual, setSelectedLineItemForActual] = useState<string>('');
+  const [performanceWindowOpen, setPerformanceWindowOpen] = useState(false);
+
+  // Listen for performance window open/close events
+  useEffect(() => {
+    const handlePerformanceOpen = () => {
+      setPerformanceWindowOpen(true);
+    };
+    const handlePerformanceClose = () => {
+      setPerformanceWindowOpen(false);
+    };
+    
+    window.addEventListener('performance-window-open', handlePerformanceOpen);
+    window.addEventListener('performance-window-close', handlePerformanceClose);
+    
+    return () => {
+      window.removeEventListener('performance-window-open', handlePerformanceOpen);
+      window.removeEventListener('performance-window-close', handlePerformanceClose);
+    };
+  }, []);
 
   useEffect(() => {
     // Debug: Log initial_budget value to help diagnose the issue
@@ -304,13 +323,20 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
       // Only close if explicitly set to false (user clicked close)
-      // Don't close when other dialogs open
-      if (!newOpen) {
+      // Don't close when performance window is open on top
+      if (!newOpen && !performanceWindowOpen) {
         onOpenChange(false);
       }
     }} modal={false}>
       <DialogPortal>
-        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-[90] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogOverlay 
+          className={cn(
+            "bg-black/60 backdrop-blur-md fixed inset-0 z-[90]",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            open ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+        />
         <DialogPrimitive.Content
           className={cn(
             "w-full h-screen max-w-full max-h-full",
@@ -322,6 +348,17 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           )}
+          onPointerDownOutside={(e) => {
+            // Prevent closing when clicking outside if another dialog is open on top
+            const target = e.target as HTMLElement;
+            if (target.closest('[data-dialog-content]') && target.closest('[data-dialog-content]') !== e.currentTarget) {
+              e.preventDefault();
+            }
+            // Also prevent closing if performance window is open
+            if (performanceWindowOpen) {
+              e.preventDefault();
+            }
+          }}
         >
         <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between gap-2">
@@ -399,6 +436,9 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
+            // Signal that performance window is opening
+            setPerformanceWindowOpen(true);
+            window.dispatchEvent(new CustomEvent('performance-window-open'));
             // Open performance window without closing budgeting window
             window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'project-performance' } }));
           }}

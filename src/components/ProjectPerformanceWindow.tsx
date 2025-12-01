@@ -20,6 +20,15 @@ export const ProjectPerformanceWindow: React.FC<ProjectPerformanceWindowProps> =
   const { currentProjectRun } = useProject();
   const [viewMode, setViewMode] = useState<'simple' | 'advanced'>('simple');
 
+  // Dispatch events when window opens/closes so budgeting window can track it
+  useEffect(() => {
+    if (open) {
+      window.dispatchEvent(new CustomEvent('performance-window-open'));
+    } else {
+      window.dispatchEvent(new CustomEvent('performance-window-close'));
+    }
+  }, [open]);
+
   const budgetMetrics = useMemo(() => {
     if (!currentProjectRun?.budget_data) {
       return { budgeted: 0, actual: 0, variance: 0, variancePercent: 0 };
