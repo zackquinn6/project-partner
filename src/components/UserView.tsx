@@ -805,6 +805,14 @@ export default function UserView({
 
   // Load project run if projectRunId is provided
   useEffect(() => {
+    // If projectRunId is cleared/null, ensure we're in listing mode
+    if (!projectRunId && currentProjectRun) {
+      console.log('🔄 UserView: projectRunId cleared - going to listing');
+      setCurrentProjectRun(null);
+      setViewMode('listing');
+      return;
+    }
+    
     // Don't try to load project run if we're in listing mode (e.g., after exit from kickoff)
     if (viewMode === 'listing') {
       return;
@@ -814,8 +822,10 @@ export default function UserView({
       console.log('🎯 UserView: Loading project run with ID:', projectRunId);
       const projectRun = projectRuns.find(run => run.id === projectRunId);
       
-      // If projectRunId doesn't exist in projectRuns and we have other runs loaded,
-      // it might have been deleted - go to listing instead of trying to fetch
+      // If projectRunId doesn't exist in projectRuns, it might have been deleted
+      // Check if projectRuns have been loaded (either empty or with items) to avoid fetching deleted projects
+      // If projectRuns is an empty array, it means they haven't loaded yet, so we should try to fetch
+      // If projectRuns has items but this one isn't there, it was likely deleted
       if (!projectRun && projectRuns.length > 0) {
         console.log('⚠️ UserView: Project run not found in loaded runs and other runs exist - likely deleted, going to listing');
         setCurrentProjectRun(null);
@@ -823,6 +833,9 @@ export default function UserView({
         onProjectSelected?.('listing' as any);
         return;
       }
+      
+      // Note: We can't check location.state here directly as it's passed as a prop
+      // The deletion check above should handle most cases
       if (projectRun) {
         // Don't open cancelled projects
         if (projectRun.status === 'cancelled') {
@@ -833,7 +846,11 @@ export default function UserView({
         setCurrentProjectRun(projectRun);
         // CRITICAL: Set viewMode to 'workflow' for new project runs so kickoff can display
         // Kickoff only shows when viewMode === 'workflow' and !isKickoffComplete
-        setViewMode('workflow');
+        // Use setTimeout to ensure state updates are processed
+        setTimeout(() => {
+          setViewMode('workflow');
+          console.log('✅ UserView: Set viewMode to workflow for project run from array');
+        }, 0);
       } else {
         // Project run not in array yet - fetch directly from database
         console.log('⚠️ UserView: Project run not in array, fetching from database:', projectRunId);
@@ -956,7 +973,11 @@ export default function UserView({
             setCurrentProjectRun(transformedRun);
             // CRITICAL: Set viewMode to 'workflow' for new project runs so kickoff can display
             // Kickoff only shows when viewMode === 'workflow' and !isKickoffComplete
-            setViewMode('workflow');
+            // Use setTimeout to ensure state updates are processed
+            setTimeout(() => {
+              setViewMode('workflow');
+              console.log('✅ UserView: Set viewMode to workflow for new project run');
+            }, 0);
           } catch (error) {
             console.error('❌ Error in fetchProjectRun:', error);
           }
