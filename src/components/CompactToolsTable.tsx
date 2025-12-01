@@ -24,14 +24,17 @@ interface CompactToolsTableProps {
 }
 
 export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactToolsTableProps) {
+  // Ensure tools is always an array to prevent undefined errors
+  const safeTools = tools || [];
+  
   const handleToolChange = (index: number, field: keyof StepTool, value: any) => {
-    const updatedTools = [...tools];
+    const updatedTools = [...safeTools];
     updatedTools[index] = { ...updatedTools[index], [field]: value };
     onToolsChange(updatedTools);
   };
 
   const handleRemoveTool = (index: number) => {
-    const updatedTools = tools.filter((_, i) => i !== index);
+    const updatedTools = safeTools.filter((_, i) => i !== index);
     onToolsChange(updatedTools);
   };
 
@@ -40,7 +43,7 @@ export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactTo
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Wrench className="w-4 h-4" />
-          Tools ({tools.length})
+          Tools ({safeTools.length})
         </h3>
         <Button size="sm" variant="outline" onClick={onAddTool}>
           <Plus className="w-3 h-3 mr-1" />
@@ -48,7 +51,7 @@ export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactTo
         </Button>
       </div>
 
-      {tools.length > 0 && (
+      {safeTools.length > 0 && (
         <div className="border rounded-md">
           <Table>
             <TableHeader>
@@ -61,7 +64,7 @@ export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactTo
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tools.map((tool, index) => (
+              {safeTools.map((tool, index) => (
                 <TableRow key={tool.id} className="text-xs">
                   <TableCell className="py-2">
                     <div>
@@ -120,7 +123,7 @@ export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactTo
         </div>
       )}
 
-      {tools.length === 0 && (
+      {safeTools.length === 0 && (
         <div className="text-center py-4 text-xs text-muted-foreground border border-dashed rounded-md">
           No tools added yet
         </div>
