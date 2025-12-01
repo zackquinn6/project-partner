@@ -419,25 +419,24 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
       modal={false}
     >
       <DialogPortal>
-        <DialogOverlay 
+        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-[90] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <div
+          data-dialog-content
+          onClick={(e) => e.stopPropagation()}
           className={cn(
-            "bg-black/60 backdrop-blur-md fixed inset-0 z-[90]",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+            // Mobile: Full screen
+            "fixed inset-0 z-[91]",
+            // Desktop: Centered with 90% viewport
+            "md:fixed md:left-1/2 md:top-1/2 md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2",
+            "md:w-[90vw] md:max-w-[90vw] md:h-[90vh] md:max-h-[90vh]",
+            "md:max-w-[calc(100vw-2rem)] md:max-h-[calc(100vh-2rem)]",
+            "bg-background md:border md:rounded-lg shadow-lg",
+            "flex flex-col overflow-hidden"
           )}
-          style={{ pointerEvents: 'auto' }}
-        />
-        <DialogPrimitive.Content
-          className={cn(
-            "w-full h-screen max-w-full max-h-full",
-            "md:max-w-[90vw] md:h-[90vh] md:rounded-lg",
-            "p-0 overflow-hidden flex flex-col",
-            "fixed left-[50%] top-[50%] z-[91] translate-x-[-50%] translate-y-[-50%]",
-            "border bg-background shadow-lg",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
-          )}
+          style={{ 
+            pointerEvents: 'auto',
+            position: 'fixed'
+          }}
           onPointerDownOutside={(e) => {
             // CRITICAL: Prevent closing when clicking outside if performance window is open
             if (performanceWindowOpen) {
@@ -447,12 +446,6 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             // Also prevent closing when clicking on another dialog
             const target = e.target as HTMLElement;
             if (target.closest('[data-dialog-content]') && target.closest('[data-dialog-content]') !== e.currentTarget) {
-              e.preventDefault();
-            }
-          }}
-          onEscapeKeyDown={(e) => {
-            // Prevent closing with Escape key if performance window is open
-            if (performanceWindowOpen) {
               e.preventDefault();
             }
           }}
@@ -817,8 +810,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         </TabsContent>
       </Tabs>
         </div>
-        </DialogPrimitive.Content>
-    </DialogPortal>
+        </div>
+      </DialogPortal>
     </Dialog>
   );
 };

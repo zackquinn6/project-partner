@@ -904,7 +904,11 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           schedule_events: typeof freshRun.schedule_events === 'string' ? JSON.parse(freshRun.schedule_events) : freshRun.schedule_events,
           customization_decisions: typeof freshRun.customization_decisions === 'string' ? JSON.parse(freshRun.customization_decisions) : freshRun.customization_decisions,
           instruction_level_preference: freshRun.instruction_level_preference as 'quick' | 'detailed' | 'new_user',
-          progress_reporting_style: (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
+          progress_reporting_style: (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear',
+          // CRITICAL: Include initial_budget, initial_timeline, initial_sizing from database
+          initial_budget: freshRun.initial_budget || null,
+          initial_timeline: freshRun.initial_timeline || null,
+          initial_sizing: freshRun.initial_sizing || null
         };
 
         // Update cache and current project run
