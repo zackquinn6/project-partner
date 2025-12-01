@@ -618,6 +618,34 @@ export default function UserView({
           apps = [];
         }
         
+        // Enrich apps with icon data from registry if missing
+        apps = apps.map(app => {
+          // If app already has icon, use it
+          if (app.icon) {
+            return app;
+          }
+          
+          // Try to get icon from native apps registry using actionKey
+          const actionKey = app.actionKey || app.id?.replace('app-', '');
+          if (actionKey) {
+            const nativeApp = getNativeAppById(actionKey);
+            if (nativeApp) {
+              return {
+                ...app,
+                icon: nativeApp.icon,
+                appName: app.appName || nativeApp.appName,
+                description: app.description || nativeApp.description
+              };
+            }
+          }
+          
+          // If no icon found, use Sparkles as fallback
+          return {
+            ...app,
+            icon: app.icon || 'Sparkles'
+          };
+        });
+        
         // Preserve spaceId and spaceName if they exist (from workflowNavigationUtils)
         const spaceId = (step as any).spaceId;
         const spaceName = (step as any).spaceName;
@@ -630,7 +658,7 @@ export default function UserView({
           operationId,
           materials,
           tools,
-          apps, // Ensure apps are properly parsed array
+          apps, // Ensure apps are properly parsed and enriched array
           navigationType: item.type, // Track navigation type for display
           // Preserve spaceId and spaceName from step if they exist (from workflowNavigationUtils)
           // Fallback to item.spaces for space-container type
