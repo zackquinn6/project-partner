@@ -12,6 +12,7 @@ import { FeedbackDialog } from './FeedbackDialog';
 import { UpgradePrompt } from './UpgradePrompt';
 import { MembershipWindow } from './MembershipWindow';
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DataPrivacyManager } from './DataPrivacyManager';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { AppDocumentationWindow } from './AppDocumentationWindow';
@@ -189,7 +190,18 @@ export default function Navigation({
       progress: projectRun.progress,
       completedStepsCount: projectRun.completedSteps.length,
       completedSteps: projectRun.completedSteps,
-      phasesCount: projectRun.phases.length
+      phasesCount: projectRun.phases?.length || 0,
+      hasPhases: !!(projectRun.phases && Array.isArray(projectRun.phases) && projectRun.phases.length > 0)
+    });
+    
+    // CRITICAL: Update URL state with projectRunId so UserView can properly load it
+    // This ensures UserView's useEffect that watches projectRunId will trigger
+    navigate('/', {
+      state: {
+        view: 'user',
+        projectRunId: projectRun.id
+      },
+      replace: true
     });
     
     setCurrentProjectRun(projectRun);
