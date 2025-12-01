@@ -22,7 +22,7 @@ interface BudgetLineItem {
   item: string;
   budgetedAmount: number;
   actualAmount: number;
-  category: 'material' | 'labor' | 'other';
+  category: 'material' | 'labor' | 'tools' | 'tool-rentals' | 'other';
   notes?: string;
 }
 
@@ -32,7 +32,7 @@ interface ActualEntry {
   description: string;
   amount: number;
   date: string;
-  category: 'material' | 'labor' | 'other';
+  category: 'material' | 'labor' | 'tools' | 'tool-rentals' | 'other';
   receiptUrl?: string;
   notes?: string;
 }
@@ -109,7 +109,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           item: String(item.item || ''),
           budgetedAmount: typeof item.budgetedAmount === 'number' ? item.budgetedAmount : parseFloat(String(item.budgetedAmount || 0)) || 0,
           actualAmount: typeof item.actualAmount === 'number' ? item.actualAmount : parseFloat(String(item.actualAmount || 0)) || 0,
-          category: ['material', 'labor', 'other'].includes(item.category) ? item.category : 'other',
+          category: ['material', 'labor', 'tools', 'tool-rentals', 'other'].includes(item.category) ? item.category : 'other',
           notes: item.notes || undefined
         }));
         
@@ -120,7 +120,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           description: String(entry.description || ''),
           amount: typeof entry.amount === 'number' ? entry.amount : parseFloat(String(entry.amount || 0)) || 0,
           date: entry.date || new Date().toISOString().split('T')[0],
-          category: ['material', 'labor', 'other'].includes(entry.category) ? entry.category : 'other',
+          category: ['material', 'labor', 'tools', 'tool-rentals', 'other'].includes(entry.category) ? entry.category : 'other',
           receiptUrl: entry.receiptUrl || undefined,
           notes: entry.notes || undefined
         }));
@@ -598,14 +598,25 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                     <SelectContent>
                       <SelectItem value="material">Material</SelectItem>
                       <SelectItem value="labor">Labor</SelectItem>
+                      <SelectItem value="tools">Tools</SelectItem>
+                      <SelectItem value="tool-rentals">Tool Rentals</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <Button onClick={async () => {
-                console.log('🎯 ProjectBudgetingWindow: Add Line Item button clicked');
-                await addBudgetItem();
+                try {
+                  console.log('🎯 ProjectBudgetingWindow: Add Line Item button clicked');
+                  await addBudgetItem();
+                } catch (error) {
+                  console.error('❌ Error adding budget item:', error);
+                  toast({
+                    title: 'Failed to add budget item',
+                    description: error instanceof Error ? error.message : 'Unknown error',
+                    variant: 'destructive'
+                  });
+                }
               }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Line Item
@@ -720,6 +731,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                     <SelectContent>
                       <SelectItem value="material">Material</SelectItem>
                       <SelectItem value="labor">Labor</SelectItem>
+                      <SelectItem value="tools">Tools</SelectItem>
+                      <SelectItem value="tool-rentals">Tool Rentals</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
@@ -743,7 +756,18 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                   </Select>
                 </div>
               </div>
-              <Button onClick={async () => await addActualEntry()}>
+              <Button onClick={async () => {
+                try {
+                  await addActualEntry();
+                } catch (error) {
+                  console.error('❌ Error adding actual entry:', error);
+                  toast({
+                    title: 'Failed to record spend',
+                    description: error instanceof Error ? error.message : 'Unknown error',
+                    variant: 'destructive'
+                  });
+                }
+              }}>
                 <DollarSign className="w-4 h-4 mr-2" />
                 Record Spend
               </Button>
