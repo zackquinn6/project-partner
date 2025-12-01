@@ -160,19 +160,26 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             // Update the project run in context with fresh data
             const updatedRun = {
               ...currentProjectRun,
-              initial_budget: freshRun.initial_budget,
-              initial_timeline: freshRun.initial_timeline,
-              initial_sizing: freshRun.initial_sizing
+              initial_budget: freshRun.initial_budget || null,
+              initial_timeline: freshRun.initial_timeline || null,
+              initial_sizing: freshRun.initial_sizing || null
             };
             await updateProjectRun(updatedRun);
             console.log('✅ ProjectBudgetingWindow: Refreshed project run with fresh initial_budget:', freshRun.initial_budget);
+          } else if (error) {
+            console.error('❌ Error fetching fresh project run:', error);
           }
         } catch (error) {
           console.error('❌ Error fetching fresh project run:', error);
         }
       };
       
-      fetchFreshProjectRun();
+      // Small delay to ensure window is fully mounted
+      const timeoutId = setTimeout(() => {
+        fetchFreshProjectRun();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [open, currentProjectRun?.id, updateProjectRun]);
 
@@ -353,22 +360,36 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     : [];
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      // Only close if explicitly set to false (user clicked close)
-      // Don't close when performance window is open on top
-      if (!newOpen && !performanceWindowOpen) {
-        onOpenChange(false);
-      }
-    }} modal={false}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(newOpen) => {
+        // CRITICAL: Only close if explicitly set to false AND performance window is not open
+        // This prevents the budgeting window from closing when performance dashboard opens
+        if (!newOpen) {
+          // Check if performance window is actually open before closing
+          if (!performanceWindowOpen) {
+            onOpenChange(false);
+          } else {
+            // Performance window is open, don't close budgeting window
+            console.log('💰 Budgeting window: Preventing close because performance window is open');
+          }
+        }
+      }} 
+      modal={false}
+    >
       <DialogPortal>
-        <DialogOverlay 
-          className={cn(
-            "bg-black/60 backdrop-blur-md fixed inset-0 z-[90]",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            open ? "opacity-100" : "opacity-0 pointer-events-none"
-          )}
-        />
+        {/* CRITICAL: Overlay must be controlled by Dialog's state, not just open prop */}
+        {/* When modal={false}, we need to ensure overlay is always rendered when dialog is open */}
+        {open && (
+          <DialogOverlay 
+            className={cn(
+              "bg-black/60 backdrop-blur-md fixed inset-0 z-[90]",
+              "data-[state=open]:animate-in data-[state=closed]:animate-out",
+              "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+            )}
+            style={{ pointerEvents: 'auto' }}
+          />
+        )}
         <DialogPrimitive.Content
           className={cn(
             "w-full h-screen max-w-full max-h-full",
@@ -381,12 +402,19 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           )}
           onPointerDownOutside={(e) => {
-            // Prevent closing when clicking outside if another dialog is open on top
+            // CRITICAL: Prevent closing when clicking outside if performance window is open
+            if (performanceWindowOpen) {
+              e.preventDefault();
+              return;
+            }
+            // Also prevent closing when clicking on another dialog
             const target = e.target as HTMLElement;
             if (target.closest('[data-dialog-content]') && target.closest('[data-dialog-content]') !== e.currentTarget) {
               e.preventDefault();
             }
-            // Also prevent closing if performance window is open
+          }}
+          onEscapeKeyDown={(e) => {
+            // Prevent closing with Escape key if performance window is open
             if (performanceWindowOpen) {
               e.preventDefault();
             }
@@ -414,8 +442,15 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                 <div className="text-xl font-bold text-primary">
                   {(() => {
                     // Try multiple property names to handle both snake_case and camelCase
-                    const budgetValue = (currentProjectRun as any)?.initial_budget || (currentProjectRun as any)?.initialBudget;
-                    const budgetStr = budgetValue ? String(budgetValue).trim() : '';
+                    // Also check if it's a number or string
+                    const budgetValue = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+                    
+                    if (budgetValue === null || budgetValue === undefined) {
+                      return 'Not set';
+                    }
+                    
+                    // Handle both string and number types
+                    const budgetStr = typeof budgetValue === 'string' ? budgetValue.trim() : String(budgetValue).trim();
                     const budgetNum = budgetStr ? parseFloat(budgetStr) : NaN;
                     
                     if (budgetStr && !isNaN(budgetNum) && budgetNum > 0) {
@@ -427,8 +462,13 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
               </div>
               {(() => {
                 // Try multiple property names to handle both snake_case and camelCase
-                const budgetValue = (currentProjectRun as any)?.initial_budget || (currentProjectRun as any)?.initialBudget;
-                const budgetStr = budgetValue ? String(budgetValue).trim() : '';
+                const budgetValue = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+                
+                if (budgetValue === null || budgetValue === undefined) {
+                  return null;
+                }
+                
+                const budgetStr = typeof budgetValue === 'string' ? budgetValue.trim() : String(budgetValue).trim();
                 const budgetNum = budgetStr ? parseFloat(budgetStr) : NaN;
                 
                 if (budgetStr && !isNaN(budgetNum) && budgetNum > 0 && totalBudgeted > 0) {
