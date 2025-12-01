@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AppReference } from '@/interfaces/Project';
 import { getAllNativeApps } from '@/utils/appsRegistry';
+import { supabase } from '@/integrations/supabase/client';
 import * as Icons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { Check, Plus } from 'lucide-react';
@@ -29,17 +30,70 @@ export const AppsLibraryDialog = ({
   onAppsSelected
 }: AppsLibraryDialogProps) => {
   const [tempSelected, setTempSelected] = useState<AppReference[]>(selectedApps);
-  const allNativeApps = getAllNativeApps();
-  // Sort native apps alphabetically by name
-  const nativeApps = [...allNativeApps].sort((a, b) => {
-    const nameA = (a.appName || '').toLowerCase();
-    const nameB = (b.appName || '').toLowerCase();
-    return nameA.localeCompare(nameB);
-  });
+  const [nativeApps, setNativeApps] = useState<AppReference[]>([]);
   
-  // Reset temp selection when dialog opens or selectedApps changes
+  // Load native apps with overrides from database (same logic as AppManager)
   useEffect(() => {
+    const loadAppsWithOverrides = async () => {
+      try {
+        // Load app overrides from database
+        const {
+          data: appOverrides,
+          error: overrideError
+        } = await supabase.from('app_overrides').select('*');
+        
+        const overrideMap = new Map<string, {
+          app_name: string;
+          description?: string;
+          icon?: string;
+        }>();
+        
+        if (!overrideError && appOverrides) {
+          appOverrides.forEach(override => {
+            overrideMap.set(override.app_id, override);
+          });
+        }
+
+        // Load native apps and apply overrides
+        const allNativeApps = getAllNativeApps();
+        const appsWithOverrides = allNativeApps.map(app => {
+          const actionKey = app.actionKey || app.id.replace('app-', '');
+          const override = overrideMap.get(actionKey);
+          if (override) {
+            // Apply override from database (updated app name/description/icon)
+            return {
+              ...app,
+              appName: override.app_name,
+              description: override.description || app.description,
+              icon: override.icon || app.icon
+            };
+          }
+          return app;
+        });
+        
+        // Sort native apps alphabetically by name
+        const sortedApps = [...appsWithOverrides].sort((a, b) => {
+          const nameA = (a.appName || '').toLowerCase();
+          const nameB = (b.appName || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        
+        setNativeApps(sortedApps);
+      } catch (error) {
+        console.error('Error loading apps with overrides:', error);
+        // Fallback to basic native apps if override loading fails
+        const allNativeApps = getAllNativeApps();
+        const sortedApps = [...allNativeApps].sort((a, b) => {
+          const nameA = (a.appName || '').toLowerCase();
+          const nameB = (b.appName || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        setNativeApps(sortedApps);
+      }
+    };
+    
     if (open) {
+      loadAppsWithOverrides();
       setTempSelected(selectedApps);
     }
   }, [open, selectedApps]);
