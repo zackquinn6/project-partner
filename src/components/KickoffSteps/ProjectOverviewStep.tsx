@@ -456,8 +456,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-3 pt-3 border-t">
-            <div>
+          <div className="mt-3 pt-3 border-t">
+            <div className="mb-3">
               <Label className="text-sm">Category</Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {categories.length > 0 ? categories.map((cat, idx) => <Badge key={idx} variant="outline" className="text-xs">
@@ -465,155 +465,165 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                     </Badge>) : <Badge variant="outline" className="text-xs sm:text-sm">Not specified</Badge>}
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 mb-0">
-                <Label className="text-sm">Project Skill Level</Label>
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none">
-                        <HelpCircle className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs z-50">
-                      <p className="text-sm">
-                        <strong>Skill Level</strong> indicates the technical expertise required for this project:
-                        <br /><br />
-                        <strong>Beginner:</strong> Basic skills, minimal experience needed
-                        <br />
-                        <strong>Intermediate:</strong> Some experience or guidance recommended
-                        <br />
-                        <strong>Advanced:</strong> Significant experience or professional help may be needed
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              {/* Left Column */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-0">
+                  <Label className="text-sm">Project Skill Level</Label>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none">
+                          <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs z-50">
+                        <p className="text-sm">
+                          <strong>Skill Level</strong> indicates the technical expertise required for this project:
+                          <br /><br />
+                          <strong>Beginner:</strong> Basic skills, minimal experience needed
+                          <br />
+                          <strong>Intermediate:</strong> Some experience or guidance recommended
+                          <br />
+                          <strong>Advanced:</strong> Significant experience or professional help may be needed
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                {renderLevelSlider(displaySkillLevel, ['Beginner', 'Intermediate', 'Advanced'], ['Beginner', 'Intermediate', 'Advanced'], userProfile?.skill_level, skillComparison)}
               </div>
-              {renderLevelSlider(displaySkillLevel, ['Beginner', 'Intermediate', 'Advanced'], ['Beginner', 'Intermediate', 'Advanced'], userProfile?.skill_level, skillComparison)}
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 mb-0">
-                <Label className="text-sm">Project Effort Level</Label>
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none">
-                        <HelpCircle className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs z-50">
-                      <p className="text-sm">
-                        <strong>Effort Level</strong> indicates the physical intensity and time commitment required:
-                        <br /><br />
-                        <strong>Low:</strong> Minimal physical effort, quick completion
-                        <br />
-                        <strong>Medium:</strong> Moderate physical effort, moderate time commitment
-                        <br />
-                        <strong>High:</strong> Significant physical effort, extended time commitment
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              {renderLevelSlider(displayEffortLevel, ['Low', 'Medium', 'High'], ['Low', 'Medium', 'High'], userProfile?.physical_capability, effortComparison)}
-            </div>
-            <div>
-              <Label className="text-sm">Estimated Time</Label>
-              <div className="mt-2 space-y-2">
-                {/* Line 1: Estimated time per unit + unit */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {displayEstimatedTime ? (
-                    <>
+
+              {/* Right Column */}
+              <div>
+                <Label className="text-sm">Estimated Budget</Label>
+                <div className="mt-2 space-y-2">
+                  {/* Line 1: Budget per unit + unit */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {displayBudgetPerUnit ? (
+                      <>
+                        <Badge variant="outline" className="text-xs sm:text-sm">
+                          ${displayBudgetPerUnit}
+                        </Badge>
+                        <span className="text-xs sm:text-sm text-muted-foreground">per</span>
+                      </>
+                    ) : null}
+                    {formattedScalingUnit ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        {formattedScalingUnit}
+                      </span>
+                    ) : displayScalingUnit ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        {displayScalingUnit.toLowerCase().startsWith('per ') ? displayScalingUnit.toLowerCase().replace('per ', '') : displayScalingUnit.toLowerCase()}
+                      </span>
+                    ) : null}
+                    {!displayBudgetPerUnit && !formattedScalingUnit && !displayScalingUnit && (
+                      <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
+                    )}
+                  </div>
+                  
+                  {/* Line 2: Budget per typical project size */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {displayBudgetPerTypicalSize ? (
                       <Badge variant="outline" className="text-xs sm:text-sm">
-                        {displayEstimatedTime}
+                        ${displayBudgetPerTypicalSize}
                       </Badge>
+                    ) : null}
+                    {displayBudgetPerTypicalSize && displayTypicalProjectSize ? (
                       <span className="text-xs sm:text-sm text-muted-foreground">per</span>
-                    </>
-                  ) : null}
-                  {formattedScalingUnit ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">
-                      {formattedScalingUnit}
-                    </span>
-                  ) : displayScalingUnit ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">
-                      {displayScalingUnit.toLowerCase().startsWith('per ') ? displayScalingUnit.toLowerCase().replace('per ', '') : displayScalingUnit.toLowerCase()}
-                    </span>
-                  ) : null}
-                  {!displayEstimatedTime && !formattedScalingUnit && !displayScalingUnit && (
-                    <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
-                  )}
-                </div>
-                
-                {/* Line 2: Total time + typical project size */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {displayEstimatedTotalTime ? (
-                    <Badge variant="outline" className="text-xs sm:text-sm">
-                      {displayEstimatedTotalTime}
-                    </Badge>
-                  ) : null}
-                  {displayEstimatedTotalTime && displayTypicalProjectSize ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">per</span>
-                  ) : null}
-                  {displayTypicalProjectSize ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">
-                      {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit : (displayScalingUnit ? displayScalingUnit.toLowerCase().replace('per ', '') : 'units')} typical project size
-                    </span>
-                  ) : displayEstimatedTotalTime ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
-                  ) : null}
-                  {!displayEstimatedTotalTime && !displayTypicalProjectSize && (
-                    <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
-                  )}
+                    ) : null}
+                    {displayTypicalProjectSize ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit : (displayScalingUnit ? displayScalingUnit.toLowerCase().replace('per ', '') : 'units')} typical project size
+                      </span>
+                    ) : displayBudgetPerTypicalSize ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
+                    ) : null}
+                    {!displayBudgetPerTypicalSize && !displayTypicalProjectSize && (
+                      <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div>
-              <Label className="text-sm">Estimated Budget</Label>
-              <div className="mt-2 space-y-2">
-                {/* Line 1: Budget per unit + unit */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {displayBudgetPerUnit ? (
-                    <>
-                      <Badge variant="outline" className="text-xs sm:text-sm">
-                        ${displayBudgetPerUnit}
-                      </Badge>
-                      <span className="text-xs sm:text-sm text-muted-foreground">per</span>
-                    </>
-                  ) : null}
-                  {formattedScalingUnit ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">
-                      {formattedScalingUnit}
-                    </span>
-                  ) : displayScalingUnit ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">
-                      {displayScalingUnit.toLowerCase().startsWith('per ') ? displayScalingUnit.toLowerCase().replace('per ', '') : displayScalingUnit.toLowerCase()}
-                    </span>
-                  ) : null}
-                  {!displayBudgetPerUnit && !formattedScalingUnit && !displayScalingUnit && (
-                    <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
-                  )}
+
+              {/* Left Column - Second Row */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-0">
+                  <Label className="text-sm">Project Effort Level</Label>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none">
+                          <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs z-50">
+                        <p className="text-sm">
+                          <strong>Effort Level</strong> indicates the physical intensity and time commitment required:
+                          <br /><br />
+                          <strong>Low:</strong> Minimal physical effort, quick completion
+                          <br />
+                          <strong>Medium:</strong> Moderate physical effort, moderate time commitment
+                          <br />
+                          <strong>High:</strong> Significant physical effort, extended time commitment
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-                
-                {/* Line 2: Budget per typical project size */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {displayBudgetPerTypicalSize ? (
-                    <Badge variant="outline" className="text-xs sm:text-sm">
-                      ${displayBudgetPerTypicalSize}
-                    </Badge>
-                  ) : null}
-                  {displayBudgetPerTypicalSize && displayTypicalProjectSize ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">per</span>
-                  ) : null}
-                  {displayTypicalProjectSize ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">
-                      {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit : (displayScalingUnit ? displayScalingUnit.toLowerCase().replace('per ', '') : 'units')} typical project size
-                    </span>
-                  ) : displayBudgetPerTypicalSize ? (
-                    <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
-                  ) : null}
-                  {!displayBudgetPerTypicalSize && !displayTypicalProjectSize && (
-                    <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
-                  )}
+                {renderLevelSlider(displayEffortLevel, ['Low', 'Medium', 'High'], ['Low', 'Medium', 'High'], userProfile?.physical_capability, effortComparison)}
+              </div>
+
+              {/* Right Column - Second Row */}
+              <div>
+                <Label className="text-sm">Estimated Time</Label>
+                <div className="mt-2 space-y-2">
+                  {/* Line 1: Estimated time per unit + unit */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {displayEstimatedTime ? (
+                      <>
+                        <Badge variant="outline" className="text-xs sm:text-sm">
+                          {displayEstimatedTime}
+                        </Badge>
+                        <span className="text-xs sm:text-sm text-muted-foreground">per</span>
+                      </>
+                    ) : null}
+                    {formattedScalingUnit ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        {formattedScalingUnit}
+                      </span>
+                    ) : displayScalingUnit ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        {displayScalingUnit.toLowerCase().startsWith('per ') ? displayScalingUnit.toLowerCase().replace('per ', '') : displayScalingUnit.toLowerCase()}
+                      </span>
+                    ) : null}
+                    {!displayEstimatedTime && !formattedScalingUnit && !displayScalingUnit && (
+                      <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
+                    )}
+                  </div>
+                  
+                  {/* Line 2: Total time + typical project size */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {displayEstimatedTotalTime ? (
+                      <Badge variant="outline" className="text-xs sm:text-sm">
+                        {displayEstimatedTotalTime}
+                      </Badge>
+                    ) : null}
+                    {displayEstimatedTotalTime && displayTypicalProjectSize ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground">per</span>
+                    ) : null}
+                    {displayTypicalProjectSize ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        {displayTypicalProjectSize} {formattedScalingUnit ? formattedScalingUnit : (displayScalingUnit ? displayScalingUnit.toLowerCase().replace('per ', '') : 'units')} typical project size
+                      </span>
+                    ) : displayEstimatedTotalTime ? (
+                      <span className="text-xs sm:text-sm text-muted-foreground">typical project size</span>
+                    ) : null}
+                    {!displayEstimatedTotalTime && !displayTypicalProjectSize && (
+                      <span className="text-xs sm:text-sm text-muted-foreground">Not specified</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
