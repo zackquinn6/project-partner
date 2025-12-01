@@ -496,7 +496,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   {displayBudgetPerUnit && formattedScalingUnit ? (
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs sm:text-sm">
-                        {displayBudgetPerUnit.startsWith('$') ? `(${displayBudgetPerUnit})` : `($${displayBudgetPerUnit})`}
+                        {displayBudgetPerUnit.startsWith('$') ? displayBudgetPerUnit : `$${displayBudgetPerUnit}`}
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">per</span>
                       <Badge variant="outline" className="text-xs sm:text-sm">
@@ -509,7 +509,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   {displayBudgetPerTypicalSize && displayTypicalProjectSize && formattedScalingUnit ? (
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs sm:text-sm">
-                        {displayBudgetPerTypicalSize.startsWith('$') ? `(${displayBudgetPerTypicalSize})` : `($${displayBudgetPerTypicalSize})`}
+                        {displayBudgetPerTypicalSize.startsWith('$') ? displayBudgetPerTypicalSize : `$${displayBudgetPerTypicalSize}`}
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">per</span>
                       <Badge variant="outline" className="text-xs sm:text-sm">
@@ -561,7 +561,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   {displayEstimatedTime && formattedScalingUnit ? (
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs sm:text-sm">
-                        ({displayEstimatedTime})
+                        {displayEstimatedTime}
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">per</span>
                       <Badge variant="outline" className="text-xs sm:text-sm">
@@ -574,7 +574,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   {displayEstimatedTotalTime && displayTypicalProjectSize && formattedScalingUnit ? (
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs sm:text-sm">
-                        ({displayEstimatedTotalTime})
+                        {displayEstimatedTotalTime}
                       </Badge>
                       <span className="text-xs sm:text-sm text-muted-foreground">per</span>
                       <Badge variant="outline" className="text-xs sm:text-sm">
