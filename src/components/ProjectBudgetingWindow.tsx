@@ -148,59 +148,62 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     }
   }, [currentProjectRun]);
   
-  // CRITICAL: When window opens, immediately read initial_budget from currentProjectRun
-  // If it's not there, fetch from database once
+  // CRITICAL: Always fetch initial_budget directly from database when window opens
+  // This bypasses any context caching issues and ensures we get the latest value
   useEffect(() => {
     if (open && currentProjectRun?.id) {
-      // First, try to get initial_budget from currentProjectRun context
-      const budgetFromContext = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
-      
-      if (budgetFromContext !== null && budgetFromContext !== undefined && budgetFromContext !== '') {
-        // We have it in context, use it immediately
-        setBudgetGoal(budgetFromContext);
-        console.log('✅ ProjectBudgetingWindow: Using initial_budget from context:', budgetFromContext);
-      } else {
-        // Not in context, fetch from database
-        const fetchFreshProjectRun = async () => {
-          try {
-            const { data: freshRun, error } = await supabase
-              .from('project_runs')
-              .select('initial_budget, initial_timeline, initial_sizing')
-              .eq('id', currentProjectRun.id)
-              .single();
+      const fetchBudgetGoal = async () => {
+        try {
+          console.log('🔍 ProjectBudgetingWindow: Fetching initial_budget from database for project:', currentProjectRun.id);
+          const { data: freshRun, error } = await supabase
+            .from('project_runs')
+            .select('initial_budget')
+            .eq('id', currentProjectRun.id)
+            .single();
+          
+          if (error) {
+            console.error('❌ Error fetching initial_budget:', error);
+            // Fallback to context value if database fetch fails
+            const budgetFromContext = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+            setBudgetGoal(budgetFromContext);
+            return;
+          }
+          
+          if (freshRun) {
+            const budgetValue = freshRun.initial_budget || null;
+            console.log('✅ ProjectBudgetingWindow: Fetched initial_budget from database:', {
+              value: budgetValue,
+              type: typeof budgetValue,
+              isEmpty: !budgetValue || budgetValue === '',
+              projectRunId: currentProjectRun.id
+            });
+            setBudgetGoal(budgetValue);
             
-            if (!error && freshRun) {
-              // Update the project run in context with fresh data
+            // Also update context if it's missing or different
+            const contextBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+            if (contextBudget !== budgetValue) {
+              console.log('🔄 ProjectBudgetingWindow: Updating context with fresh budget value');
               const updatedRun = {
                 ...currentProjectRun,
-                initial_budget: freshRun.initial_budget || null,
-                initial_timeline: freshRun.initial_timeline || null,
-                initial_sizing: freshRun.initial_sizing || null
+                initial_budget: budgetValue
               };
               await updateProjectRun(updatedRun);
-              // Update budget goal state directly
-              setBudgetGoal(freshRun.initial_budget || null);
-              console.log('✅ ProjectBudgetingWindow: Fetched initial_budget from database:', freshRun.initial_budget);
-            } else if (error) {
-              console.error('❌ Error fetching fresh project run:', error);
             }
-          } catch (error) {
-            console.error('❌ Error fetching fresh project run:', error);
           }
-        };
-        
-        fetchFreshProjectRun();
-      }
+        } catch (error) {
+          console.error('❌ Exception fetching initial_budget:', error);
+          // Fallback to context value
+          const budgetFromContext = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+          setBudgetGoal(budgetFromContext);
+        }
+      };
+      
+      fetchBudgetGoal();
+    } else if (!open) {
+      // Reset budget goal when dialog closes
+      setBudgetGoal(null);
     }
   }, [open, currentProjectRun?.id, updateProjectRun]);
-
-  // Also update budget goal when currentProjectRun changes
-  useEffect(() => {
-    if (currentProjectRun) {
-      const budgetValue = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
-      setBudgetGoal(budgetValue);
-    }
-  }, [currentProjectRun]);
 
   // Also update budget goal when currentProjectRun changes
   useEffect(() => {
@@ -419,7 +422,18 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
       modal={false}
     >
       <DialogPortal>
-        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-[90] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        {/* CRITICAL: Manually control overlay visibility for modal={false} dialogs */}
+        {/* Radix UI doesn't automatically manage overlay state when modal={false} */}
+        {open && (
+          <div 
+            className="bg-black/60 backdrop-blur-md fixed inset-0 z-[90] transition-opacity duration-200"
+            style={{ 
+              opacity: open ? 1 : 0,
+              pointerEvents: open ? 'auto' : 'none'
+            }}
+            aria-hidden="true"
+          />
+        )}
         <div
           data-dialog-content
           onClick={(e) => e.stopPropagation()}
