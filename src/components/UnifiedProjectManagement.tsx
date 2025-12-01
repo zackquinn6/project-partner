@@ -243,8 +243,8 @@ export function UnifiedProjectManagement({
         typical_project_size: editedProject.typical_project_size !== undefined ? editedProject.typical_project_size : selectedProject.typical_project_size,
         scaling_unit: editedProject.scaling_unit !== undefined ? editedProject.scaling_unit : selectedProject.scaling_unit,
         item_type: editedProject.item_type !== undefined ? editedProject.item_type : selectedProject.item_type,
-        budget_per_unit: (editedProject as any).budget_per_unit !== undefined ? (editedProject as any).budget_per_unit : ((selectedProject as any).budget_per_unit || null),
-        budget_per_typical_size: (editedProject as any).budget_per_typical_size !== undefined ? (editedProject as any).budget_per_typical_size : ((selectedProject as any).budget_per_typical_size || null),
+        budget_per_unit: (editedProject as any).budget_per_unit !== undefined ? ((editedProject as any).budget_per_unit === '' ? null : (editedProject as any).budget_per_unit) : ((selectedProject as any).budget_per_unit || null),
+        budget_per_typical_size: (editedProject as any).budget_per_typical_size !== undefined ? ((editedProject as any).budget_per_typical_size === '' ? null : (editedProject as any).budget_per_typical_size) : ((selectedProject as any).budget_per_typical_size || null),
         project_type: editedProject.project_type || selectedProject.project_type || 'primary',
         updated_at: new Date().toISOString(),
         // Always include project_challenges - determine value below
@@ -1696,20 +1696,32 @@ export function UnifiedProjectManagement({
                           {/* Budget Estimate Section */}
                           <div className="space-y-1">
                             <Label className="text-sm">Budget Per Unit</Label>
-                            {editingProject ? <Input value={(editedProject as any).budget_per_unit || ''} onChange={e => setEditedProject(prev => ({
-                              ...prev,
-                              budget_per_unit: e.target.value
-                            } as any))} className="text-sm" placeholder="e.g., 5.00" /> : <div className="p-2 bg-muted rounded text-sm">${(selectedProject as any).budget_per_unit || 'Not specified'}</div>}
-                            <p className="text-xs text-muted-foreground">Estimated cost per scaling unit</p>
+                            {editingProject ? (
+                              <>
+                                <Input value={(editedProject as any).budget_per_unit || ''} onChange={e => setEditedProject(prev => ({
+                                  ...prev,
+                                  budget_per_unit: e.target.value
+                                } as any))} className="text-sm" placeholder="e.g., 5.00" />
+                                <p className="text-xs text-muted-foreground">Estimated cost per scaling unit (Budget in $USD)</p>
+                              </>
+                            ) : (
+                              <div className="p-2 bg-muted rounded text-sm">${(selectedProject as any).budget_per_unit || 'Not specified'}</div>
+                            )}
                           </div>
 
                           <div className="space-y-1">
                             <Label className="text-sm">Budget Per Typical Project Size</Label>
-                            {editingProject ? <Input value={(editedProject as any).budget_per_typical_size || ''} onChange={e => setEditedProject(prev => ({
-                              ...prev,
-                              budget_per_typical_size: e.target.value
-                            } as any))} className="text-sm" placeholder="e.g., 500.00" /> : <div className="p-2 bg-muted rounded text-sm">${(selectedProject as any).budget_per_typical_size || 'Not specified'}</div>}
-                            <p className="text-xs text-muted-foreground">Total estimated cost for typical project size</p>
+                            {editingProject ? (
+                              <>
+                                <Input value={(editedProject as any).budget_per_typical_size || ''} onChange={e => setEditedProject(prev => ({
+                                  ...prev,
+                                  budget_per_typical_size: e.target.value
+                                } as any))} className="text-sm" placeholder="e.g., 500.00" />
+                                <p className="text-xs text-muted-foreground">Total estimated cost for typical project size (Budget in $USD)</p>
+                              </>
+                            ) : (
+                              <div className="p-2 bg-muted rounded text-sm">${(selectedProject as any).budget_per_typical_size || 'Not specified'}</div>
+                            )}
                           </div>
                         </div>
 
