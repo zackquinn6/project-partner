@@ -1068,6 +1068,13 @@ export default function EditWorkflowView({
           apps: appsToSave
         });
         
+        console.log('💾 SaveEdit: Step data before save:', {
+          stepId: editingStep.id,
+          stepType: editingStep.stepType,
+          stepTypeType: typeof editingStep.stepType,
+          hasStepType: editingStep.stepType !== undefined && editingStep.stepType !== null
+        });
+        
         const updateData: any = {
           step_title: editingStep.step,
           display_order: (editingStep as any).display_order || (editingStep as any).stepNumber || 0,
@@ -1078,7 +1085,7 @@ export default function EditWorkflowView({
           outputs: editingStep.outputs || [] as any,
           apps: appsToSave, // Use properly formatted apps array
           flow_type: (editingStep as any).flowType || null,
-          step_type: editingStep.stepType || 'prime',
+          step_type: editingStep.stepType || 'prime', // Ensure step_type is always set
           time_estimate_low: editingStep.timeEstimation?.variableTime?.low || null,
           time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || null,
           time_estimate_high: editingStep.timeEstimation?.variableTime?.high || null,
@@ -1086,6 +1093,11 @@ export default function EditWorkflowView({
           skill_level: editingStep.skillLevel || null,
           updated_at: new Date().toISOString()
         };
+        
+        console.log('💾 SaveEdit: Update data being sent:', {
+          step_type: updateData.step_type,
+          flow_type: updateData.flow_type
+        });
         
         const { error, data } = await supabase
           .from('template_steps')

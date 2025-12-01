@@ -57,14 +57,34 @@ export function MultiSelectLibraryDialog({
   const fetchItems = async () => {
     setLoading(true);
     try {
+      // Materials table uses 'name' column, tools table uses 'name' column
+      // Order by 'name' for both types
       const { data, error } = await supabase
         .from(type)
         .select('*')
-        .order('item');
+        .order('name');
       
       if (error) throw error;
       
-      const allItems = data || [];
+      // Map database columns to UI format
+      // Materials: name -> item, unit -> unit_size
+      // Tools: name -> item (if needed)
+      const allItems = (data || []).map((row: any) => {
+        if (type === 'materials') {
+          return {
+            ...row,
+            item: row.name, // Map 'name' to 'item' for UI consistency
+            unit_size: row.unit // Map 'unit' to 'unit_size' for UI consistency
+          };
+        } else {
+          // Tools: use 'name' as 'item' if 'item' doesn't exist
+          return {
+            ...row,
+            item: row.item || row.name
+          };
+        }
+      });
+      
       setItems(allItems);
       
       // Fetch variations for all items
