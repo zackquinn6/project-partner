@@ -238,8 +238,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       });
     }
     // Load completion priority from project run
-    if (projectRun?.completion_priority) {
-      setCompletionPriority(projectRun.completion_priority as 'agile' | 'waterfall');
+    // Check both completion_priority and schedule_optimization_method
+    const optimizationMethod = (projectRun as any)?.schedule_optimization_method;
+    const priority = projectRun?.completion_priority;
+    
+    if (optimizationMethod === 'single-piece-flow' || priority === 'agile') {
+      setCompletionPriority('agile');
+    } else if (optimizationMethod === 'batch-flow' || priority === 'waterfall') {
+      setCompletionPriority('waterfall');
+    } else if (priority) {
+      setCompletionPriority(priority as 'agile' | 'waterfall');
     }
   }, [open, projectRun]);
 
