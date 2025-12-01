@@ -57,6 +57,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   const [newActualDate, setNewActualDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedLineItemForActual, setSelectedLineItemForActual] = useState<string>('');
   const [performanceWindowOpen, setPerformanceWindowOpen] = useState(false);
+  // State to hold the budget goal value
+  const [budgetGoal, setBudgetGoal] = useState<string | number | null>(null);
 
   // Listen for performance window open/close events
   useEffect(() => {
@@ -89,6 +91,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         allKeys: Object.keys(currentProjectRun).filter(k => k.toLowerCase().includes('budget')),
         projectRunId: currentProjectRun.id
       });
+      // Update budget goal state
+      setBudgetGoal(budgetValue);
     }
     
     if (currentProjectRun?.budget_data) {
@@ -165,6 +169,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
               initial_sizing: freshRun.initial_sizing || null
             };
             await updateProjectRun(updatedRun);
+            // Update budget goal state directly
+            setBudgetGoal(freshRun.initial_budget || null);
             console.log('✅ ProjectBudgetingWindow: Refreshed project run with fresh initial_budget:', freshRun.initial_budget);
           } else if (error) {
             console.error('❌ Error fetching fresh project run:', error);
@@ -182,6 +188,22 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
       return () => clearTimeout(timeoutId);
     }
   }, [open, currentProjectRun?.id, updateProjectRun]);
+
+  // Also update budget goal when currentProjectRun changes
+  useEffect(() => {
+    if (currentProjectRun) {
+      const budgetValue = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+      setBudgetGoal(budgetValue);
+    }
+  }, [currentProjectRun]);
+
+  // Also update budget goal when currentProjectRun changes
+  useEffect(() => {
+    if (currentProjectRun) {
+      const budgetValue = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+      setBudgetGoal(budgetValue);
+    }
+  }, [currentProjectRun]);
 
   const saveBudgetData = async (items: BudgetLineItem[], entries: ActualEntry[]) => {
     if (!currentProjectRun) {
@@ -378,18 +400,14 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
       modal={false}
     >
       <DialogPortal>
-        {/* CRITICAL: Overlay must be controlled by Dialog's state, not just open prop */}
-        {/* When modal={false}, we need to ensure overlay is always rendered when dialog is open */}
-        {open && (
-          <DialogOverlay 
-            className={cn(
-              "bg-black/60 backdrop-blur-md fixed inset-0 z-[90]",
-              "data-[state=open]:animate-in data-[state=closed]:animate-out",
-              "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-            )}
-            style={{ pointerEvents: 'auto' }}
-          />
-        )}
+        <DialogOverlay 
+          className={cn(
+            "bg-black/60 backdrop-blur-md fixed inset-0 z-[90]",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+          )}
+          style={{ pointerEvents: 'auto' }}
+        />
         <DialogPrimitive.Content
           className={cn(
             "w-full h-screen max-w-full max-h-full",
@@ -441,11 +459,10 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                 <div className="text-xs text-muted-foreground mb-1">Project Budget Goal</div>
                 <div className="text-xl font-bold text-primary">
                   {(() => {
-                    // Try multiple property names to handle both snake_case and camelCase
-                    // Also check if it's a number or string
-                    const budgetValue = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+                    // Use budgetGoal state first, then fall back to currentProjectRun
+                    const budgetValue = budgetGoal ?? (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
                     
-                    if (budgetValue === null || budgetValue === undefined) {
+                    if (budgetValue === null || budgetValue === undefined || budgetValue === '') {
                       return 'Not set';
                     }
                     
@@ -461,10 +478,10 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                 </div>
               </div>
               {(() => {
-                // Try multiple property names to handle both snake_case and camelCase
-                const budgetValue = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+                // Use budgetGoal state first, then fall back to currentProjectRun
+                const budgetValue = budgetGoal ?? (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
                 
-                if (budgetValue === null || budgetValue === undefined) {
+                if (budgetValue === null || budgetValue === undefined || budgetValue === '') {
                   return null;
                 }
                 
