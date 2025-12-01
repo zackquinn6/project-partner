@@ -24,14 +24,17 @@ interface CompactMaterialsTableProps {
 }
 
 export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMaterial }: CompactMaterialsTableProps) {
+  // Ensure materials is always an array to prevent undefined errors
+  const safeMaterials = materials || [];
+  
   const handleMaterialChange = (index: number, field: keyof StepMaterial, value: any) => {
-    const updatedMaterials = [...materials];
+    const updatedMaterials = [...safeMaterials];
     updatedMaterials[index] = { ...updatedMaterials[index], [field]: value };
     onMaterialsChange(updatedMaterials);
   };
 
   const handleRemoveMaterial = (index: number) => {
-    const updatedMaterials = materials.filter((_, i) => i !== index);
+    const updatedMaterials = safeMaterials.filter((_, i) => i !== index);
     onMaterialsChange(updatedMaterials);
   };
 
@@ -40,7 +43,7 @@ export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMater
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Package className="w-4 h-4" />
-          Materials ({materials.length})
+          Materials ({safeMaterials.length})
         </h3>
         <Button size="sm" variant="outline" onClick={onAddMaterial}>
           <Plus className="w-3 h-3 mr-1" />
@@ -48,7 +51,7 @@ export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMater
         </Button>
       </div>
 
-      {materials.length > 0 && (
+      {safeMaterials.length > 0 && (
         <div className="border rounded-md">
           <Table>
             <TableHeader>
@@ -61,7 +64,7 @@ export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMater
               </TableRow>
             </TableHeader>
             <TableBody>
-              {materials.map((material, index) => (
+              {safeMaterials.map((material, index) => (
                 <TableRow key={material.id} className="text-xs">
                   <TableCell className="py-2">
                     <div>
@@ -120,7 +123,7 @@ export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMater
         </div>
       )}
 
-      {materials.length === 0 && (
+      {safeMaterials.length === 0 && (
         <div className="text-center py-4 text-xs text-muted-foreground border border-dashed rounded-md">
           No materials added yet
         </div>
