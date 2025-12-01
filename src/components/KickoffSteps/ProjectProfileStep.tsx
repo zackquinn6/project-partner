@@ -444,11 +444,13 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       }
 
       // Update initial_sizing in project_runs table
+      // CRITICAL: Include initial_budget in this update to ensure it's not lost
       if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0) {
         const { error: sizingError } = await supabase
           .from('project_runs')
           .update({ 
             initial_sizing: projectForm.initialSizing.trim(),
+            initial_budget: finalBudgetValue, // Preserve initial_budget
             updated_at: new Date().toISOString()
           })
           .eq('id', currentProjectRun.id);
@@ -456,7 +458,46 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         if (sizingError) {
           console.error('Error updating initial_sizing:', sizingError);
           // Don't throw - this is optional
+        } else {
+          console.log('✅ ProjectProfileStep: Preserved initial_budget in sizing update:', finalBudgetValue);
         }
+      }
+
+      // CRITICAL: Final verification - fetch the saved value from database
+      const { data: verificationData, error: verificationError } = await supabase
+        .from('project_runs')
+        .select('initial_budget, initial_timeline, initial_sizing')
+        .eq('id', currentProjectRun.id)
+        .single();
+      
+      if (!verificationError && verificationData) {
+        console.log('🔍 ProjectProfileStep: Final verification of saved values:', {
+          initial_budget: verificationData.initial_budget,
+          initial_timeline: verificationData.initial_timeline,
+          initial_sizing: verificationData.initial_sizing,
+          expectedBudget: finalBudgetValue,
+          budgetMatches: verificationData.initial_budget === finalBudgetValue
+        });
+        
+        if (verificationData.initial_budget !== finalBudgetValue) {
+          console.error('❌ ProjectProfileStep: CRITICAL - initial_budget mismatch after save!', {
+            expected: finalBudgetValue,
+            actual: verificationData.initial_budget
+          });
+          // Try one more time to save it
+          const { error: retryError } = await supabase
+            .from('project_runs')
+            .update({ initial_budget: finalBudgetValue })
+            .eq('id', currentProjectRun.id);
+          
+          if (retryError) {
+            console.error('❌ ProjectProfileStep: Retry save failed:', retryError);
+          } else {
+            console.log('✅ ProjectProfileStep: Successfully saved initial_budget on retry');
+          }
+        }
+      } else if (verificationError) {
+        console.error('❌ ProjectProfileStep: Error verifying saved values:', verificationError);
       }
 
       // Update local state for optimistic UI update
