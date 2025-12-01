@@ -2749,19 +2749,27 @@ export default function UserView({
                    workflowPhases.length > 0 ||
                    templatePhasesCount > 0;
   
+  // CRITICAL: If we have a projectRunId but no currentProjectRun yet, we're still loading
+  // Don't show "under construction" while loading - show loading state instead
+  const isStillLoading = projectRunId && !currentProjectRun;
+  
   console.log('🔍 Phase detection check:', {
     activeProjectPhasesCount,
     rawWorkflowPhasesLength: rawWorkflowPhases.length,
     workflowPhasesLength: workflowPhases.length,
     templatePhasesCount,
     hasPhases,
+    isStillLoading,
     currentProjectRunId: currentProjectRun?.id,
     activeProjectId: activeProject?.id,
-    templateId: currentProjectRun?.templateId
+    templateId: currentProjectRun?.templateId,
+    projectRunId,
+    hasCurrentProjectRun: !!currentProjectRun
   });
   
   // If there are no phases in the project run snapshot, show "under construction"
-  const shouldShowUnderConstruction = !hasPhases;
+  // BUT: Don't show it if we're still loading the project run
+  const shouldShowUnderConstruction = !hasPhases && !isStillLoading;
   
   if (shouldShowUnderConstruction) {
     return <div className="container mx-auto px-6 py-8">
