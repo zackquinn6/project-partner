@@ -664,8 +664,16 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       setCurrentProjectRun(updatedProjectRun);
     }
 
-    // Debounce the database write (but cache is already updated)
-    updateTimeoutRef.current = setTimeout(async () => {
+    // CRITICAL: For budget_data, issue_reports, and time_tracking updates, save immediately
+    // These are user-initiated changes that must be persisted right away
+    const isBudgetDataUpdate = projectRun.budget_data !== undefined;
+    const isIssueReportsUpdate = projectRun.issue_reports !== undefined;
+    const isTimeTrackingUpdate = projectRun.time_tracking !== undefined;
+    const requiresImmediateSave = isBudgetDataUpdate || isIssueReportsUpdate || isTimeTrackingUpdate;
+    
+    // For immediate saves (budget, issues, time tracking), execute right away
+    // For other updates, debounce to avoid excessive database writes
+    const saveToDatabase = async () => {
       // Prevent concurrent updates
       if (updateInProgressRef.current) {
         console.log("🔄 ProjectActions - Update already in progress, queuing...");
@@ -726,7 +734,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       } finally {
         updateInProgressRef.current = false;
       }
-    }, 300); // 300ms debounce for DB write only
+    };
+    
+    if (requiresImmediateSave) {
+      // Save immediately for budget_data, issue_reports, time_tracking
+      saveToDatabase();
+    } else {
+      // Debounce other updates
+      updateTimeoutRef.current = setTimeout(saveToDatabase, 300);
+    }
   }, [isGuest, updateGuestProjectRun, user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
 
   const deleteProject = useCallback(async (projectId: string) => {
