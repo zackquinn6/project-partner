@@ -1013,11 +1013,12 @@ export default function UserView({
       }
       
       if (projectRunId && currentProjectRun && currentProjectRun.id === projectRunId) {
-        // Project run is already loaded - ensure viewMode is 'workflow' for kickoff
+        // Project run is already loaded - ensure viewMode is 'workflow'
         // This handles the case where project run was loaded but viewMode wasn't set correctly
-        if (viewMode === 'listing' && !isKickoffComplete) {
-          console.log('🔄 UserView: Project run loaded but in listing mode - switching to workflow for kickoff');
+        if (viewMode === 'listing') {
+          console.log('🔄 UserView: Project run loaded but in listing mode - switching to workflow');
           setViewMode('workflow');
+          onProjectSelected?.();
         }
       }
     }
@@ -2780,7 +2781,12 @@ export default function UserView({
   
   // CRITICAL: If we have a projectRunId but no currentProjectRun yet, we're still loading
   // Don't show "under construction" while loading - show loading state instead
-  const isStillLoading = projectRunId && !currentProjectRun;
+  // Also check if projectRunId matches currentProjectRun to ensure we're loading the right project
+  const isStillLoading = (projectRunId && !currentProjectRun) || 
+                         (projectRunId && currentProjectRun && currentProjectRun.id !== projectRunId);
+  
+  // Also check if we're waiting for phases to be processed
+  const isProcessingPhases = currentProjectRun && rawWorkflowPhases.length === 0 && workflowPhases.length === 0;
   
   console.log('🔍 Phase detection check:', {
     activeProjectPhasesCount,
@@ -2789,16 +2795,18 @@ export default function UserView({
     templatePhasesCount,
     hasPhases,
     isStillLoading,
+    isProcessingPhases,
     currentProjectRunId: currentProjectRun?.id,
     activeProjectId: activeProject?.id,
     templateId: currentProjectRun?.templateId,
     projectRunId,
-    hasCurrentProjectRun: !!currentProjectRun
+    hasCurrentProjectRun: !!currentProjectRun,
+    projectRunIdMatches: projectRunId && currentProjectRun ? currentProjectRun.id === projectRunId : false
   });
   
   // If there are no phases in the project run snapshot, show "under construction"
-  // BUT: Don't show it if we're still loading the project run
-  const shouldShowUnderConstruction = !hasPhases && !isStillLoading;
+  // BUT: Don't show it if we're still loading the project run or processing phases
+  const shouldShowUnderConstruction = !hasPhases && !isStillLoading && !isProcessingPhases;
   
   if (shouldShowUnderConstruction) {
     return <div className="container mx-auto px-6 py-8">
