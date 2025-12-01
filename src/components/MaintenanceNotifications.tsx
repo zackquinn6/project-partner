@@ -55,27 +55,36 @@ export function MaintenanceNotifications({
     }
   };
   const testEmailNotification = async () => {
-    if (!emailAddress) return;
+    // Use authenticated user's email for test emails to match function validation
+    const testEmail = user?.email || emailAddress;
+    if (!testEmail) {
+      toast({
+        title: "Error",
+        description: "No email address available. Please ensure you're logged in.",
+        variant: "destructive"
+      });
+      return;
+    }
     try {
       const {
         error
       } = await supabase.functions.invoke('send-maintenance-reminder', {
         body: {
           type: 'test',
-          email: emailAddress,
+          email: testEmail,
           userName: user?.email?.split('@')[0] || 'User'
         }
       });
       if (error) throw error;
       toast({
         title: "Test Email Sent",
-        description: `Test notification sent to ${emailAddress}`
+        description: `Test notification sent to ${testEmail}`
       });
     } catch (error) {
       console.error('Error sending test email:', error);
       toast({
         title: "Error",
-        description: "Failed to send test email",
+        description: error instanceof Error ? error.message : "Failed to send test email",
         variant: "destructive"
       });
     }
@@ -191,12 +200,5 @@ export function MaintenanceNotifications({
           </div>
         </div>
 
-        {/* Help text */}
-        <div className="bg-muted/30 p-4 rounded-lg">
-          <p className="text-sm text-muted-foreground">
-            <strong>Note:</strong> Notifications will be sent 7 days before each maintenance task is due. 
-            You can disable notifications for specific tasks or adjust your preferences above.
-          </p>
-        </div>
     </div>;
 }
