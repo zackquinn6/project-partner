@@ -68,13 +68,22 @@ export default function EditWorkflowView({
   
   const loadPhasesFromDatabase = React.useCallback(async (projectId: string): Promise<Phase[]> => {
     if (!projectId) {
+      console.log('❌ EditWorkflowView: No project ID provided');
       return [];
     }
     
     const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
+    const isStandardProject = projectId === STANDARD_PROJECT_ID;
     
-    if (isEditingStandardProject) {
+    console.log('🔍 EditWorkflowView loadPhasesFromDatabase:', {
+      projectId,
+      isStandardProject,
+      isEditingStandardProject
+    });
+    
+    if (isStandardProject) {
       // Edit Standard: Read directly from project_phases table
+      console.log('📖 Loading Standard Project Foundation phases');
       const { data: phasesData, error } = await supabase
         .from('project_phases')
         .select(`
@@ -89,6 +98,12 @@ export default function EditWorkflowView({
         .eq('is_standard', true)
         .order('position_rule', { ascending: true })
         .order('position_value', { ascending: true, nullsFirst: false });
+      
+      console.log('📊 Standard phases query result:', {
+        phasesCount: phasesData?.length || 0,
+        phases: phasesData?.map(p => p.name),
+        error
+      });
       
       if (error) {
         throw new Error(`Failed to load phases: ${error.message}`);
@@ -273,6 +288,15 @@ export default function EditWorkflowView({
           operations: operationsWithSteps
         } as Phase;
       }));
+      
+      console.log('✅ Standard phases fully loaded with operations and steps:', {
+        count: phases.length,
+        details: phases.map(p => ({
+          name: p.name,
+          operationsCount: p.operations.length,
+          totalSteps: p.operations.reduce((sum, op) => sum + op.steps.length, 0)
+        }))
+      });
       
       return phases;
     } else {
@@ -809,6 +833,12 @@ export default function EditWorkflowView({
         } as Phase;
       }));
       
+      console.log('✅ Combined phases for regular project:', {
+        customCount: customPhases.length,
+        standardCount: standardPhases.length,
+        total: customPhases.length + standardPhases.length
+      });
+      
       // Combine custom and standard phases
       return [...customPhases, ...standardPhases];
     }
@@ -816,19 +846,30 @@ export default function EditWorkflowView({
   
   // Load phases when project changes
   React.useEffect(() => {
+    console.log('🔄 EditWorkflowView useEffect triggered:', {
+      hasProject: !!currentProject,
+      projectId: currentProject?.id,
+      projectName: currentProject?.name
+    });
+    
     if (currentProject?.id) {
       setLoadingPhases(true);
       loadPhasesFromDatabase(currentProject.id)
         .then(phases => {
+          console.log('✅ Phases loaded successfully:', {
+            count: phases.length,
+            phaseNames: phases.map(p => p.name)
+          });
           setRawPhases(phases);
           setLoadingPhases(false);
         })
         .catch(error => {
-          console.error('Failed to load phases:', error);
+          console.error('❌ Failed to load phases:', error);
           setRawPhases([]);
           setLoadingPhases(false);
         });
     } else {
+      console.log('⚠️ No project ID, clearing phases');
       setRawPhases([]);
       setLoadingPhases(false);
     }
