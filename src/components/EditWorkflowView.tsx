@@ -146,7 +146,12 @@ export default function EditWorkflowView({
               materials,
               outputs,
               content_sections,
-              time_estimation,
+              estimated_time_minutes,
+              step_number,
+              flow_type,
+              time_estimate_low,
+              time_estimate_medium,
+              time_estimate_high,
               workers_needed,
               skill_level
             `)
@@ -251,12 +256,21 @@ export default function EditWorkflowView({
                   description: s.description,
                   stepType: s.step_type,
                   displayOrder: s.display_order,
+                  stepNumber: s.step_number,
+                  flowType: s.flow_type,
                   apps: parsedApps,
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   contentSections: parsedContentSections,
-                  timeEstimation: s.time_estimation,
+                  estimatedTimeMinutes: s.estimated_time_minutes,
+                  timeEstimation: {
+                    variableTime: {
+                      low: s.time_estimate_low || 0,
+                      medium: s.time_estimate_medium || 0,
+                      high: s.time_estimate_high || 0
+                    }
+                  },
                   workersNeeded: s.workers_needed,
                   skillLevel: s.skill_level
                 };
@@ -398,7 +412,19 @@ export default function EditWorkflowView({
                 description,
                 step_type,
                 display_order,
-                apps
+                apps,
+                tools,
+                materials,
+                outputs,
+                content_sections,
+                estimated_time_minutes,
+                step_number,
+                flow_type,
+                time_estimate_low,
+                time_estimate_medium,
+                time_estimate_high,
+                workers_needed,
+                skill_level
               `)
               .eq('operation_id', op.id)
               .order('display_order');
@@ -493,12 +519,21 @@ export default function EditWorkflowView({
                   description: s.description,
                   stepType: s.step_type,
                   displayOrder: s.display_order,
+                  stepNumber: s.step_number,
+                  flowType: s.flow_type,
                   apps: parsedApps,
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   contentSections: parsedContentSections,
-                  timeEstimation: s.time_estimation,
+                  estimatedTimeMinutes: s.estimated_time_minutes,
+                  timeEstimation: {
+                    variableTime: {
+                      low: s.time_estimate_low || 0,
+                      medium: s.time_estimate_medium || 0,
+                      high: s.time_estimate_high || 0
+                    }
+                  },
                   workersNeeded: s.workers_needed,
                   skillLevel: s.skill_level
                 };
@@ -634,12 +669,21 @@ export default function EditWorkflowView({
                   description: s.description,
                   stepType: s.step_type,
                   displayOrder: s.display_order,
+                  stepNumber: s.step_number,
+                  flowType: s.flow_type,
                   apps: parsedApps,
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   contentSections: parsedContentSections,
-                  timeEstimation: s.time_estimation,
+                  estimatedTimeMinutes: s.estimated_time_minutes,
+                  timeEstimation: {
+                    variableTime: {
+                      low: s.time_estimate_low || 0,
+                      medium: s.time_estimate_medium || 0,
+                      high: s.time_estimate_high || 0
+                    }
+                  },
                   workersNeeded: s.workers_needed,
                   skillLevel: s.skill_level
                 };
@@ -804,12 +848,21 @@ export default function EditWorkflowView({
                   description: s.description,
                   stepType: s.step_type,
                   displayOrder: s.display_order,
+                  stepNumber: s.step_number,
+                  flowType: s.flow_type,
                   apps: parsedApps,
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   contentSections: parsedContentSections,
-                  timeEstimation: s.time_estimation,
+                  estimatedTimeMinutes: s.estimated_time_minutes,
+                  timeEstimation: {
+                    variableTime: {
+                      low: s.time_estimate_low || 0,
+                      medium: s.time_estimate_medium || 0,
+                      high: s.time_estimate_high || 0
+                    }
+                  },
                   workersNeeded: s.workers_needed,
                   skillLevel: s.skill_level
                 };
