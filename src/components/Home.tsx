@@ -15,6 +15,7 @@ import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExpl
 import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2, ListChecks } from 'lucide-react';
 import heroDIYPerson from '@/assets/hero-diy-person.png';
 import { HeroSection } from './landing/HeroSection';
+import { ValuePropSection } from './landing/ValuePropSection';
 import { StatisticsBar } from './landing/StatisticsBar';
 import { HowItWorksSection } from './landing/HowItWorksSection';
 import { FeaturesSection } from './landing/FeaturesSection';
@@ -273,6 +274,9 @@ export default function Home({
       
       {/* Hero Section */}
       <HeroSection onOpenDemo={() => setIsKCExplainerOpen(true)} />
+
+      {/* Value Prop Section */}
+      <ValuePropSection />
 
       {/* Statistics Bar */}
       <StatisticsBar />
