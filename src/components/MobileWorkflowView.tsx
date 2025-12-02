@@ -30,8 +30,8 @@ interface MobileWorkflowViewProps {
   checkedTools: Record<string, Set<string>>;
   onToggleMaterial: (stepId: string, materialId: string) => void;
   onToggleTool: (stepId: string, toolId: string) => void;
-  instructionLevel?: 'quick' | 'detailed' | 'new_user';
-  onInstructionLevelChange?: (level: 'quick' | 'detailed' | 'new_user') => void;
+  instructionLevel?: 'beginner' | 'intermediate' | 'advanced';
+  onInstructionLevelChange?: (level: 'beginner' | 'intermediate' | 'advanced') => void;
 }
 
 export function MobileWorkflowView({
@@ -131,15 +131,15 @@ export function MobileWorkflowView({
                   <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
                     <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs w-[70px] sm:w-[90px] flex-shrink-0">
                       <SelectValue>
-                        {instructionLevel === 'new_user' && 'Beginner'}
-                        {instructionLevel === 'detailed' && 'Intermediate'}
-                        {instructionLevel === 'quick' && 'Advanced'}
+                        {instructionLevel === 'beginner' && 'Beginner'}
+                        {instructionLevel === 'intermediate' && 'Intermediate'}
+                        {instructionLevel === 'advanced' && 'Advanced'}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="new_user" className="text-xs">Beginner: Extra guidance</SelectItem>
-                      <SelectItem value="detailed" className="text-xs">Intermediate: Short step-by-step</SelectItem>
-                      <SelectItem value="quick" className="text-xs">Advanced: Key points only</SelectItem>
+                      <SelectItem value="beginner" className="text-xs">Beginner: Extra guidance</SelectItem>
+                      <SelectItem value="intermediate" className="text-xs">Intermediate: Short step-by-step</SelectItem>
+                      <SelectItem value="advanced" className="text-xs">Advanced: Key points only</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

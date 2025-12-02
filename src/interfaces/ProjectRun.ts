@@ -234,8 +234,8 @@ export interface ProjectRun {
     workflowOrder: string[];
   };
 
-  // Instruction detail level preference
-  instruction_level_preference?: 'quick' | 'detailed' | 'new_user';
+  // Detail level preference
+  instruction_level_preference?: 'beginner' | 'intermediate' | 'advanced';
 
   // Initial project data from kickoff step 3
   initial_budget?: string;

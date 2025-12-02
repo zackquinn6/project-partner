@@ -1178,16 +1178,16 @@ export default function EditWorkflowView({
   const [showStructureManager, setShowStructureManager] = useState(false);
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
-  const [instructionLevel, setInstructionLevel] = useState<'quick' | 'detailed' | 'new_user'>('detailed');
+  const [instructionLevel, setInstructionLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
   const [levelSpecificContent, setLevelSpecificContent] = useState<ContentSection[] | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [pendingContentChanges, setPendingContentChanges] = useState<ContentSection[] | null>(null);
-  const [pendingContentLevel, setPendingContentLevel] = useState<'quick' | 'detailed' | 'new_user'>('detailed');
+  const [pendingContentLevel, setPendingContentLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveRef = useRef<Date>(new Date());
-  const pendingContentRef = useRef<{ changes: ContentSection[] | null; level: 'quick' | 'detailed' | 'new_user' }>({ 
+  const pendingContentRef = useRef<{ changes: ContentSection[] | null; level: 'beginner' | 'intermediate' | 'advanced' }>({ 
     changes: null, 
-    level: 'detailed' 
+    level: 'intermediate' 
   });
   const editingStepRef = useRef<WorkflowStep | null>(null);
 
@@ -1270,7 +1270,7 @@ export default function EditWorkflowView({
   // Save instruction content to database - stable version using refs
   const saveInstructionContentStable = useCallback(async (
     sections: ContentSection[] | null, 
-    targetLevel: 'quick' | 'detailed' | 'new_user',
+    targetLevel: 'beginner' | 'intermediate' | 'advanced',
     silent: boolean = false
   ) => {
     const stepId = editingStepRef.current?.id;
@@ -1478,7 +1478,7 @@ export default function EditWorkflowView({
       console.log(`💾 Saving pending changes for level: ${pendingContentRef.current.level} before closing edit mode`);
       await saveInstructionContentStable(pendingContentRef.current.changes, pendingContentRef.current.level, true);
       lastSaveRef.current = new Date();
-      pendingContentRef.current = { changes: null, level: 'detailed' };
+      pendingContentRef.current = { changes: null, level: 'intermediate' };
       setPendingContentChanges(null);
     }
 
@@ -2036,15 +2036,15 @@ export default function EditWorkflowView({
                         <CardDescription>Add instructions, images, videos, and other content for this step</CardDescription>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium whitespace-nowrap">Instruction Level:</Label>
-                        <Select value={instructionLevel} onValueChange={(value: 'quick' | 'detailed' | 'new_user') => setInstructionLevel(value)}>
+                        <Label className="text-sm font-medium whitespace-nowrap">Detail Level:</Label>
+                        <Select value={instructionLevel} onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') => setInstructionLevel(value)}>
                           <SelectTrigger className="w-[160px]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="quick">Quick</SelectItem>
-                            <SelectItem value="detailed">Detailed</SelectItem>
-                            <SelectItem value="new_user">New User</SelectItem>
+                            <SelectItem value="beginner">Beginner</SelectItem>
+                            <SelectItem value="intermediate">Intermediate</SelectItem>
+                            <SelectItem value="advanced">Advanced</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

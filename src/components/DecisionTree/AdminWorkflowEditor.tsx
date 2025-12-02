@@ -38,7 +38,7 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
   const [editingPhases, setEditingPhases] = useState<Phase[]>(phases);
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
   const [editingOperation, setEditingOperation] = useState<{ phaseId: string; operationId: string } | null>(null);
-  const [stepDetailLevels, setStepDetailLevels] = useState<Record<string, 'quick' | 'detailed' | 'contractor'>>({});
+  const [stepDetailLevels, setStepDetailLevels] = useState<Record<string, 'beginner' | 'intermediate' | 'advanced'>>({});
 
   const updateOperationStepType = (phaseId: string, operationId: string, stepType: string) => {
     setEditingPhases(prev => prev.map(phase => {
@@ -281,7 +281,7 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
                               <div>
                                 <Label className="text-sm font-semibold">Step Content</Label>
                                 <p className="text-xs text-muted-foreground mb-3">
-                                  Configure instruction content for each detail level. Each step can have different content for Quick, Detailed, and New User levels.
+                                  Configure instruction content for each detail level. Each step can have different content for Beginner, Intermediate, and Advanced levels.
                                 </p>
                               </div>
                               
@@ -302,9 +302,9 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
                                             <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="quick">Quick</SelectItem>
-                                            <SelectItem value="detailed">Detailed</SelectItem>
-                                            <SelectItem value="contractor">Contractor</SelectItem>
+                                            <SelectItem value="beginner">Beginner</SelectItem>
+                                            <SelectItem value="intermediate">Intermediate</SelectItem>
+                                            <SelectItem value="advanced">Advanced</SelectItem>
                                           </SelectContent>
                                         </Select>
                                       </div>

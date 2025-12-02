@@ -197,8 +197,8 @@ export default function UserView({
   }>({ materials: [], tools: [] });
   const [previousToolsAndMaterials, setPreviousToolsAndMaterials] = useState<{ tools: any[], materials: any[] } | null>(null);
   
-  // Instruction level state - defaults to 'detailed' for maximum detail
-  const [instructionLevel, setInstructionLevel] = useState<'quick' | 'detailed' | 'new_user'>('detailed');
+  // Detail level state - defaults to 'intermediate' for balanced detail
+  const [instructionLevel, setInstructionLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
@@ -213,12 +213,12 @@ export default function UserView({
   // Sync instruction level with project run preference
   useEffect(() => {
     if (currentProjectRun?.instruction_level_preference) {
-      setInstructionLevel(currentProjectRun.instruction_level_preference as 'quick' | 'detailed' | 'new_user');
+      setInstructionLevel(currentProjectRun.instruction_level_preference as 'beginner' | 'intermediate' | 'advanced');
     }
   }, [currentProjectRun?.instruction_level_preference]);
 
   // Handle instruction level change and save to project run
-  const handleInstructionLevelChange = async (level: 'quick' | 'detailed' | 'new_user') => {
+  const handleInstructionLevelChange = async (level: 'beginner' | 'intermediate' | 'advanced') => {
     setInstructionLevel(level);
     if (currentProjectRun) {
       await updateProjectRun({
@@ -757,7 +757,7 @@ export default function UserView({
               estimatedTime: freshRun.estimated_time,
               scalingUnit: freshRun.scaling_unit as Project['scalingUnit'],
               customization_decisions: customizationDecisions,
-              instruction_level_preference: (freshRun.instruction_level_preference as 'quick' | 'detailed' | 'new_user') || 'detailed',
+              instruction_level_preference: (freshRun.instruction_level_preference as 'beginner' | 'intermediate' | 'advanced') || 'intermediate',
               initial_budget: freshRun.initial_budget,
               initial_timeline: freshRun.initial_timeline,
               initial_sizing: freshRun.initial_sizing,
@@ -2653,7 +2653,7 @@ export default function UserView({
             <CardContent className="p-8">
               {instructionLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="text-muted-foreground">Loading {instructionLevel === 'new_user' ? 'Beginner' : instructionLevel === 'detailed' ? 'Intermediate' : 'Advanced'} content...</div>
+                  <div className="text-muted-foreground">Loading {instructionLevel === 'beginner' ? 'Beginner' : instructionLevel === 'intermediate' ? 'Intermediate' : 'Advanced'} content...</div>
                 </div>
               ) : (
                 renderContent(currentStep)

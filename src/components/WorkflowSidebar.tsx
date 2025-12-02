@@ -28,13 +28,13 @@ interface WorkflowSidebarProps {
   progress: number;
   groupedSteps: any;
   isKickoffComplete: boolean;
-  instructionLevel: 'quick' | 'detailed' | 'new_user';
+  instructionLevel: 'beginner' | 'intermediate' | 'advanced';
   projectName: string;
   projectRunId?: string;
   projectRun?: ProjectRun;
   estimatedFinishDate?: Date | null;
   estimatedFinishDateLoading?: boolean;
-  onInstructionLevelChange: (level: 'quick' | 'detailed' | 'new_user') => void;
+  onInstructionLevelChange: (level: 'beginner' | 'intermediate' | 'advanced') => void;
   onStepClick: (stepIndex: number, step: any) => void;
   onHelpClick: () => void;
   onUnplannedWorkClick: () => void;
@@ -412,15 +412,15 @@ export function WorkflowSidebar({
                     <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
                       <SelectTrigger className="w-[140px] text-xs">
                         <SelectValue>
-                          {instructionLevel === 'new_user' && 'Beginner'}
-                          {instructionLevel === 'detailed' && 'Intermediate'}
-                          {instructionLevel === 'quick' && 'Advanced'}
+                          {instructionLevel === 'beginner' && 'Beginner'}
+                          {instructionLevel === 'intermediate' && 'Intermediate'}
+                          {instructionLevel === 'advanced' && 'Advanced'}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="new_user" className="text-xs">Beginner: Extra guidance</SelectItem>
-                        <SelectItem value="detailed" className="text-xs">Intermediate: Short step-by-step</SelectItem>
-                        <SelectItem value="quick" className="text-xs">Advanced: Key points only</SelectItem>
+                        <SelectItem value="beginner" className="text-xs">Beginner: Extra guidance</SelectItem>
+                        <SelectItem value="intermediate" className="text-xs">Intermediate: Short step-by-step</SelectItem>
+                        <SelectItem value="advanced" className="text-xs">Advanced: Key points only</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
