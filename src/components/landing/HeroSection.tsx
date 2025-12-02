@@ -33,17 +33,12 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
         <div className="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
           {/* Left Column - Copy */}
           <div className="text-center lg:text-left space-y-6">
-            <Badge className="bg-accent hover:bg-accent text-accent-foreground mb-4 text-sm px-4 py-2 mt-4">
-              The Home Improvement App
-            </Badge>
-
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
-              Project Management,<br className="sm:hidden" /> Built for Builders
+              Project Management,<br className="sm:hidden" /> Streamlined for Home Improvement
             </h1>
 
             <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Unlike generic project apps<br />
-              Project Partner ships pre-filled for home improvement
+              Project Partner transforms scattered guides into a schedule‑driven system: accurate timelines, efficient shopping, and organized process design.
             </p>
 
             
