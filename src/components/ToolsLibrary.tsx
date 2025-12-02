@@ -251,15 +251,17 @@ export function ToolsLibrary() {
           </DialogTrigger>
           <DialogPortal>
             <DialogOverlay className="z-[100]" />
-            <DialogContent className="z-[101]">
+            <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden z-[101]">
               <DialogHeader>
                 <DialogTitle>Add New Tool</DialogTitle>
               </DialogHeader>
-          <LibraryItemForm
-            type="tools"
-            onSave={handleSave}
-            onCancel={() => setShowAddDialog(false)}
-          />
+              <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+                <LibraryItemForm
+                  type="tools"
+                  onSave={handleSave}
+                  onCancel={() => setShowAddDialog(false)}
+                />
+              </div>
             </DialogContent>
           </DialogPortal>
         </Dialog>
@@ -398,7 +400,7 @@ export function ToolsLibrary() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden z-[101]">
+          <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden z-[101]">
             <DialogHeader>
               <DialogTitle>Edit Tool</DialogTitle>
             </DialogHeader>
@@ -406,7 +408,7 @@ export function ToolsLibrary() {
               {editingTool && (
                 <LibraryItemForm
                   type="tools"
-                  item={editingTool}
+                  item={{...editingTool, name: editingTool.item}}
                   onSave={handleSave}
                   onCancel={() => {
                     setShowEditDialog(false);

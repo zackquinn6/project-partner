@@ -216,11 +216,11 @@ export function MaterialsLibrary() {
           </DialogTrigger>
           <DialogPortal>
             <DialogOverlay className="z-[100]" />
-            <DialogContent className="z-[101] max-w-[90vw] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden z-[101]">
               <DialogHeader>
                 <DialogTitle>Add New Material</DialogTitle>
               </DialogHeader>
-              <div className="overflow-y-auto">
+              <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
                 <LibraryItemForm
                   type="materials"
                   onSave={handleSave}
@@ -346,23 +346,23 @@ export function MaterialsLibrary() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
-          <DialogContent className="z-[101] max-w-[90vw] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden z-[101]">
             <DialogHeader>
               <DialogTitle>Edit Material</DialogTitle>
             </DialogHeader>
-            {editingMaterial && (
-              <div className="overflow-y-auto">
+            <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+              {editingMaterial && (
                 <LibraryItemForm
                   type="materials"
-                  item={editingMaterial}
+                  item={{...editingMaterial, name: editingMaterial.item}}
                   onSave={handleSave}
                   onCancel={() => {
                     setShowEditDialog(false);
                     setEditingMaterial(null);
                   }}
                 />
-              </div>
-            )}
+              )}
+            </div>
           </DialogContent>
         </DialogPortal>
       </Dialog>
