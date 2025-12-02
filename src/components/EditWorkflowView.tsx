@@ -146,7 +146,6 @@ export default function EditWorkflowView({
               materials,
               outputs,
               content_sections,
-              estimated_time_minutes,
               step_number,
               flow_type,
               time_estimate_low,
@@ -263,7 +262,6 @@ export default function EditWorkflowView({
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   contentSections: parsedContentSections,
-                  estimatedTimeMinutes: s.estimated_time_minutes,
                   timeEstimation: {
                     variableTime: {
                       low: s.time_estimate_low || 0,
@@ -526,7 +524,6 @@ export default function EditWorkflowView({
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   contentSections: parsedContentSections,
-                  estimatedTimeMinutes: s.estimated_time_minutes,
                   timeEstimation: {
                     variableTime: {
                       low: s.time_estimate_low || 0,
@@ -676,7 +673,6 @@ export default function EditWorkflowView({
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   contentSections: parsedContentSections,
-                  estimatedTimeMinutes: s.estimated_time_minutes,
                   timeEstimation: {
                     variableTime: {
                       low: s.time_estimate_low || 0,
@@ -855,7 +851,6 @@ export default function EditWorkflowView({
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   contentSections: parsedContentSections,
-                  estimatedTimeMinutes: s.estimated_time_minutes,
                   timeEstimation: {
                     variableTime: {
                       low: s.time_estimate_low || 0,
