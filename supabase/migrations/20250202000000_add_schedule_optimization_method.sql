@@ -9,9 +9,17 @@ DEFAULT 'single-piece-flow'
 NOT NULL;
 
 -- Step 2: Add check constraint to ensure only valid values
-ALTER TABLE public.project_runs
-ADD CONSTRAINT schedule_optimization_method_check 
-CHECK (schedule_optimization_method IN ('single-piece-flow', 'batch-flow'));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'schedule_optimization_method_check'
+  ) THEN
+    ALTER TABLE public.project_runs
+    ADD CONSTRAINT schedule_optimization_method_check 
+    CHECK (schedule_optimization_method IN ('single-piece-flow', 'batch-flow'));
+  END IF;
+END $$;
 
 -- Step 3: Backfill existing rows based on completion_priority if it exists
 -- Map: 'agile' → 'single-piece-flow', 'waterfall' → 'batch-flow'
