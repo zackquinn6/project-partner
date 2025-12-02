@@ -28,8 +28,10 @@ export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactTo
   const safeTools = tools || [];
   
   const handleToolChange = (index: number, field: keyof StepTool, value: any) => {
+    console.log('🔧 Tool change:', { index, field, value });
     const updatedTools = [...safeTools];
     updatedTools[index] = { ...updatedTools[index], [field]: value };
+    console.log('  Updated tools:', updatedTools);
     onToolsChange(updatedTools);
   };
 
@@ -99,12 +101,17 @@ export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactTo
                     />
                   </TableCell>
                   <TableCell className="py-2">
-                    <Input
-                      value={tool.alternates?.join(', ') || ''}
-                      onChange={(e) => handleToolChange(index, 'alternates', e.target.value.split(',').map(alt => alt.trim()).filter(alt => alt))}
-                      placeholder="Alt options..."
-                      className="text-xs h-6"
-                    />
+                    {tool.alternates && tool.alternates.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {tool.alternates.map((alt, altIdx) => (
+                          <Badge key={altIdx} variant="outline" className="text-[10px] px-1 py-0">
+                            {alt}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">None</span>
+                    )}
                   </TableCell>
                   <TableCell className="py-2 text-center">
                     <Button

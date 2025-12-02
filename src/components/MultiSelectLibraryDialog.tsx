@@ -22,6 +22,7 @@ interface SelectedItem {
   attributes: Record<string, string>;
   isPrime: boolean;
   alternateToolId?: string;
+  unit?: string | null;
 }
 
 interface MultiSelectLibraryDialogProps {
@@ -240,16 +241,18 @@ export function MultiSelectLibraryDialog({
         );
       } else {
         console.log('  ✨ Adding new item to selection');
+        const coreItem = items.find(i => i.id === variation.coreItemId);
         return [...prev, {
           id: selectedId,
           coreItemId: variation.coreItemId,
           variationId: variation.variationId,
           item: variation.name,
           quantity: 1,
-          description: items.find(i => i.id === variation.coreItemId)?.description,
+          description: coreItem?.description,
           attributes: variation.attributes,
           isPrime: variation.isPrime,
-          alternateToolId: variation.alternateToolId
+          alternateToolId: variation.alternateToolId,
+          unit: coreItem?.unit_size || (coreItem as any)?.unit || null
         }];
       }
     });

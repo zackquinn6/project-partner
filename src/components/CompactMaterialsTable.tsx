@@ -15,6 +15,7 @@ interface StepMaterial {
   alternates?: string[];
   quantity?: number;
   purpose?: string;
+  unit?: string;
 }
 
 interface CompactMaterialsTableProps {
@@ -28,8 +29,10 @@ export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMater
   const safeMaterials = materials || [];
   
   const handleMaterialChange = (index: number, field: keyof StepMaterial, value: any) => {
+    console.log('🔧 Material change:', { index, field, value });
     const updatedMaterials = [...safeMaterials];
     updatedMaterials[index] = { ...updatedMaterials[index], [field]: value };
+    console.log('  Updated materials:', updatedMaterials);
     onMaterialsChange(updatedMaterials);
   };
 
@@ -82,13 +85,20 @@ export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMater
                     </div>
                   </TableCell>
                   <TableCell className="py-2">
-                    <Input
-                      type="number"
-                      min="1"
-                      value={material.quantity || 1}
-                      onChange={(e) => handleMaterialChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                      className="w-12 h-6 text-xs"
-                    />
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        min="1"
+                        value={material.quantity || 1}
+                        onChange={(e) => handleMaterialChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                        className="w-12 h-6 text-xs"
+                      />
+                      {material.unit && (
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {material.unit}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="py-2">
                     <Input
@@ -99,12 +109,17 @@ export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMater
                     />
                   </TableCell>
                   <TableCell className="py-2">
-                    <Input
-                      value={material.alternates?.join(', ') || ''}
-                      onChange={(e) => handleMaterialChange(index, 'alternates', e.target.value.split(',').map(alt => alt.trim()).filter(alt => alt))}
-                      placeholder="Alt options..."
-                      className="text-xs h-6"
-                    />
+                    {material.alternates && material.alternates.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {material.alternates.map((alt, altIdx) => (
+                          <Badge key={altIdx} variant="outline" className="text-[10px] px-1 py-0">
+                            {alt}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">None</span>
+                    )}
                   </TableCell>
                   <TableCell className="py-2 text-center">
                     <Button

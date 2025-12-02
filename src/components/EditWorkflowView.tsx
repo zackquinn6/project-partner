@@ -2247,7 +2247,8 @@ export default function EditWorkflowView({
         description: item.description || '',
         category: 'Consumable',
         alternates: [],
-        quantity: item.quantity
+        quantity: item.quantity,
+        unit: item.unit || undefined
       }));
       updateEditingStep('materials', [...(editingStep?.materials || []), ...newMaterials]);
     }} />
