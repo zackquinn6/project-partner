@@ -285,7 +285,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     Schedule Optimization Method
                   </Label>
                   <div className="space-y-2">
-                    <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setCompletionPriority('agile')}>
+                    <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setScheduleOptimizationMethod('single-piece-flow')}>
                       <input
                         type="radio"
                         id="priority-single-piece-flow"
@@ -301,7 +301,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                         <p className="text-[9px] text-muted-foreground mt-1 font-medium">Delivers first finished room 60–80% faster</p>
                       </Label>
                     </div>
-                    <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setCompletionPriority('waterfall')}>
+                    <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setScheduleOptimizationMethod('batch-flow')}>
                       <input
                         type="radio"
                         id="priority-batch-flow"
