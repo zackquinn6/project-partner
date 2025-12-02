@@ -74,6 +74,10 @@ export function MultiSelectLibraryDialog({
       
       console.log(`✅ Fetched ${data?.length || 0} ${type} from database`);
       
+      if (!data || data.length === 0) {
+        console.warn(`⚠️ No ${type} found in library! You need to add ${type} to the library first using the "Manage ${type === 'tools' ? 'Tools' : 'Materials'} Library" button.`);
+      }
+      
       // Map database columns to UI format
       // Materials: name -> item, unit -> unit_size
       // Tools: name -> item (if needed)
@@ -94,7 +98,7 @@ export function MultiSelectLibraryDialog({
       });
       
       setItems(allItems);
-      console.log(`📦 Processed ${allItems.length} items for UI`);
+      console.log(`📦 Processed ${allItems.length} items for UI:`, allItems.map(i => i.item));
       
       // Fetch variations for all items
       await fetchItemVariations(allItems);

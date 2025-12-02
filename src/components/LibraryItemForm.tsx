@@ -117,17 +117,20 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         if (error) throw error;
       } else {
         // Create new item
+        console.log(`💾 Creating new ${type} item:`, dataToSave);
         const { error } = await supabase
           .from(type)
           .insert(dataToSave);
         
         if (error) {
+          console.error(`❌ Error creating ${type}:`, error);
           if (error.code === '23505') { // Unique constraint violation
-            toast.error('An item with this name already exists');
+            toast.error(`A ${type === 'tools' ? 'tool' : 'material'} with the name "${formData.name}" already exists in the library. Please use a different name or edit the existing item.`);
             return;
           }
           throw error;
         }
+        console.log(`✅ Successfully created new ${type} item`);
       }
 
       onSave();
