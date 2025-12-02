@@ -134,19 +134,36 @@ export function MultiSelectLibraryDialog({
   const fetchItemVariations = async (itemsList: any[]) => {
     if (itemsList.length === 0) return;
     
+    console.log(`🔄 Fetching variations for ${itemsList.length} items...`);
     const variationsMap: Record<string, any[]> = {};
     
     try {
-      for (const item of itemsList) {
-        const { data: variations } = await supabase
-          .from('variation_instances')
-          .select('*')
-          .eq('core_item_id', item.id)
-          .eq('item_type', type);
-        
-        variationsMap[item.id] = variations || [];
-      }
-      console.log('Item variations map:', variationsMap);
+      // PERFORMANCE: Fetch all variations in one query instead of one per item
+      const itemIds = itemsList.map(i => i.id);
+      const { data: allVariations, error } = await supabase
+        .from('variation_instances')
+        .select('*')
+        .in('core_item_id', itemIds)
+        .eq('item_type', type);
+      
+      if (error) throw error;
+      
+      // Group variations by core_item_id
+      (allVariations || []).forEach((variation: any) => {
+        if (!variationsMap[variation.core_item_id]) {
+          variationsMap[variation.core_item_id] = [];
+        }
+        variationsMap[variation.core_item_id].push(variation);
+      });
+      
+      // Initialize empty arrays for items with no variations
+      itemsList.forEach(item => {
+        if (!variationsMap[item.id]) {
+          variationsMap[item.id] = [];
+        }
+      });
+      
+      console.log(`✅ Fetched variations for ${itemsList.length} items in one query`);
       setItemVariations(variationsMap);
     } catch (error) {
       console.error('Error fetching variations:', error);
