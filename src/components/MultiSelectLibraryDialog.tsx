@@ -50,12 +50,14 @@ export function MultiSelectLibraryDialog({
 
   useEffect(() => {
     if (open && user) {
+      console.log(`🚀 MultiSelectLibraryDialog opened for ${type}`);
       fetchItems();
       fetchUserOwnedItems();
     }
   }, [open, type, user]);
 
   const fetchItems = async () => {
+    console.log(`📚 Fetching ${type} from library...`);
     setLoading(true);
     try {
       // Materials table uses 'name' column, tools table uses 'name' column
@@ -65,7 +67,12 @@ export function MultiSelectLibraryDialog({
         .select('*')
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error(`❌ Error fetching ${type}:`, error);
+        throw error;
+      }
+      
+      console.log(`✅ Fetched ${data?.length || 0} ${type} from database`);
       
       // Map database columns to UI format
       // Materials: name -> item, unit -> unit_size
@@ -87,6 +94,7 @@ export function MultiSelectLibraryDialog({
       });
       
       setItems(allItems);
+      console.log(`📦 Processed ${allItems.length} items for UI`);
       
       // Fetch variations for all items
       await fetchItemVariations(allItems);
@@ -182,21 +190,35 @@ export function MultiSelectLibraryDialog({
     .sort((a, b) => a.item.localeCompare(b.item));
 
   const handleItemToggle = (coreItem: any) => {
+    console.log('🔘 Add Variation clicked:', {
+      coreItemId: coreItem.id,
+      coreItemName: coreItem.item,
+      type
+    });
     setSelectingVariationFor(coreItem.id);
   };
 
   const handleVariationSelect = (variation: any) => {
+    console.log('🎯 Variation selected:', {
+      variationName: variation.name,
+      coreItemId: variation.coreItemId,
+      isPrime: variation.isPrime,
+      attributes: variation.attributes
+    });
+    
     const selectedId = `${variation.coreItemId}_${JSON.stringify(variation.attributes)}_${variation.isPrime}`;
     
     setSelectedItems(prev => {
       const existing = prev.find(item => item.id === selectedId);
       if (existing) {
+        console.log('  ➕ Incrementing existing item quantity');
         return prev.map(item =>
           item.id === selectedId
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       } else {
+        console.log('  ✨ Adding new item to selection');
         return [...prev, {
           id: selectedId,
           coreItemId: variation.coreItemId,
@@ -211,6 +233,7 @@ export function MultiSelectLibraryDialog({
       }
     });
     
+    console.log('  🔙 Closing variation selector');
     setSelectingVariationFor(null);
   };
 
@@ -227,6 +250,10 @@ export function MultiSelectLibraryDialog({
   };
 
   const handleConfirm = () => {
+    console.log('✅ Confirming selection:', {
+      selectedItemsCount: selectedItems.length,
+      items: selectedItems.map(i => i.item)
+    });
     onSelect(selectedItems);
     setSelectedItems([]);
     setSearchTerm('');

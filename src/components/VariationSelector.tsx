@@ -179,6 +179,14 @@ export function VariationSelector({
   };
 
   const handleSelectVariation = () => {
+    console.log('🔘 Add button clicked in VariationSelector:', {
+      coreItemId,
+      itemType,
+      selectedAttributes,
+      isPrime,
+      matchingVariation: matchingVariation?.name
+    });
+    
     const variation: SelectedVariation = {
       variationId: matchingVariation?.id,
       coreItemId,
@@ -188,6 +196,8 @@ export function VariationSelector({
       isPrime,
       alternateToolId: !isPrime ? selectedAlternateTool : undefined
     };
+    
+    console.log('  📤 Calling onVariationSelect with:', variation);
     onVariationSelect(variation);
   };
 
@@ -285,7 +295,7 @@ export function VariationSelector({
         )}
 
         <Button onClick={handleSelectVariation} size="sm" className="w-full">
-          Add Tool
+          Add {itemType === 'tools' ? 'Tool' : 'Material'}
         </Button>
       </div>
     );
