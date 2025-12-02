@@ -1284,11 +1284,26 @@ export default function EditWorkflowView({
     }, {} as Record<string, any[]>);
     return acc;
   }, {} as Record<string, Record<string, any[]>>);
+  
   if (!currentProject) {
     return <div className="fixed inset-0 bg-background overflow-auto z-50 flex items-center justify-center">
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground">No project selected</p>
+          </CardContent>
+        </Card>
+      </div>;
+  }
+  
+  // Show loading screen while phases are being loaded
+  if (loadingPhases) {
+    return <div className="fixed inset-0 bg-background overflow-auto z-50 flex items-center justify-center">
+        <Card>
+          <CardContent className="text-center py-8 space-y-4">
+            <div className="flex items-center justify-center">
+              <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+            </div>
+            <p className="text-muted-foreground">Loading workflow structure...</p>
           </CardContent>
         </Card>
       </div>;
