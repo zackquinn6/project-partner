@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, FileText, Image, Video, ExternalLink, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContentSection {
   id: string;
@@ -231,13 +232,50 @@ export function MultiContentEditor({ sections, onChange }: MultiContentEditorPro
                       placeholder="Enter image title..."
                     />
                   </div>
-                  <div>
-                    <Label>Image URL</Label>
+                  <div className="space-y-2">
+                    <Label>Image URL or Upload</Label>
                     <Input
                       value={section.content}
                       onChange={(e) => updateSection(section.id, { content: e.target.value })}
-                      placeholder="Enter image URL..."
+                      placeholder="Enter image URL or upload below..."
                     />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          
+                          // Validate file size (5MB)
+                          if (file.size > 5 * 1024 * 1024) {
+                            alert('Image must be smaller than 5MB');
+                            return;
+                          }
+                          
+                          try {
+                            const fileExt = file.name.split('.').pop();
+                            const fileName = `content-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                            
+                            const { error: uploadError } = await supabase.storage
+                              .from('library-photos')
+                              .upload(fileName, file);
+                            
+                            if (uploadError) throw uploadError;
+                            
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('library-photos')
+                              .getPublicUrl(fileName);
+                            
+                            updateSection(section.id, { content: publicUrl });
+                          } catch (error) {
+                            console.error('Upload error:', error);
+                            alert('Failed to upload image');
+                          }
+                        }}
+                        className="text-xs"
+                      />
+                    </div>
                   </div>
                   {section.content && (
                     <div className="mt-2">

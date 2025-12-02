@@ -1803,26 +1803,37 @@ export default function EditWorkflowView({
         </div>;
     }
 
+    // In view mode, try to load level-specific content first
+    // If levelSpecificContent is available (loaded in edit mode), use it
+    if (levelSpecificContent && levelSpecificContent.length > 0) {
+      console.log('  📖 Rendering level-specific content in view mode');
+      return <MultiContentRenderer sections={levelSpecificContent} />;
+    }
+
     // Render multi-content sections if available, otherwise fallback to legacy
     if (step.contentSections && step.contentSections.length > 0) {
+      console.log('  📖 Rendering step.contentSections');
       return <MultiContentRenderer sections={step.contentSections} />;
     }
 
     // Handle case where content might be an array (content_sections)
     if (Array.isArray(step.content) && step.content.length > 0) {
+      console.log('  📖 Rendering step.content as array');
       return <MultiContentRenderer sections={step.content} />;
     }
 
     // Fallback for steps with legacy string content
     if (typeof step.content === 'string' && step.content.trim()) {
+      console.log('  📖 Rendering legacy string content');
       return <div className="text-muted-foreground whitespace-pre-wrap">
           {step.content}
         </div>;
     }
 
     // Show empty state only if truly no content
+    console.log('  ⚠️ No content found - showing empty state');
     return <div className="flex items-center justify-center h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg">
-        <p className="text-muted-foreground">No content available. Edit this step to add content.</p>
+        <p className="text-muted-foreground">No content available. Click Edit Step to add instructions.</p>
       </div>;
   };
 
@@ -2083,7 +2094,12 @@ export default function EditWorkflowView({
                   <Card className="bg-muted/30 border shadow-sm">
                     <CardHeader>
                        <CardTitle>Process Variables</CardTitle>
-                       <CardDescription>Define process variables for this step</CardDescription>
+                       <CardDescription>
+                         Define process variables for this step
+                         <Badge variant="outline" className="ml-2 text-[10px] bg-yellow-100 text-yellow-800">
+                           Note: Variables are not yet saved to database
+                         </Badge>
+                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <CompactProcessVariablesTable variables={editingStep.inputs || []} onVariablesChange={variables => updateEditingStep('inputs', variables)} onAddVariable={() => {

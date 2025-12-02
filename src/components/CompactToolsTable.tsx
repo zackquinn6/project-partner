@@ -88,8 +88,12 @@ export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactTo
                       type="number"
                       min="1"
                       value={tool.quantity || 1}
-                      onChange={(e) => handleToolChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                      className="w-12 h-6 text-xs"
+                      onChange={(e) => {
+                        const newValue = parseInt(e.target.value) || 1;
+                        console.log(`🔢 Tool quantity change: ${tool.name} → ${newValue}`);
+                        handleToolChange(index, 'quantity', newValue);
+                      }}
+                      className="w-16 h-7 text-xs"
                     />
                   </TableCell>
                   <TableCell className="py-2">

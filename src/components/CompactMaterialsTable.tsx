@@ -90,8 +90,12 @@ export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMater
                         type="number"
                         min="1"
                         value={material.quantity || 1}
-                        onChange={(e) => handleMaterialChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                        className="w-12 h-6 text-xs"
+                        onChange={(e) => {
+                          const newValue = parseInt(e.target.value) || 1;
+                          console.log(`🔢 Material quantity change: ${material.name} → ${newValue}`);
+                          handleMaterialChange(index, 'quantity', newValue);
+                        }}
+                        className="w-16 h-7 text-xs"
                       />
                       {material.unit && (
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
