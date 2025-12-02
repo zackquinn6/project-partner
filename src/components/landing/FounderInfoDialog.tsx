@@ -16,9 +16,11 @@ export const FounderInfoDialog = ({ open, onOpenChange }: FounderInfoDialogProps
         
         <div className="space-y-6">
           <p className="text-lg text-muted-foreground leading-relaxed">
-            I built this app so people can finish real projects without spending years learning DIY. 
-            I combined modern adult‑learning methods with best practices I learned in healthcare and 
-            aerospace to guide you to plan, execute, and close projects on time with professional results.
+            I'm a guy that loves to DIY. My wife loves the results and some of the process - but hates when it doesn't go to schedule. She doesn't expect everything to go perfect, but thinks that most issues can be prevented and that i should always be able to accurately answer "When will this be done?"
+          </p>
+          
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            That's why i built Project Partner, to first solve my own problem - and make it a tool for others to get the same benefits. After running my first project through this app- my wife came back and said "Now this is DIY done right".
           </p>
           
           <div className="space-y-3">

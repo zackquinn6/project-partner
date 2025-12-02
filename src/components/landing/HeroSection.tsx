@@ -38,7 +38,7 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
             </h1>
 
             <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Project Partner transforms scattered guides into a schedule‑driven system: accurate timelines, efficient shopping, and organized process design.
+              Transform scattered guides into a schedule‑driven execution system
             </p>
 
             
