@@ -100,7 +100,7 @@ export const CompactAppsSection = ({
                   <IconComponent 
                     className="w-4 h-4 flex-shrink-0 app-icon"
                     strokeWidth={2}
-                    stroke="#2563eb"
+                    color="#2563eb"
                     aria-hidden="true"
                   />
                 </div>
