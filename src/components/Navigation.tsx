@@ -141,6 +141,19 @@ export default function Navigation({
       return;
     }
     
+    // Parse phases from database
+    let parsedPhases = typeof freshRun.phases === 'string' 
+      ? JSON.parse(freshRun.phases) 
+      : (freshRun.phases || []);
+    
+    // CRITICAL: Project runs MUST have phases - if missing, this is a data integrity error
+    if (!parsedPhases || !Array.isArray(parsedPhases) || parsedPhases.length === 0) {
+      const errorMsg = `Project run "${freshRun.name}" (ID: ${projectRunId}) has no phases snapshot. This project run is corrupted and cannot be opened. Please delete and recreate this project.`;
+      console.error('❌ CRITICAL ERROR:', errorMsg);
+      toast.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
     // Transform database data to ProjectRun format
     const projectRun: ProjectRun = {
       id: freshRun.id,
@@ -165,9 +178,7 @@ export default function Navigation({
         ? JSON.parse(freshRun.completed_steps) 
         : (freshRun.completed_steps || []),
       progress: freshRun.progress,
-      phases: typeof freshRun.phases === 'string' 
-        ? JSON.parse(freshRun.phases) 
-        : (freshRun.phases || []),
+      phases: parsedPhases,
       category: Array.isArray(freshRun.category) ? freshRun.category : (freshRun.category ? [freshRun.category] : []),
       effortLevel: freshRun.effort_level as 'Low' | 'Medium' | 'High',
       skillLevel: freshRun.skill_level as 'Beginner' | 'Intermediate' | 'Advanced',
