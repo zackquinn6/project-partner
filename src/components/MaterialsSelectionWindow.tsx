@@ -77,33 +77,9 @@ export function MaterialsSelectionWindow({
           // Only include steps based on the showCompletedSteps toggle
           if (!showCompletedSteps && isStepComplete) return;
 
+          // Use actual materials and tools from database - no sample data
           let materials = step.materials || [];
           let tools = step.tools || [];
-
-          // Add sample data for demonstration (same logic as OrderingWindow)
-          if (step.step?.includes('Measure') || step.id === 'measure-room') {
-            materials = [
-              { id: 'tape-measure', name: 'Measuring Tape', description: '25ft measuring tape', category: 'Hardware', alternates: ['Laser measure', 'Ruler'], unit: 'piece' },
-              { id: 'notepad', name: 'Notepad & Pencil', description: 'For recording measurements', category: 'Other', alternates: ['Phone app', 'Digital notepad'], unit: 'set' }
-            ];
-            tools = [
-              { id: 'laser-level', name: 'Laser Level', description: 'For checking floor levelness', category: 'Hardware', alternates: ['Traditional bubble level', 'Water level'] }
-            ];
-          } else if (step.step?.includes('Calculate') || step.step?.includes('Material')) {
-            materials = [
-              { id: 'tiles', name: 'Floor Tiles', description: 'Ceramic or porcelain tiles', category: 'Consumable', alternates: ['Luxury vinyl', 'Natural stone'], unit: 'sq ft' },
-              { id: 'grout', name: 'Tile Grout', description: 'Sanded grout for floor tiles', category: 'Consumable', alternates: ['Unsanded grout', 'Epoxy grout'], unit: 'lbs' },
-              { id: 'adhesive', name: 'Tile Adhesive', description: 'Floor tile adhesive', category: 'Consumable', alternates: ['Mortar mix', 'Premium adhesive'], unit: 'gallons' }
-            ];
-          } else if (step.step?.includes('Surface') || step.step?.includes('Prep')) {
-            materials = [
-              { id: 'primer', name: 'Floor Primer', description: 'Concrete floor primer', category: 'Consumable', alternates: ['Self-priming sealer', 'Bonding agent'], unit: 'gallons' }
-            ];
-            tools = [
-              { id: 'floor-scraper', name: 'Floor Scraper', description: 'For removing old flooring', category: 'Hand Tool', alternates: ['Putty knife', 'Chisel'] },
-              { id: 'shop-vac', name: 'Shop Vacuum', description: 'For cleaning debris', category: 'Power Tool', alternates: ['Regular vacuum', 'Broom and dustpan'] }
-            ];
-          }
 
           // Process materials
           materials.forEach((material, materialIndex) => {
