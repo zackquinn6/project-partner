@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { VariationSelector } from './VariationSelector';
 import { useAuth } from '@/contexts/AuthContext';
+import { ToolsMaterialsWindow } from './ToolsMaterialsWindow';
 
 interface SelectedItem {
   id: string;
@@ -238,12 +239,24 @@ export function MultiSelectLibraryDialog({
     onOpenChange(false);
   };
 
+  const [showAdminLibrary, setShowAdminLibrary] = useState(false);
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Select {type === 'tools' ? 'Tools' : 'Materials'} from Library</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Select {type === 'tools' ? 'Tools' : 'Materials'} from Library</DialogTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAdminLibrary(true)}
+                className="text-xs"
+              >
+                Manage {type === 'tools' ? 'Tools' : 'Materials'} Library
+              </Button>
+            </div>
           </DialogHeader>
           
           <div className="space-y-4 flex-1 overflow-hidden">
@@ -400,7 +413,7 @@ export function MultiSelectLibraryDialog({
 
       {/* Variation Selection Dialog */}
       <Dialog open={!!selectingVariationFor} onOpenChange={() => setSelectingVariationFor(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>
               Select Variation for {items.find(i => i.id === selectingVariationFor)?.item}
@@ -418,6 +431,18 @@ export function MultiSelectLibraryDialog({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Admin Library Window */}
+      <ToolsMaterialsWindow 
+        open={showAdminLibrary} 
+        onOpenChange={(open) => {
+          setShowAdminLibrary(open);
+          if (!open) {
+            // Refresh the items list when admin library is closed
+            fetchItems();
+          }
+        }} 
+      />
     </>
   );
 }
