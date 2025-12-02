@@ -400,7 +400,7 @@ export default function EditWorkflowView({
             .order('display_order');
           
           operationsWithSteps = await Promise.all((sourceOperations || []).map(async (op: any) => {
-            const { data: steps } = await supabase
+            const { data: steps, error: stepsError } = await supabase
               .from('template_steps')
               .select(`
                 id,
@@ -413,8 +413,6 @@ export default function EditWorkflowView({
                 materials,
                 outputs,
                 content_sections,
-                estimated_time_minutes,
-                step_number,
                 flow_type,
                 time_estimate_low,
                 time_estimate_medium,
@@ -424,6 +422,10 @@ export default function EditWorkflowView({
               `)
               .eq('operation_id', op.id)
               .order('display_order');
+            
+            if (stepsError) {
+              console.error(`❌ Error loading steps for incorporated phase operation "${op.operation_name}":`, stepsError);
+            }
             
             return {
               id: op.id,
@@ -560,7 +562,7 @@ export default function EditWorkflowView({
             .order('display_order');
           
           operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
-            const { data: steps } = await supabase
+            const { data: steps, error: stepsError } = await supabase
               .from('template_steps')
               .select(`
                 id,
@@ -568,10 +570,24 @@ export default function EditWorkflowView({
                 description,
                 step_type,
                 display_order,
-                apps
+                apps,
+                tools,
+                materials,
+                outputs,
+                content_sections,
+                flow_type,
+                time_estimate_low,
+                time_estimate_medium,
+                time_estimate_high,
+                workers_needed,
+                skill_level
               `)
               .eq('operation_id', op.id)
               .order('display_order');
+            
+            if (stepsError) {
+              console.error(`❌ Error loading steps for custom phase operation "${op.operation_name}":`, stepsError);
+            }
             
             return {
               id: op.id,
@@ -729,7 +745,7 @@ export default function EditWorkflowView({
         
         // Get steps for each operation
         const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
-          const { data: steps } = await supabase
+          const { data: steps, error: stepsError } = await supabase
             .from('template_steps')
             .select(`
               id,
@@ -742,12 +758,19 @@ export default function EditWorkflowView({
               materials,
               outputs,
               content_sections,
-              time_estimation,
+              flow_type,
+              time_estimate_low,
+              time_estimate_medium,
+              time_estimate_high,
               workers_needed,
               skill_level
             `)
             .eq('operation_id', op.id)
             .order('display_order');
+          
+          if (stepsError) {
+            console.error(`❌ Error loading steps for standard phase operation "${op.operation_name}":`, stepsError);
+          }
           
           return {
             id: op.id,
