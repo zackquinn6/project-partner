@@ -121,7 +121,14 @@ export default function EditWorkflowView({
               description,
               step_type,
               display_order,
-              apps
+              apps,
+              tools,
+              materials,
+              outputs,
+              content_sections,
+              time_estimation,
+              workers_needed,
+              skill_level
             `)
             .eq('operation_id', op.id)
             .order('display_order');
@@ -151,13 +158,80 @@ export default function EditWorkflowView({
                   }
                 }
                 
+                // Parse tools field
+                let parsedTools: any[] = [];
+                if (s.tools) {
+                  if (typeof s.tools === 'string') {
+                    try {
+                      parsedTools = JSON.parse(s.tools);
+                    } catch (e) {
+                      console.error('Error parsing tools JSON:', e);
+                      parsedTools = [];
+                    }
+                  } else if (Array.isArray(s.tools)) {
+                    parsedTools = s.tools;
+                  }
+                }
+                
+                // Parse materials field
+                let parsedMaterials: any[] = [];
+                if (s.materials) {
+                  if (typeof s.materials === 'string') {
+                    try {
+                      parsedMaterials = JSON.parse(s.materials);
+                    } catch (e) {
+                      console.error('Error parsing materials JSON:', e);
+                      parsedMaterials = [];
+                    }
+                  } else if (Array.isArray(s.materials)) {
+                    parsedMaterials = s.materials;
+                  }
+                }
+                
+                // Parse outputs field
+                let parsedOutputs: any[] = [];
+                if (s.outputs) {
+                  if (typeof s.outputs === 'string') {
+                    try {
+                      parsedOutputs = JSON.parse(s.outputs);
+                    } catch (e) {
+                      console.error('Error parsing outputs JSON:', e);
+                      parsedOutputs = [];
+                    }
+                  } else if (Array.isArray(s.outputs)) {
+                    parsedOutputs = s.outputs;
+                  }
+                }
+                
+                // Parse content_sections field
+                let parsedContentSections: any[] = [];
+                if (s.content_sections) {
+                  if (typeof s.content_sections === 'string') {
+                    try {
+                      parsedContentSections = JSON.parse(s.content_sections);
+                    } catch (e) {
+                      console.error('Error parsing content_sections JSON:', e);
+                      parsedContentSections = [];
+                    }
+                  } else if (Array.isArray(s.content_sections)) {
+                    parsedContentSections = s.content_sections;
+                  }
+                }
+                
                 return {
                   id: s.id,
                   step: s.step_title,
                   description: s.description,
                   stepType: s.step_type,
                   displayOrder: s.display_order,
-                  apps: parsedApps
+                  apps: parsedApps,
+                  tools: parsedTools,
+                  materials: parsedMaterials,
+                  outputs: parsedOutputs,
+                  contentSections: parsedContentSections,
+                  timeEstimation: s.time_estimation,
+                  workersNeeded: s.workers_needed,
+                  skillLevel: s.skill_level
                 };
               })
               .sort((a, b) => {
@@ -308,13 +382,80 @@ export default function EditWorkflowView({
                   }
                 }
                 
+                // Parse tools field
+                let parsedTools: any[] = [];
+                if (s.tools) {
+                  if (typeof s.tools === 'string') {
+                    try {
+                      parsedTools = JSON.parse(s.tools);
+                    } catch (e) {
+                      console.error('Error parsing tools JSON:', e);
+                      parsedTools = [];
+                    }
+                  } else if (Array.isArray(s.tools)) {
+                    parsedTools = s.tools;
+                  }
+                }
+                
+                // Parse materials field
+                let parsedMaterials: any[] = [];
+                if (s.materials) {
+                  if (typeof s.materials === 'string') {
+                    try {
+                      parsedMaterials = JSON.parse(s.materials);
+                    } catch (e) {
+                      console.error('Error parsing materials JSON:', e);
+                      parsedMaterials = [];
+                    }
+                  } else if (Array.isArray(s.materials)) {
+                    parsedMaterials = s.materials;
+                  }
+                }
+                
+                // Parse outputs field
+                let parsedOutputs: any[] = [];
+                if (s.outputs) {
+                  if (typeof s.outputs === 'string') {
+                    try {
+                      parsedOutputs = JSON.parse(s.outputs);
+                    } catch (e) {
+                      console.error('Error parsing outputs JSON:', e);
+                      parsedOutputs = [];
+                    }
+                  } else if (Array.isArray(s.outputs)) {
+                    parsedOutputs = s.outputs;
+                  }
+                }
+                
+                // Parse content_sections field
+                let parsedContentSections: any[] = [];
+                if (s.content_sections) {
+                  if (typeof s.content_sections === 'string') {
+                    try {
+                      parsedContentSections = JSON.parse(s.content_sections);
+                    } catch (e) {
+                      console.error('Error parsing content_sections JSON:', e);
+                      parsedContentSections = [];
+                    }
+                  } else if (Array.isArray(s.content_sections)) {
+                    parsedContentSections = s.content_sections;
+                  }
+                }
+                
                 return {
                   id: s.id,
                   step: s.step_title,
                   description: s.description,
                   stepType: s.step_type,
                   displayOrder: s.display_order,
-                  apps: parsedApps
+                  apps: parsedApps,
+                  tools: parsedTools,
+                  materials: parsedMaterials,
+                  outputs: parsedOutputs,
+                  contentSections: parsedContentSections,
+                  timeEstimation: s.time_estimation,
+                  workersNeeded: s.workers_needed,
+                  skillLevel: s.skill_level
                 };
               })
             };
@@ -382,13 +523,80 @@ export default function EditWorkflowView({
                   }
                 }
                 
+                // Parse tools field
+                let parsedTools: any[] = [];
+                if (s.tools) {
+                  if (typeof s.tools === 'string') {
+                    try {
+                      parsedTools = JSON.parse(s.tools);
+                    } catch (e) {
+                      console.error('Error parsing tools JSON:', e);
+                      parsedTools = [];
+                    }
+                  } else if (Array.isArray(s.tools)) {
+                    parsedTools = s.tools;
+                  }
+                }
+                
+                // Parse materials field
+                let parsedMaterials: any[] = [];
+                if (s.materials) {
+                  if (typeof s.materials === 'string') {
+                    try {
+                      parsedMaterials = JSON.parse(s.materials);
+                    } catch (e) {
+                      console.error('Error parsing materials JSON:', e);
+                      parsedMaterials = [];
+                    }
+                  } else if (Array.isArray(s.materials)) {
+                    parsedMaterials = s.materials;
+                  }
+                }
+                
+                // Parse outputs field
+                let parsedOutputs: any[] = [];
+                if (s.outputs) {
+                  if (typeof s.outputs === 'string') {
+                    try {
+                      parsedOutputs = JSON.parse(s.outputs);
+                    } catch (e) {
+                      console.error('Error parsing outputs JSON:', e);
+                      parsedOutputs = [];
+                    }
+                  } else if (Array.isArray(s.outputs)) {
+                    parsedOutputs = s.outputs;
+                  }
+                }
+                
+                // Parse content_sections field
+                let parsedContentSections: any[] = [];
+                if (s.content_sections) {
+                  if (typeof s.content_sections === 'string') {
+                    try {
+                      parsedContentSections = JSON.parse(s.content_sections);
+                    } catch (e) {
+                      console.error('Error parsing content_sections JSON:', e);
+                      parsedContentSections = [];
+                    }
+                  } else if (Array.isArray(s.content_sections)) {
+                    parsedContentSections = s.content_sections;
+                  }
+                }
+                
                 return {
                   id: s.id,
                   step: s.step_title,
                   description: s.description,
                   stepType: s.step_type,
                   displayOrder: s.display_order,
-                  apps: parsedApps
+                  apps: parsedApps,
+                  tools: parsedTools,
+                  materials: parsedMaterials,
+                  outputs: parsedOutputs,
+                  contentSections: parsedContentSections,
+                  timeEstimation: s.time_estimation,
+                  workersNeeded: s.workers_needed,
+                  skillLevel: s.skill_level
                 };
               })
             };
@@ -448,7 +656,14 @@ export default function EditWorkflowView({
               description,
               step_type,
               display_order,
-              apps
+              apps,
+              tools,
+              materials,
+              outputs,
+              content_sections,
+              time_estimation,
+              workers_needed,
+              skill_level
             `)
             .eq('operation_id', op.id)
             .order('display_order');
@@ -478,13 +693,80 @@ export default function EditWorkflowView({
                   }
                 }
                 
+                // Parse tools field
+                let parsedTools: any[] = [];
+                if (s.tools) {
+                  if (typeof s.tools === 'string') {
+                    try {
+                      parsedTools = JSON.parse(s.tools);
+                    } catch (e) {
+                      console.error('Error parsing tools JSON:', e);
+                      parsedTools = [];
+                    }
+                  } else if (Array.isArray(s.tools)) {
+                    parsedTools = s.tools;
+                  }
+                }
+                
+                // Parse materials field
+                let parsedMaterials: any[] = [];
+                if (s.materials) {
+                  if (typeof s.materials === 'string') {
+                    try {
+                      parsedMaterials = JSON.parse(s.materials);
+                    } catch (e) {
+                      console.error('Error parsing materials JSON:', e);
+                      parsedMaterials = [];
+                    }
+                  } else if (Array.isArray(s.materials)) {
+                    parsedMaterials = s.materials;
+                  }
+                }
+                
+                // Parse outputs field
+                let parsedOutputs: any[] = [];
+                if (s.outputs) {
+                  if (typeof s.outputs === 'string') {
+                    try {
+                      parsedOutputs = JSON.parse(s.outputs);
+                    } catch (e) {
+                      console.error('Error parsing outputs JSON:', e);
+                      parsedOutputs = [];
+                    }
+                  } else if (Array.isArray(s.outputs)) {
+                    parsedOutputs = s.outputs;
+                  }
+                }
+                
+                // Parse content_sections field
+                let parsedContentSections: any[] = [];
+                if (s.content_sections) {
+                  if (typeof s.content_sections === 'string') {
+                    try {
+                      parsedContentSections = JSON.parse(s.content_sections);
+                    } catch (e) {
+                      console.error('Error parsing content_sections JSON:', e);
+                      parsedContentSections = [];
+                    }
+                  } else if (Array.isArray(s.content_sections)) {
+                    parsedContentSections = s.content_sections;
+                  }
+                }
+                
                 return {
                   id: s.id,
                   step: s.step_title,
                   description: s.description,
                   stepType: s.step_type,
                   displayOrder: s.display_order,
-                  apps: parsedApps
+                  apps: parsedApps,
+                  tools: parsedTools,
+                  materials: parsedMaterials,
+                  outputs: parsedOutputs,
+                  contentSections: parsedContentSections,
+                  timeEstimation: s.time_estimation,
+                  workersNeeded: s.workers_needed,
+                  skillLevel: s.skill_level
                 };
               })
               .sort((a, b) => {
