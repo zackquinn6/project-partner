@@ -858,7 +858,12 @@ export default function EditWorkflowView({
         .then(phases => {
           console.log('✅ Phases loaded successfully:', {
             count: phases.length,
-            phaseNames: phases.map(p => p.name)
+            phaseNames: phases.map(p => p.name),
+            details: phases.map(p => ({
+              name: p.name,
+              operationsCount: p.operations?.length || 0,
+              totalSteps: p.operations?.reduce((sum, op) => sum + (op.steps?.length || 0), 0) || 0
+            }))
           });
           setRawPhases(phases);
           setLoadingPhases(false);
@@ -952,6 +957,15 @@ export default function EditWorkflowView({
     return sortedPhases;
   };
   
+  console.log('🔍 EditWorkflowView - rawPhases state:', {
+    count: rawPhases.length,
+    details: rawPhases.map(p => ({
+      name: p.name,
+      operationsCount: p.operations?.length || 0,
+      totalSteps: p.operations?.reduce((sum, op) => sum + (op.steps?.length || 0), 0) || 0
+    }))
+  });
+  
   const deduplicatedPhases = deduplicatePhases(rawPhases);
   
   // Order numbers are already set from database (position_rule/position_value)
@@ -964,7 +978,16 @@ export default function EditWorkflowView({
   
   console.log('🔍 EditWorkflowView - displayPhases:', {
     count: displayPhases.length,
-    phases: displayPhases.map(p => ({ name: p.name, order: p.phaseOrderNumber, isStandard: p.isStandard }))
+    phases: displayPhases.map(p => ({ 
+      name: p.name, 
+      order: p.phaseOrderNumber, 
+      isStandard: p.isStandard,
+      operationsCount: p.operations?.length || 0,
+      operations: p.operations?.map(op => ({
+        name: op.name,
+        stepsCount: op.steps?.length || 0
+      }))
+    }))
   });
 
   // Helper to check if current step is from a standard or incorporated phase
