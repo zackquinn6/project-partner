@@ -55,7 +55,7 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
                 className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300" 
                 onClick={() => navigate('/auth?mode=signup')}
               >
-                Start Your First Project Free
+                Get Started Today
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
 
