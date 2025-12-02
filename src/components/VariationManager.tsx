@@ -109,6 +109,13 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
     fetchVariations();
   }, [coreItemId]);
 
+  // Reset selected attribute if it no longer exists in the updated attributes list
+  useEffect(() => {
+    if (selectedAttributeId && !attributes.find(attr => attr.id === selectedAttributeId)) {
+      setSelectedAttributeId('');
+    }
+  }, [attributes]);
+
   const fetchAttributes = async () => {
     try {
       // First, get all attributes that have values for this core item
@@ -699,7 +706,11 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="select-attr">Attribute</Label>
-                      <Select value={selectedAttributeId} onValueChange={setSelectedAttributeId}>
+                      <Select 
+                        key={`attr-select-${attributes.map(a => a.id).join('|')}`}
+                        value={selectedAttributeId} 
+                        onValueChange={setSelectedAttributeId}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder={attributes.length === 0 ? "No attributes available. Create an attribute first." : "Select attribute"} />
                         </SelectTrigger>
