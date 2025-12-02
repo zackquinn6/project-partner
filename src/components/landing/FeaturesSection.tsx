@@ -78,6 +78,65 @@ export const FeaturesSection = () => {
           })}
         </div>
 
+        {/* Reality-Based Value Proposition */}
+        <div className="max-w-5xl mx-auto mb-16">
+          <Card className="border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
+            <CardContent className="p-8 md:p-12 space-y-6">
+              <div className="space-y-4 text-center md:text-left">
+                <p className="text-lg md:text-xl text-foreground leading-relaxed">
+                  Home improvement rarely goes exactly as planned. Friends cancel, tasks take longer than expected, tools aren't quite right, and instructions swing between vague and overwhelming. <strong>Project Partner is built for that reality.</strong>
+                </p>
+                
+                <p className="text-lg md:text-xl text-foreground leading-relaxed">
+                  Instead of rigid templates, it gives you a <strong>flexible, living schedule</strong>—one that adapts as things change. You'll always know what's next, what's delayed, and what's still possible.
+                </p>
+              </div>
+
+              <div className="mt-8">
+                <h3 className="text-xl md:text-2xl font-bold text-foreground mb-6 text-center md:text-left">
+                  Whether you're managing solo or coordinating with friends and family, Project Partner helps you:
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-base font-medium text-foreground">Stay on track with a continuously updated timeline</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-base font-medium text-foreground">Shop efficiently with organized lists tied to tasks</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-base font-medium text-foreground">Break down task guides into actionable steps</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-4 bg-background rounded-lg">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="text-base font-medium text-foreground">Share realistic schedules with others (and yourself)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 p-6 bg-primary/10 rounded-lg border border-primary/20">
+                <p className="text-lg md:text-xl font-semibold text-center text-foreground">
+                  It's not just about planning—it's about <span className="text-primary">finishing faster</span>, with <span className="text-primary">fewer mistakes</span>, and <span className="text-primary">more confidence</span> throughout a dynamic project.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Expandable Features */}
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded} className="max-w-6xl mx-auto">
           <div className="text-center">
