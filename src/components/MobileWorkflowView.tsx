@@ -51,7 +51,7 @@ export function MobileWorkflowView({
   checkedTools,
   onToggleMaterial,
   onToggleTool,
-  instructionLevel = 'detailed',
+  instructionLevel = 'intermediate',
   onInstructionLevelChange
 }: MobileWorkflowViewProps) {
   const [showMaterials, setShowMaterials] = useState(true);

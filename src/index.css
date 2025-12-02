@@ -324,28 +324,21 @@ main.flex-1.overflow-auto.dark-theme .text-primary {
   color: hsl(var(--workflow-primary)) !important;
 }
 
-/* Ensure app icons are visible in workflow theme */
+/* Ensure app icons inherit proper color from text-primary class */
+/* When inside workflow container, use workflow-primary; otherwise use global primary */
 main.flex-1.overflow-auto[data-color-scheme] .text-primary svg,
 main.flex-1.overflow-auto[data-color-scheme] svg.text-primary,
-main.flex-1.overflow-auto[data-color-scheme] .app-icon,
-main.flex-1.overflow-auto[data-color-scheme] .icon-container svg {
-  color: hsl(var(--workflow-primary)) !important;
-  stroke: hsl(var(--workflow-primary)) !important;
+main.flex-1.overflow-auto[data-color-scheme] .app-icon {
+  color: hsl(var(--workflow-primary));
+  stroke: currentColor;
 }
 
-main.flex-1.overflow-auto.dark-theme .text-primary svg,
-main.flex-1.overflow-auto.dark-theme svg.text-primary,
-main.flex-1.overflow-auto.dark-theme .app-icon,
-main.flex-1.overflow-auto.dark-theme .icon-container svg {
-  color: hsl(var(--workflow-primary)) !important;
-  stroke: hsl(var(--workflow-primary)) !important;
-}
-
-/* Fallback: Ensure icons are visible even if workflow-primary is not set */
-main.flex-1.overflow-auto .icon-container svg,
-main.flex-1.overflow-auto .app-icon {
-  color: hsl(var(--primary, 222.2 47.4% 11.2%)) !important;
-  stroke: hsl(var(--primary, 222.2 47.4% 11.2%)) !important;
+/* Fallback for non-workflow contexts */
+.text-primary svg,
+svg.text-primary,
+.app-icon {
+  color: hsl(var(--primary));
+  stroke: currentColor;
 }
 
 /* Ensure buttons have proper text color in dark mode */

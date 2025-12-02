@@ -121,9 +121,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     sizingValues?: Record<string, number>;
   }>>([]);
   
-  // Completion priority state
-  const [completionPriority, setCompletionPriority] = useState<'agile' | 'waterfall'>(
-    (projectRun?.completion_priority as 'agile' | 'waterfall') || 'agile'
+  // Schedule optimization method state
+  const [scheduleOptimizationMethod, setScheduleOptimizationMethod] = useState<'single-piece-flow' | 'batch-flow'>(
+    projectRun?.schedule_optimization_method || 'single-piece-flow'
   );
 
   // Enhanced scheduling state
@@ -237,17 +237,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         quietHours: savedData.globalSettings.quietHours
       });
     }
-    // Load completion priority from project run
-    // Check both completion_priority and schedule_optimization_method
-    const optimizationMethod = (projectRun as any)?.schedule_optimization_method;
-    const priority = projectRun?.completion_priority;
-    
-    if (optimizationMethod === 'single-piece-flow' || priority === 'agile') {
-      setCompletionPriority('agile');
-    } else if (optimizationMethod === 'batch-flow' || priority === 'waterfall') {
-      setCompletionPriority('waterfall');
-    } else if (priority) {
-      setCompletionPriority(priority as 'agile' | 'waterfall');
+    // Load schedule optimization method from project run
+    if (projectRun?.schedule_optimization_method) {
+      setScheduleOptimizationMethod(projectRun.schedule_optimization_method);
     }
   }, [open, projectRun]);
 
@@ -426,7 +418,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               const dependencies: string[] = [];
               const currentSpaceIndex = spaces.findIndex(s => s.id === space.id);
               
-              if (completionPriority === 'agile') {
+              if (scheduleOptimizationMethod === 'single-piece-flow') {
                 // Single-piece flow: Complete all phases of a space before moving to next space
                 // Step N depends on Step N-1 in the same space
                 if (index > 0) {
@@ -585,7 +577,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         high: highTotal
       }
     };
-  }, [project, projectRun, spaces, completionPriority, scheduleTempo]);
+  }, [project, projectRun, spaces, scheduleOptimizationMethod, scheduleTempo]);
 
   // Update team member
   const updateTeamMember = (id: string, updates: Partial<TeamMember>) => {
@@ -638,7 +630,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         scheduleTempo,
         preferHelpers: teamMembers.some(tm => tm.type === 'helper'),
         mode: planningMode,
-        completionPriority: completionPriority as 'agile' | 'waterfall'
+        scheduleOptimizationMethod: scheduleOptimizationMethod
       };
 
       // Compute schedule
@@ -789,7 +781,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     try {
       const updatedProjectRun = {
         ...projectRun,
-        completion_priority: completionPriority,
+        schedule_optimization_method: scheduleOptimizationMethod,
         schedule_events: {
           events: schedulingResult.scheduledTasks.map(task => ({
             id: task.taskId,
@@ -858,19 +850,12 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     if (!projectRun) return;
     
     try {
-      // Map completion priority to schedule_optimization_method values
-      // 'agile' → 'single-piece-flow', 'waterfall' → 'batch-flow'
-      const scheduleOptimizationMethod = completionPriority === 'agile' ? 'single-piece-flow' : 'batch-flow';
-      
       const updatedProjectRun = {
         ...projectRun,
-        completion_priority: completionPriority,
-        // CRITICAL: Also update schedule_optimization_method which is what workflow navigation actually uses
         schedule_optimization_method: scheduleOptimizationMethod
       } as any;
       
       console.log('💾 ProjectScheduler: Applying optimization method:', {
-        completionPriority,
         scheduleOptimizationMethod,
         projectRunId: projectRun.id
       });
@@ -879,7 +864,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       
       // CRITICAL: Update local state to reflect the saved value
       // This ensures the selection persists after applying
-      setCompletionPriority(completionPriority);
+      setScheduleOptimizationMethod(scheduleOptimizationMethod);
       
       // Dispatch refresh event for workflow navigation
       window.dispatchEvent(new CustomEvent('project-scheduler-updated', {
@@ -1126,7 +1111,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
 
             {/* New Wizard Interface */}
-            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} completionPriority={completionPriority} setCompletionPriority={setCompletionPriority} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} />
+            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} scheduleOptimizationMethod={scheduleOptimizationMethod} setScheduleOptimizationMethod={setScheduleOptimizationMethod} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} />
 
             {/* Results */}
             {schedulingResult && <>
@@ -1251,14 +1236,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                           <div className="flex items-start space-x-2">
                             <input
                               type="radio"
-                              id="priority-agile"
-                              name="completion-priority"
-                              value="agile"
-                              checked={completionPriority === 'agile'}
-                              onChange={(e) => setCompletionPriority(e.target.value as 'agile' | 'waterfall')}
+                              id="priority-single-piece-flow"
+                              name="schedule-optimization-method"
+                              value="single-piece-flow"
+                              checked={scheduleOptimizationMethod === 'single-piece-flow'}
+                              onChange={(e) => setScheduleOptimizationMethod(e.target.value as 'single-piece-flow' | 'batch-flow')}
                               className="h-4 w-4 mt-0.5"
                             />
-                            <Label htmlFor="priority-agile" className="text-sm font-normal cursor-pointer">
+                            <Label htmlFor="priority-single-piece-flow" className="text-sm font-normal cursor-pointer">
                               <span className="font-medium">Single-piece flow</span> - Fastest first room ready — you'll see progress right away.
                               <p className="text-xs text-muted-foreground mt-1">Complete all phases of a space before moving to the next space</p>
                               <p className="text-[10px] text-muted-foreground mt-1 font-medium">Delivers first finished room 60–80% faster</p>
@@ -1267,14 +1252,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                           <div className="flex items-start space-x-2">
                             <input
                               type="radio"
-                              id="priority-waterfall"
-                              name="completion-priority"
-                              value="waterfall"
-                              checked={completionPriority === 'waterfall'}
-                              onChange={(e) => setCompletionPriority(e.target.value as 'agile' | 'waterfall')}
+                              id="priority-batch-flow"
+                              name="schedule-optimization-method"
+                              value="batch-flow"
+                              checked={scheduleOptimizationMethod === 'batch-flow'}
+                              onChange={(e) => setScheduleOptimizationMethod(e.target.value as 'single-piece-flow' | 'batch-flow')}
                               className="h-4 w-4 mt-0.5"
                             />
-                            <Label htmlFor="priority-waterfall" className="text-sm font-normal cursor-pointer">
+                            <Label htmlFor="priority-batch-flow" className="text-sm font-normal cursor-pointer">
                               <span className="font-medium">Batch flow</span> - Most efficient overall — but you won't see a finished room until the end.
                               <p className="text-xs text-muted-foreground mt-1">Complete each phase across all spaces before moving to the next phase</p>
                               <p className="text-[10px] text-muted-foreground mt-1 font-medium">Reduces total project duration by 15–25%</p>

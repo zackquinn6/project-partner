@@ -65,8 +65,8 @@ interface SchedulerWizardProps {
   setPlanningMode: (mode: PlanningMode) => void;
   scheduleTempo: ScheduleTempo;
   setScheduleTempo: (tempo: ScheduleTempo) => void;
-  completionPriority: 'agile' | 'waterfall';
-  setCompletionPriority: (priority: 'agile' | 'waterfall') => void;
+  scheduleOptimizationMethod: 'single-piece-flow' | 'batch-flow';
+  setScheduleOptimizationMethod: (method: 'single-piece-flow' | 'batch-flow') => void;
   onPresetApply: (preset: SchedulePreset) => void;
   teamMembers: TeamMember[];
   addTeamMember: () => void;
@@ -87,8 +87,8 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   setPlanningMode,
   scheduleTempo,
   setScheduleTempo,
-  completionPriority,
-  setCompletionPriority,
+  scheduleOptimizationMethod,
+  setScheduleOptimizationMethod,
   onPresetApply,
   teamMembers,
   addTeamMember,
@@ -288,14 +288,14 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setCompletionPriority('agile')}>
                       <input
                         type="radio"
-                        id="priority-agile"
-                        name="completion-priority"
-                        value="agile"
-                        checked={completionPriority === 'agile'}
-                        onChange={(e) => setCompletionPriority(e.target.value as 'agile' | 'waterfall')}
+                        id="priority-single-piece-flow"
+                        name="schedule-optimization-method"
+                        value="single-piece-flow"
+                        checked={scheduleOptimizationMethod === 'single-piece-flow'}
+                        onChange={(e) => setScheduleOptimizationMethod(e.target.value as 'single-piece-flow' | 'batch-flow')}
                         className="h-4 w-4 mt-0.5"
                       />
-                      <Label htmlFor="priority-agile" className="text-xs font-normal cursor-pointer flex-1">
+                      <Label htmlFor="priority-single-piece-flow" className="text-xs font-normal cursor-pointer flex-1">
                         <span className="font-medium">Single-piece flow</span> - Fastest first room ready — you'll see progress right away.
                         <p className="text-[10px] text-muted-foreground mt-0.5">Complete all phases of a space before moving to the next space</p>
                         <p className="text-[9px] text-muted-foreground mt-1 font-medium">Delivers first finished room 60–80% faster</p>
@@ -304,14 +304,14 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setCompletionPriority('waterfall')}>
                       <input
                         type="radio"
-                        id="priority-waterfall"
-                        name="completion-priority"
-                        value="waterfall"
-                        checked={completionPriority === 'waterfall'}
-                        onChange={(e) => setCompletionPriority(e.target.value as 'agile' | 'waterfall')}
+                        id="priority-batch-flow"
+                        name="schedule-optimization-method"
+                        value="batch-flow"
+                        checked={scheduleOptimizationMethod === 'batch-flow'}
+                        onChange={(e) => setScheduleOptimizationMethod(e.target.value as 'single-piece-flow' | 'batch-flow')}
                         className="h-4 w-4 mt-0.5"
                       />
-                      <Label htmlFor="priority-waterfall" className="text-xs font-normal cursor-pointer flex-1">
+                      <Label htmlFor="priority-batch-flow" className="text-xs font-normal cursor-pointer flex-1">
                         <span className="font-medium">Batch flow</span> - Most efficient overall — but you won't see a finished room until the end.
                         <p className="text-[10px] text-muted-foreground mt-0.5">Complete each phase across all spaces before moving to the next phase</p>
                         <p className="text-[9px] text-muted-foreground mt-1 font-medium">Reduces total project duration by 15–25%</p>

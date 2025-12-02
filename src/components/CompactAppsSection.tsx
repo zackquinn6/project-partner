@@ -23,10 +23,7 @@ export const CompactAppsSection = ({
 }: CompactAppsSectionProps) => {
   
   const getIconComponent = (iconName: string): LucideIcon => {
-    if (!iconName) {
-      console.warn('⚠️ No icon name provided, using Sparkles fallback');
-      return Sparkles;
-    }
+    if (!iconName) return Sparkles;
     
     // Try exact match first
     let Icon = (LucideIcons as any)[iconName];
@@ -51,12 +48,7 @@ export const CompactAppsSection = ({
       }
     }
     
-    if (!Icon) {
-      console.error(`❌ Icon "${iconName}" not found in lucide-react. Available icons:`, Object.keys(LucideIcons).filter(k => k.toLowerCase().includes(iconName.toLowerCase())).slice(0, 5));
-      return Sparkles;
-    }
-    
-    return Icon;
+    return Icon || Sparkles;
   };
 
   const handleRemoveApp = (appId: string) => {
@@ -83,16 +75,6 @@ export const CompactAppsSection = ({
         {apps.map((app) => {
           const IconComponent = getIconComponent(app.icon || 'Sparkles');
           
-          // Debug: Log icon lookup for troubleshooting
-          console.log('🔍 App icon debug:', {
-            appName: app.appName,
-            iconName: app.icon,
-            iconType: typeof app.icon,
-            hasIcon: !!app.icon,
-            IconComponentType: typeof IconComponent,
-            IconComponentName: IconComponent?.name || 'Unknown'
-          });
-          
           return (
             <Card
               key={app.id}
@@ -117,9 +99,7 @@ export const CompactAppsSection = ({
                 <div className="w-7 h-7 rounded-lg bg-primary/25 dark:bg-primary/35 flex items-center justify-center border-2 border-primary/60 dark:border-primary/70 shadow-md icon-container">
                   <IconComponent 
                     className="w-4 h-4 flex-shrink-0 text-primary app-icon"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
+                    strokeWidth={2}
                     aria-hidden="true"
                   />
                 </div>

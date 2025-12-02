@@ -48,7 +48,7 @@ export async function autoRegenerateSchedule(
     // Get scheduling settings from saved schedule
     const scheduleTempo = scheduleEvents?.scheduleTempo || 'steady';
     const planningMode = scheduleEvents?.planningMode || 'standard';
-    const completionPriority = (projectRun.completion_priority as 'agile' | 'waterfall') || 'agile';
+    const scheduleOptimizationMethod = projectRun.schedule_optimization_method || 'single-piece-flow';
     const teamMembers = scheduleEvents?.teamMembers || [];
     const globalSettings = scheduleEvents?.globalSettings || { quietHours: { start: '21:00', end: '07:00' } };
     
@@ -141,7 +141,7 @@ export async function autoRegenerateSchedule(
             
             // Build dependencies
             const dependencies: string[] = [];
-            if (completionPriority === 'agile') {
+            if (scheduleOptimizationMethod === 'single-piece-flow') {
               // Single-piece flow: Step N depends on Step N-1 in same space
               if (stepIndex > 0) {
                 dependencies.push(`${operation.id}-step-${stepIndex - 1}-space-${space.id}`);
@@ -246,7 +246,7 @@ export async function autoRegenerateSchedule(
       scheduleTempo: scheduleTempo,
       preferHelpers: teamMembers.some(tm => tm.type === 'helper'),
       mode: planningMode,
-      completionPriority: completionPriority
+      scheduleOptimizationMethod: scheduleOptimizationMethod
     };
     
     // Compute schedule

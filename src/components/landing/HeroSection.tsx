@@ -72,7 +72,7 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
           {/* Right Column - Visual */}
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border hover-lift">
-              <img src="/lovable-uploads/dd8a6549-c627-436d-954c-e8c38a53fbee.png" alt="Project Partner Workflow Interface" className="w-full h-auto" />
+              <img src="/lovable-uploads/workflow-interface-hero.png" alt="Project Partner Workflow Interface" className="w-full h-auto" />
             </div>
           </div>
         </div>

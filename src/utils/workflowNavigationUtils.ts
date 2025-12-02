@@ -17,14 +17,13 @@ export type FlowType = 'single-piece-flow' | 'batch-flow';
 export function getFlowType(projectRun: ProjectRun | null): FlowType {
   if (!projectRun) return 'single-piece-flow';
   
-  // Check for schedule_optimization_method (newer field name)
-  const optimizationMethod = (projectRun as any).schedule_optimization_method || projectRun.completion_priority;
+  const optimizationMethod = projectRun.schedule_optimization_method;
   
-  if (optimizationMethod === 'waterfall' || optimizationMethod === 'batch-flow') {
+  if (optimizationMethod === 'batch-flow') {
     return 'batch-flow';
   }
   
-  // Default to single-piece-flow (agile)
+  // Default to single-piece-flow
   return 'single-piece-flow';
 }
 
@@ -544,8 +543,7 @@ export function organizeWorkflowNavigation(
     spacesCount: spaces.length,
     flowType,
     projectRunId: projectRun?.id,
-    schedule_optimization_method: (projectRun as any)?.schedule_optimization_method,
-    completion_priority: projectRun?.completion_priority,
+    schedule_optimization_method: projectRun?.schedule_optimization_method,
     phases: phases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
     spaces: spaces.map(s => ({ name: s.space_name, priority: s.priority }))
   });
