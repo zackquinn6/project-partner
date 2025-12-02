@@ -126,9 +126,14 @@ export default function EditWorkflowView({
           .eq('phase_id', phaseData.id)
           .order('display_order');
         
+        console.log(`📋 Loading operations for phase "${phaseData.name}":`, {
+          operationsCount: operations?.length || 0,
+          operations: operations?.map(o => ({ id: o.id, name: o.operation_name }))
+        });
+        
         // Get steps for each operation
         const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
-          const { data: steps } = await supabase
+          const { data: steps, error: stepsError } = await supabase
             .from('template_steps')
             .select(`
               id,
@@ -147,6 +152,13 @@ export default function EditWorkflowView({
             `)
             .eq('operation_id', op.id)
             .order('display_order');
+          
+          console.log(`  📝 Steps for operation "${op.operation_name}":`, {
+            operationId: op.id,
+            stepsCount: steps?.length || 0,
+            steps: steps?.map(s => s.step_title),
+            error: stepsError
+          });
           
           return {
             id: op.id,
@@ -263,6 +275,15 @@ export default function EditWorkflowView({
           const aOrder = a.displayOrder ?? 999;
           const bOrder = b.displayOrder ?? 999;
           return aOrder - bOrder;
+        });
+        
+        console.log(`✅ Operations with steps for phase "${phaseData.name}":`, {
+          operationsCount: operationsWithSteps.length,
+          details: operationsWithSteps.map(op => ({
+            name: op.name,
+            stepsCount: op.steps?.length || 0,
+            steps: op.steps?.map(s => s.step)
+          }))
         });
         
         // Derive phaseOrderNumber from position_rule
