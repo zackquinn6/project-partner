@@ -815,7 +815,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       try {
         // Load phases directly from database (already includes position data)
-        const loadedPhases = await loadPhases(projectId);
+        let loadedPhases = await loadPhases(projectId);
         
         // STRICT VALIDATION - ENFORCE: Block all operations if validation fails
         const phaseValidationError = validatePhaseOrdering(loadedPhases);
@@ -838,19 +838,81 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         // Validate display_order for operations and steps
         const displayOrderValidationError = validateDisplayOrder(loadedPhases);
         if (displayOrderValidationError) {
-          setValidationError(displayOrderValidationError);
-          setPhases([]);
-          setLoading(false);
-          // Show detailed error message
-          const errorDetails = displayOrderValidationError.details ? displayOrderValidationError.details.join('\n') : displayOrderValidationError.message;
-          toast.error(`Display order validation failed: ${displayOrderValidationError.message}`, {
-            description: errorDetails,
-            duration: 10000
-          });
-          console.error('Display order validation errors:', displayOrderValidationError.details || [displayOrderValidationError.message]);
-          loadedProjectIdRef.current = null; // Reset on validation error to allow retry
-          isLoadingRef.current = false;
-          return; // BLOCK: Do not proceed with loading phases
+          console.warn('⚠️ Display order validation failed, attempting auto-fix:', displayOrderValidationError);
+          
+          // AUTO-FIX: Renumber all display_orders to be sequential
+          try {
+            console.log('🔧 Auto-fixing duplicate display_orders...');
+            let fixCount = 0;
+            
+            for (const phase of loadedPhases) {
+              // Fix operations within phase
+              if (phase.operations && phase.operations.length > 0) {
+                const operationsToFix = phase.operations
+                  .map((op, index) => ({ op, correctOrder: index + 1 }))
+                  .filter(({ op }) => (op as any).displayOrder !== undefined);
+                
+                for (const { op, correctOrder } of operationsToFix) {
+                  if ((op as any).displayOrder !== correctOrder) {
+                    await supabase
+                      .from('template_operations')
+                      .update({ display_order: correctOrder })
+                      .eq('id', op.id);
+                    fixCount++;
+                  }
+                }
+                
+                // Fix steps within each operation
+                for (const operation of phase.operations) {
+                  if (operation.steps && operation.steps.length > 0) {
+                    const stepsToFix = operation.steps
+                      .map((step, index) => ({ step, correctOrder: index + 1 }))
+                      .filter(({ step }) => (step as any).displayOrder !== undefined);
+                    
+                    for (const { step, correctOrder } of stepsToFix) {
+                      if ((step as any).displayOrder !== correctOrder) {
+                        await supabase
+                          .from('template_steps')
+                          .update({ display_order: correctOrder })
+                          .eq('id', step.id);
+                        fixCount++;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            
+            console.log(`✅ Auto-fixed ${fixCount} display_order values`);
+            toast.success(`Auto-fixed ${fixCount} duplicate display orders. Reloading...`);
+            
+            // Reload phases after fixing
+            const reloadedPhases = await loadPhases(projectId);
+            const revalidationError = validateDisplayOrder(reloadedPhases);
+            
+            if (revalidationError) {
+              // Still has errors after auto-fix, block loading
+              setValidationError(revalidationError);
+              setPhases([]);
+              setLoading(false);
+              toast.error('Auto-fix failed. Manual intervention required.');
+              loadedProjectIdRef.current = null;
+              isLoadingRef.current = false;
+              return;
+            }
+            
+            // Use the reloaded phases
+            loadedPhases = reloadedPhases;
+          } catch (fixError) {
+            console.error('❌ Error during auto-fix:', fixError);
+            setValidationError(displayOrderValidationError);
+            setPhases([]);
+            setLoading(false);
+            toast.error('Failed to auto-fix display orders');
+            loadedProjectIdRef.current = null;
+            isLoadingRef.current = false;
+            return;
+          }
         }
         
         // Sort phases by order number
