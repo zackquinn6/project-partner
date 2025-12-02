@@ -1602,6 +1602,20 @@ export default function EditWorkflowView({
             updated_at: new Date().toISOString()
           };
           
+          console.log('  💾 Custom step: Complete update data being sent to database:', {
+            stepId: editingStep.id,
+            step_title: updateData.step_title,
+            step_type: updateData.step_type,
+            materialsCount: updateData.materials?.length || 0,
+            materials: updateData.materials,
+            toolsCount: updateData.tools?.length || 0,
+            tools: updateData.tools,
+            outputsCount: updateData.outputs?.length || 0,
+            outputs: updateData.outputs,
+            workers_needed: updateData.workers_needed,
+            skill_level: updateData.skill_level
+          });
+          
           const { error, data } = await supabase
             .from('template_steps')
             .update(updateData)
@@ -1612,7 +1626,24 @@ export default function EditWorkflowView({
             console.error('❌ Error saving custom step to template_steps:', error);
             toast.error(`Failed to save step: ${error.message}`);
           } else {
-            console.log('✅ Custom step saved to template_steps');
+            console.log('✅ Custom step saved to template_steps. Verification:', {
+              savedStepType: data?.[0]?.step_type,
+              savedMaterialsCount: Array.isArray(data?.[0]?.materials) ? data[0].materials.length : 0,
+              savedToolsCount: Array.isArray(data?.[0]?.tools) ? data[0].tools.length : 0,
+              savedOutputsCount: Array.isArray(data?.[0]?.outputs) ? data[0].outputs.length : 0,
+              savedWorkersNeeded: data?.[0]?.workers_needed,
+              savedSkillLevel: data?.[0]?.skill_level,
+              fullSavedData: data?.[0]
+            });
+            toast.success('Step saved successfully');
+            
+            // Reload phases to reflect the changes
+            console.log('🔄 Reloading phases to reflect changes...');
+            if (currentProject?.id) {
+              const reloadedPhases = await loadPhasesFromDatabase(currentProject.id);
+              setRawPhases(reloadedPhases);
+              console.log('✅ Phases reloaded');
+            }
           }
         } catch (err) {
           console.error('❌ Exception saving custom step:', err);
