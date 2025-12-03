@@ -41,6 +41,7 @@ interface WorkflowSidebarProps {
   onKeysToSuccessClick: () => void;
   onPhotosClick: () => void;
   onNotesClick: () => void;
+  onViewScheduleClick: () => void;
 }
 export function WorkflowSidebar({
   allSteps,
@@ -62,7 +63,8 @@ export function WorkflowSidebar({
   onUnplannedWorkClick,
   onKeysToSuccessClick,
   onPhotosClick,
-  onNotesClick
+  onNotesClick,
+  onViewScheduleClick
 }: WorkflowSidebarProps) {
   const { updateProjectRun } = useProject();
   const {
@@ -428,6 +430,17 @@ export function WorkflowSidebar({
                   {/* Project Tools Section */}
                   <div className="space-y-2">
                     <div className="text-xs font-semibold text-muted-foreground">Project Tools</div>
+                    {/* View Schedule Button - Full width with icon on same row */}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={onViewScheduleClick}
+                      className="h-8 px-3 text-xs w-full"
+                      style={{ backgroundColor: 'rgba(99, 102, 241, 0.40)', color: 'black' }}
+                    >
+                      <Calendar className="h-3.5 w-3.5 mr-2" style={{ color: 'black' }} />
+                      <span>View Schedule</span>
+                    </Button>
                     {/* First row: Chat, KeyInfo, Re-Plan - Icons on top of text */}
                     <div className="flex items-center gap-1.5">
                       <Button

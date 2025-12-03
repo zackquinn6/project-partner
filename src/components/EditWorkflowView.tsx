@@ -1532,6 +1532,7 @@ export default function EditWorkflowView({
           materials: editingStep.materials || [] as any,
           tools: editingStep.tools || [] as any,
           outputs: editingStep.outputs || [] as any,
+          inputs: editingStep.inputs || [] as any, // Process variables saved as JSON
           apps: appsToSave, // Use properly formatted apps array
           flow_type: (editingStep as any).flowType || null,
           step_type: editingStep.stepType || 'prime', // Ensure step_type is always set
@@ -2096,9 +2097,6 @@ export default function EditWorkflowView({
                        <CardTitle>Process Variables</CardTitle>
                        <CardDescription>
                          Define process variables for this step
-                         <Badge variant="outline" className="ml-2 text-[10px] bg-yellow-100 text-yellow-800">
-                           Note: Variables are not yet saved to database
-                         </Badge>
                        </CardDescription>
                     </CardHeader>
                     <CardContent>

@@ -30,6 +30,7 @@ import { PhaseAssignment } from '@/components/PhaseAssignment';
 import { ProjectTeamAvailability } from '@/components/ProjectTeamAvailability';
 import { ProjectContractors } from '@/components/ProjectContractors';
 import { useAuth } from '@/contexts/AuthContext';
+import { ScheduleCalendarView } from '@/components/ScheduleCalendarView';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -131,6 +132,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [scheduleTempo, setScheduleTempo] = useState<ScheduleTempo>('steady');
   const [schedulingResult, setSchedulingResult] = useState<SchedulingResult | null>(null);
   const [isComputing, setIsComputing] = useState(false);
+  const [showCalendarView, setShowCalendarView] = useState(false);
   
   // Initialize target date from project kickoff goal, or default to 30 days
   // Use lazy initializer to avoid "Cannot access before initialization" error
@@ -242,6 +244,18 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       setScheduleOptimizationMethod(projectRun.schedule_optimization_method);
     }
   }, [open, projectRun]);
+
+  // Listen for show calendar event from View Schedule button
+  useEffect(() => {
+    const handleShowCalendar = () => {
+      if (schedulingResult) {
+        setShowCalendarView(true);
+      }
+    };
+
+    window.addEventListener('show-schedule-calendar', handleShowCalendar);
+    return () => window.removeEventListener('show-schedule-calendar', handleShowCalendar);
+  }, [schedulingResult]);
 
   // Calendar popup state
   const [calendarOpen, setCalendarOpen] = useState<string | null>(null);
@@ -1119,6 +1133,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Button variant="outline" onClick={() => setShowCalendarView(true)} className="h-11 md:h-10 text-xs md:text-sm">
+                    <CalendarIcon className="w-4 h-4 mr-1 md:mr-2" />
+                    <span className="truncate">View Calendar</span>
+                  </Button>
                   <Button variant="outline" onClick={saveDraft} className="h-11 md:h-10 text-xs md:text-sm">
                     <FileText className="w-4 h-4 mr-1 md:mr-2" />
                     <span className="truncate">Save Draft</span>
@@ -1629,6 +1647,23 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Schedule Calendar View */}
+    {schedulingResult && (
+      <ScheduleCalendarView
+        open={showCalendarView}
+        onOpenChange={setShowCalendarView}
+        scheduledTasks={schedulingResult.scheduledTasks}
+        tasks={schedulingInputs.tasks}
+        workers={teamMembers.map(tm => ({
+          id: tm.id,
+          name: tm.name,
+          type: tm.type,
+          skillLevel: tm.skillLevel,
+          availability: []
+        }))}
+      />
+    )}
     </>
   );
 };

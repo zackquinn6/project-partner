@@ -2607,6 +2607,11 @@ export default function UserView({
             onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
             onPhotosClick={() => setPhotoGalleryOpen(true)}
             onNotesClick={() => setNotesGalleryOpen(true)}
+            onViewScheduleClick={() => {
+              setProjectSchedulerOpen(true);
+              // Dispatch event to show calendar view automatically
+              window.dispatchEvent(new CustomEvent('show-schedule-calendar'));
+            }}
           />
 
           <main className="flex-1 overflow-auto">
