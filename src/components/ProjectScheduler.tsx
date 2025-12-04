@@ -632,6 +632,53 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       return;
     }
 
+    // Validate team members exist
+    if (teamMembers.length === 0) {
+      toast({
+        title: "Team member required",
+        description: "Please add at least one team member before generating a schedule.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate team member availability is set
+    const hasAvailability = teamMembers.some(tm => {
+      // Check if availability object has dates OR if quick presets have been applied
+      const hasAvailabilityDates = tm.availability && Object.keys(tm.availability).length > 0;
+      const hasWorkingHoursSet = tm.workingHours && tm.workingHours.start && tm.workingHours.end;
+      return hasAvailabilityDates || hasWorkingHoursSet;
+    });
+
+    if (!hasAvailability) {
+      toast({
+        title: "Availability required",
+        description: "Please set team member availability using Quick Presets or the calendar before generating a schedule.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate there are tasks to schedule
+    if (schedulingTasks.length === 0) {
+      toast({
+        title: "No tasks to schedule",
+        description: "There are no tasks in your project to schedule.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate drop-dead date
+    if (!dropDeadDate || dropDeadDate.trim() === '') {
+      toast({
+        title: "Drop-dead date required",
+        description: "Please set a drop-dead (latest acceptable) date.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsComputing(true);
     try {
       // Prepare scheduling inputs with completion priority
@@ -679,9 +726,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         description: `Generated ${planningMode} schedule with ${result.scheduledTasks.length} tasks.`
       });
     } catch (error) {
+      console.error('❌ Schedule generation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: "Scheduling failed",
-        description: "Failed to compute schedule. Please check your inputs.",
+        description: `Failed to compute schedule: ${errorMessage}. Please check your inputs and try again.`,
         variant: "destructive"
       });
     } finally {
