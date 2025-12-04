@@ -142,6 +142,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [projectRisks, setProjectRisks] = useState<any[]>([]);
   const [riskAdjustedDate, setRiskAdjustedDate] = useState<Date | null>(null);
   
+  // Quiet hours and lunch duration state
+  const [quietHours, setQuietHours] = useState<{ start: string; end: string; }>({ 
+    start: '21:00', // 9:00 PM
+    end: '07:00'    // 7:00 AM
+  });
+  const [lunchDuration, setLunchDuration] = useState<number>(30); // 30 minutes default
+  const [scheduledCompletionDate, setScheduledCompletionDate] = useState<Date | null>(null);
+  
   // Local state for last scheduled date to ensure badge updates
   const [lastScheduledDate, setLastScheduledDate] = useState<string | null>(null);
   
@@ -274,13 +282,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     }
   }]);
 
-  // Global settings
-  const [globalSettings, setGlobalSettings] = useState<GlobalSettings>({
-    quietHours: {
-      start: '21:00',
-      end: '07:00'
-    }
-  });
+  // NOTE: globalSettings moved to individual state variables (quietHours, lunchDuration) for better control
 
   // Load saved schedule data from database on mount
   useEffect(() => {
@@ -311,9 +313,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       setTeamMembers(mergedTeamMembers);
     }
     if (savedData.globalSettings?.quietHours) {
-      setGlobalSettings({
-        quietHours: savedData.globalSettings.quietHours
-      });
+      setQuietHours(savedData.globalSettings.quietHours);
+    }
+    if (savedData.lunchDuration) {
+      setLunchDuration(savedData.lunchDuration);
     }
     // Load schedule optimization method from project run
     if (projectRun?.schedule_optimization_method) {
@@ -863,17 +866,18 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         siteConstraints: {
           allowedWorkHours: {
             weekdays: {
-              start: '07:00',
-              end: '21:00'
+              start: quietHours.end, // Work starts after quiet hours end
+              end: quietHours.start   // Work ends when quiet hours start
             },
             weekends: {
-              start: '07:00',
-              end: '21:00'
+              start: quietHours.end,
+              end: quietHours.start
             }
           },
           weekendsOnly: false,
           allowNightWork: false,
-          noiseCurfew: globalSettings.quietHours.start
+          noiseCurfew: quietHours.start,
+          lunchDuration: lunchDuration // Pass lunch duration to algorithm
         },
         blackoutDates: [],
         scheduleTempo,
@@ -885,6 +889,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       // Compute schedule
       const result = schedulingEngine.computeSchedule(schedulingInputs);
       setSchedulingResult(result);
+      
+      // Set scheduled completion date from result
+      if (result.scheduledTasks.length > 0) {
+        const lastTask = result.scheduledTasks.reduce((latest, task) => 
+          task.targetCompletionDate > latest.targetCompletionDate ? task : latest
+        );
+        setScheduledCompletionDate(lastTask.targetCompletionDate);
+      }
       toast({
         title: "Schedule computed",
         description: `Generated ${planningMode} schedule with ${result.scheduledTasks.length} tasks.`
@@ -1044,7 +1056,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             assignedTo: (task as any).assignedTo || ''
           })),
           teamMembers: teamMembers,
-          globalSettings: globalSettings,
+          globalSettings: {
+            quietHours: quietHours
+          },
+          lunchDuration: lunchDuration,
           scheduleTempo: scheduleTempo,
           planningMode: planningMode,
           lastGeneratedAt: new Date().toISOString(), // Store generation timestamp for auto-regeneration
@@ -1373,7 +1388,37 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
 
             {/* New Wizard Interface */}
-            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} scheduleOptimizationMethod={scheduleOptimizationMethod} setScheduleOptimizationMethod={setScheduleOptimizationMethod} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} onAssignWork={() => setShowPhaseAssignment(true)} onOpenRiskManager={() => setShowRiskManager(true)} riskTolerance={riskTolerance} setRiskTolerance={setRiskTolerance} riskAdjustedDate={riskAdjustedDate} />
+            <SchedulerWizard 
+              targetDate={targetDate} 
+              setTargetDate={setTargetDate} 
+              dropDeadDate={dropDeadDate} 
+              setDropDeadDate={setDropDeadDate} 
+              planningMode={planningMode} 
+              setPlanningMode={setPlanningMode} 
+              scheduleTempo={scheduleTempo} 
+              setScheduleTempo={setScheduleTempo} 
+              scheduleOptimizationMethod={scheduleOptimizationMethod} 
+              setScheduleOptimizationMethod={setScheduleOptimizationMethod} 
+              onPresetApply={applyPreset} 
+              teamMembers={teamMembers} 
+              addTeamMember={addTeamMember} 
+              removeTeamMember={removeTeamMember} 
+              updateTeamMember={updateTeamMember} 
+              openCalendar={openCalendar} 
+              onGenerateSchedule={computeAdvancedSchedule} 
+              isComputing={isComputing} 
+              onApplyOptimization={handleApplyOptimization} 
+              onAssignWork={() => setShowPhaseAssignment(true)} 
+              onOpenRiskManager={() => setShowRiskManager(true)} 
+              riskTolerance={riskTolerance} 
+              setRiskTolerance={setRiskTolerance} 
+              riskAdjustedDate={riskAdjustedDate}
+              quietHours={quietHours}
+              setQuietHours={setQuietHours}
+              lunchDuration={lunchDuration}
+              setLunchDuration={setLunchDuration}
+              scheduledCompletionDate={scheduledCompletionDate}
+            />
 
             {/* Results */}
             {schedulingResult && <>
@@ -1552,23 +1597,17 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs font-medium">From</Label>
-                            <Input type="time" value={globalSettings.quietHours.start} onChange={e => setGlobalSettings(prev => ({
-                            ...prev,
-                            quietHours: {
-                              ...prev.quietHours,
-                              start: e.target.value
-                            }
-                          }))} className="h-8 text-sm" />
+                            <Input type="time" value={quietHours.start} onChange={e => setQuietHours({
+                            ...quietHours,
+                            start: e.target.value
+                          })} className="h-8 text-sm" />
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs font-medium">To</Label>
-                            <Input type="time" value={globalSettings.quietHours.end} onChange={e => setGlobalSettings(prev => ({
-                            ...prev,
-                            quietHours: {
-                              ...prev.quietHours,
-                              end: e.target.value
-                            }
-                          }))} className="h-8 text-sm" />
+                            <Input type="time" value={quietHours.end} onChange={e => setQuietHours({
+                            ...quietHours,
+                            end: e.target.value
+                          })} className="h-8 text-sm" />
                           </div>
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">

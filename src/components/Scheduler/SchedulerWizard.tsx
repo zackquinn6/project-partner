@@ -82,6 +82,11 @@ interface SchedulerWizardProps {
   riskTolerance?: 'low' | 'medium' | 'high';
   setRiskTolerance?: (tolerance: 'low' | 'medium' | 'high') => void;
   riskAdjustedDate?: Date | null;
+  quietHours?: { start: string; end: string; };
+  setQuietHours?: (hours: { start: string; end: string; }) => void;
+  lunchDuration?: number;
+  setLunchDuration?: (duration: number) => void;
+  scheduledCompletionDate?: Date | null;
 }
 
 export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
@@ -108,7 +113,12 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   onOpenRiskManager,
   riskTolerance = 'medium',
   setRiskTolerance,
-  riskAdjustedDate
+  riskAdjustedDate,
+  quietHours,
+  setQuietHours,
+  lunchDuration = 30,
+  setLunchDuration,
+  scheduledCompletionDate
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIndividualAvailability, setShowIndividualAvailability] = useState(false);
@@ -145,6 +155,20 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               </div>
               <span>Target dates</span>
             </h3>
+            
+            {/* Scheduled and Goal Completion Dates Display */}
+            {scheduledCompletionDate && (
+              <div className="mb-4 p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
+                <div>
+                  <div className="text-2xl font-bold text-primary">
+                    Scheduled completion date: {format(scheduledCompletionDate, 'MMMM dd, yyyy')}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Goal completion date: {targetDate ? format(new Date(targetDate), 'MMMM dd, yyyy') : 'Not set'}
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -314,10 +338,10 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   {onAssignWork && (
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       onClick={onAssignWork}
-                      className="h-9 text-xs"
+                      className="h-9 text-xs bg-blue-600 hover:bg-blue-700"
                     >
                       <Users className="w-3.5 h-3.5 mr-1.5" />
                       Assign Work
@@ -325,10 +349,10 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                   )}
                   {onOpenRiskManager && (
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       onClick={onOpenRiskManager}
-                      className="h-9 text-xs"
+                      className="h-9 text-xs bg-orange-600 hover:bg-orange-700"
                     >
                       <Shield className="w-3.5 h-3.5 mr-1.5" />
                       Risk Manager
@@ -348,10 +372,10 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                         variant={riskTolerance === 'low' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setRiskTolerance('low')}
-                        className="h-auto flex flex-col items-center justify-center gap-1 p-3"
+                        className="h-auto flex flex-col items-start justify-start gap-1 p-3"
                       >
                         <span className={`text-xs font-medium ${riskTolerance === 'low' ? 'text-white' : ''}`}>Low</span>
-                        <span className={`text-[10px] text-center leading-tight ${riskTolerance === 'low' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                        <span className={`text-[10px] text-left leading-tight ${riskTolerance === 'low' ? 'text-white/90' : 'text-muted-foreground'}`}>
                           Certainty required
                         </span>
                       </Button>
@@ -359,10 +383,10 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                         variant={riskTolerance === 'medium' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setRiskTolerance('medium')}
-                        className="h-auto flex flex-col items-center justify-center gap-1 p-3"
+                        className="h-auto flex flex-col items-start justify-start gap-1 p-3"
                       >
                         <span className={`text-xs font-medium ${riskTolerance === 'medium' ? 'text-white' : ''}`}>Medium</span>
-                        <span className={`text-[10px] text-center leading-tight ${riskTolerance === 'medium' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                        <span className={`text-[10px] text-left leading-tight ${riskTolerance === 'medium' ? 'text-white/90' : 'text-muted-foreground'}`}>
                           Balanced approach
                         </span>
                       </Button>
@@ -370,10 +394,10 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                         variant={riskTolerance === 'high' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setRiskTolerance('high')}
-                        className="h-auto flex flex-col items-center justify-center gap-1 p-3"
+                        className="h-auto flex flex-col items-start justify-start gap-1 p-3"
                       >
                         <span className={`text-xs font-medium ${riskTolerance === 'high' ? 'text-white' : ''}`}>High</span>
-                        <span className={`text-[10px] text-center leading-tight ${riskTolerance === 'high' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                        <span className={`text-[10px] text-left leading-tight ${riskTolerance === 'high' ? 'text-white/90' : 'text-muted-foreground'}`}>
                           Optimistic planning
                         </span>
                       </Button>
@@ -381,14 +405,6 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     <p className="text-[10px] text-muted-foreground mt-2">
                       Risk tolerance affects which risks are factored into the schedule timeline
                     </p>
-                    {riskAdjustedDate && (
-                      <div className="mt-2 p-2 bg-primary/10 border border-primary/20 rounded-lg">
-                        <div className="text-xs text-muted-foreground">Risk-adjusted target date:</div>
-                        <div className="text-sm font-bold text-primary">
-                          {format(riskAdjustedDate, 'MMMM dd, yyyy')}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
                 
@@ -399,37 +415,43 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       variant={planningMode === 'quick' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setPlanningMode('quick')}
-                      className="h-10 flex items-center justify-start gap-2 px-3"
+                      className="h-auto flex flex-col items-start justify-start gap-1 p-3"
                     >
-                      <Brain className="w-3.5 h-3.5 flex-shrink-0" />
-                      <div className="flex flex-col items-start">
-                        <span className="text-xs font-medium">Quick</span>
-                        <span className="text-[10px] text-muted-foreground">Phases / milestones</span>
+                      <div className="flex items-center gap-1.5 w-full">
+                        <Brain className={`w-3.5 h-3.5 flex-shrink-0 ${planningMode === 'quick' ? 'text-white' : ''}`} />
+                        <span className={`text-xs font-medium ${planningMode === 'quick' ? 'text-white' : ''}`}>Quick</span>
                       </div>
+                      <span className={`text-[10px] text-left leading-tight ${planningMode === 'quick' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                        Phases / milestones
+                      </span>
                     </Button>
                     <Button
                       variant={planningMode === 'standard' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setPlanningMode('standard')}
-                      className="h-10 flex items-center justify-start gap-2 px-3"
+                      className="h-auto flex flex-col items-start justify-start gap-1 p-3"
                     >
-                      <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                      <div className="flex flex-col items-start">
-                        <span className="text-xs font-medium">Standard</span>
-                        <span className="text-[10px] text-muted-foreground">Daily tasks</span>
+                      <div className="flex items-center gap-1.5 w-full">
+                        <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${planningMode === 'standard' ? 'text-white' : ''}`} />
+                        <span className={`text-xs font-medium ${planningMode === 'standard' ? 'text-white' : ''}`}>Standard</span>
                       </div>
+                      <span className={`text-[10px] text-left leading-tight ${planningMode === 'standard' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                        Daily tasks
+                      </span>
                     </Button>
                     <Button
                       variant={planningMode === 'detailed' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setPlanningMode('detailed')}
-                      className="h-10 flex items-center justify-start gap-2 px-3"
+                      className="h-auto flex flex-col items-start justify-start gap-1 p-3"
                     >
-                      <Settings className="w-3.5 h-3.5 flex-shrink-0" />
-                      <div className="flex flex-col items-start">
-                        <span className="text-xs font-medium">Detailed</span>
-                        <span className="text-[10px] text-muted-foreground">Hour-by-hour</span>
+                      <div className="flex items-center gap-1.5 w-full">
+                        <Settings className={`w-3.5 h-3.5 flex-shrink-0 ${planningMode === 'detailed' ? 'text-white' : ''}`} />
+                        <span className={`text-xs font-medium ${planningMode === 'detailed' ? 'text-white' : ''}`}>Detailed</span>
                       </div>
+                      <span className={`text-[10px] text-left leading-tight ${planningMode === 'detailed' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                        Hour-by-hour
+                      </span>
                     </Button>
                   </div>
                 </div>
@@ -484,10 +506,71 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       className="w-full mt-3 h-8 text-xs"
                       variant="outline"
                     >
-                      Apply
+                      Apply schedule optimization method
                     </Button>
                   )}
                 </div>
+                
+                {/* Quiet Hours Setting */}
+                {setQuietHours && quietHours && (
+                  <div className="pt-3 border-t">
+                    <Label className="text-xs font-medium mb-2 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      Quiet Hours (No Work)
+                    </Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Start Time</Label>
+                        <Input
+                          type="time"
+                          value={quietHours.start}
+                          onChange={(e) => setQuietHours({ ...quietHours, start: e.target.value })}
+                          className="mt-1 h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">End Time</Label>
+                        <Input
+                          type="time"
+                          value={quietHours.end}
+                          onChange={(e) => setQuietHours({ ...quietHours, end: e.target.value })}
+                          className="mt-1 h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      No work will be scheduled during these hours (default: 9:00 PM - 7:00 AM)
+                    </p>
+                  </div>
+                )}
+                
+                {/* Lunch Duration Setting */}
+                {setLunchDuration && (
+                  <div className="pt-3 border-t">
+                    <Label className="text-xs font-medium mb-2 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      Lunch Break Duration
+                    </Label>
+                    <Select
+                      value={String(lunchDuration)}
+                      onValueChange={(value) => setLunchDuration(Number(value))}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 minutes</SelectItem>
+                        <SelectItem value="30">30 minutes</SelectItem>
+                        <SelectItem value="45">45 minutes</SelectItem>
+                        <SelectItem value="60">60 minutes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      Lunch start time assumed in middle of day, typically 12:00pm. This reduces available work hours accordingly.
+                    </p>
+                  </div>
+                )}
+              </div>
                 
                 {/* Team Members Section */}
                 <div className="space-y-3 pt-3 border-t" data-team-members-section>
