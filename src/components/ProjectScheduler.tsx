@@ -212,9 +212,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     }
   }]);
 
-  // Contractors dialog state
-  const [showContractors, setShowContractors] = useState(false);
-
   // Global settings
   const [globalSettings, setGlobalSettings] = useState<GlobalSettings>({
     quietHours: {
