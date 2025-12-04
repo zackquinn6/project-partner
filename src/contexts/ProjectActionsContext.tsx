@@ -743,7 +743,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           project_photos: projectRun.project_photos ? JSON.stringify(projectRun.project_photos) : null,
           phase_ratings: projectRun.phase_ratings ? JSON.stringify(projectRun.phase_ratings) : null,
           survey_data: projectRun.survey_data ? JSON.stringify(projectRun.survey_data) : null,
-          feedback_data: projectRun.feedback_data ? JSON.stringify(projectRun.feedback_data) : null,
           schedule_events: projectRun.schedule_events ? JSON.stringify(projectRun.schedule_events) : null,
           shopping_checklist_data: projectRun.shopping_checklist_data ? JSON.stringify(projectRun.shopping_checklist_data) : null,
           progress_reporting_style: projectRun.progress_reporting_style || 'linear',
