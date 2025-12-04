@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -16,14 +17,17 @@ import { toast } from 'sonner';
 interface Risk {
   id: string;
   risk: string;
-  likelihood: 'low' | 'medium' | 'high' | 'critical';
-  impact: 'low' | 'medium' | 'high' | 'critical';
+  likelihood: 'low' | 'medium' | 'high';
+  schedule_impact_days: number | null;
+  budget_impact_dollars: number | null;
   mitigation: string | null;
   notes?: string | null;
   status?: 'open' | 'mitigated' | 'closed' | 'monitoring';
   is_template_risk?: boolean;
   template_risk_id?: string | null;
   display_order?: number;
+  // Legacy fields for backward compatibility
+  impact?: string;
 }
 
 interface RiskManagementWindowProps {
@@ -51,8 +55,9 @@ export function RiskManagementWindow({
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
     risk: '',
-    likelihood: 'medium' as 'low' | 'medium' | 'high' | 'critical',
-    impact: 'medium' as 'low' | 'medium' | 'high' | 'critical',
+    likelihood: 'medium' as 'low' | 'medium' | 'high',
+    schedule_impact_days: 0,
+    budget_impact_dollars: 0,
     mitigation: '',
     notes: '',
     status: 'open' as 'open' | 'mitigated' | 'closed' | 'monitoring'
@@ -118,7 +123,8 @@ export function RiskManagementWindow({
             .update({
               risk: formData.risk.trim(),
               likelihood: formData.likelihood,
-              impact: formData.impact,
+              schedule_impact_days: formData.schedule_impact_days || 0,
+              budget_impact_dollars: Math.round(formData.budget_impact_dollars || 0),
               mitigation: formData.mitigation.trim() || null,
               notes: formData.notes.trim() || null
             })
@@ -144,7 +150,8 @@ export function RiskManagementWindow({
               project_id: projectId,
               risk: formData.risk.trim(),
               likelihood: formData.likelihood,
-              impact: formData.impact,
+              schedule_impact_days: formData.schedule_impact_days || 0,
+              budget_impact_dollars: Math.round(formData.budget_impact_dollars || 0),
               mitigation: formData.mitigation.trim() || null,
               notes: formData.notes.trim() || null,
               created_by: user.id,
@@ -162,7 +169,8 @@ export function RiskManagementWindow({
             .update({
               risk: formData.risk.trim(),
               likelihood: formData.likelihood,
-              impact: formData.impact,
+              schedule_impact_days: formData.schedule_impact_days || 0,
+              budget_impact_dollars: Math.round(formData.budget_impact_dollars || 0),
               mitigation: formData.mitigation.trim() || null,
               notes: formData.notes.trim() || null,
               status: formData.status
@@ -189,7 +197,8 @@ export function RiskManagementWindow({
               project_run_id: projectRunId,
               risk: formData.risk.trim(),
               likelihood: formData.likelihood,
-              impact: formData.impact,
+              schedule_impact_days: formData.schedule_impact_days || 0,
+              budget_impact_dollars: Math.round(formData.budget_impact_dollars || 0),
               mitigation: formData.mitigation.trim() || null,
               notes: formData.notes.trim() || null,
               status: formData.status,
@@ -208,7 +217,8 @@ export function RiskManagementWindow({
       setFormData({
         risk: '',
         likelihood: 'medium',
-        impact: 'medium',
+        schedule_impact_days: 0,
+        budget_impact_dollars: 0,
         mitigation: '',
         notes: '',
         status: 'open'
@@ -225,7 +235,8 @@ export function RiskManagementWindow({
     setFormData({
       risk: risk.risk,
       likelihood: risk.likelihood,
-      impact: risk.impact,
+      schedule_impact_days: risk.schedule_impact_days || 0,
+      budget_impact_dollars: risk.budget_impact_dollars || 0,
       mitigation: risk.mitigation || '',
       notes: risk.notes || '',
       status: risk.status || 'open'
@@ -286,19 +297,16 @@ export function RiskManagementWindow({
     }
   };
 
-  const getRiskLevelColor = (likelihood: string, impact: string) => {
-    const levels = {
-      'low': 1,
-      'medium': 2,
-      'high': 3,
-      'critical': 4
-    };
-    const riskScore = Math.max(levels[likelihood as keyof typeof levels] || 1, levels[impact as keyof typeof levels] || 1);
+  const getRiskLevelColor = (likelihood: string, scheduleImpact: number | null, budgetImpact: number | null) => {
+    const likelihoodScore = likelihood === 'high' ? 3 : likelihood === 'medium' ? 2 : 1;
+    const scheduleScore = (scheduleImpact || 0) > 7 ? 3 : (scheduleImpact || 0) > 3 ? 2 : 1;
+    const budgetScore = (budgetImpact || 0) > 1000 ? 3 : (budgetImpact || 0) > 500 ? 2 : 1;
     
-    if (riskScore >= 4) return 'bg-red-100 text-red-800 border-red-300';
-    if (riskScore >= 3) return 'bg-orange-100 text-orange-800 border-orange-300';
-    if (riskScore >= 2) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-    return 'bg-green-100 text-green-800 border-green-300';
+    const riskScore = Math.max(likelihoodScore, scheduleScore, budgetScore);
+    
+    if (riskScore >= 3) return 'bg-red-100 text-red-800 border-red-300';
+    if (riskScore >= 2) return 'bg-orange-100 text-orange-800 border-orange-300';
+    return 'bg-yellow-100 text-yellow-800 border-yellow-300';
   };
 
   const getStatusColor = (status: string) => {
@@ -315,15 +323,20 @@ export function RiskManagementWindow({
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
         <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between gap-2">
-            <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Risk Management
-            </DialogTitle>
+            <div>
+              <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Risk Management
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground mt-1 pr-4">
+                A risk is simply something uncertain. Construction projects often go off-schedule - usually due to uncertainty at the start. Projects come pre-loaded with risks and their potential impact. Plus, if you know of potential concerns that aren't listed - you can add your own.
+              </p>
+            </div>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => onOpenChange(false)} 
-              className="h-7 px-2 text-[9px] md:text-xs"
+              className="h-7 px-2 text-[9px] md:text-xs flex-shrink-0"
             >
               Close
             </Button>
@@ -347,7 +360,8 @@ export function RiskManagementWindow({
                       setFormData({
                         risk: '',
                         likelihood: 'medium',
-                        impact: 'medium',
+                        schedule_impact_days: 0,
+                        budget_impact_dollars: 0,
                         mitigation: '',
                         notes: '',
                         status: 'open'
@@ -406,15 +420,21 @@ export function RiskManagementWindow({
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <div className="text-xs text-muted-foreground mb-1">Likelihood</div>
-                              <Badge className={getRiskLevelColor(risk.likelihood, 'low')}>
+                              <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
                                 {risk.likelihood}
                               </Badge>
                             </div>
                             <div>
-                              <div className="text-xs text-muted-foreground mb-1">Impact</div>
-                              <Badge className={getRiskLevelColor('low', risk.impact)}>
-                                {risk.impact}
-                              </Badge>
+                              <div className="text-xs text-muted-foreground mb-1">Schedule Impact</div>
+                              <div className="text-sm font-medium">
+                                {risk.schedule_impact_days ? `${risk.schedule_impact_days} days` : '-'}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Budget Impact</div>
+                              <div className="text-sm font-medium">
+                                {risk.budget_impact_dollars ? `$${risk.budget_impact_dollars.toLocaleString()}` : '-'}
+                              </div>
                             </div>
                           </div>
                           {mode === 'run' && (
@@ -466,7 +486,8 @@ export function RiskManagementWindow({
                         <TableRow>
                           <TableHead className="w-[200px]">Risk</TableHead>
                           <TableHead className="w-[100px]">Likelihood</TableHead>
-                          <TableHead className="w-[100px]">Impact</TableHead>
+                          <TableHead className="w-[120px]">Schedule Impact</TableHead>
+                          <TableHead className="w-[120px]">Budget Impact</TableHead>
                           <TableHead className="w-[200px]">Mitigation</TableHead>
                           <TableHead className="w-[200px]">Notes</TableHead>
                           {mode === 'run' && <TableHead className="w-[120px]">Status</TableHead>}
@@ -480,14 +501,15 @@ export function RiskManagementWindow({
                               {risk.risk}
                             </TableCell>
                             <TableCell>
-                              <Badge className={getRiskLevelColor(risk.likelihood, 'low')}>
+                              <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
                                 {risk.likelihood}
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              <Badge className={getRiskLevelColor('low', risk.impact)}>
-                                {risk.impact}
-                              </Badge>
+                            <TableCell className="text-sm">
+                              {risk.schedule_impact_days ? `${risk.schedule_impact_days} days` : '-'}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {risk.budget_impact_dollars ? `$${risk.budget_impact_dollars.toLocaleString()}` : '-'}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {risk.mitigation || '-'}
@@ -572,41 +594,63 @@ export function RiskManagementWindow({
                 />
               </div>
 
+              <div>
+                <Label htmlFor="likelihood">Likelihood</Label>
+                <Select
+                  value={formData.likelihood}
+                  onValueChange={(value: any) => setFormData({ ...formData, likelihood: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Low</span>
+                        <span className="text-xs text-muted-foreground">Possible but rare</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="medium">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Medium</span>
+                        <span className="text-xs text-muted-foreground">It might happen</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="high">
+                      <div className="flex flex-col">
+                        <span className="font-medium">High</span>
+                        <span className="text-xs text-muted-foreground">Not sure but it probably will happen</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="likelihood">Likelihood</Label>
-                  <Select
-                    value={formData.likelihood}
-                    onValueChange={(value: any) => setFormData({ ...formData, likelihood: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="schedule_impact">Schedule Impact (days)</Label>
+                  <Input
+                    id="schedule_impact"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.schedule_impact_days}
+                    onChange={(e) => setFormData({ ...formData, schedule_impact_days: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
+                  />
                 </div>
 
                 <div>
-                  <Label htmlFor="impact">Impact</Label>
-                  <Select
-                    value={formData.impact}
-                    onValueChange={(value: any) => setFormData({ ...formData, impact: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="budget_impact">Budget Impact ($)</Label>
+                  <Input
+                    id="budget_impact"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={formData.budget_impact_dollars}
+                    onChange={(e) => setFormData({ ...formData, budget_impact_dollars: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
                 </div>
               </div>
 
@@ -659,7 +703,8 @@ export function RiskManagementWindow({
                   setFormData({
                     risk: '',
                     likelihood: 'medium',
-                    impact: 'medium',
+                    schedule_impact_days: 0,
+                    budget_impact_dollars: 0,
                     mitigation: '',
                     notes: '',
                     status: 'open'
