@@ -1,6 +1,22 @@
 import { AppReference } from '@/interfaces/Project';
 
 export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
+  'project-kickoff': {
+    appName: 'Project Kickoff',
+    appType: 'native',
+    icon: 'Rocket',
+    description: 'Quick 3-step setup to get your project started',
+    actionKey: 'project-kickoff',
+    displayOrder: 0
+  },
+  'project-planning-wizard': {
+    appName: 'Project Planning Wizard',
+    appType: 'native',
+    icon: 'Wand2',
+    description: 'Complete planning guide: customization, schedule, and budget',
+    actionKey: 'project-planning-wizard',
+    displayOrder: 0.5
+  },
   'project-customizer': {
     appName: 'Scope Builder',
     appType: 'native',

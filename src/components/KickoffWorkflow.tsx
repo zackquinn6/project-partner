@@ -12,10 +12,12 @@ import { supabase } from '@/integrations/supabase/client';
 interface KickoffWorkflowProps {
   onKickoffComplete: () => void;
   onExit?: () => void; // Add optional exit handler
+  onPlanningWizard?: () => void; // Handler to open planning wizard
 }
 export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   onKickoffComplete,
-  onExit
+  onExit,
+  onPlanningWizard
 }) => {
   const {
     currentProjectRun,
@@ -351,6 +353,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
             <CardContent className="p-3 sm:p-4">
               {!isStepCompleted(currentKickoffStep) ? (
                 <div className="flex gap-2">
+                  {/* Step 1: Not a match button */}
                   {currentKickoffStep === 0 && (
                     <Button 
                       onClick={async () => {
@@ -368,27 +371,73 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       <span className="sm:hidden">Not a match</span>
                     </Button>
                   )}
+                  
+                  {/* Step 3: Go directly to workflow button */}
+                  {currentKickoffStep === 2 && (
+                    <Button 
+                      onClick={async () => {
+                        console.log('🎯 KickoffWorkflow: Go directly to workflow clicked');
+                        // Save step 3 data first
+                        if ((window as any).__projectProfileStepSave) {
+                          try {
+                            await (window as any).__projectProfileStepSave();
+                            // Mark step complete and trigger onKickoffComplete
+                            await handleStepComplete(currentKickoffStep);
+                          } catch (error) {
+                            console.error('Error saving project profile:', error);
+                            return;
+                          }
+                        }
+                      }} 
+                      variant="outline" 
+                      className="w-1/3 border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight"
+                    >
+                      <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Go directly to workflow</span>
+                      <span className="sm:hidden">Skip planning</span>
+                    </Button>
+                  )}
+                  
+                  {/* Main Continue button */}
                   <Button 
                     onClick={async () => {
                       console.log('🎯 KickoffWorkflow: Step complete button clicked for step:', currentKickoffStep);
+                      
                       // For step 2 (ProjectProfileStep), call its save function first
                       if (currentKickoffStep === 2 && (window as any).__projectProfileStepSave) {
                         try {
                           await (window as any).__projectProfileStepSave();
-                          // handleStepComplete will be called by ProjectProfileStep's handleSave
+                          
+                          // Mark step as complete
+                          await handleStepComplete(currentKickoffStep);
+                          
+                          // If on step 3 and planning wizard handler exists, open planning wizard
+                          if (onPlanningWizard) {
+                            onPlanningWizard();
+                          }
                           return;
                         } catch (error) {
                           console.error('Error saving project profile:', error);
                           return; // Don't proceed if save failed
                         }
                       }
+                      
                       handleStepComplete(currentKickoffStep);
                     }} 
-                    className={`${currentKickoffStep === 0 ? "w-3/4" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight`}
+                    className={`${currentKickoffStep === 0 ? "w-3/4" : currentKickoffStep === 2 ? "w-2/3" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight`}
                   >
                     <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                    <span className="hidden sm:inline">Complete & Continue</span>
-                    <span className="sm:hidden">Continue</span>
+                    {currentKickoffStep === 2 ? (
+                      <>
+                        <span className="hidden sm:inline">Continue to Project Planning</span>
+                        <span className="sm:hidden">Continue</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="hidden sm:inline">Complete & Continue</span>
+                        <span className="sm:hidden">Continue</span>
+                      </>
+                    )}
                   </Button>
                 </div>
               ) : (

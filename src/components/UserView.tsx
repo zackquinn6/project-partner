@@ -34,6 +34,7 @@ import { OrderingWindow } from './OrderingWindow';
 import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
 import { MaterialsSelectionDialog } from './MaterialsSelectionDialog';
 import { KickoffWorkflow } from './KickoffWorkflow';
+import { ProjectPlanningWizard } from './ProjectPlanningWizard';
 import { UnplannedWorkWindow } from './UnplannedWorkWindow';
 import { ProjectSurvey } from './ProjectSurvey';
 import { PhotoUpload } from './PhotoUpload';
@@ -181,6 +182,7 @@ export default function UserView({
   const [projectCustomizerOpen, setProjectCustomizerOpen] = useState(false);
   const [projectCustomizerMode, setProjectCustomizerMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work' | 'replan'>('replan');
   const [projectSchedulerOpen, setProjectSchedulerOpen] = useState(false);
+  const [projectPlanningWizardOpen, setProjectPlanningWizardOpen] = useState(false);
   const [materialsSelectionOpen, setMaterialsSelectionOpen] = useState(false);
   const [toolRentalsOpen, setToolRentalsOpen] = useState(false);
   const [homeManagerOpen, setHomeManagerOpen] = useState(false);
@@ -290,17 +292,26 @@ export default function UserView({
       setProjectCustomizerMode(mode);
       setProjectCustomizerOpen(true);
     };
+    const handleOpenProjectBudgeting = () => {
+      setProjectBudgetingOpen(true);
+    };
 
     window.addEventListener('openProjectScheduler', handleOpenProjectScheduler);
+    window.addEventListener('open-project-scheduler', handleOpenProjectScheduler);
     window.addEventListener('openMaterialsSelection', handleOpenMaterialsSelection);
     window.addEventListener('openOrderingWindow', handleOpenOrderingWindow);
     window.addEventListener('openProjectCustomizer', handleOpenProjectCustomizer as EventListener);
+    window.addEventListener('open-project-customizer', handleOpenProjectCustomizer as EventListener);
+    window.addEventListener('open-project-budgeting', handleOpenProjectBudgeting);
 
     return () => {
       window.removeEventListener('openProjectScheduler', handleOpenProjectScheduler);
+      window.removeEventListener('open-project-scheduler', handleOpenProjectScheduler);
       window.removeEventListener('openMaterialsSelection', handleOpenMaterialsSelection);
       window.removeEventListener('openOrderingWindow', handleOpenOrderingWindow);
       window.removeEventListener('openProjectCustomizer', handleOpenProjectCustomizer);
+      window.removeEventListener('open-project-customizer', handleOpenProjectCustomizer);
+      window.removeEventListener('open-project-budgeting', handleOpenProjectBudgeting);
     };
   }, []);
 
@@ -1577,6 +1588,13 @@ export default function UserView({
     
     // Handle native apps
     switch (app.actionKey) {
+      case 'project-kickoff':
+        // Kickoff is handled separately in the workflow
+        console.log('Project Kickoff accessed via app');
+        break;
+      case 'project-planning-wizard':
+        setProjectPlanningWizardOpen(true);
+        break;
       case 'project-customizer':
         setProjectCustomizerMode('initial-plan');
         setProjectCustomizerOpen(true);
@@ -2415,6 +2433,10 @@ export default function UserView({
           
           // Clear reset flags
           window.dispatchEvent(new CustomEvent('clear-reset-flags'));
+        }}
+        onPlanningWizard={() => {
+          console.log("🎯 Opening Project Planning Wizard after kickoff");
+          setProjectPlanningWizardOpen(true);
         }}
       />
     );
@@ -3340,6 +3362,12 @@ export default function UserView({
           projectRun={currentProjectRun}
         />
       )}
+
+      {/* Project Planning Wizard */}
+      <ProjectPlanningWizard
+        open={projectPlanningWizardOpen}
+        onOpenChange={setProjectPlanningWizardOpen}
+      />
       
       {/* Project Completion Popup */}
       {currentProjectRun && (
