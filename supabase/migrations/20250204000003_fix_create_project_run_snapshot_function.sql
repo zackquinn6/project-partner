@@ -2,15 +2,23 @@
 -- Date: 2025-12-04
 -- Description: Update function to properly copy isLinked and source metadata in phases JSONB
 
--- Drop existing function
-DROP FUNCTION IF EXISTS create_project_run_snapshot(
-  p_template_id TEXT,
-  p_user_id TEXT, 
-  p_run_name TEXT,
-  p_home_id TEXT,
-  p_start_date TEXT,
-  p_plan_end_date TEXT
-);
+-- Drop all existing function overloads using a DO block
+-- This handles multiple function signatures safely
+DO $$ 
+DECLARE
+  func_record RECORD;
+BEGIN
+  -- Loop through all overloads and drop each one by its specific signature
+  FOR func_record IN 
+    SELECT 
+      oid::regprocedure AS func_signature
+    FROM pg_proc 
+    WHERE proname = 'create_project_run_snapshot'
+      AND pg_function_is_visible(oid)
+  LOOP
+    EXECUTE format('DROP FUNCTION IF EXISTS %s CASCADE', func_record.func_signature);
+  END LOOP;
+END $$;
 
 -- Recreate function with incorporated phase support
 CREATE OR REPLACE FUNCTION create_project_run_snapshot(
