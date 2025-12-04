@@ -589,39 +589,71 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                   )}
 
                   <div>
-                    <Label className="text-xs text-muted-foreground mb-2 block">Photo</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = 'image/*';
-                          input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0];
-                            if (file) {
-                              handlePhotoUpload(selectedItem.id, file, selectedType);
-                            }
-                          };
-                          input.click();
-                        }}
-                        disabled={uploadingPhoto === selectedItem.id}
-                      >
-                        <Camera className="w-4 h-4 mr-2" />
-                        {uploadingPhoto === selectedItem.id ? 'Uploading...' : 'Upload Photo'}
-                      </Button>
-                      {(selectedItem.user_photo_url || selectedItem.photo_url) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateItem('user_photo_url', null)}
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Remove
-                        </Button>
-                      )}
-                    </div>
+                    <Label className="text-xs text-muted-foreground mb-2 block">Photos</Label>
+                    
+                    {/* Admin Library Photo (if exists) */}
+                    {selectedItem.photo_url && (
+                      <div className="mb-3 p-2 border rounded-lg bg-muted/30">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-muted-foreground">From Admin Library</span>
+                          <Badge variant="secondary" className="text-[10px]">Reference</Badge>
+                        </div>
+                        <img 
+                          src={selectedItem.photo_url} 
+                          alt={`${selectedItem.item} - admin photo`}
+                          className="w-full h-32 object-cover rounded"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* User's Custom Photo */}
+                    {selectedItem.user_photo_url ? (
+                      <div className="mb-3 p-2 border rounded-lg bg-primary/5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-primary">Your Custom Photo</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateItem('user_photo_url', null)}
+                            className="h-6 px-2"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <img 
+                          src={selectedItem.user_photo_url} 
+                          alt={`${selectedItem.item} - your photo`}
+                          className="w-full h-32 object-cover rounded"
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {selectedItem.photo_url ? 'You can add your own photo too:' : 'No photos yet. Add one:'}
+                      </div>
+                    )}
+                    
+                    {/* Upload Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) {
+                            handlePhotoUpload(selectedItem.id, file, selectedType);
+                          }
+                        };
+                        input.click();
+                      }}
+                      disabled={uploadingPhoto === selectedItem.id}
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      {uploadingPhoto === selectedItem.id ? 'Uploading...' : (selectedItem.user_photo_url ? 'Replace My Photo' : 'Upload My Photo')}
+                    </Button>
                   </div>
 
                   <Button
