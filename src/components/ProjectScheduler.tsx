@@ -1708,11 +1708,20 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 <div className="h-full flex flex-col">
                   <h3 className="font-semibold text-lg mb-4">Select Available Dates</h3>
                   <div className="flex-1 flex justify-center">
-                    <CalendarComponent mode="multiple" selected={selectedDates} onSelect={handleDateSelect} className="w-full max-w-md" classNames={{
-                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground ring-2 ring-primary/20",
-                  day_today: "bg-accent text-accent-foreground font-bold",
-                  day: "h-9 w-9 text-sm hover:bg-accent hover:text-accent-foreground"
-                }} />
+                    <CalendarComponent 
+                      mode="multiple" 
+                      selected={selectedDates} 
+                      onSelect={handleDateSelect} 
+                      className="w-full max-w-md" 
+                      classNames={{
+                        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground ring-2 ring-primary/20",
+                        day_today: "bg-accent text-accent-foreground font-bold",
+                        day: "h-9 w-9 text-sm hover:bg-accent hover:text-accent-foreground flex items-center justify-center",
+                        head_cell: "text-muted-foreground font-medium text-sm w-9",
+                        cell: "h-9 w-9 text-center text-sm p-0 relative",
+                        row: "flex w-full mt-2"
+                      }} 
+                    />
                   </div>
                   <p className="text-sm text-muted-foreground mt-4 text-center">
                     Click dates to toggle availability. Highlighted dates show custom availability.
