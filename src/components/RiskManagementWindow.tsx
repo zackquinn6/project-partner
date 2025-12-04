@@ -224,6 +224,9 @@ export function RiskManagementWindow({
         status: 'open'
       });
       fetchRisks();
+      
+      // Notify scheduler that risks have been updated
+      window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {
       console.error('Error saving risk:', error);
       toast.error('Failed to save risk');
@@ -273,6 +276,9 @@ export function RiskManagementWindow({
       }
 
       fetchRisks();
+      
+      // Notify scheduler that risks have been updated
+      window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {
       console.error('Error deleting risk:', error);
       toast.error('Failed to delete risk');
@@ -291,6 +297,9 @@ export function RiskManagementWindow({
       if (error) throw error;
       toast.success('Risk status updated');
       fetchRisks();
+      
+      // Notify scheduler that risks have been updated
+      window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {
       console.error('Error updating risk status:', error);
       toast.error('Failed to update risk status');

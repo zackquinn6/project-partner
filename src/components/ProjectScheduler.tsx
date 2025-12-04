@@ -137,6 +137,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [isComputing, setIsComputing] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
   
+  // Risk management state
+  const [riskTolerance, setRiskTolerance] = useState<'low' | 'medium' | 'high'>('medium');
+  const [projectRisks, setProjectRisks] = useState<any[]>([]);
+  const [riskAdjustedDate, setRiskAdjustedDate] = useState<Date | null>(null);
+  
   // Initialize target date to empty string
   // Will be set from database when dialog opens via useEffect
   const [targetDate, setTargetDate] = useState<string>('');
@@ -187,6 +192,53 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     
     fetchAndSetTargetDate();
   }, [open, projectRun?.id]);
+  
+  // Fetch project risks when dialog opens
+  useEffect(() => {
+    const fetchRisks = async () => {
+      if (open && projectRun?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('project_run_risks')
+            .select('*')
+            .eq('project_run_id', projectRun.id)
+            .in('status', ['open', 'monitoring'])
+            .order('display_order', { ascending: true });
+          
+          if (error) {
+            console.error('Error fetching risks:', error);
+            return;
+          }
+          
+          setProjectRisks(data || []);
+        } catch (error) {
+          console.error('Error loading risks:', error);
+        }
+      }
+    };
+    
+    fetchRisks();
+    
+    // Listen for risk updates from Risk Manager
+    const handleRiskUpdate = () => {
+      fetchRisks();
+    };
+    
+    window.addEventListener('risks-updated', handleRiskUpdate);
+    return () => window.removeEventListener('risks-updated', handleRiskUpdate);
+  }, [open, projectRun?.id]);
+  
+  // Recalculate risk-adjusted date when risks, tolerance, or target date changes
+  useEffect(() => {
+    if (targetDate && projectRisks.length > 0) {
+      const baseDate = new Date(targetDate);
+      const analysis = calculateRiskAdjustedDate(baseDate, riskTolerance);
+      setRiskAdjustedDate(analysis.adjustedDate);
+    } else if (targetDate) {
+      // No risks, use target date
+      setRiskAdjustedDate(new Date(targetDate));
+    }
+  }, [projectRisks, riskTolerance, targetDate]);
 
   // Team management
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([{
@@ -620,6 +672,83 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     setTeamMembers(prev => prev.filter(member => member.id !== id));
   };
 
+  // Calculate risk-adjusted completion date based on risk tolerance
+  const calculateRiskAdjustedDate = (baseDate: Date, tolerance: 'low' | 'medium' | 'high'): { adjustedDate: Date; totalDelay: number; includedRisks: any[] } => {
+    let totalDelayDays = 0;
+    const includedRisks: any[] = [];
+    
+    projectRisks.forEach(risk => {
+      const likelihood = risk.likelihood as 'low' | 'medium' | 'high';
+      const scheduleImpact = risk.schedule_impact_days || 0;
+      
+      // Skip risks with no schedule impact
+      if (scheduleImpact === 0) return;
+      
+      // Determine if risk should be included based on tolerance and likelihood
+      let shouldInclude = false;
+      let useFullImpact = false;
+      
+      // High-likelihood risks are ALWAYS included regardless of tolerance
+      if (likelihood === 'high') {
+        shouldInclude = true;
+        useFullImpact = true; // Use full impact for high-likelihood risks
+      } else {
+        // Apply tolerance-based rules
+        if (tolerance === 'low') {
+          // Low tolerance: Always include all risks (certainty required)
+          shouldInclude = true;
+          useFullImpact = true;
+        } else if (tolerance === 'medium') {
+          if (likelihood === 'low') {
+            // Include if impact is moderate/high (>= 3 days)
+            shouldInclude = scheduleImpact >= 3;
+            useFullImpact = false; // Use expected delay
+          } else if (likelihood === 'medium') {
+            shouldInclude = true;
+            useFullImpact = false; // Use expected delay
+          }
+        } else if (tolerance === 'high') {
+          if (likelihood === 'low') {
+            // Exclude low-likelihood risks
+            shouldInclude = false;
+          } else if (likelihood === 'medium') {
+            // Include only if impact is large (>= 7 days)
+            shouldInclude = scheduleImpact >= 7;
+            useFullImpact = false; // Use expected delay
+          }
+        }
+      }
+      
+      if (shouldInclude) {
+        // Calculate delay to add
+        let delayToAdd: number;
+        if (useFullImpact) {
+          delayToAdd = scheduleImpact;
+        } else {
+          // Calculate expected delay: likelihood × impact
+          const likelihoodMultiplier = likelihood === 'high' ? 0.8 : likelihood === 'medium' ? 0.5 : 0.2;
+          delayToAdd = scheduleImpact * likelihoodMultiplier;
+        }
+        
+        totalDelayDays += delayToAdd;
+        includedRisks.push({
+          ...risk,
+          delayAdded: delayToAdd,
+          useFullImpact
+        });
+      }
+    });
+    
+    // Add delay to base date
+    const adjustedDate = addDays(baseDate, Math.ceil(totalDelayDays));
+    
+    return {
+      adjustedDate,
+      totalDelay: totalDelayDays,
+      includedRisks
+    };
+  };
+
   // Generate schedule with advanced algorithm
   const computeAdvancedSchedule = async () => {
     // Validate target date is set
@@ -681,9 +810,34 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
     setIsComputing(true);
     try {
-      // Prepare scheduling inputs with completion priority
+      // Calculate risk-adjusted completion date
+      const baseTargetDate = new Date(targetDate);
+      const riskAnalysis = calculateRiskAdjustedDate(baseTargetDate, riskTolerance);
+      setRiskAdjustedDate(riskAnalysis.adjustedDate);
+      
+      // Check if risk-adjusted date exceeds drop-dead date
+      const dropDeadDateObj = new Date(dropDeadDate);
+      const isScheduleFeasible = riskAnalysis.adjustedDate <= dropDeadDateObj;
+      
+      if (!isScheduleFeasible) {
+        const daysOver = Math.ceil((riskAnalysis.adjustedDate.getTime() - dropDeadDateObj.getTime()) / (1000 * 60 * 60 * 24));
+        toast({
+          title: "Schedule Risk Warning",
+          description: `Risk-adjusted completion date (${format(riskAnalysis.adjustedDate, 'MMM dd, yyyy')}) exceeds your latest acceptable date by ${daysOver} days. Consider: adding more working hours, extending your deadline, or mitigating high-impact risks.`,
+          variant: "destructive",
+          duration: 10000
+        });
+      } else if (riskAnalysis.totalDelay > 0) {
+        toast({
+          title: "Risk Buffer Added",
+          description: `${Math.ceil(riskAnalysis.totalDelay)} days added for ${riskAnalysis.includedRisks.length} identified risks. Risk-adjusted target: ${format(riskAnalysis.adjustedDate, 'MMM dd, yyyy')}`,
+          duration: 8000
+        });
+      }
+      
+      // Prepare scheduling inputs with risk-adjusted date
       const schedulingInputs: SchedulingInputs = {
-        targetCompletionDate: new Date(targetDate),
+        targetCompletionDate: riskAnalysis.adjustedDate, // Use risk-adjusted date instead of original
         dropDeadDate: new Date(dropDeadDate),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         tasks: schedulingTasks,
@@ -1205,7 +1359,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
 
             {/* New Wizard Interface */}
-            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} scheduleOptimizationMethod={scheduleOptimizationMethod} setScheduleOptimizationMethod={setScheduleOptimizationMethod} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} onAssignWork={() => setShowPhaseAssignment(true)} onOpenRiskManager={() => setShowRiskManager(true)} />
+            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} scheduleOptimizationMethod={scheduleOptimizationMethod} setScheduleOptimizationMethod={setScheduleOptimizationMethod} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} onAssignWork={() => setShowPhaseAssignment(true)} onOpenRiskManager={() => setShowRiskManager(true)} riskTolerance={riskTolerance} setRiskTolerance={setRiskTolerance} riskAdjustedDate={riskAdjustedDate} />
 
             {/* Results */}
             {schedulingResult && <>

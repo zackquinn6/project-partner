@@ -79,6 +79,9 @@ interface SchedulerWizardProps {
   onApplyOptimization?: () => void;
   onAssignWork?: () => void;
   onOpenRiskManager?: () => void;
+  riskTolerance?: 'low' | 'medium' | 'high';
+  setRiskTolerance?: (tolerance: 'low' | 'medium' | 'high') => void;
+  riskAdjustedDate?: Date | null;
 }
 
 export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
@@ -102,7 +105,10 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   isComputing,
   onApplyOptimization,
   onAssignWork,
-  onOpenRiskManager
+  onOpenRiskManager,
+  riskTolerance = 'medium',
+  setRiskTolerance,
+  riskAdjustedDate
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIndividualAvailability, setShowIndividualAvailability] = useState(false);
@@ -329,6 +335,62 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     </Button>
                   )}
                 </div>
+                
+                {/* Risk Tolerance Setting */}
+                {setRiskTolerance && (
+                  <div className="pt-3 border-t">
+                    <Label className="text-xs font-medium mb-2 flex items-center gap-1">
+                      <Shield className="w-3.5 h-3.5" />
+                      Risk Tolerance
+                    </Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button
+                        variant={riskTolerance === 'low' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setRiskTolerance('low')}
+                        className="h-auto flex flex-col items-center justify-center gap-1 p-3"
+                      >
+                        <span className={`text-xs font-medium ${riskTolerance === 'low' ? 'text-white' : ''}`}>Low</span>
+                        <span className={`text-[10px] text-center leading-tight ${riskTolerance === 'low' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                          Certainty required
+                        </span>
+                      </Button>
+                      <Button
+                        variant={riskTolerance === 'medium' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setRiskTolerance('medium')}
+                        className="h-auto flex flex-col items-center justify-center gap-1 p-3"
+                      >
+                        <span className={`text-xs font-medium ${riskTolerance === 'medium' ? 'text-white' : ''}`}>Medium</span>
+                        <span className={`text-[10px] text-center leading-tight ${riskTolerance === 'medium' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                          Balanced approach
+                        </span>
+                      </Button>
+                      <Button
+                        variant={riskTolerance === 'high' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setRiskTolerance('high')}
+                        className="h-auto flex flex-col items-center justify-center gap-1 p-3"
+                      >
+                        <span className={`text-xs font-medium ${riskTolerance === 'high' ? 'text-white' : ''}`}>High</span>
+                        <span className={`text-[10px] text-center leading-tight ${riskTolerance === 'high' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                          Optimistic planning
+                        </span>
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Risk tolerance affects which risks are factored into the schedule timeline
+                    </p>
+                    {riskAdjustedDate && (
+                      <div className="mt-2 p-2 bg-primary/10 border border-primary/20 rounded-lg">
+                        <div className="text-xs text-muted-foreground">Risk-adjusted target date:</div>
+                        <div className="text-sm font-bold text-primary">
+                          {format(riskAdjustedDate, 'MMMM dd, yyyy')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 
                 <div>
                   <Label className="text-xs font-medium mb-2">Planning Detail Level</Label>
