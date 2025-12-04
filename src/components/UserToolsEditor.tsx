@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, X, Upload, Camera, Eye, ShoppingCart, Save, Trash2 } from "lucide-react";
+import { Search, Plus, X, Upload, Camera, Eye, ShoppingCart, Save, Trash2, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,6 +51,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
   const [viewingVariations, setViewingVariations] = useState<Tool | null>(null);
   const [checkingVariations, setCheckingVariations] = useState<Tool | null>(null);
   const [showAddTools, setShowAddTools] = useState(initialMode === 'add-tools');
+  const [addingToolId, setAddingToolId] = useState<string | null>(null);
   const { user } = useAuth();
 
   // Update showAddTools when initialMode changes
@@ -248,8 +249,11 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
   }, [availableTools, searchTerm, toolVariations, userTools, variationsChecked]);
 
   const handleAddTool = async (tool: Tool) => {
-    // Always check if this tool has variations first
+    // Set loading state for this specific tool
+    setAddingToolId(tool.id);
+    
     try {
+      // Always check if this tool has variations first
       const { data: variations, error } = await supabase
         .from('variation_instances')
         .select('id')
@@ -264,23 +268,44 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         setCheckingVariations(tool);
       } else {
         // No variations exist, add the core tool directly
-        addTool(tool);
+        await addToolAsync(tool);
       }
     } catch (error) {
       console.error('Error checking variations:', error);
       // Fallback to direct add if error occurs
-      addTool(tool);
+      await addToolAsync(tool);
+    } finally {
+      setAddingToolId(null);
     }
   };
 
-  const addTool = (tool: Tool) => {
+  const addToolAsync = async (tool: Tool) => {
     const newUserTool: UserOwnedTool = {
       ...tool,
       quantity: 1,
       model_name: '',
       user_photo_url: ''
     };
-    setUserTools([...userTools, newUserTool]);
+    const updatedTools = [...userTools, newUserTool];
+    setUserTools(updatedTools);
+    
+    // Save to database immediately in background
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ owned_tools: updatedTools as any })
+          .eq('user_id', user.id);
+        
+        if (error) {
+          console.error('Failed to save tool:', error);
+        } else {
+          window.dispatchEvent(new CustomEvent('tools-library-updated'));
+        }
+      } catch (error) {
+        console.error('Error saving tool:', error);
+      }
+    }
   };
 
   const removeTool = (toolId: string) => {
@@ -451,9 +476,19 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                         size="sm"
                         onClick={() => handleAddTool(tool)}
                         className="flex-shrink-0"
+                        disabled={addingToolId === tool.id}
                       >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add
+                        {addingToolId === tool.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            Adding...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add
+                          </>
+                        )}
                       </Button>
                     </div>
                 </div>
