@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { TrendingUp, Plus, Trash2, Upload, DollarSign } from 'lucide-react';
+import { TrendingUp, Plus, Trash2, Upload, DollarSign, Edit, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useProject } from '@/contexts/ProjectContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,6 +51,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
   const [newItemCategory, setNewItemCategory] = useState<'material' | 'labor' | 'other'>('material');
+  const [editingItem, setEditingItem] = useState<BudgetLineItem | null>(null);
   
   // Get available phases for dropdown (custom and incorporated phases only, no standard phases)
   const availablePhases = React.useMemo(() => {
@@ -335,6 +336,78 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     toast({ title: 'Budget item removed' });
   };
 
+  const startEditItem = (item: BudgetLineItem) => {
+    setEditingItem(item);
+    setNewItemSection(item.section);
+    setNewItemName(item.item);
+    setNewItemAmount(item.budgetedAmount.toString());
+    setNewItemCategory(item.category);
+  };
+
+  const cancelEditItem = () => {
+    setEditingItem(null);
+    setNewItemSection('');
+    setNewItemName('');
+    setNewItemAmount('');
+    setNewItemCategory('material');
+  };
+
+  const updateBudgetItem = async () => {
+    if (!editingItem) return;
+    
+    // Validate required fields with specific messages
+    const missingFields: string[] = [];
+    
+    if (!newItemSection.trim()) {
+      missingFields.push('Section/Phase');
+    }
+    if (!newItemName.trim()) {
+      missingFields.push('Item Description');
+    }
+    if (!newItemAmount.trim()) {
+      missingFields.push('Budget Amount');
+    }
+
+    if (missingFields.length > 0) {
+      toast({ 
+        title: 'Missing Required Fields', 
+        description: `Please fill in: ${missingFields.join(', ')}`,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    const parsedAmount = parseFloat(newItemAmount);
+    if (isNaN(parsedAmount) || parsedAmount < 0) {
+      toast({ 
+        title: 'Invalid Budget Amount', 
+        description: 'Please enter a valid positive number for Budget Amount',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    const updatedItems = budgetItems.map(item => 
+      item.id === editingItem.id 
+        ? {
+            ...item,
+            section: newItemSection.trim(),
+            item: newItemName.trim(),
+            budgetedAmount: parsedAmount,
+            category: newItemCategory
+          }
+        : item
+    );
+
+    setBudgetItems(updatedItems);
+    await saveBudgetData(updatedItems, actualEntries);
+
+    // Clear form and editing state
+    cancelEditItem();
+    
+    toast({ title: 'Budget item updated successfully' });
+  };
+
   const addActualEntry = async () => {
     if (!newActualDescription.trim() || !newActualAmount.trim()) {
       toast({ title: 'Please fill in description and amount', variant: 'destructive' });
@@ -617,7 +690,14 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         <TabsContent value="budget" className="space-y-4 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Add Budget Line Item</CardTitle>
+              <CardTitle className="text-lg">
+                {editingItem ? 'Edit Budget Line Item' : 'Add Budget Line Item'}
+              </CardTitle>
+              {editingItem && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Editing: {editingItem.item}
+                </p>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -684,25 +764,33 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                 <p className="text-xs text-muted-foreground">
                   <span className="text-red-500">*</span> Required fields
                 </p>
-                <Button 
-                  onClick={async () => {
-                    try {
-                      console.log('🎯 ProjectBudgetingWindow: Add Line Item button clicked');
-                      await addBudgetItem();
-                    } catch (error) {
-                      console.error('❌ Error adding budget item:', error);
-                      toast({
-                        title: 'Failed to add budget item',
-                        description: error instanceof Error ? error.message : 'Unknown error',
-                        variant: 'destructive'
-                      });
-                    }
-                  }}
-                  className="h-11 md:h-10 w-full md:w-auto"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Line Item
-                </Button>
+                <div className="flex gap-2">
+                  {editingItem && (
+                    <Button 
+                      onClick={cancelEditItem}
+                      variant="outline"
+                      className="h-11 md:h-10 w-full md:w-auto"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                  <Button 
+                    onClick={editingItem ? updateBudgetItem : addBudgetItem}
+                    className="h-11 md:h-10 w-full md:w-auto"
+                  >
+                    {editingItem ? (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Update Line Item
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Line Item
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -753,14 +841,26 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                                     <span className="block md:inline">Actual: ${actualAmount.toFixed(2)}</span>
                                   </div>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeBudgetItem(item.id)}
-                                  className="h-11 w-11 md:h-9 md:w-9 p-0 flex-shrink-0"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                                <div className="flex gap-1 flex-shrink-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => startEditItem(item)}
+                                    className="h-11 w-11 md:h-9 md:w-9 p-0"
+                                    title="Edit item"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeBudgetItem(item.id)}
+                                    className="h-11 w-11 md:h-9 md:w-9 p-0"
+                                    title="Delete item"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </div>
                             );
                           })
