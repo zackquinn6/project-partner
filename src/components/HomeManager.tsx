@@ -51,7 +51,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
   const [editingHome, setEditingHome] = useState<Home | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    address: '',
     city: '',
     state: '',
     home_type: '',
@@ -133,6 +132,11 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       return;
     }
     
+    if (!formData.state) {
+      toast.error('Please select a state');
+      return;
+    }
+    
     try {
       let homeId = editingHome?.id;
       if (editingHome) {
@@ -189,7 +193,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       setSelectedFiles([]);
       setFormData({
         name: '',
-        address: '',
         city: '',
         state: '',
         home_type: '',
@@ -210,7 +213,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
     setEditingHome(home);
     setFormData({
       name: home.name,
-      address: home.address || '',
       city: home.city || '',
       state: home.state || '',
       home_type: home.home_type === 'condo' ? '' : (home.home_type || ''), // Clear condo values
@@ -460,14 +462,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
                 </Select>
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" value={formData.address} onChange={e => setFormData(prev => ({
-              ...prev,
-              address: e.target.value
-            }))} placeholder="Street address" />
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
                 <Input id="city" value={formData.city} onChange={e => setFormData(prev => ({
@@ -477,7 +471,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="state">State *</Label>
+                <Label htmlFor="state">State <span className="text-red-500">*</span></Label>
                 <Select value={formData.state} onValueChange={value => setFormData(prev => ({
               ...prev,
               state: value

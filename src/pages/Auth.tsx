@@ -343,17 +343,6 @@ export default function Auth() {
                 </svg>}
               Continue with Google
             </Button>
-            
-            <Button type="button" variant="secondary" className="w-full mt-3 mb-4" onClick={handleGuestSignIn} disabled={isLoading}>
-              <User className="mr-2 h-4 w-4" />
-              Continue as Guest
-            </Button>
-            
-            {guestData.projectRuns.length > 0 && (
-              <div className="mt-2 text-xs text-center text-muted-foreground">
-                You have {guestData.projectRuns.length} project(s) saved as a guest. Sign up to keep them permanently.
-              </div>
-            )}
           </div>
 
           {error && <Alert className="mt-4 border-destructive">
