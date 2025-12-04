@@ -134,11 +134,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [isComputing, setIsComputing] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
   
-  // Initialize target date to default (30 days from now)
-  // Will be updated from database when dialog opens via useEffect
-  const [targetDate, setTargetDate] = useState<string>(() => {
-    return format(addDays(new Date(), 30), 'yyyy-MM-dd');
-  });
+  // Initialize target date to empty string
+  // Will be set from database when dialog opens via useEffect
+  const [targetDate, setTargetDate] = useState<string>('');
   const [dropDeadDate, setDropDeadDate] = useState<string>(() => format(addDays(new Date(), 45), 'yyyy-MM-dd'));
 
   // Update target date when projectRun changes or dialog opens
@@ -172,9 +170,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               setTargetDate(formattedDate);
             } else {
               console.warn('⚠️ ProjectScheduler: Invalid date in database:', freshData.initial_timeline);
+              setTargetDate(''); // Clear invalid date
             }
           } else {
-            console.log('ℹ️ ProjectScheduler: No initial_timeline found in database, using default (30 days from now)');
+            console.warn('⚠️ ProjectScheduler: No initial_timeline found in database - please set a target date in Project Kickoff');
+            setTargetDate(''); // No default fallback
           }
         } catch (e) {
           console.error('❌ ProjectScheduler: Exception fetching/parsing initial_timeline:', e);

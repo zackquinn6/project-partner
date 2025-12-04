@@ -51,7 +51,7 @@ interface CustomizationState {
   standardDecisions: Record<string, string[]>; // phaseId -> selected alternatives
   ifNecessaryWork: Record<string, string[]>; // phaseId -> selected optional work
   customPlannedWork: Phase[]; // phases added from other projects
-  customUnplannedWork: Phase[]; // novel phases created by user
+  customUnplannedWork: Phase[]; // custom phases created by user
   workflowOrder: string[]; // ordered phase ids
 }
 
@@ -754,11 +754,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     </Card>
                   )}
 
-                  {/* Added Novel Work */}
+                  {/* Added Custom Work */}
                   {customizationState.customUnplannedWork.length > 0 && (
                     <Card>
                       <CardHeader className={isMobile ? 'pb-3' : ''}>
-                        <CardTitle className={isMobile ? 'text-base' : ''}>Added Novel Work</CardTitle>
+                        <CardTitle className={isMobile ? 'text-base' : ''}>Added Custom Work</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         {customizationState.customUnplannedWork.map((phase, index) => (
@@ -768,7 +768,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{phase.description}</p>
                             </div>
                             <Badge variant="secondary" className="bg-orange-100 text-orange-800 self-start sm:self-center">
-                              Novel
+                              Custom
                             </Badge>
                           </div>
                         ))}
