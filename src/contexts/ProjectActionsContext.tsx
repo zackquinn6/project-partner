@@ -728,7 +728,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           current_operation_id: projectRun.currentOperationId,
           current_step_id: projectRun.currentStepId,
           completed_steps: JSON.stringify(projectRun.completedSteps),
-          step_completion_percentages: projectRun.stepCompletionPercentages ? JSON.stringify(projectRun.stepCompletionPercentages) : null,
           progress: safeProgress || 0,
           phases: JSON.stringify(projectRun.phases),
           category: Array.isArray(projectRun.category) ? projectRun.category.join(', ') : projectRun.category,
