@@ -198,22 +198,22 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 
                 <div className="space-y-2">
                   {teamMembers.map((member) => (
-                    <div key={member.id} className="p-3 rounded-lg border bg-card space-y-2">
+                    <div key={member.id} className="p-3 rounded-lg border bg-card">
                       <div className="flex items-center gap-2">
                         <Input 
                           placeholder="Name"
                           value={member.name}
                           onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
-                          className="h-8 text-xs flex-1"
+                          className="h-8 text-xs"
                         />
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => openCalendar(member.id)}
-                          className="h-8 text-xs px-2"
+                          className="h-8 text-xs px-3 whitespace-nowrap"
                         >
                           <Calendar className="w-3 h-3 mr-1" />
-                          ({Object.keys(member.availability).length})
+                          Set Availability
                         </Button>
                         {teamMembers.length > 1 && (
                           <Button 
@@ -225,60 +225,6 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         )}
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input 
-                          type="email"
-                          placeholder="email@example.com"
-                          value={member.email || ''}
-                          onChange={(e) => updateTeamMember(member.id, { email: e.target.value })}
-                          className="h-7 text-xs"
-                        />
-                        <Input 
-                          type="tel"
-                          placeholder="(555) 555-5555"
-                          value={member.phone || ''}
-                          onChange={(e) => updateTeamMember(member.id, { phone: e.target.value })}
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5">
-                          <Checkbox 
-                            id={`email-${member.id}`}
-                            checked={member.notificationPreferences?.email || false}
-                            onCheckedChange={(checked) => 
-                              updateTeamMember(member.id, { 
-                                notificationPreferences: { 
-                                  ...member.notificationPreferences,
-                                  email: checked as boolean 
-                                } 
-                              })
-                            }
-                          />
-                          <Label htmlFor={`email-${member.id}`} className="text-xs cursor-pointer">
-                            Email
-                          </Label>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Checkbox 
-                            id={`sms-${member.id}`}
-                            checked={member.notificationPreferences?.sms || false}
-                            onCheckedChange={(checked) => 
-                              updateTeamMember(member.id, { 
-                                notificationPreferences: { 
-                                  ...member.notificationPreferences,
-                                  sms: checked as boolean 
-                                } 
-                              })
-                            }
-                          />
-                          <Label htmlFor={`sms-${member.id}`} className="text-xs cursor-pointer">
-                            SMS
-                          </Label>
-                        </div>
                       </div>
                     </div>
                   ))}
