@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Calendar } from '@/components/ui/calendar';
 import { ScheduledTask, Task, Worker } from '@/interfaces/Scheduling';
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
@@ -59,10 +59,12 @@ export function ScheduleCalendarView({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] overflow-y-auto [&>button]:hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Project Schedule Calendar</span>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              Project Schedule Calendar
+            </DialogTitle>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handlePrevMonth}>
                 <ChevronLeft className="h-4 w-4" />
@@ -73,8 +75,11 @@ export function ScheduleCalendarView({
               <Button variant="outline" size="sm" onClick={handleNextMonth}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="ml-4">
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          </DialogTitle>
+          </div>
         </DialogHeader>
 
         <div className="grid grid-cols-7 gap-1 mt-4">

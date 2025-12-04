@@ -142,27 +142,37 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [projectRisks, setProjectRisks] = useState<any[]>([]);
   const [riskAdjustedDate, setRiskAdjustedDate] = useState<Date | null>(null);
   
+  // Local state for last scheduled date to ensure badge updates
+  const [lastScheduledDate, setLastScheduledDate] = useState<string | null>(null);
+  
   // Initialize target date to empty string
   // Will be set from database when dialog opens via useEffect
   const [targetDate, setTargetDate] = useState<string>('');
   const [dropDeadDate, setDropDeadDate] = useState<string>(() => format(addDays(new Date(), 45), 'yyyy-MM-dd'));
 
-  // Update target date when projectRun changes or dialog opens
+  // Update target date and last scheduled when projectRun changes or dialog opens
   // CRITICAL: Fetch fresh initial_timeline from database to ensure we have latest value
   useEffect(() => {
     const fetchAndSetTargetDate = async () => {
       if (open && projectRun?.id) {
         try {
-          // Fetch the latest initial_timeline from database
+          // Fetch the latest initial_timeline and schedule_events from database
           const { data: freshData, error } = await supabase
             .from('project_runs')
-            .select('initial_timeline')
+            .select('initial_timeline, schedule_events')
             .eq('id', projectRun.id)
             .single();
           
           if (error) {
-            console.error('❌ ProjectScheduler: Error fetching initial_timeline from database:', error);
+            console.error('❌ ProjectScheduler: Error fetching data from database:', error);
             return;
+          }
+          
+          // Set last scheduled date from fresh data
+          if (freshData?.schedule_events?.lastScheduledAt) {
+            setLastScheduledDate(freshData.schedule_events.lastScheduledAt);
+          } else {
+            setLastScheduledDate(null);
           }
           
           // Use fresh data from database if available
@@ -185,7 +195,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             setTargetDate(''); // No default fallback
           }
         } catch (e) {
-          console.error('❌ ProjectScheduler: Exception fetching/parsing initial_timeline:', e);
+          console.error('❌ ProjectScheduler: Exception fetching/parsing data:', e);
         }
       }
     };
@@ -1067,6 +1077,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       await updateProjectRun(updatedProjectRun);
       schedulingEngine.commitSchedule(schedulingResult);
       
+      // Update local state for last scheduled date to trigger badge re-render
+      const savedDate = new Date().toISOString();
+      setLastScheduledDate(savedDate);
+      
       // Dispatch refresh event for workflow navigation
       window.dispatchEvent(new CustomEvent('project-scheduler-updated', {
         detail: { projectRunId: projectRun.id }
@@ -1074,7 +1088,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       
       toast({
         title: "Schedule saved",
-        description: "Your optimized schedule has been saved successfully."
+        description: `Your optimized schedule has been saved. Last scheduled: ${format(new Date(), 'MMM dd, yyyy')}`
       });
       onOpenChange(false);
     } catch (error) {
@@ -1320,9 +1334,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         {/* Last Scheduled Status */}
         <div className="px-4 pt-3 pb-1">
           <div className="flex items-center gap-2">
-            <Badge variant={projectRun?.schedule_events?.lastScheduledAt ? "default" : "secondary"} className="text-xs">
-              {projectRun?.schedule_events?.lastScheduledAt 
-                ? `Last scheduled: ${format(new Date(projectRun.schedule_events.lastScheduledAt), 'MMM dd, yyyy')}`
+            <Badge variant={lastScheduledDate ? "default" : "secondary"} className="text-xs">
+              {lastScheduledDate 
+                ? `Last scheduled: ${format(new Date(lastScheduledDate), 'MMM dd, yyyy')}`
                 : 'Unscheduled'
               }
             </Badge>
