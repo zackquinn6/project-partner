@@ -1,75 +1,76 @@
--- Migration: Fix create_project_run_snapshot to copy incorporated phase metadata
+-- Migration: Fix create_project_run_snapshot to copy incorporated phases in JSONB
 -- Date: 2025-12-04
--- Description: Update the snapshot function to properly copy isLinked and source project fields
+-- Description: Ensure snapshot function copies ALL phases including incorporated ones
 
--- This migration updates the create_project_run_snapshot function to ensure
--- incorporated phases (isLinked: true) are properly copied with all their metadata
+-- CRITICAL DISCOVERY:
+-- Phases are stored in project_runs.phases as JSONB, NOT in a separate table.
+-- There is NO project_run_phases relational table in the database.
 
--- CRITICAL FIX: When copying phases from template to project run,
--- the function MUST copy these additional fields for incorporated phases:
--- - is_linked
--- - source_project_id
--- - source_project_name
--- - incorporated_revision
--- - source_scaling_unit
+-- The create_project_run_snapshot function should:
+-- 1. Fetch the template's phases JSONB from projects.phases or project_templates_live.phases
+-- 2. Copy that JSONB directly to project_runs.phases
+-- 3. NOT filter out any phases based on isLinked or any other field
+-- 4. Create a complete immutable snapshot
 
--- Example of what the function should include when inserting project_run_phases:
+-- INCORRECT approach (if function is doing this):
 /*
-INSERT INTO project_run_phases (
-  project_run_id,
-  name,
-  description,
-  is_standard,
-  is_linked,                 -- ← CRITICAL: Must copy this
-  source_project_id,         -- ← CRITICAL: Must copy this
-  source_project_name,       -- ← CRITICAL: Must copy this
-  incorporated_revision,     -- ← CRITICAL: Must copy this
-  source_scaling_unit,       -- ← CRITICAL: Must copy this
-  position_rule,
-  position_value,
-  display_order,
-  created_at
-)
-SELECT
-  p_project_run_id,
-  name,
-  description,
-  is_standard,
-  is_linked,                 -- ← CRITICAL: Copy from source
-  source_project_id,         -- ← CRITICAL: Copy from source
-  source_project_name,       -- ← CRITICAL: Copy from source
-  incorporated_revision,     -- ← CRITICAL: Copy from source
-  source_scaling_unit,       -- ← CRITICAL: Copy from source
-  position_rule,
-  position_value,
-  display_order,
-  NOW()
-FROM project_phases
-WHERE project_id = p_template_id
--- DO NOT add: AND (is_linked IS NULL OR is_linked = FALSE)
--- DO NOT filter out incorporated phases!
--- ALL phases must be copied to create a complete immutable snapshot
-ORDER BY display_order;
+-- Don't do this:
+SELECT phases FROM project_templates_live 
+WHERE id = p_template_id 
+AND NOT (phases::jsonb @> '[{"isLinked": true}]')  -- ❌ Don't filter!
 */
 
--- NOTE: The actual function update must be done manually or through a proper
--- function replacement script. This file documents the required changes.
+-- CORRECT approach (what function should do):
+/*
+-- Copy ALL phases as-is:
+INSERT INTO project_runs (phases, ...)
+SELECT 
+  phases,  -- ← Copy entire JSONB including incorporated phases
+  ...
+FROM project_templates_live
+WHERE id = p_template_id;
 
--- To implement this fix:
--- 1. Locate the create_project_run_snapshot function in Supabase
--- 2. Ensure the INSERT statement includes all the fields listed above
--- 3. Remove any WHERE clauses that filter out incorporated phases
--- 4. Test by creating a project run from a template with incorporated phases
--- 5. Verify all phases are copied including isLinked metadata
+-- Or if building from project_phases table:
+INSERT INTO project_runs (phases, ...)
+VALUES (
+  (
+    SELECT jsonb_agg(
+      jsonb_build_object(
+        'id', pp.id,
+        'name', pp.name,
+        'isStandard', pp.is_standard,
+        'isLinked', pp.is_linked,  -- ← MUST include this
+        'sourceProjectId', pp.source_project_id,  -- ← MUST include this
+        'sourceProjectName', pp.source_project_name,  -- ← MUST include this
+        -- ... all other phase fields ...
+      )
+    )
+    FROM project_phases pp
+    WHERE pp.project_id = p_template_id
+    -- NO WHERE filtering of incorporated phases!
+    ORDER BY pp.display_order
+  ),
+  ...
+);
+*/
 
--- Validation query to check if incorporated phases are being copied:
+-- Validation query to check incorporated phases in a project run:
 -- SELECT 
---   pr.id as run_id,
---   pr.name as run_name,
---   COUNT(*) FILTER (WHERE prp.is_linked = TRUE) as incorporated_phases_count,
---   STRING_AGG(prp.name, ', ') FILTER (WHERE prp.is_linked = TRUE) as incorporated_phase_names
--- FROM project_runs pr
--- LEFT JOIN project_run_phases prp ON prp.project_run_id = pr.id
--- WHERE pr.id = 'YOUR_PROJECT_RUN_ID'
--- GROUP BY pr.id, pr.name;
+--   id,
+--   name,
+--   jsonb_array_length(phases) as total_phases,
+--   (
+--     SELECT COUNT(*) 
+--     FROM jsonb_array_elements(phases) phase 
+--     WHERE (phase->>'isLinked')::boolean = true
+--   ) as incorporated_phases_count,
+--   (
+--     SELECT jsonb_agg(phase->>'name') 
+--     FROM jsonb_array_elements(phases) phase 
+--     WHERE (phase->>'isLinked')::boolean = true
+--   ) as incorporated_phase_names
+-- FROM project_runs
+-- WHERE id = 'YOUR_PROJECT_RUN_ID';
+
+SELECT 1; -- No-op migration for documentation purposes
 
