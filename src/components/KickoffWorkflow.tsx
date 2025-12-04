@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
@@ -390,11 +390,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                         }
                       }} 
                       variant="outline" 
-                      className="w-1/3 border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight"
+                      className="w-1/3 border-blue-300 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight"
                     >
-                      <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
                       <span className="hidden sm:inline">Go directly to workflow</span>
                       <span className="sm:hidden">Skip planning</span>
+                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-1.5" />
                     </Button>
                   )}
                   
