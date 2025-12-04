@@ -31,6 +31,7 @@ import { ProjectTeamAvailability } from '@/components/ProjectTeamAvailability';
 import { ProjectContractors } from '@/components/ProjectContractors';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScheduleCalendarView } from '@/components/ScheduleCalendarView';
+import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -109,6 +110,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
   // Assign work dialog state
   const [showPhaseAssignment, setShowPhaseAssignment] = useState(false);
+  // Risk manager dialog state
+  const [showRiskManager, setShowRiskManager] = useState(false);
+  // Contractors dialog state
+  const [showContractors, setShowContractors] = useState(false);
 
   // Space priority state with sizing values
   const [spaces, setSpaces] = useState<Array<{ 
@@ -881,7 +886,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           globalSettings: globalSettings,
           scheduleTempo: scheduleTempo,
           planningMode: planningMode,
-          lastGeneratedAt: new Date().toISOString() // Store generation timestamp for auto-regeneration
+          lastGeneratedAt: new Date().toISOString(), // Store generation timestamp for auto-regeneration
+          lastScheduledAt: new Date().toISOString() // Store when schedule was committed
         },
         calendar_integration: {
           scheduledDays: schedulingResult.scheduledTasks.reduce((acc, task) => {
@@ -1143,9 +1149,33 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
+          <div className="flex items-center gap-2">
+            {schedulingResult && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowCalendarView(true)}
+              >
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                Calendar View
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
+        
+        {/* Last Scheduled Status */}
+        <div className="px-4 pt-3 pb-1">
+          <div className="flex items-center gap-2">
+            <Badge variant={projectRun?.schedule_events?.lastScheduledAt ? "default" : "secondary"} className="text-xs">
+              {projectRun?.schedule_events?.lastScheduledAt 
+                ? `Last scheduled: ${format(new Date(projectRun.schedule_events.lastScheduledAt), 'MMM dd, yyyy')}`
+                : 'Unscheduled'
+              }
+            </Badge>
+          </div>
         </div>
 
         {/* Project Goal Completion Date Header */}
@@ -1178,7 +1208,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
 
             {/* New Wizard Interface */}
-            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} scheduleOptimizationMethod={scheduleOptimizationMethod} setScheduleOptimizationMethod={setScheduleOptimizationMethod} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} onAssignWork={() => setShowPhaseAssignment(true)} />
+            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} scheduleOptimizationMethod={scheduleOptimizationMethod} setScheduleOptimizationMethod={setScheduleOptimizationMethod} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} onAssignWork={() => setShowPhaseAssignment(true)} onOpenRiskManager={() => setShowRiskManager(true)} />
 
             {/* Results */}
             {schedulingResult && <>
@@ -1693,6 +1723,15 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         }))}
       />
     )}
+    
+    {/* Risk Manager Dialog */}
+    <RiskManagementWindow
+      open={showRiskManager}
+      onOpenChange={setShowRiskManager}
+      projectId={project.id}
+      projectRunId={projectRun.id}
+      mode="run"
+    />
     </>
   );
 };
