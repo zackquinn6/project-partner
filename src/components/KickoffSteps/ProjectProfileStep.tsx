@@ -230,6 +230,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         updated_at: new Date().toISOString()
       };
       
+      console.log('💾 ProjectProfileStep: Saving initial_timeline to database:', {
+        projectRunId: currentProjectRun.id,
+        initial_timeline: projectForm.initialTimeline,
+        initial_budget: finalBudgetValue,
+        custom_project_name: projectForm.customProjectName.trim()
+      });
       
       const { error: baseError, data: updateResult } = await supabase
         .from('project_runs')
@@ -238,7 +244,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         .select('id, initial_budget, custom_project_name, initial_timeline');
 
       if (baseError) {
-        console.error('❌ ProjectProfileStep: Error saving initial_budget:', {
+        console.error('❌ ProjectProfileStep: Error saving project profile data:', {
           error: baseError,
           code: baseError.code,
           message: baseError.message,
@@ -249,17 +255,29 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         throw baseError;
       }
       
-      // CRITICAL: Verify the value was actually saved
+      // CRITICAL: Verify the values were actually saved
       if (updateResult && updateResult.length > 0) {
         const savedRecord = updateResult[0];
         
-        // If the saved value doesn't match, log a warning
+        console.log('✅ ProjectProfileStep: Values saved successfully:', {
+          initial_budget: savedRecord.initial_budget,
+          initial_timeline: savedRecord.initial_timeline,
+          custom_project_name: savedRecord.custom_project_name
+        });
+        
+        // Verify initial_budget matches
         if (savedRecord.initial_budget !== finalBudgetValue) {
-          console.warn('⚠️ ProjectProfileStep: Saved value does not match expected value!', {
+          console.warn('⚠️ ProjectProfileStep: initial_budget mismatch!', {
             expected: finalBudgetValue,
-            actual: savedRecord.initial_budget,
-            typeExpected: typeof finalBudgetValue,
-            typeActual: typeof savedRecord.initial_budget
+            actual: savedRecord.initial_budget
+          });
+        }
+        
+        // Verify initial_timeline matches
+        if (savedRecord.initial_timeline !== (projectForm.initialTimeline || null)) {
+          console.warn('⚠️ ProjectProfileStep: initial_timeline mismatch!', {
+            expected: projectForm.initialTimeline || null,
+            actual: savedRecord.initial_timeline
           });
         }
       } else {
@@ -435,10 +453,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         updatedAt: new Date()
       };
 
-      // CRITICAL: Update local cache/state with the exact data we just saved to database
-      // This ensures the context has the latest initial_budget immediately
-      // CRITICAL: Update context with the latest data including initial_budget
-      // This ensures ProjectBudgetingWindow can immediately read initial_budget from context
+      // CRITICAL: Update context with the latest data including initial_budget and initial_timeline
+      // This ensures all components can immediately read the latest values from context
       // The updateProjectRun function will also update the database, but we've already done that above
       // This ensures the context is in sync with the database
       const contextUpdatedRun = {
@@ -447,6 +463,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         initial_timeline: projectForm.initialTimeline || null,
         initial_sizing: projectForm.initialSizing.trim() || null
       };
+      
+      console.log('🔄 ProjectProfileStep: Updating context with saved values:', {
+        initial_budget: contextUpdatedRun.initial_budget,
+        initial_timeline: contextUpdatedRun.initial_timeline,
+        initial_sizing: contextUpdatedRun.initial_sizing
+      });
       
       await updateProjectRun(contextUpdatedRun);
       

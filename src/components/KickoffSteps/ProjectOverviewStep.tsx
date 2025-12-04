@@ -605,5 +605,10 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           readOnly={true}
         />
       )}
+
+      {/* Footer Text */}
+      <div className="text-center mt-4">
+        <p className="text-base text-muted-foreground">Does this project seem like a fit?</p>
+      </div>
     </div>;
 };

@@ -134,42 +134,56 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [isComputing, setIsComputing] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
   
-  // Initialize target date from project kickoff goal, or default to 30 days
-  // Use lazy initializer to avoid "Cannot access before initialization" error
+  // Initialize target date to default (30 days from now)
+  // Will be updated from database when dialog opens via useEffect
   const [targetDate, setTargetDate] = useState<string>(() => {
-    if (projectRun?.initial_timeline) {
-      try {
-        const goalDate = new Date(projectRun.initial_timeline);
-        if (!isNaN(goalDate.getTime())) {
-          return format(goalDate, 'yyyy-MM-dd');
-        }
-      } catch (e) {
-        console.error('Error parsing initial_timeline:', e);
-      }
-    }
     return format(addDays(new Date(), 30), 'yyyy-MM-dd');
   });
   const [dropDeadDate, setDropDeadDate] = useState<string>(() => format(addDays(new Date(), 45), 'yyyy-MM-dd'));
 
   // Update target date when projectRun changes or dialog opens
+  // CRITICAL: Fetch fresh initial_timeline from database to ensure we have latest value
   useEffect(() => {
-    if (open && projectRun?.initial_timeline) {
-      try {
-        const goalDate = new Date(projectRun.initial_timeline);
-        if (!isNaN(goalDate.getTime())) {
-          const formattedDate = format(goalDate, 'yyyy-MM-dd');
-          console.log('📅 ProjectScheduler: Setting target date from initial_timeline:', {
-            initial_timeline: projectRun.initial_timeline,
-            formattedDate,
-            goalDate: goalDate.toISOString()
-          });
-          setTargetDate(formattedDate);
+    const fetchAndSetTargetDate = async () => {
+      if (open && projectRun?.id) {
+        try {
+          // Fetch the latest initial_timeline from database
+          const { data: freshData, error } = await supabase
+            .from('project_runs')
+            .select('initial_timeline')
+            .eq('id', projectRun.id)
+            .single();
+          
+          if (error) {
+            console.error('❌ ProjectScheduler: Error fetching initial_timeline from database:', error);
+            return;
+          }
+          
+          // Use fresh data from database if available
+          if (freshData?.initial_timeline) {
+            const goalDate = new Date(freshData.initial_timeline);
+            if (!isNaN(goalDate.getTime())) {
+              const formattedDate = format(goalDate, 'yyyy-MM-dd');
+              console.log('✅ ProjectScheduler: Setting target date from database:', {
+                initial_timeline: freshData.initial_timeline,
+                formattedDate,
+                goalDate: goalDate.toISOString()
+              });
+              setTargetDate(formattedDate);
+            } else {
+              console.warn('⚠️ ProjectScheduler: Invalid date in database:', freshData.initial_timeline);
+            }
+          } else {
+            console.log('ℹ️ ProjectScheduler: No initial_timeline found in database, using default (30 days from now)');
+          }
+        } catch (e) {
+          console.error('❌ ProjectScheduler: Exception fetching/parsing initial_timeline:', e);
         }
-      } catch (e) {
-        console.error('Error parsing initial_timeline:', e);
       }
-    }
-  }, [open, projectRun?.initial_timeline]);
+    };
+    
+    fetchAndSetTargetDate();
+  }, [open, projectRun?.id]);
 
   // Team management
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([{

@@ -277,14 +277,35 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   };
 
   const addBudgetItem = async () => {
-    if (!newItemSection.trim() || !newItemName.trim() || !newItemAmount.trim()) {
-      toast({ title: 'Please fill in all fields', variant: 'destructive' });
+    // Validate required fields with specific messages
+    const missingFields: string[] = [];
+    
+    if (!newItemSection.trim()) {
+      missingFields.push('Section/Phase');
+    }
+    if (!newItemName.trim()) {
+      missingFields.push('Item Description');
+    }
+    if (!newItemAmount.trim()) {
+      missingFields.push('Budget Amount');
+    }
+
+    if (missingFields.length > 0) {
+      toast({ 
+        title: 'Missing Required Fields', 
+        description: `Please fill in: ${missingFields.join(', ')}`,
+        variant: 'destructive' 
+      });
       return;
     }
 
     const parsedAmount = parseFloat(newItemAmount);
     if (isNaN(parsedAmount) || parsedAmount < 0) {
-      toast({ title: 'Please enter a valid positive number for amount', variant: 'destructive' });
+      toast({ 
+        title: 'Invalid Budget Amount', 
+        description: 'Please enter a valid positive number for Budget Amount',
+        variant: 'destructive' 
+      });
       return;
     }
 
@@ -601,7 +622,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Section/Phase</Label>
+                  <Label>Section/Phase <span className="text-red-500">*</span></Label>
                   <Select
                     value={newItemSection}
                     onValueChange={setNewItemSection}
@@ -623,7 +644,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                   </Select>
                 </div>
                 <div>
-                  <Label>Item Description</Label>
+                  <Label>Item Description <span className="text-red-500">*</span></Label>
                   <Input
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
@@ -634,7 +655,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Budget Amount</Label>
+                  <Label>Budget Amount <span className="text-red-500">*</span></Label>
                   <Input
                     type="number"
                     value={newItemAmount}
@@ -659,25 +680,30 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                   </Select>
                 </div>
               </div>
-              <Button 
-                onClick={async () => {
-                  try {
-                    console.log('🎯 ProjectBudgetingWindow: Add Line Item button clicked');
-                    await addBudgetItem();
-                  } catch (error) {
-                    console.error('❌ Error adding budget item:', error);
-                    toast({
-                      title: 'Failed to add budget item',
-                      description: error instanceof Error ? error.message : 'Unknown error',
-                      variant: 'destructive'
-                    });
-                  }
-                }}
-                className="h-11 md:h-10 w-full md:w-auto"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Line Item
-              </Button>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-muted-foreground">
+                  <span className="text-red-500">*</span> Required fields
+                </p>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      console.log('🎯 ProjectBudgetingWindow: Add Line Item button clicked');
+                      await addBudgetItem();
+                    } catch (error) {
+                      console.error('❌ Error adding budget item:', error);
+                      toast({
+                        title: 'Failed to add budget item',
+                        description: error instanceof Error ? error.message : 'Unknown error',
+                        variant: 'destructive'
+                      });
+                    }
+                  }}
+                  className="h-11 md:h-10 w-full md:w-auto"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Line Item
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
