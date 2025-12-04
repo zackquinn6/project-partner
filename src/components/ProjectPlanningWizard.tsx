@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, X } from 'lucide-react';
 import { CustomizationStep } from './PlanningWizardSteps/CustomizationStep';
 import { ScheduleStep } from './PlanningWizardSteps/ScheduleStep';
 import { BudgetStep } from './PlanningWizardSteps/BudgetStep';
@@ -91,13 +92,26 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 bg-background z-50 overflow-y-auto">
-      <div className="max-w-6xl mx-auto p-2 sm:p-4 md:p-6 space-y-2 sm:space-y-4 md:space-y-6 pb-20 sm:pb-6">
-        {/* Progress Header */}
-        <Card>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[95vw] md:h-[95vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        {/* Close button */}
+        <div className="absolute right-4 top-4 z-10">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            className="h-8 px-3"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Close
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-6xl mx-auto p-2 sm:p-4 md:p-6 space-y-2 sm:space-y-4 md:space-y-6 pb-20 sm:pb-6">
+            {/* Progress Header */}
+            <Card>
           <CardHeader className="p-3 sm:p-4 md:p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="flex-1 min-w-0">
@@ -168,7 +182,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         </Card>
 
         {/* Current Step Content */}
-        <div className="flex flex-col" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
+        <div className="flex flex-col" style={{ minHeight: '400px' }}>
           <div className="flex-1 overflow-y-auto -mx-2 sm:mx-0 px-2 sm:px-0 pb-4">
             {renderCurrentStep()}
           </div>
@@ -194,8 +208,10 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             </Card>
           </div>
         </div>
-      </div>
-    </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
