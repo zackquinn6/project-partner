@@ -699,45 +699,73 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       lastUpdateRef.current = updateKey;
 
       try {
+        console.log('💾 ProjectActions - Saving project run to database:', {
+          projectRunId: projectRun.id,
+          userId: user.id,
+          name: projectRun.name,
+          completedStepsCount: projectRun.completedSteps.length,
+          progress: safeProgress,
+          initial_budget: (projectRun as any).initial_budget,
+          initial_timeline: (projectRun as any).initial_timeline,
+          initial_sizing: (projectRun as any).initial_sizing,
+          hasBudgetData: !!projectRun.budget_data,
+          hasPhotos: !!(projectRun.project_photos),
+          home_id: (projectRun as any).home_id
+        });
+
+        const updateData = {
+          name: projectRun.name,
+          description: projectRun.description,
+          start_date: projectRun.startDate.toISOString(),
+          plan_end_date: projectRun.planEndDate.toISOString(),
+          end_date: projectRun.endDate?.toISOString(),
+          status: projectRun.status,
+          project_leader: projectRun.projectLeader,
+          accountability_partner: projectRun.accountabilityPartner,
+          custom_project_name: projectRun.customProjectName,
+          home_id: (projectRun as any).home_id || null,
+          current_phase_id: projectRun.currentPhaseId,
+          current_operation_id: projectRun.currentOperationId,
+          current_step_id: projectRun.currentStepId,
+          completed_steps: JSON.stringify(projectRun.completedSteps),
+          step_completion_percentages: projectRun.stepCompletionPercentages ? JSON.stringify(projectRun.stepCompletionPercentages) : null,
+          progress: safeProgress || 0,
+          phases: JSON.stringify(projectRun.phases),
+          category: Array.isArray(projectRun.category) ? projectRun.category.join(', ') : projectRun.category,
+          effort_level: projectRun.effortLevel,
+          skill_level: projectRun.skillLevel,
+          estimated_time: projectRun.estimatedTime,
+          customization_decisions: projectRun.customization_decisions ? JSON.stringify(projectRun.customization_decisions) : null,
+          instruction_level_preference: projectRun.instruction_level_preference || 'intermediate',
+          budget_data: projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : null,
+          issue_reports: projectRun.issue_reports ? JSON.stringify(projectRun.issue_reports) : null,
+          time_tracking: projectRun.time_tracking ? JSON.stringify(projectRun.time_tracking) : null,
+          project_photos: projectRun.project_photos ? JSON.stringify(projectRun.project_photos) : null,
+          phase_ratings: projectRun.phase_ratings ? JSON.stringify(projectRun.phase_ratings) : null,
+          survey_data: projectRun.survey_data ? JSON.stringify(projectRun.survey_data) : null,
+          feedback_data: projectRun.feedback_data ? JSON.stringify(projectRun.feedback_data) : null,
+          schedule_events: projectRun.schedule_events ? JSON.stringify(projectRun.schedule_events) : null,
+          shopping_checklist_data: projectRun.shopping_checklist_data ? JSON.stringify(projectRun.shopping_checklist_data) : null,
+          progress_reporting_style: projectRun.progress_reporting_style || 'linear',
+          initial_budget: (projectRun as any).initial_budget || null,
+          initial_timeline: (projectRun as any).initial_timeline || null,
+          initial_sizing: (projectRun as any).initial_sizing || null,
+          schedule_optimization_method: projectRun.schedule_optimization_method || 'single-piece-flow',
+          updated_at: new Date().toISOString()
+        };
+
         const { error } = await supabase
           .from('project_runs')
-          .update({
-            name: projectRun.name,
-            description: projectRun.description,
-            start_date: projectRun.startDate.toISOString(),
-            plan_end_date: projectRun.planEndDate.toISOString(),
-            end_date: projectRun.endDate?.toISOString(),
-            status: projectRun.status,
-            project_leader: projectRun.projectLeader,
-            accountability_partner: projectRun.accountabilityPartner,
-            custom_project_name: projectRun.customProjectName,
-            current_phase_id: projectRun.currentPhaseId,
-            current_operation_id: projectRun.currentOperationId,
-            current_step_id: projectRun.currentStepId,
-            completed_steps: JSON.stringify(projectRun.completedSteps),
-            progress: safeProgress || 0, // Extra safety check - ensure never null
-            phases: JSON.stringify(projectRun.phases),
-            category: Array.isArray(projectRun.category) ? projectRun.category.join(', ') : projectRun.category,
-            effort_level: projectRun.effortLevel,
-            skill_level: projectRun.skillLevel,
-            estimated_time: projectRun.estimatedTime,
-            customization_decisions: projectRun.customization_decisions ? JSON.stringify(projectRun.customization_decisions) : null,
-            instruction_level_preference: projectRun.instruction_level_preference || 'detailed',
-            budget_data: projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : null,
-            issue_reports: projectRun.issue_reports ? JSON.stringify(projectRun.issue_reports) : null,
-            time_tracking: projectRun.time_tracking ? JSON.stringify(projectRun.time_tracking) : null,
-            progress_reporting_style: projectRun.progress_reporting_style || 'linear',
-            initial_budget: (projectRun as any).initial_budget || null,
-            initial_timeline: (projectRun as any).initial_timeline || null,
-            initial_sizing: (projectRun as any).initial_sizing || null,
-            schedule_optimization_method: projectRun.schedule_optimization_method || 'single-piece-flow'
-          })
+          .update(updateData)
           .eq('id', projectRun.id)
           .eq('user_id', user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ ProjectActions - Database update error:', error);
+          throw error;
+        }
 
-        console.log("✅ ProjectActions - Project run updated successfully in database");
+        console.log("✅ ProjectActions - Project run updated successfully in database for user:", user.id);
         
       } catch (error) {
         console.error('❌ Error updating project run:', error);

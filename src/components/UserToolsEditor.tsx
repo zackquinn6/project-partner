@@ -123,6 +123,11 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     if (!user) return;
     
     try {
+      console.log('🔧 UserToolsEditor - Fetching tools for user:', {
+        userId: user.id,
+        userEmail: user.email
+      });
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('owned_tools')
@@ -130,9 +135,16 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         .single();
       
       if (error) throw error;
-      setUserTools((data?.owned_tools as unknown as UserOwnedTool[]) || []);
+      
+      const tools = (data?.owned_tools as unknown as UserOwnedTool[]) || [];
+      console.log('✅ UserToolsEditor - Fetched tools:', {
+        count: tools.length,
+        toolNames: tools.slice(0, 5).map(t => t.name || t.item)
+      });
+      
+      setUserTools(tools);
     } catch (error) {
-      console.error('Error fetching user tools:', error);
+      console.error('❌ UserToolsEditor - Error fetching user tools:', error);
     }
   };
 
@@ -292,18 +304,25 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     // Save to database immediately in background
     if (user) {
       try {
+        console.log('💾 UserToolsEditor - Saving tool to database:', {
+          userId: user.id,
+          toolName: tool.name || tool.item,
+          totalTools: updatedTools.length
+        });
+        
         const { error } = await supabase
           .from('profiles')
           .update({ owned_tools: updatedTools as any })
           .eq('user_id', user.id);
         
         if (error) {
-          console.error('Failed to save tool:', error);
+          console.error('❌ Failed to save tool:', error);
         } else {
+          console.log('✅ Tool saved successfully for user:', user.id);
           window.dispatchEvent(new CustomEvent('tools-library-updated'));
         }
       } catch (error) {
-        console.error('Error saving tool:', error);
+        console.error('❌ Error saving tool:', error);
       }
     }
   };

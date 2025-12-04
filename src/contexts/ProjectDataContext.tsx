@@ -324,6 +324,17 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
   // Fetch project runs data - only when authenticated
   const shouldFetchProjectRuns = !isGuest && !!user;
   
+  // Debug log for project runs fetching
+  React.useEffect(() => {
+    if (shouldFetchProjectRuns) {
+      console.log('📊 ProjectDataContext - Fetching project runs for user:', {
+        userId: user.id,
+        userEmail: user.email,
+        shouldFetch: shouldFetchProjectRuns
+      });
+    }
+  }, [shouldFetchProjectRuns, user?.id]);
+  
   const {
     data: projectRuns,
     loading: projectRunsLoading,

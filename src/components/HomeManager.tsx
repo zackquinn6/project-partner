@@ -73,6 +73,11 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
     if (!user) return;
     setLoading(true);
     try {
+      console.log('🏠 HomeManager - Fetching homes for user:', {
+        userId: user.id,
+        userEmail: user.email
+      });
+      
       const {
         data,
         error
@@ -81,10 +86,17 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       }).order('created_at', {
         ascending: false
       });
+      
       if (error) throw error;
+      
+      console.log('✅ HomeManager - Fetched homes:', {
+        count: data?.length || 0,
+        homeNames: data?.map(h => h.name) || []
+      });
+      
       setHomes(data || []);
     } catch (error) {
-      console.error('Error fetching homes:', error);
+      console.error('❌ HomeManager - Error fetching homes:', error);
       toast.error('Failed to load homes');
     } finally {
       setLoading(false);
