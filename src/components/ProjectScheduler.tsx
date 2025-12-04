@@ -622,6 +622,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
   // Generate schedule with advanced algorithm
   const computeAdvancedSchedule = async () => {
+    // Validate target date is set
+    if (!targetDate || targetDate.trim() === '') {
+      toast({
+        title: "Target date required",
+        description: "Please set a target completion date before generating a schedule.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsComputing(true);
     try {
       // Prepare scheduling inputs with completion priority
