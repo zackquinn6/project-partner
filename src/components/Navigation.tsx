@@ -69,6 +69,7 @@ export default function Navigation({
   const { canAccessPaidFeatures } = useMembership();
   const { isBetaMode } = useBetaMode();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   // Listen for user documentation request from admin guide
   useEffect(() => {
