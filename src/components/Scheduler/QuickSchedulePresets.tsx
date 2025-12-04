@@ -111,11 +111,6 @@ export const QuickSchedulePresets: React.FC<QuickSchedulePresetsProps> = ({ onPr
   
   return (
     <div className="space-y-3">
-      <div>
-        <h3 className="text-sm font-medium mb-2">Quick Availability</h3>
-        <p className="text-xs text-muted-foreground">Choose a schedule that fits your availability</p>
-      </div>
-      
       <div className="grid grid-cols-4 gap-2">
         {presets.map((preset) => {
           const isSelected = selectedPresetId === preset.id;
@@ -156,10 +151,10 @@ export const QuickSchedulePresets: React.FC<QuickSchedulePresetsProps> = ({ onPr
                     <div className="flex items-center justify-center gap-1 mt-2">
                       <Badge 
                         variant={isSelected ? 'default' : 'secondary'} 
-                        className="text-[10px] font-medium px-1.5 py-0.5"
+                        className="text-sm font-bold px-2 py-1"
                       >
-                        <Clock className={`w-2.5 h-2.5 mr-1 ${isSelected ? 'text-primary-foreground' : ''}`} />
-                        {preset.settings.hoursPerWeek}h
+                        <Clock className={`w-3.5 h-3.5 mr-1.5 ${isSelected ? 'text-primary-foreground' : ''}`} />
+                        {preset.settings.hoursPerWeek}h per week
                       </Badge>
                     </div>
                   </div>

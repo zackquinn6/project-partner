@@ -103,6 +103,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIndividualAvailability, setShowIndividualAvailability] = useState(false);
+  const [noWorkOnHolidays, setNoWorkOnHolidays] = useState(false);
   
   // Check if availability has been selected (either quick preset or individual)
   const hasAvailabilitySelected = teamMembers.some(member => 
@@ -110,6 +111,18 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
     member.weekendsOnly || 
     member.weekdaysAfterFivePm
   );
+  
+  // Handler for customize availability button
+  const handleCustomizeAvailability = () => {
+    setShowAdvanced(true);
+    // Scroll to team members section after a brief delay to allow expansion
+    setTimeout(() => {
+      const teamMembersSection = document.querySelector('[data-team-members-section]');
+      if (teamMembersSection) {
+        teamMembersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
 
   return (
     <div className="space-y-4">
@@ -171,66 +184,28 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
             {/* Quick Availability Presets */}
             <QuickSchedulePresets onPresetSelect={onPresetApply} teamMembers={teamMembers} />
             
-            {/* Individual Team Availability Button */}
+            {/* No work on national holidays checkbox */}
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox 
+                id="no-holidays"
+                checked={noWorkOnHolidays}
+                onCheckedChange={(checked) => setNoWorkOnHolidays(checked as boolean)}
+              />
+              <Label htmlFor="no-holidays" className="text-xs cursor-pointer">
+                No work on national holidays
+              </Label>
+            </div>
+            
+            {/* Customize Availability Button */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowIndividualAvailability(!showIndividualAvailability)}
+              onClick={handleCustomizeAvailability}
               className="w-full h-9 text-xs mt-3"
             >
               <Users className="w-3.5 h-3.5 mr-1.5" />
-              Individual team availability
+              Customize availability
             </Button>
-            
-            {/* Individual Availability Section (collapsible) */}
-            {showIndividualAvailability && (
-              <div className="space-y-3 pt-3 border-t mt-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" />
-                    Team Members & Availability
-                  </Label>
-                  <Button onClick={addTeamMember} size="sm" variant="outline" className="h-7 text-xs">
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add Member
-                  </Button>
-                </div>
-                
-                <div className="space-y-2">
-                  {teamMembers.map((member) => (
-                    <div key={member.id} className="p-3 rounded-lg border bg-card">
-                      <div className="flex items-center gap-2">
-                        <Input 
-                          placeholder="Name"
-                          value={member.name}
-                          onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
-                          className="h-8 text-xs"
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => openCalendar(member.id)}
-                          className="h-8 text-xs px-3 whitespace-nowrap"
-                        >
-                          <Calendar className="w-3 h-3 mr-1" />
-                          Set Availability
-                        </Button>
-                        {teamMembers.length > 1 && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removeTeamMember(member.id)}
-                            className="h-8 px-2"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -434,6 +409,54 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       Apply
                     </Button>
                   )}
+                </div>
+                
+                {/* Team Members Section */}
+                <div className="space-y-3 pt-3 border-t" data-team-members-section>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5" />
+                      Team Members & Availability
+                    </Label>
+                    <Button onClick={addTeamMember} size="sm" variant="outline" className="h-7 text-xs">
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add Member
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {teamMembers.map((member) => (
+                      <div key={member.id} className="p-3 rounded-lg border bg-card">
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            placeholder="Name"
+                            value={member.name}
+                            onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
+                            className="h-8 text-xs"
+                          />
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openCalendar(member.id)}
+                            className="h-8 text-xs px-3 whitespace-nowrap"
+                          >
+                            <Calendar className="w-3 h-3 mr-1" />
+                            Set Availability
+                          </Button>
+                          {teamMembers.length > 1 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => removeTeamMember(member.id)}
+                              className="h-8 px-2"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </CardContent>
