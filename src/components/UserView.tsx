@@ -3367,6 +3367,11 @@ export default function UserView({
       <ProjectPlanningWizard
         open={projectPlanningWizardOpen}
         onOpenChange={setProjectPlanningWizardOpen}
+        onGoToWorkflow={() => {
+          console.log("🎯 Planning Wizard: Let's get to work - switching to workflow");
+          setProjectPlanningWizardOpen(false);
+          // User goes directly to workflow
+        }}
       />
       
       {/* Project Completion Popup */}

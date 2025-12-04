@@ -10,11 +10,13 @@ import { BudgetStep } from './PlanningWizardSteps/BudgetStep';
 interface ProjectPlanningWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onGoToWorkflow?: () => void;
 }
 
 export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   open,
-  onOpenChange
+  onOpenChange,
+  onGoToWorkflow
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -74,7 +76,14 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       case 0:
         return <CustomizationStep {...stepProps} />;
       case 1:
-        return <ScheduleStep {...stepProps} />;
+        return <ScheduleStep 
+          {...stepProps}
+          onNext={() => setCurrentStep(2)}
+          onGoToWorkflow={() => {
+            onOpenChange(false);
+            if (onGoToWorkflow) onGoToWorkflow();
+          }}
+        />;
       case 2:
         return <BudgetStep {...stepProps} />;
       default:
