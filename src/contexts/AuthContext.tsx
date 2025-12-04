@@ -44,11 +44,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Handle email confirmation - redirect to home/workshop after verification
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('✅ User signed in via email confirmation');
+          // Use window.location to ensure clean navigation after email confirmation
+          // This prevents auth state issues and ensures proper redirect
+          if (window.location.pathname === '/auth' || window.location.pathname === '/') {
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 500);
+          }
+        }
       }
     );
 
@@ -67,8 +79,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
     
-    // Use production URL for email confirmation links
-    const redirectUrl = 'https://projectpartner.toolio.us/';
+    // Use production URL for email confirmation links - redirect to auth page
+    // After confirmation, user will be signed in and redirected to home/projects
+    const redirectUrl = 'https://projectpartner.toolio.us/auth';
     
     const { error } = await supabase.auth.signUp({
       email: sanitizedEmail,

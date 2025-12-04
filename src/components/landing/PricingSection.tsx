@@ -47,7 +47,7 @@ export const PricingSection: React.FC = () => {
                   <span>My Tools Library</span>
                 </li>
               </ul>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/auth')}>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/auth?mode=signup')}>
                 Get Started Free
               </Button>
             </CardContent>
@@ -100,7 +100,7 @@ export const PricingSection: React.FC = () => {
                   <span>DIY Achievement Tracking</span>
                 </li>
               </ul>
-              <Button className="w-full" onClick={() => navigate('/auth')}>
+              <Button className="w-full" onClick={() => navigate('/auth?mode=signup')}>
                 Start Free Trial
               </Button>
               <p className="text-xs text-center text-muted-foreground mt-3">
