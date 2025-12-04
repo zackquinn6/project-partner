@@ -42,8 +42,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { setGuestMode, transferGuestDataToUser } = useGuest();
 
   useEffect(() => {
-    let hasRedirected = false; // Prevent multiple redirects
-    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -51,16 +49,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        
-        // Handle email confirmation - redirect to home ONLY from auth page
-        // Only redirect once and only if on /auth page to avoid infinite loops
-        if (event === 'SIGNED_IN' && session?.user && !hasRedirected && window.location.pathname === '/auth') {
-          console.log('✅ User signed in via email confirmation - redirecting from auth page');
-          hasRedirected = true;
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 500);
-        }
       }
     );
 
