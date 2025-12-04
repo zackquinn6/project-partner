@@ -142,16 +142,49 @@ export default function Navigation({
     }
     
     // Parse phases from database
-    let parsedPhases = typeof freshRun.phases === 'string' 
-      ? JSON.parse(freshRun.phases) 
-      : (freshRun.phases || []);
+    let parsedPhases;
+    try {
+      if (typeof freshRun.phases === 'string') {
+        parsedPhases = freshRun.phases.trim() === '' || freshRun.phases === '[]' 
+          ? [] 
+          : JSON.parse(freshRun.phases);
+      } else {
+        parsedPhases = freshRun.phases || [];
+      }
+    } catch (parseError) {
+      console.error('❌ Error parsing phases:', parseError);
+      parsedPhases = [];
+    }
     
     // CRITICAL: Project runs MUST have phases - if missing, this is a data integrity error
     if (!parsedPhases || !Array.isArray(parsedPhases) || parsedPhases.length === 0) {
-      const errorMsg = `Project run "${freshRun.name}" (ID: ${projectRunId}) has no phases snapshot. This project run is corrupted and cannot be opened. Please delete and recreate this project.`;
-      console.error('❌ CRITICAL ERROR:', errorMsg);
-      toast.error(errorMsg);
-      throw new Error(errorMsg);
+      console.error('❌ CRITICAL ERROR: Project run has no phases:', {
+        name: freshRun.name,
+        id: projectRunId,
+        phasesRaw: freshRun.phases,
+        phasesType: typeof freshRun.phases,
+        parsedPhases
+      });
+      
+      // Try to fetch template and rebuild phases
+      if (freshRun.template_id) {
+        console.log('🔄 Attempting to fetch template phases for:', freshRun.template_id);
+        const template = projects.find(p => p.id === freshRun.template_id);
+        if (template?.phases && Array.isArray(template.phases) && template.phases.length > 0) {
+          console.log('✅ Found template phases, using template data');
+          parsedPhases = template.phases;
+        } else {
+          const errorMsg = `Project run "${freshRun.name}" has no phases and template is unavailable. Please recreate this project.`;
+          console.error('❌ FINAL ERROR:', errorMsg);
+          toast.error(errorMsg);
+          return; // Don't throw, just return to prevent navigation
+        }
+      } else {
+        const errorMsg = `Project run "${freshRun.name}" has no phases and no template. Please recreate this project.`;
+        console.error('❌ FINAL ERROR:', errorMsg);
+        toast.error(errorMsg);
+        return; // Don't throw, just return to prevent navigation
+      }
     }
     
     // Transform database data to ProjectRun format
