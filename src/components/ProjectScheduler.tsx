@@ -107,10 +107,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   } = useResponsive();
   const { user } = useAuth();
 
-  // Phase assignment dialog state
+  // Assign work dialog state
   const [showPhaseAssignment, setShowPhaseAssignment] = useState(false);
-  // Team availability dialog state
-  const [showTeamAvailability, setShowTeamAvailability] = useState(false);
 
   // Space priority state with sizing values
   const [spaces, setSpaces] = useState<Array<{ 
@@ -1166,26 +1164,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
-            {/* Assign Phases, Team Availability, and Contractors Buttons */}
+            {/* Contractor Scheduling Button */}
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPhaseAssignment(true)}
-                className="flex-1 h-11 md:h-9 text-xs md:text-sm"
-              >
-                <Layers className="w-4 h-4 mr-1 md:mr-2" />
-                <span className="truncate">Assign Phases</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTeamAvailability(true)}
-                className="flex-1 h-11 md:h-9 text-xs md:text-sm"
-              >
-                <Users className="w-4 h-4 mr-1 md:mr-2" />
-                <span className="truncate">Team Availability</span>
-              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -1193,12 +1173,12 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 className="flex-1 h-11 md:h-9 text-xs md:text-sm"
               >
                 <Briefcase className="w-4 h-4 mr-1 md:mr-2" />
-                <span className="truncate">Contractors</span>
+                <span className="truncate">Add contractor scheduling</span>
               </Button>
             </div>
 
             {/* New Wizard Interface */}
-            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} scheduleOptimizationMethod={scheduleOptimizationMethod} setScheduleOptimizationMethod={setScheduleOptimizationMethod} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} />
+            <SchedulerWizard targetDate={targetDate} setTargetDate={setTargetDate} dropDeadDate={dropDeadDate} setDropDeadDate={setDropDeadDate} planningMode={planningMode} setPlanningMode={setPlanningMode} scheduleTempo={scheduleTempo} setScheduleTempo={setScheduleTempo} scheduleOptimizationMethod={scheduleOptimizationMethod} setScheduleOptimizationMethod={setScheduleOptimizationMethod} onPresetApply={applyPreset} teamMembers={teamMembers} addTeamMember={addTeamMember} removeTeamMember={removeTeamMember} updateTeamMember={updateTeamMember} openCalendar={openCalendar} onGenerateSchedule={computeAdvancedSchedule} isComputing={isComputing} onApplyOptimization={handleApplyOptimization} onAssignWork={() => setShowPhaseAssignment(true)} />
 
             {/* Results */}
             {schedulingResult && <>
@@ -1642,11 +1622,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           </DialogContent>
         </Dialog>}
 
-    {/* Phase Assignment Dialog */}
+    {/* Assign Work Dialog */}
     <Dialog open={showPhaseAssignment} onOpenChange={setShowPhaseAssignment}>
       <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-6xl h-[85vh] p-0 gap-0">
         <DialogHeader className="p-4 border-b flex flex-row items-center justify-between">
-          <DialogTitle>Assign Phases to Team Members</DialogTitle>
+          <DialogTitle>Assign Work to Team Members</DialogTitle>
           <Button
             variant="ghost"
             size="icon"
@@ -1669,37 +1649,13 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       </DialogContent>
     </Dialog>
 
-    {/* Team Availability Dialog */}
-    <Dialog open={showTeamAvailability} onOpenChange={setShowTeamAvailability}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0">
-          <div className="flex items-center justify-between gap-2">
-            <DialogTitle className="text-lg md:text-xl font-bold">Team Availability</DialogTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setShowTeamAvailability(false)} 
-              className="h-7 px-2 text-[9px] md:text-xs"
-            >
-              Close
-            </Button>
-          </div>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
-          <ProjectTeamAvailability
-            teamMembers={teamMembers}
-            onTeamMembersChange={setTeamMembers}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
 
-    {/* Contractors Dialog */}
+    {/* Add Contractor Scheduling Dialog */}
     <Dialog open={showContractors} onOpenChange={setShowContractors}>
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
         <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0">
           <div className="flex items-center justify-between gap-2">
-            <DialogTitle className="text-lg md:text-xl font-bold">Contractors</DialogTitle>
+            <DialogTitle className="text-lg md:text-xl font-bold">Add contractor scheduling</DialogTitle>
             <Button 
               variant="ghost" 
               size="sm" 

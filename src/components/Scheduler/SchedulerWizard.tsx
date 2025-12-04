@@ -76,6 +76,7 @@ interface SchedulerWizardProps {
   onGenerateSchedule: () => void;
   isComputing: boolean;
   onApplyOptimization?: () => void;
+  onAssignWork?: () => void;
 }
 
 export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
@@ -97,26 +98,30 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   openCalendar,
   onGenerateSchedule,
   isComputing,
-  onApplyOptimization
+  onApplyOptimization,
+  onAssignWork
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showIndividualAvailability, setShowIndividualAvailability] = useState(false);
+  
+  // Check if availability has been selected (either quick preset or individual)
+  const hasAvailabilitySelected = teamMembers.some(member => 
+    Object.keys(member.availability).length > 0 || 
+    member.weekendsOnly || 
+    member.weekdaysAfterFivePm
+  );
 
   return (
     <div className="space-y-4">
-      {/* Quick Presets */}
+      {/* Step 1: Target Dates */}
       <Card>
-        <CardContent className="p-4">
-          <QuickSchedulePresets onPresetSelect={onPresetApply} teamMembers={teamMembers} />
-        </CardContent>
-      </Card>
-
-      {/* Essential Settings */}
-      <Card>
-        <CardContent className="p-4 space-y-4">
+        <CardContent className="p-4 space-y-3">
           <div>
             <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" />
-              Project Dates
+              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                1
+              </div>
+              <span>Target dates</span>
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -149,13 +154,157 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
+      {/* Step 2: Availability */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
           <div>
+            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                2
+              </div>
+              <span>Availability</span>
+            </h3>
+            
+            {/* Quick Availability Presets */}
+            <QuickSchedulePresets onPresetSelect={onPresetApply} teamMembers={teamMembers} />
+            
+            {/* Individual Team Availability Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowIndividualAvailability(!showIndividualAvailability)}
+              className="w-full h-9 text-xs mt-3"
+            >
+              <Users className="w-3.5 h-3.5 mr-1.5" />
+              Individual team availability
+            </Button>
+            
+            {/* Individual Availability Section (collapsible) */}
+            {showIndividualAvailability && (
+              <div className="space-y-3 pt-3 border-t mt-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" />
+                    Team Members & Availability
+                  </Label>
+                  <Button onClick={addTeamMember} size="sm" variant="outline" className="h-7 text-xs">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add Member
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  {teamMembers.map((member) => (
+                    <div key={member.id} className="p-3 rounded-lg border bg-card space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          placeholder="Name"
+                          value={member.name}
+                          onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
+                          className="h-8 text-xs flex-1"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openCalendar(member.id)}
+                          className="h-8 text-xs px-2"
+                        >
+                          <Calendar className="w-3 h-3 mr-1" />
+                          ({Object.keys(member.availability).length})
+                        </Button>
+                        {teamMembers.length > 1 && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => removeTeamMember(member.id)}
+                            className="h-8 px-2"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input 
+                          type="email"
+                          placeholder="email@example.com"
+                          value={member.email || ''}
+                          onChange={(e) => updateTeamMember(member.id, { email: e.target.value })}
+                          className="h-7 text-xs"
+                        />
+                        <Input 
+                          type="tel"
+                          placeholder="(555) 555-5555"
+                          value={member.phone || ''}
+                          onChange={(e) => updateTeamMember(member.id, { phone: e.target.value })}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <Checkbox 
+                            id={`email-${member.id}`}
+                            checked={member.notificationPreferences?.email || false}
+                            onCheckedChange={(checked) => 
+                              updateTeamMember(member.id, { 
+                                notificationPreferences: { 
+                                  ...member.notificationPreferences,
+                                  email: checked as boolean 
+                                } 
+                              })
+                            }
+                          />
+                          <Label htmlFor={`email-${member.id}`} className="text-xs cursor-pointer">
+                            Email
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Checkbox 
+                            id={`sms-${member.id}`}
+                            checked={member.notificationPreferences?.sms || false}
+                            onCheckedChange={(checked) => 
+                              updateTeamMember(member.id, { 
+                                notificationPreferences: { 
+                                  ...member.notificationPreferences,
+                                  sms: checked as boolean 
+                                } 
+                              })
+                            }
+                          />
+                          <Label htmlFor={`sms-${member.id}`} className="text-xs cursor-pointer">
+                            SMS
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Step 3: Tempo */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div>
+            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                3
+              </div>
+              <span>Tempo</span>
+            </h3>
+            
             <Label className="text-xs font-medium mb-2 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Schedule Tempo
             </Label>
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 variant={scheduleTempo === 'fast_track' ? 'default' : 'outline'}
                 size="sm"
@@ -215,11 +364,6 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 <div className="flex items-center gap-2">
                   <Settings className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Advanced Options</span>
-                  {!showAdvanced && (
-                    <Badge variant="outline" className="text-xs">
-                      Optional
-                    </Badge>
-                  )}
                 </div>
                 {showAdvanced ? (
                   <ChevronDown className="w-4 h-4" />
@@ -229,13 +373,26 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               </Button>
             </CollapsibleTrigger>
             <p className="text-xs text-muted-foreground">
-              Use this section to define specific team member availability and schedule detail.
+              Use this section to define specific schedule detail and work assignments.
             </p>
           </CardContent>
           
           <CollapsibleContent>
             <CardContent className="pt-0 pb-4 px-4">
               <div className="space-y-4 pt-3 border-t">
+                {/* Assign Work Button */}
+                {onAssignWork && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onAssignWork}
+                    className="w-full h-9 text-xs"
+                  >
+                    <Users className="w-3.5 h-3.5 mr-1.5" />
+                    Assign Work
+                  </Button>
+                )}
+                
                 <div>
                   <Label className="text-xs font-medium mb-2">Planning Detail Level</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -332,185 +489,85 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     </Button>
                   )}
                 </div>
-
-                {/* Team Members Section */}
-                <div className="space-y-3 pt-3 border-t">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5" />
-                      Team Members & Availability
-                    </Label>
-                    <Button onClick={addTeamMember} size="sm" variant="outline" className="h-7 text-xs">
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add Member
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {teamMembers.map((member) => (
-                      <div key={member.id} className="p-3 rounded-lg border bg-card space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Input 
-                            placeholder="Name"
-                            value={member.name}
-                            onChange={(e) => updateTeamMember(member.id, { name: e.target.value })}
-                            className="h-8 text-xs flex-1"
-                          />
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => openCalendar(member.id)}
-                            className="h-8 text-xs px-2"
-                          >
-                            <Calendar className="w-3 h-3 mr-1" />
-                            ({Object.keys(member.availability).length})
-                          </Button>
-                          {teamMembers.length > 1 && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => removeTeamMember(member.id)}
-                              className="h-8 px-2"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          <Input 
-                            type="email"
-                            placeholder="email@example.com"
-                            value={member.email || ''}
-                            onChange={(e) => updateTeamMember(member.id, { email: e.target.value })}
-                            className="h-7 text-xs"
-                          />
-                          <Input 
-                            type="tel"
-                            placeholder="(555) 555-5555"
-                            value={member.phone || ''}
-                            onChange={(e) => updateTeamMember(member.id, { phone: e.target.value })}
-                            className="h-7 text-xs"
-                          />
-                        </div>
-                        
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5">
-                            <Checkbox 
-                              id={`email-${member.id}`}
-                              checked={member.notificationPreferences?.email || false}
-                              onCheckedChange={(checked) => 
-                                updateTeamMember(member.id, { 
-                                  notificationPreferences: { 
-                                    ...member.notificationPreferences,
-                                    email: checked as boolean 
-                                  } 
-                                })
-                              }
-                            />
-                            <Label htmlFor={`email-${member.id}`} className="text-xs cursor-pointer">
-                              Email
-                            </Label>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Checkbox 
-                              id={`sms-${member.id}`}
-                              checked={member.notificationPreferences?.sms || false}
-                              onCheckedChange={(checked) => 
-                                updateTeamMember(member.id, { 
-                                  notificationPreferences: { 
-                                    ...member.notificationPreferences,
-                                    sms: checked as boolean 
-                                  } 
-                                })
-                              }
-                            />
-                            <Label htmlFor={`sms-${member.id}`} className="text-xs cursor-pointer">
-                              SMS
-                            </Label>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </CardContent>
           </CollapsibleContent>
         </Card>
       </Collapsible>
 
-      {/* Generate Schedule Button */}
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-medium">Generate Schedule</h3>
-              <TooltipProvider delayDuration={100}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex items-center justify-center rounded-full p-0.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1"
-                      aria-label="Scheduling algorithm info"
-                    >
-                      <Info className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-md text-xs">
-                    <div className="space-y-2">
-                      <p className="font-semibold">Scheduling Algorithm</p>
-                      <p>The scheduler uses your settings to create an optimized schedule:</p>
-                      <div className="space-y-1.5 mt-2">
-                        <p><strong>Estimated Times:</strong></p>
-                        <p className="ml-2">Uses time estimates from your customized project workflow (only applicable phases that you've included). Each step's low/medium/high time estimates are selected based on Schedule Tempo.</p>
-                        <p className="mt-2"><strong>Schedule Tempo:</strong></p>
-                        <ul className="list-disc list-inside space-y-0.5 ml-2">
-                          <li><strong>Fast-track:</strong> Uses low end of time estimates (10th percentile) - best for skilled teams</li>
-                          <li><strong>Steady:</strong> Uses medium time estimates (50th percentile) - balanced, not rushed</li>
-                          <li><strong>Extended:</strong> Uses high end of time estimates (90th percentile) - ideal for beginners or low-urgency projects</li>
-                        </ul>
-                        <p className="mt-2"><strong>Team Member Availability:</strong></p>
-                        <p className="ml-2">Schedules tasks based on each team member's availability calendar. The algorithm matches tasks to available time slots, respecting working hours, blackout dates, and site constraints.</p>
-                        <p className="mt-2"><strong>Schedule Optimization Method:</strong></p>
-                        <ul className="list-disc list-inside space-y-0.5 ml-2">
-                          <li><strong>Single-piece flow:</strong> Fastest first room ready — you'll see progress right away. Completes all phases of a space before moving to the next space.</li>
-                          <li><strong>Batch flow:</strong> Most efficient overall — but you won't see a finished room until the end. Completes each phase across all spaces before moving to the next phase.</li>
-                        </ul>
-                        <p className="mt-2"><strong>Planning Detail Level:</strong></p>
-                        <ul className="list-disc list-inside space-y-0.5 ml-2">
-                          <li><strong>Quick:</strong> Plans phases and major milestones</li>
-                          <li><strong>Standard:</strong> Plans daily tasks (recommended)</li>
-                          <li><strong>Detailed:</strong> Plans hour-by-hour tasks for each team member</li>
-                        </ul>
-                        <p className="mt-2"><strong>Resource Allocation:</strong></p>
-                        <p className="ml-2">Allocates workers based on step requirements (workers needed per step). Steps with 0 workers still require duration but workers can be assigned elsewhere.</p>
+      {/* Generate Schedule Button - Only visible after availability is selected */}
+      {hasAvailabilitySelected && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-medium">Generate Schedule</h3>
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center rounded-full p-0.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1"
+                        aria-label="Scheduling algorithm info"
+                      >
+                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-md text-xs">
+                      <div className="space-y-2">
+                        <p className="font-semibold">Scheduling Algorithm</p>
+                        <p>The scheduler uses your settings to create an optimized schedule:</p>
+                        <div className="space-y-1.5 mt-2">
+                          <p><strong>Estimated Times:</strong></p>
+                          <p className="ml-2">Uses time estimates from your customized project workflow (only applicable phases that you've included). Each step's low/medium/high time estimates are selected based on Schedule Tempo.</p>
+                          <p className="mt-2"><strong>Schedule Tempo:</strong></p>
+                          <ul className="list-disc list-inside space-y-0.5 ml-2">
+                            <li><strong>Fast-track:</strong> Uses low end of time estimates (10th percentile) - best for skilled teams</li>
+                            <li><strong>Steady:</strong> Uses medium time estimates (50th percentile) - balanced, not rushed</li>
+                            <li><strong>Extended:</strong> Uses high end of time estimates (90th percentile) - ideal for beginners or low-urgency projects</li>
+                          </ul>
+                          <p className="mt-2"><strong>Team Member Availability:</strong></p>
+                          <p className="ml-2">Schedules tasks based on each team member's availability calendar. The algorithm matches tasks to available time slots, respecting working hours, blackout dates, and site constraints.</p>
+                          <p className="mt-2"><strong>Schedule Optimization Method:</strong></p>
+                          <ul className="list-disc list-inside space-y-0.5 ml-2">
+                            <li><strong>Single-piece flow:</strong> Fastest first room ready — you'll see progress right away. Completes all phases of a space before moving to the next space.</li>
+                            <li><strong>Batch flow:</strong> Most efficient overall — but you won't see a finished room until the end. Completes each phase across all spaces before moving to the next phase.</li>
+                          </ul>
+                          <p className="mt-2"><strong>Planning Detail Level:</strong></p>
+                          <ul className="list-disc list-inside space-y-0.5 ml-2">
+                            <li><strong>Quick:</strong> Plans phases and major milestones</li>
+                            <li><strong>Standard:</strong> Plans daily tasks (recommended)</li>
+                            <li><strong>Detailed:</strong> Plans hour-by-hour tasks for each team member</li>
+                          </ul>
+                          <p className="mt-2"><strong>Resource Allocation:</strong></p>
+                          <p className="ml-2">Allocates workers based on step requirements (workers needed per step). Steps with 0 workers still require duration but workers can be assigned elsewhere.</p>
+                        </div>
                       </div>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
-          </div>
-          <Button 
-            onClick={onGenerateSchedule} 
-            className="w-full h-9 text-sm"
-            disabled={isComputing || teamMembers.length === 0 || !targetDate}
-          >
-            {isComputing ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                Computing...
-              </>
-            ) : (
-              <>
-                <Zap className="w-3.5 h-3.5 mr-1.5" />
-                Generate Schedule
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+            <Button 
+              onClick={onGenerateSchedule} 
+              className="w-full h-9 text-sm"
+              disabled={isComputing || teamMembers.length === 0 || !targetDate}
+            >
+              {isComputing ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Computing...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-3.5 h-3.5 mr-1.5" />
+                  Generate Schedule
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
