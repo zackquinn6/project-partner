@@ -411,12 +411,10 @@ export function WorkflowSidebar({
                         <div>Level</div>
                       </div>
                     </div>
-                    <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
+                    <Select value={instructionLevel || 'intermediate'} onValueChange={onInstructionLevelChange} defaultValue="intermediate">
                       <SelectTrigger className="w-[140px] text-xs">
-                        <SelectValue>
-                          {instructionLevel === 'beginner' && 'Beginner'}
-                          {instructionLevel === 'intermediate' && 'Intermediate'}
-                          {instructionLevel === 'advanced' && 'Advanced'}
+                        <SelectValue placeholder="Intermediate">
+                          {instructionLevel === 'beginner' ? 'Beginner' : instructionLevel === 'advanced' ? 'Advanced' : 'Intermediate'}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
