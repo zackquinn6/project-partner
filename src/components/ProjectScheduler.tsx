@@ -1727,7 +1727,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         open={showCalendarView}
         onOpenChange={setShowCalendarView}
         scheduledTasks={schedulingResult.scheduledTasks}
-        tasks={schedulingInputs.tasks}
+        tasks={schedulingTasks}
         workers={teamMembers.map(tm => ({
           id: tm.id,
           name: tm.name,
