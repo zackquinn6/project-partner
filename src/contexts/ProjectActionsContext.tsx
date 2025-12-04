@@ -184,10 +184,19 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         return null;
       }
 
+      // Count incorporated phases in template
+      const incorporatedPhasesCount = project.phases.filter(p => p.isLinked === true).length;
+      const standardPhasesCount = project.phases.filter(p => p.isStandard === true && !p.isLinked).length;
+      const customPhasesCount = project.phases.filter(p => !p.isStandard && !p.isLinked).length;
+      
       console.log('✅ Template validation passed - creating project run:', {
         templateId: project.id,
         templateName: project.name,
-        templatePhasesCount: project.phases.length
+        totalPhasesCount: project.phases.length,
+        standardPhasesCount,
+        incorporatedPhasesCount,
+        customPhasesCount,
+        incorporatedPhaseNames: project.phases.filter(p => p.isLinked === true).map(p => p.name)
       });
 
       // Use database function to create project run snapshot with properly built phases
@@ -198,7 +207,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         templatePhasesCount: project.phases?.length || 0,
         templatePhases: project.phases ? (Array.isArray(project.phases) ? `${project.phases.length} phases` : typeof project.phases) : 'null/undefined',
         userId: user.id,
-        runName: customName || project.name
+        runName: customName || project.name,
+        CRITICAL_NOTE: 'Function MUST copy ALL phases including incorporated phases (isLinked: true)'
       });
 
       const { data, error } = await supabase.rpc('create_project_run_snapshot', {
@@ -280,6 +290,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       const templatePhasesCount = project.phases?.length || 0;
       const runPhasesCount = parsedPhases.length;
+      
+      // Count incorporated phases in template and run
+      const templateIncorporatedCount = project.phases.filter(p => p.isLinked === true).length;
+      const runIncorporatedCount = parsedPhases.filter(p => p.isLinked === true).length;
 
       if (!phasesExist || runPhasesCount === 0) {
         console.error('❌ CRITICAL: Project run created without phases!', {
@@ -310,7 +324,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           templateName: project.name,
           templatePhasesCount,
           runPhasesCount,
-          missingPhases: templatePhasesCount - runPhasesCount
+          missingPhases: templatePhasesCount - runPhasesCount,
+          templateIncorporatedCount,
+          runIncorporatedCount
         });
         
         // Delete the invalid project run - it must have all phases
@@ -321,13 +337,39 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         
         throw new Error(`Project run was created with only ${runPhasesCount} of ${templatePhasesCount} phases. This indicates a problem with the create_project_run_snapshot function. The project run must be a complete snapshot of the template.`);
       }
+      
+      // CRITICAL: Validate that incorporated phases were copied
+      if (runIncorporatedCount < templateIncorporatedCount) {
+        console.error('❌ CRITICAL: Project run missing incorporated phases!', {
+          runId: data,
+          templateId: project.id,
+          templateName: project.name,
+          templateIncorporatedCount,
+          runIncorporatedCount,
+          missingIncorporatedPhases: templateIncorporatedCount - runIncorporatedCount,
+          templateIncorporatedPhaseNames: project.phases.filter(p => p.isLinked === true).map(p => p.name),
+          runIncorporatedPhaseNames: parsedPhases.filter(p => p.isLinked === true).map(p => p.name)
+        });
+        
+        // Delete the invalid project run - it must include ALL phases including incorporated ones
+        await supabase
+          .from('project_runs')
+          .delete()
+          .eq('id', data);
+        
+        throw new Error(`Project run is missing ${templateIncorporatedCount - runIncorporatedCount} incorporated phases. The create_project_run_snapshot database function failed to copy incorporated phases. This is a critical error - project runs must be complete immutable snapshots.`);
+      }
 
-      console.log('✅ Project run created successfully with phases:', {
+      console.log('✅ Project run created successfully with ALL phases including incorporated:', {
         runId: data,
         templateId: project.id,
-        templatePhasesCount: templatePhasesCount,
-        runPhasesCount: runPhasesCount,
-        phasesMatch: runPhasesCount === templatePhasesCount
+        totalPhases: runPhasesCount,
+        standardPhases: parsedPhases.filter(p => p.isStandard === true && !p.isLinked).length,
+        incorporatedPhases: runIncorporatedCount,
+        customPhases: parsedPhases.filter(p => !p.isStandard && !p.isLinked).length,
+        incorporatedPhaseNames: parsedPhases.filter(p => p.isLinked === true).map(p => p.name),
+        phasesMatch: runPhasesCount === templatePhasesCount,
+        incorporatedPhasesMatch: runIncorporatedCount === templateIncorporatedCount
       });
       
       // Verify spaces were created
