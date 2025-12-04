@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
+import { useProjectData } from '@/contexts/ProjectDataContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Output, Project, AppReference, Phase } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
@@ -113,6 +114,7 @@ export default function UserView({
     updateProjectRun,
     deleteProjectRun
   } = useProject();
+  const { refetchProjectRuns } = useProjectData();
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
@@ -389,8 +391,15 @@ export default function UserView({
       .subscribe();
     
     // Handler for refresh events (manual triggers)
-    const handleRefresh = () => {
-      loadSpaces();
+    const handleRefresh = async () => {
+      // Reload spaces
+      await loadSpaces();
+      
+      // CRITICAL: Refetch project runs to get updated schedule_optimization_method
+      // This ensures organizedNavigation useMemo sees the change and rebuilds
+      await refetchProjectRuns();
+      
+      console.log('🔄 UserView: Refreshed spaces and project runs after scheduler update');
     };
     
     // Listen for refresh events
