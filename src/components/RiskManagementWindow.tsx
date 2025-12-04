@@ -601,7 +601,11 @@ export function RiskManagementWindow({
                   onValueChange={(value: any) => setFormData({ ...formData, likelihood: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>
+                      {formData.likelihood === 'low' && 'Low'}
+                      {formData.likelihood === 'medium' && 'Medium'}
+                      {formData.likelihood === 'high' && 'High'}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">
@@ -628,7 +632,7 @@ export function RiskManagementWindow({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="schedule_impact">Schedule Impact (days)</Label>
+                  <Label htmlFor="schedule_impact">Potential Schedule Impact (days)</Label>
                   <Input
                     id="schedule_impact"
                     type="number"
@@ -641,7 +645,7 @@ export function RiskManagementWindow({
                 </div>
 
                 <div>
-                  <Label htmlFor="budget_impact">Budget Impact ($)</Label>
+                  <Label htmlFor="budget_impact">Potential Budget Impact ($)</Label>
                   <Input
                     id="budget_impact"
                     type="number"
