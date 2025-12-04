@@ -393,24 +393,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         }
       }
 
-      // Update initial_sizing in project_runs table
-      // CRITICAL: Include initial_budget in this update to ensure it's not lost
-      if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0) {
-        const { error: sizingError } = await supabase
-          .from('project_runs')
-          .update({ 
-            initial_sizing: projectForm.initialSizing.trim(),
-            initial_budget: finalBudgetValue, // Preserve initial_budget
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentProjectRun.id);
-        
-        if (sizingError) {
-          console.error('Error updating initial_sizing:', sizingError);
-          // Don't throw - this is optional
-        } else {
-        }
-      }
+      // Note: initial_sizing is stored in project_run_spaces and project_run_space_sizing tables
+      // We don't need to update it on project_runs table to avoid triggering space_id constraint errors
 
       // CRITICAL: Final verification - fetch the saved value from database
       const { data: verificationData, error: verificationError } = await supabase
