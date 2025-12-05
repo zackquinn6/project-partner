@@ -1,0 +1,20 @@
+[33m89255ad[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add documentation for authentication fixes
+[33m09e92c2[m Fix login blocking issue - make auth-rate-limit edge function gracefully degrade and add security functions migration
+[33m996c94d[m Fix authentication error handling for deleted users in check-subscription edge function
+[33m68689bf[m fix: phaseOrderNumber should be 'first'/'last'/number not always numeric
+[33m662f8f5[m feat: Save initial_sizing to BOTH project_runs AND space tables with correct order
+[33m779b3a2[m fix: Remove initial_sizing from project_runs due to database trigger conflict
+[33mc6d19b2[m feat: Save initial_sizing to BOTH project_runs AND space tables
+[33maa4b829[m fix: Save budget/timeline to project_runs, sizing to space tables separately
+[33m6268da2[m fix: Remove manual space sizing saves - let database trigger handle sync
+[33m8105189[m fix: Save initial_sizing to project_runs AFTER Room 1 space created
+[33mb73ef23[m fix: Add comprehensive logging and initial_sizing save to ProjectProfileStep
+[33m0bff1e7[m feat: Reduce padding and spacing in kickoff steps for better fit
+[33m06102c9[m fix: Make migration idempotent - handle existing constraint
+[33m8ac8d5a[m fix: Remove extra closing div tag causing JSX syntax error
+[33mf928fc7[m fix: Schedule optimization method now properly updates workflow navigation
+[33m6ec29e4[m fix: Calendar date picker alignment with day headers
+[33m29ce065[m feat: Major Project Scheduler UI and functionality enhancements
+[33m3897f94[m fix: Remove survey_data column reference - column does not exist
+[33md555c5d[m fix: Handle multiple function overloads when dropping create_project_run_snapshot
+[33m56f0c30[m feat: Add database function fix for incorporated phases in snapshots

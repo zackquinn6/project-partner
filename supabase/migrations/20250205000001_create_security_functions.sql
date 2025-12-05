@@ -16,6 +16,7 @@ CREATE INDEX IF NOT EXISTS idx_failed_login_attempts_email_time
 ALTER TABLE public.failed_login_attempts ENABLE ROW LEVEL SECURITY;
 
 -- Only service role can access this table
+DROP POLICY IF EXISTS "Service role only" ON public.failed_login_attempts;
 CREATE POLICY "Service role only" ON public.failed_login_attempts
   FOR ALL
   USING (auth.role() = 'service_role');

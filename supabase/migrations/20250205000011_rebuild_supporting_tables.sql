@@ -321,13 +321,7 @@ CREATE TABLE IF NOT EXISTS public.admin_sensitive_data_access (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS public.failed_login_attempts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT NOT NULL,
-  attempt_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  ip_address INET,
-  user_agent TEXT
-);
+-- Skipping failed_login_attempts - already created in 20250205000001
 
 -- AI Repair Analysis
 CREATE TABLE IF NOT EXISTS public.ai_repair_analyses (
@@ -373,7 +367,7 @@ ALTER TABLE public.decision_tree_conditions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.decision_tree_execution_paths ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_sensitive_data_access ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.failed_login_attempts ENABLE ROW LEVEL SECURITY;
+-- failed_login_attempts RLS already enabled in 20250205000001
 ALTER TABLE public.ai_repair_analyses ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
@@ -386,8 +380,7 @@ CREATE INDEX IF NOT EXISTS idx_home_tasks_user_id ON public.home_tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_home_tasks_home_id ON public.home_tasks(home_id);
 CREATE INDEX IF NOT EXISTS idx_decision_trees_project_id ON public.decision_trees(project_id);
 CREATE INDEX IF NOT EXISTS idx_pricing_data_model_id ON public.pricing_data(model_id);
-CREATE INDEX IF NOT EXISTS idx_failed_login_attempts_email ON public.failed_login_attempts(email);
-CREATE INDEX IF NOT EXISTS idx_failed_login_attempts_time ON public.failed_login_attempts(attempt_time);
+-- failed_login_attempts indexes created in 20250205000001
 
 -- Success message
 DO $$
