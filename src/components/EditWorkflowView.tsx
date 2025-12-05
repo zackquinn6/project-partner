@@ -592,15 +592,13 @@ export default function EditWorkflowView({
       const standardPhases: Phase[] = await Promise.all((standardPhasesData || []).map(async (phaseData: any) => {
         // Get operations for this phase
         const { data: operations } = await supabase
-          .from('template_operations')
+          .from('phase_operations')
           .select(`
             id,
             operation_name,
             operation_description,
             flow_type,
-            user_prompt,
-            display_order,
-            is_reference
+            display_order
           `)
           .eq('phase_id', phaseData.id)
           .order('display_order');
