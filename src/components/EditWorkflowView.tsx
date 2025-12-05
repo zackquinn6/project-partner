@@ -185,13 +185,13 @@ export default function EditWorkflowView({
               materials: step.materials || [],
               tools: step.tools || [],
               outputs: step.outputs || [],
-              timeEstimation: {
-                variableTime: {
+                  timeEstimation: {
+                    variableTime: {
                   low: step.time_estimate_low || 0,
                   medium: step.time_estimate_med || 0,
                   high: step.time_estimate_high || 0
-                }
-              },
+                    }
+                  },
               workersNeeded: step.number_of_workers || 1,
               skillLevel: step.skill_level || 'intermediate'
             })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
@@ -2026,13 +2026,13 @@ export default function EditWorkflowView({
                         onValueChange={value => updateEditingStep('stepType', value)} 
                       />
                     </div>
-                    <CompactTimeEstimation 
-                      step={editingStep} 
-                      scalingUnit={currentProject?.scalingUnit} 
-                      onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)}
-                      onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
-                      onSkillLevelChange={skillLevel => updateEditingStep('skillLevel', skillLevel)}
-                    />
+                <CompactTimeEstimation 
+                  step={editingStep} 
+                  scalingUnit={currentProject?.scalingUnit} 
+                  onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)}
+                  onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
+                  onSkillLevelChange={skillLevel => updateEditingStep('skillLevel', skillLevel)}
+                />
                   </CardContent>
                 </Card>
 

@@ -34,6 +34,7 @@ export const UserRoleManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const loadUserRoles = async () => {
     try {
+      console.log('📥 Loading user roles...');
       // First get user roles
       const {
         data: rolesData,
@@ -41,26 +42,39 @@ export const UserRoleManager: React.FC = () => {
       } = await supabase.from('user_roles').select('*').order('created_at', {
         ascending: false
       });
-      if (rolesError) throw rolesError;
+      
+      if (rolesError) {
+        console.error('❌ Error loading roles:', rolesError);
+        throw rolesError;
+      }
+
+      console.log('✅ Loaded roles:', rolesData?.length || 0);
 
       // Then get profiles separately and match them
       const {
         data: profilesData,
         error: profilesError
       } = await supabase.from('profiles').select('user_id, email, display_name');
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('❌ Error loading profiles:', profilesError);
+        throw profilesError;
+      }
+
+      console.log('✅ Loaded profiles:', profilesData?.length || 0);
 
       // Combine the data
       const userRolesWithProfiles = (rolesData || []).map(role => ({
         ...role,
         profiles: profilesData?.find(profile => profile.user_id === role.user_id) || null
       }));
+      
+      console.log('✅ Combined user roles with profiles:', userRolesWithProfiles.length);
       setUserRoles(userRolesWithProfiles);
-    } catch (error) {
-      console.error('Error loading user roles:', error);
+    } catch (error: any) {
+      console.error('❌ Error loading user roles:', error);
       toast({
         title: "Error loading user roles",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive"
       });
     }

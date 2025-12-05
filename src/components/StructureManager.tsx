@@ -688,13 +688,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           if (!sourcePhase?.id) {
             console.warn(`⚠️ Source phase not found for incorporated phase "${phaseData.name}" in project ${phaseData.source_project_id}`);
             // Fall back to using the phase's own ID
-            const { data: operations } = await supabase
+          const { data: operations } = await supabase
               .from('phase_operations')
-              .select(`
-                id,
-                operation_name,
-                operation_description,
-                flow_type,
+            .select(`
+              id,
+              operation_name,
+              operation_description,
+              flow_type,
                 display_order
               `)
               .eq('phase_id', phaseData.id)
@@ -709,7 +709,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   description,
                   content_type,
                   content,
-                  display_order,
+              display_order,
                   materials,
                   tools,
                   outputs
@@ -748,7 +748,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 display_order
               `)
               .eq('phase_id', sourcePhase.id) // Use source phase ID
-              .order('display_order');
+            .order('display_order');
           
           // Get steps for each operation from source
           operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {

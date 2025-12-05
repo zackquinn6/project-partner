@@ -207,7 +207,6 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">{projectRun.description}</p>
                         </div>
                         <Badge className={getStatusColor(projectRun.status)}>
                           {projectRun.status.replace('-', ' ')}
@@ -331,7 +330,6 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                               </Badge>
                             )}
                           </div>
-                          <div className="text-sm text-muted-foreground">{projectRun.description}</div>
                         </div>
                       </TableCell>
                       <TableCell>

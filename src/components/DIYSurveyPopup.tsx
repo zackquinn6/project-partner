@@ -422,6 +422,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               user_id: user.id,
               personality_profile: personalityProfile,
               updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
             });
 
           if (error) {
@@ -524,7 +526,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           // User is signed in - save to database
           const { error } = await supabase
             .from('profiles')
-            .update({
+            .upsert({
+              user_id: user.id,
               full_name: answers.fullName,
               nickname: answers.nickname,
               skill_level: answers.skillLevel,
@@ -535,9 +538,11 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               preferred_learning_methods: answers.preferredLearningMethods,
               owned_tools: finalOwnedTools,
               project_skills: Object.keys(projectSkills).length > 0 ? projectSkills : null,
-              survey_completed_at: new Date().toISOString()
-            })
-            .eq('user_id', user.id);
+              survey_completed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
+            });
 
           if (error) {
             console.error('Error saving survey:', error);
@@ -837,29 +842,20 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       case 2:
         return (
           <div className="space-y-4">
-            <div className="text-center space-y-2">
+            <div className="text-center">
               <h3 className="text-2xl font-bold">🧠 Experience & Capabilities</h3>
-              <p className="text-muted-foreground">Help us understand your background</p>
             </div>
             
             {/* Experience Level */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="text-center">
                 <h4 className="text-lg font-semibold">What's your experience level?</h4>
               </div>
               <Card>
-                <CardContent className="p-4 space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Skill Level</Label>
-                      <span className="text-sm font-semibold">
-                        {answers.skillLevel === "newbie" ? "Beginner" : 
-                         answers.skillLevel === "confident" ? "Intermediate" : 
-                         answers.skillLevel === "hero" ? "Advanced" : 
-                         "Select your level"}
-                      </span>
-                    </div>
-                    <div className="relative py-2">
+                <CardContent className="p-3 space-y-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Skill Level</Label>
+                    <div className="relative py-1.5">
                       {/* Color sections background - positioned to align with slider track */}
                       <div className="absolute top-1/2 left-0 right-0 flex h-2 -translate-y-1/2 rounded-full overflow-hidden pointer-events-none">
                         <div className="w-1/3 bg-green-500"></div>
@@ -890,17 +886,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                         step={1}
                         className="w-full relative z-10 [&_[role=slider]]:bg-background [&_[role=slider]]:border-2 [&_[role=slider]]:border-primary [&>div>div]:bg-transparent"
                       />
-                      {/* Arrows positioned at 16.66% and 83.33% centered above descriptive text */}
-                      <div className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none">
-                        <div className="relative w-full">
-                          <div className="absolute left-[16.66%] transform -translate-x-1/2 flex flex-col items-center">
-                            <ArrowUp className="w-4 h-4 text-foreground" />
-                          </div>
-                          <div className="absolute left-[83.33%] transform -translate-x-1/2 flex flex-col items-center">
-                            <ArrowUp className="w-4 h-4 text-foreground" />
-                          </div>
-                        </div>
-                      </div>
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground relative">
                       <div className="text-center" style={{ width: '33.33%' }}>
@@ -930,23 +915,15 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
             </div>
 
             {/* Physical Capability / Effort Level */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="text-center">
                 <h4 className="text-lg font-semibold">What's your physical capability / effort level?</h4>
               </div>
               <Card>
-                <CardContent className="p-4 space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Effort Level</Label>
-                      <span className="text-sm font-semibold">
-                        {answers.physicalCapability === "light" ? "Light" : 
-                         answers.physicalCapability === "medium" ? "Medium" : 
-                         answers.physicalCapability === "heavy" ? "High" : 
-                         "Select your level"}
-                      </span>
-                    </div>
-                    <div className="relative py-2">
+                <CardContent className="p-3 space-y-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Effort Level</Label>
+                    <div className="relative py-1.5">
                       {/* Color sections background - positioned to align with slider track */}
                       <div className="absolute top-1/2 left-0 right-0 flex h-2 -translate-y-1/2 rounded-full overflow-hidden pointer-events-none">
                         <div className="w-1/3 bg-green-500"></div>
@@ -977,17 +954,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                         step={1}
                         className="w-full relative z-10 [&_[role=slider]]:bg-background [&_[role=slider]]:border-2 [&_[role=slider]]:border-primary [&>div>div]:bg-transparent"
                       />
-                      {/* Arrows positioned at 16.66% and 83.33% centered above descriptive text */}
-                      <div className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none">
-                        <div className="relative w-full">
-                          <div className="absolute left-[16.66%] transform -translate-x-1/2 flex flex-col items-center">
-                            <ArrowUp className="w-4 h-4 text-foreground" />
-                          </div>
-                          <div className="absolute left-[83.33%] transform -translate-x-1/2 flex flex-col items-center">
-                            <ArrowUp className="w-4 h-4 text-foreground" />
-                          </div>
-                        </div>
-                      </div>
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground relative">
                       <div className="text-center" style={{ width: '33.33%' }}>

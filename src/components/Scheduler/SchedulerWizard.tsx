@@ -363,10 +363,27 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 {/* Risk Tolerance Setting */}
                 {setRiskTolerance && (
                   <div className="pt-3 border-t">
-                    <Label className="text-xs font-medium mb-2 flex items-center gap-1">
-                      <Shield className="w-3.5 h-3.5" />
-                      Risk Tolerance
-                    </Label>
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Label className="text-xs font-medium mb-2 flex items-center gap-1 cursor-help">
+                            <Shield className="w-3.5 h-3.5" />
+                            Risk Tolerance
+                            <Info className="w-3 h-3 text-muted-foreground" />
+                          </Label>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-md text-xs p-3">
+                          <div className="space-y-2">
+                            <p className="font-semibold">High Risk Tolerance:</p>
+                            <p>If in a newer home with excellent history of work and no known or experienced issues - set risk tolerance to high.</p>
+                            <p className="font-semibold mt-3">Default (Medium):</p>
+                            <p>Default value is somewhere in between.</p>
+                            <p className="font-semibold mt-3">Low Risk Tolerance:</p>
+                            <p>If in an older home or one with known issues including workmanship gaps - no problem! It's more likely this home will have surprises - plan for it!</p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <div className="grid grid-cols-3 gap-2">
                       <Button
                         variant={riskTolerance === 'low' ? 'default' : 'outline'}
