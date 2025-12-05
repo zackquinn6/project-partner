@@ -67,12 +67,12 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   const loadFlowConfigs = async () => {
     try {
       // CRITICAL: Decision tree data is scoped to specific project revisions
-      // Each revision has its own template_operations with unique flow configurations
-      // When a revision is deleted, its template_operations and decision tree data are CASCADE deleted
+      // Each revision has its own phase_operations with unique flow configurations
+      // When a revision is deleted, its phase_operations and decision tree data are CASCADE deleted
       console.log('🔍 Loading decision tree config for project:', currentProject.id, 'Name:', currentProject.name);
       
       // Load flow configurations from phase_operations
-      // Note: flow_type is available, but user_prompt, alternate_group, and dependent_on may not exist
+      // Note: phase_operations only has flow_type column (user_prompt, alternate_group, dependent_on do not exist)
       const { data: operations, error } = await supabase
         .from('phase_operations')
         .select('id, flow_type')
@@ -90,27 +90,13 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
       const configs: Record<string, FlowTypeConfig> = {};
       
-      // Build a map of alternate_group to operation IDs
-      const alternateGroups = new Map<string, string[]>();
-      operations?.forEach(op => {
-        if (op.alternate_group) {
-          const existing = alternateGroups.get(op.alternate_group) || [];
-          alternateGroups.set(op.alternate_group, [...existing, op.id]);
-        }
-      });
-      
       operations?.forEach(op => {
         if (op.flow_type) {
-          // Get all operations in the same alternate group (excluding self)
-          const alternateIds = op.alternate_group 
-            ? (alternateGroups.get(op.alternate_group) || []).filter(id => id !== op.id)
-            : undefined;
-            
           configs[op.id] = {
             type: op.flow_type as 'if-necessary' | 'alternate' | 'dependent',
-            decisionPrompt: op.user_prompt || undefined,
-            alternateIds,
-            dependentOn: op.dependent_on || undefined,
+            decisionPrompt: undefined, // Not stored in phase_operations
+            alternateIds: undefined, // Not stored in phase_operations
+            dependentOn: undefined, // Not stored in phase_operations
             predecessorIds: []
           };
         }
@@ -493,23 +479,18 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       let errorCount = 0;
       
       for (const [itemId, config] of Object.entries(flowConfigs)) {
-        // Check if this is an operation (exists in template_operations)
+        // Check if this is an operation (exists in phase_operations)
         const isOperation = currentProject.phases.some(phase => 
           phase.operations.some(op => op.id === itemId)
         );
         
         if (isOperation) {
-          // Get the alternate group ID if this operation is part of an alternate group
-          const alternateGroupId = alternateGroupMap.get(itemId) || null;
-          
-          // Update template_operations with flow_type, user_prompt, alternate_group, dependent_on
+          // Update phase_operations with flow_type
+          // Note: phase_operations only supports flow_type (user_prompt, alternate_group, dependent_on do not exist)
           const { error } = await supabase
-            .from('template_operations')
+            .from('phase_operations')
             .update({
               flow_type: config.type || null,
-              user_prompt: config.decisionPrompt || null,
-              alternate_group: alternateGroupId,
-              dependent_on: config.type === 'dependent' ? config.dependentOn : null,
               updated_at: new Date().toISOString()
             })
             .eq('id', itemId);
