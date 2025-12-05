@@ -17,6 +17,10 @@ SET is_linked = TRUE
 WHERE source_project_id IS NOT NULL;
 
 -- Add check constraint to ensure is_linked matches source_project_id
+-- Drop existing constraint if it exists from previous migration attempt
+ALTER TABLE project_phases
+DROP CONSTRAINT IF EXISTS check_is_linked_matches_source;
+
 ALTER TABLE project_phases
 ADD CONSTRAINT check_is_linked_matches_source 
 CHECK (
