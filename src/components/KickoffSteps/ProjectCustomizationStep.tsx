@@ -144,7 +144,7 @@ export const ProjectCustomizationStep: React.FC<ProjectCustomizationStepProps> =
     const kickoffPhase = currentProjectRun.phases.find(phase => 
       phase.isStandard === true && 
       !phase.isLinked &&
-      phase.phaseOrderNumber === 'first'
+      phase.phaseOrderNumber === 1
     );
     const updatedPhases = kickoffPhase ? [kickoffPhase, ...selectedPhases] : selectedPhases;
     
