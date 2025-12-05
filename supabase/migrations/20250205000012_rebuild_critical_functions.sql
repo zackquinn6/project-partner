@@ -275,8 +275,8 @@ BEGIN
   SELECT COUNT(*)
   INTO attempt_count
   FROM public.failed_login_attempts
-  WHERE email = identifier
-    AND attempt_time >= window_start;
+  WHERE user_email = identifier
+    AND attempted_at >= window_start;
   
   RETURN attempt_count < max_attempts;
 END;
@@ -297,12 +297,12 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  INSERT INTO public.failed_login_attempts (email, ip_address, user_agent)
-  VALUES (user_email, ip_addr::INET, user_agent_string);
+  INSERT INTO public.failed_login_attempts (user_email, ip_address, user_agent)
+  VALUES (user_email, ip_addr, user_agent_string);
   
   -- Clean up old attempts (older than 24 hours)
   DELETE FROM public.failed_login_attempts
-  WHERE attempt_time < NOW() - INTERVAL '24 hours';
+  WHERE attempted_at < NOW() - INTERVAL '24 hours';
 END;
 $$;
 
