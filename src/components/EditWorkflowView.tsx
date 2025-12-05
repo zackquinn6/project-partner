@@ -155,9 +155,9 @@ export default function EditWorkflowView({
               tools,
               outputs,
               time_estimate_low,
-              time_estimate_medium,
+              time_estimate_med,
               time_estimate_high,
-              workers_needed,
+              number_of_workers,
               skill_level
             `)
             .eq('operation_id', op.id)
@@ -188,11 +188,11 @@ export default function EditWorkflowView({
               timeEstimation: {
                 variableTime: {
                   low: step.time_estimate_low || 0,
-                  medium: step.time_estimate_medium || 0,
+                  medium: step.time_estimate_med || 0,
                   high: step.time_estimate_high || 0
                 }
               },
-              workersNeeded: step.workers_needed || 1,
+              workersNeeded: step.number_of_workers || 1,
               skillLevel: step.skill_level || 'intermediate'
             })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
           };
@@ -420,11 +420,11 @@ export default function EditWorkflowView({
                   timeEstimation: {
                     variableTime: {
                       low: s.time_estimate_low || 0,
-                      medium: s.time_estimate_medium || 0,
+                      medium: s.time_estimate_med || 0,
                       high: s.time_estimate_high || 0
                     }
                   },
-                  workersNeeded: s.workers_needed,
+                  workersNeeded: s.number_of_workers || 1,
                   skillLevel: s.skill_level
                 };
               })
@@ -467,9 +467,9 @@ export default function EditWorkflowView({
                 tools,
                 outputs,
                 time_estimate_low,
-                time_estimate_medium,
+                time_estimate_med,
                 time_estimate_high,
-                workers_needed,
+                number_of_workers,
                 skill_level
               `)
               .eq('operation_id', op.id)
@@ -578,11 +578,11 @@ export default function EditWorkflowView({
                   timeEstimation: {
                     variableTime: {
                       low: s.time_estimate_low || 0,
-                      medium: s.time_estimate_medium || 0,
+                      medium: s.time_estimate_med || 0,
                       high: s.time_estimate_high || 0
                     }
                   },
-                  workersNeeded: s.workers_needed,
+                  workersNeeded: s.number_of_workers || 1,
                   skillLevel: s.skill_level
                 };
               })
@@ -646,9 +646,9 @@ export default function EditWorkflowView({
               tools,
               outputs,
               time_estimate_low,
-              time_estimate_medium,
+              time_estimate_med,
               time_estimate_high,
-              workers_needed,
+              number_of_workers,
               skill_level
             `)
             .eq('operation_id', op.id)
@@ -757,11 +757,11 @@ export default function EditWorkflowView({
                   timeEstimation: {
                     variableTime: {
                       low: s.time_estimate_low || 0,
-                      medium: s.time_estimate_medium || 0,
+                      medium: s.time_estimate_med || 0,
                       high: s.time_estimate_high || 0
                     }
                   },
-                  workersNeeded: s.workers_needed,
+                  workersNeeded: s.number_of_workers || 1,
                   skillLevel: s.skill_level
                 };
               })
@@ -1417,9 +1417,9 @@ export default function EditWorkflowView({
           tools: editingStep.tools || [] as any,
           outputs: editingStep.outputs || [] as any,
           time_estimate_low: editingStep.timeEstimation?.variableTime?.low || 0,
-          time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || 0,
+          time_estimate_med: editingStep.timeEstimation?.variableTime?.medium || 0,
           time_estimate_high: editingStep.timeEstimation?.variableTime?.high || 0,
-          workers_needed: editingStep.workersNeeded ?? 1,
+          number_of_workers: editingStep.workersNeeded ?? 1,
           skill_level: editingStep.skillLevel || 'intermediate',
           updated_at: new Date().toISOString()
         };
@@ -1497,9 +1497,9 @@ export default function EditWorkflowView({
             tools: editingStep.tools || [] as any,
             outputs: editingStep.outputs || [] as any,
             time_estimate_low: editingStep.timeEstimation?.variableTime?.low || 0,
-            time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || 0,
+            time_estimate_med: editingStep.timeEstimation?.variableTime?.medium || 0,
             time_estimate_high: editingStep.timeEstimation?.variableTime?.high || 0,
-            workers_needed: editingStep.workersNeeded ?? 1,
+            number_of_workers: editingStep.workersNeeded ?? 1,
             skill_level: editingStep.skillLevel || 'intermediate',
             updated_at: new Date().toISOString()
           };
