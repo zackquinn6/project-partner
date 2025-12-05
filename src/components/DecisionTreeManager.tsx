@@ -71,11 +71,18 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       // When a revision is deleted, its template_operations and decision tree data are CASCADE deleted
       console.log('🔍 Loading decision tree config for project:', currentProject.id, 'Name:', currentProject.name);
       
-      // Load flow configurations from template_operations
+      // Load flow configurations from phase_operations
+      // Note: flow_type is available, but user_prompt, alternate_group, and dependent_on may not exist
       const { data: operations, error } = await supabase
-        .from('template_operations')
-        .select('id, flow_type, user_prompt, alternate_group, dependent_on')
-        .eq('project_id', currentProject.id); // Scoped to this specific revision
+        .from('phase_operations')
+        .select('id, flow_type')
+        .in('phase_id', 
+          (await supabase
+            .from('project_phases')
+            .select('id')
+            .eq('project_id', currentProject.id)
+          ).data?.map(p => p.id) || []
+        );
 
       if (error) throw error;
 
