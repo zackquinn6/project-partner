@@ -851,13 +851,22 @@ export function UnifiedProjectManagement({
 
       // Delete all related data for each project
       for (const pid of projectIds) {
-        // Delete template_steps via template_operations
-        const {
-          data: operations
-        } = await supabase.from('template_operations').select('id').eq('project_id', pid);
-        if (operations && operations.length > 0) {
-          const operationIds = operations.map(op => op.id);
-          await supabase.from('template_steps').delete().in('operation_id', operationIds);
+        // Delete operation_steps via phase_operations
+        const { data: phaseIds } = await supabase
+          .from('project_phases')
+          .select('id')
+          .eq('project_id', pid);
+        
+        if (phaseIds && phaseIds.length > 0) {
+          const { data: operations } = await supabase
+            .from('phase_operations')
+            .select('id')
+            .in('phase_id', phaseIds.map(p => p.id));
+          
+          if (operations && operations.length > 0) {
+            const operationIds = operations.map(op => op.id);
+            await supabase.from('operation_steps').delete().in('operation_id', operationIds);
+          }
         }
 
         // Delete phase_operations
@@ -1158,25 +1167,32 @@ export function UnifiedProjectManagement({
         console.log('🗑️ Step 3: Deleting excluded parent revision:', parentIdToExclude);
         
         // Delete related data for the parent
-        const { data: parentOperations } = await supabase
-          .from('template_operations')
+        const { data: parentPhaseIds } = await supabase
+          .from('project_phases')
           .select('id')
           .eq('project_id', parentIdToExclude);
         
-        if (parentOperations && parentOperations.length > 0) {
-          const parentOpIds = parentOperations.map(op => op.id);
+        if (parentPhaseIds && parentPhaseIds.length > 0) {
+          const { data: parentOperations } = await supabase
+            .from('phase_operations')
+            .select('id')
+            .in('phase_id', parentPhaseIds.map(p => p.id));
           
-          // Delete template steps
-          await supabase
-            .from('template_steps')
-            .delete()
-            .in('operation_id', parentOpIds);
+          if (parentOperations && parentOperations.length > 0) {
+            const parentOpIds = parentOperations.map(op => op.id);
+            
+            // Delete operation steps
+            await supabase
+              .from('operation_steps')
+              .delete()
+              .in('operation_id', parentOpIds);
+          }
           
-          // Delete template operations
+          // Delete phase operations
           await supabase
-            .from('template_operations')
+            .from('phase_operations')
             .delete()
-            .eq('project_id', parentIdToExclude);
+            .in('phase_id', parentPhaseIds.map(p => p.id));
         }
         
         // Delete project_phases for parent (latest revision phases are preserved)
