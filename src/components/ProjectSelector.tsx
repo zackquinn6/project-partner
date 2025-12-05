@@ -221,8 +221,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                   .filter(project => {
                     const shouldInclude = isAdminMode ? true : (project.publishStatus === 'published' || project.publishStatus === 'beta-testing');
                     const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000'; // Hide manual log template
-                    const isNotStandardProject = project.id !== '00000000-0000-0000-0000-000000000001'; // Hide standard project foundation
-                    console.log('Project filter:', project.name, 'publishStatus:', project.publishStatus, 'include:', shouldInclude && isNotManualTemplate && isNotStandardProject);
+                    // Hide standard foundation using is_standard field instead of hardcoded ID
+                    const isNotStandardProject = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
+                    console.log('Project filter:', project.name, 'publishStatus:', project.publishStatus, 'is_standard:', (project as any).is_standard, 'include:', shouldInclude && isNotManualTemplate && isNotStandardProject);
                     return shouldInclude && isNotManualTemplate && isNotStandardProject;
                   })
                   .map((project) => (

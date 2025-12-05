@@ -245,7 +245,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             isAdminMode
           );
           const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
-          const isNotStandardFoundation = project.id !== '00000000-0000-0000-0000-000000000001';
+          // Hide standard foundation using is_standard field instead of hardcoded ID
+          const isNotStandardFoundation = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
           
           // Include if: (published/beta OR admin mode) AND not manual template AND not standard foundation AND is current version
           // Note: is_current_version filter is now applied at query level to ensure latest revisions
@@ -258,16 +259,19 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               isCurrentVersion,
               isAdminMode,
               isNotManualTemplate,
-              isNotStandardFoundation
+              isNotStandardFoundation,
+              is_standard: (project as any).is_standard
             });
           }
           
           return shouldInclude;
         })
-      : publicProjects.filter(project => 
-          project.id !== '00000000-0000-0000-0000-000000000000' && // Hide manual project template
-          project.id !== '00000000-0000-0000-0000-000000000001' // Hide standard foundation
-        );
+      : publicProjects.filter(project => {
+          const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
+          // Hide standard foundation using is_standard field instead of hardcoded ID
+          const isNotStandardFoundation = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
+          return isNotManualTemplate && isNotStandardFoundation;
+        });
     
     console.log('✅ publishedProjects:', {
       count: filtered.length,
