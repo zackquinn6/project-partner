@@ -1436,7 +1436,7 @@ export default function EditWorkflowView({
           outputsCount: updateData.outputs?.length || 0,
           outputs: updateData.outputs,
           appsCount: updateData.apps?.length || 0,
-          workers_needed: updateData.workers_needed,
+          number_of_workers: updateData.number_of_workers,
           skill_level: updateData.skill_level
         });
         
@@ -1456,7 +1456,7 @@ export default function EditWorkflowView({
             savedMaterialsCount: Array.isArray(data?.[0]?.materials) ? data[0].materials.length : 0,
             savedToolsCount: Array.isArray(data?.[0]?.tools) ? data[0].tools.length : 0,
             savedOutputsCount: Array.isArray(data?.[0]?.outputs) ? data[0].outputs.length : 0,
-            savedWorkersNeeded: data?.[0]?.workers_needed,
+            savedWorkersNeeded: data?.[0]?.number_of_workers,
             savedSkillLevel: data?.[0]?.skill_level,
             fullSavedData: data?.[0]
           });
@@ -1514,7 +1514,7 @@ export default function EditWorkflowView({
             tools: updateData.tools,
             outputsCount: updateData.outputs?.length || 0,
             outputs: updateData.outputs,
-            workers_needed: updateData.workers_needed,
+            number_of_workers: updateData.number_of_workers,
             skill_level: updateData.skill_level
           });
           
@@ -1533,7 +1533,7 @@ export default function EditWorkflowView({
               savedMaterialsCount: Array.isArray(data?.[0]?.materials) ? data[0].materials.length : 0,
               savedToolsCount: Array.isArray(data?.[0]?.tools) ? data[0].tools.length : 0,
               savedOutputsCount: Array.isArray(data?.[0]?.outputs) ? data[0].outputs.length : 0,
-              savedWorkersNeeded: data?.[0]?.workers_needed,
+              savedWorkersNeeded: data?.[0]?.number_of_workers,
               savedSkillLevel: data?.[0]?.skill_level,
               fullSavedData: data?.[0]
             });
