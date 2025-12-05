@@ -860,8 +860,13 @@ export function UnifiedProjectManagement({
           await supabase.from('template_steps').delete().in('operation_id', operationIds);
         }
 
-        // Delete template_operations
-        await supabase.from('template_operations').delete().eq('project_id', pid);
+        // Delete phase_operations
+        if (phaseIds && phaseIds.length > 0) {
+          await supabase
+            .from('phase_operations')
+            .delete()
+            .in('phase_id', phaseIds.map(p => p.id));
+        }
 
         // Delete project_phases (new architecture)
         await supabase.from('project_phases').delete().eq('project_id', pid);
@@ -906,7 +911,12 @@ export function UnifiedProjectManagement({
         await supabase.from('template_steps').delete().in('operation_id', operationIds);
 
         // Delete template operations
-        await supabase.from('template_operations').delete().eq('project_id', revisionId);
+        if (phaseIds && phaseIds.length > 0) {
+          await supabase
+            .from('phase_operations')
+            .delete()
+            .in('phase_id', phaseIds.map(p => p.id));
+        }
       }
 
       // Now delete the project
@@ -998,40 +1008,52 @@ export function UnifiedProjectManagement({
         for (const revisionId of otherRevisionIds) {
           console.log('🗑️ Deleting revision:', revisionId);
           
-          // Delete related template data
-          const { data: operations, error: opsError } = await supabase
-            .from('template_operations')
+          // Delete related data
+          const { data: phaseIds, error: phaseError } = await supabase
+            .from('project_phases')
             .select('id')
             .eq('project_id', revisionId);
           
-          if (opsError) {
-            console.error('Error fetching operations for deletion:', opsError);
-            throw opsError;
+          if (phaseError) {
+            console.error('Error fetching phases for deletion:', phaseError);
+            throw phaseError;
           }
           
-          if (operations && operations.length > 0) {
-            const operationIds = operations.map(op => op.id);
-            console.log('🗑️ Deleting', operationIds.length, 'operations and their steps');
+          if (phaseIds && phaseIds.length > 0) {
+            const { data: operations, error: opsError } = await supabase
+              .from('phase_operations')
+              .select('id')
+              .in('phase_id', phaseIds.map(p => p.id));
             
-            // Delete template steps first
-            const { error: stepsError } = await supabase
-              .from('template_steps')
-              .delete()
-              .in('operation_id', operationIds);
-            
-            if (stepsError) {
-              console.error('Error deleting template steps:', stepsError);
-              throw stepsError;
+            if (opsError) {
+              console.error('Error fetching operations for deletion:', opsError);
+              throw opsError;
             }
             
-            // Delete template operations
+            if (operations && operations.length > 0) {
+              const operationIds = operations.map(op => op.id);
+              console.log('🗑️ Deleting', operationIds.length, 'operations and their steps');
+              
+              // Delete operation steps first
+              const { error: stepsError } = await supabase
+                .from('operation_steps')
+                .delete()
+                .in('operation_id', operationIds);
+              
+              if (stepsError) {
+                console.error('Error deleting operation steps:', stepsError);
+                throw stepsError;
+              }
+            }
+            
+            // Delete phase operations
             const { error: opsDeleteError } = await supabase
-              .from('template_operations')
+              .from('phase_operations')
               .delete()
-              .eq('project_id', revisionId);
+              .in('phase_id', phaseIds.map(p => p.id));
             
             if (opsDeleteError) {
-              console.error('Error deleting template operations:', opsDeleteError);
+              console.error('Error deleting phase operations:', opsDeleteError);
               throw opsDeleteError;
             }
           }
