@@ -2202,7 +2202,9 @@ export default function EditWorkflowView({
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
                                        <div className="font-medium">{output.name}</div>
-                                       {output.type !== "none" && <Badge variant="outline" className="text-xs capitalize">{output.type}</Badge>}
+                                       {output.type !== "none" && ['major-aesthetics', 'performance-durability', 'safety'].includes(output.type) && (
+                                         <Badge variant="outline" className="text-xs capitalize">{output.type.replace('-', ' ')}</Badge>
+                                       )}
                                     </div>
                                     <div className="text-sm text-muted-foreground mt-1">{output.description}</div>
                                   </div>

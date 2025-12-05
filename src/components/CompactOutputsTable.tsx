@@ -16,7 +16,14 @@ interface CompactOutputsTableProps {
 
 export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onEditOutput }: CompactOutputsTableProps) {
   // Ensure outputs is always an array to prevent undefined errors
-  const safeOutputs = outputs || [];
+  // Filter out invalid output types (quality, condition, etc.) and normalize to 'none'
+  const safeOutputs = (outputs || []).map(output => ({
+    ...output,
+    type: (output.type === 'quality' || output.type === 'condition' || 
+           !['none', 'major-aesthetics', 'performance-durability', 'safety'].includes(output.type))
+      ? 'none' as Output['type']
+      : output.type
+  }));
   
   const handleOutputChange = (index: number, field: keyof Output, value: any) => {
     const updatedOutputs = [...safeOutputs];
@@ -27,6 +34,13 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
   const handleRemoveOutput = (index: number) => {
     const updatedOutputs = safeOutputs.filter((_, i) => i !== index);
     onOutputsChange(updatedOutputs);
+  };
+
+  // Valid output types from dropdown
+  const validOutputTypes: Output['type'][] = ['none', 'major-aesthetics', 'performance-durability', 'safety'];
+  
+  const isValidOutputType = (type: string): type is Output['type'] => {
+    return validOutputTypes.includes(type as Output['type']);
   };
 
   const getTypeColor = (type: Output['type']) => {
@@ -89,7 +103,7 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
                     >
                       <SelectTrigger className="h-6 text-xs">
                         <SelectValue>
-                          {output.type !== 'none' ? (
+                          {output.type !== 'none' && ['major-aesthetics', 'performance-durability', 'safety'].includes(output.type) ? (
                             <Badge className={`text-[10px] px-1 py-0 ${getTypeColor(output.type)}`}>
                               {getTypeLabel(output.type)}
                             </Badge>

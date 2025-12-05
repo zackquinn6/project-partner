@@ -55,7 +55,7 @@ export const OutputDetailPopup: React.FC<OutputDetailPopupProps> = ({
         
         <div className="space-y-4">
           {/* Output Type */}
-          {output.type !== 'none' && (
+          {output.type !== 'none' && ['major-aesthetics', 'performance-durability', 'safety'].includes(output.type) && (
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Type:</span>
               <Badge 
