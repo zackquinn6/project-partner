@@ -548,6 +548,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         throw new Error(`Failed to load standard phases: ${standardError.message}`);
       }
       
+      console.log('🔍 StructureManager - Loaded phases:', {
+        customPhasesCount: customPhasesData?.length || 0,
+        standardPhasesCount: standardPhasesData?.length || 0,
+        standardPhases: standardPhasesData?.map((p: any) => ({
+          name: p.name,
+          position_rule: p.position_rule,
+          position_value: p.position_value
+        }))
+      });
+      
       // Combine both and convert to Phase format
       const allPhasesData = [...(standardPhasesData || []), ...(customPhasesData || [])];
       
@@ -575,10 +585,84 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       const phases: Phase[] = await Promise.all(allPhasesData.map(async (phaseData: any) => {
         // Check if this is an incorporated phase (has source_project_id)
         const isIncorporated = !!phaseData.source_project_id;
+        // Check if this is a standard phase (from standard project foundation)
+        const isStandardPhase = phaseData.is_standard === true && !isIncorporated;
         
         let operationsWithSteps: any[] = [];
         
-        if (isIncorporated) {
+        if (isStandardPhase) {
+          // For standard phases: fetch operations from the standard project's phase
+          console.log(`🔍 Loading operations for standard phase "${phaseData.name}" (phase_id: ${phaseData.id})`);
+          const { data: operations, error: operationsError } = await supabase
+            .from('phase_operations')
+            .select(`
+              id,
+              operation_name,
+              operation_description,
+              flow_type,
+              display_order
+            `)
+            .eq('phase_id', phaseData.id) // phaseData.id is from standard project
+            .order('display_order');
+          
+          if (operationsError) {
+            console.error(`❌ Error loading operations for standard phase "${phaseData.name}":`, operationsError);
+          } else {
+            console.log(`✅ Loaded ${operations?.length || 0} operations for standard phase "${phaseData.name}"`);
+          }
+          
+          // Get steps for each operation from standard project
+          operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+            const { data: steps } = await supabase
+              .from('operation_steps')
+              .select(`
+                id,
+                step_title,
+                description,
+                content_type,
+                content,
+                materials,
+                tools,
+                outputs,
+                display_order
+              `)
+              .eq('operation_id', op.id)
+              .order('display_order');
+            
+            return {
+              id: op.id,
+              name: op.operation_name,
+              description: op.operation_description || '',
+              flowType: op.flow_type || 'prime',
+              displayOrder: op.display_order || 0,
+              isStandard: true, // Mark as standard/read-only
+              steps: (steps || [])
+                .map((s: any) => ({
+                  id: s.id,
+                  step: s.step_title,
+                  description: s.description || '',
+                  contentType: s.content_type || 'text',
+                  content: s.content || '',
+                  materials: s.materials || [],
+                  tools: s.tools || [],
+                  outputs: s.outputs || [],
+                  displayOrder: s.display_order || 0
+                }))
+                .sort((a, b) => {
+                  const aOrder = a.displayOrder ?? 999;
+                  const bOrder = b.displayOrder ?? 999;
+                  return aOrder - bOrder;
+                })
+            };
+          }));
+          
+          // Sort operations by displayOrder
+          operationsWithSteps.sort((a, b) => {
+            const aOrder = a.displayOrder ?? 999;
+            const bOrder = b.displayOrder ?? 999;
+            return aOrder - bOrder;
+          });
+        } else if (isIncorporated) {
           // For incorporated phases: dynamically fetch operations/steps from source project
           // First, find the source phase by matching name in the source project
           const { data: sourcePhase } = await supabase
@@ -708,7 +792,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           }
         } else {
           // For regular phases: get operations from current phase
-          const { data: operations } = await supabase
+          console.log(`🔍 Loading operations for custom phase "${phaseData.name}" (phase_id: ${phaseData.id})`);
+          const { data: operations, error: operationsError } = await supabase
             .from('phase_operations')
             .select(`
               id,
@@ -720,6 +805,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             `)
             .eq('phase_id', phaseData.id)
             .order('display_order');
+          
+          if (operationsError) {
+            console.error(`❌ Error loading operations for custom phase "${phaseData.name}":`, operationsError);
+          } else {
+            console.log(`✅ Loaded ${operations?.length || 0} operations for custom phase "${phaseData.name}"`);
+          }
           
           // Get steps for each operation
           operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
@@ -786,7 +877,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           phaseOrderNumber = 999;
         }
         
-        return {
+        const phaseResult = {
           id: phaseData.id,
           name: phaseData.name,
           description: phaseData.description,
@@ -799,6 +890,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           position_value: phaseData.position_value,
           operations: operationsWithSteps
         } as Phase;
+        
+        console.log(`✅ Built phase "${phaseData.name}":`, {
+          isStandard: phaseResult.isStandard,
+          isLinked: phaseResult.isLinked,
+          phaseOrderNumber: phaseResult.phaseOrderNumber,
+          position_rule: phaseResult.position_rule,
+          position_value: phaseResult.position_value,
+          operationsCount: phaseResult.operations.length,
+          stepsCount: phaseResult.operations.reduce((sum, op) => sum + (op.steps?.length || 0), 0)
+        });
+        
+        return phaseResult;
       }));
       
       return phases;
