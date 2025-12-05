@@ -32,9 +32,7 @@ export function enforceStandardPhaseOrdering(phases: Phase[], standardProjectPha
       
       // If both have order numbers from standard project, use those
       if (aOrder !== undefined && bOrder !== undefined) {
-        // Handle 'first' and 'last' special cases
-        if (aOrder === 'first') return -1;
-        if (bOrder === 'first') return 1;
+        // Handle 'last' special case
         if (aOrder === 'last') return 1;
         if (bOrder === 'last') return -1;
         
@@ -46,8 +44,6 @@ export function enforceStandardPhaseOrdering(phases: Phase[], standardProjectPha
       
       // Fallback: use phaseOrderNumber from the phase itself
       if (a.phaseOrderNumber !== undefined && b.phaseOrderNumber !== undefined) {
-        if (a.phaseOrderNumber === 'first') return -1;
-        if (b.phaseOrderNumber === 'first') return 1;
         if (a.phaseOrderNumber === 'last') return 1;
         if (b.phaseOrderNumber === 'last') return -1;
         if (typeof a.phaseOrderNumber === 'number' && typeof b.phaseOrderNumber === 'number') {
@@ -64,8 +60,6 @@ export function enforceStandardPhaseOrdering(phases: Phase[], standardProjectPha
       const aOrder = a.phaseOrderNumber;
       const bOrder = b.phaseOrderNumber;
       
-      if (aOrder === 'first') return -1;
-      if (bOrder === 'first') return 1;
       if (aOrder === 'last') return 1;
       if (bOrder === 'last') return -1;
       
@@ -118,12 +112,7 @@ export function validateStandardPhaseOrdering(phases: Phase[]): { isValid: boole
     const expectedOrder = typeof phase.phaseOrderNumber === 'number' ? phase.phaseOrderNumber : -1;
     const actualIndex = phases.findIndex(p => p.id === phase.id);
     
-    // Validate 'first' phase is at index 0
-    if (phase.phaseOrderNumber === 'first' && actualIndex !== 0) {
-      errors.push(`${phase.name} phase must be the first phase`);
-    }
-    
-    // Validate numbered phases are in correct position
+    // Validate numbered phases are in correct position (position 1 = index 0)
     if (typeof expectedOrder === 'number' && expectedOrder > 0 && actualIndex !== expectedOrder - 1) {
       errors.push(`${phase.name} phase must be at position ${expectedOrder}`);
     }
@@ -151,10 +140,6 @@ export function validateStandardPhaseOrdering(phases: Phase[]): { isValid: boole
 export function getStandardPhaseExpectedPosition(phase: Phase, totalPhases: number): number {
   if (phase.isStandard !== true || phase.isLinked) {
     return -1; // Not a standard phase
-  }
-  
-  if (phase.phaseOrderNumber === 'first') {
-    return 0;
   }
   
   if (phase.phaseOrderNumber === 'last') {
@@ -197,14 +182,10 @@ export function validateAndFixSequentialOrdering(phases: Phase[]): Phase[] {
     return phase;
   });
 
-  // Sort phases by their current order (handling 'first', 'last', and numbers)
+  // Sort phases by their current order (handling 'last' and numbers)
   const sortedPhases = [...phasesWithTemporaryOrder].sort((a, b) => {
     const aOrder = a.phaseOrderNumber;
     const bOrder = b.phaseOrderNumber;
-    
-    // Handle 'first' - always comes first
-    if (aOrder === 'first') return -1;
-    if (bOrder === 'first') return 1;
     
     // Handle 'last' - always comes last
     if (aOrder === 'last') return 1;

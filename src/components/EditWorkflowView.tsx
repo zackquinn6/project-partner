@@ -148,9 +148,9 @@ export default function EditWorkflowView({
           isLinked: phaseData.is_linked || false,
           sourceProjectId: phaseData.source_project_id,
           sourceProjectName: phaseData.source_project_name,
-          phaseOrderNumber: phaseData.position_rule === 'first' ? 'first' 
-            : phaseData.position_rule === 'last' ? 'last'
-            : phaseData.position_value || 999,
+          phaseOrderNumber: phaseData.position_rule === 'last' ? 'last'
+            : (phaseData.position_rule === 'nth' && phaseData.position_value) ? phaseData.position_value
+            : 999,
           operations: (phaseData.phase_operations || []).map((op: any) => ({
             id: op.id,
             name: op.operation_name,
@@ -880,12 +880,10 @@ export default function EditWorkflowView({
   // Sort phases by order number (same logic as StructureManager)
   const sortPhasesByOrderNumber = (phases: Phase[]): Phase[] => {
     const sortedPhases = [...phases].sort((a, b) => {
-      const aOrder = a.phaseOrderNumber === 'first' ? -Infinity : 
-                    (a.phaseOrderNumber === 'last' ? Infinity : 
-                    (typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 1000));
-      const bOrder = b.phaseOrderNumber === 'first' ? -Infinity : 
-                    (b.phaseOrderNumber === 'last' ? Infinity : 
-                    (typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 1000));
+      const aOrder = a.phaseOrderNumber === 'last' ? Infinity : 
+                    (typeof a.phaseOrderNumber === 'number' ? a.phaseOrderNumber : 1000);
+      const bOrder = b.phaseOrderNumber === 'last' ? Infinity : 
+                    (typeof b.phaseOrderNumber === 'number' ? b.phaseOrderNumber : 1000);
       
       if (aOrder !== bOrder) {
         return aOrder - bOrder;

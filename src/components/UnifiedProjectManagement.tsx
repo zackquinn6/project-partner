@@ -1342,9 +1342,9 @@ export function UnifiedProjectManagement({
         isLinked: phase.is_linked || false,
         sourceProjectId: phase.source_project_id,
         sourceProjectName: phase.source_project_name,
-        phaseOrderNumber: phase.position_rule === 'first' ? 'first' 
-          : phase.position_rule === 'last' ? 'last'
-          : phase.position_value || 999,
+        phaseOrderNumber: phase.position_rule === 'last' ? 'last'
+          : (phase.position_rule === 'nth' && phase.position_value) ? phase.position_value
+          : 999,
         operations: (phase.phase_operations || []).map((op: any) => ({
           id: op.id,
           name: op.operation_name,
