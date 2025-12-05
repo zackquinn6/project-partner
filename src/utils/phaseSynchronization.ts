@@ -119,7 +119,7 @@ async function syncStepsForOperation(
   const stepIds = steps.filter(s => s.id).map(s => s.id);
   if (stepIds.length > 0) {
     await supabase
-      .from('template_steps')
+      .from('operation_steps')
       .delete()
       .eq('operation_id', operationId)
       .not('id', 'in', `(${stepIds.join(',')})`);
@@ -151,7 +151,7 @@ async function syncStepsForOperation(
     if (step.id) {
       // Update existing step
       const { error: updateError } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .update(stepData)
         .eq('id', step.id)
         .eq('operation_id', operationId);
@@ -163,7 +163,7 @@ async function syncStepsForOperation(
     } else {
       // Insert new step
       const { error: insertError } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .insert(stepData);
 
       if (insertError) {
@@ -247,7 +247,7 @@ export async function deletePhaseFromDatabase(
 
       // Delete all steps for these operations
       const { error: deleteStepsError } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .delete()
         .in('operation_id', operationIds);
 

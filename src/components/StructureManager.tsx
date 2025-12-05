@@ -1164,12 +1164,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           operation_id: newOperation.id,
           step_title: 'New Step',
           description: 'Step description',
-          content_type: 'text',
-          content: '',
           display_order: 1,
+          content_sections: [],
           materials: [],
           tools: [],
-          outputs: []
+          outputs: [],
+          apps: [],
+          flow_type: 'prime',
+          step_type: 'prime'
         });
       
       if (stepError) {
