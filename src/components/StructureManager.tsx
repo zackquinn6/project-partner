@@ -524,17 +524,37 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         throw new Error(`Failed to load phases from project: ${allPhasesError.message}`);
       }
       
-      // Filter to get standard phases (is_standard = true) from current project
-      const standardPhasesData = (allProjectPhasesData || []).filter((p: any) => p.is_standard === true);
+      // Debug: Log all phases with their is_standard values
+      console.log('🔍 StructureManager - All phases from database:', {
+        totalCount: allProjectPhasesData?.length || 0,
+        phases: (allProjectPhasesData || []).map((p: any) => ({
+          name: p.name,
+          is_standard: p.is_standard,
+          is_standard_type: typeof p.is_standard,
+          is_standard_truthy: !!p.is_standard,
+          position_rule: p.position_rule,
+          position_value: p.position_value
+        }))
+      });
       
-      // Filter to get custom phases (is_standard = false) and incorporated phases
-      const customPhasesData = (allProjectPhasesData || []).filter((p: any) => p.is_standard === false);
+      // Filter to get standard phases (is_standard = true or truthy) from current project
+      // Use truthy check to handle both true and potentially truthy values
+      const standardPhasesData = (allProjectPhasesData || []).filter((p: any) => p.is_standard === true || p.is_standard === 'true' || (typeof p.is_standard === 'boolean' && p.is_standard));
       
-      console.log('🔍 StructureManager - Loaded phases:', {
+      // Filter to get custom phases (is_standard = false, null, or explicitly false)
+      const customPhasesData = (allProjectPhasesData || []).filter((p: any) => !standardPhasesData.includes(p));
+      
+      console.log('🔍 StructureManager - Filtered phases:', {
         totalPhasesCount: allProjectPhasesData?.length || 0,
         customPhasesCount: customPhasesData?.length || 0,
         standardPhasesCount: standardPhasesData?.length || 0,
         standardPhases: standardPhasesData?.map((p: any) => ({
+          name: p.name,
+          is_standard: p.is_standard,
+          position_rule: p.position_rule,
+          position_value: p.position_value
+        })),
+        customPhases: customPhasesData?.map((p: any) => ({
           name: p.name,
           is_standard: p.is_standard,
           position_rule: p.position_rule,
