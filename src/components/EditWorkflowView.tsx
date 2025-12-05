@@ -86,7 +86,8 @@ export default function EditWorkflowView({
     if (isStandardProject) {
       // Edit Standard: Read directly from project_phases table (same approach as UnifiedProjectManagement)
       console.log('📖 Loading Standard Project Foundation phases');
-      const { data: phasesData, error } = await supabase
+      // Use separate queries instead of nested selects to avoid column alias issues with new fields
+      const { data: phasesData, error: phasesError } = await supabase
         .from('project_phases')
         .select(`
           id,
@@ -98,15 +99,52 @@ export default function EditWorkflowView({
           is_standard,
           is_linked,
           source_project_id,
-          source_project_name,
-          phase_operations (
+          source_project_name
+        `)
+        .eq('project_id', projectId)
+        .eq('is_standard', true)  // Only show standard phases when editing standard project
+        .order('display_order', { ascending: true });
+      
+      console.log('📊 Standard phases query result:', {
+        phasesCount: phasesData?.length || 0,
+        phases: phasesData?.map(p => p.name),
+        error: phasesError
+      });
+      
+      if (phasesError) {
+        throw new Error(`Failed to load phases: ${phasesError.message}`);
+      }
+      
+      if (!phasesData || phasesData.length === 0) {
+        console.warn('⚠️ No standard phases found for project:', projectId);
+        return [];
+      }
+      
+      // Load operations and steps separately for each phase to avoid nested select issues
+      const phases: Phase[] = await Promise.all(phasesData.map(async (phaseData: any) => {
+        // Get operations for this phase
+        const { data: operations, error: operationsError } = await supabase
+          .from('phase_operations')
+          .select(`
             id,
             operation_name,
             operation_description,
             display_order,
             estimated_time,
-            flow_type,
-            operation_steps (
+            flow_type
+          `)
+          .eq('phase_id', phaseData.id)
+          .order('display_order', { ascending: true });
+        
+        if (operationsError) {
+          console.error(`❌ Error loading operations for phase "${phaseData.name}":`, operationsError);
+        }
+        
+        // Get steps for each operation
+        const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+          const { data: steps, error: stepsError } = await supabase
+            .from('operation_steps')
+            .select(`
               id,
               step_title,
               description,
@@ -121,37 +159,15 @@ export default function EditWorkflowView({
               time_estimate_high,
               workers_needed,
               skill_level
-            )
-          )
-        `)
-        .eq('project_id', projectId)
-        .eq('is_standard', true)  // Only show standard phases when editing standard project
-        .order('display_order', { ascending: true });
-      
-      console.log('📊 Standard phases query result:', {
-        phasesCount: phasesData?.length || 0,
-        phases: phasesData?.map(p => p.name),
-        error
-      });
-      
-      if (error) {
-        throw new Error(`Failed to load phases: ${error.message}`);
-      }
-      
-      // Transform relational data to frontend format (same as UnifiedProjectManagement)
-      const phases: Phase[] = (phasesData || []).map((phaseData: any) => {
-        return {
-          id: phaseData.id,
-          name: phaseData.name,
-          description: phaseData.description || '',
-          isStandard: phaseData.is_standard || false,
-          isLinked: phaseData.is_linked || false,
-          sourceProjectId: phaseData.source_project_id,
-          sourceProjectName: phaseData.source_project_name,
-          phaseOrderNumber: phaseData.position_rule === 'last' ? 'last'
-            : (phaseData.position_rule === 'nth' && phaseData.position_value) ? phaseData.position_value
-            : 999,
-          operations: (phaseData.phase_operations || []).map((op: any) => ({
+            `)
+            .eq('operation_id', op.id)
+            .order('display_order', { ascending: true });
+          
+          if (stepsError) {
+            console.error(`❌ Error loading steps for operation "${op.operation_name}":`, stepsError);
+          }
+          
+          return {
             id: op.id,
             name: op.operation_name,
             description: op.operation_description || '',
@@ -159,7 +175,7 @@ export default function EditWorkflowView({
             flowType: op.flow_type || 'prime',
             displayOrder: op.display_order || 0,
             isStandard: phaseData.is_standard || false,
-            steps: (op.operation_steps || []).map((step: any) => ({
+            steps: (steps || []).map((step: any) => ({
               id: step.id,
               step: step.step_title,
               description: step.description || '',
@@ -179,9 +195,23 @@ export default function EditWorkflowView({
               workersNeeded: step.workers_needed || 1,
               skillLevel: step.skill_level || 'intermediate'
             })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
-          })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
+          };
+        }));
+        
+        return {
+          id: phaseData.id,
+          name: phaseData.name,
+          description: phaseData.description || '',
+          isStandard: phaseData.is_standard || false,
+          isLinked: phaseData.is_linked || false,
+          sourceProjectId: phaseData.source_project_id,
+          sourceProjectName: phaseData.source_project_name,
+          phaseOrderNumber: phaseData.position_rule === 'last' ? 'last'
+            : (phaseData.position_rule === 'nth' && phaseData.position_value) ? phaseData.position_value
+            : 999,
+          operations: operationsWithSteps.sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
         };
-      });
+      }));
       
       console.log('✅ Standard phases fully loaded with operations and steps:', {
         count: phases.length,
@@ -412,15 +442,13 @@ export default function EditWorkflowView({
         } else {
           // For regular custom phases, fetch operations and steps normally
           const { data: operations } = await supabase
-            .from('template_operations')
+            .from('phase_operations')
             .select(`
               id,
               operation_name,
               operation_description,
               flow_type,
-              user_prompt,
-              display_order,
-              is_reference
+              display_order
             `)
             .eq('phase_id', phaseData.id)
             .order('display_order');
@@ -635,9 +663,8 @@ export default function EditWorkflowView({
             name: op.operation_name,
             description: op.operation_description,
             flowType: op.flow_type,
-            userPrompt: op.user_prompt,
             displayOrder: op.display_order,
-            isStandard: op.is_reference || phaseData.is_standard,
+            isStandard: phaseData.is_standard,
             steps: (steps || [])
               .map((s: any) => {
                 // Parse apps field - handle both JSON string and array
