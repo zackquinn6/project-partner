@@ -16,11 +16,18 @@ import { toast } from 'sonner';
 
 interface Risk {
   id: string;
-  risk: string;
+  risk: string; // Maps to risk_title in DB
+  risk_title?: string; // Database field
+  risk_description?: string; // Database field
   likelihood: 'low' | 'medium' | 'high';
-  schedule_impact_days: number | null;
-  budget_impact_dollars: number | null;
-  mitigation: string | null;
+  schedule_impact_days: number | null; // Maps to schedule_impact_low_days or schedule_impact_high_days
+  schedule_impact_low_days?: number | null; // Database field
+  schedule_impact_high_days?: number | null; // Database field
+  budget_impact_dollars: number | null; // Maps to budget_impact_low or budget_impact_high
+  budget_impact_low?: number | null; // Database field
+  budget_impact_high?: number | null; // Database field
+  mitigation: string | null; // Maps to mitigation_strategy in DB
+  mitigation_strategy?: string | null; // Database field
   notes?: string | null;
   status?: 'open' | 'mitigated' | 'closed' | 'monitoring';
   is_template_risk?: boolean;
@@ -75,15 +82,56 @@ export function RiskManagementWindow({
     setLoading(true);
     try {
       if (mode === 'template' && projectId) {
-        // Fetch template-level risks
+        console.log('🔍 RiskManagementWindow: Fetching risks for template project:', projectId);
+        // First, check if this is a revision and get the parent/template project ID
+        let templateProjectId = projectId;
+        
+        const { data: projectData, error: projectError } = await supabase
+          .from('projects')
+          .select('id, parent_project_id')
+          .eq('id', projectId)
+          .single();
+        
+        if (projectError) {
+          console.error('Error fetching project:', projectError);
+        } else if (projectData?.parent_project_id) {
+          // This is a revision, use the parent project ID
+          templateProjectId = projectData.parent_project_id;
+          console.log('📋 RiskManagementWindow: Detected revision, using parent project ID:', templateProjectId);
+        }
+        
+        console.log('📊 RiskManagementWindow: Querying project_template_risks for project:', templateProjectId);
+        // Fetch template-level risks using the template project ID
         const { data, error } = await supabase
-          .from('project_risks')
+          .from('project_template_risks')
           .select('*')
-          .eq('project_id', projectId)
+          .eq('project_id', templateProjectId)
           .order('display_order', { ascending: true });
 
         if (error) throw error;
-        setRisks((data || []) as Risk[]);
+        
+        // Map database fields to component interface
+        const mappedRisks: Risk[] = (data || []).map((risk: any) => ({
+          id: risk.id,
+          risk: risk.risk_title || '',
+          risk_title: risk.risk_title,
+          risk_description: risk.risk_description,
+          likelihood: risk.likelihood,
+          schedule_impact_days: risk.schedule_impact_high_days || risk.schedule_impact_low_days || null,
+          schedule_impact_low_days: risk.schedule_impact_low_days,
+          schedule_impact_high_days: risk.schedule_impact_high_days,
+          budget_impact_dollars: risk.budget_impact_high || risk.budget_impact_low || null,
+          budget_impact_low: risk.budget_impact_low,
+          budget_impact_high: risk.budget_impact_high,
+          mitigation: risk.mitigation_strategy || null,
+          mitigation_strategy: risk.mitigation_strategy,
+          notes: risk.risk_description || null,
+          status: 'open' as const,
+          display_order: risk.display_order,
+          impact: risk.impact
+        }));
+        
+        setRisks(mappedRisks);
       } else if (mode === 'run' && projectRunId) {
         // Fetch run-level risks (template risks + user-added risks)
         const { data, error } = await supabase
@@ -93,7 +141,31 @@ export function RiskManagementWindow({
           .order('display_order', { ascending: true });
 
         if (error) throw error;
-        setRisks((data || []) as Risk[]);
+        
+        // Map database fields to component interface
+        const mappedRisks: Risk[] = (data || []).map((risk: any) => ({
+          id: risk.id,
+          risk: risk.risk_title || '',
+          risk_title: risk.risk_title,
+          risk_description: risk.risk_description,
+          likelihood: risk.likelihood,
+          schedule_impact_days: risk.schedule_impact_high_days || risk.schedule_impact_low_days || null,
+          schedule_impact_low_days: risk.schedule_impact_low_days,
+          schedule_impact_high_days: risk.schedule_impact_high_days,
+          budget_impact_dollars: risk.budget_impact_high || risk.budget_impact_low || null,
+          budget_impact_low: risk.budget_impact_low,
+          budget_impact_high: risk.budget_impact_high,
+          mitigation: risk.mitigation_strategy || null,
+          mitigation_strategy: risk.mitigation_strategy,
+          notes: risk.risk_description || null,
+          status: risk.status || 'open',
+          is_template_risk: !!risk.template_risk_id,
+          template_risk_id: risk.template_risk_id,
+          display_order: risk.display_order,
+          impact: risk.impact
+        }));
+        
+        setRisks(mappedRisks);
       }
     } catch (error) {
       console.error('Error fetching risks:', error);
@@ -119,14 +191,16 @@ export function RiskManagementWindow({
         // Save template risk
         if (editingRisk) {
           const { error } = await supabase
-            .from('project_risks')
+            .from('project_template_risks')
             .update({
-              risk: formData.risk.trim(),
+              risk_title: formData.risk.trim(),
+              risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,
-              schedule_impact_days: formData.schedule_impact_days || 0,
-              budget_impact_dollars: Math.round(formData.budget_impact_dollars || 0),
-              mitigation: formData.mitigation.trim() || null,
-              notes: formData.notes.trim() || null
+              schedule_impact_low_days: formData.schedule_impact_days || null,
+              schedule_impact_high_days: formData.schedule_impact_days || null,
+              budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
+              budget_impact_high: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
+              mitigation_strategy: formData.mitigation.trim() || null
             })
             .eq('id', editingRisk.id);
 
@@ -134,7 +208,7 @@ export function RiskManagementWindow({
           toast.success('Risk updated successfully');
         } else {
           const { data: existingRisks } = await supabase
-            .from('project_risks')
+            .from('project_template_risks')
             .select('display_order')
             .eq('project_id', projectId)
             .order('display_order', { ascending: false })
@@ -145,16 +219,17 @@ export function RiskManagementWindow({
             : 0;
 
           const { error } = await supabase
-            .from('project_risks')
+            .from('project_template_risks')
             .insert({
               project_id: projectId,
-              risk: formData.risk.trim(),
+              risk_title: formData.risk.trim(),
+              risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,
-              schedule_impact_days: formData.schedule_impact_days || 0,
-              budget_impact_dollars: Math.round(formData.budget_impact_dollars || 0),
-              mitigation: formData.mitigation.trim() || null,
-              notes: formData.notes.trim() || null,
-              created_by: user.id,
+              schedule_impact_low_days: formData.schedule_impact_days || null,
+              schedule_impact_high_days: formData.schedule_impact_days || null,
+              budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
+              budget_impact_high: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
+              mitigation_strategy: formData.mitigation.trim() || null,
               display_order: nextOrder
             });
 
@@ -167,12 +242,14 @@ export function RiskManagementWindow({
           const { error } = await supabase
             .from('project_run_risks')
             .update({
-              risk: formData.risk.trim(),
+              risk_title: formData.risk.trim(),
+              risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,
-              schedule_impact_days: formData.schedule_impact_days || 0,
-              budget_impact_dollars: Math.round(formData.budget_impact_dollars || 0),
-              mitigation: formData.mitigation.trim() || null,
-              notes: formData.notes.trim() || null,
+              schedule_impact_low_days: formData.schedule_impact_days || null,
+              schedule_impact_high_days: formData.schedule_impact_days || null,
+              budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
+              budget_impact_high: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
+              mitigation_strategy: formData.mitigation.trim() || null,
               status: formData.status
             })
             .eq('id', editingRisk.id);
@@ -195,15 +272,15 @@ export function RiskManagementWindow({
             .from('project_run_risks')
             .insert({
               project_run_id: projectRunId,
-              risk: formData.risk.trim(),
+              risk_title: formData.risk.trim(),
+              risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,
-              schedule_impact_days: formData.schedule_impact_days || 0,
-              budget_impact_dollars: Math.round(formData.budget_impact_dollars || 0),
-              mitigation: formData.mitigation.trim() || null,
-              notes: formData.notes.trim() || null,
+              schedule_impact_low_days: formData.schedule_impact_days || null,
+              schedule_impact_high_days: formData.schedule_impact_days || null,
+              budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
+              budget_impact_high: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
+              mitigation_strategy: formData.mitigation.trim() || null,
               status: formData.status,
-              is_template_risk: false, // User-added risk
-              created_by: user.id,
               display_order: nextOrder
             });
 
@@ -236,12 +313,12 @@ export function RiskManagementWindow({
   const handleEditRisk = (risk: Risk) => {
     setEditingRisk(risk);
     setFormData({
-      risk: risk.risk,
+      risk: risk.risk || risk.risk_title || '',
       likelihood: risk.likelihood,
-      schedule_impact_days: risk.schedule_impact_days || 0,
-      budget_impact_dollars: risk.budget_impact_dollars || 0,
-      mitigation: risk.mitigation || '',
-      notes: risk.notes || '',
+      schedule_impact_days: risk.schedule_impact_days || risk.schedule_impact_high_days || risk.schedule_impact_low_days || 0,
+      budget_impact_dollars: risk.budget_impact_dollars || risk.budget_impact_high || risk.budget_impact_low || 0,
+      mitigation: risk.mitigation || risk.mitigation_strategy || '',
+      notes: risk.notes || risk.risk_description || '',
       status: risk.status || 'open'
     });
     setShowAddForm(true);
@@ -259,7 +336,7 @@ export function RiskManagementWindow({
     try {
       if (mode === 'template' && projectId) {
         const { error } = await supabase
-          .from('project_risks')
+          .from('project_template_risks')
           .delete()
           .eq('id', risk.id);
 

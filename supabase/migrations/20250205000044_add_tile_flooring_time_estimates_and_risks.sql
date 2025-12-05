@@ -367,13 +367,14 @@ INSERT INTO public.project_template_risks (
 UPDATE projects
 SET project_challenges = 'Tile Flooring Installation presents several key challenges that require careful planning:
 
-• Subfloor preparation is critical - uneven surfaces can cause tile failure
-• Precise layout and alignment prevent costly corrections later
-• Proper mortar mixing and curing ensure long-term durability
-• Weather and temperature conditions affect installation quality
-• Material waste and breakage should be anticipated (10% buffer recommended)
+• Subfloor preparation is critical - soft, uneven, or damp surfaces cause tile movement and failure
+• Material selection must match tile type and installation area (wet vs dry)
+• Proper layout and planning prevent wasted materials and unprofessional appearance
+• Adhesive and grout curing times must be respected to avoid bonding failures
+• Safety hazards from sharp tiles, cement burns, and dust require proper PPE
+• Weather and temperature conditions affect mortar curing and installation quality
 
-Budget for 10-15% contingency to handle unexpected subfloor repairs, material waste, and tool needs. Allow extra time for subfloor preparation and curing phases.'
+Budget for 15-20% contingency to handle subfloor repairs, material waste, tool needs, and safety equipment. Allow extra time for subfloor preparation, proper curing phases, and careful planning.'
 WHERE id = '9c04c190-9409-4eeb-98db-36426aacb39f';
 
 -- Verify updates
