@@ -192,7 +192,7 @@ export function AddMaintenanceTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100]" />
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden z-[101]">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden z-[101]">
         <DialogHeader>
           <DialogTitle>Add Maintenance Task</DialogTitle>
         </DialogHeader>
