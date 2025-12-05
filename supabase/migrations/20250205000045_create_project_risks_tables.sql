@@ -1,32 +1,13 @@
 -- Migration: Create project risks tables
 -- Risks exist at project_run level (user-specific) and can be copied from template risks
+-- Note: project_template_risks table is created in migration 20250205000044
 
 -- ============================================
--- PART 1: Create project_template_risks table
--- Stores risks at the template/project level (can be copied to project runs)
+-- PART 1: Ensure project_template_risks table exists (created in earlier migration)
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS public.project_template_risks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
-  risk_title TEXT NOT NULL,
-  risk_description TEXT,
-  likelihood TEXT CHECK (likelihood IN ('low', 'medium', 'high')),
-  impact TEXT CHECK (impact IN ('low', 'medium', 'high')),
-  budget_impact_low NUMERIC(10, 2),
-  budget_impact_high NUMERIC(10, 2),
-  schedule_impact_low_days INTEGER,
-  schedule_impact_high_days INTEGER,
-  mitigation_strategy TEXT,
-  mitigation_cost NUMERIC(10, 2),
-  display_order INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Add indexes
-CREATE INDEX IF NOT EXISTS idx_project_template_risks_project_id ON public.project_template_risks(project_id);
-CREATE INDEX IF NOT EXISTS idx_project_template_risks_display_order ON public.project_template_risks(project_id, display_order);
+-- Table creation moved to 20250205000044 to ensure it exists before inserting risks
+-- This migration focuses on RLS policies and project_run_risks table
 
 -- ============================================
 -- PART 2: Create project_run_risks table

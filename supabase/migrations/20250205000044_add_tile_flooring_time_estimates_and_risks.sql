@@ -2,6 +2,31 @@
 -- Project ID: 9c04c190-9409-4eeb-98db-36426aacb39f
 
 -- ============================================
+-- PART 0: Create project_template_risks table if it doesn't exist
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.project_template_risks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  risk_title TEXT NOT NULL,
+  risk_description TEXT,
+  likelihood TEXT CHECK (likelihood IN ('low', 'medium', 'high')),
+  impact TEXT CHECK (impact IN ('low', 'medium', 'high')),
+  budget_impact_low NUMERIC(10, 2),
+  budget_impact_high NUMERIC(10, 2),
+  schedule_impact_low_days INTEGER,
+  schedule_impact_high_days INTEGER,
+  mitigation_strategy TEXT,
+  mitigation_cost NUMERIC(10, 2),
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_template_risks_project_id ON public.project_template_risks(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_template_risks_display_order ON public.project_template_risks(project_id, display_order);
+
+-- ============================================
 -- PART 1: Update time estimates for all steps (per square foot)
 -- Time estimates are in hours per square foot for scaled steps
 -- ============================================
