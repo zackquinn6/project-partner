@@ -405,19 +405,25 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       
                       // For step 2 (ProjectProfileStep), call its save function first
                       if (currentKickoffStep === 2 && (window as any).__projectProfileStepSave) {
+                        console.log('💾 KickoffWorkflow: Calling ProjectProfileStep save function...');
                         try {
                           await (window as any).__projectProfileStepSave();
+                          console.log('✅ KickoffWorkflow: ProjectProfileStep save completed successfully');
                           
                           // Mark step as complete
+                          console.log('📝 KickoffWorkflow: Marking step as complete...');
                           await handleStepComplete(currentKickoffStep);
+                          console.log('✅ KickoffWorkflow: Step marked complete');
                           
                           // If on step 3 and planning wizard handler exists, open planning wizard
                           if (onPlanningWizard) {
+                            console.log('🎨 KickoffWorkflow: Opening planning wizard...');
                             onPlanningWizard();
                           }
                           return;
                         } catch (error) {
-                          console.error('Error saving project profile:', error);
+                          console.error('❌ KickoffWorkflow: Error saving project profile:', error);
+                          toast.error('Failed to save project profile. Please try again.');
                           return; // Don't proceed if save failed
                         }
                       }

@@ -170,6 +170,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const handleSave = useCallback(async () => {
     if (!currentProjectRun) return;
     
+    console.log('🚀 ProjectProfileStep.handleSave: Starting save with form data:', {
+      customProjectName: projectForm.customProjectName,
+      initialSizing: projectForm.initialSizing,
+      initialTimeline: projectForm.initialTimeline,
+      initialBudget: projectForm.initialBudget,
+      selectedHomeId,
+      homesCount: homes.length
+    });
+    
     // REQUIREMENT 4: Only require home selection if user has multiple homes
     if (homes.length > 1 && !selectedHomeId) {
       toast.error('Please select a home for this project');
@@ -227,21 +236,37 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         custom_project_name: projectForm.customProjectName.trim(),
         initial_timeline: projectForm.initialTimeline || null,
         initial_budget: finalBudgetValue,
+        initial_sizing: projectForm.initialSizing?.trim() || null,
         updated_at: new Date().toISOString()
       };
       
-      console.log('💾 ProjectProfileStep: Saving initial_timeline to database:', {
+      console.log('💾 ProjectProfileStep: Preparing to save to database:', {
         projectRunId: currentProjectRun.id,
-        initial_timeline: projectForm.initialTimeline,
-        initial_budget: finalBudgetValue,
-        custom_project_name: projectForm.customProjectName.trim()
+        updateData: baseUpdateData,
+        formState: {
+          customProjectName: projectForm.customProjectName,
+          initialTimeline: projectForm.initialTimeline,
+          initialBudget: projectForm.initialBudget,
+          initialSizing: projectForm.initialSizing
+        }
       });
+      
+      // CRITICAL: Log a warning if fields are empty
+      if (!projectForm.initialTimeline) {
+        console.warn('⚠️ ProjectProfileStep: initialTimeline is empty!');
+      }
+      if (!projectForm.initialBudget) {
+        console.warn('⚠️ ProjectProfileStep: initialBudget is empty!');
+      }
+      if (!projectForm.initialSizing) {
+        console.warn('⚠️ ProjectProfileStep: initialSizing is empty!');
+      }
       
       const { error: baseError, data: updateResult } = await supabase
         .from('project_runs')
         .update(baseUpdateData)
         .eq('id', currentProjectRun.id)
-        .select('id, initial_budget, custom_project_name, initial_timeline');
+        .select('id, initial_budget, custom_project_name, initial_timeline, initial_sizing');
 
       if (baseError) {
         console.error('❌ ProjectProfileStep: Error saving project profile data:', {
@@ -259,29 +284,40 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       if (updateResult && updateResult.length > 0) {
         const savedRecord = updateResult[0];
         
-        console.log('✅ ProjectProfileStep: Values saved successfully:', {
+        console.log('✅ ProjectProfileStep: Values saved successfully to database:', {
           initial_budget: savedRecord.initial_budget,
           initial_timeline: savedRecord.initial_timeline,
+          initial_sizing: savedRecord.initial_sizing,
           custom_project_name: savedRecord.custom_project_name
         });
         
         // Verify initial_budget matches
         if (savedRecord.initial_budget !== finalBudgetValue) {
-          console.warn('⚠️ ProjectProfileStep: initial_budget mismatch!', {
+          console.error('❌ ProjectProfileStep: initial_budget mismatch!', {
             expected: finalBudgetValue,
             actual: savedRecord.initial_budget
           });
         }
         
         // Verify initial_timeline matches
-        if (savedRecord.initial_timeline !== (projectForm.initialTimeline || null)) {
-          console.warn('⚠️ ProjectProfileStep: initial_timeline mismatch!', {
-            expected: projectForm.initialTimeline || null,
+        const expectedTimeline = projectForm.initialTimeline || null;
+        if (savedRecord.initial_timeline !== expectedTimeline) {
+          console.error('❌ ProjectProfileStep: initial_timeline mismatch!', {
+            expected: expectedTimeline,
             actual: savedRecord.initial_timeline
           });
         }
+        
+        // Verify initial_sizing matches
+        const expectedSizing = projectForm.initialSizing?.trim() || null;
+        if (savedRecord.initial_sizing !== expectedSizing) {
+          console.error('❌ ProjectProfileStep: initial_sizing mismatch!', {
+            expected: expectedSizing,
+            actual: savedRecord.initial_sizing
+          });
+        }
       } else {
-        console.warn('⚠️ ProjectProfileStep: Update succeeded but no data returned');
+        console.error('❌ ProjectProfileStep: Update succeeded but no data returned from database!');
       }
       
       // Second update: home_id (must be set before creating spaces)
@@ -486,10 +522,13 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         console.error('❌ ProjectProfileStep: Final verification error:', finalVerificationError);
       }
       
+      console.log('✅ ProjectProfileStep.handleSave: COMPLETED SUCCESSFULLY - calling onComplete()');
+      toast.success('Project profile saved successfully');
       onComplete();
     } catch (error) {
-      console.error('Error saving project profile:', error);
+      console.error('❌ ProjectProfileStep.handleSave: FAILED with error:', error);
       toast.error('Failed to save project profile');
+      throw error; // Re-throw so KickoffWorkflow knows the save failed
     }
   }, [currentProjectRun, selectedHomeId, projectForm, homes, updateProjectRun, onComplete, user, scalingUnit, fetchHomes]);
 
@@ -575,18 +614,21 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 </Label>
                 <p className="text-[10px] text-muted-foreground mb-1">How much work are you doing?</p>
                 <div className="flex items-center gap-2 w-full justify-center">
-                  <Input
-                    type="number"
-                    value={projectForm.initialSizing}
-                    onChange={(e) => setProjectForm(prev => ({
+                <Input
+                  type="number"
+                  value={projectForm.initialSizing}
+                  onChange={(e) => {
+                    console.log('📝 ProjectProfileStep: initialSizing changed to:', e.target.value);
+                    setProjectForm(prev => ({
                       ...prev,
                       initialSizing: e.target.value
-                    }))}
-                    placeholder="0"
-                    className="text-xs h-9 w-[80px]"
-                    step="1"
-                    min="0"
-                  />
+                    }));
+                  }}
+                  placeholder="0"
+                  className="text-xs h-9 w-[80px]"
+                  step="1"
+                  min="0"
+                />
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {(() => {
                       // Standard scaling units
@@ -631,10 +673,13 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 <Input
                   type="date"
                   value={projectForm.initialTimeline}
-                  onChange={(e) => setProjectForm(prev => ({
-                    ...prev,
-                    initialTimeline: e.target.value
-                  }))}
+                  onChange={(e) => {
+                    console.log('📝 ProjectProfileStep: initialTimeline changed to:', e.target.value);
+                    setProjectForm(prev => ({
+                      ...prev,
+                      initialTimeline: e.target.value
+                    }));
+                  }}
                   className="text-xs h-9 w-auto"
                 />
               </div>
@@ -650,10 +695,13 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
                   <Input
                     value={projectForm.initialBudget}
-                    onChange={(e) => setProjectForm(prev => ({
-                      ...prev,
-                      initialBudget: e.target.value
-                    }))}
+                    onChange={(e) => {
+                      console.log('📝 ProjectProfileStep: initialBudget changed to:', e.target.value);
+                      setProjectForm(prev => ({
+                        ...prev,
+                        initialBudget: e.target.value
+                      }));
+                    }}
                     placeholder="0"
                     className="text-xs h-9 pl-7 w-[100px]"
                     type="number"
