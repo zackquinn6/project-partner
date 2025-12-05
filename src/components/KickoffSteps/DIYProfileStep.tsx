@@ -124,11 +124,11 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
   const renderProfileView = () => {
     if (!existingProfile) {
       return (
-        <div className="text-center space-y-3">
-          <User className="w-12 h-12 mx-auto text-muted-foreground" />
+        <div className="text-center space-y-2">
+          <User className="w-10 h-10 mx-auto text-muted-foreground" />
           <div>
-            <h3 className="text-base font-semibold mb-1.5">Complete Your DIY Profile</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+            <h3 className="text-sm font-semibold mb-1">Complete Your DIY Profile</h3>
+            <p className="text-xs text-muted-foreground mb-2">
               Help us personalize your project experience by completing your DIY profile.
             </p>
             <Button onClick={handleStartEdit} size="sm" className="h-8 sm:h-9">
@@ -140,19 +140,19 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
     }
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <div className="text-center">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
             Your profile helps us match you with the right tools, guidance, and partners—
             so every project starts with an advantage.
           </p>
         </div>
 
         <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <CardContent className="p-2 sm:p-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
               {/* Column 1 */}
-              <div className="space-y-2 sm:space-y-3">
+              <div className="space-y-1.5 sm:space-y-2">
                 <div>
                   <h4 className="font-semibold text-xs sm:text-sm">Full Name</h4>
                   <p className="text-xs text-muted-foreground break-words mt-0.5">
@@ -237,15 +237,15 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
   return (
     <>
       <Card>
-        <CardHeader className="p-3 sm:p-4 md:p-6">
-          <div className="flex items-start justify-between gap-4">
+        <CardHeader className="p-2 sm:p-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl">
-                <User className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <User className="w-4 h-4 flex-shrink-0" />
                 <span className="truncate">DIY Profile</span>
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm mt-0.5">
+              <CardDescription className="text-xs mt-0.5">
                 Set up your DIY profile for personalized project guidance
               </CardDescription>
             </div>
@@ -254,16 +254,16 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                 onClick={handleStartEdit} 
                 variant="outline" 
                 size="sm"
-                className="flex items-center gap-2 text-xs sm:text-sm h-8 sm:h-9 flex-shrink-0"
+                className="flex items-center gap-1.5 text-xs h-7 flex-shrink-0 px-2"
               >
-                <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Edit3 className="w-3 h-3" />
                 <span className="hidden sm:inline">Edit Profile</span>
                 <span className="sm:hidden">Edit</span>
               </Button>
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 p-3 sm:p-4">
+        <CardContent className="space-y-1.5 p-2 sm:p-3">
           {renderProfileView()}
           
           {!isCompleted && !existingProfile && (

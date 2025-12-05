@@ -526,26 +526,26 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   return (
     <>
       <Card>
-        <CardHeader className="p-3 sm:p-4">
-          <div className="flex items-start justify-between gap-4">
+        <CardHeader className="p-2 sm:p-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl">
-                <Home className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <Home className="w-4 h-4 flex-shrink-0" />
                 <span className="truncate">Project Profile</span>
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm mt-0.5">
+              <CardDescription className="text-xs mt-0.5">
                 Setup your project goals
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3 p-3 sm:p-4">
-          <div className="space-y-3">
+        <CardContent className="space-y-2 p-2 sm:p-3">
+          <div className="space-y-2">
             <div>
-              <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                <span className="text-[10px] sm:text-xs text-muted-foreground">1 of 3</span>
-                <label className="text-xs sm:text-sm font-medium">Name your project</label>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[10px] text-muted-foreground">1 of 3</span>
+                <label className="text-xs font-medium">Name your project</label>
               </div>
               <Input
                 value={projectForm.customProjectName}
@@ -554,26 +554,26 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   customProjectName: e.target.value
                 }))}
                 placeholder="Enter your custom project name"
-                className="text-xs sm:text-sm h-11 sm:h-10"
+                className="text-xs h-9"
               />
             </div>
 
             {/* Header for Quick Project Goals */}
-            <div className="mt-6 mb-2">
-              <h3 className="text-sm sm:text-base font-medium text-foreground">
+            <div className="mt-3 mb-1.5">
+              <h3 className="text-xs sm:text-sm font-medium text-foreground">
                 Quick project goals - you can edit these later
               </h3>
             </div>
 
             {/* Three column layout for Project Size, Timeline, Budget - Single column on mobile, centered */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 max-w-md md:max-w-none mx-auto md:mx-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 max-w-md md:max-w-none mx-auto md:mx-0">
               {/* Project Size */}
               <div className="flex flex-col items-center text-center">
-                <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5 justify-center">
-                  <Ruler className="w-3.5 h-3.5" />
+                <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
+                  <Ruler className="w-3 h-3" />
                   Project Size
                 </Label>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5">How much work are you doing?</p>
+                <p className="text-[10px] text-muted-foreground mb-1">How much work are you doing?</p>
                 <div className="flex items-center gap-2 w-full justify-center">
                   <Input
                     type="number"
@@ -583,11 +583,11 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       initialSizing: e.target.value
                     }))}
                     placeholder="0"
-                    className="text-xs sm:text-sm h-11 sm:h-10 w-[100px] sm:w-[80px]"
+                    className="text-xs h-9 w-[80px]"
                     step="1"
                     min="0"
                   />
-                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {(() => {
                       // Standard scaling units
                       const normalizedScalingUnit = scalingUnit?.toLowerCase().trim() || '';
@@ -623,11 +623,11 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
               {/* Timeline */}
               <div className="flex flex-col items-center text-center">
-                <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5 justify-center">
-                  <Calendar className="w-3.5 h-3.5" />
+                <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
+                  <Calendar className="w-3 h-3" />
                   Timeline
                 </Label>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5">When do you want this done?</p>
+                <p className="text-[10px] text-muted-foreground mb-1">When do you want this done?</p>
                 <Input
                   type="date"
                   value={projectForm.initialTimeline}
@@ -635,19 +635,19 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                     ...prev,
                     initialTimeline: e.target.value
                   }))}
-                  className="text-xs sm:text-sm h-9 sm:h-10 w-auto"
+                  className="text-xs h-9 w-auto"
                 />
               </div>
 
               {/* Budget */}
               <div className="flex flex-col items-center text-center">
-                <Label className="text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5 justify-center">
-                  <DollarSign className="w-3.5 h-3.5" />
+                <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
+                  <DollarSign className="w-3 h-3" />
                   Budget
                 </Label>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5">How much do you want to spend?</p>
+                <p className="text-[10px] text-muted-foreground mb-1">How much do you want to spend?</p>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs sm:text-sm text-muted-foreground">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
                   <Input
                     value={projectForm.initialBudget}
                     onChange={(e) => setProjectForm(prev => ({
@@ -655,7 +655,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       initialBudget: e.target.value
                     }))}
                     placeholder="0"
-                    className="text-xs sm:text-sm h-9 sm:h-10 pl-7 w-[100px]"
+                    className="text-xs h-9 pl-7 w-[100px]"
                     type="number"
                     step="1"
                     min="0"
@@ -668,25 +668,25 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             {/* Home Selection - Only show if user has multiple homes */}
             {homes.length > 1 && (
               <div>
-                <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
-                  <span className="text-[10px] sm:text-xs text-muted-foreground">2 of 3</span>
-                  <label className="text-xs sm:text-sm font-medium">Select Home</label>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[10px] text-muted-foreground">2 of 3</span>
+                  <label className="text-xs font-medium">Select Home</label>
                 </div>
                 {loading ? (
                   <div className="text-xs sm:text-sm text-muted-foreground">Loading homes...</div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
-                      <SelectTrigger className="text-xs sm:text-sm h-9 sm:h-10">
+                      <SelectTrigger className="text-xs h-9">
                         <SelectValue placeholder="Select a home for this project" />
                       </SelectTrigger>
                       <SelectContent>
                         {homes.map((home) => (
-                          <SelectItem key={home.id} value={home.id} className="text-xs sm:text-sm">
+                          <SelectItem key={home.id} value={home.id} className="text-xs">
                             <div className="flex items-center gap-2">
                               <span className="truncate">{home.name}</span>
                               {home.is_primary && (
-                                <Badge variant="secondary" className="text-[10px] sm:text-xs flex-shrink-0">Primary</Badge>
+                                <Badge variant="secondary" className="text-[10px] flex-shrink-0">Primary</Badge>
                               )}
                             </div>
                           </SelectItem>
@@ -697,9 +697,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       variant="outline" 
                       size="icon" 
                       onClick={() => setShowHomeManager(true)}
-                      className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                      className="h-9 w-9 flex-shrink-0"
                     >
-                      <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <Plus className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 )}

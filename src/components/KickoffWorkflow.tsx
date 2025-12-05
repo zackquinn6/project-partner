@@ -280,25 +280,25 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         return null;
     }
   };
-  return <div className="max-w-6xl mx-auto p-2 sm:p-4 md:p-6 space-y-2 sm:space-y-4 md:space-y-6 pb-20 sm:pb-6">
+  return <div className="max-w-6xl mx-auto p-2 sm:p-3 space-y-2 sm:space-y-3 pb-20 sm:pb-4">
       {/* Progress Header */}
       <Card>
-        <CardHeader className="p-3 sm:p-4 md:p-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <CardHeader className="p-2 sm:p-3">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 Project Kickoff{currentProjectRun?.name ? `: ${currentProjectRun.name}` : ''}
-                {allKickoffStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-500 flex-shrink-0" />}
+                {allKickoffStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />}
               </CardTitle>
-              <p className="text-base sm:text-lg font-semibold mt-2 text-foreground">Plan your project in 15min or less</p>
-              <CardDescription className="text-xs sm:text-sm mt-1">Three quick steps check that this project is a good fit - then personalizes the project to you</CardDescription>
+              <p className="text-sm sm:text-base font-semibold mt-1 text-foreground">Plan your project in 15min or less</p>
+              <CardDescription className="text-xs mt-0.5">Three quick steps check that this project is a good fit - then personalizes the project to you</CardDescription>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <div className="text-right">
-                <div className="text-xs sm:text-sm text-muted-foreground mb-1">
+                <div className="text-xs text-muted-foreground mb-0.5">
                   Step {currentKickoffStep + 1} of {kickoffSteps.length}
                 </div>
-                <Progress value={progress} className="w-20 sm:w-24 md:w-32 h-1.5 sm:h-2" />
+                <Progress value={progress} className="w-20 sm:w-24 h-1.5" />
               </div>
             </div>
           </div>

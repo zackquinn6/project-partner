@@ -413,57 +413,57 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     // Remove "per " prefix if present, return lowercase unit
     return normalizedScalingUnit.startsWith('per ') ? normalizedScalingUnit.replace('per ', '') : normalizedScalingUnit;
   })() : null;
-  return <div className="space-y-3">
+  return <div className="space-y-2">
       <Card>
-        <CardHeader className="p-3 sm:p-4">
-          <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
             Project Overview: {currentProjectRun.name}
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm mt-0.5">
+          <CardDescription className="text-xs mt-0.5">
             Make sure this project is right for you
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3 p-3 sm:p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <CardContent className="space-y-2 p-2 sm:p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
-              <Label className="text-xs sm:text-sm">Description</Label>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{currentProjectRun.description || 'No description provided'}</p>
+              <Label className="text-xs">Description</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">{currentProjectRun.description || 'No description provided'}</p>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <Label className="text-xs sm:text-sm">Project Challenges</Label>
+              <div className="flex items-center justify-between gap-2 mb-0.5">
+                <Label className="text-xs">Project Challenges</Label>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setRiskManagementOpen(true)}
-                  className="h-7 px-2.5 text-xs bg-muted/50 hover:bg-muted border-muted"
+                  className="h-6 px-2 text-[10px] bg-muted/50 hover:bg-muted border-muted"
                 >
-                  <Eye className="w-3 h-3 mr-1.5" />
+                  <Eye className="w-3 h-3 mr-1" />
                   See All Potential Challenges
                 </Button>
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-line mt-0.5">
+              <p className="text-xs text-muted-foreground whitespace-pre-line mt-0.5">
                 {displayProjectChallenges || 'None specified'}
               </p>
             </div>
           </div>
 
-          <div className="mt-3 pt-3 border-t">
-            <div className="mb-3">
-              <Label className="text-sm">Category</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 pt-2 border-t">
+            <div className="mb-2">
+              <Label className="text-xs">Category</Label>
+              <div className="mt-1 flex flex-wrap gap-1.5">
                 {categories.length > 0 ? categories.map((cat, idx) => <Badge key={idx} variant="outline" className="text-xs">
                       {cat}
-                    </Badge>) : <Badge variant="outline" className="text-xs sm:text-sm">Not specified</Badge>}
+                    </Badge>) : <Badge variant="outline" className="text-xs">Not specified</Badge>}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {/* Left Column */}
               <div>
-                <div className="flex items-center gap-1.5 mb-0">
-                  <Label className="text-sm">Project Skill Level</Label>
+                <div className="flex items-center gap-1 mb-0">
+                  <Label className="text-xs">Project Skill Level</Label>
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -490,8 +490,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
               {/* Right Column */}
               <div>
-                <Label className="text-sm">Estimated Budget</Label>
-                <div className="mt-2 space-y-2">
+                <Label className="text-xs">Estimated Budget</Label>
+                <div className="mt-1 space-y-1">
                   {/* Line 1: Budget per unit + unit */}
                   {displayBudgetPerUnit && formattedScalingUnit ? (
                     <div className="flex flex-wrap items-center gap-2">
@@ -527,8 +527,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
               {/* Left Column - Second Row */}
               <div>
-                <div className="flex items-center gap-1.5 mb-0">
-                  <Label className="text-sm">Project Effort Level</Label>
+                <div className="flex items-center gap-1 mb-0">
+                  <Label className="text-xs">Project Effort Level</Label>
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -555,8 +555,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
               {/* Right Column - Second Row */}
               <div>
-                <Label className="text-sm">Estimated Time</Label>
-                <div className="mt-2 space-y-2">
+                <Label className="text-xs">Estimated Time</Label>
+                <div className="mt-1 space-y-1">
                   {/* Line 1: Estimated time per unit + unit */}
                   {displayEstimatedTime && formattedScalingUnit ? (
                     <div className="flex flex-wrap items-center gap-2">
@@ -607,8 +607,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       )}
 
       {/* Footer Text */}
-      <div className="text-center mt-4">
-        <p className="text-base text-muted-foreground">Does this project seem like a fit?</p>
+      <div className="text-center mt-2">
+        <p className="text-sm text-muted-foreground">Does this project seem like a fit?</p>
       </div>
     </div>;
 };
