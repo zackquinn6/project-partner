@@ -1419,6 +1419,12 @@ export function UnifiedProjectManagement({
     try {
       console.log('🔨 Creating project:', { ...newProject, name: projectName });
 
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User must be authenticated to create a project');
+      }
+
       // Use backend function to create project with standard foundation
       const {
         data,
@@ -1426,7 +1432,8 @@ export function UnifiedProjectManagement({
       } = await supabase.rpc('create_project_with_standard_foundation_v2', {
         p_project_name: projectName,
         p_project_description: newProject.description || '',
-        p_category: newProject.categories.length > 0 ? newProject.categories[0] : 'general'
+        p_category: newProject.categories.length > 0 ? newProject.categories[0] : 'general',
+        p_created_by: user.id
       });
       if (error) {
         console.error('❌ Create project error:', error);
