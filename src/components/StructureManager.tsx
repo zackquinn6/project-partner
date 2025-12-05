@@ -415,8 +415,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             operation_name,
             operation_description,
             flow_type,
-            display_order,
-            is_reference
+            display_order
           `)
           .eq('phase_id', phaseData.id)
           .order('display_order');
