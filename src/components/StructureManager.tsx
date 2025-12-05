@@ -3426,7 +3426,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 position_rule: positionRule,
                 position_value: positionValue,
                 source_project_id: phaseToIncorporate.sourceProjectId,
-                source_phase_id: sourcePhase.id
+                source_project_name: phaseToIncorporate.sourceProjectName || null
               })
               .select('id')
               .single();
