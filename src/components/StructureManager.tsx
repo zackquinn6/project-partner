@@ -500,11 +500,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return phases;
     } else {
       // Regular projects: Read directly from project_phases
-      // 1. Get custom phases from current project
-      // 2. Get standard phases from Standard Project Foundation
+      // Standard phases are copied into each project with is_standard = true
+      // So we load all phases from the current project and filter by is_standard
       
-      // Get ALL phases from current project (both custom and any incorrectly flagged standard phases)
-      // This ensures we don't miss any phases due to data inconsistencies
+      // Get ALL phases from current project (both standard and custom)
       const { data: allProjectPhasesData, error: allPhasesError } = await supabase
         .from('project_phases')
         .select(`
@@ -525,34 +524,19 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         throw new Error(`Failed to load phases from project: ${allPhasesError.message}`);
       }
       
+      // Filter to get standard phases (is_standard = true) from current project
+      const standardPhasesData = (allProjectPhasesData || []).filter((p: any) => p.is_standard === true);
+      
       // Filter to get custom phases (is_standard = false) and incorporated phases
       const customPhasesData = (allProjectPhasesData || []).filter((p: any) => p.is_standard === false);
       
-      // Get standard phases from Standard Project Foundation
-      const { data: standardPhasesData, error: standardError } = await supabase
-        .from('project_phases')
-        .select(`
-          id,
-          name,
-          description,
-          is_standard,
-          position_rule,
-          position_value
-        `)
-        .eq('project_id', STANDARD_PROJECT_ID)
-        .eq('is_standard', true)
-        .order('position_rule', { ascending: true })
-        .order('position_value', { ascending: true, nullsFirst: false });
-      
-      if (standardError) {
-        throw new Error(`Failed to load standard phases: ${standardError.message}`);
-      }
-      
       console.log('🔍 StructureManager - Loaded phases:', {
+        totalPhasesCount: allProjectPhasesData?.length || 0,
         customPhasesCount: customPhasesData?.length || 0,
         standardPhasesCount: standardPhasesData?.length || 0,
         standardPhases: standardPhasesData?.map((p: any) => ({
           name: p.name,
+          is_standard: p.is_standard,
           position_rule: p.position_rule,
           position_value: p.position_value
         }))
