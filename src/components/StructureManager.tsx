@@ -428,7 +428,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               id,
               step_title,
               description,
-              step_type,
+              content_type,
+              content,
+              materials,
+              tools,
+              outputs,
               display_order
             `)
             .eq('operation_id', op.id)
@@ -446,7 +450,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 id: s.id,
                 step: s.step_title,
                 description: s.description,
-                stepType: s.step_type,
+                contentType: s.content_type || 'text',
+                content: s.content || '',
+                materials: s.materials || [],
+                tools: s.tools || [],
+                outputs: s.outputs || [],
                 displayOrder: s.display_order
               }))
               .sort((a, b) => {
@@ -594,7 +602,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 id,
                 step_title,
                 description,
-                step_type,
+                content_type,
+              content,
+              materials,
+              tools,
+              outputs,
                 display_order
               `)
               .eq('operation_id', op.id)
@@ -612,7 +624,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   id: s.id,
                   step: s.step_title,
                   description: s.description,
-                  stepType: s.step_type,
+                  contentType: s.content_type || 'text',
+                content: s.content || '',
+                materials: s.materials || [],
+                tools: s.tools || [],
+                outputs: s.outputs || [],
                   displayOrder: s.display_order
                 }))
                 .sort((a, b) => {
@@ -653,7 +669,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 id,
                 step_title,
                 description,
-                step_type,
+                content_type,
+              content,
+              materials,
+              tools,
+              outputs,
                 display_order
               `)
               .eq('operation_id', op.id)
@@ -671,7 +691,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   id: s.id,
                   step: s.step_title,
                   description: s.description,
-                  stepType: s.step_type,
+                  contentType: s.content_type || 'text',
+                content: s.content || '',
+                materials: s.materials || [],
+                tools: s.tools || [],
+                outputs: s.outputs || [],
                   displayOrder: s.display_order
                 }))
                 .sort((a, b) => {
