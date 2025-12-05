@@ -115,7 +115,12 @@ export default function EditWorkflowView({
               display_order,
               materials,
               tools,
-              outputs
+              outputs,
+              time_estimate_low,
+              time_estimate_medium,
+              time_estimate_high,
+              workers_needed,
+              skill_level
             )
           )
         `)
@@ -163,7 +168,16 @@ export default function EditWorkflowView({
               displayOrder: step.display_order || 0,
               materials: step.materials || [],
               tools: step.tools || [],
-              outputs: step.outputs || []
+              outputs: step.outputs || [],
+              timeEstimation: {
+                variableTime: {
+                  low: step.time_estimate_low || 0,
+                  medium: step.time_estimate_medium || 0,
+                  high: step.time_estimate_high || 0
+                }
+              },
+              workersNeeded: step.workers_needed || 1,
+              skillLevel: step.skill_level || 'intermediate'
             })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
           })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
         };
@@ -413,19 +427,17 @@ export default function EditWorkflowView({
           
           operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
             const { data: steps, error: stepsError } = await supabase
-              .from('template_steps')
+              .from('operation_steps')
               .select(`
                 id,
                 step_title,
                 description,
-                step_type,
+                content_type,
+                content,
                 display_order,
-                apps,
-                tools,
                 materials,
+                tools,
                 outputs,
-                content_sections,
-                flow_type,
                 time_estimate_low,
                 time_estimate_medium,
                 time_estimate_high,
@@ -596,19 +608,17 @@ export default function EditWorkflowView({
         // Get steps for each operation
         const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
           const { data: steps, error: stepsError } = await supabase
-            .from('template_steps')
+            .from('operation_steps')
             .select(`
               id,
               step_title,
               description,
-              step_type,
+              content_type,
+              content,
               display_order,
-              apps,
-              tools,
               materials,
+              tools,
               outputs,
-              content_sections,
-              flow_type,
               time_estimate_low,
               time_estimate_medium,
               time_estimate_high,
@@ -1411,7 +1421,7 @@ export default function EditWorkflowView({
         });
         
         const { error, data } = await supabase
-          .from('template_steps')
+          .from('operation_steps')
           .update(updateData)
           .eq('id', editingStep.id)
           .select('*'); // Select all fields to verify everything was saved
@@ -1491,7 +1501,7 @@ export default function EditWorkflowView({
           });
           
           const { error, data } = await supabase
-            .from('template_steps')
+            .from('operation_steps')
             .update(updateData)
             .eq('id', editingStep.id)
             .select('*');
