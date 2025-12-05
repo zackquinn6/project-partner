@@ -59,7 +59,8 @@ export default function EditWorkflowView({
   // The only difference is isEditingStandardProject flag which controls edit permissions
   
   // Detect if editing Standard Project Foundation
-  const isEditingStandardProject = currentProject?.id === '00000000-0000-0000-0000-000000000001' || currentProject?.isStandardTemplate;
+  // Check both the hardcoded ID and the isStandardTemplate flag
+  const isEditingStandardProject = currentProject?.isStandardTemplate || currentProject?.id === '00000000-0000-0000-0000-000000000001';
   
   // Load phases directly from database - EXACTLY like StructureManager does
   // This ensures workflow editor and structure manager always match
@@ -72,8 +73,9 @@ export default function EditWorkflowView({
       return [];
     }
     
-    const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
-    const isStandardProject = projectId === STANDARD_PROJECT_ID;
+    // Check if this is the standard project by checking is_standard flag
+    // Use isEditingStandardProject flag which is set based on currentProject.isStandardTemplate
+    const isStandardProject = isEditingStandardProject;
     
     console.log('🔍 EditWorkflowView loadPhasesFromDatabase:', {
       projectId,
@@ -118,6 +120,7 @@ export default function EditWorkflowView({
           )
         `)
         .eq('project_id', projectId)
+        .eq('is_standard', true)  // Only show standard phases when editing standard project
         .order('display_order', { ascending: true });
       
       console.log('📊 Standard phases query result:', {
@@ -192,7 +195,7 @@ export default function EditWorkflowView({
           position_rule,
           position_value,
           source_project_id,
-          source_phase_id
+          source_project_name
         `)
         .eq('project_id', projectId)
         .eq('is_standard', false)
@@ -204,6 +207,15 @@ export default function EditWorkflowView({
       }
       
       // Get standard phases from Standard Project Foundation
+      // Find the standard project ID first
+      const { data: standardProject } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('is_standard', true)
+        .single();
+      
+      const standardProjectId = standardProject?.id;
+      
       const { data: standardPhasesData, error: standardError } = await supabase
         .from('project_phases')
         .select(`
@@ -214,7 +226,7 @@ export default function EditWorkflowView({
           position_rule,
           position_value
         `)
-        .eq('project_id', STANDARD_PROJECT_ID)
+        .eq('project_id', standardProjectId || '00000000-0000-0000-0000-000000000001')
         .eq('is_standard', true)
         .order('position_rule', { ascending: true })
         .order('position_value', { ascending: true, nullsFirst: false });
@@ -230,41 +242,33 @@ export default function EditWorkflowView({
         let sourceProjectName: string | undefined;
         
         if (isLinked) {
-          // For incorporated phases, fetch operations and steps from source project
+          // For incorporated phases, fetch operations and steps from the phase itself
           const { data: sourceOperations } = await supabase
-            .from('template_operations')
+            .from('phase_operations')
             .select(`
               id,
               operation_name,
               operation_description,
               flow_type,
-              user_prompt,
               display_order,
-              is_reference
+              estimated_time
             `)
-            .eq('phase_id', phaseData.source_phase_id)
+            .eq('phase_id', phaseData.id)  // Use the phase's own ID, not source_phase_id
             .order('display_order');
           
           operationsWithSteps = await Promise.all((sourceOperations || []).map(async (op: any) => {
             const { data: steps, error: stepsError } = await supabase
-              .from('template_steps')
+              .from('operation_steps')
               .select(`
                 id,
                 step_title,
                 description,
-                step_type,
+                content_type,
+                content,
                 display_order,
-                apps,
-                tools,
                 materials,
-                outputs,
-                content_sections,
-                flow_type,
-                time_estimate_low,
-                time_estimate_medium,
-                time_estimate_high,
-                workers_needed,
-                skill_level
+                tools,
+                outputs
               `)
               .eq('operation_id', op.id)
               .order('display_order');
