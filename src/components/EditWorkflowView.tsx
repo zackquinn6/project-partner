@@ -1364,9 +1364,9 @@ export default function EditWorkflowView({
     updateProject(updatedProject);
     console.log('  ✅ updateProject called');
     
-    // If editing Standard Project Foundation, also update template_steps table
+    // If editing Standard Project Foundation, also update operation_steps table
     if (isEditingStandardProject) {
-      console.log('💾 SaveEdit: Updating template_steps table for Standard Project Foundation');
+      console.log('💾 SaveEdit: Updating operation_steps table for Standard Project Foundation');
       try {
         // Ensure apps is properly formatted - handle both array and ensure it's not undefined
         const appsToSave = Array.isArray(editingStep.apps) ? editingStep.apps : (editingStep.apps ? [editingStep.apps] : []);
@@ -1424,10 +1424,10 @@ export default function EditWorkflowView({
           .select('*'); // Select all fields to verify everything was saved
         
         if (error) {
-          console.error('❌ SaveEdit: Error updating template_steps:', error);
+          console.error('❌ SaveEdit: Error updating operation_steps:', error);
           toast.error(`Failed to save step: ${error.message}`);
         } else {
-          console.log('✅ SaveEdit: Successfully saved to template_steps. Verification:', {
+          console.log('✅ SaveEdit: Successfully saved to operation_steps. Verification:', {
             savedStepType: data?.[0]?.step_type,
             savedAppsCount: Array.isArray(data?.[0]?.apps) ? data[0].apps.length : 0,
             savedMaterialsCount: Array.isArray(data?.[0]?.materials) ? data[0].materials.length : 0,
@@ -1448,19 +1448,19 @@ export default function EditWorkflowView({
           }
         }
       } catch (err) {
-        console.error('❌ SaveEdit: Exception updating template_steps:', err);
+        console.error('❌ SaveEdit: Exception updating operation_steps:', err);
         toast.error('Failed to save standard project changes');
       }
     } else {
-      // For regular projects, also save to template_steps if this is a custom step
-      console.log('💾 SaveEdit: Regular project - checking if we should save to template_steps');
+      // For regular projects, also save to operation_steps if this is a custom step
+      console.log('💾 SaveEdit: Regular project - checking if we should save to operation_steps');
       
       // Find the phase and operation to determine if this step should be saved to database
       const currentPhase = displayPhases.find(p => p.operations.some(op => op.steps.some(s => s.id === editingStep.id)));
       const isCustomStep = currentPhase && !currentPhase.isStandard && !currentPhase.isLinked;
       
       if (isCustomStep) {
-        console.log('  📝 This is a custom step, saving to template_steps');
+        console.log('  📝 This is a custom step, saving to operation_steps');
         try {
           const appsToSave = Array.isArray(editingStep.apps) ? editingStep.apps : (editingStep.apps ? [editingStep.apps] : []);
           
@@ -1502,10 +1502,10 @@ export default function EditWorkflowView({
             .select('*');
           
           if (error) {
-            console.error('❌ Error saving custom step to template_steps:', error);
+            console.error('❌ Error saving custom step to operation_steps:', error);
             toast.error(`Failed to save step: ${error.message}`);
           } else {
-            console.log('✅ Custom step saved to template_steps. Verification:', {
+            console.log('✅ Custom step saved to operation_steps. Verification:', {
               savedStepType: data?.[0]?.step_type,
               savedMaterialsCount: Array.isArray(data?.[0]?.materials) ? data[0].materials.length : 0,
               savedToolsCount: Array.isArray(data?.[0]?.tools) ? data[0].tools.length : 0,
@@ -1528,7 +1528,7 @@ export default function EditWorkflowView({
           console.error('❌ Exception saving custom step:', err);
         }
       } else {
-        console.log('  ℹ️ This is a standard/linked step, skipping template_steps update');
+        console.log('  ℹ️ This is a standard/linked step, skipping operation_steps update');
       }
     }
     
