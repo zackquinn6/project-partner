@@ -174,69 +174,160 @@ WHERE id IN (
 );
 
 -- ============================================
--- PART 2: Add project risks with quantified impacts
+-- PART 2: Add project risks to template_risks table
 -- ============================================
 
--- Update project_challenges field with comprehensive risk analysis
+-- Insert risks into project_template_risks table
+-- These will be copied to project runs when users start a project
+
+INSERT INTO public.project_template_risks (
+  project_id,
+  risk_title,
+  risk_description,
+  likelihood,
+  impact,
+  budget_impact_low,
+  budget_impact_high,
+  schedule_impact_low_days,
+  schedule_impact_high_days,
+  mitigation_strategy,
+  mitigation_cost,
+  display_order
+) VALUES
+(
+  '9c04c190-9409-4eeb-98db-36426aacb39f',
+  'Subfloor Preparation Issues',
+  'Uneven or damaged subfloor requiring extensive repair before tile installation',
+  'medium',
+  'high',
+  200.00,
+  800.00,
+  1,
+  3,
+  'Thorough inspection before starting, budget 10% contingency for subfloor repairs',
+  0.00,
+  1
+),
+(
+  '9c04c190-9409-4eeb-98db-36426aacb39f',
+  'Tile Breakage During Installation',
+  'Tiles crack or break during cutting or installation, requiring replacement',
+  'high',
+  'medium',
+  50.00,
+  300.00,
+  0,
+  1,
+  'Order 10% extra tiles for waste, practice cutting techniques on scrap pieces',
+  0.00,
+  2
+),
+(
+  '9c04c190-9409-4eeb-98db-36426aacb39f',
+  'Mortar/Thinset Curing Issues',
+  'Improper mixing or application leading to weak bond, requiring removal and reinstallation',
+  'low',
+  'high',
+  100.00,
+  500.00,
+  2,
+  5,
+  'Follow manufacturer instructions precisely, use proper mixing tools and timing',
+  0.00,
+  3
+),
+(
+  '9c04c190-9409-4eeb-98db-36426aacb39f',
+  'Layout and Alignment Errors',
+  'Tiles not properly aligned, requiring removal and resetting',
+  'medium',
+  'medium',
+  150.00,
+  600.00,
+  1,
+  2,
+  'Use layout lines and spacers, check alignment frequently during installation',
+  0.00,
+  4
+),
+(
+  '9c04c190-9409-4eeb-98db-36426aacb39f',
+  'Grouting and Sealing Problems',
+  'Grout cracking, discoloration, or improper sealing requiring correction',
+  'medium',
+  'low',
+  50.00,
+  200.00,
+  0,
+  1,
+  'Use quality grout products, follow sealing instructions carefully',
+  0.00,
+  5
+),
+(
+  '9c04c190-9409-4eeb-98db-36426aacb39f',
+  'Tool Failure or Damage',
+  'Wet saw or other critical tools break during project',
+  'low',
+  'medium',
+  100.00,
+  400.00,
+  0,
+  1,
+  'Have backup tools available, rent quality equipment from reputable suppliers',
+  0.00,
+  6
+),
+(
+  '9c04c190-9409-4eeb-98db-36426aacb39f',
+  'Material Shortage or Delivery Delays',
+  'Insufficient materials or delivery delays causing project delays',
+  'medium',
+  'medium',
+  0.00,
+  100.00,
+  1,
+  3,
+  'Order all materials upfront, verify quantities, allow buffer time for delivery',
+  0.00,
+  7
+),
+(
+  '9c04c190-9409-4eeb-98db-36426aacb39f',
+  'Weather and Temperature Issues',
+  'Extreme temperatures affecting mortar curing and installation quality',
+  'low',
+  'medium',
+  0.00,
+  200.00,
+  1,
+  2,
+  'Plan installation during moderate weather, use climate control if needed',
+  0.00,
+  8
+);
+
+-- ============================================
+-- PART 3: Update project_challenges as summary field for kickoff
+-- ============================================
+
 UPDATE projects
-SET project_challenges = 'Tile Flooring Installation Project Risks:
+SET project_challenges = 'Tile Flooring Installation presents several key challenges that require careful planning:
 
-1. SUBFLOOR PREPARATION ISSUES
-   Risk: Uneven or damaged subfloor requiring extensive repair
-   Budget Impact: $200-$800 for additional materials (leveling compound, plywood)
-   Schedule Impact: 1-3 days delay for subfloor preparation and curing
-   Mitigation: Thorough inspection before starting, budget 10% contingency
+• Subfloor preparation is critical - uneven surfaces can cause tile failure
+• Precise layout and alignment prevent costly corrections later
+• Proper mortar mixing and curing ensure long-term durability
+• Weather and temperature conditions affect installation quality
+• Material waste and breakage should be anticipated (10% buffer recommended)
 
-2. TILE BREAKAGE DURING INSTALLATION
-   Risk: Tiles crack or break during cutting or installation
-   Budget Impact: $50-$300 for replacement tiles (5-15% waste factor)
-   Schedule Impact: 0.5-1 day delay for reordering and replacement
-   Mitigation: Order 10% extra tiles, practice cutting techniques
-
-3. MORTAR/THINSET CURING ISSUES
-   Risk: Improper mixing or application leading to weak bond
-   Budget Impact: $100-$500 for removal and reinstallation
-   Schedule Impact: 2-5 days delay for removal, curing, and reinstallation
-   Mitigation: Follow manufacturer instructions, use proper mixing tools
-
-4. LAYOUT AND ALIGNMENT ERRORS
-   Risk: Tiles not properly aligned, requiring removal and resetting
-   Budget Impact: $150-$600 for additional materials and time
-   Schedule Impact: 1-2 days delay for correction
-   Mitigation: Use layout lines, check alignment frequently
-
-5. GROUTING AND SEALING PROBLEMS
-   Risk: Grout cracking, discoloration, or improper sealing
-   Budget Impact: $50-$200 for grout removal and replacement
-   Schedule Impact: 0.5-1 day delay for correction
-   Mitigation: Use quality grout, follow sealing instructions
-
-6. TOOL FAILURE OR DAMAGE
-   Risk: Wet saw or other critical tools break during project
-   Budget Impact: $100-$400 for tool rental or replacement
-   Schedule Impact: 0.5-1 day delay for tool replacement
-   Mitigation: Have backup tools, rent quality equipment
-
-7. MATERIAL SHORTAGE OR DELAYS
-   Risk: Insufficient materials or delivery delays
-   Budget Impact: $0-$100 for expedited shipping
-   Schedule Impact: 1-3 days delay for material delivery
-   Mitigation: Order all materials upfront, verify quantities
-
-8. WEATHER AND TEMPERATURE ISSUES
-   Risk: Extreme temperatures affecting mortar curing
-   Budget Impact: $0-$200 for climate control or delays
-   Schedule Impact: 1-2 days delay for proper curing conditions
-   Mitigation: Plan installation during moderate weather, use climate control if needed
-
-TOTAL POTENTIAL BUDGET IMPACT: $650-$2,600 (13-52% of typical $5,000 project)
-TOTAL POTENTIAL SCHEDULE IMPACT: 7-18 days delay on typical 2-week project'
+Budget for 10-15% contingency to handle unexpected subfloor repairs, material waste, and tool needs. Allow extra time for subfloor preparation and curing phases.'
 WHERE id = '9c04c190-9409-4eeb-98db-36426aacb39f';
 
 -- Verify updates
 DO $$
 DECLARE
   updated_steps_count INTEGER;
+  risks_count INTEGER;
   project_name TEXT;
 BEGIN
   SELECT COUNT(*) INTO updated_steps_count
@@ -248,11 +339,16 @@ BEGIN
     AND os.time_estimate_med IS NOT NULL
     AND os.time_estimate_high IS NOT NULL;
   
+  SELECT COUNT(*) INTO risks_count
+  FROM project_template_risks
+  WHERE project_id = '9c04c190-9409-4eeb-98db-36426aacb39f';
+  
   SELECT name INTO project_name
   FROM projects
   WHERE id = '9c04c190-9409-4eeb-98db-36426aacb39f';
   
   RAISE NOTICE 'Updated time estimates for % steps in project: %', updated_steps_count, project_name;
-  RAISE NOTICE 'Updated project_challenges with quantified risks';
+  RAISE NOTICE 'Inserted % template risks for project: %', risks_count, project_name;
+  RAISE NOTICE 'Updated project_challenges summary field for kickoff display';
 END $$;
 
