@@ -1171,7 +1171,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           outputs: [],
           apps: [],
           flow_type: 'prime',
-          step_type: 'prime'
+          step_type: 'scaled'
         });
       
       if (stepError) {
@@ -2226,7 +2226,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           outputs: [],
           apps: [],
           flow_type: 'prime',
-          step_type: 'prime'
+          step_type: 'scaled'
         })
         .select('id, step_title')
         .single();
