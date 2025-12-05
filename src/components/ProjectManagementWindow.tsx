@@ -73,29 +73,103 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   // Handle Edit Standard Project Foundation
   const handleEditStandardProject = async () => {
     try {
-      // Fetch standard project using RPC
-      const { data: standardData, error: rpcError } = await supabase.rpc('get_standard_project_template');
-      if (rpcError) throw rpcError;
-      if (!standardData || standardData.length === 0) throw new Error('Standard Project not found');
+      // Fetch standard project metadata from relational table
+      const { data: standardProject, error: projectError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('is_standard', true)
+        .single();
       
-      const projectData = standardData[0];
-      const parsedPhases = Array.isArray(projectData.phases) 
-        ? projectData.phases 
-        : typeof projectData.phases === 'string' 
-          ? JSON.parse(projectData.phases) 
-          : [];
+      if (projectError) throw projectError;
+      if (!standardProject) throw new Error('Standard Project not found');
+
+      // Fetch phases from relational tables (NOT from JSONB)
+      const { data: phasesData, error: phasesError } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          name,
+          description,
+          display_order,
+          position_rule,
+          position_value,
+          is_standard,
+          is_linked,
+          source_project_id,
+          source_project_name,
+          phase_operations (
+            id,
+            operation_name,
+            operation_description,
+            display_order,
+            estimated_time,
+            flow_type,
+            operation_steps (
+              id,
+              step_title,
+              description,
+              content_type,
+              content,
+              display_order,
+              materials,
+              tools,
+              outputs
+            )
+          )
+        `)
+        .eq('project_id', standardProject.id)
+        .order('display_order', { ascending: true });
+
+      if (phasesError) throw phasesError;
+
+      // Transform relational data to frontend format
+      const transformedPhases = (phasesData || []).map(phase => ({
+        id: phase.id,
+        name: phase.name,
+        description: phase.description || '',
+        isStandard: phase.is_standard || false,
+        isLinked: phase.is_linked || false,
+        sourceProjectId: phase.source_project_id,
+        sourceProjectName: phase.source_project_name,
+        phaseOrderNumber: phase.position_rule === 'first' ? 'first' 
+          : phase.position_rule === 'last' ? 'last'
+          : phase.position_value || 999,
+        operations: (phase.phase_operations || []).map((op: any) => ({
+          id: op.id,
+          name: op.operation_name,
+          description: op.operation_description || '',
+          estimatedTime: op.estimated_time || '',
+          flowType: op.flow_type || 'prime',
+          steps: (op.operation_steps || []).map((step: any) => ({
+            id: step.id,
+            step: step.step_title,
+            description: step.description || '',
+            contentType: step.content_type || 'text',
+            content: step.content || '',
+            materials: step.materials || [],
+            tools: step.tools || [],
+            outputs: step.outputs || []
+          }))
+        }))
+      }));
       
       // Set Standard Project Foundation as current project
       setCurrentProject({
-        id: projectData.project_id,
-        name: projectData.project_name,
-        description: projectData.project_description || '',
-        createdAt: new Date(projectData.created_at || Date.now()),
-        updatedAt: new Date(projectData.updated_at || Date.now()),
+        id: standardProject.id,
+        name: standardProject.name,
+        description: standardProject.description || '',
+        createdAt: new Date(standardProject.created_at || Date.now()),
+        updatedAt: new Date(standardProject.updated_at || Date.now()),
         publishStatus: 'draft' as const,
-        phases: parsedPhases,
+        phases: transformedPhases,
         isStandardTemplate: true,
-        category: projectData.category || []
+        category: standardProject.category || []
+      });
+
+      console.log('✅ Loaded standard project from relational tables:', {
+        projectId: standardProject.id,
+        phasesCount: transformedPhases.length,
+        phases: transformedPhases.map(p => p.name)
       });
 
       // Open workflow editor for Standard Project Foundation
