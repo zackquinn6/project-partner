@@ -289,71 +289,95 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         return;
       }
 
-      // STEP 3: Save all fields to project_runs table
-      // CRITICAL: Room 1 must exist BEFORE saving initial_sizing to project_runs
-      // The database has a trigger that syncs initial_sizing to project_run_spaces/project_run_space_sizing
-      // That trigger requires Room 1 to exist first (for the space_id)
+      // STEP 3A: Save budget and timeline to project_runs table
       const mainUpdateData: any = {
         custom_project_name: projectForm.customProjectName.trim(),
         initial_timeline: projectForm.initialTimeline || null,
         initial_budget: finalBudgetValue,
-        initial_sizing: finalSizingValue,  // Safe to save because Room 1 exists (db trigger needs it)
         updated_at: new Date().toISOString()
       };
       
-      console.log('💾 ProjectProfileStep: Saving all 3 fields to project_runs:', {
+      console.log('💾 ProjectProfileStep: Saving budget & timeline to project_runs:', {
         projectRunId: currentProjectRun.id,
         initial_budget: finalBudgetValue,
-        initial_timeline: projectForm.initialTimeline || null,
-        initial_sizing: finalSizingValue,
-        room1Exists: !!room1SpaceId
+        initial_timeline: projectForm.initialTimeline || null
       });
       
       const { error: mainError, data: mainUpdateResult } = await supabase
         .from('project_runs')
         .update(mainUpdateData)
         .eq('id', currentProjectRun.id)
-        .select('id, initial_budget, custom_project_name, initial_timeline, initial_sizing');
+        .select('id, initial_budget, custom_project_name, initial_timeline');
 
       if (mainError) {
         console.error('❌ ProjectProfileStep: Error saving to project_runs:', mainError);
         throw mainError;
       }
       
-      // Verify the save
-      if (mainUpdateResult && mainUpdateResult.length > 0) {
-        const savedRecord = mainUpdateResult[0];
-        console.log('✅ ProjectProfileStep: All 3 fields saved to project_runs table:', {
-          initial_budget: savedRecord.initial_budget,
-          initial_timeline: savedRecord.initial_timeline,
-          initial_sizing: savedRecord.initial_sizing
-        });
-        console.log('📝 Note: Database trigger auto-syncs initial_sizing to project_run_spaces/project_run_space_sizing');
-        
-        if (savedRecord.initial_budget !== finalBudgetValue) {
-          console.error('❌ initial_budget mismatch:', { expected: finalBudgetValue, actual: savedRecord.initial_budget });
-        }
-        if (savedRecord.initial_timeline !== (projectForm.initialTimeline || null)) {
-          console.error('❌ initial_timeline mismatch:', { expected: projectForm.initialTimeline || null, actual: savedRecord.initial_timeline });
-        }
-        if (savedRecord.initial_sizing !== finalSizingValue) {
-          console.error('❌ initial_sizing mismatch:', { expected: finalSizingValue, actual: savedRecord.initial_sizing });
+      console.log('✅ Budget & timeline saved to project_runs');
+      
+      // STEP 3B: Save sizing to space-specific tables
+      if (finalSizingValue && room1SpaceId) {
+        const parsedSizing = parseFloat(finalSizingValue);
+        if (!isNaN(parsedSizing) && parsedSizing > 0) {
+          const projectScaleUnit = scalingUnit || 'per item';
+          
+          console.log('💾 ProjectProfileStep: Saving sizing to Room 1 space:', {
+            room1SpaceId,
+            size: parsedSizing,
+            unit: projectScaleUnit
+          });
+          
+          // Update Room 1 space with sizing
+          const { error: spaceUpdateError } = await supabase
+            .from('project_run_spaces')
+            .update({ 
+              scale_value: parsedSizing,
+              scale_unit: projectScaleUnit,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', room1SpaceId);
+
+          if (spaceUpdateError) {
+            console.error('❌ Error updating Room 1 sizing:', spaceUpdateError);
+            throw spaceUpdateError;
+          }
+          
+          console.log('✅ Sizing saved to project_run_spaces');
+          
+          // Also save to project_run_space_sizing table
+          const { error: sizingError } = await supabase
+            .from('project_run_space_sizing')
+            .upsert({
+              space_id: room1SpaceId,
+              scaling_unit: projectScaleUnit,
+              size_value: parsedSizing
+            }, {
+              onConflict: 'space_id,scaling_unit'
+            });
+          
+          if (sizingError) {
+            console.error('❌ Error saving to project_run_space_sizing:', sizingError);
+            throw sizingError;
+          }
+          
+          console.log('✅ Sizing saved to project_run_space_sizing');
         }
       }
 
       // CRITICAL: Final verification - fetch the saved values from database
       const { data: verificationData, error: verificationError } = await supabase
         .from('project_runs')
-        .select('initial_budget, initial_timeline, initial_sizing')
+        .select('initial_budget, initial_timeline')
         .eq('id', currentProjectRun.id)
         .single();
       
       if (!verificationError && verificationData) {
-        console.log('✅ ProjectProfileStep: Final verification - all fields saved:', {
+        console.log('✅ ProjectProfileStep: Final verification from project_runs:', {
           initial_budget: verificationData.initial_budget,
-          initial_timeline: verificationData.initial_timeline,
-          initial_sizing: verificationData.initial_sizing
+          initial_timeline: verificationData.initial_timeline
         });
+        console.log('📝 Note: initial_sizing is stored in project_run_spaces/project_run_space_sizing, not project_runs');
         
         // Check for mismatches
         if (verificationData.initial_budget !== finalBudgetValue) {
@@ -361,9 +385,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         }
         if (verificationData.initial_timeline !== (projectForm.initialTimeline || null)) {
           console.error('❌ initial_timeline mismatch:', { expected: projectForm.initialTimeline || null, actual: verificationData.initial_timeline });
-        }
-        if (verificationData.initial_sizing !== finalSizingValue) {
-          console.error('❌ initial_sizing mismatch:', { expected: finalSizingValue, actual: verificationData.initial_sizing });
         }
       } else if (verificationError) {
         console.error('❌ ProjectProfileStep: Error verifying saved values:', verificationError);
