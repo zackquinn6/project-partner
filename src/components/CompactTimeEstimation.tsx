@@ -54,7 +54,11 @@ export function CompactTimeEstimation({
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Timer className="w-3 h-3 text-primary" />
-          <Label className="text-xs font-medium">Work Time (hours {scalingUnit})</Label>
+          <Label className="text-xs font-medium">
+            {step.stepType === 'scaled' || step.stepType === 'quality_control_scaled' 
+              ? `Work Time (hours per ${getScalingUnitDisplay()})`
+              : 'Work Time (total hours)'}
+          </Label>
           <TooltipProvider delayDuration={100}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -66,6 +70,17 @@ export function CompactTimeEstimation({
                   <p>• <strong>Medium</strong> = Expected / average time</p>
                   <p>• <strong>Low</strong> = 10th percentile (best case)</p>
                   <p>• <strong>High</strong> = 90th percentile (worst case)</p>
+                  {(step.stepType === 'scaled' || step.stepType === 'quality_control_scaled') && (
+                    <p className="mt-2 pt-2 border-t">
+                      <strong>Note:</strong> Times are per {getScalingUnitDisplay()}. 
+                      Total time = estimate × project size.
+                    </p>
+                  )}
+                  {(step.stepType === 'prime' || step.stepType === 'quality_control_non_scaled' || !step.stepType) && (
+                    <p className="mt-2 pt-2 border-t">
+                      <strong>Note:</strong> Times are total hours (fixed, does not scale with project size).
+                    </p>
+                  )}
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -108,7 +123,9 @@ export function CompactTimeEstimation({
         </div>
         
         <p className="text-[10px] text-muted-foreground">
-          Active work time per {getScalingUnitDisplay()}
+          {step.stepType === 'scaled' || step.stepType === 'quality_control_scaled'
+            ? `Active work time per ${getScalingUnitDisplay()} (multiplies by project size)`
+            : 'Active work time (fixed total, does not scale)'}
         </p>
       </div>
 

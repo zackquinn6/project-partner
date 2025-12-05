@@ -1866,12 +1866,6 @@ export default function EditWorkflowView({
                         <Label htmlFor="step-description" className="text-base font-medium">Description</Label>
                         <Textarea id="step-description" value={editingStep.description || ''} onChange={e => updateEditingStep('description', e.target.value)} placeholder="Step description..." className="mt-2" rows={3} />
                       </div>
-                      <div>
-                        <StepTypeSelector 
-                          value={editingStep.stepType} 
-                          onValueChange={value => updateEditingStep('stepType', value)} 
-                        />
-                      </div>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-sm text-muted-foreground">Flow Type</Label>
@@ -2014,13 +2008,27 @@ export default function EditWorkflowView({
                 </div>
 
                 {/* Time Estimation */}
-                <CompactTimeEstimation 
-                  step={editingStep} 
-                  scalingUnit={currentProject?.scalingUnit} 
-                  onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)}
-                  onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
-                  onSkillLevelChange={skillLevel => updateEditingStep('skillLevel', skillLevel)}
-                />
+                <Card className="bg-muted/30 border shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Time Estimation & Step Type</CardTitle>
+                    <CardDescription>Configure time estimates and step type. Step type determines how time estimates are interpreted.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <StepTypeSelector 
+                        value={editingStep.stepType} 
+                        onValueChange={value => updateEditingStep('stepType', value)} 
+                      />
+                    </div>
+                    <CompactTimeEstimation 
+                      step={editingStep} 
+                      scalingUnit={currentProject?.scalingUnit} 
+                      onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)}
+                      onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
+                      onSkillLevelChange={skillLevel => updateEditingStep('skillLevel', skillLevel)}
+                    />
+                  </CardContent>
+                </Card>
 
                 {/* Navigation */}
                 <div className="flex justify-between">
