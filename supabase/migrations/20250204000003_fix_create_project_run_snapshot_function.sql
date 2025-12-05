@@ -68,10 +68,11 @@ BEGIN
         'sourceProjectId', pp.source_project_id,    -- ← CRITICAL: Include source project
         'sourceProjectName', (SELECT name FROM projects WHERE id = pp.source_project_id),
         'phaseOrderNumber', CASE
-          WHEN pp.position_rule = 'first' THEN 1
-          WHEN pp.position_rule = 'last' THEN 999
-          WHEN pp.position_rule = 'nth' THEN COALESCE(pp.position_value, 999)
-          ELSE 999
+          WHEN pp.position_rule = 'first' THEN to_jsonb('first'::text)
+          WHEN pp.position_rule = 'last' THEN to_jsonb('last'::text)
+          WHEN pp.position_rule = 'nth' THEN to_jsonb(COALESCE(pp.position_value, 999))
+          WHEN pp.position_rule = 'last_minus_n' THEN to_jsonb(COALESCE(pp.position_value, 999))
+          ELSE to_jsonb(999)
         END,
         'operations', COALESCE(
           (
