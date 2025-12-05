@@ -500,11 +500,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       return phases;
     } else {
       // Regular projects: Read directly from project_phases
-      // Standard phases are copied into each project with is_standard = true
-      // So we load all phases from the current project and filter by is_standard
+      // 1. Get custom phases from current project (is_standard = false)
+      // 2. Get standard phases from Standard Project Foundation (is_standard = true)
+      // This matches EditWorkflowView's approach
       
-      // Get ALL phases from current project (both standard and custom)
-      const { data: allProjectPhasesData, error: allPhasesError } = await supabase
+      // Get custom phases (including incorporated phases) from current project
+      const { data: customPhasesData, error: customError } = await supabase
         .from('project_phases')
         .select(`
           id,
@@ -517,44 +518,48 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           source_project_name
         `)
         .eq('project_id', projectId)
+        .eq('is_standard', false)
         .order('position_rule', { ascending: true })
         .order('position_value', { ascending: true, nullsFirst: false });
       
-      if (allPhasesError) {
-        throw new Error(`Failed to load phases from project: ${allPhasesError.message}`);
+      if (customError) {
+        throw new Error(`Failed to load custom phases from project: ${customError.message}`);
       }
       
-      // Debug: Log all phases with their is_standard values
-      console.log('🔍 StructureManager - All phases from database:', {
-        totalCount: allProjectPhasesData?.length || 0,
-        phases: (allProjectPhasesData || []).map((p: any) => ({
-          name: p.name,
-          is_standard: p.is_standard,
-          is_standard_type: typeof p.is_standard,
-          is_standard_truthy: !!p.is_standard,
-          position_rule: p.position_rule,
-          position_value: p.position_value
-        }))
-      });
+      // Get standard phases from Standard Project Foundation
+      // Find the standard project ID first (by is_standard flag or fallback to hardcoded ID)
+      const { data: standardProject } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('is_standard', true)
+        .single();
       
-      // Filter to get standard phases (is_standard = true or truthy) from current project
-      // Use truthy check to handle both true and potentially truthy values
-      const standardPhasesData = (allProjectPhasesData || []).filter((p: any) => p.is_standard === true || p.is_standard === 'true' || (typeof p.is_standard === 'boolean' && p.is_standard));
+      const standardProjectId = standardProject?.id || STANDARD_PROJECT_ID;
       
-      // Filter to get custom phases (is_standard = false, null, or explicitly false)
-      const customPhasesData = (allProjectPhasesData || []).filter((p: any) => !standardPhasesData.includes(p));
+      const { data: standardPhasesData, error: standardError } = await supabase
+        .from('project_phases')
+        .select(`
+          id,
+          name,
+          description,
+          is_standard,
+          position_rule,
+          position_value
+        `)
+        .eq('project_id', standardProjectId)
+        .eq('is_standard', true)
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
       
-      console.log('🔍 StructureManager - Filtered phases:', {
-        totalPhasesCount: allProjectPhasesData?.length || 0,
+      if (standardError) {
+        throw new Error(`Failed to load standard phases: ${standardError.message}`);
+      }
+      
+      console.log('🔍 StructureManager - Loaded phases:', {
         customPhasesCount: customPhasesData?.length || 0,
         standardPhasesCount: standardPhasesData?.length || 0,
+        standardProjectId,
         standardPhases: standardPhasesData?.map((p: any) => ({
-          name: p.name,
-          is_standard: p.is_standard,
-          position_rule: p.position_rule,
-          position_value: p.position_value
-        })),
-        customPhases: customPhasesData?.map((p: any) => ({
           name: p.name,
           is_standard: p.is_standard,
           position_rule: p.position_rule,
