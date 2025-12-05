@@ -1388,19 +1388,16 @@ export default function EditWorkflowView({
           step_title: editingStep.step,
           display_order: (editingStep as any).display_order || (editingStep as any).stepNumber || 0,
           description: editingStep.description,
-          content_sections: (editingStep.contentSections || editingStep.content) as any,
+          content_type: editingStep.contentType || 'text',
+          content: editingStep.content || '',
           materials: editingStep.materials || [] as any,
           tools: editingStep.tools || [] as any,
           outputs: editingStep.outputs || [] as any,
-          inputs: editingStep.inputs || [] as any, // Process variables saved as JSON
-          apps: appsToSave, // Use properly formatted apps array
-          flow_type: (editingStep as any).flowType || null,
-          step_type: editingStep.stepType || 'prime', // Ensure step_type is always set
-          time_estimate_low: editingStep.timeEstimation?.variableTime?.low || null,
-          time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || null,
-          time_estimate_high: editingStep.timeEstimation?.variableTime?.high || null,
+          time_estimate_low: editingStep.timeEstimation?.variableTime?.low || 0,
+          time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || 0,
+          time_estimate_high: editingStep.timeEstimation?.variableTime?.high || 0,
           workers_needed: editingStep.workersNeeded ?? 1,
-          skill_level: editingStep.skillLevel || null,
+          skill_level: editingStep.skillLevel || 'intermediate',
           updated_at: new Date().toISOString()
         };
         
@@ -1471,18 +1468,16 @@ export default function EditWorkflowView({
             step_title: editingStep.step,
             display_order: (editingStep as any).display_order || 0,
             description: editingStep.description,
-            content_sections: (editingStep.contentSections || editingStep.content) as any,
+            content_type: editingStep.contentType || 'text',
+            content: editingStep.content || '',
             materials: editingStep.materials || [] as any,
             tools: editingStep.tools || [] as any,
             outputs: editingStep.outputs || [] as any,
-            apps: appsToSave,
-            flow_type: (editingStep as any).flowType || null,
-            step_type: editingStep.stepType || 'prime',
-            time_estimate_low: editingStep.timeEstimation?.variableTime?.low || null,
-            time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || null,
-            time_estimate_high: editingStep.timeEstimation?.variableTime?.high || null,
+            time_estimate_low: editingStep.timeEstimation?.variableTime?.low || 0,
+            time_estimate_medium: editingStep.timeEstimation?.variableTime?.medium || 0,
+            time_estimate_high: editingStep.timeEstimation?.variableTime?.high || 0,
             workers_needed: editingStep.workersNeeded ?? 1,
-            skill_level: editingStep.skillLevel || null,
+            skill_level: editingStep.skillLevel || 'intermediate',
             updated_at: new Date().toISOString()
           };
           
