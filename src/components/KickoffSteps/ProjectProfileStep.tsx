@@ -289,76 +289,24 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         return;
       }
 
-      // REQUIREMENT 2: Apply initial_sizing to Room 1 if provided
-      if (projectForm.initialSizing && projectForm.initialSizing.trim().length > 0 && room1SpaceId) {
-        const parsedSizing = parseFloat(projectForm.initialSizing.trim());
-        if (!isNaN(parsedSizing) && parsedSizing > 0) {
-          // Get project scaling unit
-          const projectScaleUnit = scalingUnit || 'per item';
-          
-          // CRITICAL: Ensure room1SpaceId is valid before any operations
-          if (!room1SpaceId) {
-            console.error('❌ Cannot apply sizing: room1SpaceId is null');
-            toast.error('Failed to apply sizing: Room 1 space not found');
-            return;
-          }
-          
-          // Update Room 1 space with sizing
-          const { error: spaceUpdateError } = await supabase
-            .from('project_run_spaces')
-            .update({ 
-              scale_value: parsedSizing,
-              scale_unit: projectScaleUnit,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', room1SpaceId);
-
-          if (spaceUpdateError) {
-            console.error('Error updating Room 1 sizing:', spaceUpdateError);
-            toast.error('Failed to update Room 1 sizing');
-            // Don't throw - sizing is optional, but log the error
-          } else {
-            // Also update project_run_space_sizing table
-            // CRITICAL: Double-check room1SpaceId is still valid
-            if (!room1SpaceId) {
-              console.error('❌ room1SpaceId became null before upsert');
-              return;
-            }
-            
-            const { error: sizingUpsertError } = await supabase
-              .from('project_run_space_sizing')
-              .upsert({
-                space_id: room1SpaceId,
-                scaling_unit: projectScaleUnit,
-                size_value: parsedSizing
-              }, {
-                onConflict: 'space_id,scaling_unit'
-              });
-
-            if (sizingUpsertError) {
-              console.error('Error upserting space sizing:', sizingUpsertError);
-              // Don't throw - sizing is optional, but log the error
-            } else {
-              console.log('✅ ProjectProfileStep: Sizing saved to project_run_space_sizing');
-            }
-          }
-        }
-      }
-
-      // STEP 3: NOW save all fields to project_runs table
-      // Room 1 exists, so database trigger (if any) has required space_id available
+      // STEP 3: Save all fields to project_runs table
+      // CRITICAL: Room 1 must exist BEFORE saving initial_sizing to project_runs
+      // The database has a trigger that syncs initial_sizing to project_run_spaces/project_run_space_sizing
+      // That trigger requires Room 1 to exist first (for the space_id)
       const mainUpdateData: any = {
         custom_project_name: projectForm.customProjectName.trim(),
         initial_timeline: projectForm.initialTimeline || null,
         initial_budget: finalBudgetValue,
-        initial_sizing: finalSizingValue,  // Now safe to save because Room 1 exists
+        initial_sizing: finalSizingValue,  // Safe to save because Room 1 exists (db trigger needs it)
         updated_at: new Date().toISOString()
       };
       
-      console.log('💾 ProjectProfileStep: Saving all fields to project_runs (after Room 1 created):', {
+      console.log('💾 ProjectProfileStep: Saving all 3 fields to project_runs:', {
         projectRunId: currentProjectRun.id,
-        updateData: mainUpdateData,
-        room1SpaceId
+        initial_budget: finalBudgetValue,
+        initial_timeline: projectForm.initialTimeline || null,
+        initial_sizing: finalSizingValue,
+        room1Exists: !!room1SpaceId
       });
       
       const { error: mainError, data: mainUpdateResult } = await supabase
@@ -375,7 +323,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       // Verify the save
       if (mainUpdateResult && mainUpdateResult.length > 0) {
         const savedRecord = mainUpdateResult[0];
-        console.log('✅ ProjectProfileStep: All values saved to project_runs:', savedRecord);
+        console.log('✅ ProjectProfileStep: All 3 fields saved to project_runs table:', {
+          initial_budget: savedRecord.initial_budget,
+          initial_timeline: savedRecord.initial_timeline,
+          initial_sizing: savedRecord.initial_sizing
+        });
+        console.log('📝 Note: Database trigger auto-syncs initial_sizing to project_run_spaces/project_run_space_sizing');
         
         if (savedRecord.initial_budget !== finalBudgetValue) {
           console.error('❌ initial_budget mismatch:', { expected: finalBudgetValue, actual: savedRecord.initial_budget });
