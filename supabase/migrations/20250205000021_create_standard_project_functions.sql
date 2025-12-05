@@ -180,8 +180,16 @@ GRANT EXECUTE ON FUNCTION public.get_standard_project_with_phases() TO authentic
 
 -- =====================================================
 -- 3. CREATE_STANDARD_PROJECT
+-- ⚠️ DISASTER RECOVERY ONLY - NOT FOR REGULAR USE
 -- Creates a new standard/foundational project template
 -- =====================================================
+--
+-- WARNING: This function should ONLY be used for disaster recovery.
+-- The standard project is initialized once via migration 20250205000022.
+-- This function exists only as a backup mechanism if the standard project
+-- is accidentally deleted and needs to be recreated manually.
+--
+-- Normal workflow: Standard project is created once and never recreated.
 
 CREATE OR REPLACE FUNCTION public.create_standard_project(
   p_name TEXT,
@@ -203,6 +211,9 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'Only admins can create standard projects';
   END IF;
+  
+  -- Warn that this should not be used regularly
+  RAISE WARNING 'Creating new standard project. This should only be used for disaster recovery!';
   
   -- Mark any existing standard project as non-standard
   UPDATE projects
@@ -237,12 +248,14 @@ BEGIN
   )
   RETURNING id INTO v_project_id;
   
+  RAISE NOTICE 'Created standard project shell: %. You must manually add phases, operations, and steps.', v_project_id;
+  
   RETURN v_project_id;
 END;
 $$;
 
 COMMENT ON FUNCTION public.create_standard_project IS 
-'Creates a new standard/foundational project template. Only admins can create standard projects. Marks previous standard project as non-standard.';
+'⚠️ DISASTER RECOVERY ONLY - Creates a new standard/foundational project template. Should NOT be used in normal operations. Standard project is initialized once via migration. This function exists only for emergency recovery if standard project is accidentally deleted.';
 
 -- Grant execute to authenticated users (admin check is inside function)
 GRANT EXECUTE ON FUNCTION public.create_standard_project(TEXT, TEXT, TEXT, UUID) TO authenticated, service_role;
