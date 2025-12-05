@@ -2217,12 +2217,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           operation_id: operationId,
           step_title: stepName,
           description: 'Step description',
-          content_type: 'text',
-          content: '',
           display_order: nextStepNumber,
+          content_sections: [],
           materials: [],
           tools: [],
-          outputs: []
+          outputs: [],
+          apps: [],
+          flow_type: 'prime',
+          step_type: 'prime'
         })
         .select('id, step_title')
         .single();
