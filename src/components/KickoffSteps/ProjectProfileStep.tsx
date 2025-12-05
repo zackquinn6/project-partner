@@ -289,27 +289,28 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         return;
       }
 
-      // STEP 3A: Save all fields to project_runs table (canonical source)
+      // STEP 3A: Save budget and timeline to project_runs table
+      // NOTE: initial_sizing is NOT saved to project_runs due to database trigger conflict
+      // The database trigger tries to sync to project_run_space_sizing but doesn't have space_id context
       const mainUpdateData: any = {
         custom_project_name: projectForm.customProjectName.trim(),
         initial_timeline: projectForm.initialTimeline || null,
         initial_budget: finalBudgetValue,
-        initial_sizing: finalSizingValue,  // Save to project_runs for robust storage
         updated_at: new Date().toISOString()
       };
       
-      console.log('💾 ProjectProfileStep: Saving all 3 fields to project_runs (canonical source):', {
+      console.log('💾 ProjectProfileStep: Saving budget & timeline to project_runs:', {
         projectRunId: currentProjectRun.id,
         initial_budget: finalBudgetValue,
-        initial_timeline: projectForm.initialTimeline || null,
-        initial_sizing: finalSizingValue
+        initial_timeline: projectForm.initialTimeline || null
       });
+      console.log('📝 Note: initial_sizing will be saved separately to space tables (not project_runs)');
       
       const { error: mainError, data: mainUpdateResult } = await supabase
         .from('project_runs')
         .update(mainUpdateData)
         .eq('id', currentProjectRun.id)
-        .select('id, initial_budget, custom_project_name, initial_timeline, initial_sizing');
+        .select('id, initial_budget, custom_project_name, initial_timeline');
 
       if (mainError) {
         console.error('❌ ProjectProfileStep: Error saving to project_runs:', mainError);
@@ -317,22 +318,21 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       }
       
       if (mainUpdateResult && mainUpdateResult.length > 0) {
-        console.log('✅ All 3 fields saved to project_runs (canonical source):', {
+        console.log('✅ Budget & timeline saved to project_runs:', {
           initial_budget: mainUpdateResult[0].initial_budget,
-          initial_timeline: mainUpdateResult[0].initial_timeline,
-          initial_sizing: mainUpdateResult[0].initial_sizing
+          initial_timeline: mainUpdateResult[0].initial_timeline
         });
       }
       
-      // STEP 3B: ALSO save sizing to space-specific tables for detailed tracking
-      // This provides redundant storage: project_runs has the canonical value,
-      // while space tables track per-room sizing details
+      // STEP 3B: Save sizing to space-specific tables
+      // NOTE: Sizing is ONLY stored in space tables, not in project_runs
+      // This is due to database trigger architecture that prevents storing in project_runs
       if (finalSizingValue && room1SpaceId) {
         const parsedSizing = parseFloat(finalSizingValue);
         if (!isNaN(parsedSizing) && parsedSizing > 0) {
           const projectScaleUnit = scalingUnit || 'per item';
           
-          console.log('💾 ProjectProfileStep: ALSO saving sizing to Room 1 space tables (redundant):', {
+          console.log('💾 ProjectProfileStep: Saving sizing to Room 1 space tables (canonical storage for sizing):', {
             room1SpaceId,
             size: parsedSizing,
             unit: projectScaleUnit
@@ -353,7 +353,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             throw spaceUpdateError;
           }
           
-          console.log('✅ Sizing also saved to project_run_spaces (for space-specific tracking)');
+          console.log('✅ Sizing saved to project_run_spaces');
           
           // Also save to project_run_space_sizing table
           const { error: sizingError } = await supabase
@@ -371,24 +371,23 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             throw sizingError;
           }
           
-          console.log('✅ Sizing also saved to project_run_space_sizing (for detailed tracking)');
+          console.log('✅ Sizing saved to project_run_space_sizing');
         }
       }
 
       // CRITICAL: Final verification - fetch the saved values from database
       const { data: verificationData, error: verificationError } = await supabase
         .from('project_runs')
-        .select('initial_budget, initial_timeline, initial_sizing')
+        .select('initial_budget, initial_timeline')
         .eq('id', currentProjectRun.id)
         .single();
       
       if (!verificationError && verificationData) {
-        console.log('✅ ProjectProfileStep: Final verification - all 3 fields in project_runs:', {
+        console.log('✅ ProjectProfileStep: Final verification - budget & timeline in project_runs:', {
           initial_budget: verificationData.initial_budget,
-          initial_timeline: verificationData.initial_timeline,
-          initial_sizing: verificationData.initial_sizing
+          initial_timeline: verificationData.initial_timeline
         });
-        console.log('📝 Note: initial_sizing is ALSO stored in project_run_spaces/project_run_space_sizing for space-specific tracking');
+        console.log('📝 Note: initial_sizing is stored in project_run_spaces/project_run_space_sizing (NOT in project_runs)');
         
         // Check for mismatches
         if (verificationData.initial_budget !== finalBudgetValue) {
@@ -396,9 +395,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         }
         if (verificationData.initial_timeline !== (projectForm.initialTimeline || null)) {
           console.error('❌ initial_timeline mismatch:', { expected: projectForm.initialTimeline || null, actual: verificationData.initial_timeline });
-        }
-        if (verificationData.initial_sizing !== finalSizingValue) {
-          console.error('❌ initial_sizing mismatch:', { expected: finalSizingValue, actual: verificationData.initial_sizing });
         }
       } else if (verificationError) {
         console.error('❌ ProjectProfileStep: Error verifying saved values:', verificationError);
@@ -411,15 +407,14 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         home_id: homeId,
         initial_budget: finalBudgetValue,
         initial_timeline: projectForm.initialTimeline || null,
-        initial_sizing: finalSizingValue,
         updatedAt: new Date()
       };
       
       console.log('🔄 ProjectProfileStep: Updating context with saved values:', {
         initial_budget: contextUpdatedRun.initial_budget,
-        initial_timeline: contextUpdatedRun.initial_timeline,
-        initial_sizing: contextUpdatedRun.initial_sizing
+        initial_timeline: contextUpdatedRun.initial_timeline
       });
+      console.log('📝 Note: initial_sizing queried from project_run_spaces, not stored in context');
       
       // Update context (this won't trigger another database save since we already saved above)
       await updateProjectRun(contextUpdatedRun);
