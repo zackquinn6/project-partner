@@ -586,7 +586,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               flow_type,
               display_order
             `)
-            .eq('phase_id', phaseData.id) // phaseData.id is from standard project
+            .eq('phase_id', phaseData.id) // phaseData.id is from current project (standard phases are copied into each project)
             .order('display_order');
           
           if (operationsError) {
