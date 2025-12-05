@@ -34,7 +34,24 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    
+    // Handle case where user was deleted but still has a valid JWT token
+    if (userError || !userData.user) {
+      const errorMsg = userError?.message || "User not found";
+      if (errorMsg.includes("does not exist")) {
+        logStep("User does not exist in database", { error: errorMsg });
+        return new Response(JSON.stringify({ 
+          subscribed: false, 
+          error: "User account not found. Please sign in again.",
+          requiresReauth: true 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        });
+      }
+      throw new Error(`Authentication error: ${errorMsg}`);
+    }
+    
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
@@ -108,7 +125,7 @@ serve(async (req) => {
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
-    let subscriptionEnd = null;
+    let subscriptionEnd: string | null = null;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];

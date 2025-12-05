@@ -43,6 +43,19 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
       
       if (error) throw error;
 
+      // Check if user needs to re-authenticate
+      if (data.requiresReauth) {
+        console.log('User account not found, signing out:', data.error);
+        toast({
+          title: "Session Expired",
+          description: "Please sign in again to continue.",
+          variant: "destructive",
+        });
+        // Sign out to clear invalid session
+        await supabase.auth.signOut();
+        return;
+      }
+
       setIsSubscribed(data.subscribed || false);
       setIsAdmin(data.isAdmin || false);
       setInTrial(data.inTrial || false);
