@@ -515,7 +515,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           position_rule,
           position_value,
           source_project_id,
-          source_phase_id
+          source_project_name
         `)
         .eq('project_id', projectId)
         .order('position_rule', { ascending: true })
@@ -573,26 +573,85 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       const phases: Phase[] = await Promise.all(allPhasesData.map(async (phaseData: any) => {
-        // Check if this is an incorporated phase (has source_project_id and source_phase_id)
-        const isIncorporated = !!(phaseData.source_project_id && phaseData.source_phase_id);
+        // Check if this is an incorporated phase (has source_project_id)
+        const isIncorporated = !!phaseData.source_project_id;
         
         let operationsWithSteps: any[] = [];
         
         if (isIncorporated) {
           // For incorporated phases: dynamically fetch operations/steps from source project
-          // Use source_phase_id to get operations from the source phase
-          const { data: operations } = await supabase
-            .from('phase_operations')
-            .select(`
-              id,
-              operation_name,
-              operation_description,
-              flow_type,
-              display_order,
-              is_reference
-            `)
-            .eq('phase_id', phaseData.source_phase_id) // Use source phase ID
-            .order('display_order');
+          // First, find the source phase by matching name in the source project
+          const { data: sourcePhase } = await supabase
+            .from('project_phases')
+            .select('id')
+            .eq('project_id', phaseData.source_project_id)
+            .eq('name', phaseData.name)
+            .single();
+          
+          if (!sourcePhase?.id) {
+            console.warn(`⚠️ Source phase not found for incorporated phase "${phaseData.name}" in project ${phaseData.source_project_id}`);
+            // Fall back to using the phase's own ID
+            const { data: operations } = await supabase
+              .from('phase_operations')
+              .select(`
+                id,
+                operation_name,
+                operation_description,
+                flow_type,
+                display_order
+              `)
+              .eq('phase_id', phaseData.id)
+              .order('display_order');
+            
+            operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
+              const { data: steps } = await supabase
+                .from('operation_steps')
+                .select(`
+                  id,
+                  step_title,
+                  description,
+                  content_type,
+                  content,
+                  display_order,
+                  materials,
+                  tools,
+                  outputs
+                `)
+                .eq('operation_id', op.id)
+                .order('display_order');
+              
+              return {
+                id: op.id,
+                name: op.operation_name,
+                description: op.operation_description || '',
+                flowType: op.flow_type || 'prime',
+                displayOrder: op.display_order || 0,
+                steps: (steps || []).map((s: any) => ({
+                  id: s.id,
+                  step: s.step_title,
+                  description: s.description || '',
+                  contentType: s.content_type || 'text',
+                  content: s.content || '',
+                  displayOrder: s.display_order || 0,
+                  materials: s.materials || [],
+                  tools: s.tools || [],
+                  outputs: s.outputs || []
+                })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
+              };
+            }));
+          } else {
+            // Use source phase ID to get operations from the source phase
+            const { data: operations } = await supabase
+              .from('phase_operations')
+              .select(`
+                id,
+                operation_name,
+                operation_description,
+                flow_type,
+                display_order
+              `)
+              .eq('phase_id', sourcePhase.id) // Use source phase ID
+              .order('display_order');
           
           // Get steps for each operation from source
           operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
