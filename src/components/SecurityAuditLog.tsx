@@ -20,7 +20,7 @@ interface AuditLogEntry {
 interface FailedLoginAttempt {
   id: string;
   email: string;
-  attempt_time: string;
+  attempted_at: string;
   user_agent: string;
 }
 
@@ -51,7 +51,7 @@ export const SecurityAuditLog: React.FC = () => {
         const { data: loginData, error: loginError } = await supabase
           .from('failed_login_attempts')
           .select('*')
-          .order('attempt_time', { ascending: false })
+          .order('attempted_at', { ascending: false })
           .limit(50);
 
         if (loginError) throw loginError;
@@ -176,7 +176,7 @@ export const SecurityAuditLog: React.FC = () => {
                 {failedLogins.map((attempt) => (
                   <TableRow key={attempt.id}>
                     <TableCell>{attempt.email}</TableCell>
-                    <TableCell>{new Date(attempt.attempt_time).toLocaleString()}</TableCell>
+                    <TableCell>{new Date(attempt.attempted_at).toLocaleString()}</TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-md truncate">
                       {attempt.user_agent}
                     </TableCell>

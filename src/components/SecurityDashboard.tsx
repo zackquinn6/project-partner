@@ -25,7 +25,7 @@ interface FailedLogin {
   id: string;
   email: string;
   ip_address: string | null;
-  attempt_time: string;
+  attempted_at: string;
   user_agent: string | null;
 }
 
@@ -51,7 +51,7 @@ export const SecurityDashboard: React.FC = () => {
     try {
       const [auditResult, failedResult, sessionsResult] = await Promise.all([
         supabase.from('role_audit_log').select('*').order('created_at', { ascending: false }).limit(50),
-        supabase.from('failed_login_attempts').select('*').order('attempt_time', { ascending: false }).limit(50),
+        supabase.from('failed_login_attempts').select('*').order('attempted_at', { ascending: false }).limit(50),
         supabase.from('user_sessions').select('*').order('session_start', { ascending: false }).limit(50)
       ]);
 
@@ -119,7 +119,7 @@ export const SecurityDashboard: React.FC = () => {
   }
 
   const recentFailedLogins = failedLogins.filter(login => 
-    new Date(login.attempt_time) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    new Date(login.attempted_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
   );
 
   const activeSessions = userSessions.filter(session => session.is_active);
@@ -233,7 +233,7 @@ export const SecurityDashboard: React.FC = () => {
                 <TableBody>
                   {failedLogins.map((login) => (
                     <TableRow key={login.id}>
-                      <TableCell>{new Date(login.attempt_time).toLocaleString()}</TableCell>
+                      <TableCell>{new Date(login.attempted_at).toLocaleString()}</TableCell>
                       <TableCell>{login.email}</TableCell>
                       <TableCell>{login.ip_address || 'Unknown'}</TableCell>
                       <TableCell className="max-w-xs truncate">{login.user_agent || 'Unknown'}</TableCell>

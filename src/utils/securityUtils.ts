@@ -134,7 +134,7 @@ export class SecurityMaintenance {
       const { error } = await supabase
         .from('failed_login_attempts')
         .delete()
-        .lt('attempt_time', ninetyDaysAgo.toISOString());
+        .lt('attempted_at', ninetyDaysAgo.toISOString());
 
       if (error) throw error;
     } catch (error) {
@@ -158,7 +158,7 @@ export class SecurityMaintenance {
         supabase
           .from('failed_login_attempts')
           .select('id', { count: 'exact' })
-          .gte('attempt_time', twentyFourHoursAgo.toISOString()),
+          .gte('attempted_at', twentyFourHoursAgo.toISOString()),
         
         supabase
           .from('user_sessions')
