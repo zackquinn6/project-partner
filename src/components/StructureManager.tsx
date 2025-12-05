@@ -440,9 +440,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             name: op.operation_name,
             description: op.operation_description,
             flowType: op.flow_type,
-            userPrompt: op.user_prompt,
             displayOrder: op.display_order,
-            isStandard: op.is_reference || phaseData.is_standard,
+            isStandard: phaseData.is_standard,
             steps: (steps || [])
               .map((s: any) => ({
                 id: s.id,
@@ -607,7 +606,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               name: op.operation_name,
               description: op.operation_description,
               flowType: op.flow_type,
-              userPrompt: op.user_prompt,
               displayOrder: op.display_order,
               isStandard: true, // Mark as standard/read-only for incorporated content
               steps: (steps || [])
