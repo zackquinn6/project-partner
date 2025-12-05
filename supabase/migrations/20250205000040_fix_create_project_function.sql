@@ -43,7 +43,9 @@ BEGIN
     name,
     description,
     category,
+    publish_status,
     is_template,
+    is_current_version,
     created_at,
     updated_at
   ) VALUES (
@@ -51,6 +53,8 @@ BEGIN
     p_project_name,
     p_project_description,
     category_array,
+    'draft',
+    true,
     true,
     NOW(),
     NOW()
