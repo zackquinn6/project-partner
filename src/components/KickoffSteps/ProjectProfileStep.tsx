@@ -191,6 +191,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     }
 
     try {
+      // Prepare values for saving
+      const budgetValue = projectForm.initialBudget?.trim() || '';
+      const finalBudgetValue = budgetValue === '' ? null : budgetValue;
+      const sizingValue = projectForm.initialSizing?.trim() || '';
+      const finalSizingValue = sizingValue === '' ? null : sizingValue;
+      
       // REQUIREMENT 1 & 3: Ensure home exists - use selected home or first home or create default
       let homeId = selectedHomeId || homes[0]?.id || null;
       
@@ -227,100 +233,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
       // Update project run in database with new fields
       // First update: fields that don't trigger space_sizing creation
-      // CRITICAL: Handle initial_budget properly - trim and convert empty string to null
-      const budgetValue = projectForm.initialBudget?.trim() || '';
-      const finalBudgetValue = budgetValue === '' ? null : budgetValue;
-      
-      
-      const baseUpdateData: any = {
-        custom_project_name: projectForm.customProjectName.trim(),
-        initial_timeline: projectForm.initialTimeline || null,
-        initial_budget: finalBudgetValue,
-        initial_sizing: projectForm.initialSizing?.trim() || null,
-        updated_at: new Date().toISOString()
-      };
-      
-      console.log('💾 ProjectProfileStep: Preparing to save to database:', {
-        projectRunId: currentProjectRun.id,
-        updateData: baseUpdateData,
-        formState: {
-          customProjectName: projectForm.customProjectName,
-          initialTimeline: projectForm.initialTimeline,
-          initialBudget: projectForm.initialBudget,
-          initialSizing: projectForm.initialSizing
-        }
-      });
-      
-      // CRITICAL: Log a warning if fields are empty
-      if (!projectForm.initialTimeline) {
-        console.warn('⚠️ ProjectProfileStep: initialTimeline is empty!');
-      }
-      if (!projectForm.initialBudget) {
-        console.warn('⚠️ ProjectProfileStep: initialBudget is empty!');
-      }
-      if (!projectForm.initialSizing) {
-        console.warn('⚠️ ProjectProfileStep: initialSizing is empty!');
-      }
-      
-      const { error: baseError, data: updateResult } = await supabase
-        .from('project_runs')
-        .update(baseUpdateData)
-        .eq('id', currentProjectRun.id)
-        .select('id, initial_budget, custom_project_name, initial_timeline, initial_sizing');
-
-      if (baseError) {
-        console.error('❌ ProjectProfileStep: Error saving project profile data:', {
-          error: baseError,
-          code: baseError.code,
-          message: baseError.message,
-          details: baseError.details,
-          hint: baseError.hint,
-          updateData: baseUpdateData
-        });
-        throw baseError;
-      }
-      
-      // CRITICAL: Verify the values were actually saved
-      if (updateResult && updateResult.length > 0) {
-        const savedRecord = updateResult[0];
-        
-        console.log('✅ ProjectProfileStep: Values saved successfully to database:', {
-          initial_budget: savedRecord.initial_budget,
-          initial_timeline: savedRecord.initial_timeline,
-          initial_sizing: savedRecord.initial_sizing,
-          custom_project_name: savedRecord.custom_project_name
-        });
-        
-        // Verify initial_budget matches
-        if (savedRecord.initial_budget !== finalBudgetValue) {
-          console.error('❌ ProjectProfileStep: initial_budget mismatch!', {
-            expected: finalBudgetValue,
-            actual: savedRecord.initial_budget
-          });
-        }
-        
-        // Verify initial_timeline matches
-        const expectedTimeline = projectForm.initialTimeline || null;
-        if (savedRecord.initial_timeline !== expectedTimeline) {
-          console.error('❌ ProjectProfileStep: initial_timeline mismatch!', {
-            expected: expectedTimeline,
-            actual: savedRecord.initial_timeline
-          });
-        }
-        
-        // Verify initial_sizing matches
-        const expectedSizing = projectForm.initialSizing?.trim() || null;
-        if (savedRecord.initial_sizing !== expectedSizing) {
-          console.error('❌ ProjectProfileStep: initial_sizing mismatch!', {
-            expected: expectedSizing,
-            actual: savedRecord.initial_sizing
-          });
-        }
-      } else {
-        console.error('❌ ProjectProfileStep: Update succeeded but no data returned from database!');
-      }
-      
-      // Second update: home_id (must be set before creating spaces)
+      // STEP 1: Update home_id first (must be set before creating spaces)
       if (homeId !== currentProjectRun.home_id) {
         const { error: homeError } = await supabase
           .from('project_runs')
@@ -330,7 +243,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         if (homeError) throw homeError;
       }
 
-      // REQUIREMENT 2 & 5: Ensure "Room 1" space exists for this project run
+      // STEP 2: Ensure "Room 1" space exists BEFORE saving any initial_sizing data
+      // CRITICAL: Room 1 MUST exist before we can save initial_sizing to project_runs
+      // because there may be a database trigger that requires a space_id
       const { data: existingSpaces, error: spacesCheckError } = await supabase
         .from('project_run_spaces')
         .select('id, space_name')
@@ -424,15 +339,56 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               console.error('Error upserting space sizing:', sizingUpsertError);
               // Don't throw - sizing is optional, but log the error
             } else {
+              console.log('✅ ProjectProfileStep: Sizing saved to project_run_space_sizing');
             }
           }
         }
       }
 
-      // Note: initial_sizing is stored in project_run_spaces and project_run_space_sizing tables
-      // We don't need to update it on project_runs table to avoid triggering space_id constraint errors
+      // STEP 3: NOW save all fields to project_runs table
+      // Room 1 exists, so database trigger (if any) has required space_id available
+      const mainUpdateData: any = {
+        custom_project_name: projectForm.customProjectName.trim(),
+        initial_timeline: projectForm.initialTimeline || null,
+        initial_budget: finalBudgetValue,
+        initial_sizing: finalSizingValue,  // Now safe to save because Room 1 exists
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log('💾 ProjectProfileStep: Saving all fields to project_runs (after Room 1 created):', {
+        projectRunId: currentProjectRun.id,
+        updateData: mainUpdateData,
+        room1SpaceId
+      });
+      
+      const { error: mainError, data: mainUpdateResult } = await supabase
+        .from('project_runs')
+        .update(mainUpdateData)
+        .eq('id', currentProjectRun.id)
+        .select('id, initial_budget, custom_project_name, initial_timeline, initial_sizing');
 
-      // CRITICAL: Final verification - fetch the saved value from database
+      if (mainError) {
+        console.error('❌ ProjectProfileStep: Error saving to project_runs:', mainError);
+        throw mainError;
+      }
+      
+      // Verify the save
+      if (mainUpdateResult && mainUpdateResult.length > 0) {
+        const savedRecord = mainUpdateResult[0];
+        console.log('✅ ProjectProfileStep: All values saved to project_runs:', savedRecord);
+        
+        if (savedRecord.initial_budget !== finalBudgetValue) {
+          console.error('❌ initial_budget mismatch:', { expected: finalBudgetValue, actual: savedRecord.initial_budget });
+        }
+        if (savedRecord.initial_timeline !== (projectForm.initialTimeline || null)) {
+          console.error('❌ initial_timeline mismatch:', { expected: projectForm.initialTimeline || null, actual: savedRecord.initial_timeline });
+        }
+        if (savedRecord.initial_sizing !== finalSizingValue) {
+          console.error('❌ initial_sizing mismatch:', { expected: finalSizingValue, actual: savedRecord.initial_sizing });
+        }
+      }
+
+      // CRITICAL: Final verification - fetch the saved values from database
       const { data: verificationData, error: verificationError } = await supabase
         .from('project_runs')
         .select('initial_budget, initial_timeline, initial_sizing')
@@ -440,48 +396,35 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         .single();
       
       if (!verificationError && verificationData) {
+        console.log('✅ ProjectProfileStep: Final verification - all fields saved:', {
+          initial_budget: verificationData.initial_budget,
+          initial_timeline: verificationData.initial_timeline,
+          initial_sizing: verificationData.initial_sizing
+        });
         
+        // Check for mismatches
         if (verificationData.initial_budget !== finalBudgetValue) {
-          console.error('❌ ProjectProfileStep: CRITICAL - initial_budget mismatch after save!', {
-            expected: finalBudgetValue,
-            actual: verificationData.initial_budget
-          });
-          // Try one more time to save it
-          const { error: retryError } = await supabase
-            .from('project_runs')
-            .update({ initial_budget: finalBudgetValue })
-            .eq('id', currentProjectRun.id);
-          
-          if (retryError) {
-            console.error('❌ ProjectProfileStep: Retry save failed:', retryError);
-          } else {
-          }
+          console.error('❌ initial_budget mismatch:', { expected: finalBudgetValue, actual: verificationData.initial_budget });
+        }
+        if (verificationData.initial_timeline !== (projectForm.initialTimeline || null)) {
+          console.error('❌ initial_timeline mismatch:', { expected: projectForm.initialTimeline || null, actual: verificationData.initial_timeline });
+        }
+        if (verificationData.initial_sizing !== finalSizingValue) {
+          console.error('❌ initial_sizing mismatch:', { expected: finalSizingValue, actual: verificationData.initial_sizing });
         }
       } else if (verificationError) {
         console.error('❌ ProjectProfileStep: Error verifying saved values:', verificationError);
       }
 
-      // Update local state for optimistic UI update
-      // CRITICAL: Use the same finalBudgetValue we saved to database
-      const updatedProjectRun = {
+      // STEP 4: Update context so other components can read these values
+      const contextUpdatedRun = {
         ...currentProjectRun,
         customProjectName: projectForm.customProjectName.trim(),
         home_id: homeId,
-        initial_sizing: projectForm.initialSizing.trim() || null,
-        initial_timeline: projectForm.initialTimeline || null,
         initial_budget: finalBudgetValue,
+        initial_timeline: projectForm.initialTimeline || null,
+        initial_sizing: finalSizingValue,
         updatedAt: new Date()
-      };
-
-      // CRITICAL: Update context with the latest data including initial_budget and initial_timeline
-      // This ensures all components can immediately read the latest values from context
-      // The updateProjectRun function will also update the database, but we've already done that above
-      // This ensures the context is in sync with the database
-      const contextUpdatedRun = {
-        ...updatedProjectRun,
-        initial_budget: finalBudgetValue,
-        initial_timeline: projectForm.initialTimeline || null,
-        initial_sizing: projectForm.initialSizing.trim() || null
       };
       
       console.log('🔄 ProjectProfileStep: Updating context with saved values:', {
@@ -490,37 +433,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         initial_sizing: contextUpdatedRun.initial_sizing
       });
       
+      // Update context (this won't trigger another database save since we already saved above)
       await updateProjectRun(contextUpdatedRun);
-      
-      // CRITICAL: Final database verification - ensure initial_budget is actually in the database
-      const { data: finalVerification, error: finalVerificationError } = await supabase
-        .from('project_runs')
-        .select('initial_budget')
-        .eq('id', currentProjectRun.id)
-        .single();
-      
-      if (!finalVerificationError && finalVerification) {
-        if (finalVerification.initial_budget !== finalBudgetValue) {
-          console.error('❌ ProjectProfileStep: CRITICAL - initial_budget mismatch in final verification!', {
-            expected: finalBudgetValue,
-            actual: finalVerification.initial_budget
-          });
-          // Force one more save attempt
-          const { error: forceSaveError } = await supabase
-            .from('project_runs')
-            .update({ initial_budget: finalBudgetValue })
-            .eq('id', currentProjectRun.id);
-          
-          if (forceSaveError) {
-            console.error('❌ ProjectProfileStep: Force save failed:', forceSaveError);
-            toast.error('Failed to save budget. Please try again.');
-            return; // Don't proceed if we can't save
-          } else {
-          }
-        }
-      } else if (finalVerificationError) {
-        console.error('❌ ProjectProfileStep: Final verification error:', finalVerificationError);
-      }
       
       console.log('✅ ProjectProfileStep.handleSave: COMPLETED SUCCESSFULLY - calling onComplete()');
       toast.success('Project profile saved successfully');
