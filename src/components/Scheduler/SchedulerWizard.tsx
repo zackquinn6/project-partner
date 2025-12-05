@@ -23,7 +23,8 @@ import {
   Brain,
   Info,
   Loader2,
-  Shield
+  Shield,
+  TrendingUp
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays } from 'date-fns';
@@ -79,6 +80,7 @@ interface SchedulerWizardProps {
   onApplyOptimization?: () => void;
   onAssignWork?: () => void;
   onOpenRiskManager?: () => void;
+  onOpenSensitivity?: () => void;
   riskTolerance?: 'low' | 'medium' | 'high';
   setRiskTolerance?: (tolerance: 'low' | 'medium' | 'high') => void;
   riskAdjustedDate?: Date | null;
@@ -92,6 +94,7 @@ interface SchedulerWizardProps {
 export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   targetDate,
   setTargetDate,
+  onOpenSensitivity,
   dropDeadDate,
   setDropDeadDate,
   planningMode,
@@ -356,6 +359,17 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     >
                       <Shield className="w-3.5 h-3.5 mr-1.5" />
                       Risk Manager
+                    </Button>
+                  )}
+                  {onOpenSensitivity && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={onOpenSensitivity}
+                      className="h-9 text-xs bg-purple-600 hover:bg-purple-700 col-span-2"
+                    >
+                      <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
+                      Schedule Sensitivity
                     </Button>
                   )}
                 </div>

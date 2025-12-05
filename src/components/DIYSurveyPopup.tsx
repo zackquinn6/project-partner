@@ -844,12 +844,13 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           <div className="space-y-4">
             <div className="text-center">
               <h3 className="text-2xl font-bold">🧠 Experience & Capabilities</h3>
+              <p className="text-muted-foreground mt-2">Let's create your builder profile</p>
             </div>
             
             {/* Experience Level */}
             <div className="space-y-2">
               <div className="text-center">
-                <h4 className="text-lg font-semibold">What's your experience level?</h4>
+                <h4 className="text-lg font-semibold">What's your general home improvement experience level?</h4>
               </div>
               <Card>
                 <CardContent className="p-3 space-y-2">

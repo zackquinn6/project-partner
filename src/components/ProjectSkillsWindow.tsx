@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 
 interface ProjectSkill {
   name: string;
-  skillLevel: number; // 0 = beginner, 1 = intermediate, 2 = advanced
+  skillLevel: number; // 0-100 continuous value
   avoid: boolean;
 }
 
@@ -29,7 +29,7 @@ const PROJECT_LIST = [
   "High heights / ladders"
 ];
 
-const SKILL_LEVEL_LABELS = ["Beginner", "Intermediate", "Advanced"];
+// Removed SKILL_LEVEL_LABELS as we're using continuous sliders now
 
 export function ProjectSkillsWindow({ 
   open, 
@@ -40,7 +40,7 @@ export function ProjectSkillsWindow({
   const [projectSkills, setProjectSkills] = useState<ProjectSkill[]>(() => {
     return PROJECT_LIST.map(project => ({
       name: project,
-      skillLevel: 0, // Default to beginner
+      skillLevel: 0, // Default to 0 (beginner)
       avoid: initialAvoidProjects.includes(project)
     }));
   });
@@ -97,7 +97,7 @@ export function ProjectSkillsWindow({
         <DialogOverlay className="z-[102]" />
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-[103]">
         <DialogHeader>
-          <DialogTitle>Optional: Define Project Skills</DialogTitle>
+          <DialogTitle>Define project-specific experience</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -125,24 +125,36 @@ export function ProjectSkillsWindow({
                     </div>
                     
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs text-muted-foreground">Skill Level</Label>
-                        <span className="text-xs font-medium">
-                          {SKILL_LEVEL_LABELS[project.skillLevel]}
-                        </span>
+                      <Label className="text-xs text-muted-foreground">Skill Level</Label>
+                      <div className="relative py-1.5">
+                        {/* Color sections background - positioned to align with slider track */}
+                        <div className="absolute top-1/2 left-0 right-0 flex h-2 -translate-y-1/2 rounded-full overflow-hidden pointer-events-none">
+                          <div className="w-1/3 bg-green-500"></div>
+                          <div className="w-1/3 bg-blue-500"></div>
+                          <div className="w-1/3 bg-black"></div>
+                        </div>
+                        <Slider
+                          value={[project.skillLevel]}
+                          onValueChange={(value) => handleSkillLevelChange(project.name, value)}
+                          min={0}
+                          max={100}
+                          step={1}
+                          className="w-full relative z-10 [&_[role=slider]]:bg-background [&_[role=slider]]:border-2 [&_[role=slider]]:border-primary [&>div>div]:bg-transparent"
+                        />
                       </div>
-                      <Slider
-                        value={[project.skillLevel]}
-                        onValueChange={(value) => handleSkillLevelChange(project.name, value)}
-                        min={0}
-                        max={2}
-                        step={1}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-[10px] text-muted-foreground">
-                        <span>Beginner</span>
-                        <span>Intermediate</span>
-                        <span>Advanced</span>
+                      <div className="flex justify-between text-xs text-muted-foreground relative">
+                        <div className="text-center" style={{ width: '33.33%' }}>
+                          <div className="font-medium">🔰 Beginner</div>
+                          <div className="text-[10px]">Just getting started</div>
+                        </div>
+                        <div className="text-center" style={{ width: '33.33%' }}>
+                          <div className="font-medium">🧰 Intermediate</div>
+                          <div className="text-[10px]">Done a few projects</div>
+                        </div>
+                        <div className="text-center" style={{ width: '33.33%' }}>
+                          <div className="font-medium">🛠️ Advanced</div>
+                          <div className="text-[10px]">Tackled big stuff</div>
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -32,6 +32,7 @@ import { ProjectContractors } from '@/components/ProjectContractors';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScheduleCalendarView } from '@/components/ScheduleCalendarView';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
+import { ScheduleSensitivity } from './Scheduler/ScheduleSensitivity';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -114,6 +115,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [showRiskManager, setShowRiskManager] = useState(false);
   // Contractors dialog state
   const [showContractors, setShowContractors] = useState(false);
+  // Schedule sensitivity dialog state
+  const [showSensitivity, setShowSensitivity] = useState(false);
 
   // Space priority state with sizing values
   const [spaces, setSpaces] = useState<Array<{ 
@@ -671,6 +674,19 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       }
     };
   }, [project, projectRun, spaces, scheduleOptimizationMethod, scheduleTempo]);
+
+  // Calculate available hours per week from team members
+  const availableHoursPerWeek = useMemo(() => {
+    if (teamMembers.length === 0) return 0;
+    return teamMembers.reduce((total, member) => {
+      const workingHours = member.workingHours || { start: '09:00', end: '17:00' };
+      const startHour = parseInt(workingHours.start.split(':')[0]);
+      const endHour = parseInt(workingHours.end.split(':')[0]);
+      const dailyHours = endHour - startHour;
+      const weeklyHours = dailyHours * 5; // Assume 5 days per week (can be adjusted)
+      return total + weeklyHours;
+    }, 0);
+  }, [teamMembers]);
 
   // Update team member
   const updateTeamMember = (id: string, updates: Partial<TeamMember>) => {
@@ -1410,6 +1426,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               onApplyOptimization={handleApplyOptimization} 
               onAssignWork={() => setShowPhaseAssignment(true)} 
               onOpenRiskManager={() => setShowRiskManager(true)} 
+              onOpenSensitivity={() => setShowSensitivity(true)}
               riskTolerance={riskTolerance} 
               setRiskTolerance={setRiskTolerance} 
               riskAdjustedDate={riskAdjustedDate}
@@ -1944,6 +1961,19 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       projectId={project.id}
       projectRunId={projectRun.id}
       mode="run"
+    />
+
+    {/* Schedule Sensitivity Dialog */}
+    <ScheduleSensitivity
+      open={showSensitivity}
+      onOpenChange={setShowSensitivity}
+      schedulingResult={schedulingResult}
+      riskTolerance={riskTolerance}
+      scheduleTempo={scheduleTempo}
+      planningMode={planningMode}
+      availableHoursPerWeek={availableHoursPerWeek}
+      targetDate={targetDate}
+      tasks={schedulingTasks}
     />
     </>
   );
