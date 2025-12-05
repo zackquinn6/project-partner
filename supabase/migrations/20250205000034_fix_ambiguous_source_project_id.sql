@@ -1,6 +1,6 @@
 -- =====================================================
--- CREATE PROJECT REVISION FUNCTION
--- Creates a new revision of a project with all phases
+-- FIX AMBIGUOUS source_project_id REFERENCES
+-- Qualify function parameter references to avoid ambiguity
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION public.create_project_revision_v2(
@@ -297,13 +297,9 @@ COMMENT ON FUNCTION public.create_project_revision_v2 IS
 Sets the new revision as current_version=true and marks old revisions as current_version=false.
 Returns the UUID of the newly created revision.';
 
-GRANT EXECUTE ON FUNCTION public.create_project_revision_v2(UUID, TEXT) TO authenticated, anon, service_role;
-
 -- Success message
 DO $$
 BEGIN
-  RAISE NOTICE '✅ create_project_revision_v2 function created';
-  RAISE NOTICE '✅ Function creates new project revisions with all phases';
-  RAISE NOTICE '✅ Automatically manages revision numbers and current_version flags';
+  RAISE NOTICE '✅ create_project_revision_v2 function fixed - ambiguous references resolved';
 END $$;
 
