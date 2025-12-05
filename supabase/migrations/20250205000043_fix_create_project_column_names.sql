@@ -1,12 +1,11 @@
 -- =====================================================
--- FIX CREATE PROJECT WITH STANDARD FOUNDATION FUNCTION
--- Update function to match current schema and fix parameter order
+-- FIX CREATE PROJECT FUNCTION COLUMN NAMES
+-- Update function to use correct column names: time_estimate_med and number_of_workers
+-- Also add missing columns: apps, content_sections, flow_type, step_type
 -- =====================================================
 
--- Drop existing function with all possible signatures
-DROP FUNCTION IF EXISTS public.create_project_with_standard_foundation_v2(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT[]);
+-- Drop and recreate the function with correct column names
 DROP FUNCTION IF EXISTS public.create_project_with_standard_foundation_v2(TEXT, TEXT, TEXT, UUID);
-DROP FUNCTION IF EXISTS public.create_project_with_standard_foundation_v2(TEXT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION public.create_project_with_standard_foundation_v2(
   p_project_name TEXT,
@@ -239,7 +238,8 @@ TO authenticated, service_role;
 -- Success message
 DO $$
 BEGIN
-  RAISE NOTICE '✅ create_project_with_standard_foundation_v2 function updated';
-  RAISE NOTICE '✅ Function now matches current schema and parameter order';
+  RAISE NOTICE '✅ create_project_with_standard_foundation_v2 function updated with correct column names';
+  RAISE NOTICE '✅ Using time_estimate_med and number_of_workers';
+  RAISE NOTICE '✅ Including apps, content_sections, flow_type, step_type';
 END $$;
 
