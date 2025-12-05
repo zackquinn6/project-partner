@@ -409,13 +409,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       const phases: Phase[] = await Promise.all((phasesData || []).map(async (phaseData: any) => {
         // Get operations for this phase
         const { data: operations } = await supabase
-          .from('template_operations')
+          .from('phase_operations')
           .select(`
             id,
             operation_name,
             operation_description,
             flow_type,
-            user_prompt,
             display_order,
             is_reference
           `)
@@ -577,13 +576,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           // For incorporated phases: dynamically fetch operations/steps from source project
           // Use source_phase_id to get operations from the source phase
           const { data: operations } = await supabase
-            .from('template_operations')
+            .from('phase_operations')
             .select(`
               id,
               operation_name,
               operation_description,
               flow_type,
-              user_prompt,
               display_order,
               is_reference
             `)
@@ -638,13 +636,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         } else {
           // For regular phases: get operations from current phase
           const { data: operations } = await supabase
-            .from('template_operations')
+            .from('phase_operations')
             .select(`
               id,
               operation_name,
               operation_description,
               flow_type,
-              user_prompt,
               display_order,
               is_reference
             `)
@@ -854,7 +851,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 for (const { op, correctOrder } of operationsToFix) {
                   if ((op as any).displayOrder !== correctOrder) {
                     await supabase
-                      .from('template_operations')
+                      .from('phase_operations')
                       .update({ display_order: correctOrder })
                       .eq('id', op.id);
                     fixCount++;
@@ -1125,15 +1122,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Create default operation and step directly in database
       const { data: newOperation, error: operationError } = await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .insert({
           phase_id: addedPhase.id,
-          project_id: currentProject.id,
           operation_name: 'New Operation',
           operation_description: 'Operation description',
           flow_type: 'prime',
-          display_order: 1,
-          is_reference: false
+          display_order: 1
         })
         .select('id')
         .single();
@@ -1144,19 +1139,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Create default step directly in database
       const { error: stepError } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .insert({
           operation_id: newOperation.id,
           step_title: 'New Step',
           description: 'Step description',
+          content_type: 'text',
+          content: '',
           display_order: 1,
-          content_sections: [],
           materials: [],
           tools: [],
-          outputs: [],
-          apps: [],
-          flow_type: 'prime',
-          step_type: 'prime'
+          outputs: []
         });
       
       if (stepError) {
@@ -1479,7 +1472,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         }
       } else if (editingItem.type === 'operation') {
         const { error } = await supabase
-          .from('template_operations')
+          .from('phase_operations')
           .update({
             operation_name: editingItem.data.name,  // Changed from name
             operation_description: editingItem.data.description || null,  // Changed from description
@@ -1588,7 +1581,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Delete the operation
       const { error: deleteError } = await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .delete()
         .eq('id', operationId);
       
@@ -1639,7 +1632,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     try {
       // Get current display_order values
       const { data: ops } = await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .select('id, display_order')
         .in('id', [operation.id, prevOperation.id]);
       
@@ -1652,12 +1645,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Swap display_order
       await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .update({ display_order: op2.display_order })
         .eq('id', operation.id);
       
       await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .update({ display_order: op1.display_order })
         .eq('id', prevOperation.id);
       
@@ -1704,7 +1697,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     try {
       // Get current display_order values
       const { data: ops } = await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .select('id, display_order')
         .in('id', [operation.id, nextOperation.id]);
       
@@ -1717,12 +1710,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Swap display_order
       await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .update({ display_order: op2.display_order })
         .eq('id', operation.id);
       
       await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .update({ display_order: op1.display_order })
         .eq('id', nextOperation.id);
       
@@ -2031,7 +2024,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     try {
       // Get ALL existing operations to renumber them sequentially
       const { data: existingOperations } = await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .select('id, operation_name, display_order')
         .eq('phase_id', phaseId)
         .order('display_order', { ascending: true });
@@ -2043,7 +2036,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           const correctOrder = i + 1;
           if (op.display_order !== correctOrder) {
             await supabase
-              .from('template_operations')
+              .from('phase_operations')
               .update({ display_order: correctOrder })
               .eq('id', op.id);
           }
@@ -2079,7 +2072,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Phase standard status comes from project_phases.is_standard
       
       const { data: newOperation, error: insertError } = await supabase
-        .from('template_operations')
+        .from('phase_operations')
         .insert(insertData)
         .select('id')
         .single();
