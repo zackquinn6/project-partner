@@ -1549,11 +1549,13 @@ export function UnifiedProjectManagement({
                     <div className="p-2 border-b">
                       <Input placeholder="Search projects..." value={projectSearch} onChange={e => setProjectSearch(e.target.value)} className="h-8" onClick={e => e.stopPropagation()} />
                     </div>
-                    {projects.filter(project => project.id !== '00000000-0000-0000-0000-000000000000' &&
-                  // Hide manual log template
-                  project.id !== '00000000-0000-0000-0000-000000000001' &&
-                  // Hide Standard Project Foundation
-                  project.name.toLowerCase().includes(projectSearch.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name)).map(project => <SelectItem key={project.id} value={project.id}>
+                    {projects.filter(project => {
+                      const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
+                      // Hide standard foundation using is_standard field instead of hardcoded ID
+                      const isNotStandardProject = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
+                      const matchesSearch = project.name.toLowerCase().includes(projectSearch.toLowerCase());
+                      return isNotManualTemplate && isNotStandardProject && matchesSearch;
+                    }).sort((a, b) => a.name.localeCompare(b.name)).map(project => <SelectItem key={project.id} value={project.id}>
                         <span>{project.name}</span>
                       </SelectItem>)}
                   </SelectContent>
