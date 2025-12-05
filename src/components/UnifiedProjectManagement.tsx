@@ -689,7 +689,7 @@ export function UnifiedProjectManagement({
         error
       } = await supabase.from('projects').update({
         publish_status: status,
-        release_notes: notes
+        revision_notes: notes
       }).eq('id', revision.id);
       if (error) {
         console.error('❌ Supabase error:', error);
@@ -1239,9 +1239,8 @@ export function UnifiedProjectManagement({
         publish_status: 'draft',
         is_current_version: true,
         revision_notes: null,
-        release_notes: null,
         // Removed fields that don't exist in projects table:
-        // published_at, beta_released_at, archived_at, created_from_revision
+        // published_at, beta_released_at, archived_at, created_from_revision, release_notes
         // PRESERVE project name - do NOT add "(draft)" or revision_number suffix
         name: projectInfoToPreserve.name || latestRevision.name,
         // PRESERVE all other project information fields
@@ -2200,9 +2199,9 @@ export function UnifiedProjectManagement({
                                           <p className="text-sm text-muted-foreground mt-1">{revision.revision_notes}</p>
                                         </div>}
 
-                                      {revision.release_notes && <div>
-                                          <span className="font-medium text-sm">Release Notes:</span>
-                                          <p className="text-sm text-muted-foreground mt-1">{revision.release_notes}</p>
+                                      {revision.revision_notes && <div>
+                                          <span className="font-medium text-sm">Revision Notes:</span>
+                                          <p className="text-sm text-muted-foreground mt-1">{revision.revision_notes}</p>
                                         </div>}
                                     </div>
 
