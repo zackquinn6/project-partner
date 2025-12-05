@@ -40,7 +40,6 @@ interface Project {
   published_at: string | null;
   beta_released_at: string | null;
   archived_at: string | null;
-  release_notes: string | null;
   revision_notes: string | null;
   is_current_version: boolean;
   category: string[] | null;
