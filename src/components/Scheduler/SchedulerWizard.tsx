@@ -570,7 +570,6 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     </p>
                   </div>
                 )}
-              </div>
                 
                 {/* Team Members Section */}
                 <div className="space-y-3 pt-3 border-t" data-team-members-section>
