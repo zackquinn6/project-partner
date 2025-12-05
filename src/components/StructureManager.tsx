@@ -705,6 +705,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             const bOrder = b.displayOrder ?? 999;
             return aOrder - bOrder;
           });
+          }
         } else {
           // For regular phases: get operations from current phase
           const { data: operations } = await supabase
