@@ -2081,7 +2081,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Build insert object based on phase type
       const insertData: any = {
         phase_id: phaseId,
-        project_id: currentProject.id,
         operation_name: operationName,  // Changed from name
         operation_description: 'Operation description',  // Changed from description
         flow_type: 'prime',
@@ -2121,14 +2120,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           operation_id: newOperation.id,
           step_title: stepName,
           description: 'Step description',
+          content_type: 'text',
+          content: '',
           display_order: 1,
-          content_sections: [],
           materials: [],
           tools: [],
-          outputs: [],
-          apps: [],
-          flow_type: 'prime',
-          step_type: 'prime'
+          outputs: []
         });
       
       if (stepInsertError) {
