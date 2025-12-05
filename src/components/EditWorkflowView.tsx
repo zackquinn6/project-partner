@@ -82,7 +82,7 @@ export default function EditWorkflowView({
     });
     
     if (isStandardProject) {
-      // Edit Standard: Read directly from project_phases table
+      // Edit Standard: Read directly from project_phases table (same approach as UnifiedProjectManagement)
       console.log('📖 Loading Standard Project Foundation phases');
       const { data: phasesData, error } = await supabase
         .from('project_phases')
@@ -90,14 +90,35 @@ export default function EditWorkflowView({
           id,
           name,
           description,
-          is_standard,
+          display_order,
           position_rule,
-          position_value
+          position_value,
+          is_standard,
+          is_linked,
+          source_project_id,
+          source_project_name,
+          phase_operations (
+            id,
+            operation_name,
+            operation_description,
+            display_order,
+            estimated_time,
+            flow_type,
+            operation_steps (
+              id,
+              step_title,
+              description,
+              content_type,
+              content,
+              display_order,
+              materials,
+              tools,
+              outputs
+            )
+          )
         `)
         .eq('project_id', projectId)
-        .eq('is_standard', true)
-        .order('position_rule', { ascending: true })
-        .order('position_value', { ascending: true, nullsFirst: false });
+        .order('display_order', { ascending: true });
       
       console.log('📊 Standard phases query result:', {
         phasesCount: phasesData?.length || 0,
@@ -109,223 +130,48 @@ export default function EditWorkflowView({
         throw new Error(`Failed to load phases: ${error.message}`);
       }
       
-      // Convert to Phase format with operations and steps
-      const phases: Phase[] = await Promise.all((phasesData || []).map(async (phaseData: any) => {
-        // Get operations for this phase
-        const { data: operations } = await supabase
-          .from('template_operations')
-          .select(`
-            id,
-            operation_name,
-            operation_description,
-            flow_type,
-            user_prompt,
-            display_order,
-            is_reference
-          `)
-          .eq('phase_id', phaseData.id)
-          .order('display_order');
-        
-        console.log(`📋 Loading operations for phase "${phaseData.name}":`, {
-          operationsCount: operations?.length || 0,
-          operations: operations?.map(o => ({ id: o.id, name: o.operation_name }))
-        });
-        
-        // Get steps for each operation
-        const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
-          const { data: steps, error: stepsError } = await supabase
-            .from('template_steps')
-            .select(`
-              id,
-              step_title,
-              description,
-              step_type,
-              display_order,
-              apps,
-              tools,
-              materials,
-              outputs,
-              content_sections,
-              flow_type,
-              time_estimate_low,
-              time_estimate_medium,
-              time_estimate_high,
-              workers_needed,
-              skill_level
-            `)
-            .eq('operation_id', op.id)
-            .order('display_order');
-          
-          console.log(`  📝 Steps for operation "${op.operation_name}":`, {
-            operationId: op.id,
-            stepsCount: steps?.length || 0,
-            steps: steps?.map(s => s.step_title),
-            error: stepsError
-          });
-          
-          return {
-            id: op.id,
-            name: op.operation_name,
-            description: op.operation_description,
-            flowType: op.flow_type,
-            userPrompt: op.user_prompt,
-            displayOrder: op.display_order,
-            isStandard: op.is_reference || phaseData.is_standard,
-            steps: (steps || [])
-              .map((s: any) => {
-                // Parse apps field - handle both JSON string and array
-                let parsedApps: any[] = [];
-                if (s.apps) {
-                  if (typeof s.apps === 'string') {
-                    try {
-                      parsedApps = JSON.parse(s.apps);
-                    } catch (e) {
-                      console.error('Error parsing apps JSON:', e);
-                      parsedApps = [];
-                    }
-                  } else if (Array.isArray(s.apps)) {
-                    parsedApps = s.apps;
-                  }
-                }
-                
-                // Parse tools field
-                let parsedTools: any[] = [];
-                if (s.tools) {
-                  if (typeof s.tools === 'string') {
-                    try {
-                      parsedTools = JSON.parse(s.tools);
-                    } catch (e) {
-                      console.error('Error parsing tools JSON:', e);
-                      parsedTools = [];
-                    }
-                  } else if (Array.isArray(s.tools)) {
-                    parsedTools = s.tools;
-                  }
-                }
-                
-                // Parse materials field
-                let parsedMaterials: any[] = [];
-                if (s.materials) {
-                  if (typeof s.materials === 'string') {
-                    try {
-                      parsedMaterials = JSON.parse(s.materials);
-                    } catch (e) {
-                      console.error('Error parsing materials JSON:', e);
-                      parsedMaterials = [];
-                    }
-                  } else if (Array.isArray(s.materials)) {
-                    parsedMaterials = s.materials;
-                  }
-                }
-                
-                // Parse outputs field
-                let parsedOutputs: any[] = [];
-                if (s.outputs) {
-                  if (typeof s.outputs === 'string') {
-                    try {
-                      parsedOutputs = JSON.parse(s.outputs);
-                    } catch (e) {
-                      console.error('Error parsing outputs JSON:', e);
-                      parsedOutputs = [];
-                    }
-                  } else if (Array.isArray(s.outputs)) {
-                    parsedOutputs = s.outputs;
-                  }
-                }
-                
-                // Parse content_sections field
-                let parsedContentSections: any[] = [];
-                if (s.content_sections) {
-                  if (typeof s.content_sections === 'string') {
-                    try {
-                      parsedContentSections = JSON.parse(s.content_sections);
-                    } catch (e) {
-                      console.error('Error parsing content_sections JSON:', e);
-                      parsedContentSections = [];
-                    }
-                  } else if (Array.isArray(s.content_sections)) {
-                    parsedContentSections = s.content_sections;
-                  }
-                }
-                
-                return {
-                  id: s.id,
-                  step: s.step_title,
-                  description: s.description,
-                  stepType: s.step_type,
-                  displayOrder: s.display_order,
-                  flowType: s.flow_type,
-                  apps: parsedApps,
-                  tools: parsedTools,
-                  materials: parsedMaterials,
-                  outputs: parsedOutputs,
-                  contentSections: parsedContentSections,
-                  timeEstimation: {
-                    variableTime: {
-                      low: s.time_estimate_low || 0,
-                      medium: s.time_estimate_medium || 0,
-                      high: s.time_estimate_high || 0
-                    }
-                  },
-                  workersNeeded: s.workers_needed,
-                  skillLevel: s.skill_level
-                };
-              })
-              .sort((a, b) => {
-                // Explicitly sort by displayOrder to ensure correct order
-                const aOrder = a.displayOrder ?? 999;
-                const bOrder = b.displayOrder ?? 999;
-                return aOrder - bOrder;
-              })
-          };
-        }));
-        
-        // Sort operations by displayOrder
-        operationsWithSteps.sort((a, b) => {
-          const aOrder = a.displayOrder ?? 999;
-          const bOrder = b.displayOrder ?? 999;
-          return aOrder - bOrder;
-        });
-        
-        console.log(`✅ Operations with steps for phase "${phaseData.name}":`, {
-          operationsCount: operationsWithSteps.length,
-          details: operationsWithSteps.map(op => ({
-            name: op.name,
-            stepsCount: op.steps?.length || 0,
-            steps: op.steps?.map(s => s.step)
-          }))
-        });
-        
-        // Derive phaseOrderNumber from position_rule
-        // 'first' is now 'nth' with position_value = 1
-        let phaseOrderNumber: number | string;
-        if (phaseData.position_rule === 'last') {
-          phaseOrderNumber = 'last';
-        } else if (phaseData.position_rule === 'nth' && phaseData.position_value) {
-          phaseOrderNumber = phaseData.position_value;
-        } else {
-          phaseOrderNumber = 999;
-        }
-        
+      // Transform relational data to frontend format (same as UnifiedProjectManagement)
+      const phases: Phase[] = (phasesData || []).map((phaseData: any) => {
         return {
           id: phaseData.id,
           name: phaseData.name,
-          description: phaseData.description,
-          isStandard: phaseData.is_standard,
-          isLinked: false,
-          phaseOrderNumber,
-          position_rule: phaseData.position_rule,
-          position_value: phaseData.position_value,
-          operations: operationsWithSteps
-        } as Phase;
-      }));
+          description: phaseData.description || '',
+          isStandard: phaseData.is_standard || false,
+          isLinked: phaseData.is_linked || false,
+          sourceProjectId: phaseData.source_project_id,
+          sourceProjectName: phaseData.source_project_name,
+          phaseOrderNumber: phaseData.position_rule === 'first' ? 'first' 
+            : phaseData.position_rule === 'last' ? 'last'
+            : phaseData.position_value || 999,
+          operations: (phaseData.phase_operations || []).map((op: any) => ({
+            id: op.id,
+            name: op.operation_name,
+            description: op.operation_description || '',
+            estimatedTime: op.estimated_time || '',
+            flowType: op.flow_type || 'prime',
+            displayOrder: op.display_order || 0,
+            isStandard: phaseData.is_standard || false,
+            steps: (op.operation_steps || []).map((step: any) => ({
+              id: step.id,
+              step: step.step_title,
+              description: step.description || '',
+              contentType: step.content_type || 'text',
+              content: step.content || '',
+              displayOrder: step.display_order || 0,
+              materials: step.materials || [],
+              tools: step.tools || [],
+              outputs: step.outputs || []
+            })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
+          })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
+        };
+      });
       
       console.log('✅ Standard phases fully loaded with operations and steps:', {
         count: phases.length,
         details: phases.map(p => ({
           name: p.name,
           operationsCount: p.operations.length,
-          totalSteps: p.operations.reduce((sum, op) => sum + op.steps.length, 0)
+          totalSteps: p.operations.reduce((sum: number, op: any) => sum + (op.steps?.length || 0), 0)
         }))
       });
       
