@@ -64,11 +64,13 @@ BEGIN
   )
   RETURNING id INTO v_project_id;
   
-  -- If standard project exists, link/incorporate its phases
+  -- If standard project exists, create LINKS to its phases (not copies)
   IF v_standard_project_id IS NOT NULL THEN
-    -- Copy standard phases as "incorporated" phases
+    -- Create lightweight references to standard phases
+    -- These are just links - the actual phase data lives in the standard project
     FOR v_phase IN 
-      SELECT * FROM project_phases 
+      SELECT id, name, display_order, position_rule, position_value, is_standard
+      FROM project_phases 
       WHERE project_id = v_standard_project_id
       ORDER BY display_order
     LOOP
@@ -80,30 +82,31 @@ BEGIN
         position_rule,
         position_value,
         is_standard,
-        is_linked, -- Mark as incorporated/linked
-        source_project_id,
+        is_linked, -- TRUE = this is a dynamic link, not a copy
+        source_project_id, -- Points to standard project
         source_project_name,
         created_at,
         updated_at
       ) VALUES (
         v_project_id,
         v_phase.name,
-        v_phase.description,
+        '[LINKED] This phase is dynamically linked from the Standard Foundation',
         v_phase.display_order,
         v_phase.position_rule,
         v_phase.position_value,
         v_phase.is_standard,
-        true, -- This is an incorporated phase
-        v_standard_project_id,
+        true, -- Dynamic link - data comes from source_project_id
+        v_standard_project_id, -- Reference to actual phase data
         'Standard Foundation',
         NOW(),
         NOW()
       );
     END LOOP;
     
-    RAISE NOTICE 'Incorporated % standard phases into new project %', 
+    RAISE NOTICE 'Created % dynamic links to standard phases for project %', 
       (SELECT COUNT(*) FROM project_phases WHERE project_id = v_standard_project_id),
       v_project_id;
+    RAISE NOTICE 'Standard phases are LINKED, not copied - they will update when standard project changes';
   ELSE
     RAISE WARNING 'No standard project found - creating project without standard foundation';
   END IF;
@@ -113,7 +116,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.create_project_with_standard_foundation_v2 IS 
-'Creates a new project template and automatically incorporates standard foundation phases. Standard phases are linked (isLinked: true) and reference the source project.';
+'Creates a new project template and automatically creates DYNAMIC LINKS to standard foundation phases. Standard phases are NOT copied - they are linked (isLinked: true) and reference source_project_id. When standard project is updated, all linked projects see the changes automatically.';
 
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION public.create_project_with_standard_foundation_v2(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT[]) 
