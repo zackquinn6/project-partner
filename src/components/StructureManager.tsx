@@ -527,14 +527,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Get standard phases from Standard Project Foundation
-      // Find the standard project ID first (by is_standard flag or fallback to hardcoded ID)
-      const { data: standardProject } = await supabase
+      // Find the standard project ID by is_standard flag
+      const { data: standardProject, error: standardProjectError } = await supabase
         .from('projects')
         .select('id')
         .eq('is_standard', true)
         .single();
       
-      const standardProjectId = standardProject?.id || STANDARD_PROJECT_ID;
+      if (standardProjectError || !standardProject?.id) {
+        throw new Error(`Failed to find Standard Project Foundation: ${standardProjectError?.message || 'Standard project not found'}`);
+      }
+      
+      const standardProjectId = standardProject.id;
       
       const { data: standardPhasesData, error: standardError } = await supabase
         .from('project_phases')
