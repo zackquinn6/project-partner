@@ -1197,10 +1197,8 @@ export function UnifiedProjectManagement({
         is_current_version: true,
         revision_notes: null,
         release_notes: null,
-        published_at: null,
-        beta_released_at: null,
-        archived_at: null,
-        created_from_revision: null,
+        // Removed fields that don't exist in projects table:
+        // published_at, beta_released_at, archived_at, created_from_revision
         // PRESERVE project name - do NOT add "(draft)" or revision_number suffix
         name: projectInfoToPreserve.name || latestRevision.name,
         // PRESERVE all other project information fields
