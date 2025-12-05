@@ -909,23 +909,28 @@ export function UnifiedProjectManagement({
       return;
     }
     try {
-      // First try to delete related template data
-      const {
-        data: operations
-      } = await supabase.from('template_operations').select('id').eq('project_id', revisionId);
-      if (operations && operations.length > 0) {
-        const operationIds = operations.map(op => op.id);
-
-        // Delete template steps first
-        await supabase.from('template_steps').delete().in('operation_id', operationIds);
-
-        // Delete template operations
-        if (phaseIds && phaseIds.length > 0) {
-          await supabase
-            .from('phase_operations')
-            .delete()
-            .in('phase_id', phaseIds.map(p => p.id));
+      // First try to delete related data
+      const { data: phaseIds } = await supabase
+        .from('project_phases')
+        .select('id')
+        .eq('project_id', revisionId);
+      
+      if (phaseIds && phaseIds.length > 0) {
+        const { data: operations } = await supabase
+          .from('phase_operations')
+          .select('id')
+          .in('phase_id', phaseIds.map(p => p.id));
+        
+        if (operations && operations.length > 0) {
+          const operationIds = operations.map(op => op.id);
+          await supabase.from('operation_steps').delete().in('operation_id', operationIds);
         }
+        
+        // Delete phase_operations
+        await supabase
+          .from('phase_operations')
+          .delete()
+          .in('phase_id', phaseIds.map(p => p.id));
       }
 
       // Now delete the project
