@@ -424,7 +424,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         // Get steps for each operation
         const operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
           const { data: steps } = await supabase
-            .from('template_steps')
+            .from('operation_steps')
             .select(`
               id,
               step_title,
@@ -591,7 +591,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           // Get steps for each operation from source
           operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
             const { data: steps } = await supabase
-              .from('template_steps')
+              .from('operation_steps')
               .select(`
                 id,
                 step_title,
@@ -651,7 +651,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           // Get steps for each operation
           operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
             const { data: steps } = await supabase
-              .from('template_steps')
+              .from('operation_steps')
               .select(`
                 id,
                 step_title,
@@ -667,9 +667,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               name: op.operation_name,
               description: op.operation_description,
               flowType: op.flow_type,
-              userPrompt: op.user_prompt,
               displayOrder: op.display_order,
-              isStandard: op.is_reference || phaseData.is_standard,
+              isStandard: phaseData.is_standard,
               steps: (steps || [])
                 .map((s: any) => ({
                   id: s.id,
@@ -868,7 +867,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                     for (const { step, correctOrder } of stepsToFix) {
                       if ((step as any).displayOrder !== correctOrder) {
                         await supabase
-                          .from('template_steps')
+                          .from('operation_steps')
                           .update({ display_order: correctOrder })
                           .eq('id', step.id);
                         fixCount++;
@@ -1487,7 +1486,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         // Ensure we use step_title (the actual database field)
         const stepTitle = editingItem.data.step_title || editingItem.data.step || '';
         const { error } = await supabase
-          .from('template_steps')
+          .from('operation_steps')
           .update({
             step_title: stepTitle,
             description: editingItem.data.description || null,
@@ -1571,7 +1570,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     try {
       // Delete all steps for this operation first
       const { error: deleteStepsError } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .delete()
         .eq('operation_id', operationId);
       
@@ -1790,7 +1789,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     try {
       // Get current display_order values
       const { data: steps } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .select('id, display_order')
         .in('id', [step.id, prevStep.id]);
       
@@ -1803,12 +1802,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Swap display_order
       await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .update({ display_order: s2.display_order })
         .eq('id', step.id);
       
       await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .update({ display_order: s1.display_order })
         .eq('id', prevStep.id);
       
@@ -1883,7 +1882,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     try {
       // Get current display_order values
       const { data: steps } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .select('id, display_order')
         .in('id', [step.id, nextStep.id]);
       
@@ -1896,12 +1895,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Swap display_order
       await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .update({ display_order: s2.display_order })
         .eq('id', step.id);
       
       await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .update({ display_order: s1.display_order })
         .eq('id', nextStep.id);
       
@@ -1975,7 +1974,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     try {
       // Delete the step
       const { error: deleteError } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .delete()
         .eq('id', stepId);
       
@@ -2083,7 +2082,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Automatically create one step for the new operation
       const { data: existingSteps } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .select('step_title')
         .eq('operation_id', newOperation.id);
       
@@ -2096,7 +2095,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       const { error: stepInsertError } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .insert({
           operation_id: newOperation.id,
           step_title: stepName,
@@ -2163,7 +2162,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     try {
       // Get ALL existing steps to renumber them sequentially
       const { data: existingSteps } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .select('id, step_title, display_order')
         .eq('operation_id', operationId)
         .order('display_order', { ascending: true });
@@ -2175,7 +2174,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           const correctOrder = i + 1;
           if (step.display_order !== correctOrder) {
             await supabase
-              .from('template_steps')
+              .from('operation_steps')
               .update({ display_order: correctOrder })
               .eq('id', step.id);
           }
@@ -2195,7 +2194,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Insert new step with all required fields
       const { data: newStep, error: insertError } = await supabase
-        .from('template_steps')
+        .from('operation_steps')
         .insert({
           operation_id: operationId,
           step_title: stepName,
