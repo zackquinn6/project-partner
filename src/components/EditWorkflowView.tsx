@@ -158,7 +158,8 @@ export default function EditWorkflowView({
               time_estimate_med,
               time_estimate_high,
               number_of_workers,
-              skill_level
+              skill_level,
+              allow_content_edit
             `)
             .eq('operation_id', op.id)
             .order('display_order', { ascending: true });
@@ -228,27 +229,58 @@ export default function EditWorkflowView({
       // 1. Get custom phases from current project
       // 2. Get standard phases from Standard Project Foundation
       
-      // Get custom phases (including incorporated phases)
-      const { data: customPhasesData, error: customError } = await supabase
+      // Get ALL phases for this project (both custom and standard phases that belong to this project)
+      // Don't filter by is_standard - get all phases and let the code determine which are custom
+      const { data: allPhasesData, error: allPhasesError } = await supabase
         .from('project_phases')
         .select(`
           id,
           name,
           description,
           is_standard,
+          is_linked,
           position_rule,
           position_value,
           source_project_id,
           source_project_name
         `)
         .eq('project_id', projectId)
-        .eq('is_standard', false)
         .order('position_rule', { ascending: true })
         .order('position_value', { ascending: true, nullsFirst: false });
       
+      // Filter to get custom phases: phases that belong to this project and are NOT standard phases from Standard Project Foundation
+      // Custom phases are those where:
+      // 1. is_standard = false (explicitly marked as custom)
+      // 2. is_standard is null/undefined (treat as custom by default)
+      // 3. is_linked = true but source_project_id is NOT the standard project (incorporated from another project)
+      // We exclude phases where is_standard = true AND source_project_id = standardProjectId (these are standard phases we'll load separately)
+      const customPhasesData = (allPhasesData || []).filter((phase: any) => {
+        // If explicitly marked as standard AND linked from standard project, exclude it (we'll load it from standard project)
+        if (phase.is_standard === true && phase.is_linked === true && phase.source_project_id === standardProjectId) {
+          return false;
+        }
+        // All other phases belong to this project and should be shown
+        return true;
+      });
+      
+      const customError = allPhasesError;
+      
       if (customError) {
-        throw new Error(`Failed to load custom phases: ${customError.message}`);
+        throw new Error(`Failed to load phases: ${customError.message}`);
       }
+      
+      console.log('📊 Loaded phases for project:', {
+        totalPhases: allPhasesData?.length || 0,
+        customPhases: customPhasesData.length,
+        filteredOut: (allPhasesData || []).length - customPhasesData.length,
+        details: allPhasesData?.map((p: any) => ({
+          name: p.name,
+          is_standard: p.is_standard,
+          is_linked: p.is_linked,
+          source_project_id: p.source_project_id,
+          included: customPhasesData.some((cp: any) => cp.id === p.id)
+        }))
+      });
       
       // Get standard phases from Standard Project Foundation
       // Find the standard project ID first
@@ -312,7 +344,8 @@ export default function EditWorkflowView({
                 display_order,
                 materials,
                 tools,
-                outputs
+                outputs,
+                allow_content_edit
               `)
               .eq('operation_id', op.id)
               .order('display_order');
@@ -425,7 +458,8 @@ export default function EditWorkflowView({
                     }
                   },
                   workersNeeded: s.number_of_workers || 1,
-                  skillLevel: s.skill_level
+                  skillLevel: s.skill_level,
+                  allowContentEdit: s.allow_content_edit || false
                 };
               })
             };
@@ -466,11 +500,12 @@ export default function EditWorkflowView({
                 materials,
                 tools,
                 outputs,
-                time_estimate_low,
-                time_estimate_med,
-                time_estimate_high,
-                number_of_workers,
-                skill_level
+              time_estimate_low,
+              time_estimate_med,
+              time_estimate_high,
+              number_of_workers,
+              skill_level,
+              allow_content_edit
               `)
               .eq('operation_id', op.id)
               .order('display_order');
@@ -649,7 +684,8 @@ export default function EditWorkflowView({
               time_estimate_med,
               time_estimate_high,
               number_of_workers,
-              skill_level
+              skill_level,
+              allow_content_edit
             `)
             .eq('operation_id', op.id)
             .order('display_order');
@@ -762,7 +798,8 @@ export default function EditWorkflowView({
                     }
                   },
                   workersNeeded: s.number_of_workers || 1,
-                  skillLevel: s.skill_level
+                  skillLevel: s.skill_level,
+                  allowContentEdit: s.allow_content_edit || false
                 };
               })
               .sort((a, b) => {
@@ -990,13 +1027,20 @@ export default function EditWorkflowView({
     // 1. Marked as standard (isStandard === true), OR
     // 2. Incorporated from another project (isLinked === true)
     // 
+    // EXCEPTION: If step has allowContentEdit=true, allow content editing even in standard phases
+    // This allows project-specific content customization for specific steps (e.g., "Measure & Assess")
+    // 
     // NOTE: We check phase.isStandard, not step.isStandard, because the phase-level flag
     // is the source of truth for whether content is editable.
     // The database should be the single source of truth - no hardcoded phase names.
     
     const isStandardPhase = phase.isStandard === true;
     const isLinkedPhase = phase.isLinked === true;
-    const shouldBlock = isStandardPhase || isLinkedPhase;
+    const allowContentEdit = step.allowContentEdit === true;
+    
+    // Allow editing if step has allowContentEdit flag, even in standard phases
+    // This allows content customization while maintaining step structure
+    const shouldBlock = (isStandardPhase || isLinkedPhase) && !allowContentEdit;
     
     // Debug logging for troubleshooting
     console.log(`🔍 Edit Step Check for "${step.step}" in phase "${phaseName}":`, {
@@ -1312,8 +1356,8 @@ export default function EditWorkflowView({
     }
   };
   const handleStartEdit = () => {
-    // Check if this step is standard
-    if (!isEditingStandardProject && currentStep?.isStandard) {
+    // Check if this step is standard (unless allowContentEdit is true)
+    if (!isEditingStandardProject && currentStep?.isStandard && !currentStep?.allowContentEdit) {
       toast('Cannot edit standard steps. Only custom steps can be edited in this project.');
       return;
     }
@@ -1484,13 +1528,30 @@ export default function EditWorkflowView({
       // Find the phase and operation to determine if this step should be saved to database
       const currentPhase = displayPhases.find(p => p.operations.some(op => op.steps.some(s => s.id === editingStep.id)));
       const isCustomStep = currentPhase && !currentPhase.isStandard && !currentPhase.isLinked;
+      const isEditableStandardStep = editingStep.allowContentEdit === true;
       
-      if (isCustomStep) {
-        console.log('  📝 This is a custom step, saving to operation_steps');
+      if (isCustomStep || isEditableStandardStep) {
+        if (isEditableStandardStep) {
+          console.log('  📝 This is an editable standard step (allowContentEdit=true), saving content to operation_steps');
+        } else {
+          console.log('  📝 This is a custom step, saving to operation_steps');
+        }
         try {
           const appsToSave = Array.isArray(editingStep.apps) ? editingStep.apps : (editingStep.apps ? [editingStep.apps] : []);
           
-          const updateData: any = {
+          // For editable standard steps, only update content fields, not structural fields
+          const updateData: any = isEditableStandardStep ? {
+            // Content fields only - structure remains locked
+            description: editingStep.description,
+            content_type: editingStep.contentType || 'text',
+            content: editingStep.content || '',
+            materials: editingStep.materials || [] as any,
+            tools: editingStep.tools || [] as any,
+            outputs: editingStep.outputs || [] as any,
+            apps: appsToSave,
+            updated_at: new Date().toISOString()
+          } : {
+            // For custom steps, allow all fields to be updated
             step_title: editingStep.step,
             display_order: (editingStep as any).display_order || 0,
             description: editingStep.description,
@@ -1866,12 +1927,28 @@ export default function EditWorkflowView({
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="step-title" className="text-base font-medium">Step Title</Label>
-                        <Input id="step-title" value={editingStep.step} onChange={e => updateEditingStep('step', e.target.value)} className="text-2xl font-bold mt-2" placeholder="Step title..." />
+                        {editingStep.allowContentEdit ? (
+                          <div className="mt-2">
+                            <Input 
+                              id="step-title" 
+                              value={editingStep.step} 
+                              disabled 
+                              className="text-2xl font-bold bg-muted cursor-not-allowed" 
+                              placeholder="Step title..." 
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Step structure is locked. Only content can be edited for this step.
+                            </p>
+                          </div>
+                        ) : (
+                          <Input id="step-title" value={editingStep.step} onChange={e => updateEditingStep('step', e.target.value)} className="text-2xl font-bold mt-2" placeholder="Step title..." />
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="step-description" className="text-base font-medium">Description</Label>
                         <Textarea id="step-description" value={editingStep.description || ''} onChange={e => updateEditingStep('description', e.target.value)} placeholder="Step description..." className="mt-2" rows={3} />
                       </div>
+                      {!editingStep.allowContentEdit && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-sm text-muted-foreground">Flow Type</Label>
@@ -1902,6 +1979,15 @@ export default function EditWorkflowView({
                           )}
                         </div>
                       </div>
+                      )}
+                      {editingStep.allowContentEdit && (
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Flow Type</Label>
+                        <div className="p-2 bg-muted rounded-md text-sm text-muted-foreground">
+                          Flow type is part of the step structure and cannot be modified.
+                        </div>
+                      </div>
+                      )}
                     </div>
                   </CardHeader>
                 </Card>
@@ -2014,6 +2100,7 @@ export default function EditWorkflowView({
                 </div>
 
                 {/* Time Estimation */}
+                {!editingStep.allowContentEdit && (
                 <Card className="bg-muted/30 border shadow-sm">
                   <CardHeader>
                     <CardTitle>Time Estimation & Step Type</CardTitle>
@@ -2035,6 +2122,20 @@ export default function EditWorkflowView({
                 />
                   </CardContent>
                 </Card>
+                )}
+                {editingStep.allowContentEdit && (
+                <Card className="bg-muted/30 border shadow-sm opacity-60">
+                  <CardHeader>
+                    <CardTitle>Time Estimation & Step Type</CardTitle>
+                    <CardDescription className="text-muted-foreground">Step structure is locked. Only content can be edited for this step.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-muted rounded-md text-sm text-muted-foreground">
+                      Time estimation and step type are part of the step structure and cannot be modified.
+                    </div>
+                  </CardContent>
+                </Card>
+                )}
 
                 {/* Navigation */}
                 <div className="flex justify-between">
@@ -2107,10 +2208,10 @@ export default function EditWorkflowView({
                       </>
                     </div>
                     <div className="flex gap-2">
-                      {!isStepFromStandardOrIncorporatedPhase(currentStep) && (
+                      {(!isStepFromStandardOrIncorporatedPhase(currentStep) || currentStep?.allowContentEdit) && (
                         <Button onClick={handleStartEdit} variant="outline" size="sm">
                           <Edit className="w-4 h-4 mr-2" />
-                          Edit Step
+                          {currentStep?.allowContentEdit ? 'Edit Content' : 'Edit Step'}
                         </Button>
                       )}
                     </div>

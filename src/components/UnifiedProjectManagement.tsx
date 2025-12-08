@@ -1919,6 +1919,45 @@ export function UnifiedProjectManagement({
                            {projectTimeEstimate && (() => {
                              const timeEstimate = projectTimeEstimate;
                              const scalingUnitDisplay = formatScalingUnit(selectedProject.scaling_unit);
+                             const typicalSize = selectedProject.typical_project_size;
+                             
+                             // Helper function to format time
+                             const formatTime = (hours: number): string => {
+                               if (hours < 1) {
+                                 const minutes = Math.round(hours * 60);
+                                 return `${minutes}min`;
+                               } else if (hours < 24) {
+                                 const h = Math.floor(hours);
+                                 const m = Math.round((hours - h) * 60);
+                                 return m > 0 ? `${h}h ${m}m` : `${h}h`;
+                               } else {
+                                 const days = Math.floor(hours / 24);
+                                 const remainingHours = Math.round(hours % 24);
+                                 return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+                               }
+                             };
+                             
+                             // Helper function to format time per unit
+                             const formatTimePerUnit = (hours: number): string => {
+                               if (hours < 1/60) {
+                                 const seconds = Math.round(hours * 3600);
+                                 return `${seconds}sec`;
+                               } else if (hours < 1) {
+                                 const minutes = Math.round(hours * 60);
+                                 return `${minutes}min`;
+                               } else {
+                                 const h = Math.floor(hours);
+                                 const m = Math.round((hours - h) * 60);
+                                 return m > 0 ? `${h}h ${m}m` : `${h}h`;
+                               }
+                             };
+                             
+                             // Calculate total time for typical project size (only if typical size is set)
+                             const totalTimeForTypicalSize = typicalSize && typicalSize > 0 ? {
+                               low: (timeEstimate.scaledTimePerUnit.low * typicalSize) + timeEstimate.fixedTime.low,
+                               medium: (timeEstimate.scaledTimePerUnit.medium * typicalSize) + timeEstimate.fixedTime.medium,
+                               high: (timeEstimate.scaledTimePerUnit.high * typicalSize) + timeEstimate.fixedTime.high
+                             } : null;
                              
                              return (
                                <div className="space-y-3">
@@ -1926,46 +1965,83 @@ export function UnifiedProjectManagement({
                                  
                                  {/* Main Project Time Estimates */}
                                  <div className="p-3 border rounded-md bg-background">
-                                   <div className="space-y-2">
+                                   <div className="space-y-3">
                                      <div className="text-xs font-medium text-muted-foreground">Main Project</div>
                                      
-                                     {/* Fixed Time */}
-                                     {(timeEstimate.fixedTime.low > 0 || timeEstimate.fixedTime.medium > 0 || timeEstimate.fixedTime.high > 0) && (
+                                     {/* Total Time per Scaling Unit + Fixed Time */}
+                                     {((timeEstimate.scaledTimePerUnit.low > 0 || timeEstimate.scaledTimePerUnit.medium > 0 || timeEstimate.scaledTimePerUnit.high > 0) || 
+                                       (timeEstimate.fixedTime.low > 0 || timeEstimate.fixedTime.medium > 0 || timeEstimate.fixedTime.high > 0)) && (
                                        <div className="space-y-1">
-                                         <Label className="text-xs">Fixed Time (hours)</Label>
+                                         <Label className="text-xs">Total Time per {scalingUnitDisplay} + Fixed Time</Label>
                                          <div className="grid grid-cols-3 gap-2 text-xs">
                                            <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
                                              <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
-                                             <div className="text-green-900 dark:text-green-100 font-semibold">{timeEstimate.fixedTime.low.toFixed(1)}</div>
+                                             <div className="text-green-900 dark:text-green-100 font-semibold text-[10px] leading-tight">
+                                               {timeEstimate.scaledTimePerUnit.low > 0 && (
+                                                 <div>{formatTimePerUnit(timeEstimate.scaledTimePerUnit.low)} per {scalingUnitDisplay}</div>
+                                               )}
+                                               {timeEstimate.fixedTime.low > 0 && (
+                                                 <div className={timeEstimate.scaledTimePerUnit.low > 0 ? 'mt-1' : ''}>
+                                                   {timeEstimate.scaledTimePerUnit.low > 0 ? '+' : ''} {formatTime(timeEstimate.fixedTime.low)}
+                                                 </div>
+                                               )}
+                                               {timeEstimate.scaledTimePerUnit.low === 0 && timeEstimate.fixedTime.low === 0 && '0'}
+                                             </div>
                                            </div>
                                            <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
                                              <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
-                                             <div className="text-blue-900 dark:text-blue-100 font-semibold">{timeEstimate.fixedTime.medium.toFixed(1)}</div>
+                                             <div className="text-blue-900 dark:text-blue-100 font-semibold text-[10px] leading-tight">
+                                               {timeEstimate.scaledTimePerUnit.medium > 0 && (
+                                                 <div>{formatTimePerUnit(timeEstimate.scaledTimePerUnit.medium)} per {scalingUnitDisplay}</div>
+                                               )}
+                                               {timeEstimate.fixedTime.medium > 0 && (
+                                                 <div className={timeEstimate.scaledTimePerUnit.medium > 0 ? 'mt-1' : ''}>
+                                                   {timeEstimate.scaledTimePerUnit.medium > 0 ? '+' : ''} {formatTime(timeEstimate.fixedTime.medium)}
+                                                 </div>
+                                               )}
+                                               {timeEstimate.scaledTimePerUnit.medium === 0 && timeEstimate.fixedTime.medium === 0 && '0'}
+                                             </div>
                                            </div>
                                            <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
                                              <div className="text-red-700 dark:text-red-300 font-medium">High</div>
-                                             <div className="text-red-900 dark:text-red-100 font-semibold">{timeEstimate.fixedTime.high.toFixed(1)}</div>
+                                             <div className="text-red-900 dark:text-red-100 font-semibold text-[10px] leading-tight">
+                                               {timeEstimate.scaledTimePerUnit.high > 0 && (
+                                                 <div>{formatTimePerUnit(timeEstimate.scaledTimePerUnit.high)} per {scalingUnitDisplay}</div>
+                                               )}
+                                               {timeEstimate.fixedTime.high > 0 && (
+                                                 <div className={timeEstimate.scaledTimePerUnit.high > 0 ? 'mt-1' : ''}>
+                                                   {timeEstimate.scaledTimePerUnit.high > 0 ? '+' : ''} {formatTime(timeEstimate.fixedTime.high)}
+                                                 </div>
+                                               )}
+                                               {timeEstimate.scaledTimePerUnit.high === 0 && timeEstimate.fixedTime.high === 0 && '0'}
+                                             </div>
                                            </div>
                                          </div>
                                        </div>
                                      )}
                                      
-                                     {/* Scaled Time Per Unit */}
-                                     {(timeEstimate.scaledTimePerUnit.low > 0 || timeEstimate.scaledTimePerUnit.medium > 0 || timeEstimate.scaledTimePerUnit.high > 0) && (
+                                     {/* Total Time for Typical Project Size */}
+                                     {totalTimeForTypicalSize && typicalSize && typicalSize > 0 && (
                                        <div className="space-y-1">
-                                         <Label className="text-xs">Time per {scalingUnitDisplay} (hours)</Label>
+                                         <Label className="text-xs">Total Time for Typical Project Size ({typicalSize} {scalingUnitDisplay})</Label>
                                          <div className="grid grid-cols-3 gap-2 text-xs">
                                            <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
                                              <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
-                                             <div className="text-green-900 dark:text-green-100 font-semibold">{timeEstimate.scaledTimePerUnit.low.toFixed(2)}</div>
+                                             <div className="text-green-900 dark:text-green-100 font-semibold">
+                                               {formatTime(totalTimeForTypicalSize.low)}
+                                             </div>
                                            </div>
                                            <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
                                              <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
-                                             <div className="text-blue-900 dark:text-blue-100 font-semibold">{timeEstimate.scaledTimePerUnit.medium.toFixed(2)}</div>
+                                             <div className="text-blue-900 dark:text-blue-100 font-semibold">
+                                               {formatTime(totalTimeForTypicalSize.medium)}
+                                             </div>
                                            </div>
                                            <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
                                              <div className="text-red-700 dark:text-red-300 font-medium">High</div>
-                                             <div className="text-red-900 dark:text-red-100 font-semibold">{timeEstimate.scaledTimePerUnit.high.toFixed(2)}</div>
+                                             <div className="text-red-900 dark:text-red-100 font-semibold">
+                                               {formatTime(totalTimeForTypicalSize.high)}
+                                             </div>
                                            </div>
                                          </div>
                                        </div>

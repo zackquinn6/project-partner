@@ -335,40 +335,40 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
           </CardContent>
           
           <CollapsibleContent>
-            <CardContent className="pt-0 pb-4 px-4">
+            <CardContent className="pt-0 pb-2 px-4">
               <div className="space-y-4 pt-3 border-t">
                 {/* Advanced Action Buttons */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex gap-1.5">
                   {onAssignWork && (
                     <Button
-                      variant="default"
+                      variant="outline"
                       size="sm"
                       onClick={onAssignWork}
-                      className="h-9 text-xs bg-blue-600 hover:bg-blue-700"
+                      className="h-7 px-2 text-xs bg-blue-50/50 hover:bg-blue-100/70 text-blue-700 border-blue-200/50"
                     >
-                      <Users className="w-3.5 h-3.5 mr-1.5" />
+                      <Users className="w-3 h-3 mr-1" />
                       Assign Work
                     </Button>
                   )}
                   {onOpenRiskManager && (
                     <Button
-                      variant="default"
+                      variant="outline"
                       size="sm"
                       onClick={onOpenRiskManager}
-                      className="h-9 text-xs bg-orange-600 hover:bg-orange-700"
+                      className="h-7 px-2 text-xs bg-orange-50/50 hover:bg-orange-100/70 text-orange-700 border-orange-200/50"
                     >
-                      <Shield className="w-3.5 h-3.5 mr-1.5" />
+                      <Shield className="w-3 h-3 mr-1" />
                       Risk Manager
                     </Button>
                   )}
                   {onOpenSensitivity && (
                     <Button
-                      variant="default"
+                      variant="outline"
                       size="sm"
                       onClick={onOpenSensitivity}
-                      className="h-9 text-xs bg-purple-600 hover:bg-purple-700 col-span-2"
+                      className="h-7 px-2 text-xs bg-purple-50/50 hover:bg-purple-100/70 text-purple-700 border-purple-200/50"
                     >
-                      <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
+                      <TrendingUp className="w-3 h-3 mr-1" />
                       Schedule Sensitivity
                     </Button>
                   )}

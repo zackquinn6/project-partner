@@ -4,7 +4,6 @@ import { ScheduledTask, Task, Worker } from '@/interfaces/Scheduling';
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
 
 interface ScheduleCalendarViewProps {
@@ -57,11 +56,32 @@ export function ScheduleCalendarView({
     setCurrentMonth(addMonths(currentMonth, 1));
   };
 
+  // Calculate target completion date and latest date from scheduled tasks
+  const getTargetAndLatestDates = () => {
+    if (scheduledTasks.length === 0) {
+      return { targetCompletionDate: null, latestDate: null };
+    }
+    
+    // Find the latest task's target and latest completion dates
+    const latestTask = scheduledTasks.reduce((latest, task) => {
+      const taskTargetDate = new Date(task.targetCompletionDate);
+      const latestTargetDate = new Date(latest.targetCompletionDate);
+      return taskTargetDate > latestTargetDate ? task : latest;
+    });
+    
+    return {
+      targetCompletionDate: new Date(latestTask.targetCompletionDate),
+      latestDate: new Date(latestTask.latestCompletionDate)
+    };
+  };
+
+  const { targetCompletionDate, latestDate } = getTargetAndLatestDates();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] overflow-y-auto [&>button]:hidden">
+      <DialogContent className="w-full max-w-full h-[90vh] max-h-[90vh] overflow-y-auto [&>button]:hidden m-0 p-6">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <DialogTitle className="flex items-center gap-2">
               Project Schedule Calendar
             </DialogTitle>
@@ -80,6 +100,24 @@ export function ScheduleCalendarView({
               </Button>
             </div>
           </div>
+          
+          {/* Target completion date and Latest date */}
+          {(targetCompletionDate || latestDate) && (
+            <div className="flex items-center gap-6 text-sm mb-4 pb-4 border-b">
+              {targetCompletionDate && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-muted-foreground">Target completion date:</span>
+                  <span className="font-semibold">{format(targetCompletionDate, 'MMM dd, yyyy')}</span>
+                </div>
+              )}
+              {latestDate && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-muted-foreground">Latest date:</span>
+                  <span className="font-semibold">{format(latestDate, 'MMM dd, yyyy')}</span>
+                </div>
+              )}
+            </div>
+          )}
         </DialogHeader>
 
         <div className="grid grid-cols-7 gap-1 mt-4">
@@ -127,12 +165,6 @@ export function ScheduleCalendarView({
                         <div className="text-muted-foreground truncate">
                           {workerName}
                         </div>
-                        <Badge 
-                          variant={scheduledTask.status === 'confirmed' ? 'default' : 'outline'} 
-                          className="text-[8px] px-1 py-0 mt-0.5"
-                        >
-                          {scheduledTask.status}
-                        </Badge>
                       </div>
                     );
                   })}

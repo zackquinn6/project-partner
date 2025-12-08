@@ -720,12 +720,17 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       console.log('✅ ProjectActions: Updated currentProjectRun with initial_budget:', (updatedProjectRun as any).initial_budget);
     }
 
-    // CRITICAL: For budget_data, issue_reports, and time_tracking updates, save immediately
+    // CRITICAL: For budget_data, issue_reports, time_tracking, and kickoff completion updates, save immediately
     // These are user-initiated changes that must be persisted right away
     const isBudgetDataUpdate = projectRun.budget_data !== undefined;
     const isIssueReportsUpdate = projectRun.issue_reports !== undefined;
     const isTimeTrackingUpdate = projectRun.time_tracking !== undefined;
-    const requiresImmediateSave = isBudgetDataUpdate || isIssueReportsUpdate || isTimeTrackingUpdate;
+    // Check if this is a kickoff completion update (status changing to 'in-progress' with kickoff steps completed)
+    const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
+    const hasAllKickoffSteps = kickoffStepIds.every(id => projectRun.completedSteps.includes(id));
+    const isKickoffCompletion = projectRun.status === 'in-progress' && hasAllKickoffSteps && 
+                                 (currentProjectRun?.status !== 'in-progress' || !kickoffStepIds.every(id => (currentProjectRun?.completedSteps || []).includes(id)));
+    const requiresImmediateSave = isBudgetDataUpdate || isIssueReportsUpdate || isTimeTrackingUpdate || isKickoffCompletion;
     
     // For immediate saves (budget, issues, time tracking), execute right away
     // For other updates, debounce to avoid excessive database writes
@@ -773,11 +778,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           progress: safeProgress || 0,
           phases: JSON.stringify(projectRun.phases),
           category: Array.isArray(projectRun.category) ? projectRun.category.join(', ') : projectRun.category,
-          effort_level: projectRun.effortLevel,
-          skill_level: projectRun.skillLevel,
           estimated_time: projectRun.estimatedTime,
           customization_decisions: projectRun.customization_decisions ? JSON.stringify(projectRun.customization_decisions) : null,
-          instruction_level_preference: projectRun.instruction_level_preference || 'intermediate',
           budget_data: projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : null,
           issue_reports: projectRun.issue_reports ? JSON.stringify(projectRun.issue_reports) : null,
           time_tracking: projectRun.time_tracking ? JSON.stringify(projectRun.time_tracking) : null,
@@ -789,7 +791,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           initial_budget: (projectRun as any).initial_budget || null,
           initial_timeline: (projectRun as any).initial_timeline || null,
           initial_sizing: (projectRun as any).initial_sizing || null,
-          schedule_optimization_method: projectRun.schedule_optimization_method || 'single-piece-flow',
           updated_at: new Date().toISOString()
         };
 

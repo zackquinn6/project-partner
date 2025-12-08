@@ -166,6 +166,8 @@ export interface WorkflowStep {
   skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'; // Skill level required for this step
   // Standard content flag - marks steps from Standard Project Foundation
   isStandard?: boolean;
+  // Allow content editing flag - if true, allows editing content even in standard phases
+  allowContentEdit?: boolean;
 }
 
 export interface Operation {

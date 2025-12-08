@@ -71,6 +71,14 @@ function calculateOperationTimeEstimate(operation: { steps: WorkflowStep[] }): {
   fixedTime: { low: number; medium: number; high: number };
   timePerUnit: { low: number; medium: number; high: number };
 } {
+  // Safety check: ensure steps array exists
+  if (!operation.steps || operation.steps.length === 0) {
+    return {
+      fixedTime: { low: 0, medium: 0, high: 0 },
+      timePerUnit: { low: 0, medium: 0, high: 0 }
+    };
+  }
+
   return operation.steps.reduce(
     (total, step) => {
       const stepEstimate = calculateStepTimeEstimate(step);
@@ -101,8 +109,20 @@ function calculatePhaseTimeEstimate(phase: Phase): {
   fixedTime: { low: number; medium: number; high: number };
   timePerUnit: { low: number; medium: number; high: number };
 } {
+  // Safety check: ensure operations array exists
+  if (!phase.operations || phase.operations.length === 0) {
+    return {
+      fixedTime: { low: 0, medium: 0, high: 0 },
+      timePerUnit: { low: 0, medium: 0, high: 0 }
+    };
+  }
+
   return phase.operations.reduce(
     (total, operation) => {
+      // Safety check: ensure operation has steps
+      if (!operation.steps || operation.steps.length === 0) {
+        return total;
+      }
       const operationEstimate = calculateOperationTimeEstimate(operation);
       return {
         fixedTime: {
@@ -128,13 +148,15 @@ function calculatePhaseTimeEstimate(phase: Phase): {
  * Calculate total time estimates for a project, separating:
  * - Fixed time (from Prime and QC Non-Scaled steps)
  * - Scaled time per unit (from Scaled and QC Scaled steps)
- * - Incorporated phases (separated by phase)
+ * - Incorporated phases (separated by phase, excluding standard phases)
  */
 export function calculateProjectTimeEstimate(project: Project): TimeEstimateBreakdown {
-  const mainPhases = project.phases.filter(phase => !phase.isLinked);
-  const incorporatedPhases = project.phases.filter(phase => phase.isLinked);
+  // Main phases: non-linked phases OR standard phases (standard phases are always included in main project)
+  const mainPhases = project.phases.filter(phase => !phase.isLinked || phase.isStandard);
+  // Incorporated phases: linked phases that are NOT standard (standard phases should not appear separately)
+  const incorporatedPhases = project.phases.filter(phase => phase.isLinked && !phase.isStandard);
 
-  // Calculate main project time estimates
+  // Calculate main project time estimates (includes standard phases even if they're linked)
   const mainProjectEstimate = mainPhases.reduce(
     (total, phase) => {
       const phaseEstimate = calculatePhaseTimeEstimate(phase);
@@ -157,7 +179,7 @@ export function calculateProjectTimeEstimate(project: Project): TimeEstimateBrea
     }
   );
 
-  // Calculate incorporated phases separately
+  // Calculate incorporated phases separately (excluding standard phases)
   const incorporatedPhasesBreakdown = incorporatedPhases.map(phase => {
     const phaseEstimate = calculatePhaseTimeEstimate(phase);
     const scalingUnit = phase.sourceScalingUnit || project.scalingUnit || 'per item';

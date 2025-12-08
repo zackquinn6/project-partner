@@ -2379,7 +2379,49 @@ export default function UserView({
                 updatedAt: new Date()
               };
               
+              // CRITICAL: Wait for database update to complete (kickoff completion is marked as immediate save)
               await updateProjectRun(updatedRun);
+              
+              // CRITICAL: Small delay to ensure database write completes before refreshing
+              await new Promise(resolve => setTimeout(resolve, 100));
+              
+              // CRITICAL: Refresh project run from database to ensure we have the latest data
+              // This ensures isKickoffComplete check uses fresh data from the database
+              console.log("🔄 Refreshing project run from database after kickoff completion");
+              if (currentProjectRun?.id) {
+                const { data: refreshedRun, error: refreshError } = await supabase
+                  .from('project_runs')
+                  .select('*')
+                  .eq('id', currentProjectRun.id)
+                  .single();
+                
+                if (refreshError) {
+                  console.error('❌ Error refreshing project run:', refreshError);
+                } else if (refreshedRun) {
+                  // Transform and update currentProjectRun with fresh data
+                  const transformedRun = {
+                    ...refreshedRun,
+                    completedSteps: Array.isArray(refreshedRun.completed_steps) 
+                      ? refreshedRun.completed_steps 
+                      : (typeof refreshedRun.completed_steps === 'string' 
+                          ? JSON.parse(refreshedRun.completed_steps || '[]') 
+                          : []),
+                    phases: Array.isArray(refreshedRun.phases)
+                      ? refreshedRun.phases
+                      : (typeof refreshedRun.phases === 'string'
+                          ? JSON.parse(refreshedRun.phases || '[]')
+                          : []),
+                    startDate: new Date(refreshedRun.start_date),
+                    planEndDate: new Date(refreshedRun.plan_end_date),
+                    endDate: refreshedRun.end_date ? new Date(refreshedRun.end_date) : undefined,
+                    updatedAt: new Date(refreshedRun.updated_at)
+                  } as ProjectRun;
+                  
+                  setCurrentProjectRun(transformedRun);
+                  console.log("✅ Refreshed currentProjectRun from database with completedSteps:", transformedRun.completedSteps);
+                  console.log("✅ isKickoffComplete should now be:", isKickoffPhaseComplete(transformedRun.completedSteps));
+                }
+              }
               
               // CRITICAL: Update local state immediately after database update to ensure UI reflects changes
               // This ensures the completedSteps state is in sync with the database
@@ -2399,7 +2441,47 @@ export default function UserView({
                 updatedAt: new Date()
               };
               
+              // CRITICAL: Wait for database update to complete (kickoff completion is marked as immediate save)
               await updateProjectRun(updatedRun);
+              
+              // CRITICAL: Small delay to ensure database write completes before refreshing
+              await new Promise(resolve => setTimeout(resolve, 100));
+              
+              // CRITICAL: Refresh project run from database to ensure we have the latest data
+              console.log("🔄 Refreshing project run from database after kickoff completion");
+              if (currentProjectRun?.id) {
+                const { data: refreshedRun, error: refreshError } = await supabase
+                  .from('project_runs')
+                  .select('*')
+                  .eq('id', currentProjectRun.id)
+                  .single();
+                
+                if (refreshError) {
+                  console.error('❌ Error refreshing project run:', refreshError);
+                } else if (refreshedRun) {
+                  // Transform and update currentProjectRun with fresh data
+                  const transformedRun = {
+                    ...refreshedRun,
+                    completedSteps: Array.isArray(refreshedRun.completed_steps) 
+                      ? refreshedRun.completed_steps 
+                      : (typeof refreshedRun.completed_steps === 'string' 
+                          ? JSON.parse(refreshedRun.completed_steps || '[]') 
+                          : []),
+                    phases: Array.isArray(refreshedRun.phases)
+                      ? refreshedRun.phases
+                      : (typeof refreshedRun.phases === 'string'
+                          ? JSON.parse(refreshedRun.phases || '[]')
+                          : []),
+                    startDate: new Date(refreshedRun.start_date),
+                    planEndDate: new Date(refreshedRun.plan_end_date),
+                    endDate: refreshedRun.end_date ? new Date(refreshedRun.end_date) : undefined,
+                    updatedAt: new Date(refreshedRun.updated_at)
+                  } as ProjectRun;
+                  
+                  setCurrentProjectRun(transformedRun);
+                  console.log("✅ Refreshed currentProjectRun from database with completedSteps:", transformedRun.completedSteps);
+                }
+              }
               
               // CRITICAL: Update local state immediately after database update
               console.log("🔄 Refreshing completedSteps state after kickoff completion");
