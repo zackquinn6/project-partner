@@ -291,6 +291,15 @@ export default function UserView({
     };
     const handleOpenProjectCustomizer = (event?: any) => {
       const mode = event?.detail?.mode || 'replan';
+      const fromPlanningWizard = event?.detail?.fromPlanningWizard || false;
+      const onComplete = event?.detail?.onComplete;
+      
+      // Store the onComplete callback if opened from planning wizard
+      if (fromPlanningWizard && onComplete) {
+        // Store it in a ref or state to call when customizer closes
+        (window as any).__planningWizardCustomizerComplete = onComplete;
+      }
+      
       setProjectCustomizerMode(mode);
       setProjectCustomizerOpen(true);
     };
@@ -2223,7 +2232,8 @@ export default function UserView({
   
   // FOURTH: If project run exists and kickoff is not complete, show kickoff workflow
   // CRITICAL FIX: Don't show kickoff for cancelled projects
-  if (currentProjectRun && currentProjectRun.status !== 'cancelled' && !isKickoffComplete && viewMode === 'workflow') {
+  // CRITICAL: Don't show kickoff if planning wizard is open (prevents kickoff from reappearing)
+  if (currentProjectRun && currentProjectRun.status !== 'cancelled' && !isKickoffComplete && viewMode === 'workflow' && !projectPlanningWizardOpen) {
     // Fix missing kickoff steps if user has progressed past them
     const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
     const currentCompletedSteps = currentProjectRun.completedSteps || [];
@@ -3421,6 +3431,16 @@ export default function UserView({
           open={projectCustomizerOpen}
           onOpenChange={(open) => {
             setProjectCustomizerOpen(open);
+            
+            // If customizer was opened from planning wizard and is now closing, mark step as complete
+            if (!open && (window as any).__planningWizardCustomizerComplete) {
+              const onComplete = (window as any).__planningWizardCustomizerComplete;
+              delete (window as any).__planningWizardCustomizerComplete;
+              // Call the completion callback
+              if (typeof onComplete === 'function') {
+                onComplete();
+              }
+            }
             
             // When customizer closes, check if shopping is needed
             if (!open && currentProjectRun) {

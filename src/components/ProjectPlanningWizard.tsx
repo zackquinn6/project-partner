@@ -98,13 +98,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         {/* Close button */}
         <div className="absolute right-4 top-4 z-10">
           <Button
-            variant="outline"
-            size="sm"
+            variant="ghost"
+            size="icon"
             onClick={() => onOpenChange(false)}
-            className="h-8 px-3"
+            className="h-8 w-8 p-0"
           >
-            <X className="w-4 h-4 mr-1" />
-            Close
+            <X className="w-4 h-4" />
           </Button>
         </div>
 

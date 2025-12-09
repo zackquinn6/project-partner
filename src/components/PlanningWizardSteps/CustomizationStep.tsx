@@ -15,8 +15,11 @@ export const CustomizationStep: React.FC<CustomizationStepProps> = ({
 }) => {
   const handleOpenCustomizer = () => {
     // Dispatch event to open Project Customizer
-    window.dispatchEvent(new CustomEvent('open-project-customizer'));
-    onComplete();
+    // Don't call onComplete() here - let the customizer handle completion
+    // The planning wizard should stay open while customizer is open
+    window.dispatchEvent(new CustomEvent('open-project-customizer', {
+      detail: { fromPlanningWizard: true, onComplete }
+    }));
   };
 
   return (

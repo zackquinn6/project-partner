@@ -788,6 +788,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           schedule_events: projectRun.schedule_events ? JSON.stringify(projectRun.schedule_events) : null,
           shopping_checklist_data: projectRun.shopping_checklist_data ? JSON.stringify(projectRun.shopping_checklist_data) : null,
           progress_reporting_style: projectRun.progress_reporting_style || 'linear',
+          schedule_optimization_method: (projectRun as any).schedule_optimization_method || 'single-piece-flow',
+          instruction_level_preference: (projectRun as any).instruction_level_preference || null,
           initial_budget: (projectRun as any).initial_budget || null,
           initial_timeline: (projectRun as any).initial_timeline || null,
           initial_sizing: (projectRun as any).initial_sizing || null,
