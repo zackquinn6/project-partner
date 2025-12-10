@@ -400,12 +400,58 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         // Normalize timeline comparison: database returns ISO timestamp, form has date string
         const expectedTimeline = projectForm.initialTimeline || null;
         const actualTimeline = verificationData.initial_timeline;
-        // Extract date part from ISO timestamp if present
-        const normalizedActualTimeline = actualTimeline 
-          ? (actualTimeline.includes('T') ? actualTimeline.split('T')[0] : actualTimeline)
-          : null;
-        if (normalizedActualTimeline !== expectedTimeline) {
-          console.error('❌ initial_timeline mismatch:', { expected: expectedTimeline, actual: actualTimeline, normalized: normalizedActualTimeline });
+        
+        // Normalize both values for comparison
+        // Extract date part from ISO timestamp if present (handles '2025-12-24T00:00:00+00:00' -> '2025-12-24')
+        const normalizeDate = (dateValue: string | Date | null | undefined): string | null => {
+          if (!dateValue) return null;
+          
+          // Handle Date objects
+          if (dateValue instanceof Date) {
+            const year = dateValue.getFullYear();
+            const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+            const day = String(dateValue.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          }
+          
+          // Handle string values
+          const dateStr = typeof dateValue === 'string' ? dateValue : String(dateValue);
+          
+          // Handle ISO timestamp format: extract just the date part before 'T'
+          if (dateStr.includes('T')) {
+            return dateStr.split('T')[0].trim();
+          }
+          
+          // Handle date strings with timezone offset (e.g., '2025-12-24+00:00')
+          if (dateStr.includes('+') && !dateStr.includes('T')) {
+            return dateStr.split('+')[0].trim();
+          }
+          
+          // Already a date string, just trim it
+          return dateStr.trim();
+        };
+        
+        const normalizedExpected = normalizeDate(expectedTimeline);
+        const normalizedActual = normalizeDate(actualTimeline);
+        
+        // Compare normalized values
+        if (normalizedActual !== normalizedExpected) {
+          console.error('❌ initial_timeline mismatch:', { 
+            expected: expectedTimeline, 
+            actual: actualTimeline, 
+            normalizedExpected,
+            normalizedActual,
+            types: {
+              expectedType: typeof expectedTimeline,
+              actualType: typeof actualTimeline
+            }
+          });
+        } else {
+          console.log('✅ initial_timeline verified:', { 
+            expected: expectedTimeline, 
+            actual: actualTimeline, 
+            normalized: normalizedActual 
+          });
         }
         if (verificationData.initial_sizing !== finalSizingValue) {
           console.error('❌ initial_sizing mismatch:', { expected: finalSizingValue, actual: verificationData.initial_sizing });
