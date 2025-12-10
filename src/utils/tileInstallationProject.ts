@@ -1088,7 +1088,7 @@ export const createFallbackTileProject = (): Project => {
     effortLevel: 'Medium',
     skillLevel: 'Intermediate',
     estimatedTime: '2-4 days',
-    scalingUnit: 'per square foot',
+    scalingUnit: 'per square feet',
     estimatedTimePerUnit: 0.5,
     publishStatus: 'published' as const,
     phases: allPhases,

@@ -32,8 +32,10 @@ export const ProjectSizingQuestionnaire: React.FC<ProjectSizingQuestionnaireProp
 
   const getScalingUnitDisplay = () => {
     switch (scalingUnit) {
+      case 'per square feet':
       case 'per square foot': return 'Square Feet';
       case 'per 10x10 room': return 'Rooms (10x10)';
+      case 'per linear feet':
       case 'per linear foot': return 'Linear Feet';
       case 'per cubic yard': return 'Cubic Yards';
       case 'per item': return 'Items';

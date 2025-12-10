@@ -44,7 +44,7 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
   const templateProject = projectRun?.templateId 
     ? projects.find(p => p.id === projectRun.templateId)
     : null;
-  const projectScaleUnit = templateProject?.scalingUnit?.replace('per ', '') || 'square foot';
+  const projectScaleUnit = templateProject?.scalingUnit?.replace('per ', '') || projectRun?.scalingUnit?.replace('per ', '') || 'item';
   const currentProjectName = templateProject?.name || projectRun.name || 'Current Project';
 
   // Extract unique incorporated phases with their scaling units

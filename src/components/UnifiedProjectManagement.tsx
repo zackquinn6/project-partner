@@ -1803,9 +1803,9 @@ export function UnifiedProjectManagement({
                                   <SelectValue placeholder="Select scaling unit" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="per square foot">per square foot</SelectItem>
+                                  <SelectItem value="per square feet">per square feet</SelectItem>
                                   <SelectItem value="per 10x10 room">per 10x10 room</SelectItem>
-                                  <SelectItem value="per linear foot">per linear foot</SelectItem>
+                                  <SelectItem value="per linear feet">per linear feet</SelectItem>
                                   <SelectItem value="per cubic yard">per cubic yard</SelectItem>
                                   <SelectItem value="per item">per item</SelectItem>
                                 </SelectContent>
@@ -2777,9 +2777,9 @@ export function UnifiedProjectManagement({
                     <SelectValue placeholder="Select scaling unit" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="per square foot">per square foot</SelectItem>
+                    <SelectItem value="per square feet">per square feet</SelectItem>
                     <SelectItem value="per 10x10 room">per 10x10 room</SelectItem>
-                    <SelectItem value="per linear foot">per linear foot</SelectItem>
+                    <SelectItem value="per linear feet">per linear feet</SelectItem>
                     <SelectItem value="per cubic yard">per cubic yard</SelectItem>
                     <SelectItem value="per item">per item</SelectItem>
                   </SelectContent>

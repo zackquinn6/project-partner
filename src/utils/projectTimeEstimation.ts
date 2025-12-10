@@ -207,11 +207,13 @@ export function formatScalingUnit(unit?: string): string {
   if (!unit) return 'unit';
   
   switch (unit) {
-    case 'per square foot':
+    case 'per square feet':
+    case 'per square foot': // Backward compatibility
       return 'sq ft';
     case 'per 10x10 room':
       return 'room';
-    case 'per linear foot':
+    case 'per linear feet':
+    case 'per linear foot': // Backward compatibility
       return 'lin ft';
     case 'per cubic yard':
       return 'cu yd';

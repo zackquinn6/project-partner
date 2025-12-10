@@ -36,7 +36,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
   projectRunHomeId,
   selectedSpaces,
   onSpacesChange,
-  projectScaleUnit = 'square foot',
+  projectScaleUnit = 'item',
   currentProjectName = 'Current Project',
   phases = [],
   initialSizing

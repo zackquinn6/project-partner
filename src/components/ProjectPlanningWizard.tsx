@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, CheckCircle, X } from 'lucide-react';
 import { CustomizationStep } from './PlanningWizardSteps/CustomizationStep';
 import { ScheduleStep } from './PlanningWizardSteps/ScheduleStep';
+import { UncertaintyStep } from './PlanningWizardSteps/UncertaintyStep';
 import { BudgetStep } from './PlanningWizardSteps/BudgetStep';
 
 interface ProjectPlanningWizardProps {
@@ -35,6 +36,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     },
     {
       id: 'planning-step-3',
+      title: 'Project Uncertainty',
+      description: 'Plan for potential risks'
+    },
+    {
+      id: 'planning-step-4',
       title: 'Budget',
       description: 'Manage project finances'
     }
@@ -86,6 +92,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           }}
         />;
       case 2:
+        return <UncertaintyStep {...stepProps} />;
+      case 3:
         return <BudgetStep {...stepProps} />;
       default:
         return null;
@@ -124,7 +132,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                 </CardTitle>
                 <p className="text-base sm:text-lg font-semibold mt-2 text-foreground">Build your complete project plan</p>
                 <CardDescription className="text-xs sm:text-sm mt-1">
-                  Three steps to customize, schedule, and budget your project
+                  Four steps to customize, schedule, plan for uncertainty, and budget your project
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">

@@ -117,10 +117,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
   // Helper function to format scaling unit for display
   const getScalingUnitDisplay = () => {
-    // Standard scaling units
-    if (scalingUnit === 'per square foot') return 'sq ft';
+    // Standard scaling units (handle both old singular and new plural forms for backward compatibility)
+    if (scalingUnit === 'per square feet' || scalingUnit === 'per square foot') return 'sq ft';
     if (scalingUnit === 'per 10x10 room') return 'rooms';
-    if (scalingUnit === 'per linear foot') return 'linear ft';
+    if (scalingUnit === 'per linear feet' || scalingUnit === 'per linear foot') return 'linear ft';
     if (scalingUnit === 'per cubic yard') return 'cu yd';
     
     // For "per item", check if there's a custom item_type
@@ -854,7 +854,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
               projectRunHomeId={currentProjectRun.home_id}
               selectedSpaces={customizationState.spaces}
               onSpacesChange={handleSpacesChange}
-              projectScaleUnit={scalingUnit?.replace('per ', '') || 'square foot'}
+              projectScaleUnit={scalingUnit?.replace('per ', '') || 'item'}
               currentProjectName={templateProject?.name || currentProjectRun.name || 'Current Project'}
               phases={currentProjectRun.phases || []}
               initialSizing={currentProjectRun.initial_sizing}

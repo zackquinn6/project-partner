@@ -218,7 +218,7 @@ export interface Project {
   typicalProjectSize?: number; // Typical project size used for estimated total time (e.g., 100 for 100 sqft)
   projectType?: 'Primary' | 'Secondary';
   estimatedTimePerUnit?: number;
-  scalingUnit?: 'per square foot' | 'per 10x10 room' | 'per linear foot' | 'per cubic yard' | 'per item';
+  scalingUnit?: 'per square feet' | 'per 10x10 room' | 'per linear feet' | 'per cubic yard' | 'per item';
   phases: Phase[];
   // Revision tracking fields
   revisionNumber?: number;

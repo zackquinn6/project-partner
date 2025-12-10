@@ -328,9 +328,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                           <SelectValue placeholder="Select scaling unit" />
                         </SelectTrigger>
                         <SelectContent className="text-sm">
-                          <SelectItem className="text-sm" value="per square foot">per square foot</SelectItem>
+                          <SelectItem className="text-sm" value="per square feet">per square feet</SelectItem>
                           <SelectItem className="text-sm" value="per 10x10 room">per 10x10 room</SelectItem>
-                          <SelectItem className="text-sm" value="per linear foot">per linear foot</SelectItem>
+                          <SelectItem className="text-sm" value="per linear feet">per linear feet</SelectItem>
                           <SelectItem className="text-sm" value="per cubic yard">per cubic yard</SelectItem>
                           <SelectItem className="text-sm" value="per item">per item</SelectItem>
                         </SelectContent>

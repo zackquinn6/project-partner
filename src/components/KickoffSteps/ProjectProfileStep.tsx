@@ -549,9 +549,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       // Standard scaling units
                       const normalizedScalingUnit = scalingUnit?.toLowerCase().trim() || '';
                       
-                      if (normalizedScalingUnit === 'per square foot') return 'sq ft';
+                      if (normalizedScalingUnit === 'per square feet' || normalizedScalingUnit === 'per square foot') return 'sq ft';
                       if (normalizedScalingUnit === 'per 10x10 room') return 'rooms';
-                      if (normalizedScalingUnit === 'per linear foot') return 'linear ft';
+                      if (normalizedScalingUnit === 'per linear feet' || normalizedScalingUnit === 'per linear foot') return 'linear ft';
                       if (normalizedScalingUnit === 'per cubic yard') return 'cu yd';
                       
                       // For "per item", use item_type if available, otherwise use "per item"
