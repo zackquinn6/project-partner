@@ -578,7 +578,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             }
           }}
         >
-        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <DialogHeader className="px-4 md:px-6 py-2 md:py-3 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-lg md:text-xl font-bold">Project Budgeting</DialogTitle>
             <Button 
@@ -591,7 +591,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             </Button>
           </div>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
           {/* Budget Goal Header */}
           <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
             <div className="flex items-center justify-between">

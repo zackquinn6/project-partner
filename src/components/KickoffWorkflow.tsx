@@ -290,8 +290,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                 Project Kickoff{currentProjectRun?.name ? `: ${currentProjectRun.name}` : ''}
                 {allKickoffStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />}
               </CardTitle>
-              <p className="text-sm sm:text-base font-semibold mt-1 text-foreground">Plan your project in 15min or less</p>
-              <CardDescription className="text-xs mt-0.5">Three quick steps check that this project is a good fit - then personalizes the project to you</CardDescription>
+              <CardDescription className="text-xs mt-0.5">Overview the project and make sure this project is a good fit</CardDescription>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="text-right">
@@ -403,14 +402,20 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     onClick={async () => {
                       console.log('🎯 KickoffWorkflow: Step complete button clicked for step:', currentKickoffStep);
                       
-                      // For step 2 (ProjectProfileStep), call its save function first
+                      // For step 2 (ProjectProfileStep - step 3 in UI), call its save function first
+                      // CRITICAL: This MUST complete before marking the step as complete
+                      // The save function saves initial_budget, initial_timeline, and initial_sizing to the database
                       if (currentKickoffStep === 2 && (window as any).__projectProfileStepSave) {
-                        console.log('💾 KickoffWorkflow: Calling ProjectProfileStep save function...');
+                        console.log('💾 KickoffWorkflow: Calling ProjectProfileStep save function to save budget, sizing, and timeline...');
                         try {
+                          // CRITICAL: Wait for the save to complete - this saves all 3 fields to database
                           await (window as any).__projectProfileStepSave();
-                          console.log('✅ KickoffWorkflow: ProjectProfileStep save completed successfully');
+                          console.log('✅ KickoffWorkflow: ProjectProfileStep save completed - budget, sizing, and timeline saved to database');
                           
-                          // Mark step as complete
+                          // CRITICAL: Wait a brief moment to ensure database write is committed
+                          await new Promise(resolve => setTimeout(resolve, 100));
+                          
+                          // Now mark step as complete (this will preserve the saved values)
                           console.log('📝 KickoffWorkflow: Marking step as complete...');
                           await handleStepComplete(currentKickoffStep);
                           console.log('✅ KickoffWorkflow: Step marked complete');

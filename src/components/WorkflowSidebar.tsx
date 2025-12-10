@@ -158,8 +158,26 @@ export function WorkflowSidebar({
   };
   
   // Track which phases and operations are open
-  const [openPhases, setOpenPhases] = useState<Set<string>>(new Set());
-  const [openOperations, setOpenOperations] = useState<Set<string>>(new Set());
+  // Initialize with first phase open so steps are visible by default
+  const [openPhases, setOpenPhases] = useState<Set<string>>(() => {
+    if (groupedSteps && Object.keys(groupedSteps).length > 0) {
+      return new Set([Object.keys(groupedSteps)[0]]);
+    }
+    return new Set();
+  });
+  const [openOperations, setOpenOperations] = useState<Set<string>>(() => {
+    if (groupedSteps && Object.keys(groupedSteps).length > 0) {
+      const firstPhaseKey = Object.keys(groupedSteps)[0];
+      const firstPhaseValue = groupedSteps[firstPhaseKey];
+      if (firstPhaseValue && typeof firstPhaseValue === 'object' && !Array.isArray(firstPhaseValue)) {
+        const firstOperationKey = Object.keys(firstPhaseValue)[0];
+        if (firstOperationKey) {
+          return new Set([`${firstPhaseKey}-${firstOperationKey}`]);
+        }
+      }
+    }
+    return new Set();
+  });
   
   // Helper function to check if a value is a space container (nested structure)
   const isSpaceContainer = (value: any): boolean => {
@@ -230,18 +248,46 @@ export function WorkflowSidebar({
       const phaseKey = space ? `${space}-${phase}` : phase;
       const operationKey = space ? `${space}-${phase}-${operation}` : `${phase}-${operation}`;
       
-      // Close ALL phases except the current one
+      // Open the current phase and operation
       setOpenPhases(new Set([phaseKey]));
       
-      // Close ALL operations except the current one
-      // Only open the current operation - all others (including future ones) should be closed
+      // Open the current operation
       setOpenOperations(new Set([operationKey]));
     } else {
-      // If no current step found, close everything
-      setOpenPhases(new Set());
-      setOpenOperations(new Set());
+      // If no current step found, open the first phase by default so user can see steps
+      if (groupedSteps && Object.keys(groupedSteps).length > 0) {
+        const firstPhaseKey = Object.keys(groupedSteps)[0];
+        setOpenPhases(new Set([firstPhaseKey]));
+        // Also open the first operation of the first phase
+        const firstPhaseValue = groupedSteps[firstPhaseKey];
+        if (firstPhaseValue && typeof firstPhaseValue === 'object' && !Array.isArray(firstPhaseValue)) {
+          const firstOperationKey = Object.keys(firstPhaseValue)[0];
+          if (firstOperationKey) {
+            setOpenOperations(new Set([`${firstPhaseKey}-${firstOperationKey}`]));
+          }
+        }
+      } else {
+        setOpenPhases(new Set());
+        setOpenOperations(new Set());
+      }
     }
-  }, [currentStepPhaseAndOperation, currentStepIndex, currentStep?.id]); // Trigger on step change
+  }, [currentStepPhaseAndOperation, currentStepIndex, currentStep?.id, groupedSteps]); // Trigger on step change or groupedSteps change
+  
+  // Also ensure first phase is open when groupedSteps first becomes available
+  useEffect(() => {
+    if (groupedSteps && Object.keys(groupedSteps).length > 0 && openPhases.size === 0 && !currentStep) {
+      const firstPhaseKey = Object.keys(groupedSteps)[0];
+      setOpenPhases(new Set([firstPhaseKey]));
+      
+      const firstPhaseValue = groupedSteps[firstPhaseKey];
+      if (firstPhaseValue && typeof firstPhaseValue === 'object' && !Array.isArray(firstPhaseValue)) {
+        const firstOperationKey = Object.keys(firstPhaseValue)[0];
+        if (firstOperationKey) {
+          setOpenOperations(new Set([`${firstPhaseKey}-${firstOperationKey}`]));
+        }
+      }
+    }
+  }, [groupedSteps, openPhases.size, currentStep]);
 
   // Calculate completed operations and phases (handles both regular phases and space containers)
   const completedOperations = useMemo(() => {

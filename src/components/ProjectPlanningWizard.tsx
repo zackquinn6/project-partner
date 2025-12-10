@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -95,6 +95,10 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[95vw] md:h-[95vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        {/* Accessibility: DialogTitle and DialogDescription required */}
+        <DialogTitle className="sr-only">Project Planning Wizard</DialogTitle>
+        <DialogDescription className="sr-only">Plan and customize your project workflow</DialogDescription>
+        
         {/* Close button */}
         <div className="absolute right-4 top-4 z-10">
           <Button

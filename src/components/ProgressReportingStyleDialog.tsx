@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Button } from '@/components/ui/button';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
+import { toast } from 'sonner';
 
 interface ProgressReportingStyleDialogProps {
   open: boolean;
@@ -21,22 +23,47 @@ export const ProgressReportingStyleDialog = ({
   const [selectedStyle, setSelectedStyle] = useState<'linear' | 'exponential' | 'time-based'>(
     (projectRun?.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
   );
+  const [saving, setSaving] = useState(false);
 
-  // Update local state when projectRun changes
+  // Update local state when projectRun changes or dialog opens
   useEffect(() => {
+    if (open && projectRun?.progress_reporting_style) {
+      setSelectedStyle(projectRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based');
+    }
+  }, [projectRun?.progress_reporting_style, open]);
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = selectedStyle !== (projectRun?.progress_reporting_style as 'linear' | 'exponential' | 'time-based');
+
+  const handleApply = async () => {
+    if (!projectRun) {
+      toast.error('No project run selected');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateProjectRun({
+        ...projectRun,
+        progress_reporting_style: selectedStyle
+      });
+      
+      toast.success('Progress reporting style updated successfully');
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error updating progress reporting style:', error);
+      toast.error('Failed to update progress reporting style');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    // Reset to original value
     if (projectRun?.progress_reporting_style) {
       setSelectedStyle(projectRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based');
     }
-  }, [projectRun?.progress_reporting_style]);
-
-  const handleStyleChange = async (value: 'linear' | 'exponential' | 'time-based') => {
-    setSelectedStyle(value);
-    if (projectRun) {
-      await updateProjectRun({
-        ...projectRun,
-        progress_reporting_style: value
-      });
-    }
+    onOpenChange(false);
   };
 
   return (
@@ -59,7 +86,7 @@ export const ProgressReportingStyleDialog = ({
             <CardContent>
               <RadioGroup
                 value={selectedStyle}
-                onValueChange={(value) => handleStyleChange(value as 'linear' | 'exponential' | 'time-based')}
+                onValueChange={(value) => setSelectedStyle(value as 'linear' | 'exponential' | 'time-based')}
                 className="space-y-3"
               >
                 <Label 
@@ -103,6 +130,23 @@ export const ProgressReportingStyleDialog = ({
               </RadioGroup>
             </CardContent>
           </Card>
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button 
+            variant="outline" 
+            onClick={handleCancel}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleApply}
+            disabled={saving || !hasUnsavedChanges}
+          >
+            {saving ? 'Applying...' : 'Apply'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

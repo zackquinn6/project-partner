@@ -33,6 +33,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ScheduleCalendarView } from '@/components/ScheduleCalendarView';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { ScheduleSensitivity } from './Scheduler/ScheduleSensitivity';
+import { ScheduleViewDialog } from '@/components/ScheduleViewDialog';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -139,6 +140,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [schedulingResult, setSchedulingResult] = useState<SchedulingResult | null>(null);
   const [isComputing, setIsComputing] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
+  const [showScheduleView, setShowScheduleView] = useState(false);
   
   // Risk management state
   const [riskTolerance, setRiskTolerance] = useState<'low' | 'medium' | 'high'>('medium');
@@ -915,7 +917,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       }
       toast({
         title: "Schedule computed",
-        description: `Generated ${planningMode} schedule with ${result.scheduledTasks.length} tasks.`
+        description: `Generated ${planningMode} schedule with ${result.scheduledTasks.length} tasks. Click "View Schedule" to see your schedule.`,
+        duration: 5000
       });
     } catch (error) {
       console.error('❌ Schedule generation error:', error);
@@ -1437,16 +1440,36 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               scheduledCompletionDate={scheduledCompletionDate}
             />
 
-            {/* Results */}
-            {schedulingResult && <>
-                <ScheduleOutputView schedulingResult={schedulingResult} planningMode={planningMode} schedulingTasks={schedulingTasks} teamMembers={teamMembers} />
+            {/* Results - Show View Schedule button after generation */}
+            {schedulingResult && (
+              <div className="space-y-4">
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription className="space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span>Schedule generated with {schedulingResult.scheduledTasks.length} tasks</span>
+                      <Button 
+                        onClick={() => setShowScheduleView(true)} 
+                        className="h-8 text-xs"
+                        size="sm"
+                      >
+                        <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
+                        View Schedule
+                      </Button>
+                    </div>
+                    {scheduledCompletionDate && (
+                      <div className="flex items-center gap-2 pt-2 border-t">
+                        <Badge variant="secondary" className="text-xs">
+                          <Target className="w-3 h-3 mr-1" />
+                          Scheduled Completion Date: {format(scheduledCompletionDate, 'MMM dd, yyyy')}
+                        </Badge>
+                      </div>
+                    )}
+                  </AlertDescription>
+                </Alert>
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Button variant="outline" onClick={() => setShowCalendarView(true)} className="h-11 md:h-10 text-xs md:text-sm">
-                    <CalendarIcon className="w-4 h-4 mr-1 md:mr-2" />
-                    <span className="truncate">View Calendar</span>
-                  </Button>
                   <Button variant="outline" onClick={saveDraft} className="h-11 md:h-10 text-xs md:text-sm">
                     <FileText className="w-4 h-4 mr-1 md:mr-2" />
                     <span className="truncate">Save Draft</span>
@@ -1464,7 +1487,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                     <span className="truncate">Email Me</span>
                   </Button>
                 </div>
-              </>}
+              </div>
+            )}
 
             {/* Old Configuration Section - REMOVED */}
             <div className="hidden grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1961,6 +1985,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       projectId={project.id}
       projectRunId={projectRun.id}
       mode="run"
+    />
+
+    {/* Schedule View Dialog - Full screen with tabs */}
+    <ScheduleViewDialog
+      open={showScheduleView}
+      onOpenChange={setShowScheduleView}
+      schedulingResult={schedulingResult}
+      planningMode={planningMode}
+      schedulingTasks={schedulingTasks}
+      teamMembers={teamMembers}
     />
 
     {/* Schedule Sensitivity Dialog */}

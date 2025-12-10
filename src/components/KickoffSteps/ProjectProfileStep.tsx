@@ -397,8 +397,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         if (verificationData.initial_budget !== finalBudgetValue) {
           console.error('❌ initial_budget mismatch:', { expected: finalBudgetValue, actual: verificationData.initial_budget });
         }
-        if (verificationData.initial_timeline !== (projectForm.initialTimeline || null)) {
-          console.error('❌ initial_timeline mismatch:', { expected: projectForm.initialTimeline || null, actual: verificationData.initial_timeline });
+        // Normalize timeline comparison: database returns ISO timestamp, form has date string
+        const expectedTimeline = projectForm.initialTimeline || null;
+        const actualTimeline = verificationData.initial_timeline;
+        // Extract date part from ISO timestamp if present
+        const normalizedActualTimeline = actualTimeline 
+          ? (actualTimeline.includes('T') ? actualTimeline.split('T')[0] : actualTimeline)
+          : null;
+        if (normalizedActualTimeline !== expectedTimeline) {
+          console.error('❌ initial_timeline mismatch:', { expected: expectedTimeline, actual: actualTimeline, normalized: normalizedActualTimeline });
         }
         if (verificationData.initial_sizing !== finalSizingValue) {
           console.error('❌ initial_sizing mismatch:', { expected: finalSizingValue, actual: verificationData.initial_sizing });
@@ -427,9 +434,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       // Update context (this won't trigger another database save since we already saved above)
       await updateProjectRun(contextUpdatedRun);
       
-      console.log('✅ ProjectProfileStep.handleSave: COMPLETED SUCCESSFULLY - calling onComplete()');
+      console.log('✅ ProjectProfileStep.handleSave: COMPLETED SUCCESSFULLY - all 3 fields saved to database');
       toast.success('Project profile saved successfully');
-      onComplete();
+      
+      // CRITICAL: Don't call onComplete() here - let the parent component (KickoffWorkflow) handle step completion
+      // This prevents double-calling handleStepComplete and ensures proper sequencing
+      // The parent will call handleStepComplete after this save completes
     } catch (error) {
       console.error('❌ ProjectProfileStep.handleSave: FAILED with error:', error);
       toast.error('Failed to save project profile');

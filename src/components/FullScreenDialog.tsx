@@ -37,20 +37,23 @@ export function FullScreenDialog({
             className
           )}
         >
-          {(title || description) && (
-            <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
-              <div>
-                {title && (
-                  <DialogTitle className="text-lg md:text-xl font-bold">
-                    {title}
-                  </DialogTitle>
-                )}
-                {description && (
-                  <DialogDescription className="text-sm md:text-base mt-1">
-                    {description}
-                  </DialogDescription>
-                )}
-              </div>
+          <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
+            <div>
+              {title ? (
+                <DialogTitle className="text-lg md:text-xl font-bold">
+                  {title}
+                </DialogTitle>
+              ) : (
+                <DialogTitle className="sr-only">Dialog</DialogTitle>
+              )}
+              {description ? (
+                <DialogDescription className="text-sm md:text-base mt-1">
+                  {description}
+                </DialogDescription>
+              ) : (
+                <DialogDescription className="sr-only">Dialog content</DialogDescription>
+              )}
+            </div>
               
               {/* Close button - X for desktop, Close button for mobile */}
               {isMobile ? (
@@ -71,8 +74,7 @@ export function FullScreenDialog({
                   <X className="h-4 w-4" />
                 </Button>
               )}
-            </div>
-          )}
+          </div>
           
           <div 
             className="flex-1 min-h-0 overflow-y-auto enhanced-scroll p-4 md:p-6"

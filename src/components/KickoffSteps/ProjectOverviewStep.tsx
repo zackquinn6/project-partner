@@ -420,9 +420,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             Project Overview: {currentProjectRun.name}
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription className="text-xs mt-0.5">
-            Make sure this project is right for you
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 p-2 sm:p-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">

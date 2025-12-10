@@ -1073,60 +1073,10 @@ export default function UserView({
     if (!currentStep || !currentProjectRun) return;
 
     // Record started_at timestamp when step is first viewed
+    // NOTE: project_run_steps table does not exist - this tracking is disabled
     const trackStepStart = async () => {
-      try {
-        const { data: existingStep, error: fetchError } = await supabase
-          .from('project_run_steps')
-          .select('id, started_at')
-          .eq('project_run_id', currentProjectRun.id)
-          .eq('template_step_id', currentStep.id)
-          .maybeSingle();
-
-        if (fetchError && fetchError.code !== 'PGRST116') {
-          console.error('Error fetching project_run_step for start tracking:', fetchError);
-          return;
-        }
-
-        // Only set started_at if it doesn't exist yet
-        if (!existingStep || !existingStep.started_at) {
-          const now = new Date().toISOString();
-          const stepData = {
-            project_run_id: currentProjectRun.id,
-            template_step_id: currentStep.id,
-            started_at: now,
-            updated_at: now
-          };
-
-          if (existingStep) {
-            // Update existing record with started_at
-            const { error: updateError } = await supabase
-              .from('project_run_steps')
-              .update({
-                started_at: now,
-                updated_at: now
-              })
-              .eq('id', existingStep.id);
-
-            if (updateError) {
-              console.error('Error updating project_run_step started_at:', updateError);
-            } else {
-            }
-          } else {
-            // Insert new record with started_at
-            const { error: insertError } = await supabase
-              .from('project_run_steps')
-              .insert(stepData);
-
-            if (insertError) {
-              console.error('Error inserting project_run_step started_at:', insertError);
-            } else {
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error tracking step start:', error);
-        // Don't fail if timestamp tracking fails
-      }
+      // Table does not exist - skip tracking
+      return;
     };
 
     trackStepStart();
@@ -1299,61 +1249,8 @@ export default function UserView({
           // CRITICAL: Wait for database update to complete before clearing flag
           await updateProjectRun(updatedProjectRun);
           
-          // Record step completion timestamp in project_run_steps table for analytics
-          try {
-            const { data: existingStep, error: fetchError } = await supabase
-              .from('project_run_steps')
-              .select('id, started_at')
-              .eq('project_run_id', currentProjectRun.id)
-              .eq('template_step_id', currentStep.id)
-              .maybeSingle();
-
-            if (fetchError && fetchError.code !== 'PGRST116') {
-              console.error('Error fetching project_run_step:', fetchError);
-            }
-
-            const now = new Date().toISOString();
-            const stepData = {
-              project_run_id: currentProjectRun.id,
-              template_step_id: currentStep.id,
-              is_completed: true,
-              completion_percentage: 100,
-              completed_at: now,
-              updated_at: now
-            };
-
-            if (existingStep) {
-              // Update existing record
-              const { error: updateError } = await supabase
-                .from('project_run_steps')
-                .update({
-                  ...stepData,
-                  started_at: existingStep.started_at || now // Preserve started_at if it exists
-                })
-                .eq('id', existingStep.id);
-
-              if (updateError) {
-                console.error('Error updating project_run_step:', updateError);
-              } else {
-              }
-            } else {
-              // Insert new record
-              const { error: insertError } = await supabase
-                .from('project_run_steps')
-                .insert({
-                  ...stepData,
-                  started_at: now // Set started_at to now if not previously tracked
-                });
-
-              if (insertError) {
-                console.error('Error inserting project_run_step:', insertError);
-              } else {
-              }
-            }
-          } catch (error) {
-            console.error('Error recording step timestamp:', error);
-            // Don't fail the step completion if timestamp recording fails
-          }
+          // NOTE: project_run_steps table does not exist - step completion tracking is disabled
+          // Step completion is tracked via project_runs.completed_steps array instead
           
         }
         
@@ -2359,13 +2256,41 @@ export default function UserView({
               
               console.log("✅ Auto-rating kickoff phase:", kickoffRating);
               
-              // CRITICAL: Preserve initial_budget, initial_timeline, initial_sizing from current context
+              // CRITICAL: Fetch initial_budget, initial_timeline, initial_sizing from database
               // These values were saved in ProjectProfileStep and must not be lost
-              const preservedBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
-              const preservedTimeline = (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
-              const preservedSizing = (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+              // Fetch from database to ensure we have the latest saved values
+              let preservedBudget: string | null = null;
+              let preservedTimeline: string | null = null;
+              let preservedSizing: string | null = null;
               
-              console.log('💾 onKickoffComplete: Preserving budget fields:', {
+              if (currentProjectRun?.id) {
+                try {
+                  const { data: budgetData, error: budgetError } = await supabase
+                    .from('project_runs')
+                    .select('initial_budget, initial_timeline, initial_sizing')
+                    .eq('id', currentProjectRun.id)
+                    .single();
+                  
+                  if (!budgetError && budgetData) {
+                    preservedBudget = budgetData.initial_budget || null;
+                    preservedTimeline = budgetData.initial_timeline || null;
+                    preservedSizing = budgetData.initial_sizing || null;
+                  } else {
+                    // Fallback to context if database fetch fails
+                    preservedBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+                    preservedTimeline = (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
+                    preservedSizing = (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+                  }
+                } catch (error) {
+                  console.error('Error fetching budget fields from database:', error);
+                  // Fallback to context if database fetch fails
+                  preservedBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+                  preservedTimeline = (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
+                  preservedSizing = (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+                }
+              }
+              
+              console.log('💾 onKickoffComplete: Preserving budget fields from database:', {
                 initial_budget: preservedBudget,
                 initial_timeline: preservedTimeline,
                 initial_sizing: preservedSizing

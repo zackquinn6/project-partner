@@ -678,11 +678,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     if (!user) return;
 
     // Create a unique key for this update to detect duplicates
-    // Include budget_data, issue_reports, and time_tracking to ensure these updates are never skipped
+    // Include budget_data, issue_reports, time_tracking, and initial budget fields to ensure these updates are never skipped
     const budgetDataKey = projectRun.budget_data ? JSON.stringify(projectRun.budget_data) : 'null';
     const issueReportsKey = projectRun.issue_reports ? JSON.stringify(projectRun.issue_reports) : 'null';
     const timeTrackingKey = projectRun.time_tracking ? JSON.stringify(projectRun.time_tracking) : 'null';
-    const updateKey = `${projectRun.id}-${projectRun.progress}-${JSON.stringify(projectRun.completedSteps)}-${budgetDataKey}-${issueReportsKey}-${timeTrackingKey}`;
+    const initialBudgetKey = (projectRun as any).initial_budget !== undefined ? String((projectRun as any).initial_budget) : 'undefined';
+    const initialTimelineKey = (projectRun as any).initial_timeline !== undefined ? String((projectRun as any).initial_timeline) : 'undefined';
+    const initialSizingKey = (projectRun as any).initial_sizing !== undefined ? String((projectRun as any).initial_sizing) : 'undefined';
+    const updateKey = `${projectRun.id}-${projectRun.progress}-${JSON.stringify(projectRun.completedSteps)}-${budgetDataKey}-${issueReportsKey}-${timeTrackingKey}-${initialBudgetKey}-${initialTimelineKey}-${initialSizingKey}`;
     
     // Skip if this is the exact same update as the last one
     if (lastUpdateRef.current === updateKey) {
@@ -720,17 +723,20 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       console.log('✅ ProjectActions: Updated currentProjectRun with initial_budget:', (updatedProjectRun as any).initial_budget);
     }
 
-    // CRITICAL: For budget_data, issue_reports, time_tracking, and kickoff completion updates, save immediately
+    // CRITICAL: For budget_data, issue_reports, time_tracking, initial budget fields, and kickoff completion updates, save immediately
     // These are user-initiated changes that must be persisted right away
     const isBudgetDataUpdate = projectRun.budget_data !== undefined;
     const isIssueReportsUpdate = projectRun.issue_reports !== undefined;
     const isTimeTrackingUpdate = projectRun.time_tracking !== undefined;
+    const isInitialBudgetUpdate = (projectRun as any).initial_budget !== undefined;
+    const isInitialTimelineUpdate = (projectRun as any).initial_timeline !== undefined;
+    const isInitialSizingUpdate = (projectRun as any).initial_sizing !== undefined;
     // Check if this is a kickoff completion update (status changing to 'in-progress' with kickoff steps completed)
     const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
     const hasAllKickoffSteps = kickoffStepIds.every(id => projectRun.completedSteps.includes(id));
     const isKickoffCompletion = projectRun.status === 'in-progress' && hasAllKickoffSteps && 
                                  (currentProjectRun?.status !== 'in-progress' || !kickoffStepIds.every(id => (currentProjectRun?.completedSteps || []).includes(id)));
-    const requiresImmediateSave = isBudgetDataUpdate || isIssueReportsUpdate || isTimeTrackingUpdate || isKickoffCompletion;
+    const requiresImmediateSave = isBudgetDataUpdate || isIssueReportsUpdate || isTimeTrackingUpdate || isInitialBudgetUpdate || isInitialTimelineUpdate || isInitialSizingUpdate || isKickoffCompletion;
     
     // For immediate saves (budget, issues, time tracking), execute right away
     // For other updates, debounce to avoid excessive database writes
@@ -746,15 +752,43 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       lastUpdateRef.current = updateKey;
 
       try {
+        // CRITICAL: Fetch current values from database to preserve initial_budget, initial_timeline, initial_sizing
+        // if they're not explicitly provided in the projectRun object
+        let preservedBudget = (projectRun as any).initial_budget;
+        let preservedTimeline = (projectRun as any).initial_timeline;
+        let preservedSizing = (projectRun as any).initial_sizing;
+        
+        // If any of these fields are undefined, fetch from database to preserve existing values
+        if (preservedBudget === undefined || preservedTimeline === undefined || preservedSizing === undefined) {
+          const { data: currentRun, error: fetchError } = await supabase
+            .from('project_runs')
+            .select('initial_budget, initial_timeline, initial_sizing')
+            .eq('id', projectRun.id)
+            .single();
+          
+          if (!fetchError && currentRun) {
+            // Only use database values if the field was undefined (not explicitly set to null)
+            if (preservedBudget === undefined) {
+              preservedBudget = currentRun.initial_budget;
+            }
+            if (preservedTimeline === undefined) {
+              preservedTimeline = currentRun.initial_timeline;
+            }
+            if (preservedSizing === undefined) {
+              preservedSizing = currentRun.initial_sizing;
+            }
+          }
+        }
+        
         console.log('💾 ProjectActions - Saving project run to database:', {
           projectRunId: projectRun.id,
           userId: user.id,
           name: projectRun.name,
           completedStepsCount: projectRun.completedSteps.length,
           progress: safeProgress,
-          initial_budget: (projectRun as any).initial_budget,
-          initial_timeline: (projectRun as any).initial_timeline,
-          initial_sizing: (projectRun as any).initial_sizing,
+          initial_budget: preservedBudget,
+          initial_timeline: preservedTimeline,
+          initial_sizing: preservedSizing,
           hasBudgetData: !!projectRun.budget_data,
           hasPhotos: !!(projectRun.project_photos),
           home_id: (projectRun as any).home_id
@@ -790,9 +824,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           progress_reporting_style: projectRun.progress_reporting_style || 'linear',
           schedule_optimization_method: (projectRun as any).schedule_optimization_method || 'single-piece-flow',
           instruction_level_preference: (projectRun as any).instruction_level_preference || null,
-          initial_budget: (projectRun as any).initial_budget || null,
-          initial_timeline: (projectRun as any).initial_timeline || null,
-          initial_sizing: (projectRun as any).initial_sizing || null,
+          initial_budget: preservedBudget !== undefined ? preservedBudget : null,
+          initial_timeline: preservedTimeline !== undefined ? preservedTimeline : null,
+          initial_sizing: preservedSizing !== undefined ? preservedSizing : null,
           updated_at: new Date().toISOString()
         };
 
