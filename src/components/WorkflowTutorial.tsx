@@ -90,10 +90,10 @@ const tutorialSteps: TutorialStep[] = [
     position: 'bottom'
   },
   {
-    id: 'outputs',
-    title: 'Outputs',
-    description: 'What you need to complete or verify before moving to the next step. Complete all outputs to mark the step as done.',
-    targetSelector: '[data-tutorial="outputs"]',
+    id: 'step-checklist',
+    title: 'Step Checklist',
+    description: 'What you need to complete or verify before moving to the next step. Complete all items to mark the step as done.',
+    targetSelector: '[data-tutorial="step-checklist"]',
     position: 'bottom'
   },
   {
@@ -113,7 +113,7 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: 'mark-complete',
     title: 'Mark as Complete',
-    description: 'When you\'ve finished all outputs for a step, mark it as complete to track your progress and unlock the next step.',
+    description: 'When you\'ve finished all checklist items for a step, mark it as complete to track your progress and unlock the next step.',
     targetSelector: '[data-tutorial="mark-complete"]',
     position: 'top'
   },

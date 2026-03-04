@@ -25,6 +25,7 @@ export function MaintenanceNotifications({
     toast
   } = useToast();
   const [saving, setSaving] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
 
   // Simple state management for now
   const [emailEnabled, setEmailEnabled] = useState(true);
@@ -55,8 +56,8 @@ export function MaintenanceNotifications({
     }
   };
   const testEmailNotification = async () => {
-    // Use authenticated user's email for test emails to match function validation
-    const testEmail = user?.email || emailAddress;
+    // Function requires the email to match the authenticated user
+    const testEmail = user?.email ?? emailAddress.trim();
     if (!testEmail) {
       toast({
         title: "Error",
@@ -65,17 +66,36 @@ export function MaintenanceNotifications({
       });
       return;
     }
+    if (user?.email && emailAddress.trim() && emailAddress.trim() !== user.email) {
+      toast({
+        title: "Error",
+        description: "Test email is sent to your account email. Change the address above only after saving; test uses your logged-in email.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setSendingTest(true);
     try {
-      const {
-        error
-      } = await supabase.functions.invoke('send-maintenance-reminder', {
+      const { data, error } = await supabase.functions.invoke('send-maintenance-reminder', {
         body: {
           type: 'test',
           email: testEmail,
           userName: user?.email?.split('@')[0] || 'User'
         }
       });
-      if (error) throw error;
+      if (error) {
+        let errMsg = (error as { message?: string }).message ?? 'Failed to send test email';
+        const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context;
+        if (ctx && typeof ctx.json === 'function') {
+          try {
+            const body = await ctx.json();
+            if (body?.error) errMsg = body.error;
+          } catch {
+            // use errMsg from above
+          }
+        }
+        throw new Error(errMsg);
+      }
       toast({
         title: "Test Email Sent",
         description: `Test notification sent to ${testEmail}`
@@ -87,6 +107,8 @@ export function MaintenanceNotifications({
         description: error instanceof Error ? error.message : "Failed to send test email",
         variant: "destructive"
       });
+    } finally {
+      setSendingTest(false);
     }
   };
   const showSMSNotAvailable = () => {
@@ -126,8 +148,8 @@ export function MaintenanceNotifications({
                   <Label htmlFor="email-address">Email Address</Label>
                   <Input id="email-address" type="email" value={emailAddress} onChange={e => setEmailAddress(e.target.value)} placeholder="Enter your email address" />
                 </div>
-                <Button variant="outline" size="sm" onClick={testEmailNotification} disabled={!emailAddress}>
-                  Send Test Email
+                <Button variant="outline" size="sm" onClick={testEmailNotification} disabled={!emailAddress || sendingTest}>
+                  {sendingTest ? "Sending…" : "Send Test Email"}
                 </Button>
               </div>}
           </div>

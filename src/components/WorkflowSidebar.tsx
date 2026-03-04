@@ -522,7 +522,7 @@ export function WorkflowSidebar({
                         </Button>
                       )}
                     </div>
-                    {/* Second row: Notes, Photos - Icons to the left of text */}
+                    {/* Second row: Notes, Photos, Progress views */}
                     <div className="flex items-center gap-1.5">
                       <Button
                         variant="default"
@@ -544,20 +544,17 @@ export function WorkflowSidebar({
                         <Image className="h-3 w-3 mr-1.5" style={{ color: 'black' }} />
                         <span>Photos</span>
                       </Button>
-                    </div>
-                    {/* Progress views: Gantt & Kanban */}
-                    {onProgressViewsClick && (
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={onProgressViewsClick}
-                        className="h-8 px-3 text-xs w-full"
+                        onClick={onProgressViewsClick ?? (() => {})}
+                        className="h-7 px-2 text-[10px] flex-1"
                         style={{ backgroundColor: 'rgba(20, 184, 166, 0.40)', color: 'black' }}
                       >
-                        <BarChart3 className="h-3.5 w-3.5 mr-2" style={{ color: 'black' }} />
-                        <span>Progress views</span>
+                        <BarChart3 className="h-3 w-3 mr-1.5" style={{ color: 'black' }} />
+                        <span>Progress</span>
                       </Button>
-                    )}
+                    </div>
                   </div>
 
                   {/* Separator */}

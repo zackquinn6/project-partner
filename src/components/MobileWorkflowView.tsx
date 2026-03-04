@@ -219,7 +219,7 @@ export function MobileWorkflowView({
                   {/* Render instruction content based on level if available */}
                   {instructionLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <div className="text-muted-foreground text-sm">Loading {instructionLevel === 'new_user' ? 'New DIY' : instructionLevel === 'detailed' ? 'Mid-level DIY' : 'Advanced DIY'} content...</div>
+                      <div className="text-muted-foreground text-sm">Loading {instructionLevel === 'beginner' ? 'Beginner' : instructionLevel === 'advanced' ? 'Advanced' : 'Intermediate'} content...</div>
                     </div>
                   ) : instruction ? (
                     <div className="space-y-4 text-sm">

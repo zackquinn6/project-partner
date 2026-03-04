@@ -123,7 +123,7 @@ export const ProgressReportingStyleDialog = ({
                   <div className="flex-1">
                     <div className="font-medium">Time-Based</div>
                     <div className="text-sm text-muted-foreground mt-1">
-                      Uses step estimated times aligned to your speed setting. Fast-track uses low end of time estimates, steady uses medium, extended uses high.
+                      Uses the estimated time for each step (adjusted to your speed) to calculate progress. For example, if a step takes 60 minutes out of an 8‑hour project, completing it adds 12.5% to your progress.
                     </div>
                   </div>
                 </Label>

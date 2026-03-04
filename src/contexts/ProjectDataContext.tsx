@@ -233,7 +233,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         estimatedTime: run.estimated_time,
         scalingUnit: run.scaling_unit as Project['scalingUnit'],
         customization_decisions: customizationDecisions,
-        instruction_level_preference: (run.instruction_level_preference as 'quick' | 'detailed' | 'new_user') || 'detailed',
+        instruction_level_preference: run.instruction_level_preference as 'beginner' | 'intermediate' | 'advanced' | undefined,
         // Initial project goals from kickoff step 3
         initial_budget: run.initial_budget,
         initial_timeline: run.initial_timeline,

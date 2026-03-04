@@ -2805,21 +2805,21 @@ export default function UserView({
             );
           })()}
 
-          {/* Outputs */}
+          {/* Step Checklist */}
           {currentStep && currentStep.outputs?.length > 0 && (
-            <Card className="gradient-card border-0 shadow-card" data-tutorial="outputs">
+            <Card className="gradient-card border-0 shadow-card" data-tutorial="step-checklist">
               <CardContent className="p-6">
-                <Accordion type="multiple" defaultValue={["outputs"]} className="w-full">
+                <Accordion type="multiple" defaultValue={["step-checklist"]} className="w-full">
                   {(() => {
                     const stepOutputs = checkedOutputs[currentStep.id] || new Set();
                     const completedCount = stepOutputs.size;
                     const totalCount = currentStep.outputs.length;
                     const isAllCompleted = completedCount === totalCount;
                     
-                    return <AccordionItem value="outputs">
+                    return <AccordionItem value="step-checklist">
                       <AccordionTrigger className="text-base font-semibold">
                         <div className="flex items-center gap-2">
-                          <span>Outputs</span>
+                          <span>Step Checklist</span>
                           <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-green-500 text-white text-xs" : "text-xs"}>
                             {completedCount}/{totalCount}
                           </Badge>
@@ -2961,10 +2961,10 @@ export default function UserView({
                         variant="outline"
                         className="opacity-50 cursor-not-allowed text-xs text-muted-foreground" 
                         size="sm"
-                        title={isMobile ? "Complete All Outputs First" : undefined}
+                        title={isMobile ? "Complete Step Checklist First" : undefined}
                       >
                         <CheckCircle className="w-4 h-4" />
-                        {!isMobile && <span className="ml-2 text-xs text-muted-foreground">Complete All Outputs First</span>}
+                        {!isMobile && <span className="ml-2 text-xs text-muted-foreground">Complete Step Checklist First</span>}
                       </Button>
                     )
                   )}

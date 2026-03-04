@@ -121,6 +121,11 @@ const handler = async (req: Request): Promise<Response> => {
       html: htmlContent,
     });
 
+    if (emailResponse.error) {
+      console.error("Resend API error:", emailResponse.error);
+      throw new Error(emailResponse.error.message || "Email service failed to send");
+    }
+
     console.log("Maintenance reminder email sent successfully");
 
     return new Response(JSON.stringify({ 
@@ -133,12 +138,21 @@ const handler = async (req: Request): Promise<Response> => {
         ...corsHeaders,
       },
     });
-  } catch (error: any) {
-    console.error("Error in send-maintenance-reminder function:", error);
-    
-    const statusCode = error.message.includes('authorization') || error.message.includes('token') ? 401 : 500;
-    const message = statusCode === 401 ? 'Authentication required' : 'Failed to send reminder';
-    
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error("Error in send-maintenance-reminder function:", err);
+
+    const msg = err.message;
+    const statusCode =
+      msg.includes('authorization') || msg.includes('token') || msg.includes('Authentication') ? 401
+      : msg.includes('Email mismatch') ? 403
+      : 500;
+    const message =
+      statusCode === 401 ? 'Authentication required'
+      : statusCode === 403 ? msg
+      : msg.includes('configuration') ? 'Email service is not configured. Please try again later.'
+      : 'Failed to send reminder';
+
     return new Response(
       JSON.stringify({ error: message }),
       {
