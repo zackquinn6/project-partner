@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Edit3 } from "lucide-react";
+import { Edit3, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,13 @@ interface ProfileManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+/** Project focus labels (step 3 onboarding). */
+const PROJECT_FOCUS_LABELS: Record<string, string> = {
+  schedule: 'Hitting my schedule',
+  quality: 'Highest quality work',
+  savings: 'Maximize savings',
+};
+
 interface ProfileData {
   skill_level?: string;
   avoid_projects?: string[];
@@ -20,6 +27,7 @@ interface ProfileData {
   home_build_year?: string;
   home_state?: string;
   preferred_learning_methods?: string[];
+  project_focus?: string | null;
   owned_tools?: any[];
   survey_completed_at?: string;
   full_name?: string;
@@ -37,6 +45,7 @@ export default function ProfileManager({
   const [isLoading, setIsLoading] = useState(true);
   const [existingProfile, setExistingProfile] = useState<ProfileData | null>(null);
   const [showSurveyEditor, setShowSurveyEditor] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
   const {
     toast
   } = useToast();
@@ -62,6 +71,7 @@ export default function ProfileManager({
           home_build_year, 
           home_state, 
           preferred_learning_methods, 
+          project_focus, 
           owned_tools, 
           survey_completed_at,
           full_name,
@@ -151,9 +161,11 @@ export default function ProfileManager({
                 </div>
 
                 <div>
-                  <h4 className="font-semibold">Learning Preferences</h4>
+                  <h4 className="font-semibold">Project Focus Preference</h4>
                   <p className="text-sm text-muted-foreground">
-                    {existingProfile.preferred_learning_methods?.length ? existingProfile.preferred_learning_methods.join(", ") : "Not specified"}
+                    {existingProfile.project_focus
+                      ? (PROJECT_FOCUS_LABELS[existingProfile.project_focus] ?? existingProfile.project_focus)
+                      : "Not specified"}
                   </p>
                 </div>
 
@@ -168,17 +180,19 @@ export default function ProfileManager({
           </Card>
         </div>
 
-        {/* Edit Profile Button - Between Profile and Achievements */}
-        <div className="flex justify-center py-4">
+        <div className="flex flex-col sm:flex-row justify-center gap-2 py-4">
           <Button onClick={handleStartEdit} className="flex items-center gap-2">
             <Edit3 className="w-4 h-4" />
             Edit Profile
           </Button>
-        </div>
-
-        {/* Achievements Section */}
-        <div>
-          <AchievementsSection />
+          <Button
+            variant="outline"
+            onClick={() => setShowAchievements(true)}
+            className="flex items-center gap-2"
+          >
+            <Trophy className="w-4 h-4" />
+            My Achievements
+          </Button>
         </div>
       </div>;
   };
@@ -224,6 +238,27 @@ export default function ProfileManager({
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto px-4 py-6">
               {renderProfileView()}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAchievements} onOpenChange={setShowAchievements}>
+        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+          <div className="flex flex-col h-full overflow-hidden">
+            <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
+              <h2 className="text-lg md:text-xl font-bold">My Achievements</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAchievements(false)}
+                className="ml-4 flex-shrink-0"
+              >
+                Close
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-6">
+              <AchievementsSection />
             </div>
           </div>
         </DialogContent>

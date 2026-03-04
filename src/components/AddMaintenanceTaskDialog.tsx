@@ -21,6 +21,8 @@ interface MaintenanceTemplate {
   category: string;
   frequency_days: number;
   instructions: string;
+  risks_of_skipping?: string | null;
+  benefits_of_maintenance?: string | null;
 }
 
 interface AddMaintenanceTaskDialogProps {
@@ -47,7 +49,9 @@ export function AddMaintenanceTaskDialog({
     title: '',
     description: '',
     category: 'general',
-    frequency_days: 90
+    frequency_days: 90,
+    risks_of_skipping: '',
+    benefits_of_maintenance: '',
   });
 
   useEffect(() => {
@@ -93,7 +97,9 @@ export function AddMaintenanceTaskDialog({
           description: template.description,
           category: template.category,
           frequency_days: template.frequency_days,
-          next_due: nextDueDate.toISOString()
+          next_due: nextDueDate.toISOString(),
+          risks_of_skipping: template.risks_of_skipping ?? null,
+          benefits_of_maintenance: template.benefits_of_maintenance ?? null,
         });
 
       if (error) throw error;
@@ -136,7 +142,9 @@ export function AddMaintenanceTaskDialog({
           description: customTask.description.trim() || null,
           category: customTask.category,
           frequency_days: customTask.frequency_days,
-          next_due: nextDueDate.toISOString()
+          next_due: nextDueDate.toISOString(),
+          risks_of_skipping: customTask.risks_of_skipping.trim() || null,
+          benefits_of_maintenance: customTask.benefits_of_maintenance.trim() || null,
         });
 
       if (error) throw error;
@@ -319,6 +327,7 @@ export function AddMaintenanceTaskDialog({
                         <SelectItem value="landscaping">Landscaping</SelectItem>
                         <SelectItem value="outdoor">Outdoor</SelectItem>
                         <SelectItem value="plumbing">Plumbing</SelectItem>
+                        <SelectItem value="roof">Roof</SelectItem>
                         <SelectItem value="safety">Safety</SelectItem>
                         <SelectItem value="security">Security</SelectItem>
                       </SelectContent>
@@ -330,7 +339,7 @@ export function AddMaintenanceTaskDialog({
                     <Input
                       id="frequency"
                       type="number"
-                      min="1"
+                      min={1}
                       max="3650"
                       value={customTask.frequency_days}
                       onChange={(e) => setCustomTask(prev => ({ 
@@ -339,6 +348,27 @@ export function AddMaintenanceTaskDialog({
                       }))}
                     />
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="custom-risks">Risks of skipping (optional)</Label>
+                  <Textarea
+                    id="custom-risks"
+                    rows={2}
+                    placeholder="e.g. Sediment buildup, early failure"
+                    value={customTask.risks_of_skipping}
+                    onChange={(e) => setCustomTask(prev => ({ ...prev, risks_of_skipping: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="custom-benefits">Benefits of maintenance (optional)</Label>
+                  <Textarea
+                    id="custom-benefits"
+                    rows={2}
+                    placeholder="e.g. Extend life from 10 to 20 yrs"
+                    value={customTask.benefits_of_maintenance}
+                    onChange={(e) => setCustomTask(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
+                  />
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">

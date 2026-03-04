@@ -15,19 +15,22 @@ import { useGuest } from '@/contexts/GuestContext';
 
 const ONBOARDING_STORAGE_KEY = 'project_partner_onboarding';
 
-/** Persist onboarding name and DIY level to the user's profile. Call after signup when user is in session. */
-async function saveOnboardingToProfile(userId: string, name: string, diyLevel: string): Promise<void> {
-  const { error } = await supabase
-    .from('profiles')
-    .upsert(
-      {
-        user_id: userId,
-        full_name: name,
-        skill_level: diyLevel,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: 'user_id' }
-    );
+/** Persist onboarding (name, DIY level, project focus) to the user's profile. Call after signup when user is in session. */
+async function saveOnboardingToProfile(
+  userId: string,
+  name: string,
+  diyLevel: string,
+  pmFocus?: 'schedule' | 'quality' | 'savings' | null
+): Promise<void> {
+  const row: Record<string, unknown> = {
+    user_id: userId,
+    full_name: name,
+    nickname: name,
+    skill_level: diyLevel,
+    updated_at: new Date().toISOString(),
+  };
+  if (pmFocus) row.project_focus = pmFocus;
+  const { error } = await supabase.from('profiles').upsert(row, { onConflict: 'user_id' });
   if (error) {
     console.error('Failed to save onboarding to profile:', error);
   }
@@ -62,9 +65,14 @@ export default function Auth() {
     try {
       const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY);
       if (!raw) return;
-      const pending = JSON.parse(raw) as { email: string; name: string; diyLevel: string };
+      const pending = JSON.parse(raw) as {
+        email: string;
+        name: string;
+        diyLevel: string;
+        pmFocus?: 'schedule' | 'quality' | 'savings' | null;
+      };
       if (pending.email !== userEmail.toLowerCase()) return;
-      await saveOnboardingToProfile(userId, pending.name, pending.diyLevel);
+      await saveOnboardingToProfile(userId, pending.name, pending.diyLevel, pending.pmFocus ?? null);
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
     } catch {
       // ignore
@@ -173,9 +181,11 @@ export default function Auth() {
     // Track form submission timing
     trackFormSubmission('signup');
     
-    const onboarding = (location.state as { onboarding?: { name: string; diyLevel: string } })?.onboarding;
+    const onboarding = (location.state as {
+      onboarding?: { name: string; diyLevel: string; pmFocus?: 'schedule' | 'quality' | 'savings' | null };
+    })?.onboarding;
     const dataToTransfer = guestData.projectRuns.length > 0 ? guestData : undefined;
-    
+
     const { error } = await signUp(validation.sanitizedData.email, password, dataToTransfer);
     if (error) {
       setError(error.message);
@@ -186,17 +196,26 @@ export default function Auth() {
       } else {
         setMessage('Check your email for a confirmation link');
       }
-      // Persist onboarding name and DIY level to profile once user is in session
+      // Persist onboarding name (→ full_name + nickname), DIY level, and project focus to profile once user is in session
       if (onboarding?.name?.trim() && onboarding?.diyLevel) {
         const { data: { user: newUser } } = await supabase.auth.getUser();
         if (newUser) {
-          await saveOnboardingToProfile(newUser.id, onboarding.name.trim(), onboarding.diyLevel);
+          await saveOnboardingToProfile(
+            newUser.id,
+            onboarding.name.trim(),
+            onboarding.diyLevel,
+            onboarding.pmFocus ?? null
+          );
         } else {
-          localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
-            email: validation.sanitizedData.email.toLowerCase(),
-            name: onboarding.name.trim(),
-            diyLevel: onboarding.diyLevel
-          }));
+          localStorage.setItem(
+            ONBOARDING_STORAGE_KEY,
+            JSON.stringify({
+              email: validation.sanitizedData.email.toLowerCase(),
+              name: onboarding.name.trim(),
+              diyLevel: onboarding.diyLevel,
+              pmFocus: onboarding.pmFocus ?? null,
+            })
+          );
         }
       }
     }

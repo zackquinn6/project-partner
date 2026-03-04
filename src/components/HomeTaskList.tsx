@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users } from "lucide-react";
+import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -138,7 +138,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (onCreated?: (task: HomeTask) => void) => {
     if (!user || !formData.title.trim()) {
       return;
     }
@@ -248,6 +248,8 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             if (materialError) throw materialError;
           }
         }
+
+        onCreated?.(newTask as HomeTask);
       }
 
       resetForm();
@@ -661,11 +663,32 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                           )}
                         </div>
 
-                         <div className="flex gap-2 justify-end">
+                         <div className="flex gap-2 justify-end flex-wrap">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs"
+                            onClick={() => {
+                              if (editingTask) {
+                                setSelectedTask(editingTask);
+                                setShowProjectLink(true);
+                              } else {
+                                handleSubmit((task) => {
+                                  setSelectedTask(task);
+                                  setShowProjectLink(true);
+                                });
+                              }
+                            }}
+                            disabled={!formData.title.trim() || !selectedHomeId || selectedHomeId === 'all'}
+                          >
+                            <Link2 className="h-3 w-3 mr-1" />
+                            Link task to project
+                          </Button>
                           <Button variant="outline" onClick={resetForm} size="sm" className="h-8 text-xs">
                             Cancel
                           </Button>
-                          <Button onClick={handleSubmit} size="sm" className="h-8 text-xs">
+                          <Button onClick={() => handleSubmit()} size="sm" className="h-8 text-xs">
                             {editingTask ? "Update" : "Create"}
                           </Button>
                         </div>

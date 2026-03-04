@@ -21,21 +21,23 @@ import { TaskCompletionDialog } from './TaskCompletionDialog';
 import { MaintenanceHistoryTab } from './MaintenanceHistoryTab';
 import { MaintenancePdfPrinter } from './MaintenancePdfPrinter';
 import { MaintenanceNotifications } from './MaintenanceNotifications';
+import { MaintenanceDashboard } from './MaintenanceDashboard';
 interface MaintenanceTask {
   id: string;
   user_id: string;
   home_id: string;
   template_id?: string;
   title: string;
-  description: string;
+  description: string | null;
   category: string;
   frequency_days: number;
   last_completed: string | null;
   next_due: string;
-  is_custom: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  risks_of_skipping?: string | null;
+  benefits_of_maintenance?: string | null;
 }
 interface MaintenanceCompletion {
   id: string;
@@ -74,6 +76,8 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
     description: task.description || '',
     category: task.category,
     frequency_days: task.frequency_days,
+    risks_of_skipping: task.risks_of_skipping ?? '',
+    benefits_of_maintenance: task.benefits_of_maintenance ?? '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -153,6 +157,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
                 <SelectItem value="landscaping">Landscaping</SelectItem>
                 <SelectItem value="outdoor">Outdoor</SelectItem>
                 <SelectItem value="plumbing">Plumbing</SelectItem>
+                <SelectItem value="roof">Roof</SelectItem>
                 <SelectItem value="safety">Safety</SelectItem>
                 <SelectItem value="security">Security</SelectItem>
               </SelectContent>
@@ -174,6 +179,26 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               }
             />
           </div>
+        </div>
+        <div>
+          <Label htmlFor="edit-risks">Risks of skipping</Label>
+          <Textarea
+            id="edit-risks"
+            rows={2}
+            placeholder="e.g. Sediment buildup, early failure"
+            value={form.risks_of_skipping}
+            onChange={(e) => setForm(prev => ({ ...prev, risks_of_skipping: e.target.value }))}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-benefits">Benefits of maintenance</Label>
+          <Textarea
+            id="edit-benefits"
+            rows={2}
+            placeholder="e.g. Extend life from 10 to 20 yrs"
+            value={form.benefits_of_maintenance}
+            onChange={(e) => setForm(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
+          />
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -358,14 +383,20 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
     return tasks.filter(task => task.category === categoryFilter);
   };
-  const categories = ['appliances', 'hvac', 'safety', 'plumbing', 'exterior', 'general'];
+  const categories = ['appliances', 'electrical', 'exterior', 'general', 'hvac', 'interior', 'landscaping', 'outdoor', 'plumbing', 'roof', 'safety', 'security'];
   const categoryLabels: Record<string, string> = {
     appliances: 'Appliances',
-    hvac: 'HVAC',
-    safety: 'Safety',
-    plumbing: 'Plumbing',
+    electrical: 'Electrical',
     exterior: 'Exterior',
-    general: 'General'
+    general: 'General',
+    hvac: 'HVAC',
+    interior: 'Interior',
+    landscaping: 'Landscaping',
+    outdoor: 'Outdoor',
+    plumbing: 'Plumbing',
+    roof: 'Roof',
+    safety: 'Safety',
+    security: 'Security',
   };
 
   // Touch handlers for swipe gestures
@@ -444,6 +475,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           </div>
         </div>
 
+            {/* Summary dashboard */}
+            {selectedHomeId && tasks.length >= 0 && (
+              <MaintenanceDashboard
+                tasks={tasks.map(t => ({ id: t.id, title: t.title, category: t.category, next_due: t.next_due, last_completed: t.last_completed }))}
+                completions={completions.map(c => ({ task_id: c.task_id, completed_at: c.completed_at, task: { category: c.task?.category } }))}
+              />
+            )}
+
             {/* Tabs - Takes remaining space */}
             {selectedHomeId && <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 <Tabs defaultValue="tasks" className="flex flex-col h-full">
@@ -505,6 +544,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               <th className="text-left px-2 py-2 font-medium">Task</th>
                               <th className="text-left px-2 py-2 font-medium">Frequency</th>
                               <th className="text-left px-2 py-2 font-medium">Summary</th>
+                              <th className="text-left px-2 py-2 font-medium hidden lg:table-cell">Risks of skipping</th>
+                              <th className="text-left px-2 py-2 font-medium hidden lg:table-cell">Benefits of maintenance</th>
                               <th className="text-right px-2 py-2 font-medium">Actions</th>
                             </tr>
                           </thead>
@@ -534,9 +575,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         >
                           <div className="flex items-center gap-2">
                             <span className="font-medium truncate">{task.title}</span>
-                            {task.is_custom && (
-                              <Badge variant="outline" className="text-[10px] uppercase">Custom</Badge>
-                            )}
                           </div>
                           <div className="mt-1 text-[10px] text-muted-foreground">
                             Due {format(new Date(task.next_due), 'MMM dd, yyyy')}
@@ -559,6 +597,28 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         >
                           <span className="line-clamp-3 text-xs text-muted-foreground">
                             {summary}
+                          </span>
+                        </td>
+                        <td
+                          className="px-2 py-2 align-top hidden lg:table-cell max-w-[140px] cursor-pointer"
+                          onClick={() => {
+                            setSwipedTaskId(null);
+                            setSelectedTaskForDetails(task);
+                          }}
+                        >
+                          <span className="line-clamp-2 text-xs text-muted-foreground">
+                            {task.risks_of_skipping || '—'}
+                          </span>
+                        </td>
+                        <td
+                          className="px-2 py-2 align-top hidden lg:table-cell max-w-[140px] cursor-pointer"
+                          onClick={() => {
+                            setSwipedTaskId(null);
+                            setSelectedTaskForDetails(task);
+                          }}
+                        >
+                          <span className="line-clamp-2 text-xs text-muted-foreground">
+                            {task.benefits_of_maintenance || '—'}
                           </span>
                         </td>
                         <td className="px-2 py-2 align-top">
@@ -689,6 +749,22 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   <p className="text-sm text-foreground whitespace-pre-wrap">
                     {selectedTaskForDetails.description}
                   </p>
+                </div>
+              )}
+              {(selectedTaskForDetails.risks_of_skipping || selectedTaskForDetails.benefits_of_maintenance) && (
+                <div className="mt-3 flex flex-col gap-2">
+                  {selectedTaskForDetails.risks_of_skipping && (
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Risks of skipping</h3>
+                      <p className="text-sm text-muted-foreground">{selectedTaskForDetails.risks_of_skipping}</p>
+                    </div>
+                  )}
+                  {selectedTaskForDetails.benefits_of_maintenance && (
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Benefits of maintenance</h3>
+                      <p className="text-sm text-muted-foreground">{selectedTaskForDetails.benefits_of_maintenance}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

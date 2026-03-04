@@ -29,7 +29,7 @@ interface ProjectTemplate {
   name: string;
   description: string | null;
   category: string[] | null;
-  difficulty: string | null;
+  difficulty_level: string | null;
   estimated_time: string | null;
 }
 
@@ -69,10 +69,13 @@ export function HomeTaskProjectLink({
 
   const fetchProjectTemplates = async () => {
     const { data, error } = await supabase
-      .from("projects")
-      .select("id, name, description, category, difficulty, estimated_time")
+      .from("project_templates_live")
+      .select("id, name, description, category, difficulty_level, estimated_time, is_standard")
+      .eq("is_current_version", true)
       .in("publish_status", ["published", "beta-testing"])
       .neq("name", "Manual Project Template")
+      .neq("id", "00000000-0000-0000-0000-000000000001")
+      .or("is_standard.eq.false,is_standard.is.null")
       .order("name");
     
     if (!error && data) {
@@ -243,9 +246,9 @@ export function HomeTaskProjectLink({
                                 {template.category}
                               </Badge>
                             )}
-                            {template.difficulty && (
+                            {template.difficulty_level && (
                               <Badge variant="outline" className="text-[10px]">
-                                {template.difficulty}
+                                {template.difficulty_level}
                               </Badge>
                             )}
                             {template.estimated_time && (
