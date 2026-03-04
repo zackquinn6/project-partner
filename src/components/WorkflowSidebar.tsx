@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3 } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -42,6 +42,7 @@ interface WorkflowSidebarProps {
   onPhotosClick: () => void;
   onNotesClick: () => void;
   onViewScheduleClick: () => void;
+  onProgressViewsClick?: () => void;
 }
 export function WorkflowSidebar({
   allSteps,
@@ -64,7 +65,8 @@ export function WorkflowSidebar({
   onKeysToSuccessClick,
   onPhotosClick,
   onNotesClick,
-  onViewScheduleClick
+  onViewScheduleClick,
+  onProgressViewsClick
 }: WorkflowSidebarProps) {
   const { updateProjectRun } = useProject();
   const {
@@ -543,6 +545,19 @@ export function WorkflowSidebar({
                         <span>Photos</span>
                       </Button>
                     </div>
+                    {/* Progress views: Gantt & Kanban */}
+                    {onProgressViewsClick && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={onProgressViewsClick}
+                        className="h-8 px-3 text-xs w-full"
+                        style={{ backgroundColor: 'rgba(20, 184, 166, 0.40)', color: 'black' }}
+                      >
+                        <BarChart3 className="h-3.5 w-3.5 mr-2" style={{ color: 'black' }} />
+                        <span>Progress views</span>
+                      </Button>
+                    )}
                   </div>
 
                   {/* Separator */}

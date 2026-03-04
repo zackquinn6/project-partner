@@ -97,23 +97,17 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   }, [setCurrentProjectRun, onProjectSelect, navigate]);
 
   const handleDeleteProjectRun = async (projectRunId: string) => {
-    // Clear projectRunId from location state FIRST to prevent UserView from trying to load it
-    // This must happen before deletion to prevent loading screen
-    if (currentProjectRun?.id === projectRunId) {
-      // Clear location state projectRunId by navigating without it
-      navigate(window.location.pathname, { 
-        replace: true,
-        state: { view: 'user' } // Keep view but remove projectRunId
-      });
-    }
-    
-    // Ensure we don't auto-select another project run after deletion
+    // Always clear projectRunId from location state so UserView does not open
+    // another project (or kickoff) after delete. Stay on Progress Board listing.
+    navigate(window.location.pathname, {
+      replace: true,
+      state: { view: 'user' }
+    });
+
     setCurrentProjectRun(null);
-    
-    // Delete the project run
+
     await deleteProjectRun(projectRunId);
-    
-    // Communicate to parent component that we want to stay in listing mode
+
     onProjectSelect?.(null as any);
   };
 

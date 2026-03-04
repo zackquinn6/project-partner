@@ -885,7 +885,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               Project Catalog
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Select a project to get started with confidence</p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Select a project to get started</p>
         </div>
 
         {/* Mobile Close Button */}
@@ -961,7 +961,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-52">
-                    <FilterMenuHeader label="Skill Level" description={FILTER_DESCRIPTIONS.skill} />
+                    <FilterMenuHeader label="Skill" description={FILTER_DESCRIPTIONS.skill} />
                     {availableDifficulties.map((difficulty) => (
                       <DropdownMenuCheckboxItem
                         key={difficulty}
@@ -986,7 +986,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-52">
-                    <FilterMenuHeader label="Effort Level" description={FILTER_DESCRIPTIONS.effort} />
+                    <FilterMenuHeader label="Effort" description={FILTER_DESCRIPTIONS.effort} />
                     {availableEffortLevels.map((effortLevel) => (
                       <DropdownMenuCheckboxItem
                         key={effortLevel}
@@ -1011,7 +1011,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-52 space-y-1">
-                    <FilterMenuHeader label="Project Type" description={FILTER_DESCRIPTIONS.projectType} />
+                    <FilterMenuHeader label="Type" description={FILTER_DESCRIPTIONS.projectType} />
                     <DropdownMenuRadioGroup value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
                       <DropdownMenuRadioItem value="all">All project types</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="primary">Primary</DropdownMenuRadioItem>
@@ -1081,12 +1081,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     <Button variant="outline" className="w-full md:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
-                        Skill Level {selectedDifficulties.length > 0 && `(${selectedDifficulties.length})`}
+                        Skill {selectedDifficulties.length > 0 && `(${selectedDifficulties.length})`}
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
-                    <FilterMenuHeader label="Skill Level" description={FILTER_DESCRIPTIONS.skill} />
+                    <FilterMenuHeader label="Skill" description={FILTER_DESCRIPTIONS.skill} />
                     {availableDifficulties.map((difficulty) => (
                       <DropdownMenuCheckboxItem
                         key={difficulty}
@@ -1108,12 +1108,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     <Button variant="outline" className="w-full md:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
-                        Effort Level {selectedEffortLevels.length > 0 && `(${selectedEffortLevels.length})`}
+                        Effort {selectedEffortLevels.length > 0 && `(${selectedEffortLevels.length})`}
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
-                    <FilterMenuHeader label="Effort Level" description={FILTER_DESCRIPTIONS.effort} />
+                    <FilterMenuHeader label="Effort" description={FILTER_DESCRIPTIONS.effort} />
                     {availableEffortLevels.map((effortLevel) => (
                       <DropdownMenuCheckboxItem
                         key={effortLevel}
@@ -1135,12 +1135,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     <Button variant="outline" className="w-full md:w-auto justify-between relative">
                       <span className="flex items-center gap-2">
                         <Filter className="w-4 h-4" />
-                        Project Type {projectTypeLabel && `(${projectTypeLabel})`}
+                        Type {projectTypeLabel && `(${projectTypeLabel})`}
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56 space-y-1">
-                    <FilterMenuHeader label="Project Type" description={FILTER_DESCRIPTIONS.projectType} />
+                    <FilterMenuHeader label="Type" description={FILTER_DESCRIPTIONS.projectType} />
                     <DropdownMenuRadioGroup value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
                       <DropdownMenuRadioItem value="all">All project types</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="primary">Primary</DropdownMenuRadioItem>

@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, ArrowRight, HelpCircle } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
 import { ProjectProfileStep } from './KickoffSteps/ProjectProfileStep';
+import { ProjectToolsStep, PLANNING_TOOLS, type PlanningToolId } from './KickoffSteps/ProjectToolsStep';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 interface KickoffWorkflowProps {
@@ -27,6 +29,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const [currentKickoffStep, setCurrentKickoffStep] = useState(0);
   const [completedKickoffSteps, setCompletedKickoffSteps] = useState<Set<number>>(new Set());
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
+  const [selectedPlanningTools, setSelectedPlanningTools] = useState<PlanningToolId[]>([]);
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
   const kickoffSteps = [{
@@ -41,6 +44,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     id: 'kickoff-step-3',
     title: 'Project Profile',
     description: 'Set up your project team and home selection'
+  }, {
+    id: 'kickoff-step-4',
+    title: 'Pick your project tools',
+    description: 'Choose which planning tools to use'
   }];
 
   // Initialize completed steps from project run data - ONLY on mount or when project changes
@@ -51,7 +58,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       return;
     }
     if (currentProjectRun?.completedSteps) {
-      const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
+      const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
       const completedIndices = new Set<number>();
       console.log("KickoffWorkflow - Initializing from project run:", {
         completedSteps: currentProjectRun.completedSteps,
@@ -84,7 +91,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     }
   }, [currentProjectRun?.id]); // Only re-run when project ID changes
 
-  const handleStepComplete = async (stepIndex: number) => {
+  const handleStepComplete = async (stepIndex: number, selectedTools?: PlanningToolId[]) => {
     console.log("🎯 handleStepComplete called with stepIndex:", stepIndex);
     if (!currentProjectRun) {
       console.error("❌ handleStepComplete: currentProjectRun is null/undefined!");
@@ -161,16 +168,22 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         }
       });
       
+      // For step 4 (tools), merge selected_planning_tools into customization_decisions
+      const existingDecisions = (currentProjectRun.customization_decisions || {}) as Record<string, unknown>;
+      const customization_decisions = stepIndex === 3 && selectedTools
+        ? { ...existingDecisions, selected_planning_tools: selectedTools }
+        : currentProjectRun.customization_decisions;
+
       // Update project run with completed step - WAIT for completion
       const updatedProjectRun = {
         ...currentProjectRun,
         completedSteps: newCompletedSteps,
         progress: Math.round(newCompletedSteps.length / getTotalStepsCount() * 100),
         // CRITICAL: Always include initial_budget, initial_timeline, initial_sizing (even if null)
-        // This ensures they are preserved in the update
         initial_budget: preservedBudget,
         initial_timeline: preservedTimeline,
         initial_sizing: preservedSizing,
+        ...(customization_decisions !== undefined && { customization_decisions }),
         updatedAt: new Date()
       };
 
@@ -188,8 +201,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       if (newCompletedKickoffSteps.size === kickoffSteps.length) {
         console.log("🎉 KickoffWorkflow - All steps complete, calling onKickoffComplete");
 
-        // DEFENSIVE CHECK: Verify all 3 UI kickoff step IDs are in database
-        const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
+        // DEFENSIVE CHECK: Verify all 4 UI kickoff step IDs are in database
+        const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
         const allIdsPresent = kickoffStepIds.every(id => newCompletedSteps.includes(id));
         if (!allIdsPresent) {
           console.error('❌ Not all kickoff step IDs present in database:', {
@@ -269,6 +282,9 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       checkedOutputs: checkedOutputs[kickoffSteps[currentKickoffStep].id] || new Set(),
       onOutputToggle: (outputId: string) => handleOutputToggle(kickoffSteps[currentKickoffStep].id, outputId)
     };
+    const existingDecisions = currentProjectRun?.customization_decisions as Record<string, unknown> | undefined;
+    const initialTools = (existingDecisions?.selected_planning_tools as PlanningToolId[] | undefined) || [];
+
     switch (currentKickoffStep) {
       case 0:
         return <ProjectOverviewStep {...stepProps} />;
@@ -276,6 +292,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         return <DIYProfileStep {...stepProps} />;
       case 2:
         return <ProjectProfileStep {...stepProps} />;
+      case 3:
+        return (
+          <ProjectToolsStep
+            {...stepProps}
+            onComplete={() => handleStepComplete(3, selectedPlanningTools)}
+            initialSelected={initialTools}
+            onSelectionChange={setSelectedPlanningTools}
+          />
+        );
       default:
         return null;
     }
@@ -290,7 +315,22 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                 Project Kickoff{currentProjectRun?.name ? `: ${currentProjectRun.name}` : ''}
                 {allKickoffStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />}
               </CardTitle>
-              <CardDescription className="text-xs mt-0.5">Overview the project and make sure this project is a good fit</CardDescription>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                <CardDescription className="text-xs">Overview the project and make sure this project is a good fit</CardDescription>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-primary cursor-help underline decoration-dotted">
+                        <HelpCircle className="h-3.5 w-3.5" />
+                        What is a good fit?
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs">
+                      <p className="text-sm">A good fit = budget, time, skill, and effort match your situation. A bad match = more money than you intend or more effort than you can do. Open the overview step for this project&apos;s details and quantified skill/effort levels.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="text-right">
@@ -371,17 +411,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     </Button>
                   )}
                   
-                  {/* Step 3: Go directly to workflow button */}
-                  {currentKickoffStep === 2 && (
+                  {false && currentKickoffStep === 2 && (
                     <Button 
                       onClick={async () => {
-                        console.log('🎯 KickoffWorkflow: Go directly to workflow clicked');
-                        // Save step 3 data first
                         if ((window as any).__projectProfileStepSave) {
                           try {
                             await (window as any).__projectProfileStepSave();
-                            // Mark step complete and trigger onKickoffComplete
+                            await new Promise(resolve => setTimeout(resolve, 100));
                             await handleStepComplete(currentKickoffStep);
+                            // Step 4 will be skipped; user goes to next step. Then they must complete step 4 (tools). So we don't skip - we just go to step 4. So this button should say "Skip tools" and complete kickoff with empty selected tools. So: mark step 3 complete, then mark step 4 complete with selected_planning_tools: [], then onKickoffComplete. That's a bigger change. Per user: "requires completion of all 4 steps". So we should NOT have "Go directly to workflow" skip step 4. So this button should just advance to step 4 (tools). So rename to something like "Next: Pick tools" or remove the skip option. User said "requires completion of all 4 steps". So remove "Go directly to workflow" button from step 3 - only "Complete & Continue" which goes to step 4.
                           } catch (error) {
                             console.error('Error saving project profile:', error);
                             return;
@@ -402,46 +440,39 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     onClick={async () => {
                       console.log('🎯 KickoffWorkflow: Step complete button clicked for step:', currentKickoffStep);
                       
-                      // For step 2 (ProjectProfileStep - step 3 in UI), call its save function first
-                      // CRITICAL: This MUST complete before marking the step as complete
-                      // The save function saves initial_budget, initial_timeline, and initial_sizing to the database
                       if (currentKickoffStep === 2 && (window as any).__projectProfileStepSave) {
-                        console.log('💾 KickoffWorkflow: Calling ProjectProfileStep save function to save budget, sizing, and timeline...');
+                        console.log('💾 KickoffWorkflow: Calling ProjectProfileStep save function...');
                         try {
-                          // CRITICAL: Wait for the save to complete - this saves all 3 fields to database
                           await (window as any).__projectProfileStepSave();
-                          console.log('✅ KickoffWorkflow: ProjectProfileStep save completed - budget, sizing, and timeline saved to database');
-                          
-                          // CRITICAL: Wait a brief moment to ensure database write is committed
                           await new Promise(resolve => setTimeout(resolve, 100));
-                          
-                          // Now mark step as complete (this will preserve the saved values)
-                          console.log('📝 KickoffWorkflow: Marking step as complete...');
                           await handleStepComplete(currentKickoffStep);
-                          console.log('✅ KickoffWorkflow: Step marked complete');
-                          
-                          // If on step 3 and planning wizard handler exists, open planning wizard
-                          if (onPlanningWizard) {
-                            console.log('🎨 KickoffWorkflow: Opening planning wizard...');
-                            onPlanningWizard();
-                          }
                           return;
                         } catch (error) {
                           console.error('❌ KickoffWorkflow: Error saving project profile:', error);
                           toast.error('Failed to save project profile. Please try again.');
-                          return; // Don't proceed if save failed
+                          return;
                         }
+                      }
+
+                      if (currentKickoffStep === 3) {
+                        await handleStepComplete(3, selectedPlanningTools);
+                        return;
                       }
                       
                       handleStepComplete(currentKickoffStep);
                     }} 
-                    className={`${currentKickoffStep === 0 ? "w-3/4" : currentKickoffStep === 2 ? "w-2/3" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight`}
+                    className={`${currentKickoffStep === 0 ? "w-3/4" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight`}
                   >
                     <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                     {currentKickoffStep === 2 ? (
                       <>
-                        <span className="hidden sm:inline">Continue to Project Planning</span>
+                        <span className="hidden sm:inline">Continue to Pick Tools</span>
                         <span className="sm:hidden">Continue</span>
+                      </>
+                    ) : currentKickoffStep === 3 ? (
+                      <>
+                        <span className="hidden sm:inline">Complete & Start Planning</span>
+                        <span className="sm:hidden">Complete</span>
                       </>
                     ) : (
                       <>

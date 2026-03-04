@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSecureInput } from '@/hooks/useSecureInput';
@@ -12,6 +12,27 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, ArrowLeft, AlertCircle, User } from 'lucide-react';
 import { useGuest } from '@/contexts/GuestContext';
+
+const ONBOARDING_STORAGE_KEY = 'project_partner_onboarding';
+
+/** Persist onboarding name and DIY level to the user's profile. Call after signup when user is in session. */
+async function saveOnboardingToProfile(userId: string, name: string, diyLevel: string): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(
+      {
+        user_id: userId,
+        full_name: name,
+        skill_level: diyLevel,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: 'user_id' }
+    );
+  if (error) {
+    console.error('Failed to save onboarding to profile:', error);
+  }
+}
+
 export default function Auth() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -36,25 +57,38 @@ export default function Auth() {
   const [showGoogleErrorDialog, setShowGoogleErrorDialog] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+  // When user becomes available, persist any pending onboarding (e.g. after email confirmation)
+  const flushPendingOnboarding = useCallback(async (userEmail: string, userId: string) => {
+    try {
+      const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+      if (!raw) return;
+      const pending = JSON.parse(raw) as { email: string; name: string; diyLevel: string };
+      if (pending.email !== userEmail.toLowerCase()) return;
+      await saveOnboardingToProfile(userId, pending.name, pending.diyLevel);
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // Update form when URL changes
   useEffect(() => {
     const mode = searchParams.get('mode');
     setIsSignUp(mode === 'signup');
   }, [location.search]);
 
-  // Redirect if already authenticated
+  // When user is present, save any pending onboarding then redirect
   useEffect(() => {
-    if (user && !loading) {
-      // Check if there's a return parameter
+    if (!user || loading) return;
+    flushPendingOnboarding(user.email ?? '', user.id).then(() => {
       const returnPath = searchParams.get('return');
       if (returnPath === 'projects') {
         navigate('/projects');
       } else {
-        // Default: Open project catalog when user logs in
         navigate('/projects');
       }
-    }
-  }, [user, loading, navigate, searchParams]);
+    });
+  }, [user, loading, navigate, searchParams, flushPendingOnboarding]);
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -139,7 +173,7 @@ export default function Auth() {
     // Track form submission timing
     trackFormSubmission('signup');
     
-    // Transfer guest data if converting from guest
+    const onboarding = (location.state as { onboarding?: { name: string; diyLevel: string } })?.onboarding;
     const dataToTransfer = guestData.projectRuns.length > 0 ? guestData : undefined;
     
     const { error } = await signUp(validation.sanitizedData.email, password, dataToTransfer);
@@ -151,6 +185,19 @@ export default function Auth() {
         setMessage('Account created! Your guest data has been saved.');
       } else {
         setMessage('Check your email for a confirmation link');
+      }
+      // Persist onboarding name and DIY level to profile once user is in session
+      if (onboarding?.name?.trim() && onboarding?.diyLevel) {
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          await saveOnboardingToProfile(newUser.id, onboarding.name.trim(), onboarding.diyLevel);
+        } else {
+          localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
+            email: validation.sanitizedData.email.toLowerCase(),
+            name: onboarding.name.trim(),
+            diyLevel: onboarding.diyLevel
+          }));
+        }
       }
     }
     setIsLoading(false);

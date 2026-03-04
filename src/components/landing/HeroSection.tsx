@@ -1,17 +1,16 @@
-import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ArrowRight } from 'lucide-react';
 import { FounderInfoDialog } from './FounderInfoDialog';
+import { OnboardingDialog } from './OnboardingDialog';
 
 interface HeroSectionProps {
   onOpenDemo?: () => void;
 }
 
 export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
-  const navigate = useNavigate();
   const [isFounderDialogOpen, setIsFounderDialogOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   
   return (
     <>
@@ -48,7 +47,7 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
               <Button 
                 size="xl" 
                 className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300" 
-                onClick={() => navigate('/auth?mode=signup')}
+                onClick={() => setIsOnboardingOpen(true)}
               >
                 Get Started Today
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -82,6 +81,10 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
       <FounderInfoDialog 
         open={isFounderDialogOpen} 
         onOpenChange={setIsFounderDialogOpen} 
+      />
+      <OnboardingDialog
+        open={isOnboardingOpen}
+        onOpenChange={setIsOnboardingOpen}
       />
     </>
   );

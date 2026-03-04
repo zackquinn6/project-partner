@@ -5,21 +5,6 @@ export const createKickoffPhase = (): Phase => {
   const kickoffSteps: WorkflowStep[] = [
     {
       id: 'kickoff-step-1',
-      step: 'DIY Profile',
-      description: 'Complete your DIY profile for personalized project guidance',
-      contentType: 'text' as const,
-      content: 'Set up your DIY profile to receive personalized project recommendations, tool suggestions, and guidance tailored to your skill level and preferences.',
-      materials: [],
-      tools: [],
-      outputs: [{
-        id: 'diy-profile-output',
-        name: 'DIY Profile Complete',
-        description: 'Personal DIY profile completed and saved',
-        type: 'none' as const
-      }]
-    },
-    {
-      id: 'kickoff-step-2',
       step: 'Project Overview',
       description: 'Review and customize your project details, timeline, and objectives',
       contentType: 'text' as const,
@@ -30,6 +15,21 @@ export const createKickoffPhase = (): Phase => {
         id: 'overview-output',
         name: 'Project Overview Complete',
         description: 'Project details reviewed and customized',
+        type: 'none' as const
+      }]
+    },
+    {
+      id: 'kickoff-step-2',
+      step: 'DIY Profile',
+      description: 'Complete your DIY profile for personalized project guidance',
+      contentType: 'text' as const,
+      content: 'Set up your DIY profile to receive personalized project recommendations, tool suggestions, and guidance tailored to your skill level and preferences.',
+      materials: [],
+      tools: [],
+      outputs: [{
+        id: 'diy-profile-output',
+        name: 'DIY Profile Complete',
+        description: 'Personal DIY profile completed and saved',
         type: 'none' as const
       }]
     },
@@ -45,6 +45,21 @@ export const createKickoffPhase = (): Phase => {
         id: 'project-profile-output',
         name: 'Project Profile Complete',
         description: 'Project profile configured and saved',
+        type: 'none' as const
+      }]
+    },
+    {
+      id: 'kickoff-step-4',
+      step: 'Pick your project tools',
+      description: 'Choose which planning tools to use for this project',
+      contentType: 'text' as const,
+      content: 'Select the tools you want to use: Scope, Schedule, Risk/Uncertainty, Budget, Detailed Instructions, Quality Control, Expert Support. Tools can be added later.',
+      materials: [],
+      tools: [],
+      outputs: [{
+        id: 'tools-output',
+        name: 'Project tools selected',
+        description: 'Planning tools selection saved',
         type: 'none' as const
       }]
     }
@@ -584,10 +599,11 @@ export const isKickoffPhaseComplete = (completedSteps: string[]): boolean => {
   const kickoffStepIds = [
     'kickoff-step-1',
     'kickoff-step-2',
-    'kickoff-step-3'
+    'kickoff-step-3',
+    'kickoff-step-4'
   ];
   
-  // STRICT CHECK: All 3 UI kickoff step IDs must be present
+  // STRICT CHECK: All 4 UI kickoff step IDs must be present
   const allKickoffStepsComplete = kickoffStepIds.every(stepId => 
     completedSteps.includes(stepId)
   );

@@ -50,6 +50,7 @@ import { DecisionRollupWindow } from './DecisionRollupWindow';
 import { KeyCharacteristicsWindow } from './KeyCharacteristicsWindow';
 import { ProjectCustomizer } from './ProjectCustomizer/ProjectCustomizer';
 import { ProjectScheduler } from './ProjectScheduler';
+import { ProgressViewsWindow } from './ProgressViewsWindow';
 import { ScaledStepProgressDialog } from './ScaledStepProgressDialog';
 import { MultiContentRenderer } from './MultiContentRenderer';
 import { CompactAppsSection } from './CompactAppsSection';
@@ -193,6 +194,7 @@ export default function UserView({
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
   const [notesGalleryOpen, setNotesGalleryOpen] = useState(false);
+  const [progressViewsOpen, setProgressViewsOpen] = useState(false);
   const [scaledProgressDialogOpen, setScaledProgressDialogOpen] = useState(false);
   const [currentScaledStep, setCurrentScaledStep] = useState<{ id: string; title: string } | null>(null);
   const [selectedMaterialsForShopping, setSelectedMaterialsForShopping] = useState<{
@@ -651,13 +653,15 @@ export default function UserView({
 
   // Load project run if projectRunId is provided
   useEffect(() => {
-    // If projectRunId is cleared/null, ensure we're in listing mode
-    if (!projectRunId && currentProjectRun) {
-      setCurrentProjectRun(null);
+    // If projectRunId is cleared/null, ensure we're in listing mode (e.g. after delete on Progress Board)
+    if (!projectRunId) {
+      if (currentProjectRun) {
+        setCurrentProjectRun(null);
+      }
       setViewMode('listing');
-      return;
+      if (!currentProjectRun) return;
     }
-    
+
     // CRITICAL: If projectRunId is provided, we MUST load it regardless of current viewMode
     // This ensures new projects from ProjectCatalog open to kickoff even if we're in listing mode
     if (projectRunId) {
@@ -2132,14 +2136,13 @@ export default function UserView({
   // CRITICAL: Don't show kickoff if planning wizard is open (prevents kickoff from reappearing)
   if (currentProjectRun && currentProjectRun.status !== 'cancelled' && !isKickoffComplete && viewMode === 'workflow' && !projectPlanningWizardOpen) {
     // Fix missing kickoff steps if user has progressed past them
-    const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
+    const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
     const currentCompletedSteps = currentProjectRun.completedSteps || [];
     
-    // If we have step 3 but missing 1 or 2, auto-complete them since user clearly progressed through
-    const hasStep3 = currentCompletedSteps.includes('kickoff-step-3');
-    const missingEarlierSteps = kickoffStepIds.slice(0, 2).filter(id => !currentCompletedSteps.includes(id));
+    const hasStep4 = currentCompletedSteps.includes('kickoff-step-4');
+    const missingEarlierSteps = kickoffStepIds.slice(0, 3).filter(id => !currentCompletedSteps.includes(id));
     
-    if (hasStep3 && missingEarlierSteps.length > 0) {
+    if (hasStep4 && missingEarlierSteps.length > 0) {
       console.log("🔧 Auto-completing missing earlier kickoff steps:", missingEarlierSteps);
       const updatedSteps = [...currentCompletedSteps];
       missingEarlierSteps.forEach(stepId => {
@@ -2172,7 +2175,7 @@ export default function UserView({
              const existingSteps = currentProjectRun.completedSteps || [];
              
              // UI kickoff step IDs
-             const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
+             const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
              
              // Find all actual Kickoff phase operation steps to mark complete
              const kickoffPhase = currentProjectRun.phases.find(p => p.name === 'Kickoff');
@@ -2660,6 +2663,7 @@ export default function UserView({
               // Dispatch event to show calendar view automatically
               window.dispatchEvent(new CustomEvent('show-schedule-calendar'));
             }}
+            onProgressViewsClick={() => setProgressViewsOpen(true)}
           />
 
           <main className="flex-1 overflow-auto">
@@ -3388,6 +3392,21 @@ export default function UserView({
           mode={projectCustomizerMode}
         />
       )}
+
+      {/* Progress views (Gantt / Kanban) */}
+      <ProgressViewsWindow
+        open={progressViewsOpen}
+        onOpenChange={setProgressViewsOpen}
+        allSteps={allSteps}
+        completedSteps={completedSteps}
+        currentStepId={currentStep?.id}
+        onStepClick={(stepIndex) => {
+          if (stepIndex >= 0 && isKickoffComplete) {
+            setCurrentStepIndex(stepIndex);
+            setProgressViewsOpen(false);
+          }
+        }}
+      />
 
       {/* Project Scheduler */}
       {projectSchedulerOpen && currentProjectRun && (
