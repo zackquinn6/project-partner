@@ -103,6 +103,9 @@ export function AddMaintenanceTaskDialog({
         description: `${template.title} has been added to your maintenance schedule`,
       });
 
+      // Remove the added template from the in-memory list to avoid duplicate tasks
+      setTemplates(prev => prev.filter(t => t.id !== template.id));
+
       onTaskAdded();
       onOpenChange(false);
     } catch (error) {
@@ -190,7 +193,7 @@ export function AddMaintenanceTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100]" />
-        <DialogContent className="w-full max-w-[95vw] md:max-w-[50vw] max-h-[90vh] overflow-hidden z-[101]">
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[75vw] max-h-[90vh] overflow-hidden z-[101]">
         <button
           type="button"
           aria-label="Close"

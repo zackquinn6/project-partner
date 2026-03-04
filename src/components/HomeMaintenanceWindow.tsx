@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { X } from 'lucide-react';
 import { useResponsive } from '@/hooks/useResponsive';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Filter, Trash2, FileText } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Filter, Trash2, FileText, Pencil } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { AddMaintenanceTaskDialog } from './AddMaintenanceTaskDialog';
 import { TaskCompletionDialog } from './TaskCompletionDialog';
 import { MaintenanceHistoryTab } from './MaintenanceHistoryTab';
@@ -55,6 +59,134 @@ interface HomeMaintenanceWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+interface EditMaintenanceTaskFormProps {
+  task: MaintenanceTask;
+  onClose: () => void;
+  onUpdated: () => void;
+}
+
+const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task, onClose, onUpdated }) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    title: task.title,
+    description: task.description || '',
+    category: task.category,
+    frequency_days: task.frequency_days,
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!user || !form.title.trim()) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('user_maintenance_tasks')
+        .update({
+          title: form.title.trim(),
+          description: form.description.trim() || null,
+          category: form.category,
+          frequency_days: form.frequency_days,
+        })
+        .eq('id', task.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Task updated',
+        description: 'Maintenance task details have been updated.',
+      });
+
+      onUpdated();
+      onClose();
+    } catch (error) {
+      console.error('Error updating maintenance task:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update maintenance task',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3">
+        <div>
+          <Label htmlFor="edit-title">Task title</Label>
+          <Input
+            id="edit-title"
+            value={form.title}
+            onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-description">Description</Label>
+          <Textarea
+            id="edit-description"
+            rows={3}
+            value={form.description}
+            onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="edit-category">Category</Label>
+            <Select
+              value={form.category}
+              onValueChange={(value) => setForm(prev => ({ ...prev, category: value }))}
+            >
+              <SelectTrigger id="edit-category">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="appliances">Appliances</SelectItem>
+                <SelectItem value="electrical">Electrical</SelectItem>
+                <SelectItem value="exterior">Exterior</SelectItem>
+                <SelectItem value="hvac">HVAC</SelectItem>
+                <SelectItem value="interior">Interior</SelectItem>
+                <SelectItem value="landscaping">Landscaping</SelectItem>
+                <SelectItem value="outdoor">Outdoor</SelectItem>
+                <SelectItem value="plumbing">Plumbing</SelectItem>
+                <SelectItem value="safety">Safety</SelectItem>
+                <SelectItem value="security">Security</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="edit-frequency">Frequency (days)</Label>
+            <Input
+              id="edit-frequency"
+              type="number"
+              min={1}
+              max={3650}
+              value={form.frequency_days}
+              onChange={(e) =>
+                setForm(prev => ({
+                  ...prev,
+                  frequency_days: parseInt(e.target.value, 10) || prev.frequency_days,
+                }))
+              }
+            />
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={saving || !form.title.trim()}>
+          {saving ? 'Saving...' : 'Save changes'}
+        </Button>
+      </div>
+    </div>
+  );
+};
 export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   open,
   onOpenChange
@@ -76,6 +208,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [sortBy, setSortBy] = useState<string>('date-desc');
   const [historyCategoryFilter, setHistoryCategoryFilter] = useState<string>('all');
   const [showAlerts, setShowAlerts] = useState(false);
+  const [selectedTaskForDetails, setSelectedTaskForDetails] = useState<MaintenanceTask | null>(null);
+  const [taskBeingEdited, setTaskBeingEdited] = useState<MaintenanceTask | null>(null);
   const {
     isMobile
   } = useResponsive();
@@ -347,7 +481,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         </div>
 
                         {/* Scrollable task list */}
-                        <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
+                        <div className="flex-1 min-h-0 overflow-y-auto py-3 px-3 md:px-6">
                       {loading ? <div className="text-center py-8">Loading tasks...</div> : getFilteredTasks().length === 0 ? <Card className="mx-1">
                           <CardContent className="pt-6">
                             <div className="text-center py-8">
@@ -364,54 +498,111 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               </Button>
                             </div>
                           </CardContent>
-                        </Card> : getFilteredTasks().map(task => {
+                        </Card> : (
+                        <table className="w-full border-collapse text-xs sm:text-sm">
+                          <thead>
+                            <tr className="border-b border-border bg-muted/40">
+                              <th className="text-left px-2 py-2 font-medium">Task</th>
+                              <th className="text-left px-2 py-2 font-medium">Frequency</th>
+                              <th className="text-left px-2 py-2 font-medium">Summary</th>
+                              <th className="text-right px-2 py-2 font-medium">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                        {getFilteredTasks().map(task => {
                     const progress = getTaskProgress(task);
                     const {
                       status,
                       color,
                       icon: StatusIcon
                     } = getTaskStatus(task);
-                    return <Card key={task.id} className="hover:shadow-sm transition-shadow relative overflow-hidden mx-1">
-                              <CardContent className="p-3 sm:p-4" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={() => handleTouchEnd(task.id)} onClick={e => {
-                        e.stopPropagation();
-                        setSwipedTaskId(null);
-                      }}>
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <h4 className="font-medium text-sm truncate">{task.title}</h4>
-                                      {task.is_custom}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mb-2">
-                                      Due: {format(new Date(task.next_due), 'MMM dd, yyyy')}
-                                    </div>
-                                    <div className="space-y-1">
-                                      <div className="flex justify-between text-xs">
-                                        <span>Progress</span>
-                                        <span>{Math.round(progress)}%</span>
-                                      </div>
-                                      <Progress value={progress} className="h-2" />
-                                    </div>
-                                  </div>
-                                    <div className="flex flex-col gap-1 min-h-[44px] md:min-h-[36px] justify-center">
-                                     <Button onClick={() => handleTaskComplete(task)} size="sm" className="w-9 h-9 md:w-8 md:h-8 p-0 bg-green-600 hover:bg-green-700 text-white" title="Complete Task">
-                                       <CheckCircle className="h-4 w-4" />
-                                     </Button>
-                                     
-                                     {/* Show delete button on desktop or when swiped on mobile */}
-                                     <div className={`transition-all duration-200 ${swipedTaskId === task.id ? 'opacity-100 w-9 md:w-8' : 'md:opacity-100 md:w-8 opacity-0 w-0'}`}>
-                                       <Button variant="destructive" size="sm" onClick={() => {
+                    const summary = task.description || 'No description yet.';
+                    return (
+                      <tr
+                        key={task.id}
+                        className="border-b border-border hover:bg-muted/30 transition-colors"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={() => handleTouchEnd(task.id)}
+                      >
+                        <td
+                          className="px-2 py-2 align-top cursor-pointer"
+                          onClick={() => {
+                            setSwipedTaskId(null);
+                            setSelectedTaskForDetails(task);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium truncate">{task.title}</span>
+                            {task.is_custom && (
+                              <Badge variant="outline" className="text-[10px] uppercase">Custom</Badge>
+                            )}
+                          </div>
+                          <div className="mt-1 text-[10px] text-muted-foreground">
+                            Due {format(new Date(task.next_due), 'MMM dd, yyyy')}
+                          </div>
+                          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <span>Progress</span>
+                            <span>{Math.round(progress)}%</span>
+                            <Progress value={progress} className="h-1.5 flex-1" />
+                          </div>
+                        </td>
+                        <td className="px-2 py-2 align-top">
+                          Every {task.frequency_days} days
+                        </td>
+                        <td
+                          className="px-2 py-2 align-top cursor-pointer max-w-xs"
+                          onClick={() => {
+                            setSwipedTaskId(null);
+                            setSelectedTaskForDetails(task);
+                          }}
+                        >
+                          <span className="line-clamp-3 text-xs text-muted-foreground">
+                            {summary}
+                          </span>
+                        </td>
+                        <td className="px-2 py-2 align-top">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              onClick={() => handleTaskComplete(task)}
+                              size="lg"
+                              className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3"
+                              title="Complete Task"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Complete
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-foreground"
+                              title="Edit Task"
+                              onClick={() => setTaskBeingEdited(task)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 ${
+                                swipedTaskId === task.id ? 'opacity-100' : 'md:opacity-100'
+                              }`}
+                              title="Delete Task"
+                              onClick={() => {
                                 handleDeleteTask(task.id);
                                 setSwipedTaskId(null);
-                              }} className="w-9 h-9 md:w-8 md:h-8 p-0" title="Delete Task">
-                                         <Trash2 className="h-4 w-4" />
-                                       </Button>
-                                     </div>
-                                   </div>
-                                </div>
-                              </CardContent>
-                            </Card>;
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
                   })}
+                          </tbody>
+                        </table>
+                      )}
                         </div>
                       </div>
                     </TabsContent>
@@ -476,6 +667,48 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               </p>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Task details dialog */}
+      <Dialog open={!!selectedTaskForDetails} onOpenChange={(open) => !open && setSelectedTaskForDetails(null)}>
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[600px] max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>{selectedTaskForDetails?.title || 'Task details'}</DialogTitle>
+          </DialogHeader>
+          {selectedTaskForDetails && (
+            <div className="flex flex-col gap-3 py-1">
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                <div><span className="font-medium">Category:</span> {categoryLabels[selectedTaskForDetails.category] || selectedTaskForDetails.category}</div>
+                <div><span className="font-medium">Frequency:</span> Every {selectedTaskForDetails.frequency_days} days</div>
+                <div><span className="font-medium">Next due:</span> {format(new Date(selectedTaskForDetails.next_due), 'MMM dd, yyyy')}</div>
+              </div>
+              {selectedTaskForDetails.description && (
+                <div className="mt-2">
+                  <h3 className="text-sm font-medium mb-1">Summary</h3>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">
+                    {selectedTaskForDetails.description}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Task edit dialog */}
+      <Dialog open={!!taskBeingEdited} onOpenChange={(open) => !open && setTaskBeingEdited(null)}>
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[600px] max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Edit Maintenance Task</DialogTitle>
+          </DialogHeader>
+          {taskBeingEdited && (
+            <EditMaintenanceTaskForm
+              task={taskBeingEdited}
+              onClose={() => setTaskBeingEdited(null)}
+              onUpdated={fetchTasks}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>;
