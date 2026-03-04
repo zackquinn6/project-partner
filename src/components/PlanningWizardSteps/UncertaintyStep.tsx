@@ -9,18 +9,24 @@ import { useProject } from '@/contexts/ProjectContext';
 interface UncertaintyStepProps {
   onComplete: () => void;
   isCompleted: boolean;
+  /** When provided (e.g. from UserView), opens Risk Management at host level to avoid nested dialog */
+  onOpenRiskManagement?: () => void;
 }
 
 export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
   onComplete,
-  isCompleted
+  isCompleted,
+  onOpenRiskManagement
 }) => {
   const { currentProjectRun } = useProject();
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
 
   const handleOpenRiskManagement = () => {
-    setRiskManagementOpen(true);
-    // Mark step as complete when opening risk management
+    if (onOpenRiskManagement) {
+      onOpenRiskManagement();
+    } else {
+      setRiskManagementOpen(true);
+    }
     onComplete();
   };
 
@@ -61,14 +67,16 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Risk Management Window */}
-      <RiskManagementWindow
-        open={riskManagementOpen}
-        onOpenChange={setRiskManagementOpen}
-        projectRunId={currentProjectRun?.id}
-        mode="run"
-        readOnly={false}
-      />
+      {/* Risk Management Window: only when host does not provide onOpenRiskManagement (avoids nested dialog) */}
+      {!onOpenRiskManagement && (
+        <RiskManagementWindow
+          open={riskManagementOpen}
+          onOpenChange={setRiskManagementOpen}
+          projectRunId={currentProjectRun?.id}
+          mode="run"
+          readOnly={false}
+        />
+      )}
     </div>
   );
 };

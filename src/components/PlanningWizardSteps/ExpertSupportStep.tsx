@@ -2,27 +2,22 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
-interface BudgetStepProps {
+const CALL_THE_TRADES_URL = 'https://callthetrades.com';
+
+interface ExpertSupportStepProps {
   onComplete: () => void;
   isCompleted: boolean;
-  /** When provided (e.g. from UserView), opens Project Budgeting directly so the link works from the wizard */
-  onOpenBudgeting?: () => void;
 }
 
-export const BudgetStep: React.FC<BudgetStepProps> = ({
+export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
   onComplete,
-  isCompleted,
-  onOpenBudgeting
+  isCompleted
 }) => {
-  const handleOpenBudgeting = (e: React.MouseEvent) => {
+  const handleOpenLink = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onOpenBudgeting) {
-      onOpenBudgeting();
-    } else {
-      window.dispatchEvent(new CustomEvent('open-project-budgeting'));
-    }
+    window.open(CALL_THE_TRADES_URL, '_blank', 'noopener,noreferrer');
     onComplete();
   };
 
@@ -31,33 +26,36 @@ export const BudgetStep: React.FC<BudgetStepProps> = ({
       <Card>
         <CardHeader className="p-3 sm:p-4">
           <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
-            <DollarSign className="w-5 h-5" />
-            Budget
+            Expert support
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Manage project finances
+            Get help from trades professionals when you need it
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-3 sm:p-4">
           <div className="text-center space-y-4 py-6">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Manage finances for this project. Go to Project Budgeting app.
+              Set up an account with Call the Trades to connect with expert tradespeople for support during your project.
             </p>
-            
-            <Button 
+            <Button
               type="button"
-              onClick={handleOpenBudgeting}
+              variant="default"
               size="lg"
               className="w-full max-w-md h-16 text-lg font-semibold"
+              onClick={handleOpenLink}
             >
-              <DollarSign className="w-6 h-6 mr-3" />
-              Open Project Budgeting
+              <ExternalLink className="w-6 h-6 mr-3" />
+              Setup an account with Call the Trades
             </Button>
-
+            <p className="text-xs text-muted-foreground">
+              <a href={CALL_THE_TRADES_URL} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">
+                {CALL_THE_TRADES_URL}
+              </a>
+            </p>
             {isCompleted && (
               <p className="text-xs sm:text-sm text-green-600 font-medium">
-                ✓ Budget completed
+                ✓ Expert support option reviewed
               </p>
             )}
           </div>
@@ -66,4 +64,3 @@ export const BudgetStep: React.FC<BudgetStepProps> = ({
     </div>
   );
 };
-

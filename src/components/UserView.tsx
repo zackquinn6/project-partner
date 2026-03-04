@@ -3495,6 +3495,7 @@ export default function UserView({
           // User goes directly to workflow
         }}
         onOpenBudgeting={() => setProjectBudgetingOpen(true)}
+        onOpenRiskManagement={() => setRiskManagementOpen(true)}
       />
       
       {/* Project Completion Popup */}

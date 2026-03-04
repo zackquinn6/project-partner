@@ -17,6 +17,7 @@ import { AdminRoadmapManager } from './AdminRoadmapManager';
 import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
 import { AdminGuideWindow } from './AdminGuideWindow';
 import { BetaModeToggle } from './BetaModeToggle';
+import { PartnerAppToggles } from './PartnerAppToggles';
 import { AppManager } from './AppManager';
 export const AdminView: React.FC = () => {
   const [enhancedProjectManagementOpen, setEnhancedProjectManagementOpen] = useState(false);
@@ -194,6 +195,9 @@ export const AdminView: React.FC = () => {
 
         {/* Beta Mode Toggle */}
         <BetaModeToggle />
+
+        {/* Partner apps & Expert support toggles */}
+        <PartnerAppToggles />
 
         <Dialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen}>
           <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">

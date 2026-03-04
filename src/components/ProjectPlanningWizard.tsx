@@ -19,8 +19,15 @@ import { ScheduleStep } from './PlanningWizardSteps/ScheduleStep';
 import { UncertaintyStep } from './PlanningWizardSteps/UncertaintyStep';
 import { BudgetStep } from './PlanningWizardSteps/BudgetStep';
 import { ShoppingStep } from './PlanningWizardSteps/ShoppingStep';
+import { LearningPreferencesStep } from './PlanningWizardSteps/LearningPreferencesStep';
+import { QualityControlStep } from './PlanningWizardSteps/QualityControlStep';
+import { ExpertSupportStep } from './PlanningWizardSteps/ExpertSupportStep';
+import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 
-const WIZARD_TOOL_ORDER: PlanningToolId[] = ['scope', 'schedule', 'risk', 'budget', 'shopping_list'];
+const WIZARD_TOOL_ORDER: PlanningToolId[] = [
+  'scope', 'schedule', 'risk', 'budget', 'shopping_list',
+  'detailed_instructions', 'quality_control', 'expert_support'
+];
 
 interface ProjectPlanningWizardProps {
   open: boolean;
@@ -28,23 +35,37 @@ interface ProjectPlanningWizardProps {
   onGoToWorkflow?: () => void;
   /** When provided, opens Project Budgeting from the Budget step without relying on window event */
   onOpenBudgeting?: () => void;
+  /** When provided, opens Risk Management at the host level (avoids nested dialog) */
+  onOpenRiskManagement?: () => void;
 }
 
 export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   open,
   onOpenChange,
   onGoToWorkflow,
-  onOpenBudgeting
+  onOpenBudgeting,
+  onOpenRiskManagement
 }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
+  const { expertSupportEnabled } = usePartnerAppSettings();
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  /** Local copy of selected tools so dropdown changes apply immediately without waiting for context */
+  const [localSelectedTools, setLocalSelectedTools] = useState<PlanningToolId[] | null>(null);
 
-  const wizardSteps = useMemo(() => {
+  const selectedToolsFromContext = useMemo(() => {
     const decisions = currentProjectRun?.customization_decisions as Record<string, unknown> | undefined;
     const selected = (decisions?.selected_planning_tools as PlanningToolId[] | undefined) ?? [];
+    return expertSupportEnabled ? selected : selected.filter(id => id !== 'expert_support');
+  }, [currentProjectRun?.id, currentProjectRun?.customization_decisions, expertSupportEnabled]);
+
+  const wizardSteps = useMemo(() => {
+    const selected = localSelectedTools ?? selectedToolsFromContext;
     const selectedSet = new Set(selected);
-    const ordered = WIZARD_TOOL_ORDER.filter(id => selectedSet.has(id));
+    const orderFiltered = expertSupportEnabled
+      ? WIZARD_TOOL_ORDER
+      : WIZARD_TOOL_ORDER.filter(id => id !== 'expert_support');
+    const ordered = orderFiltered.filter(id => selectedSet.has(id));
     if (ordered.length === 0) {
       return [{
         id: 'no-tools',
@@ -62,12 +83,13 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         description: meta?.benefit ?? ''
       };
     });
-  }, [currentProjectRun?.id, currentProjectRun?.customization_decisions]);
+  }, [localSelectedTools, selectedToolsFromContext, expertSupportEnabled]);
 
   useEffect(() => {
     if (open) {
       setCurrentStep(0);
       setCompletedSteps(new Set());
+      setLocalSelectedTools(null);
     }
   }, [open]);
 
@@ -104,27 +126,31 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const currentToolId = wizardSteps[currentStep]?.toolId ?? null;
 
   const planningToolsForWizard = useMemo(
-    () => PLANNING_TOOLS.filter(t => WIZARD_TOOL_ORDER.includes(t.id)),
-    []
+    () => PLANNING_TOOLS.filter(t =>
+      WIZARD_TOOL_ORDER.includes(t.id) && (t.id !== 'expert_support' || expertSupportEnabled)
+    ),
+    [expertSupportEnabled]
   );
 
   const handlePlanningToolToggle = useCallback(
     (toolId: PlanningToolId, checked: boolean) => {
       if (!currentProjectRun || toolId === 'scope') return;
       const decisions = (currentProjectRun.customization_decisions || {}) as Record<string, unknown>;
-      const current = (decisions.selected_planning_tools as PlanningToolId[] | undefined) ?? [];
-      const currentSet = new Set(current);
+      // Use effective selection (local + context) so rapid toggles don't overwrite with stale context
+      const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
+      const currentSet = new Set(effectiveSelected);
       if (checked) currentSet.add(toolId);
       else currentSet.delete(toolId);
       currentSet.add('scope');
       const next = Array.from(currentSet);
+      setLocalSelectedTools(next);
       updateProjectRun({
         ...currentProjectRun,
         customization_decisions: { ...decisions, selected_planning_tools: next },
         updatedAt: new Date()
       });
     },
-    [currentProjectRun, updateProjectRun]
+    [currentProjectRun, updateProjectRun, localSelectedTools, selectedToolsFromContext]
   );
 
   const renderCurrentStep = () => {
@@ -160,11 +186,17 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           />
         );
       case 'risk':
-        return <UncertaintyStep {...stepProps} />;
+        return <UncertaintyStep {...stepProps} onOpenRiskManagement={onOpenRiskManagement} />;
       case 'budget':
         return <BudgetStep {...stepProps} onOpenBudgeting={onOpenBudgeting} />;
       case 'shopping_list':
         return <ShoppingStep {...stepProps} />;
+      case 'detailed_instructions':
+        return <LearningPreferencesStep {...stepProps} />;
+      case 'quality_control':
+        return <QualityControlStep {...stepProps} />;
+      case 'expert_support':
+        return <ExpertSupportStep {...stepProps} />;
       default:
         return (
           <Card>
@@ -222,9 +254,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                     <DropdownMenuLabel>Planning tools for this run</DropdownMenuLabel>
                     {planningToolsForWizard.map(({ id, label }) => {
                       const isScope = id === 'scope';
-                      const checked = (currentProjectRun?.customization_decisions as Record<string, unknown> | undefined)?.selected_planning_tools != null
-                        ? ((currentProjectRun.customization_decisions as Record<string, unknown>).selected_planning_tools as PlanningToolId[]).includes(id)
-                        : id === 'scope' || id === 'risk';
+                      const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
+                      const checked = effectiveSelected.includes(id);
                       return (
                         <DropdownMenuCheckboxItem
                           key={id}

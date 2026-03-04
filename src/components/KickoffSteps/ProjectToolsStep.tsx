@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 
 export const PLANNING_TOOL_IDS = [
   'scope',
@@ -20,7 +21,7 @@ export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: st
   { id: 'risk', label: 'Risk/Uncertainty', benefit: 'Proactively avoid issues' },
   { id: 'budget', label: 'Budget', benefit: 'Spend what you want' },
   { id: 'shopping_list', label: 'Shopping List', benefit: 'Track tool & material shopping' },
-  { id: 'detailed_instructions', label: 'Detailed Instructions', benefit: 'Step-by-step when you need it' },
+  { id: 'detailed_instructions', label: 'Learning preferences', benefit: 'Step-by-step when you need it' },
   { id: 'quality_control', label: 'Quality Control', benefit: 'Document results for future inspections' },
   { id: 'expert_support', label: 'Expert Support', benefit: 'Get help when you\'re stuck' }
 ];
@@ -42,22 +43,32 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   initialSelected = [],
   onSelectionChange
 }) => {
+  const { expertSupportEnabled } = usePartnerAppSettings();
+  const toolsToShow = React.useMemo(
+    () => expertSupportEnabled ? PLANNING_TOOLS : PLANNING_TOOLS.filter(t => t.id !== 'expert_support'),
+    [expertSupportEnabled]
+  );
+
   const [selected, setSelected] = useState<Set<PlanningToolId>>(() => {
     const initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
-    return new Set(initial as PlanningToolId[]);
+    const filtered = expertSupportEnabled ? initial : initial.filter(id => id !== 'expert_support');
+    return new Set(filtered as PlanningToolId[]);
   });
 
   useEffect(() => {
-    const initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
+    let initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
+    if (!expertSupportEnabled) initial = initial.filter(id => id !== 'expert_support');
     setSelected(new Set(initial as PlanningToolId[]));
     if (initialSelected.length === 0) {
-      onSelectionChange?.(DEFAULT_SELECTED);
+      const defaultFiltered = expertSupportEnabled ? DEFAULT_SELECTED : DEFAULT_SELECTED.filter(id => id !== 'expert_support');
+      onSelectionChange?.(defaultFiltered as PlanningToolId[]);
     }
-  }, [initialSelected.join(',')]);
+  }, [initialSelected.join(','), expertSupportEnabled]);
 
   const notifySelection = (next: Set<PlanningToolId>) => {
     const withScope = new Set(next);
     withScope.add('scope');
+    if (!expertSupportEnabled) withScope.delete('expert_support');
     onSelectionChange?.(Array.from(withScope));
   };
 
@@ -73,7 +84,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   };
 
   const handleSelectAll = () => {
-    const all = new Set(PLANNING_TOOL_IDS);
+    const all = new Set(PLANNING_TOOL_IDS.filter(id => id !== 'expert_support' || expertSupportEnabled));
     setSelected(all);
     notifySelection(all);
   };
@@ -87,7 +98,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
-        {PLANNING_TOOLS.map(({ id, label, benefit }) => {
+        {toolsToShow.map(({ id, label, benefit }) => {
           const isScope = id === 'scope';
           const isChecked = selected.has(id);
           return (
