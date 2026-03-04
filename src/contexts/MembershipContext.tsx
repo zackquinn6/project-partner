@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -144,10 +144,10 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const canAccessPaidFeatures = isBetaMode || isSubscribed || isAdmin || inTrial;
 
-  const canAccessApp = (actionKey: string): boolean => {
-    if (FREE_APP_ACTION_KEYS.includes(actionKey as typeof FREE_APP_ACTION_KEYS[number])) return true;
+  const canAccessApp = useCallback((actionKey: string): boolean => {
+    if ((FREE_APP_ACTION_KEYS as readonly string[]).includes(actionKey)) return true;
     return canAccessPaidFeatures;
-  };
+  }, [canAccessPaidFeatures]);
 
   const trialDaysRemaining = trialEndDate
     ? Math.max(0, Math.ceil((new Date(trialEndDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
