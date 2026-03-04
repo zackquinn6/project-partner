@@ -8,6 +8,7 @@ export const PLANNING_TOOL_IDS = [
   'schedule',
   'risk',
   'budget',
+  'shopping_list',
   'detailed_instructions',
   'quality_control',
   'expert_support'
@@ -18,16 +19,15 @@ export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: st
   { id: 'schedule', label: 'Schedule', benefit: 'Set a realistic timeline' },
   { id: 'risk', label: 'Risk/Uncertainty', benefit: 'Proactively avoid issues' },
   { id: 'budget', label: 'Budget', benefit: 'Spend what you want' },
+  { id: 'shopping_list', label: 'Shopping List', benefit: 'Track tool & material shopping' },
   { id: 'detailed_instructions', label: 'Detailed Instructions', benefit: 'Step-by-step when you need it' },
-  { id: 'quality_control', label: 'Quality Control', benefit: 'Checkpoints that keep results on track' },
+  { id: 'quality_control', label: 'Quality Control', benefit: 'Document results for future inspections' },
   { id: 'expert_support', label: 'Expert Support', benefit: 'Get help when you\'re stuck' }
 ];
 
 export type PlanningToolId = (typeof PLANNING_TOOL_IDS)[number];
 
-const PRESET_LITE: PlanningToolId[] = ['risk'];
-const PRESET_STANDARD: PlanningToolId[] = ['risk', 'schedule', 'detailed_instructions'];
-const PRESET_PRO: PlanningToolId[] = [...PLANNING_TOOL_IDS];
+const DEFAULT_SELECTED: PlanningToolId[] = ['scope', 'risk'];
 
 interface ProjectToolsStepProps {
   onComplete: () => void;
@@ -42,20 +42,32 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   initialSelected = [],
   onSelectionChange
 }) => {
-  const [selected, setSelected] = useState<Set<PlanningToolId>>(() => new Set(initialSelected));
+  const [selected, setSelected] = useState<Set<PlanningToolId>>(() => {
+    const initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
+    return new Set(initial as PlanningToolId[]);
+  });
 
   useEffect(() => {
-    if (initialSelected.length > 0) {
-      setSelected(new Set(initialSelected as PlanningToolId[]));
+    const initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
+    setSelected(new Set(initial as PlanningToolId[]));
+    if (initialSelected.length === 0) {
+      onSelectionChange?.(DEFAULT_SELECTED);
     }
   }, [initialSelected.join(',')]);
 
+  const notifySelection = (next: Set<PlanningToolId>) => {
+    const withScope = new Set(next);
+    withScope.add('scope');
+    onSelectionChange?.(Array.from(withScope));
+  };
+
   const handleToggle = (id: PlanningToolId) => {
+    if (id === 'scope') return;
     setSelected(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      onSelectionChange?.(Array.from(next));
+      notifySelection(next);
       return next;
     });
   };
@@ -63,18 +75,13 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   const handleSelectAll = () => {
     const all = new Set(PLANNING_TOOL_IDS);
     setSelected(all);
-    onSelectionChange?.(Array.from(all));
+    notifySelection(all);
   };
 
   const handleClearAll = () => {
-    setSelected(new Set());
-    onSelectionChange?.([]);
-  };
-
-  const applyPreset = (preset: PlanningToolId[]) => {
-    const next = new Set(preset);
+    const next = new Set<PlanningToolId>(['scope', 'risk']);
     setSelected(next);
-    onSelectionChange?.(preset);
+    notifySelection(next);
   };
 
   return (
@@ -86,62 +93,39 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => applyPreset(PRESET_LITE)}
-          className={selected.size === PRESET_LITE.length && PRESET_LITE.every(id => selected.has(id)) ? 'border-primary bg-primary/5' : ''}
-        >
-          Lite
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => applyPreset(PRESET_STANDARD)}
-          className={selected.size === PRESET_STANDARD.length && PRESET_STANDARD.every(id => selected.has(id)) ? 'border-primary bg-primary/5' : ''}
-        >
-          Standard
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => applyPreset(PRESET_PRO)}
-          className={selected.size === PRESET_PRO.length ? 'border-primary bg-primary/5' : ''}
-        >
-          Pro
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Lite: Risk only · Standard: Risk, Schedule, Instructions · Pro: All tools (incl. Budget, Quality Control)
-      </p>
-
       <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
-        {PLANNING_TOOLS.map(({ id, label, benefit }) => (
-          <Card
-            key={id}
-            className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-              selected.has(id) ? 'border-primary bg-primary/5' : ''
-            }`}
-            onClick={() => handleToggle(id)}
-          >
-            <CardHeader className="p-4 pb-2">
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id={id}
-                  checked={selected.has(id)}
-                  onCheckedChange={() => handleToggle(id)}
-                  onClick={e => e.stopPropagation()}
-                  className="mt-0.5"
-                />
-                <div className="space-y-0.5 min-w-0">
-                  <CardTitle className="text-base font-medium">{label}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{benefit}</p>
+        {PLANNING_TOOLS.map(({ id, label, benefit }) => {
+          const isScope = id === 'scope';
+          const isChecked = selected.has(id);
+          return (
+            <Card
+              key={id}
+              className={
+                isScope
+                  ? 'border-primary bg-primary/5 cursor-default'
+                  : `cursor-pointer transition-colors hover:bg-muted/50 ${isChecked ? 'border-primary bg-primary/5' : ''}`
+              }
+              onClick={isScope ? undefined : () => handleToggle(id)}
+            >
+              <CardHeader className="p-4 pb-2">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id={id}
+                    checked={isChecked}
+                    onCheckedChange={isScope ? undefined : () => handleToggle(id)}
+                    onClick={e => e.stopPropagation()}
+                    className="mt-0.5"
+                    disabled={isScope}
+                  />
+                  <div className="space-y-0.5 min-w-0">
+                    <CardTitle className="text-base font-medium">{label}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{benefit}</p>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
+              </CardHeader>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="flex items-center gap-2">

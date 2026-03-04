@@ -242,18 +242,17 @@ const Index = () => {
   useEffect(() => {
     const handleForceProgressBoardListing = () => {
       console.log('🔄 Index: Force Progress Board listing event received - clearing project and forcing listing mode');
-      // Clear current project run in global context
       setCurrentProjectRun(null);
       setCurrentProject(null);
-      // Force listing mode
       setForceListingMode(true);
-      // Ensure we're in user view
       setCurrentView('user');
+      // Clear projectRunId from location state so UserView never opens a project when showing Progress Board
+      navigate('/', { state: { view: 'user' }, replace: true });
     };
 
     window.addEventListener('force-progress-board-listing', handleForceProgressBoardListing);
     return () => window.removeEventListener('force-progress-board-listing', handleForceProgressBoardListing);
-  }, [setCurrentProjectRun, setCurrentProject]);
+  }, [setCurrentProjectRun, setCurrentProject, navigate]);
 
   // Listen for clear reset flags event and sync with Index
   useEffect(() => {

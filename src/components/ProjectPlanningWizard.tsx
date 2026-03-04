@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, CheckCircle, X } from 'lucide-react';
+import { useProject } from '@/contexts/ProjectContext';
+import { PLANNING_TOOLS } from './KickoffSteps/ProjectToolsStep';
+import type { PlanningToolId } from './KickoffSteps/ProjectToolsStep';
 import { CustomizationStep } from './PlanningWizardSteps/CustomizationStep';
 import { ScheduleStep } from './PlanningWizardSteps/ScheduleStep';
 import { UncertaintyStep } from './PlanningWizardSteps/UncertaintyStep';
 import { BudgetStep } from './PlanningWizardSteps/BudgetStep';
+import { ShoppingStep } from './PlanningWizardSteps/ShoppingStep';
+
+const WIZARD_TOOL_ORDER: PlanningToolId[] = ['scope', 'schedule', 'risk', 'budget', 'shopping_list'];
 
 interface ProjectPlanningWizardProps {
   open: boolean;
@@ -20,38 +26,51 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   onOpenChange,
   onGoToWorkflow
 }) => {
+  const { currentProjectRun } = useProject();
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
-  const wizardSteps = [
-    {
-      id: 'planning-step-1',
-      title: 'Customization',
-      description: 'Make choices and plan your work'
-    },
-    {
-      id: 'planning-step-2',
-      title: 'Schedule',
-      description: 'Create a realistic timeline'
-    },
-    {
-      id: 'planning-step-3',
-      title: 'Project Uncertainty',
-      description: 'Plan for potential risks'
-    },
-    {
-      id: 'planning-step-4',
-      title: 'Budget',
-      description: 'Manage project finances'
+  const wizardSteps = useMemo(() => {
+    const decisions = currentProjectRun?.customization_decisions as Record<string, unknown> | undefined;
+    const selected = (decisions?.selected_planning_tools as PlanningToolId[] | undefined) ?? [];
+    const selectedSet = new Set(selected);
+    const ordered = WIZARD_TOOL_ORDER.filter(id => selectedSet.has(id));
+    if (ordered.length === 0) {
+      return [{
+        id: 'no-tools',
+        toolId: null as PlanningToolId | null,
+        title: 'No tools selected',
+        description: 'Complete Workflow Setup (Kickoff step 4) to choose planning tools for this run.'
+      }];
     }
-  ];
+    return ordered.map(toolId => {
+      const meta = PLANNING_TOOLS.find(t => t.id === toolId);
+      return {
+        id: `planning-${toolId}`,
+        toolId,
+        title: meta?.label ?? toolId,
+        description: meta?.benefit ?? ''
+      };
+    });
+  }, [currentProjectRun?.id, currentProjectRun?.customization_decisions]);
+
+  useEffect(() => {
+    if (open) {
+      setCurrentStep(0);
+      setCompletedSteps(new Set());
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (currentStep >= wizardSteps.length) {
+      setCurrentStep(Math.max(0, wizardSteps.length - 1));
+    }
+  }, [wizardSteps.length, currentStep]);
 
   const handleStepComplete = (stepIndex: number) => {
     const newCompletedSteps = new Set(completedSteps);
     newCompletedSteps.add(stepIndex);
     setCompletedSteps(newCompletedSteps);
-
-    // Move to next step if not at the end
     if (stepIndex < wizardSteps.length - 1) {
       setCurrentStep(stepIndex + 1);
     }
@@ -70,8 +89,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   };
 
   const isStepCompleted = (stepIndex: number) => completedSteps.has(stepIndex);
-  const allStepsComplete = completedSteps.size === wizardSteps.length;
-  const progress = completedSteps.size / wizardSteps.length * 100;
+  const allStepsComplete = wizardSteps.length > 0 && completedSteps.size === wizardSteps.length;
+  const progress = wizardSteps.length > 0 ? completedSteps.size / wizardSteps.length * 100 : 0;
+  const currentToolId = wizardSteps[currentStep]?.toolId ?? null;
 
   const renderCurrentStep = () => {
     const stepProps = {
@@ -79,24 +99,48 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       isCompleted: isStepCompleted(currentStep)
     };
 
-    switch (currentStep) {
-      case 0:
+    if (currentToolId === null) {
+      return (
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-muted-foreground">
+              Complete Workflow Setup (Kickoff step 4) to choose planning tools for this run. Each tool becomes a step in this wizard and opens its app when you select it.
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    switch (currentToolId) {
+      case 'scope':
         return <CustomizationStep {...stepProps} />;
-      case 1:
-        return <ScheduleStep 
-          {...stepProps}
-          onNext={() => setCurrentStep(2)}
-          onGoToWorkflow={() => {
-            onOpenChange(false);
-            if (onGoToWorkflow) onGoToWorkflow();
-          }}
-        />;
-      case 2:
+      case 'schedule':
+        return (
+          <ScheduleStep
+            {...stepProps}
+            onNext={() => setCurrentStep(currentStep + 1)}
+            onGoToWorkflow={() => {
+              onOpenChange(false);
+              if (onGoToWorkflow) onGoToWorkflow();
+            }}
+          />
+        );
+      case 'risk':
         return <UncertaintyStep {...stepProps} />;
-      case 3:
+      case 'budget':
         return <BudgetStep {...stepProps} />;
+      case 'shopping_list':
+        return <ShoppingStep {...stepProps} />;
       default:
-        return null;
+        return (
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-sm text-muted-foreground">
+                Use this tool from the workflow when you reach the relevant step.
+              </p>
+            </CardContent>
+          </Card>
+        );
     }
   };
 
@@ -132,7 +176,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                 </CardTitle>
                 <p className="text-base sm:text-lg font-semibold mt-2 text-foreground">Build your complete project plan</p>
                 <CardDescription className="text-xs sm:text-sm mt-1">
-                  Four steps to customize, schedule, plan for uncertainty, and budget your project
+                  {wizardSteps.length === 1 && wizardSteps[0].toolId === null
+                    ? 'Select planning tools in Kickoff step 4 to see your steps here.'
+                    : `${wizardSteps.length} step${wizardSteps.length !== 1 ? 's' : ''} based on tools selected for this run`}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">

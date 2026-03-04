@@ -425,19 +425,16 @@ export function organizeWorkflowNavigation(
   let closeProjectPhase: Phase | null = null;
   
   phases.forEach(phase => {
-    // CRITICAL: Check if phase is standard
-    // A phase is standard if: isStandard === true AND not linked
-    // A phase is close project if: isStandard === true AND not linked AND phaseOrderNumber === 'last'
-    // Everything else is a custom phase
-    const isStandardPhase = phase.isStandard === true && !phase.isLinked;
-    const isCloseProject = phase.isStandard === true && !phase.isLinked && phase.phaseOrderNumber === 'last';
+    // CRITICAL: Standard phases include both owned and linked (isLinked) foundation phases
+    // so Kickoff, Plan, Ordering, Close display as separate standard phases in the workflow
+    const isStandardPhase = phase.isStandard === true;
+    const isCloseProject = phase.isStandard === true && phase.phaseOrderNumber === 'last';
     
     if (isCloseProject) {
       closeProjectPhase = phase;
     } else if (isStandardPhase) {
       standardPhases.push(phase);
     } else {
-      // Custom phase (isStandard is false, undefined, or phase is linked)
       customPhases.push(phase);
     }
   });

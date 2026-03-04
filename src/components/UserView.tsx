@@ -1760,8 +1760,23 @@ export default function UserView({
     }
     
     
-    const contentStr = typeof step.content === 'string' ? step.content : '';
-    
+    const rawContentStr = typeof step.content === 'string' ? step.content : '';
+    // For default text content only: show selected instruction level when content has **LEVEL:** segments
+    const contentStrForText = (() => {
+      if (!rawContentStr) return '';
+      const markers = ['**BEGINNER:**', '**INTERMEDIATE:**', '**ADVANCED:**'] as const;
+      const hasMarkers = markers.some(m => rawContentStr.includes(m));
+      if (!hasMarkers) return rawContentStr;
+      const levelIndex = instructionLevel === 'beginner' ? 0 : instructionLevel === 'intermediate' ? 1 : 2;
+      const startMarker = markers[levelIndex];
+      const start = rawContentStr.indexOf(startMarker);
+      if (start === -1) return rawContentStr;
+      const afterStart = rawContentStr.slice(start + startMarker.length).trimStart();
+      const nextMarker = markers.slice(levelIndex + 1).find(m => afterStart.includes(m));
+      const end = nextMarker ? afterStart.indexOf(nextMarker) : afterStart.length;
+      return afterStart.slice(0, end).trim();
+    })();
+
     switch (step.contentType) {
       case 'document':
         return <div className="space-y-4">
@@ -1771,7 +1786,7 @@ export default function UserView({
                 <span className="font-medium text-orange-800">External Resource</span>
               </div>
               <div className="text-foreground break-all">
-                {contentStr}
+                {rawContentStr}
               </div>
             </div>
           </div>;
@@ -1783,7 +1798,7 @@ export default function UserView({
             </div>
             {step.image && <img src={step.image} alt={step.step} className="w-full rounded-lg shadow-card max-w-2xl" />}
             <div className="prose prose-sm max-w-none">
-              <div className="whitespace-pre-wrap">{contentStr}</div>
+              <div className="whitespace-pre-wrap">{contentStrForText}</div>
             </div>
           </div>;
       case 'video':
@@ -1793,13 +1808,13 @@ export default function UserView({
               <span className="font-medium">Tutorial Video</span>
             </div>
             <div className="aspect-video rounded-lg overflow-hidden shadow-card">
-              <iframe src={contentStr} className="w-full h-full" allowFullScreen title={step.step} />
+              <iframe src={rawContentStr} className="w-full h-full" allowFullScreen title={step.step} />
             </div>
           </div>;
       default:
         return <div className="prose max-w-none">
             <div className="whitespace-pre-wrap text-foreground leading-relaxed">
-              {contentStr}
+              {contentStrForText}
             </div>
           </div>;
     }
@@ -2686,12 +2701,11 @@ export default function UserView({
             </CardHeader>
           </Card>
 
-              {/* Tools & Materials Section - Hide for ordering steps since they don't need materials/tools */}
-              {currentStep && 
-                !(currentStep.step === 'Tool & Material Ordering' || 
-                  currentStep.phaseName === 'Ordering' || 
-                  currentStep.id === 'ordering-step-1') &&
-                (currentStep.materials?.length > 0 || currentStep.tools?.length > 0) && (
+              {/* Tools & Materials Section - Show for all steps except ordering; show even when empty */}
+              {currentStep &&
+                !(currentStep.step === 'Tool & Material Ordering' ||
+                  currentStep.phaseName === 'Ordering' ||
+                  currentStep.id === 'ordering-step-1') && (
                 <ToolsMaterialsSection
                   currentStep={currentStep}
                   checkedMaterials={checkedMaterials[currentStep.id] || new Set()}

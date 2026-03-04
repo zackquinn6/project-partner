@@ -24,16 +24,12 @@ export function ToolsMaterialsSection({
 }: ToolsMaterialsSectionProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Ensure we have valid arrays and at least one has items
-  const hasMaterials = Array.isArray(currentStep?.materials) && currentStep.materials.length > 0;
-  const hasTools = Array.isArray(currentStep?.tools) && currentStep.tools.length > 0;
+  if (!currentStep) return null;
 
-  if (!currentStep || (!hasMaterials && !hasTools)) {
-    return null;
-  }
-
-  const materialsCount = currentStep.materials?.length || 0;
-  const toolsCount = currentStep.tools?.length || 0;
+  const materials = Array.isArray(currentStep.materials) ? currentStep.materials : [];
+  const tools = Array.isArray(currentStep.tools) ? currentStep.tools : [];
+  const materialsCount = materials.length;
+  const toolsCount = tools.length;
   const checkedMaterialsCount = checkedMaterials.size;
   const checkedToolsCount = checkedTools.size;
   const allMaterialsChecked = materialsCount === 0 || checkedMaterialsCount === materialsCount;
@@ -64,17 +60,17 @@ export function ToolsMaterialsSection({
       {!isCollapsed && (
         <CardContent>
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Materials Column */}
-            {currentStep.materials?.length > 0 && (
-              <div className="space-y-2" data-tutorial="materials">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-semibold">Materials</h4>
-                  <Badge variant={allMaterialsChecked ? "default" : "outline"} className={allMaterialsChecked ? "bg-green-500 text-white text-xs" : "text-xs"}>
-                    {checkedMaterialsCount}/{materialsCount}
-                  </Badge>
-                </div>
+            {/* Materials Column - always show */}
+            <div className="space-y-2" data-tutorial="materials">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold">Materials</h4>
+                <Badge variant={allMaterialsChecked ? "default" : "outline"} className={allMaterialsChecked ? "bg-green-500 text-white text-xs" : "text-xs"}>
+                  {checkedMaterialsCount}/{materialsCount}
+                </Badge>
+              </div>
+              {materials.length > 0 ? (
                 <div className="space-y-2">
-                  {currentStep.materials.map(material => (
+                  {materials.map(material => (
                     <div key={material.id} className="p-2.5 bg-background/50 rounded-lg">
                       <div className="flex items-start gap-2.5">
                         <Checkbox 
@@ -92,20 +88,22 @@ export function ToolsMaterialsSection({
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-muted-foreground">No materials specified for this step.</p>
+              )}
+            </div>
 
-            {/* Tools Column */}
-            {currentStep.tools?.length > 0 && (
-              <div className="space-y-2" data-tutorial="tools">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-semibold">Tools</h4>
-                  <Badge variant={allToolsChecked ? "default" : "outline"} className={allToolsChecked ? "bg-green-500 text-white text-xs" : "text-xs"}>
-                    {checkedToolsCount}/{toolsCount}
-                  </Badge>
-                </div>
+            {/* Tools Column - always show */}
+            <div className="space-y-2" data-tutorial="tools">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold">Tools</h4>
+                <Badge variant={allToolsChecked ? "default" : "outline"} className={allToolsChecked ? "bg-green-500 text-white text-xs" : "text-xs"}>
+                  {checkedToolsCount}/{toolsCount}
+                </Badge>
+              </div>
+              {tools.length > 0 ? (
                 <div className="space-y-2">
-                  {currentStep.tools.map(tool => (
+                  {tools.map(tool => (
                     <div key={tool.id} className="p-2.5 bg-background/50 rounded-lg">
                       <div className="flex items-start gap-2.5">
                         <Checkbox 
@@ -123,8 +121,10 @@ export function ToolsMaterialsSection({
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-muted-foreground">No tools specified for this step.</p>
+              )}
+            </div>
           </div>
         </CardContent>
       )}
