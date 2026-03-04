@@ -888,26 +888,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Select a project to get started</p>
         </div>
 
-        {/* Task Manager helper section - subtle guidance for complex jobs */}
-        <div className="max-w-2xl mx-auto mb-6">
-          <Card className="border-dashed bg-background/40">
-            <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs sm:text-sm text-muted-foreground text-left">
-                For multi-trade renovation projects, use Task Manager to organize multiple individual projects.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="self-start sm:self-auto text-xs"
-                onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
-              >
-                Open Task Manager
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Mobile Close Button */}
         <div className="md:hidden flex justify-end mb-4">
           <Button 
@@ -1232,7 +1212,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
         {/* Show All Projects Button - Only show when grid is hidden */}
         {!shouldShowGrid && (
-          <div className="mb-6 flex justify-center">
+          <div className="mb-10 flex flex-col items-center gap-8">
             <Button 
               variant="outline" 
               size="sm"
@@ -1241,6 +1221,25 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             >
               Show all Projects
             </Button>
+            {/* Task Manager helper - for multi-trade renovation projects */}
+            <div className="max-w-2xl w-full">
+              <Card className="border-dashed bg-background/40">
+                <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs sm:text-sm text-muted-foreground text-left">
+                    For multi-trade renovation projects, use Task Manager to organize multiple individual projects.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="self-start sm:self-auto text-xs"
+                    onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
+                  >
+                    Open Task Manager
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
