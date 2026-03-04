@@ -33,6 +33,33 @@ interface Home {
   is_primary: boolean;
 }
 
+/** Return YYYY-MM-DD for the Sunday of the week containing the given date string. */
+function getSundayOfWeek(dateStr: string): string {
+  if (!dateStr?.trim()) return dateStr;
+  const d = new Date(dateStr + 'T12:00:00');
+  if (Number.isNaN(d.getTime())) return dateStr;
+  const day = d.getDay();
+  d.setDate(d.getDate() - day);
+  return d.toISOString().split('T')[0];
+}
+
+/** Add n weeks to the given date string; result is the Sunday of that week (YYYY-MM-DD). */
+function addWeeks(dateStr: string, n: number): string {
+  if (!dateStr?.trim()) return dateStr;
+  const sunday = new Date(getSundayOfWeek(dateStr) + 'T12:00:00');
+  sunday.setDate(sunday.getDate() + n * 7);
+  return sunday.toISOString().split('T')[0];
+}
+
+/** Add n days to the given date string (YYYY-MM-DD). */
+function addDays(dateStr: string, n: number): string {
+  if (!dateStr?.trim()) return dateStr;
+  const d = new Date(dateStr + 'T12:00:00');
+  if (Number.isNaN(d.getTime())) return dateStr;
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
 export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComplete, isCompleted, checkedOutputs = new Set(), onOutputToggle }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
   const { projects } = useProjectData();
@@ -580,13 +607,26 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 flex-shrink-0"
-                    aria-label="Decrease by 25 sq ft"
+                    aria-label="Decrease by 25"
                     onClick={() => {
                       const n = Math.max(0, (parseFloat(projectForm.initialSizing) || 0) - 25);
                       setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
                     }}
                   >
                     <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    aria-label="Decrease by 1"
+                    onClick={() => {
+                      const n = Math.max(0, (parseFloat(projectForm.initialSizing) || 0) - 1);
+                      setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
+                    }}
+                  >
+                    <ChevronDown className="w-3 h-3" />
                   </Button>
                   <Input
                     type="number"
@@ -596,15 +636,28 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                     }}
                     placeholder="0"
                     className="text-xs h-9 w-[80px]"
-                    step="25"
+                    step="1"
                     min="0"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    aria-label="Increase by 1"
+                    onClick={() => {
+                      const n = (parseFloat(projectForm.initialSizing) || 0) + 1;
+                      setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
+                    }}
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
                     className="h-9 w-9 flex-shrink-0"
-                    aria-label="Increase by 25 sq ft"
+                    aria-label="Increase by 25"
                     onClick={() => {
                       const n = (parseFloat(projectForm.initialSizing) || 0) + 25;
                       setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
@@ -646,25 +699,75 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 </div>
               </div>
 
-              {/* Timeline */}
+              {/* Timeline - one week at a time ending Sunday; large = ±1 week, small = ±1 day */}
               <div className="flex flex-col items-center text-center">
                 <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
                   <Calendar className="w-3 h-3" />
                   Timeline
                 </Label>
                 <p className="text-[10px] text-muted-foreground mb-1">When do you want this done?</p>
-                <Input
-                  type="date"
-                  value={projectForm.initialTimeline}
-                  onChange={(e) => {
-                    console.log('📝 ProjectProfileStep: initialTimeline changed to:', e.target.value);
-                    setProjectForm(prev => ({
-                      ...prev,
-                      initialTimeline: e.target.value
-                    }));
-                  }}
-                  className="text-xs h-9 w-auto"
-                />
+                <div className="flex items-center gap-1 w-full justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                    aria-label="Move back one week (previous Sunday)"
+                    onClick={() => {
+                      const next = addWeeks(projectForm.initialTimeline || new Date().toISOString().split('T')[0], -1);
+                      setProjectForm(prev => ({ ...prev, initialTimeline: next }));
+                    }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    aria-label="Move back one day"
+                    onClick={() => {
+                      const next = addDays(projectForm.initialTimeline || new Date().toISOString().split('T')[0], -1);
+                      setProjectForm(prev => ({ ...prev, initialTimeline: next }));
+                    }}
+                  >
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                  <Input
+                    type="date"
+                    value={projectForm.initialTimeline}
+                    onChange={(e) => {
+                      setProjectForm(prev => ({ ...prev, initialTimeline: e.target.value }));
+                    }}
+                    className="text-xs h-9 w-auto min-w-[120px]"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    aria-label="Move forward one day"
+                    onClick={() => {
+                      const next = addDays(projectForm.initialTimeline || new Date().toISOString().split('T')[0], 1);
+                      setProjectForm(prev => ({ ...prev, initialTimeline: next }));
+                    }}
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                    aria-label="Move forward one week (next Sunday)"
+                    onClick={() => {
+                      const next = addWeeks(projectForm.initialTimeline || new Date().toISOString().split('T')[0], 1);
+                      setProjectForm(prev => ({ ...prev, initialTimeline: next }));
+                    }}
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
               {/* Budget */}
@@ -688,6 +791,19 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   >
                     <ChevronDown className="w-4 h-4" />
                   </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    aria-label="Decrease by $1"
+                    onClick={() => {
+                      const n = Math.max(0, (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) - 1);
+                      setProjectForm(prev => ({ ...prev, initialBudget: String(n) }));
+                    }}
+                  >
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
                     <Input
@@ -698,11 +814,24 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                       placeholder="0"
                       className="text-xs h-9 pl-7 w-[100px]"
                       type="number"
-                      step="100"
+                      step="1"
                       min="0"
                       max="999999"
                     />
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    aria-label="Increase by $1"
+                    onClick={() => {
+                      const n = (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) + 1;
+                      setProjectForm(prev => ({ ...prev, initialBudget: String(n) }));
+                    }}
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
