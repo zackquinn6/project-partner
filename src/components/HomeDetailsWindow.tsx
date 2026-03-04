@@ -162,7 +162,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
     
     try {
       const { data: risks, error } = await supabase
-        .from('home_risks')
+        .from('homes_risks')
         .select('*')
         .lte('start_year', buildYear)
         .or(`end_year.gte.${buildYear},end_year.is.null`)

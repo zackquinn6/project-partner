@@ -46,20 +46,16 @@ export const HomeRiskManager: React.FC = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('home_risks')
-        .select(`
-          *,
-          home_risk_mitigations!left(is_mitigated)
-        `);
+        .from('homes_risks')
+        .select('*');
 
       if (error) throw error;
-      
-      // Process the data to include mitigation status
+
       const processedData = (data || []).map((risk: any) => ({
         ...risk,
-        is_mitigated: Array.isArray(risk.home_risk_mitigations) && 
-                     risk.home_risk_mitigations.length > 0 && 
-                     risk.home_risk_mitigations[0]?.is_mitigated === true
+        is_mitigated: Array.isArray(risk.home_risk_mitigations) &&
+          risk.home_risk_mitigations?.length > 0 &&
+          risk.home_risk_mitigations[0]?.is_mitigated === true
       }));
       
       // Sort by mitigation status first (active risks first), then by risk level, then by start year
@@ -111,7 +107,7 @@ export const HomeRiskManager: React.FC = () => {
 
       if (editingRisk) {
         const { error } = await supabase
-          .from('home_risks')
+          .from('homes_risks')
           .update(riskData)
           .eq('id', editingRisk.id);
 
@@ -119,7 +115,7 @@ export const HomeRiskManager: React.FC = () => {
         toast.success('Home risk updated successfully');
       } else {
         const { error } = await supabase
-          .from('home_risks')
+          .from('homes_risks')
           .insert(riskData);
 
         if (error) throw error;
@@ -159,7 +155,7 @@ export const HomeRiskManager: React.FC = () => {
 
     try {
       const { error } = await supabase
-        .from('home_risks')
+        .from('homes_risks')
         .delete()
         .eq('id', riskId);
 
