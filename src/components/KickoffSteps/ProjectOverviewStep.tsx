@@ -622,14 +622,24 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         <p className="text-lg font-medium text-muted-foreground">
           Does this project seem like a fit?
         </p>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary underline decoration-dotted hover:opacity-80"
-          onClick={() => setRiskManagementOpen(true)}
-        >
-          <HelpCircle className="h-3.5 w-3.5" aria-hidden />
-          What is a good fit?
-        </button>
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary underline decoration-dotted hover:opacity-80 cursor-help"
+                onClick={() => setRiskManagementOpen(true)}
+                aria-label="What is a good fit?"
+              >
+                <HelpCircle className="h-3.5 w-3.5" aria-hidden />
+                What is a good fit?
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs z-[100]" sideOffset={8}>
+              <p className="text-sm">A good fit means the project matches your goals, timeline, and skill level. Check the overview, estimated time, and challenges—if they align with what you want to take on, it&apos;s a good fit. You can always adjust scope and schedule later.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>;
 };

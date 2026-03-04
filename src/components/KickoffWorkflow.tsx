@@ -390,18 +390,18 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
               {currentStepPurpose}
             </h2>
             {currentKickoffStep === 0 && (
-              <TooltipProvider>
+              <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      className="text-xs font-medium text-primary underline decoration-dotted hover:opacity-80 inline-flex items-center gap-1 shrink-0"
+                      className="text-xs font-medium text-primary underline decoration-dotted hover:opacity-80 inline-flex items-center gap-1 shrink-0 cursor-help"
                       aria-label="What is a good fit?"
                     >
                       What is a good fit?
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="left" className="max-w-xs">
+                  <TooltipContent side="left" className="max-w-xs z-[100]" sideOffset={8}>
                     <p className="text-sm">A good fit means the project matches your goals, timeline, and skill level. Check the overview, estimated time, and challenges—if they align with what you want to take on, it&apos;s a good fit. You can always adjust scope and schedule later.</p>
                   </TooltipContent>
                 </Tooltip>
