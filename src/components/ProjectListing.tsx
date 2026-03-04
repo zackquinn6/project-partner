@@ -162,8 +162,8 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 className="w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Manual Project Log</span>
-                <span className="sm:hidden">Manual Log</span>
+                <span className="hidden sm:inline">Add to portfolio</span>
+                <span className="sm:hidden">Add to portfolio</span>
               </Button>
             </div>
           </div>
