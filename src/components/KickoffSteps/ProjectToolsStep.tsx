@@ -80,7 +80,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold">Pick your project tools</h3>
+        <h3 className="text-lg font-semibold">Workflow Setup</h3>
         <p className="text-sm text-muted-foreground mt-1">
           Choose which planning tools you want to use for this project.
         </p>

@@ -34,19 +34,19 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const isCompletingStepRef = useRef(false);
   const kickoffSteps = [{
     id: 'kickoff-step-1',
-    title: 'Project Overview',
+    title: 'Project Match',
     description: 'Review and customize your project details'
   }, {
     id: 'kickoff-step-2',
-    title: 'DIY Profile',
+    title: 'Build Style',
     description: 'Complete your DIY profile for personalized guidance'
   }, {
     id: 'kickoff-step-3',
-    title: 'Project Profile',
+    title: 'Scope & Specs',
     description: 'Set up your project team and home selection'
   }, {
     id: 'kickoff-step-4',
-    title: 'Pick your project tools',
+    title: 'Workflow Setup',
     description: 'Choose which planning tools to use'
   }];
 
@@ -466,7 +466,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                     {currentKickoffStep === 2 ? (
                       <>
-                        <span className="hidden sm:inline">Continue to Pick Tools</span>
+                        <span className="hidden sm:inline">Continue to Workflow Setup</span>
                         <span className="sm:hidden">Continue</span>
                       </>
                     ) : currentKickoffStep === 3 ? (

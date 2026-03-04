@@ -468,7 +468,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         <CardHeader className="p-2 sm:p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-              Project Overview: {currentProjectRun.name}
+              Project Match: {currentProjectRun.name}
               {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
             </CardTitle>
             <TooltipProvider delayDuration={100}>

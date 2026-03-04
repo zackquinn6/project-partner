@@ -5,7 +5,7 @@ export const createKickoffPhase = (): Phase => {
   const kickoffSteps: WorkflowStep[] = [
     {
       id: 'kickoff-step-1',
-      step: 'Project Overview',
+      step: 'Project Match',
       description: 'Review and customize your project details, timeline, and objectives',
       contentType: 'text' as const,
       content: 'This is your project overview step. Review all project details and make any necessary customizations before proceeding.',
@@ -13,14 +13,14 @@ export const createKickoffPhase = (): Phase => {
       tools: [],
       outputs: [{
         id: 'overview-output',
-        name: 'Project Overview Complete',
+        name: 'Project Match Complete',
         description: 'Project details reviewed and customized',
         type: 'none' as const
       }]
     },
     {
       id: 'kickoff-step-2',
-      step: 'DIY Profile',
+      step: 'Build Style',
       description: 'Complete your DIY profile for personalized project guidance',
       contentType: 'text' as const,
       content: 'Set up your DIY profile to receive personalized project recommendations, tool suggestions, and guidance tailored to your skill level and preferences.',
@@ -28,14 +28,14 @@ export const createKickoffPhase = (): Phase => {
       tools: [],
       outputs: [{
         id: 'diy-profile-output',
-        name: 'DIY Profile Complete',
+        name: 'Build Style Complete',
         description: 'Personal DIY profile completed and saved',
         type: 'none' as const
       }]
     },
     {
       id: 'kickoff-step-3',
-      step: 'Project Profile',
+      step: 'Scope & Specs',
       description: 'Set up your project team, home selection, and customization',
       contentType: 'text' as const,
       content: 'Configure your project profile including project name, team members, home selection, and any project-specific customizations.',
@@ -43,14 +43,14 @@ export const createKickoffPhase = (): Phase => {
       tools: [],
       outputs: [{
         id: 'project-profile-output',
-        name: 'Project Profile Complete',
+        name: 'Scope & Specs Complete',
         description: 'Project profile configured and saved',
         type: 'none' as const
       }]
     },
     {
       id: 'kickoff-step-4',
-      step: 'Pick your project tools',
+      step: 'Workflow Setup',
       description: 'Choose which planning tools to use for this project',
       contentType: 'text' as const,
       content: 'Select the tools you want to use: Scope, Schedule, Risk/Uncertainty, Budget, Detailed Instructions, Quality Control, Expert Support. Tools can be added later.',
@@ -58,7 +58,7 @@ export const createKickoffPhase = (): Phase => {
       tools: [],
       outputs: [{
         id: 'tools-output',
-        name: 'Project tools selected',
+        name: 'Workflow Setup Complete',
         description: 'Planning tools selection saved',
         type: 'none' as const
       }]

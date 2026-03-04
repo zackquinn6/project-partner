@@ -531,7 +531,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             <div className="flex-1 min-w-0">
               <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
                 <Home className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Project Profile</span>
+                <span className="truncate">Scope & Specs</span>
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
