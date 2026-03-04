@@ -888,6 +888,26 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Select a project to get started</p>
         </div>
 
+        {/* Task Manager helper section - subtle guidance for complex jobs */}
+        <div className="max-w-2xl mx-auto mb-6">
+          <Card className="border-dashed bg-background/40">
+            <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs sm:text-sm text-muted-foreground text-left">
+                For multi-trade renovation projects, use Task Manager to organize multiple individual projects.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start sm:self-auto text-xs"
+                onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
+              >
+                Open Task Manager
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Mobile Close Button */}
         <div className="md:hidden flex justify-end mb-4">
           <Button 

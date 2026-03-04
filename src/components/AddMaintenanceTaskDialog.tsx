@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, FileText, User } from 'lucide-react';
+import { Plus, FileText, User, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -93,8 +93,7 @@ export function AddMaintenanceTaskDialog({
           description: template.description,
           category: template.category,
           frequency_days: template.frequency_days,
-          next_due_date: nextDueDate.toISOString(),
-          is_custom: false
+          next_due: nextDueDate.toISOString()
         });
 
       if (error) throw error;
@@ -134,8 +133,7 @@ export function AddMaintenanceTaskDialog({
           description: customTask.description.trim() || null,
           category: customTask.category,
           frequency_days: customTask.frequency_days,
-          next_due_date: nextDueDate.toISOString(),
-          is_custom: true
+          next_due: nextDueDate.toISOString()
         });
 
       if (error) throw error;
@@ -192,7 +190,15 @@ export function AddMaintenanceTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100]" />
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden z-[101]">
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[50vw] max-h-[90vh] overflow-hidden z-[101]">
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={() => onOpenChange(false)}
+          className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
         <DialogHeader>
           <DialogTitle>Add Maintenance Task</DialogTitle>
         </DialogHeader>

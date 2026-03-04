@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2, Eye, ArrowUp, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useProject } from '@/contexts/ProjectContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -414,55 +413,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     // Remove "per " prefix if present, return lowercase unit
     return normalizedScalingUnit.startsWith('per ') ? normalizedScalingUnit.replace('per ', '') : normalizedScalingUnit;
   })() : null;
-  // Key steps: phase names (excluding Kickoff) and first step per phase
-  const keyStepsList = useMemo(() => {
-    const phases = templateProject?.phases || currentProjectRun?.phases || [];
-    const steps: string[] = [];
-    phases.forEach((phase: any) => {
-      if (phase.name && phase.name !== 'Kickoff') {
-        steps.push(phase.name);
-        const firstOp = phase.operations?.[0];
-        const firstStep = firstOp?.steps?.[0];
-        if (firstStep?.step) steps.push(`  · ${firstStep.step}`);
-      }
-    });
-    return steps.slice(0, 10);
-  }, [templateProject?.phases, currentProjectRun?.phases]);
-
-  const goodFitSummary = (
-    <>
-      <p className="font-medium text-foreground mb-1">Summary</p>
-      <p className="text-sm text-muted-foreground mb-3">
-        A <strong>good fit</strong> means the project aligns with your budget, time, skill, and physical capability.
-        A <strong>bad match</strong> is when any one of these is off: <em>more money than you intend to spend</em>, or <em>more effort than you are physically capable of</em>.
-      </p>
-      <p className="text-xs font-medium text-foreground mb-1">This project</p>
-      <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4 mb-2">
-        <li><strong>Description:</strong> {currentProjectRun.description || 'Not specified'}</li>
-        {keyStepsList.length > 0 && (
-          <li><strong>Key steps:</strong> {keyStepsList.slice(0, 5).join('; ')}{keyStepsList.length > 5 ? '…' : ''}</li>
-        )}
-        <li><strong>Challenges (hardest points):</strong> {displayProjectChallenges || 'None specified'}</li>
-        <li><strong>Skill level needed:</strong> {displaySkillLevel || 'Not specified'}</li>
-        <li><strong>Effort level needed:</strong> {displayEffortLevel || 'Not specified'}</li>
-        <li><strong>Budget needed:</strong> {displayBudgetPerTypicalSize || displayBudgetPerUnit || 'Not specified'}</li>
-        <li><strong>Time needed:</strong> {displayEstimatedTotalTime || displayEstimatedTime || 'Not specified'}</li>
-      </ul>
-      <p className="text-xs font-medium text-foreground mt-3 mb-1">Skill level (quantified)</p>
-      <ul className="text-xs text-muted-foreground space-y-0.5 list-disc pl-4 mb-2">
-        <li><strong>Beginner:</strong> Basic tools, follow-along instructions (e.g. assemble furniture, paint a wall).</li>
-        <li><strong>Intermediate:</strong> Some experience (e.g. install trim, replace a fixture).</li>
-        <li><strong>Advanced:</strong> Trade-level tasks (e.g. electrical, plumbing, tile layout).</li>
-      </ul>
-      <p className="text-xs font-medium text-foreground mt-2 mb-1">Effort level (quantified)</p>
-      <ul className="text-xs text-muted-foreground space-y-0.5 list-disc pl-4">
-        <li><strong>Low:</strong> Light effort (e.g. painting a room for ~4 hr).</li>
-        <li><strong>Medium:</strong> Moderate lifting and duration (e.g. carrying boxes, demo for several hours).</li>
-        <li><strong>High:</strong> Heavy or sustained effort (e.g. picking up 80 lb thinset bags, mixing and moving material for ~2 hr).</li>
-      </ul>
-    </>
-  );
-
   return <div className="space-y-2">
       <Card>
         <CardHeader className="p-2 sm:p-3">
@@ -471,23 +421,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               Project Match: {currentProjectRun.name}
               {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
             </CardTitle>
-            <TooltipProvider delayDuration={100}>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs font-medium border-primary/50 bg-primary/5 hover:bg-primary/10"
-                  >
-                    <HelpCircle className="h-4 w-4" />
-                    What is a good fit?
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[min(90vw,400px)] max-h-[80vh] overflow-y-auto" align="end">
-                  {goodFitSummary}
-                </PopoverContent>
-              </Popover>
-            </TooltipProvider>
           </div>
         </CardHeader>
         <CardContent className="space-y-2 p-2 sm:p-3">
@@ -498,7 +431,21 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-0.5">
-                <Label className="text-xs">Project Challenges</Label>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs">Project Challenges</Label>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none" aria-label="What are project challenges?">
+                          <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs z-50">
+                        <p className="text-sm">Known difficulties or risks for this project — for example, access, materials, or skill demands. Use these to plan ahead.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -544,7 +491,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                         <ul className="text-xs mt-1 space-y-0.5 list-disc pl-4">
                           <li><strong>Beginner:</strong> Basic tools, follow-along (e.g. assemble furniture, paint a wall)</li>
                           <li><strong>Intermediate:</strong> Some experience (e.g. install trim, replace a fixture)</li>
-                          <li><strong>Advanced:</strong> Trade-level (e.g. electrical, plumbing, tile layout)</li>
+                          <li><strong>Advanced:</strong> Trade-level (e.g. electrical, plumbing, complex layout)</li>
                         </ul>
                       </TooltipContent>
                     </Tooltip>
@@ -606,9 +553,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                           <strong>Effort level</strong> — physical intensity and duration:
                         </p>
                         <ul className="text-xs mt-1 space-y-0.5 list-disc pl-4">
-                          <li><strong>Low:</strong> Light effort (e.g. painting a room for ~4 hr)</li>
-                          <li><strong>Medium:</strong> Moderate lifting/duration (e.g. carrying boxes, demo for several hours)</li>
-                          <li><strong>High:</strong> Heavy/sustained (e.g. 80 lb thinset bags, mixing/moving material ~2 hr)</li>
+                          <li><strong>Low:</strong> Light effort (e.g. painting a room for a few hours)</li>
+                          <li><strong>Medium:</strong> Moderate lifting and duration (e.g. carrying loads, demo for several hours)</li>
+                          <li><strong>High:</strong> Heavy or sustained effort (e.g. heavy materials, mixing and moving loads for extended periods)</li>
                         </ul>
                       </TooltipContent>
                     </Tooltip>
@@ -670,9 +617,19 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         />
       )}
 
-      {/* Footer Text */}
-      <div className="text-center mt-2">
-        <p className="text-sm text-muted-foreground">Does this project seem like a fit?</p>
+      {/* Footer Text + Good Fit helper */}
+      <div className="mt-2 flex flex-col items-center gap-1">
+        <p className="text-lg font-medium text-muted-foreground">
+          Does this project seem like a fit?
+        </p>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary underline decoration-dotted hover:opacity-80"
+          onClick={() => setRiskManagementOpen(true)}
+        >
+          <HelpCircle className="h-3.5 w-3.5" aria-hidden />
+          What is a good fit?
+        </button>
       </div>
     </div>;
 };

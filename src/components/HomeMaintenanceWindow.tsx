@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -26,8 +26,8 @@ interface MaintenanceTask {
   description: string;
   category: string;
   frequency_days: number;
-  last_completed_at: string | null;
-  next_due_date: string;
+  last_completed: string | null;
+  next_due: string;
   is_custom: boolean;
   is_active: boolean;
   created_at: string;
@@ -75,6 +75,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [touchEnd, setTouchEnd] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>('date-desc');
   const [historyCategoryFilter, setHistoryCategoryFilter] = useState<string>('all');
+  const [showAlerts, setShowAlerts] = useState(false);
   const {
     isMobile
   } = useResponsive();
@@ -114,7 +115,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       const {
         data,
         error
-      } = await supabase.from('user_maintenance_tasks').select('*').eq('user_id', user.id).eq('home_id', selectedHomeId).eq('is_active', true).order('next_due_date', {
+      } = await supabase.from('user_maintenance_tasks').select('*').eq('user_id', user.id).eq('home_id', selectedHomeId).eq('is_active', true).order('next_due', {
         ascending: true
       });
       if (error) throw error;
@@ -165,16 +166,16 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   };
   const getTaskProgress = (task: MaintenanceTask) => {
-    if (!task.last_completed_at) return 0;
-    const lastCompleted = new Date(task.last_completed_at);
-    const nextDue = new Date(task.next_due_date);
+    if (!task.last_completed) return 0;
+    const lastCompleted = new Date(task.last_completed);
+    const nextDue = new Date(task.next_due);
     const now = new Date();
     const totalDays = task.frequency_days;
     const daysSinceCompletion = differenceInDays(now, lastCompleted);
     return Math.min(Math.max(daysSinceCompletion / totalDays * 100, 0), 100);
   };
   const getTaskStatus = (task: MaintenanceTask) => {
-    const dueDate = new Date(task.next_due_date);
+    const dueDate = new Date(task.next_due);
     const now = new Date();
     const daysUntilDue = differenceInDays(dueDate, now);
     if (daysUntilDue < 0) {
@@ -275,31 +276,48 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         <div className="px-3 md:px-6 py-3 shrink-0 bg-background border-b">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
-                    <SelectTrigger className="w-full sm:w-[280px] h-9">
-                      <SelectValue placeholder="Select a home" />
-                    </SelectTrigger>
-                     <SelectContent className="z-[200] bg-popover border border-border shadow-md">
-                       {homes.map(home => <SelectItem key={home.id} value={home.id} className="cursor-pointer">
-                           {home.name} {home.address && `- ${home.address}`}
-                         </SelectItem>)}
-                     </SelectContent>
-                  </Select>
+              <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
+                <SelectTrigger className="w-full sm:w-[280px] h-9">
+                  <SelectValue placeholder="Select a home" />
+                </SelectTrigger>
+                <SelectContent className="z-[200] bg-popover border border-border shadow-md">
+                  {homes.map(home => (
+                    <SelectItem key={home.id} value={home.id} className="cursor-pointer">
+                      {home.name} {home.address && `- ${home.address}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-                  {selectedHomeId && tasks.length > 0 && <MaintenancePdfPrinter tasks={tasks} completions={completions} homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'} />}
-                </div>
-              </div>
+              {selectedHomeId && tasks.length > 0 && (
+                <MaintenancePdfPrinter
+                  tasks={tasks}
+                  completions={completions}
+                  homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
+                />
+              )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-2"
+                disabled={!selectedHomeId}
+                onClick={() => setShowAlerts(true)}
+              >
+                Setup Alerts
+              </Button>
             </div>
+          </div>
+        </div>
 
             {/* Tabs - Takes remaining space */}
             {selectedHomeId && <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 <Tabs defaultValue="tasks" className="flex flex-col h-full">
                   {/* Tab bar - Fixed at top of tabs area */}
                   <div className="px-3 md:px-6 py-3 bg-background border-b shrink-0">
-                    <TabsList className="grid grid-cols-3 w-full h-11 p-1">
+                    <TabsList className="grid grid-cols-2 w-full h-11 p-1">
                       <TabsTrigger value="tasks" className="text-xs md:text-sm">Active</TabsTrigger>
                       <TabsTrigger value="history" className="text-xs md:text-sm">History</TabsTrigger>
-                      <TabsTrigger value="notifications" className="text-xs md:text-sm">Alerts</TabsTrigger>
                     </TabsList>
                   </div>
 
@@ -365,7 +383,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                       {task.is_custom}
                                     </div>
                                     <div className="text-xs text-muted-foreground mb-2">
-                                      Due: {format(new Date(task.next_due_date), 'MMM dd, yyyy')}
+                                      Due: {format(new Date(task.next_due), 'MMM dd, yyyy')}
                                     </div>
                                     <div className="space-y-1">
                                       <div className="flex justify-between text-xs">
@@ -433,15 +451,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                        </div>
                       </div>
                    </TabsContent>
-
-                   <TabsContent value="notifications" className="flex-1 min-h-0 overflow-hidden m-0">
-                     <div className="flex flex-col h-full">
-                       {/* Scrollable notifications - matches structure of Active tab */}
-                       <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
-                         <MaintenanceNotifications selectedHomeId={selectedHomeId} />
-                       </div>
-                     </div>
-                   </TabsContent>
                  </Tabs>
                </div>}
           </div>
@@ -452,5 +461,22 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       <AddMaintenanceTaskDialog open={showAddTask} onOpenChange={setShowAddTask} homeId={selectedHomeId} onTaskAdded={fetchTasks} />
 
       {selectedTask && <TaskCompletionDialog open={!!selectedTask} onOpenChange={open => !open && setSelectedTask(null)} task={selectedTask} onCompleted={handleTaskCompleted} />}
+
+      <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[50vw] max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Setup Alerts</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
+            {selectedHomeId ? (
+              <MaintenanceNotifications selectedHomeId={selectedHomeId} />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Select a home to configure alerts.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>;
 };

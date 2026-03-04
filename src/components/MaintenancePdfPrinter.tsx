@@ -13,7 +13,7 @@ interface MaintenanceTask {
   title: string;
   category: string;
   frequency_days: number;
-  next_due_date: string;
+  next_due: string;
   description?: string;
 }
 
@@ -135,7 +135,7 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{categoryLabels[task.category]}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>Every {task.frequency_days} days</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                      {format(new Date(task.next_due_date), 'MMM dd, yyyy')}
+                      {format(new Date(task.next_due), 'MMM dd, yyyy')}
                     </td>
                   </tr>
                 ))}

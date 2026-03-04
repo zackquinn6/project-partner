@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, ArrowRight, HelpCircle } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
@@ -218,6 +217,9 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         setTimeout(() => {
           isCompletingStepRef.current = false;
           onKickoffComplete();
+          if (onPlanningWizard) {
+            onPlanningWizard();
+          }
         }, 200);
       } else {
         console.log("KickoffWorkflow - Moving to next step");
@@ -244,6 +246,22 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       }, 0);
     }, 0);
   };
+
+  const currentStepPurpose = (() => {
+    const title = kickoffSteps[currentKickoffStep]?.title;
+    switch (title) {
+      case 'Project Match':
+        return 'Overview the project and make sure this project is a good fit';
+      case 'Build Style':
+        return 'Personalize the project to your unique DIY experience level and preferences';
+      case 'Scope & Specs':
+        return 'Complete initial customization to your unique project';
+      case 'Workflow Setup':
+        return 'Choose the tools that matter most to you';
+      default:
+        return '';
+    }
+  })();
   const handleNext = () => {
     if (currentKickoffStep < kickoffSteps.length - 1) {
       setCurrentKickoffStep(currentKickoffStep + 1);
@@ -315,22 +333,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                 Project Kickoff{currentProjectRun?.name ? `: ${currentProjectRun.name}` : ''}
                 {allKickoffStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />}
               </CardTitle>
-              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <CardDescription className="text-xs">Overview the project and make sure this project is a good fit</CardDescription>
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-primary cursor-help underline decoration-dotted">
-                        <HelpCircle className="h-3.5 w-3.5" />
-                        What is a good fit?
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs">
-                      <p className="text-sm">A good fit = budget, time, skill, and effort match your situation. A bad match = more money than you intend or more effort than you can do. Open the overview step for this project&apos;s details and quantified skill/effort levels.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap" />
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="text-right">
@@ -381,6 +384,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         </CardContent>
       </Card>
 
+      {/* Step Purpose Sub-header */}
+      {currentStepPurpose && (
+        <div className="px-1 sm:px-0">
+          <h2 className="text-base sm:text-lg flex items-center gap-2">
+            {currentStepPurpose}
+          </h2>
+        </div>
+      )}
+
       {/* Current Step Content - Scrollable with Fixed Button */}
       <div className="flex flex-col" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
         <div className="flex-1 overflow-y-auto -mx-2 sm:mx-0 px-2 sm:px-0 pb-4">
@@ -392,8 +404,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
             <CardContent className="p-3 sm:p-4">
               {!isStepCompleted(currentKickoffStep) ? (
                 <div className="flex gap-2">
-                  {/* Step 1: Not a match button */}
-                  {currentKickoffStep === 0 && (
+                  {/* Left-side secondary action */}
+                  {currentKickoffStep === 0 ? (
                     <Button 
                       onClick={async () => {
                         if (currentProjectRun) {
@@ -402,40 +414,30 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                           if (onExit) onExit();
                         }
                       }} 
-                      variant="outline" 
-                      className="w-1/4 border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight"
+                      variant="outline"
+                      size="lg"
+                      className="w-1/4 border-red-300 text-red-700 hover:bg-red-50"
                     >
-                      <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+                      <ArrowLeft className="w-4 h-4 mr-2" />
                       <span className="hidden sm:inline sm:block">Not a match -<br />take me back to catalog</span>
                       <span className="sm:hidden">Not a match</span>
                     </Button>
-                  )}
-                  
-                  {false && currentKickoffStep === 2 && (
-                    <Button 
-                      onClick={async () => {
-                        if ((window as any).__projectProfileStepSave) {
-                          try {
-                            await (window as any).__projectProfileStepSave();
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            await handleStepComplete(currentKickoffStep);
-                            // Step 4 will be skipped; user goes to next step. Then they must complete step 4 (tools). So we don't skip - we just go to step 4. So this button should say "Skip tools" and complete kickoff with empty selected tools. So: mark step 3 complete, then mark step 4 complete with selected_planning_tools: [], then onKickoffComplete. That's a bigger change. Per user: "requires completion of all 4 steps". So we should NOT have "Go directly to workflow" skip step 4. So this button should just advance to step 4 (tools). So rename to something like "Next: Pick tools" or remove the skip option. User said "requires completion of all 4 steps". So remove "Go directly to workflow" button from step 3 - only "Complete & Continue" which goes to step 4.
-                          } catch (error) {
-                            console.error('Error saving project profile:', error);
-                            return;
-                          }
-                        }
-                      }} 
-                      variant="outline" 
-                      className="w-1/3 border-blue-300 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight"
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className="w-1/4 border-muted-foreground/40 text-muted-foreground hover:bg-muted/40"
+                      onClick={() => {
+                        // Skip remaining kickoff steps and go directly to project workflow
+                        onKickoffComplete();
+                      }}
                     >
-                      <span className="hidden sm:inline">Go directly to workflow</span>
-                      <span className="sm:hidden">Skip planning</span>
-                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-1.5" />
+                      Skip direct to project workflow
                     </Button>
                   )}
                   
-                  {/* Main Continue button */}
+                  {/* Main Continue button - consistent shape/size across steps */}
                   <Button 
                     onClick={async () => {
                       console.log('🎯 KickoffWorkflow: Step complete button clicked for step:', currentKickoffStep);
@@ -461,7 +463,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       
                       handleStepComplete(currentKickoffStep);
                     }} 
-                    className={`${currentKickoffStep === 0 ? "w-3/4" : "w-full"} bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-11 sm:h-auto sm:py-2 sm:px-3 sm:leading-tight`}
+                    size="lg"
+                    className="w-full bg-green-600 hover:bg-green-700 text-sm"
                   >
                     <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                     {currentKickoffStep === 2 ? (

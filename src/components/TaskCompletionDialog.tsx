@@ -19,8 +19,8 @@ interface MaintenanceTask {
   description: string;
   category: string;
   frequency_days: number;
-  last_completed_at: string | null;
-  next_due_date: string;
+  last_completed: string | null;
+  next_due: string;
   is_custom: boolean;
   home_id: string;
   template_id?: string;

@@ -91,6 +91,9 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         <p className="text-sm text-muted-foreground mt-1">
           Choose which planning tools you want to use for this project.
         </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Choose which planning tools you want to use for this project. You can add or remove these later.
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
@@ -138,9 +141,6 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
           </Button>
         )}
       </div>
-
-      <p className="text-xs text-muted-foreground">You can change this later.</p>
-
       <button
         type="button"
         onClick={onComplete}
