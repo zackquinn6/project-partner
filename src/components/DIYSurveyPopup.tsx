@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useTempQuiz } from "@/contexts/TempQuizContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProjectSkillsWindow } from "@/components/ProjectSkillsWindow";
+import { type PMFocus, PM_FOCUS_OPTIONS } from "@/components/landing/OnboardingDialog";
 
 interface DIYSurveyPopupProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface DIYSurveyPopupProps {
     homeBuildYear?: string;
     homeState?: string;
     preferredLearningMethods?: string[];
+    projectFocus?: PMFocus | null;
     ownedTools?: any[];
     fullName?: string;
     nickname?: string;
@@ -69,6 +71,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     homeBuildYear: initialData?.homeBuildYear || "",
     homeState: initialData?.homeState || "",
     preferredLearningMethods: initialData?.preferredLearningMethods ? [...initialData.preferredLearningMethods] : [] as string[],
+    projectFocus: initialData?.projectFocus ?? null as PMFocus | null,
     ownedTools: initialData?.ownedTools || [] as any[],
     fullName: initialData?.fullName || "",
     nickname: initialData?.nickname || ""
@@ -535,7 +538,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               home_ownership: answers.homeOwnership,
               home_build_year: answers.homeBuildYear,
               home_state: answers.homeState,
-              preferred_learning_methods: answers.preferredLearningMethods,
+              project_focus: answers.projectFocus,
               owned_tools: finalOwnedTools,
               project_skills: Object.keys(projectSkills).length > 0 ? projectSkills : null,
               survey_completed_at: new Date().toISOString(),
@@ -592,20 +595,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
   };
 
 
-  const handleLearningMethodChange = (method: string, checked: boolean) => {
-    if (checked) {
-      setAnswers(prev => ({
-        ...prev,
-        preferredLearningMethods: [...prev.preferredLearningMethods, method]
-      }));
-    } else {
-      setAnswers(prev => ({
-        ...prev,
-        preferredLearningMethods: prev.preferredLearningMethods.filter(m => m !== method)
-      }));
-    }
-  };
-
   const canProceed = () => {
     if (mode === 'personality') {
       if (currentStep === -1) return true; // Opener screen
@@ -620,7 +609,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       case 0: return true; // Verify step
       case 1: return answers.fullName.trim() !== ""; // Name step - require full name
       case 2: return answers.skillLevel !== "" && answers.physicalCapability !== "";
-      case 3: return answers.preferredLearningMethods.length > 0;
+      case 3: return answers.projectFocus != null;
       case 4: return true; // Owned tools is optional
       default: return false;
     }
@@ -785,7 +774,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                 <div className="space-y-3">
                   <div><strong>Skill Level:</strong> {answers.skillLevel || 'Not specified'}</div>
                   <div><strong>Physical Capability:</strong> {answers.physicalCapability || 'Not specified'}</div>
-                  <div><strong>Learning Methods:</strong> {answers.preferredLearningMethods.length > 0 ? answers.preferredLearningMethods.join(', ') : 'None specified'}</div>
+                  <div><strong>Project focus:</strong> {answers.projectFocus != null ? PM_FOCUS_OPTIONS.find(o => o.value === answers.projectFocus)?.title ?? answers.projectFocus : 'Not specified'}</div>
                   <div><strong>Owned Tools:</strong> {answers.ownedTools.length} tools</div>
                 </div>
               </Card>
@@ -981,31 +970,35 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h3 className="text-2xl font-bold">📚 How do you prefer to learn?</h3>
-              <p className="text-muted-foreground">Check all that apply:</p>
+              <h3 className="text-2xl font-bold">What is most important to you?</h3>
+              <p className="text-muted-foreground">Pick your primary project management focus. This helps us prioritize guidance for your projects.</p>
             </div>
-            <div className="space-y-2 md:space-y-3">
-              {[
-                "Videos",
-                "Written guides & photos", 
-                "Training workshops",
-                "Having human guidance alongside me"
-              ].map((method) => (
-                <Card key={method} className="hover:border-primary/50 transition-colors">
-                  <CardContent className="p-2.5 md:p-4">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                      <Checkbox 
-                        id={method}
-                        checked={answers.preferredLearningMethods.includes(method)}
-                        onCheckedChange={(checked) => handleLearningMethodChange(method, checked as boolean)}
-                        className="h-4 w-4 shrink-0"
-                      />
-                      <Label htmlFor={method} className="cursor-pointer font-medium text-sm md:text-base">
-                        {method}
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
+            <div className="grid grid-cols-1 gap-3 py-2" role="group" aria-label="Project management focus">
+              {PM_FOCUS_OPTIONS.map(({ value, title, description, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setAnswers(prev => ({ ...prev, projectFocus: value }))}
+                  className={`
+                    flex items-start gap-3 p-4 rounded-xl border-2 text-left
+                    transition-all duration-200
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                    ${answers.projectFocus === value
+                      ? 'border-primary bg-primary/10 text-foreground shadow-sm'
+                      : 'border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-muted/40 text-foreground'
+                    }
+                  `}
+                  aria-pressed={answers.projectFocus === value}
+                  aria-label={`${title}: ${description}`}
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-background/80">
+                    <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />
+                  </span>
+                  <span className="flex flex-col gap-0.5">
+                    <span className="font-medium">{title}</span>
+                    <span className="text-sm text-muted-foreground">{description}</span>
+                  </span>
+                </button>
               ))}
             </div>
           </div>

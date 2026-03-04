@@ -276,6 +276,7 @@ export default function ProfileManager({
       homeBuildYear: existingProfile?.home_build_year || "",
       homeState: existingProfile?.home_state || "",
       preferredLearningMethods: existingProfile?.preferred_learning_methods || [],
+      projectFocus: existingProfile?.project_focus ?? undefined,
       ownedTools: existingProfile?.owned_tools || [],
       fullName: existingProfile?.full_name || "",
       nickname: existingProfile?.nickname || ""

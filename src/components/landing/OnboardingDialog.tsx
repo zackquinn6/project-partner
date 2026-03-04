@@ -26,7 +26,7 @@ const DIY_LEVELS: { value: DIYLevel; label: string; short: string; icon: typeof 
   { value: 'Advanced', label: 'Advanced', short: 'Experienced with tools and trades', icon: Hammer },
 ];
 
-const PM_FOCUS_OPTIONS: {
+export const PM_FOCUS_OPTIONS: {
   value: PMFocus;
   title: string;
   description: string;

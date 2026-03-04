@@ -79,15 +79,15 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({ open, onOpenChange
             </div>
 
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">$25/year</div>
-              <p className="text-xs text-muted-foreground mt-1">Just $2.08/month</p>
+              <div className="text-3xl font-bold text-primary">$59/year</div>
+              <p className="text-xs text-muted-foreground mt-1">Just $4.92/month</p>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col sm:flex-col gap-2">
           <Button onClick={handleUpgrade} size="lg" className="w-full">
             <Crown className="h-4 w-4 mr-2" />
-            Subscribe Now - $25/year
+            Subscribe Now - $59/year
           </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
             Maybe Later

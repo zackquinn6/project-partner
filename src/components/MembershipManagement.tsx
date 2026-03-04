@@ -99,7 +99,7 @@ export const MembershipManagement: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Current Plan:</span>
             {isAdmin && <Badge variant="default">Admin</Badge>}
-            {!isAdmin && isSubscribed && <Badge variant="default">Annual Member - $25/year</Badge>}
+            {!isAdmin && isSubscribed && <Badge variant="default">Annual Member - $59/year</Badge>}
             {!isAdmin && inTrial && !isSubscribed && (
               <Badge variant="secondary">Free Trial ({trialDaysRemaining} days left)</Badge>
             )}
@@ -141,7 +141,7 @@ export const MembershipManagement: React.FC = () => {
                   Upgrade to unlock the Project Catalog and Project Workflows for just $25/year.
                 </p>
                 <Button onClick={handleSubscribeClick} className="w-full">
-                  Subscribe Now - $25/year
+                  Subscribe Now - $59/year
                 </Button>
               </div>
             )}

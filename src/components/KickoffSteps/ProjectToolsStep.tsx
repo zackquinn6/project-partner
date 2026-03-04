@@ -79,23 +79,13 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   };
 
   const handleClearAll = () => {
-    const next = new Set<PlanningToolId>(['scope', 'risk']);
+    const next = new Set<PlanningToolId>(['scope']);
     setSelected(next);
     notifySelection(next);
   };
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold">Workflow Setup</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Choose which planning tools you want to use for this project.
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Choose which planning tools you want to use for this project. You can add or remove these later.
-        </p>
-      </div>
-
       <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
         {PLANNING_TOOLS.map(({ id, label, benefit }) => {
           const isScope = id === 'scope';
@@ -135,19 +125,12 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         <Button variant="outline" size="sm" onClick={handleSelectAll}>
           Select all
         </Button>
-        {selected.size > 0 && (
+        {selected.size > 1 && (
           <Button variant="ghost" size="sm" onClick={handleClearAll}>
             Clear
           </Button>
         )}
       </div>
-      <button
-        type="button"
-        onClick={onComplete}
-        className="text-sm text-muted-foreground underline hover:text-foreground transition-colors"
-      >
-        Skip for now
-      </button>
     </div>
   );
 };

@@ -128,6 +128,7 @@ export function TaskCompletionDialog({
           user_id: user.id,
           task_id: task.id,
           completed_at: completedDate.toISOString(),
+          scheduled_due_date: task.next_due,
           notes: notes.trim() || null,
           photo_url: photoUrl
         });

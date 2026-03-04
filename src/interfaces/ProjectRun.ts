@@ -1,5 +1,22 @@
 import { Project } from './Project';
 
+/**
+ * Project run (user's instance of a project).
+ *
+ * Schema: maps to Supabase table `project_runs`.
+ * - id, template_id, name, description, project_challenges, is_manual_entry
+ * - created_at, updated_at, start_date, plan_end_date, end_date, status
+ * - project_leader, accountability_partner, custom_project_name, home_id
+ * - current_phase_id, current_operation_id, current_step_id
+ * - completed_steps (JSONB array), progress
+ * - phases (JSONB; immutable snapshot from template at creation)
+ * - category, effort_level, skill_level, estimated_time, scaling_unit
+ * - budget_data, phase_ratings, issue_reports, time_tracking (JSONB)
+ * - customization_decisions (JSONB), instruction_level_preference
+ * - initial_budget, initial_timeline, initial_sizing
+ * - progress_reporting_style, schedule_optimization_method
+ * - schedule_events, project_photos, shopping_checklist_data (JSONB)
+ */
 export interface ProjectRun {
   id: string;
   templateId: string; // Reference to the template project

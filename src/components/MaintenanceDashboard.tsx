@@ -67,9 +67,11 @@ const W_C = 3;
 const W_D = 1;
 const DEFAULT_CRITICALITY = 2;
 
-function getSystemForCategory(category: string): SystemKey {
+export function getSystemForCategory(category: string): SystemKey {
   return CATEGORY_TO_SYSTEM[category] ?? 'other';
 }
+
+export { SYSTEM_CONFIG };
 
 function getCriticality(task: MaintenanceTaskForDashboard): number {
   const c = task.criticality;
@@ -150,23 +152,23 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   const gaugeRotation = -90 + (healthScore / 100) * 180;
 
   return (
-    <div className="px-3 md:px-6 py-4 border-b bg-muted/30 space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        {/* Home Health Score - Speedometer */}
-        <Card className="col-span-2 md:col-span-1 flex flex-col">
-          <CardContent className="p-3 flex flex-col items-center justify-center flex-1">
+    <div className="px-3 md:px-6 py-2 border-b bg-muted/30 space-y-2">
+      <div className="flex flex-wrap items-stretch gap-2">
+        {/* Home Health Score - Speedometer (maximized in card) */}
+        <Card className="flex-shrink-0 w-[140px] md:w-[160px] flex flex-col">
+          <CardContent className="p-2 flex flex-col items-center justify-center flex-1 min-h-0">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="text-xs font-medium text-muted-foreground mb-1 cursor-help">Home Health Score</div>
+                  <div className="text-[10px] font-medium text-muted-foreground cursor-help leading-tight">Home Health</div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[260px] text-center">
                   Your Home Health Score starts at 100 and drops based on overdue tasks, how critical they are, and how many tasks are coming up in the next 30 days.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <div className="relative w-28 h-14 flex items-end justify-center">
-              <svg viewBox="0 0 120 70" className="w-full h-full" aria-hidden>
+            <div className="relative w-full flex-1 min-h-[44px] md:min-h-[52px] flex items-end justify-center">
+              <svg viewBox="0 0 120 70" className="w-full h-full max-h-12 md:max-h-14" aria-hidden preserveAspectRatio="xMidYMax meet">
                 <defs>
                   <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#ef4444" />
@@ -182,38 +184,38 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                 </g>
               </svg>
             </div>
-            <span className="text-2xl font-bold tabular-nums" aria-live="polite">{healthScore}</span>
+            <span className="text-xl md:text-2xl font-bold tabular-nums leading-tight" aria-live="polite">{healthScore}</span>
           </CardContent>
         </Card>
 
-        {/* Overdue + Due in next 30 days - combined */}
-        <Card>
-          <CardContent className="p-3 flex flex-col items-center justify-center min-h-[80px]">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold tabular-nums text-destructive">{overdue.length}</span>
-              <span className="text-muted-foreground/80">/</span>
-              <span className="text-2xl font-bold tabular-nums">{upcoming30.length}</span>
+        {/* Overdue / Due - split horizontally, large numbers */}
+        <Card className="flex-shrink-0 w-[100px] md:w-[110px] flex flex-col">
+          <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-between">
+            <div className="flex flex-col items-center">
+              <span className="text-xl md:text-2xl font-bold tabular-nums text-destructive leading-tight">{overdue.length}</span>
+              <span className="text-[10px] text-muted-foreground">Overdue</span>
             </div>
-            <span className="text-[10px] text-muted-foreground text-center">Overdue / Due in 30 days</span>
-            {C > 0 && (
-              <span className="text-[10px] text-destructive font-medium mt-0.5">Criticality sum: {C}</span>
-            )}
+            <div className="border-t pt-1.5 flex flex-col items-center">
+              <span className="text-xl md:text-2xl font-bold tabular-nums leading-tight">{upcoming30.length}</span>
+              <span className="text-[10px] text-muted-foreground">Due (30d)</span>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Money saved */}
-        <Card>
-          <CardContent className="p-3 flex flex-col items-center justify-center min-h-[80px]">
-            <span className="text-2xl font-bold tabular-nums text-emerald-600">${moneySaved}</span>
-            <span className="text-[10px] text-muted-foreground text-center">Est. repairs avoided this year</span>
+        {/* Estimated repair costs avoided - compact, match layout */}
+        <Card className="flex-shrink-0 w-[120px] md:w-[130px] flex flex-col">
+          <CardContent className="p-2 flex flex-col items-center justify-center flex-1 min-h-0">
+            <span className="text-[10px] text-muted-foreground leading-tight">Est. repairs avoided</span>
+            <span className="text-lg md:text-xl font-bold tabular-nums text-emerald-600 leading-tight">${moneySaved}</span>
+            <span className="text-[10px] text-muted-foreground">this year</span>
           </CardContent>
         </Card>
 
-        {/* System status flags - larger, spread out, with status badge overlay */}
-        <Card className="col-span-2 md:col-span-1">
-          <CardContent className="p-3">
-            <div className="text-xs font-medium text-muted-foreground mb-3">System status</div>
-            <div className="grid grid-cols-3 gap-3 md:gap-4">
+        {/* System status - all icons in one row */}
+        <Card className="flex-1 min-w-0 flex flex-col">
+          <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center">
+            <div className="text-[10px] font-medium text-muted-foreground mb-1">System status</div>
+            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
               {(Object.keys(SYSTEM_CONFIG) as SystemKey[]).map(sys => {
                 const status = systemStatus[sys];
                 const Icon = SYSTEM_CONFIG[sys].icon;
@@ -222,17 +224,17 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                 return (
                   <div
                     key={sys}
-                    className="flex flex-col items-center gap-1 relative"
+                    className="flex items-center gap-0.5"
                     title={`${SYSTEM_CONFIG[sys].label}: ${status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due soon' : 'Good'}`}
                   >
                     <div className="relative">
-                      <Icon className="h-8 w-8 md:h-9 md:w-9 text-muted-foreground" strokeWidth={1.5} />
+                      <Icon className="h-6 w-6 md:h-7 md:w-7 text-muted-foreground" strokeWidth={1.5} />
                       <StatusBadge
-                        className={`h-4 w-4 md:h-5 md:w-5 absolute -top-0.5 -right-0.5 ${badgeColor}`}
+                        className={`h-3 w-3 md:h-3.5 md:w-3.5 absolute -top-0.5 -right-0.5 ${badgeColor}`}
                         strokeWidth={2.5}
                       />
                     </div>
-                    <span className="text-[10px] text-muted-foreground truncate w-full text-center">{SYSTEM_CONFIG[sys].label}</span>
+                    <span className="text-[9px] text-muted-foreground hidden sm:inline">{SYSTEM_CONFIG[sys].label}</span>
                   </div>
                 );
               })}

@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Home, CheckCircle, Plus, Target, DollarSign, Calendar, Ruler } from 'lucide-react';
+import { Home, CheckCircle, Plus, Target, DollarSign, Calendar, Ruler, ChevronUp, ChevronDown } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -574,23 +574,45 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   Project Size
                 </Label>
                 <p className="text-[10px] text-muted-foreground mb-1">How much work are you doing?</p>
-                <div className="flex items-center gap-2 w-full justify-center">
-                <Input
-                  type="number"
-                  value={projectForm.initialSizing}
-                  onChange={(e) => {
-                    console.log('📝 ProjectProfileStep: initialSizing changed to:', e.target.value);
-                    setProjectForm(prev => ({
-                      ...prev,
-                      initialSizing: e.target.value
-                    }));
-                  }}
-                  placeholder="0"
-                  className="text-xs h-9 w-[80px]"
-                  step="1"
-                  min="0"
-                />
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                <div className="flex items-center gap-1 w-full justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                    aria-label="Decrease by 25 sq ft"
+                    onClick={() => {
+                      const n = Math.max(0, (parseFloat(projectForm.initialSizing) || 0) - 25);
+                      setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
+                    }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  <Input
+                    type="number"
+                    value={projectForm.initialSizing}
+                    onChange={(e) => {
+                      setProjectForm(prev => ({ ...prev, initialSizing: e.target.value }));
+                    }}
+                    placeholder="0"
+                    className="text-xs h-9 w-[80px]"
+                    step="25"
+                    min="0"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                    aria-label="Increase by 25 sq ft"
+                    onClick={() => {
+                      const n = (parseFloat(projectForm.initialSizing) || 0) + 25;
+                      setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
+                    }}
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-0.5">
                     {(() => {
                       // Standard scaling units
                       const normalizedScalingUnit = scalingUnit?.toLowerCase().trim() || '';
@@ -652,34 +674,58 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   Budget
                 </Label>
                 <p className="text-[10px] text-muted-foreground mb-1">How much do you want to spend?</p>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                  <Input
-                    value={projectForm.initialBudget}
-                    onChange={(e) => {
-                      console.log('📝 ProjectProfileStep: initialBudget changed to:', e.target.value);
-                      setProjectForm(prev => ({
-                        ...prev,
-                        initialBudget: e.target.value
-                      }));
+                <div className="flex items-center gap-1 w-full justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                    aria-label="Decrease by $100"
+                    onClick={() => {
+                      const n = Math.max(0, (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) - 100);
+                      setProjectForm(prev => ({ ...prev, initialBudget: String(n) }));
                     }}
-                    placeholder="0"
-                    className="text-xs h-9 pl-7 w-[100px]"
-                    type="number"
-                    step="1"
-                    min="0"
-                    max="999999"
-                  />
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                    <Input
+                      value={projectForm.initialBudget}
+                      onChange={(e) => {
+                        setProjectForm(prev => ({ ...prev, initialBudget: e.target.value }));
+                      }}
+                      placeholder="0"
+                      className="text-xs h-9 pl-7 w-[100px]"
+                      type="number"
+                      step="100"
+                      min="0"
+                      max="999999"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 flex-shrink-0"
+                    aria-label="Increase by $100"
+                    onClick={() => {
+                      const n = (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) + 100;
+                      setProjectForm(prev => ({ ...prev, initialBudget: String(n) }));
+                    }}
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* Home Selection - Only show if user has multiple homes */}
-            {homes.length > 1 && (
+            {/* Primary home selection - show whenever user has at least one home (Scope & Specs step) */}
+            {homes.length >= 1 && (
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[10px] text-muted-foreground">2 of 3</span>
-                  <label className="text-xs font-medium">Select Home</label>
+                  <label className="text-xs font-medium">Primary home for this project</label>
                 </div>
                 {loading ? (
                   <div className="text-xs sm:text-sm text-muted-foreground">Loading homes...</div>

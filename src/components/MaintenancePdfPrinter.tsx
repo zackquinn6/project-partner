@@ -24,6 +24,7 @@ interface MaintenanceCompletion {
     category: string;
   };
   completed_at: string;
+  scheduled_due_date?: string;
   notes?: string;
 }
 
@@ -38,37 +39,41 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
   completions, 
   homeName 
 }) => {
-  const printRef = useRef<HTMLDivElement>(null);
+  const planRef = useRef<HTMLDivElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
-  const generatePDF = async () => {
-    if (!printRef.current) return;
-
-    try {
-      const canvas = await html2canvas(printRef.current, {
-        scale: 2,
-        allowTaint: true,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 295; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
+  const addCanvasToPdf = (pdf: jsPDF, canvas: HTMLCanvasElement, imgWidth: number, pageHeight: number) => {
+    const imgData = canvas.toDataURL('image/png');
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
+    }
+  };
 
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
+  const generatePDF = async () => {
+    if (!planRef.current) return;
+
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const opts = { scale: 2, allowTaint: true, useCORS: true, backgroundColor: '#ffffff' as const };
+
+      const planCanvas = await html2canvas(planRef.current, opts);
+      addCanvasToPdf(pdf, planCanvas, imgWidth, pageHeight);
+
+      if (historyRef.current) {
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        const historyCanvas = await html2canvas(historyRef.current, opts);
+        addCanvasToPdf(pdf, historyCanvas, imgWidth, pageHeight);
       }
 
       pdf.save(`${homeName.replace(/\s+/g, '_')}_maintenance_tracker.pdf`);
@@ -99,9 +104,9 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
         </Button>
       )}
 
-      {/* Hidden content for PDF generation */}
-      <div ref={printRef} style={{ position: 'absolute', left: '-9999px', width: '210mm', backgroundColor: 'white', padding: '20px' }}>
-        <div style={{ fontFamily: 'Arial, sans-serif' }}>
+      {/* Hidden content for PDF generation - Plan and History in separate refs for separate pages */}
+      <div style={{ position: 'absolute', left: '-9999px', width: '210mm', backgroundColor: 'white', padding: '20px' }}>
+        <div ref={planRef} style={{ fontFamily: 'Arial, sans-serif' }}>
           <div style={{ textAlign: 'center', marginBottom: '30px' }}>
             <h1 style={{ fontSize: '24px', marginBottom: '10px', color: '#333' }}>
               Home Maintenance Tracker
@@ -115,7 +120,7 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
           </div>
 
           {/* Maintenance Plan Section */}
-          <div style={{ marginBottom: '40px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <h3 style={{ fontSize: '18px', marginBottom: '20px', color: '#333', borderBottom: '2px solid #ddd', paddingBottom: '5px' }}>
               Maintenance Plan
             </h3>
@@ -142,35 +147,46 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
               </tbody>
             </table>
           </div>
+        </div>
 
-          {/* Maintenance History Section */}
-          <div>
-            <h3 style={{ fontSize: '18px', marginBottom: '20px', color: '#333', borderBottom: '2px solid #ddd', paddingBottom: '5px' }}>
-              Maintenance History
-            </h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f8f9fa' }}>
-                  <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Task</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Category</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Completed</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Notes</th>
+        {/* History on its own (captured as second page) */}
+        <div ref={historyRef} style={{ fontFamily: 'Arial, sans-serif', paddingTop: '20px' }}>
+          <h3 style={{ fontSize: '18px', marginBottom: '20px', color: '#333', borderBottom: '2px solid #ddd', paddingBottom: '5px' }}>
+            Maintenance History
+          </h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f8f9fa' }}>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Task</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Category</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Completed</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Plan vs actual</th>
+                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {completions.slice(0, 20).map((completion, index) => (
+                <tr key={completion.id} style={{ backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa' }}>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{completion.task.title}</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{categoryLabels[completion.task.category] ?? completion.task.category}</td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    {format(new Date(completion.completed_at), 'MMM dd, yyyy')}
+                  </td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                    {completion.scheduled_due_date
+                      ? (() => {
+                          const due = new Date(completion.scheduled_due_date);
+                          const done = new Date(completion.completed_at);
+                          const days = Math.round((done.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+                          return days > 0 ? `+${days} days` : days < 0 ? `${days} days` : 'On time';
+                        })()
+                      : '-'}
+                  </td>
+                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{completion.notes || '-'}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {completions.slice(0, 20).map((completion, index) => (
-                  <tr key={completion.id} style={{ backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa' }}>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{completion.task.title}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{categoryLabels[completion.task.category]}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                      {format(new Date(completion.completed_at), 'MMM dd, yyyy')}
-                    </td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{completion.notes || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </>

@@ -30,7 +30,7 @@ export const TrialBanner: React.FC = () => {
           className="whitespace-nowrap flex items-center gap-2"
         >
           <Crown className="h-4 w-4" />
-          Subscribe $25/year
+          Subscribe $59/year
         </Button>
       </AlertDescription>
     </Alert>

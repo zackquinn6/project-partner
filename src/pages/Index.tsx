@@ -87,6 +87,15 @@ const Index = () => {
 
   // Handle navigation state changes (including view parameter)
   useEffect(() => {
+    const openFromState = location.state?.openTaskList === true;
+    const openFromStorage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('openTaskList') === '1';
+    if (openFromState || openFromStorage) {
+      setIsHomeTaskListOpen(true);
+      if (openFromStorage) sessionStorage.removeItem('openTaskList');
+      if (openFromState) {
+        navigate(location.pathname, { state: { ...location.state, openTaskList: undefined }, replace: true });
+      }
+    }
     if (location.state?.view) {
       console.log('🎯 Index: Setting view from navigation state:', location.state.view);
       setCurrentView(location.state.view);
@@ -113,7 +122,7 @@ const Index = () => {
         setForceListingMode(true);
       }
     }
-  }, [location.state, projectRuns, isMobile, setCurrentProjectRun]);
+  }, [location.state, location.pathname, projectRuns, isMobile, setCurrentProjectRun, navigate]);
 
   // Prevent constant re-renders by memoizing navigation handlers
   const [hasHandledInitialState, setHasHandledInitialState] = useState(false);

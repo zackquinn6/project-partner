@@ -14,6 +14,13 @@ interface DIYProfileStepProps {
   onOutputToggle?: (outputId: string) => void;
 }
 
+/** Project focus labels (matches workshop My Profile). */
+const PROJECT_FOCUS_LABELS: Record<string, string> = {
+  schedule: 'Hitting my schedule',
+  quality: 'Highest quality work',
+  savings: 'Maximize savings',
+};
+
 interface ProfileData {
   skill_level?: string;
   avoid_projects?: string[];
@@ -21,16 +28,11 @@ interface ProfileData {
   home_ownership?: string;
   home_build_year?: string;
   home_state?: string;
-  preferred_learning_methods?: string[];
+  project_focus?: string | null;
   owned_tools?: any[];
   survey_completed_at?: string;
   full_name?: string;
   nickname?: string;
-  primary_home?: {
-    name: string;
-    city?: string;
-    state?: string;
-  };
 }
 
 export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCompleted, checkedOutputs = new Set(), onOutputToggle }) => {
@@ -65,7 +67,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
           home_ownership, 
           home_build_year, 
           home_state, 
-          preferred_learning_methods, 
+          project_focus, 
           owned_tools, 
           survey_completed_at,
           full_name,
@@ -85,23 +87,9 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         return;
       }
 
-      // Then fetch primary home data
-      const { data: homeData, error: homeError } = await supabase
-        .from('homes')
-        .select('name, city, state')
-        .eq('user_id', user?.id)
-        .eq('is_primary', true)
-        .maybeSingle();
-
-      if (homeError && homeError.code !== 'PGRST116') {
-        console.error('Error loading primary home:', homeError);
-      }
-
-      // Combine profile and home data
       const completeProfile = {
         ...profileData,
         owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
-        primary_home: homeData || undefined
       };
       setExistingProfile(completeProfile);
     } catch (error) {
@@ -182,22 +170,17 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold text-xs sm:text-sm">Primary Home</h4>
-                  <p className="text-xs text-muted-foreground break-words mt-0.5">
-                    {existingProfile.primary_home ? `${existingProfile.primary_home.name}${existingProfile.primary_home.city && existingProfile.primary_home.state ? ` • ${existingProfile.primary_home.city}, ${existingProfile.primary_home.state}` : ''}` : "No primary home set"}
+                  <h4 className="font-semibold text-xs sm:text-sm">Project Focus</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {existingProfile.project_focus
+                      ? (PROJECT_FOCUS_LABELS[existingProfile.project_focus] ?? existingProfile.project_focus)
+                      : "Not specified"}
                   </p>
                 </div>
               </div>
 
               {/* Column 2 */}
               <div className="space-y-2 sm:space-y-3">
-                <div>
-                  <h4 className="font-semibold text-xs sm:text-sm">Learning Preferences</h4>
-                  <p className="text-xs text-muted-foreground break-words mt-0.5">
-                    {existingProfile.preferred_learning_methods?.length ? existingProfile.preferred_learning_methods.join(", ") : "Not specified"}
-                  </p>
-                </div>
-
                 <div>
                   <h4 className="font-semibold text-xs sm:text-sm">Owned Tools</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -291,7 +274,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
           homeOwnership: existingProfile?.home_ownership || "",
           homeBuildYear: existingProfile?.home_build_year || "",
           homeState: existingProfile?.home_state || "",
-          preferredLearningMethods: existingProfile?.preferred_learning_methods || [],
+          projectFocus: existingProfile?.project_focus ?? undefined,
           ownedTools: existingProfile?.owned_tools || [],
           fullName: existingProfile?.full_name || "",
           nickname: existingProfile?.nickname || ""

@@ -102,7 +102,7 @@ export const MembershipStatusCard: React.FC = () => {
         {!isAdmin && !isSubscribed && (
           <Button onClick={createCheckout} className="w-full" size="sm">
             <Crown className="h-4 w-4 mr-2" />
-            {inTrial ? 'Subscribe Now - $25/year' : 'Upgrade to Member'}
+            {inTrial ? 'Subscribe Now - $59/year' : 'Upgrade to Member'}
           </Button>
         )}
       </CardContent>

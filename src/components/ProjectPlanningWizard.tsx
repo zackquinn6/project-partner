@@ -1,9 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight, CheckCircle, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import { ChevronLeft, ChevronRight, CheckCircle, X, Settings2 } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { PLANNING_TOOLS } from './KickoffSteps/ProjectToolsStep';
 import type { PlanningToolId } from './KickoffSteps/ProjectToolsStep';
@@ -26,7 +33,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   onOpenChange,
   onGoToWorkflow
 }) => {
-  const { currentProjectRun } = useProject();
+  const { currentProjectRun, updateProjectRun } = useProject();
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
@@ -93,6 +100,30 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const progress = wizardSteps.length > 0 ? completedSteps.size / wizardSteps.length * 100 : 0;
   const currentToolId = wizardSteps[currentStep]?.toolId ?? null;
 
+  const planningToolsForWizard = useMemo(
+    () => PLANNING_TOOLS.filter(t => WIZARD_TOOL_ORDER.includes(t.id)),
+    []
+  );
+
+  const handlePlanningToolToggle = useCallback(
+    (toolId: PlanningToolId, checked: boolean) => {
+      if (!currentProjectRun || toolId === 'scope') return;
+      const decisions = (currentProjectRun.customization_decisions || {}) as Record<string, unknown>;
+      const current = (decisions.selected_planning_tools as PlanningToolId[] | undefined) ?? [];
+      const currentSet = new Set(current);
+      if (checked) currentSet.add(toolId);
+      else currentSet.delete(toolId);
+      currentSet.add('scope');
+      const next = Array.from(currentSet);
+      updateProjectRun({
+        ...currentProjectRun,
+        customization_decisions: { ...decisions, selected_planning_tools: next },
+        updatedAt: new Date()
+      });
+    },
+    [currentProjectRun, updateProjectRun]
+  );
+
   const renderCurrentStep = () => {
     const stepProps = {
       onComplete: () => handleStepComplete(currentStep),
@@ -148,7 +179,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[95vw] md:h-[95vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
         {/* Accessibility: DialogTitle and DialogDescription required */}
-        <DialogTitle className="sr-only">Project Planning Wizard</DialogTitle>
+        <DialogTitle className="sr-only">Project Planning Workflow</DialogTitle>
         <DialogDescription className="sr-only">Plan and customize your project workflow</DialogDescription>
         
         {/* Close button */}
@@ -171,17 +202,39 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
-                  Project Planning Wizard
+                  Project Planning Workflow
                   {allStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-500 flex-shrink-0" />}
                 </CardTitle>
                 <p className="text-base sm:text-lg font-semibold mt-2 text-foreground">Build your complete project plan</p>
-                <CardDescription className="text-xs sm:text-sm mt-1">
-                  {wizardSteps.length === 1 && wizardSteps[0].toolId === null
-                    ? 'Select planning tools in Kickoff step 4 to see your steps here.'
-                    : `${wizardSteps.length} step${wizardSteps.length !== 1 ? 's' : ''} based on tools selected for this run`}
-                </CardDescription>
               </div>
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                      <Settings2 className="w-4 h-4 mr-1.5" />
+                      Change planning tools
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Planning tools for this run</DropdownMenuLabel>
+                    {planningToolsForWizard.map(({ id, label }) => {
+                      const isScope = id === 'scope';
+                      const checked = (currentProjectRun?.customization_decisions as Record<string, unknown> | undefined)?.selected_planning_tools != null
+                        ? ((currentProjectRun.customization_decisions as Record<string, unknown>).selected_planning_tools as PlanningToolId[]).includes(id)
+                        : id === 'scope' || id === 'risk';
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={id}
+                          checked={checked}
+                          onCheckedChange={value => handlePlanningToolToggle(id, value === true)}
+                          disabled={isScope}
+                        >
+                          {label}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <div className="text-right">
                   <div className="text-xs sm:text-sm text-muted-foreground mb-1">
                     Step {currentStep + 1} of {wizardSteps.length}

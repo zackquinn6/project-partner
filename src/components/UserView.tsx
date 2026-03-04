@@ -65,6 +65,8 @@ import {
   extractStepIdFromCompletionKey
 } from '@/utils/projectUtils';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useMembership } from '@/contexts/MembershipContext';
+import { UpgradePrompt } from './UpgradePrompt';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
 import { MobileDIYDropdown } from './MobileDIYDropdown';
 import { ProjectCompletionHandler } from './ProjectCompletionHandler';
@@ -106,6 +108,8 @@ export default function UserView({
 }: UserViewProps) {
   const { isMobile } = useResponsive();
   const { isAdmin } = useUserRole();
+  const { canAccessApp } = useMembership();
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const {
     currentProject,
     currentProjectRun,
@@ -115,7 +119,7 @@ export default function UserView({
     updateProjectRun,
     deleteProjectRun
   } = useProject();
-  const { refetchProjectRuns } = useProjectData();
+  const { refetchProjectRuns, updateProjectRunsCache } = useProjectData();
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
@@ -428,6 +432,43 @@ export default function UserView({
       window.removeEventListener('space-name-updated', handleRefresh);
     };
   }, [currentProjectRun?.id]);
+
+  // When the project run has no phases in memory (e.g. stale cache or partial load), refetch from DB
+  // so the workflow navigation pane can display standard phases (Kickoff, Planning, Closing, etc.)
+  const lastRefetchedPhasesRunId = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    const run = currentProjectRun;
+    if (!run?.id || !updateProjectRunsCache || !setCurrentProjectRun || !projectRuns.length) return;
+    const hasPhases = run.phases != null && Array.isArray(run.phases) && run.phases.length > 0;
+    if (hasPhases) {
+      lastRefetchedPhasesRunId.current = null;
+      return;
+    }
+    if (lastRefetchedPhasesRunId.current === run.id) return;
+    lastRefetchedPhasesRunId.current = run.id;
+    (async () => {
+      try {
+        const { data: row, error } = await supabase
+          .from('project_runs')
+          .select('phases')
+          .eq('id', run.id)
+          .single();
+        if (error || !row?.phases) return;
+        let parsed: Phase[] = [];
+        try {
+          parsed = typeof row.phases === 'string' ? JSON.parse(row.phases) : row.phases;
+        } catch {
+          return;
+        }
+        if (!Array.isArray(parsed) || parsed.length === 0) return;
+        const updatedRun = { ...run, phases: parsed };
+        setCurrentProjectRun(updatedRun);
+        updateProjectRunsCache(projectRuns.map(r => (r.id === run.id ? updatedRun : r)));
+      } finally {
+        lastRefetchedPhasesRunId.current = null;
+      }
+    })();
+  }, [currentProjectRun?.id, currentProjectRun?.phases, projectRuns, setCurrentProjectRun, updateProjectRunsCache]);
   
   // CRITICAL ARCHITECTURE:
   // - UserView ONLY displays project runs (immutable snapshots)
@@ -1493,7 +1534,7 @@ export default function UserView({
   const handleLaunchApp = (app: AppReference) => {
     console.log('🚀 App launched:', app);
     
-    // Handle external apps
+    // Handle external apps (no subscription gate)
     if (app.appType === 'external-link' && app.linkUrl) {
       window.open(app.linkUrl, app.openInNewTab ? '_blank' : '_self');
       return;
@@ -1505,8 +1546,20 @@ export default function UserView({
       return;
     }
     
+    // Native apps: require subscription unless app is free (Home maintenance, Task manager, My tools library)
+    if (app.actionKey && !canAccessApp(app.actionKey)) {
+      setShowUpgradePrompt(true);
+      return;
+    }
+    
     // Handle native apps
     switch (app.actionKey) {
+      case 'home-maintenance':
+        window.dispatchEvent(new CustomEvent('show-home-maintenance'));
+        break;
+      case 'task-manager':
+        window.dispatchEvent(new CustomEvent('show-home-task-list'));
+        break;
       case 'project-kickoff':
         // Kickoff is handled separately in the workflow
         console.log('Project Kickoff accessed via app');
@@ -3519,6 +3572,9 @@ export default function UserView({
           mode="run"
         />
       )}
+
+      {/* Upgrade prompt when launching a paid app without subscription */}
+      <UpgradePrompt open={showUpgradePrompt} onOpenChange={setShowUpgradePrompt} feature="this app" />
 
       {/* Photo Gallery */}
       {currentProjectRun && (

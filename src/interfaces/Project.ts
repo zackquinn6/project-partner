@@ -1,3 +1,12 @@
+/**
+ * Schema documentation (Supabase):
+ *
+ * - projects / project_templates_live: template projects (id, name, description, phases JSONB, scaling_unit, revision_number, etc.)
+ * - project_runs: user runs (see ProjectRun in ProjectRun.ts)
+ * - project_phases, project_operations, project_steps: normalized structure for templates
+ * - library_tools, library_materials: tool/material library
+ */
+
 // Legacy interfaces for embedded materials/tools (deprecated)
 export interface Material {
   id: string;

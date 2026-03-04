@@ -10,7 +10,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 0
   },
   'project-planning-wizard': {
-    appName: 'Project Planning Wizard',
+    appName: 'Project Planning Workflow',
     appType: 'native',
     icon: 'Wand2',
     description: 'Complete planning guide: customization, schedule, and budget',

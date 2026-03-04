@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Filter, Trash2, FileText, Pencil } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +21,7 @@ import { TaskCompletionDialog } from './TaskCompletionDialog';
 import { MaintenanceHistoryTab } from './MaintenanceHistoryTab';
 import { MaintenancePdfPrinter } from './MaintenancePdfPrinter';
 import { MaintenanceNotifications } from './MaintenanceNotifications';
-import { MaintenanceDashboard } from './MaintenanceDashboard';
+import { MaintenanceDashboard, getSystemForCategory, SYSTEM_CONFIG, type SystemKey } from './MaintenanceDashboard';
 import { HomeManager } from './HomeManager';
 interface MaintenanceTask {
   id: string;
@@ -45,6 +45,7 @@ interface MaintenanceCompletion {
   id: string;
   task_id: string;
   completed_at: string;
+  scheduled_due_date?: string;
   notes?: string;
   photo_url?: string;
   task: {
@@ -247,7 +248,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [selectedHomeId, setSelectedHomeId] = useState<string>('');
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [systemFilter, setSystemFilter] = useState<SystemKey | 'all'>('all');
   const [completions, setCompletions] = useState<MaintenanceCompletion[]>([]);
   const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<number>(0);
@@ -318,6 +319,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           id,
           task_id,
           completed_at,
+          scheduled_due_date,
           notes,
           photo_url,
           user_maintenance_tasks!inner (
@@ -335,6 +337,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         id: completion.id,
         task_id: completion.task_id,
         completed_at: completion.completed_at,
+        scheduled_due_date: completion.scheduled_due_date ?? undefined,
         notes: completion.notes,
         photo_url: completion.photo_url,
         task: {
@@ -401,25 +404,15 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   };
   const getFilteredTasks = () => {
-    if (categoryFilter === 'all') {
-      return tasks;
-    }
-    return tasks.filter(task => task.category === categoryFilter);
+    let list = systemFilter === 'all' ? tasks : tasks.filter(task => getSystemForCategory(task.category) === systemFilter);
+    return [...list].sort((a, b) => new Date(a.next_due).getTime() - new Date(b.next_due).getTime());
   };
-  const categories = ['appliances', 'electrical', 'exterior', 'general', 'hvac', 'interior', 'landscaping', 'outdoor', 'plumbing', 'roof', 'safety', 'security'];
+
+  const historyCategories = ['appliances', 'electrical', 'exterior', 'general', 'hvac', 'interior', 'landscaping', 'outdoor', 'plumbing', 'roof', 'safety', 'security'];
   const categoryLabels: Record<string, string> = {
-    appliances: 'Appliances',
-    electrical: 'Electrical',
-    exterior: 'Exterior',
-    general: 'General',
-    hvac: 'HVAC',
-    interior: 'Interior',
-    landscaping: 'Landscaping',
-    outdoor: 'Outdoor',
-    plumbing: 'Plumbing',
-    roof: 'Roof',
-    safety: 'Safety',
-    security: 'Security',
+    appliances: 'Appliances', electrical: 'Electrical', exterior: 'Exterior', general: 'General',
+    hvac: 'HVAC', interior: 'Interior', landscaping: 'Landscaping', outdoor: 'Outdoor',
+    plumbing: 'Plumbing', roof: 'Roof', safety: 'Safety', security: 'Security',
   };
 
   // Touch handlers for swipe gestures
@@ -528,25 +521,40 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
                    <TabsContent value="tasks" className="flex-1 min-h-0 overflow-hidden m-0">
                       <div className="flex flex-col h-full">
-                        {/* Category Filter */}
-                        <div className="flex items-center gap-2 py-3 shrink-0 px-3 md:px-6 border-b">
-                          <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                            <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
-                              <SelectValue placeholder="Filter by category" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[200] bg-popover border">
-                              <SelectItem value="all">All Categories ({tasks.length})</SelectItem>
-                              {categories.map(category => {
-                        const count = tasks.filter(task => task.category === category).length;
-                        return count > 0 ? <SelectItem key={category} value={category}>
-                                    {categoryLabels[category]} ({count})
-                                  </SelectItem> : null;
-                      })}
-                            </SelectContent>
-                          </Select>
-                          
-                          <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="w-8 h-8 p-0 shrink-0" title="Add Task">
+                        {/* System filter buttons + Add task */}
+                        <div className="flex flex-wrap items-center gap-2 py-2 shrink-0 px-3 md:px-6 border-b">
+                          {(['all', ...Object.keys(SYSTEM_CONFIG)] as (SystemKey | 'all')[]).map(sys => {
+                            if (sys === 'all') {
+                              return (
+                                <Button
+                                  key="all"
+                                  variant={systemFilter === 'all' ? 'default' : 'outline'}
+                                  size="sm"
+                                  className="h-8 text-xs"
+                                  onClick={() => setSystemFilter('all')}
+                                >
+                                  All
+                                </Button>
+                              );
+                            }
+                            const Icon = SYSTEM_CONFIG[sys].icon;
+                            const count = tasks.filter(t => getSystemForCategory(t.category) === sys).length;
+                            return (
+                              <Button
+                                key={sys}
+                                variant={systemFilter === sys ? 'default' : 'outline'}
+                                size="sm"
+                                className="h-8 gap-1.5 text-xs"
+                                onClick={() => setSystemFilter(sys)}
+                                title={`${SYSTEM_CONFIG[sys].label}${count > 0 ? ` (${count})` : ''}`}
+                              >
+                                <Icon className="h-3.5 w-3.5" />
+                                {SYSTEM_CONFIG[sys].label}
+                                {count > 0 && <span className="opacity-80">({count})</span>}
+                              </Button>
+                            );
+                          })}
+                          <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="ml-auto h-8 w-8 p-0 shrink-0" title="Add Task">
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
@@ -558,10 +566,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <div className="text-center py-8">
                               <Home className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                               <h3 className="text-lg font-medium mb-2">
-                                {tasks.length === 0 ? 'No maintenance tasks yet' : 'No tasks in this category'}
+                                {tasks.length === 0 ? 'No maintenance tasks yet' : 'No tasks in this system'}
                               </h3>
                               <p className="text-muted-foreground mb-4 text-sm">
-                                {tasks.length === 0 ? 'Add your first maintenance task to start tracking your home maintenance.' : 'Try selecting a different category or add a new task.'}
+                                {tasks.length === 0 ? 'Add your first maintenance task to start tracking your home maintenance.' : 'Try selecting a different system or add a new task.'}
                               </p>
                               <Button onClick={() => setShowAddTask(true)}>
                                 <Plus className="h-4 w-4 mr-2" />
@@ -713,7 +721,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                            </SelectTrigger>
                            <SelectContent className="z-[200] bg-popover border">
                              <SelectItem value="all">All Categories</SelectItem>
-                             {categories.map(category => <SelectItem key={category} value={category}>
+                             {historyCategories.map(category => <SelectItem key={category} value={category}>
                                  {categoryLabels[category]}
                                </SelectItem>)}
                            </SelectContent>

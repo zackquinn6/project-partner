@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, ArrowRight, HelpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
@@ -254,7 +255,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       case 'Scope & Specs':
         return 'Complete initial customization to your unique project';
       case 'Workflow Setup':
-        return 'Choose the tools that matter most to you';
+        return 'Equip your project with the right planning tools';
       default:
         return '';
     }
@@ -381,13 +382,33 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         </CardContent>
       </Card>
 
-      {/* Step Purpose Sub-header */}
+      {/* Step Purpose Sub-header - white box like project kickoff header */}
       {currentStepPurpose && (
-        <div className="px-1 sm:px-0">
-          <h2 className="text-base sm:text-lg flex items-center gap-2">
-            {currentStepPurpose}
-          </h2>
-        </div>
+        <Card>
+          <CardContent className="p-2 sm:p-3 flex flex-row items-center justify-between gap-2">
+            <h2 className="text-base sm:text-lg font-semibold">
+              {currentStepPurpose}
+            </h2>
+            {currentKickoffStep === 0 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-primary underline decoration-dotted hover:opacity-80 inline-flex items-center gap-1 shrink-0"
+                      aria-label="What is a good fit?"
+                    >
+                      What is a good fit?
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs">
+                    <p className="text-sm">A good fit means the project matches your goals, timeline, and skill level. Check the overview, estimated time, and challenges—if they align with what you want to take on, it&apos;s a good fit. You can always adjust scope and schedule later.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Current Step Content - Scrollable with Fixed Button */}

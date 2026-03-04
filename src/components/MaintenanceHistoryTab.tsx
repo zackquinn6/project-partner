@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarIcon, Trash2, Pencil } from 'lucide-react';
-import { format, addDays } from 'date-fns';
+import { format, addDays, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,7 @@ interface MaintenanceCompletion {
   id: string;
   task_id: string;
   completed_at: string;
+  scheduled_due_date?: string | null;
   notes?: string;
   photo_url?: string;
   task: {
@@ -58,6 +59,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
           id,
           task_id,
           completed_at,
+          scheduled_due_date,
           notes,
           photo_url,
           user_maintenance_tasks!inner (
@@ -77,6 +79,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
         id: completion.id,
         task_id: completion.task_id,
         completed_at: completion.completed_at,
+        scheduled_due_date: completion.scheduled_due_date ?? undefined,
         notes: completion.notes,
         photo_url: completion.photo_url,
         task: {
@@ -216,7 +219,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
       <Card className="mx-1">
         <CardContent className="pt-6">
           <div className="text-center py-8">
-            <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No completion history</h3>
             <p className="text-muted-foreground">
               Complete some maintenance tasks to see your history here.
@@ -257,6 +260,13 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
                         <CalendarIcon className="h-3 w-3" />
                         {format(new Date(completion.completed_at), 'MMM dd, yyyy')}
+                        {completion.scheduled_due_date && (() => {
+                          const due = new Date(completion.scheduled_due_date);
+                          const done = new Date(completion.completed_at);
+                          const days = differenceInDays(done, due);
+                          const planVsActual = days > 0 ? `+${days} days` : days < 0 ? `${days} days` : 'On time';
+                          return <span className="text-muted-foreground">({planVsActual})</span>;
+                        })()}
                         <Pencil className="h-3 w-3 ml-0.5" />
                       </Button>
                     </PopoverTrigger>

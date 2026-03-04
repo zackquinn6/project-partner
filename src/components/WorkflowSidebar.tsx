@@ -523,36 +523,36 @@ export function WorkflowSidebar({
                       )}
                     </div>
                     {/* Second row: Notes, Photos, Progress views */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onNotesClick}
-                        className="h-7 px-2 text-[10px] flex-1"
+                        className="h-7 min-w-0 px-1.5 text-[10px] flex-1"
                         style={{ backgroundColor: 'rgba(34, 197, 94, 0.40)', color: 'black' }}
                       >
-                        <FileText className="h-3 w-3 mr-1.5" style={{ color: 'black' }} />
-                        <span>Notes</span>
+                        <FileText className="h-3 w-3 mr-1 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Notes</span>
                       </Button>
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onPhotosClick}
-                        className="h-7 px-2 text-[10px] flex-1"
+                        className="h-7 min-w-0 px-1.5 text-[10px] flex-1"
                         style={{ backgroundColor: 'rgba(251, 146, 60, 0.40)', color: 'black' }}
                       >
-                        <Image className="h-3 w-3 mr-1.5" style={{ color: 'black' }} />
-                        <span>Photos</span>
+                        <Image className="h-3 w-3 mr-1 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Photos</span>
                       </Button>
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onProgressViewsClick ?? (() => {})}
-                        className="h-7 px-2 text-[10px] flex-1"
+                        className="h-7 min-w-0 px-1.5 text-[10px] flex-1"
                         style={{ backgroundColor: 'rgba(20, 184, 166, 0.40)', color: 'black' }}
                       >
-                        <BarChart3 className="h-3 w-3 mr-1.5" style={{ color: 'black' }} />
-                        <span>Progress</span>
+                        <BarChart3 className="h-3 w-3 mr-1 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Progress</span>
                       </Button>
                     </div>
                   </div>

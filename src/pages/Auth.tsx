@@ -324,6 +324,9 @@ export default function Auth() {
               </TabsContent>
               
               <TabsContent value="signup" className="mt-0 space-y-0">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Project Partner saves your project plans, tasks, and progress so you can pick up right where you left off. A quick login keeps that information secure and available whenever you return.
+                </p>
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>

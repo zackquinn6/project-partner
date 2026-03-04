@@ -33,11 +33,11 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
           {/* Left Column - Copy */}
           <div className="text-center lg:text-left space-y-6">
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
-              Project Management,<br className="sm:hidden" /> Streamlined for Home Improvement
+              Project Management,<br className="sm:hidden" /> Built for Home Improvement
             </h1>
 
             <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Transform scattered guides into a schedule‑driven execution system
+              Project Partner reshapes scattered DIY content into a predictable, timeline‑based execution system.
             </p>
 
             

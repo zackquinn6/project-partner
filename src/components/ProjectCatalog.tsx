@@ -1233,7 +1233,15 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     variant="outline"
                     size="sm"
                     className="self-start sm:self-auto text-xs"
-                    onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
+                    onClick={() => {
+                      if (onClose) {
+                        onClose();
+                        window.dispatchEvent(new CustomEvent('show-home-task-list'));
+                      } else {
+                        sessionStorage.setItem('openTaskList', '1');
+                        navigate('/', { state: { openTaskList: true, view: 'home' }, replace: false });
+                      }
+                    }}
                   >
                     Open Task Manager
                   </Button>
