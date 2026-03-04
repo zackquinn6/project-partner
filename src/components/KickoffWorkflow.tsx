@@ -217,9 +217,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         setTimeout(() => {
           isCompletingStepRef.current = false;
           onKickoffComplete();
-          if (onPlanningWizard) {
-            onPlanningWizard();
-          }
         }, 200);
       } else {
         console.log("KickoffWorkflow - Moving to next step");
@@ -458,6 +455,9 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
                       if (currentKickoffStep === 3) {
                         await handleStepComplete(3, selectedPlanningTools);
+                        if (onPlanningWizard) {
+                          onPlanningWizard();
+                        }
                         return;
                       }
                       
