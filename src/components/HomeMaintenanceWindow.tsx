@@ -22,6 +22,7 @@ import { MaintenanceHistoryTab } from './MaintenanceHistoryTab';
 import { MaintenancePdfPrinter } from './MaintenancePdfPrinter';
 import { MaintenanceNotifications } from './MaintenanceNotifications';
 import { MaintenanceDashboard } from './MaintenanceDashboard';
+import { HomeManager } from './HomeManager';
 interface MaintenanceTask {
   id: string;
   user_id: string;
@@ -235,6 +236,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [showAlerts, setShowAlerts] = useState(false);
   const [selectedTaskForDetails, setSelectedTaskForDetails] = useState<MaintenanceTask | null>(null);
   const [taskBeingEdited, setTaskBeingEdited] = useState<MaintenanceTask | null>(null);
+  const [showHomeManager, setShowHomeManager] = useState(false);
   const {
     isMobile
   } = useResponsive();
@@ -453,6 +455,15 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-9 p-0 shrink-0"
+                onClick={() => setShowHomeManager(true)}
+                title="Manage homes"
+              >
+                <Home className="h-4 w-4" />
+              </Button>
 
               {selectedHomeId && tasks.length > 0 && (
                 <MaintenancePdfPrinter
@@ -478,7 +489,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {/* Summary dashboard */}
             {selectedHomeId && tasks.length >= 0 && (
               <MaintenanceDashboard
-                tasks={tasks.map(t => ({ id: t.id, title: t.title, category: t.category, next_due: t.next_due, last_completed: t.last_completed }))}
+                tasks={tasks.map(t => ({ id: t.id, title: t.title, category: t.category, frequency_days: t.frequency_days, next_due: t.next_due, last_completed: t.last_completed }))}
                 completions={completions.map(c => ({ task_id: c.task_id, completed_at: c.completed_at, task: { category: c.task?.category } }))}
               />
             )}
@@ -698,7 +709,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
                        {/* Scrollable history list - matches structure of Active tab */}
                        <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
-                         <MaintenanceHistoryTab selectedHomeId={selectedHomeId} sortBy={sortBy} categoryFilter={historyCategoryFilter} />
+                         <MaintenanceHistoryTab
+                           selectedHomeId={selectedHomeId}
+                           sortBy={sortBy}
+                           categoryFilter={historyCategoryFilter}
+                           onRefresh={() => { fetchTasks(); fetchCompletions(); }}
+                         />
                        </div>
                       </div>
                    </TabsContent>
@@ -787,5 +803,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           )}
         </DialogContent>
       </Dialog>
+
+      <HomeManager
+        open={showHomeManager}
+        onOpenChange={setShowHomeManager}
+        selectedHomeId={null}
+        onHomeSelected={fetchHomes}
+        showSelector={false}
+      />
     </>;
 };

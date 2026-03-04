@@ -7,8 +7,11 @@ import {
   ShieldCheck,
   MoreHorizontal,
   Droplets,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 
 export type SystemKey = 'hvac' | 'roof' | 'plumbing' | 'appliances' | 'safety' | 'other';
 
@@ -45,6 +48,7 @@ export interface MaintenanceTaskForDashboard {
   id: string;
   title: string;
   category: string;
+  frequency_days: number;
   next_due: string;
   last_completed: string | null;
 }
@@ -85,21 +89,24 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     return d >= 0 && d <= 30;
   });
 
+  const yearStart = new Date(now.getFullYear(), 0, 1);
   const completionsThisYear = completions.filter(
     c => new Date(c.completed_at).getFullYear() === now.getFullYear()
   );
-  const moneySaved = completionsThisYear.length * ESTIMATED_SAVINGS_PER_COMPLETION;
-
-  const completionMonths = new Set(
-    completions.map(c => format(new Date(c.completed_at), 'yyyy-MM'))
-  );
-  let streakMonths = 0;
-  for (let i = 0; i < 24; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = format(d, 'yyyy-MM');
-    if (completionMonths.has(key)) streakMonths++;
-    else break;
-  }
+  const taskIdToFrequency: Record<string, number> = {};
+  tasks.forEach(t => {
+    taskIdToFrequency[t.id] = t.frequency_days;
+  });
+  const periodKeys = new Set<string>();
+  completionsThisYear.forEach(c => {
+    const freq = taskIdToFrequency[c.task_id];
+    if (!freq || freq < 1) return;
+    const completedDate = new Date(c.completed_at);
+    const daysSinceYearStart = differenceInDays(completedDate, yearStart);
+    const periodIndex = Math.floor(daysSinceYearStart / freq);
+    if (periodIndex >= 0) periodKeys.add(`${c.task_id}:${periodIndex}`);
+  });
+  const moneySaved = periodKeys.size * ESTIMATED_SAVINGS_PER_COMPLETION;
 
   const systemStatus: Record<SystemKey, 'green' | 'yellow' | 'red'> = {
     hvac: 'green',
@@ -144,7 +151,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
 
   return (
     <div className="px-3 md:px-6 py-4 border-b bg-muted/30 space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {/* Home Health Score - Speedometer */}
         <Card className="col-span-2 md:col-span-1 flex flex-col">
           <CardContent className="p-3 flex flex-col items-center justify-center flex-1">
@@ -171,22 +178,18 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
           </CardContent>
         </Card>
 
-        {/* Overdue */}
+        {/* Overdue + Due in next 30 days - combined */}
         <Card>
           <CardContent className="p-3 flex flex-col items-center justify-center min-h-[80px]">
-            <span className="text-2xl font-bold tabular-nums text-destructive">{overdue.length}</span>
-            <span className="text-[10px] text-muted-foreground text-center">Overdue tasks</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold tabular-nums text-destructive">{overdue.length}</span>
+              <span className="text-muted-foreground/80">/</span>
+              <span className="text-2xl font-bold tabular-nums">{upcoming30.length}</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground text-center">Overdue / Due in 30 days</span>
             {overdueRiskCritical.length > 0 && (
               <span className="text-[10px] text-destructive font-medium mt-0.5">{overdueRiskCritical.length} risk-critical</span>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Upcoming 30 days */}
-        <Card>
-          <CardContent className="p-3 flex flex-col items-center justify-center min-h-[80px]">
-            <span className="text-2xl font-bold tabular-nums">{upcoming30.length}</span>
-            <span className="text-[10px] text-muted-foreground text-center">Due in next 30 days</span>
           </CardContent>
         </Card>
 
@@ -198,27 +201,30 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
           </CardContent>
         </Card>
 
-        {/* Streak */}
-        <Card>
-          <CardContent className="p-3 flex flex-col items-center justify-center min-h-[80px]">
-            <span className="text-2xl font-bold tabular-nums">{streakMonths}</span>
-            <span className="text-[10px] text-muted-foreground text-center">Months of consistent maintenance</span>
-          </CardContent>
-        </Card>
-
-        {/* System status flags */}
-        <Card>
+        {/* System status flags - larger, spread out, with status badge overlay */}
+        <Card className="col-span-2 md:col-span-1">
           <CardContent className="p-3">
-            <div className="text-xs font-medium text-muted-foreground mb-2">System status</div>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="text-xs font-medium text-muted-foreground mb-3">System status</div>
+            <div className="grid grid-cols-3 gap-3 md:gap-4">
               {(Object.keys(SYSTEM_CONFIG) as SystemKey[]).map(sys => {
                 const status = systemStatus[sys];
                 const Icon = SYSTEM_CONFIG[sys].icon;
-                const color = status === 'red' ? 'text-destructive' : status === 'yellow' ? 'text-amber-500' : 'text-emerald-600';
+                const StatusBadge = status === 'red' ? XCircle : status === 'yellow' ? AlertTriangle : CheckCircle2;
+                const badgeColor = status === 'red' ? 'text-destructive' : status === 'yellow' ? 'text-amber-500' : 'text-emerald-600';
                 return (
-                  <div key={sys} className="flex flex-col items-center gap-0.5" title={`${SYSTEM_CONFIG[sys].label}: ${status}`}>
-                    <Icon className={`h-5 w-5 ${color}`} />
-                    <span className="text-[9px] text-muted-foreground truncate w-full text-center">{SYSTEM_CONFIG[sys].label}</span>
+                  <div
+                    key={sys}
+                    className="flex flex-col items-center gap-1 relative"
+                    title={`${SYSTEM_CONFIG[sys].label}: ${status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due soon' : 'Good'}`}
+                  >
+                    <div className="relative">
+                      <Icon className="h-8 w-8 md:h-9 md:w-9 text-muted-foreground" strokeWidth={1.5} />
+                      <StatusBadge
+                        className={`h-4 w-4 md:h-5 md:w-5 absolute -top-0.5 -right-0.5 ${badgeColor}`}
+                        strokeWidth={2.5}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground truncate w-full text-center">{SYSTEM_CONFIG[sys].label}</span>
                   </div>
                 );
               })}
