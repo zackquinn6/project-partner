@@ -1,6 +1,12 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Thermometer,
   Home,
   Refrigerator,
@@ -39,11 +45,6 @@ const SYSTEM_CONFIG: Record<SystemKey, { label: string; icon: React.ElementType 
   other: { label: 'Other', icon: MoreHorizontal },
 };
 
-const RISK_CRITICAL_KEYWORDS = [
-  'hvac filter', 'sump pump', 'smoke alarm', 'smoke detector', 'co detector', 'carbon monoxide',
-  'pressure relief', 'water heater', 'gfci', 'fire extinguisher',
-];
-
 export interface MaintenanceTaskForDashboard {
   id: string;
   title: string;
@@ -51,6 +52,7 @@ export interface MaintenanceTaskForDashboard {
   frequency_days: number;
   next_due: string;
   last_completed: string | null;
+  criticality?: number | null;
 }
 
 export interface CompletionForDashboard {
@@ -60,17 +62,19 @@ export interface CompletionForDashboard {
 }
 
 const ESTIMATED_SAVINGS_PER_COMPLETION = 45;
-const HEALTH_DEDUCT_OVERDUE = 4;
-const HEALTH_DEDUCT_RISK_OVERDUE = 8;
-const HEALTH_DEDUCT_SYSTEM_RED = 6;
+const W_O = 5;
+const W_C = 3;
+const W_D = 1;
+const DEFAULT_CRITICALITY = 2;
 
 function getSystemForCategory(category: string): SystemKey {
   return CATEGORY_TO_SYSTEM[category] ?? 'other';
 }
 
-function isRiskCritical(task: MaintenanceTaskForDashboard): boolean {
-  const t = task.title.toLowerCase();
-  return RISK_CRITICAL_KEYWORDS.some(kw => t.includes(kw)) || task.category === 'safety';
+function getCriticality(task: MaintenanceTaskForDashboard): number {
+  const c = task.criticality;
+  if (c === 1 || c === 2 || c === 3) return c;
+  return DEFAULT_CRITICALITY;
 }
 
 interface MaintenanceDashboardProps {
@@ -83,11 +87,13 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const overdue = tasks.filter(t => differenceInDays(today, new Date(t.next_due)) > 0);
-  const overdueRiskCritical = overdue.filter(isRiskCritical);
   const upcoming30 = tasks.filter(t => {
     const d = differenceInDays(new Date(t.next_due), today);
     return d >= 0 && d <= 30;
   });
+  const O = overdue.length;
+  const C = overdue.reduce((sum, t) => sum + getCriticality(t), 0);
+  const D = upcoming30.length;
 
   const yearStart = new Date(now.getFullYear(), 0, 1);
   const completionsThisYear = completions.filter(
@@ -139,13 +145,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     else if (hasDue30) systemStatus[sys] = 'yellow';
   });
 
-  let healthScore = 100;
-  healthScore -= overdue.length * HEALTH_DEDUCT_OVERDUE;
-  healthScore -= overdueRiskCritical.length * (HEALTH_DEDUCT_RISK_OVERDUE - HEALTH_DEDUCT_OVERDUE);
-  (Object.keys(systemStatus) as SystemKey[]).forEach(sys => {
-    if (systemStatus[sys] === 'red') healthScore -= HEALTH_DEDUCT_SYSTEM_RED;
-  });
-  healthScore = Math.max(0, Math.min(100, Math.round(healthScore)));
+  const healthScore = Math.max(0, Math.min(100, Math.round(100 - W_O * O - W_C * C - W_D * D)));
 
   const gaugeRotation = -90 + (healthScore / 100) * 180;
 
@@ -155,9 +155,18 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
         {/* Home Health Score - Speedometer */}
         <Card className="col-span-2 md:col-span-1 flex flex-col">
           <CardContent className="p-3 flex flex-col items-center justify-center flex-1">
-            <div className="text-xs font-medium text-muted-foreground mb-1">Home Health Score</div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-xs font-medium text-muted-foreground mb-1 cursor-help">Home Health Score</div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[260px] text-center">
+                  Your Home Health Score starts at 100 and drops based on overdue tasks, how critical they are, and how many tasks are coming up in the next 30 days.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <div className="relative w-28 h-14 flex items-end justify-center">
-              <svg viewBox="0 0 120 70" className="w-full h-full">
+              <svg viewBox="0 0 120 70" className="w-full h-full" aria-hidden>
                 <defs>
                   <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#ef4444" />
@@ -173,8 +182,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                 </g>
               </svg>
             </div>
-            <span className="text-2xl font-bold tabular-nums">{healthScore}</span>
-            <span className="text-[10px] text-muted-foreground">On-time, overdue & systems</span>
+            <span className="text-2xl font-bold tabular-nums" aria-live="polite">{healthScore}</span>
           </CardContent>
         </Card>
 
@@ -187,8 +195,8 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
               <span className="text-2xl font-bold tabular-nums">{upcoming30.length}</span>
             </div>
             <span className="text-[10px] text-muted-foreground text-center">Overdue / Due in 30 days</span>
-            {overdueRiskCritical.length > 0 && (
-              <span className="text-[10px] text-destructive font-medium mt-0.5">{overdueRiskCritical.length} risk-critical</span>
+            {C > 0 && (
+              <span className="text-[10px] text-destructive font-medium mt-0.5">Criticality sum: {C}</span>
             )}
           </CardContent>
         </Card>

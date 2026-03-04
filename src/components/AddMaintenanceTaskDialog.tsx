@@ -23,6 +23,7 @@ interface MaintenanceTemplate {
   instructions: string;
   risks_of_skipping?: string | null;
   benefits_of_maintenance?: string | null;
+  criticality?: number | null;
 }
 
 interface AddMaintenanceTaskDialogProps {
@@ -100,6 +101,7 @@ export function AddMaintenanceTaskDialog({
           next_due: nextDueDate.toISOString(),
           risks_of_skipping: template.risks_of_skipping ?? null,
           benefits_of_maintenance: template.benefits_of_maintenance ?? null,
+          criticality: template.criticality ?? 2,
         });
 
       if (error) throw error;
@@ -145,6 +147,7 @@ export function AddMaintenanceTaskDialog({
           next_due: nextDueDate.toISOString(),
           risks_of_skipping: customTask.risks_of_skipping.trim() || null,
           benefits_of_maintenance: customTask.benefits_of_maintenance.trim() || null,
+          criticality: customTask.criticality,
         });
 
       if (error) throw error;
@@ -347,6 +350,22 @@ export function AddMaintenanceTaskDialog({
                         frequency_days: parseInt(e.target.value) || 90 
                       }))}
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="custom-criticality">Criticality</Label>
+                    <Select
+                      value={String(customTask.criticality)}
+                      onValueChange={(v) => setCustomTask(prev => ({ ...prev, criticality: parseInt(v, 10) as 1 | 2 | 3 }))}
+                    >
+                      <SelectTrigger id="custom-criticality">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Low</SelectItem>
+                        <SelectItem value="2">Medium</SelectItem>
+                        <SelectItem value="3">High</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

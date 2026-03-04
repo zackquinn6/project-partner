@@ -39,6 +39,7 @@ interface MaintenanceTask {
   updated_at: string;
   risks_of_skipping?: string | null;
   benefits_of_maintenance?: string | null;
+  criticality?: number | null;
 }
 interface MaintenanceCompletion {
   id: string;
@@ -79,6 +80,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
     frequency_days: task.frequency_days,
     risks_of_skipping: task.risks_of_skipping ?? '',
     benefits_of_maintenance: task.benefits_of_maintenance ?? '',
+    criticality: task.criticality ?? 2,
   });
   const [saving, setSaving] = useState(false);
 
@@ -93,6 +95,9 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           description: form.description.trim() || null,
           category: form.category,
           frequency_days: form.frequency_days,
+          risks_of_skipping: form.risks_of_skipping.trim() || null,
+          benefits_of_maintenance: form.benefits_of_maintenance.trim() || null,
+          criticality: form.criticality,
         })
         .eq('id', task.id)
         .eq('user_id', user.id);
@@ -179,6 +184,22 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
                 }))
               }
             />
+          </div>
+          <div>
+            <Label htmlFor="edit-criticality">Criticality</Label>
+            <Select
+              value={String(form.criticality)}
+              onValueChange={(v) => setForm(prev => ({ ...prev, criticality: parseInt(v, 10) as 1 | 2 | 3 }))}
+            >
+              <SelectTrigger id="edit-criticality">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Low</SelectItem>
+                <SelectItem value="2">Medium</SelectItem>
+                <SelectItem value="3">High</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <div>
@@ -489,7 +510,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {/* Summary dashboard */}
             {selectedHomeId && tasks.length >= 0 && (
               <MaintenanceDashboard
-                tasks={tasks.map(t => ({ id: t.id, title: t.title, category: t.category, frequency_days: t.frequency_days, next_due: t.next_due, last_completed: t.last_completed }))}
+                tasks={tasks.map(t => ({ id: t.id, title: t.title, category: t.category, frequency_days: t.frequency_days, next_due: t.next_due, last_completed: t.last_completed, criticality: t.criticality ?? undefined }))}
                 completions={completions.map(c => ({ task_id: c.task_id, completed_at: c.completed_at, task: { category: c.task?.category } }))}
               />
             )}
@@ -554,6 +575,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <tr className="border-b border-border bg-muted/40">
                               <th className="text-left px-2 py-2 font-medium">Task</th>
                               <th className="text-left px-2 py-2 font-medium">Frequency</th>
+                              <th className="text-left px-2 py-2 font-medium">Criticality</th>
                               <th className="text-left px-2 py-2 font-medium">Summary</th>
                               <th className="text-left px-2 py-2 font-medium hidden lg:table-cell">Risks of skipping</th>
                               <th className="text-left px-2 py-2 font-medium hidden lg:table-cell">Benefits of maintenance</th>
@@ -598,6 +620,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         </td>
                         <td className="px-2 py-2 align-top">
                           Every {task.frequency_days} days
+                        </td>
+                        <td className="px-2 py-2 align-top">
+                          <span className="text-xs">{task.criticality === 3 ? 'High' : task.criticality === 1 ? 'Low' : 'Med'}</span>
                         </td>
                         <td
                           className="px-2 py-2 align-top cursor-pointer max-w-xs"
@@ -757,6 +782,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               <div className="text-xs sm:text-sm text-muted-foreground">
                 <div><span className="font-medium">Category:</span> {categoryLabels[selectedTaskForDetails.category] || selectedTaskForDetails.category}</div>
                 <div><span className="font-medium">Frequency:</span> Every {selectedTaskForDetails.frequency_days} days</div>
+                <div><span className="font-medium">Criticality:</span> {selectedTaskForDetails.criticality === 3 ? 'High' : selectedTaskForDetails.criticality === 1 ? 'Low' : 'Medium'}</div>
                 <div><span className="font-medium">Next due:</span> {format(new Date(selectedTaskForDetails.next_due), 'MMM dd, yyyy')}</div>
               </div>
               {selectedTaskForDetails.description && (
