@@ -151,97 +151,106 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
 
   const gaugeRotation = -90 + (healthScore / 100) * 180;
 
+  const healthScoreTooltip = (
+    <div className="space-y-1.5 text-left">
+      <p className="font-semibold">Home Health Score</p>
+      <p className="text-xs text-muted-foreground">
+        Starts at 100 and decreases for: overdue tasks (5 pts each), their criticality (3 pts per level), and tasks due in the next 30 days (1 pt each). Higher is better—stay on top of maintenance to keep your score up.
+      </p>
+    </div>
+  );
+
   return (
-    <div className="px-3 md:px-6 py-2 border-b bg-muted/30 space-y-2">
-      <div className="flex flex-wrap items-stretch gap-2">
-        {/* Home Health Score - Speedometer (maximized in card) */}
-        <Card className="flex-shrink-0 w-[140px] md:w-[160px] flex flex-col">
-          <CardContent className="p-2 flex flex-col items-center justify-center flex-1 min-h-0">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="text-[10px] font-medium text-muted-foreground cursor-help leading-tight">Home Health</div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[260px] text-center">
-                  Your Home Health Score starts at 100 and drops based on overdue tasks, how critical they are, and how many tasks are coming up in the next 30 days.
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <div className="relative w-full flex-1 min-h-[44px] md:min-h-[52px] flex items-end justify-center">
-              <svg viewBox="0 0 120 70" className="w-full h-full max-h-12 md:max-h-14" aria-hidden preserveAspectRatio="xMidYMax meet">
-                <defs>
-                  <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#ef4444" />
-                    <stop offset="40%" stopColor="#f97316" />
-                    <stop offset="70%" stopColor="#eab308" />
-                    <stop offset="100%" stopColor="#22c55e" />
-                  </linearGradient>
-                </defs>
-                <path d="M 12 58 A 48 48 0 0 1 108 58" fill="none" stroke="url(#gaugeTrack)" strokeWidth="10" strokeLinecap="round" />
-                <g transform={`rotate(${gaugeRotation} 60 60)`}>
-                  <line x1="60" y1="60" x2="60" y2="28" stroke="var(--foreground)" strokeWidth="2.5" strokeLinecap="round" />
-                  <circle cx="60" cy="60" r="3.5" fill="var(--foreground)" />
-                </g>
-              </svg>
-            </div>
-            <span className="text-xl md:text-2xl font-bold tabular-nums leading-tight" aria-live="polite">{healthScore}</span>
-          </CardContent>
-        </Card>
-
-        {/* Overdue / Due - split horizontally, large numbers */}
-        <Card className="flex-shrink-0 w-[100px] md:w-[110px] flex flex-col">
-          <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-between">
-            <div className="flex flex-col items-center">
-              <span className="text-xl md:text-2xl font-bold tabular-nums text-destructive leading-tight">{overdue.length}</span>
-              <span className="text-[10px] text-muted-foreground">Overdue</span>
-            </div>
-            <div className="border-t pt-1.5 flex flex-col items-center">
-              <span className="text-xl md:text-2xl font-bold tabular-nums leading-tight">{upcoming30.length}</span>
-              <span className="text-[10px] text-muted-foreground">Due (30d)</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Estimated repair costs avoided - compact, match layout */}
-        <Card className="flex-shrink-0 w-[120px] md:w-[130px] flex flex-col">
-          <CardContent className="p-2 flex flex-col items-center justify-center flex-1 min-h-0">
-            <span className="text-[10px] text-muted-foreground leading-tight">Est. repairs avoided</span>
-            <span className="text-lg md:text-xl font-bold tabular-nums text-emerald-600 leading-tight">${moneySaved}</span>
-            <span className="text-[10px] text-muted-foreground">this year</span>
-          </CardContent>
-        </Card>
-
-        {/* System status - all icons in one row */}
-        <Card className="flex-1 min-w-0 flex flex-col">
-          <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center">
-            <div className="text-[10px] font-medium text-muted-foreground mb-1">System status</div>
-            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-              {(Object.keys(SYSTEM_CONFIG) as SystemKey[]).map(sys => {
-                const status = systemStatus[sys];
-                const Icon = SYSTEM_CONFIG[sys].icon;
-                const StatusBadge = status === 'red' ? XCircle : status === 'yellow' ? AlertTriangle : CheckCircle2;
-                const badgeColor = status === 'red' ? 'text-destructive' : status === 'yellow' ? 'text-amber-500' : 'text-emerald-600';
-                return (
-                  <div
-                    key={sys}
-                    className="flex items-center gap-0.5"
-                    title={`${SYSTEM_CONFIG[sys].label}: ${status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due soon' : 'Good'}`}
-                  >
-                    <div className="relative">
-                      <Icon className="h-6 w-6 md:h-7 md:w-7 text-muted-foreground" strokeWidth={1.5} />
-                      <StatusBadge
-                        className={`h-3 w-3 md:h-3.5 md:w-3.5 absolute -top-0.5 -right-0.5 ${badgeColor}`}
-                        strokeWidth={2.5}
-                      />
-                    </div>
-                    <span className="text-[9px] text-muted-foreground hidden sm:inline">{SYSTEM_CONFIG[sys].label}</span>
+    <div className="px-3 md:px-4 py-3 border-b bg-muted/30">
+      <TooltipProvider delayDuration={300}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-[auto_auto_auto_1fr] gap-2 md:gap-3 items-stretch max-w-full">
+          {/* Home Health Score - whole card is tooltip trigger */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Card className="col-span-2 sm:col-span-1 w-full min-w-0 max-w-[160px] mx-auto sm:mx-0 flex flex-col cursor-help border-dashed">
+                <CardContent className="p-2.5 flex flex-col items-center justify-center flex-1 min-h-0 gap-0.5">
+                  <span className="text-[10px] font-medium text-muted-foreground">Home Health</span>
+                  <div className="relative w-full flex-1 min-h-[40px] md:min-h-[48px] flex items-end justify-center">
+                    <svg viewBox="0 0 120 70" className="w-full h-full max-h-11 md:max-h-12" aria-hidden preserveAspectRatio="xMidYMax meet">
+                      <defs>
+                        <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#ef4444" />
+                          <stop offset="40%" stopColor="#f97316" />
+                          <stop offset="70%" stopColor="#eab308" />
+                          <stop offset="100%" stopColor="#22c55e" />
+                        </linearGradient>
+                      </defs>
+                      <path d="M 12 58 A 48 48 0 0 1 108 58" fill="none" stroke="url(#gaugeTrack)" strokeWidth="10" strokeLinecap="round" />
+                      <g transform={`rotate(${gaugeRotation} 60 60)`}>
+                        <line x1="60" y1="60" x2="60" y2="28" stroke="var(--foreground)" strokeWidth="2.5" strokeLinecap="round" />
+                        <circle cx="60" cy="60" r="3.5" fill="var(--foreground)" />
+                      </g>
+                    </svg>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  <span className="text-xl md:text-2xl font-bold tabular-nums" aria-live="polite">{healthScore}</span>
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[280px]" align="start">
+              {healthScoreTooltip}
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Overdue / Due */}
+          <Card className="min-w-0 flex flex-col">
+            <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] text-muted-foreground">Overdue</span>
+                <span className="text-lg md:text-xl font-bold tabular-nums text-destructive">{overdue.length}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                <span className="text-[10px] text-muted-foreground">Due (30d)</span>
+                <span className="text-lg md:text-xl font-bold tabular-nums">{upcoming30.length}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Est. repairs avoided */}
+          <Card className="min-w-0 flex flex-col">
+            <CardContent className="p-2 flex flex-col items-center justify-center flex-1 min-h-0">
+              <span className="text-[10px] text-muted-foreground">Est. repairs avoided</span>
+              <span className="text-lg font-bold tabular-nums text-emerald-600">${moneySaved}</span>
+              <span className="text-[10px] text-muted-foreground">this year</span>
+            </CardContent>
+          </Card>
+
+          {/* System status */}
+          <Card className="col-span-2 sm:col-span-4 lg:col-span-1 min-w-0 flex flex-col">
+            <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center">
+              <div className="text-[10px] font-medium text-muted-foreground mb-1.5">System status</div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                {(Object.keys(SYSTEM_CONFIG) as SystemKey[]).map(sys => {
+                  const status = systemStatus[sys];
+                  const Icon = SYSTEM_CONFIG[sys].icon;
+                  const StatusBadge = status === 'red' ? XCircle : status === 'yellow' ? AlertTriangle : CheckCircle2;
+                  const badgeColor = status === 'red' ? 'text-destructive' : status === 'yellow' ? 'text-amber-500' : 'text-emerald-600';
+                  return (
+                    <div
+                      key={sys}
+                      className="flex items-center gap-1"
+                      title={`${SYSTEM_CONFIG[sys].label}: ${status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due soon' : 'Good'}`}
+                    >
+                      <div className="relative flex-shrink-0">
+                        <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" strokeWidth={1.5} />
+                        <StatusBadge
+                          className={`h-2.5 w-2.5 sm:h-3 sm:w-3 absolute -top-0.5 -right-0.5 ${badgeColor}`}
+                          strokeWidth={2.5}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{SYSTEM_CONFIG[sys].label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </TooltipProvider>
     </div>
   );
 }

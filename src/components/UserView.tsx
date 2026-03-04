@@ -3494,6 +3494,7 @@ export default function UserView({
           setProjectPlanningWizardOpen(false);
           // User goes directly to workflow
         }}
+        onOpenBudgeting={() => setProjectBudgetingOpen(true)}
       />
       
       {/* Project Completion Popup */}

@@ -10,7 +10,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { ChevronLeft, ChevronRight, CheckCircle, X, Settings2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Settings2 } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { PLANNING_TOOLS } from './KickoffSteps/ProjectToolsStep';
 import type { PlanningToolId } from './KickoffSteps/ProjectToolsStep';
@@ -26,12 +26,15 @@ interface ProjectPlanningWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGoToWorkflow?: () => void;
+  /** When provided, opens Project Budgeting from the Budget step without relying on window event */
+  onOpenBudgeting?: () => void;
 }
 
 export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   open,
   onOpenChange,
-  onGoToWorkflow
+  onGoToWorkflow,
+  onOpenBudgeting
 }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
   const [currentStep, setCurrentStep] = useState(0);
@@ -159,7 +162,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       case 'risk':
         return <UncertaintyStep {...stepProps} />;
       case 'budget':
-        return <BudgetStep {...stepProps} />;
+        return <BudgetStep {...stepProps} onOpenBudgeting={onOpenBudgeting} />;
       case 'shopping_list':
         return <ShoppingStep {...stepProps} />;
       default:
@@ -182,15 +185,15 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <DialogTitle className="sr-only">Project Planning Workflow</DialogTitle>
         <DialogDescription className="sr-only">Plan and customize your project workflow</DialogDescription>
         
-        {/* Close button */}
+        {/* Close button - matches other windows */}
         <div className="absolute right-4 top-4 z-10">
           <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
+            size="sm"
             onClick={() => onOpenChange(false)}
-            className="h-8 w-8 p-0"
+            className="text-xs sm:text-sm"
           >
-            <X className="w-4 h-4" />
+            Close
           </Button>
         </div>
 

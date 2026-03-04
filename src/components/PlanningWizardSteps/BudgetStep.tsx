@@ -7,15 +7,21 @@ import { DollarSign } from 'lucide-react';
 interface BudgetStepProps {
   onComplete: () => void;
   isCompleted: boolean;
+  /** When provided (e.g. from UserView), opens Project Budgeting directly so the link works from the wizard */
+  onOpenBudgeting?: () => void;
 }
 
 export const BudgetStep: React.FC<BudgetStepProps> = ({
   onComplete,
-  isCompleted
+  isCompleted,
+  onOpenBudgeting
 }) => {
   const handleOpenBudgeting = () => {
-    // Dispatch event to open Project Budgeting
-    window.dispatchEvent(new CustomEvent('open-project-budgeting'));
+    if (onOpenBudgeting) {
+      onOpenBudgeting();
+    } else {
+      window.dispatchEvent(new CustomEvent('open-project-budgeting'));
+    }
     onComplete();
   };
 
