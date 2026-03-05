@@ -169,7 +169,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   return (
     <div className="px-3 md:px-4 py-2 border-b bg-muted/30 shrink-0 min-h-[6.5rem]" style={{ ['--card-min-h' as string]: cardMinH, ['--card-max-h' as string]: cardMaxH }}>
       <TooltipProvider delayDuration={300}>
-        <div className="grid grid-cols-2 lg:grid-cols-[0.7fr_1.725fr_0.38fr_0.66fr_1fr] gap-2 items-stretch max-w-full">
+        <div className="grid grid-cols-2 lg:grid-cols-[0.7fr_1.725fr_0.38fr_0.759fr_1fr] gap-2 items-stretch max-w-full">
           {/* 1. Home Health – speedometer left, score right */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">Home Health</div>

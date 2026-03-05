@@ -179,8 +179,8 @@ export function AddMaintenanceTaskDialog({
       if (error) throw error;
 
       toast({
-        title: "Custom Task Added",
-        description: `${customTask.title} has been added to your maintenance schedule`,
+        title: "Custom task added",
+        description: `${customTask.title} was added to your maintenance schedule successfully.`,
       });
 
       setCustomTask({
@@ -327,7 +327,7 @@ export function AddMaintenanceTaskDialog({
                               className="h-8 w-8 shrink-0"
                               title="Add to plan"
                             >
-                              <Plus className="h-4 w-4" />
+                              <Plus className="h-4 w-4 text-blue-600" />
                             </Button>
                           </div>
                         </CardHeader>
@@ -389,14 +389,14 @@ export function AddMaintenanceTaskDialog({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="category">Category</Label>
                     <Select 
                       value={customTask.category} 
                       onValueChange={(value) => setCustomTask(prev => ({ ...prev, category: value }))}
                     >
-                      <SelectTrigger className="w-[140px]">
+                      <SelectTrigger className="w-full min-w-0">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="z-[200]">
@@ -415,29 +415,13 @@ export function AddMaintenanceTaskDialog({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div>
-                    <Label htmlFor="frequency">Frequency (days)</Label>
-                    <Input
-                      id="frequency"
-                      type="number"
-                      min={1}
-                      max="3650"
-                      className="w-[100px]"
-                      value={customTask.frequency_days}
-                      onChange={(e) => setCustomTask(prev => ({ 
-                        ...prev, 
-                        frequency_days: parseInt(e.target.value) || 90 
-                      }))}
-                    />
-                  </div>
                   <div>
                     <Label htmlFor="custom-criticality">Criticality</Label>
                     <Select
                       value={String(customTask.criticality)}
                       onValueChange={(v) => setCustomTask(prev => ({ ...prev, criticality: parseInt(v, 10) as 1 | 2 | 3 }))}
                     >
-                      <SelectTrigger id="custom-criticality" className="w-[110px]">
+                      <SelectTrigger id="custom-criticality" className="w-full min-w-0">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="z-[200]">
@@ -446,6 +430,21 @@ export function AddMaintenanceTaskDialog({
                         <SelectItem value="3">High</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="frequency">Frequency (days)</Label>
+                    <Input
+                      id="frequency"
+                      type="number"
+                      min={1}
+                      max="3650"
+                      className="w-full min-w-0"
+                      value={customTask.frequency_days}
+                      onChange={(e) => setCustomTask(prev => ({ 
+                        ...prev, 
+                        frequency_days: parseInt(e.target.value) || 90 
+                      }))}
+                    />
                   </div>
                 </div>
 
