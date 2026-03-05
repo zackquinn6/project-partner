@@ -85,7 +85,7 @@ export function MaintenancePhotosWindow({ open, onOpenChange }: MaintenancePhoto
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95">
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
-                <Camera className="w-5 h-5" />
+                <Camera className="w-5 h-5 text-primary" />
                 Maintenance Photos
               </DialogTitle>
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="h-7 px-2 text-xs">
@@ -100,12 +100,14 @@ export function MaintenancePhotosWindow({ open, onOpenChange }: MaintenancePhoto
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
               </div>
             ) : items.length === 0 ? (
-              <Card>
+              <Card className="border-primary/20 bg-primary/5">
                 <CardContent className="text-center py-12">
-                  <Camera className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 text-primary mb-4">
+                    <Camera className="w-7 h-7" />
+                  </div>
                   <h3 className="text-lg font-medium mb-2">No maintenance photos yet</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Photos added when you mark a task complete will appear here.
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    When you mark a task complete and add a photo, it will show up here. Great for before-and-after and records.
                   </p>
                 </CardContent>
               </Card>

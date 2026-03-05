@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -501,6 +501,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         {/* Header with title, tooltip, and close button */}
         <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
+            <Wrench className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
             <h2 className="text-lg md:text-xl font-bold">Home Maintenance Tracker</h2>
             <TooltipProvider>
               <Tooltip>
@@ -558,8 +559,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 size="sm"
                 onClick={() => setShowMaintenancePhotos(true)}
                 title="View photos from task completions"
+                className="gap-1.5"
               >
-                <ImageIcon className="h-4 w-4 mr-1" />
+                <ImageIcon className="h-4 w-4 text-primary" />
                 View Photos
               </Button>
               {selectedHomeId && tasks.length > 0 && (
@@ -574,7 +576,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 size="sm"
                 disabled={!selectedHomeId}
                 onClick={() => setShowAlerts(true)}
+                className="gap-1.5"
               >
+                <Bell className="h-4 w-4 text-amber-500" />
                 Setup Alerts
               </Button>
             </div>
@@ -595,8 +599,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   {/* Tab bar - Fixed at top of tabs area */}
                   <div className="px-3 md:px-6 py-3 bg-background border-b shrink-0">
                     <TabsList className="grid grid-cols-2 w-full h-11 p-1">
-                      <TabsTrigger value="tasks" className="text-xs md:text-sm">Active</TabsTrigger>
-                      <TabsTrigger value="history" className="text-xs md:text-sm">History</TabsTrigger>
+                      <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5">
+                        <ListTodo className="h-3.5 w-3.5" />
+                        Active
+                      </TabsTrigger>
+                      <TabsTrigger value="history" className="text-xs md:text-sm gap-1.5">
+                        <History className="h-3.5 w-3.5" />
+                        History
+                      </TabsTrigger>
                     </TabsList>
                   </div>
 
@@ -635,7 +645,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               </Button>
                             );
                           })}
-                          <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="ml-auto h-8 shrink-0 text-xs" title="Add Tasks">
+                          <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="ml-auto h-8 shrink-0 text-xs bg-primary hover:bg-primary/90 text-primary-foreground" title="Add Tasks">
                             <Plus className="h-4 w-4 mr-1" />
                             Add Tasks
                           </Button>
@@ -643,17 +653,19 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
                         {/* Scrollable task list */}
                         <div className="flex-1 min-h-0 overflow-y-auto py-3 px-3 md:px-6">
-                      {loading ? <div className="text-center py-8">Loading tasks...</div> : getFilteredTasks().length === 0 ? <Card className="mx-1">
+                      {loading ? <div className="text-center py-8 text-muted-foreground">Loading tasks...</div> : getFilteredTasks().length === 0 ? <Card className="mx-1 border-primary/20 bg-primary/5">
                           <CardContent className="pt-6">
                             <div className="text-center py-8">
-                              <Home className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 text-primary mb-4">
+                                <ListTodo className="h-7 w-7" />
+                              </div>
                               <h3 className="text-lg font-medium mb-2">
-                                {tasks.length === 0 ? 'No maintenance tasks yet' : 'No tasks in this system'}
+                                {tasks.length === 0 ? "You're all set to add your first task" : 'No tasks in this system'}
                               </h3>
-                              <p className="text-muted-foreground mb-4 text-sm">
-                                {tasks.length === 0 ? 'Add your first maintenance task to start tracking your home maintenance.' : 'Try selecting a different system or add a new task.'}
+                              <p className="text-muted-foreground mb-4 text-sm max-w-sm mx-auto">
+                                {tasks.length === 0 ? "Add tasks from templates or create your own. We'll help you stay on top of due dates and keep your home in great shape." : 'Try selecting a different system filter or add a new task.'}
                               </p>
-                              <Button onClick={() => setShowAddTask(true)}>
+                              <Button onClick={() => setShowAddTask(true)} className="bg-primary hover:bg-primary/90">
                                 <Plus className="h-4 w-4 mr-2" />
                                 {tasks.length === 0 ? 'Add Your First Task' : 'Add New Task'}
                               </Button>
@@ -819,15 +831,21 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
         <DialogContent className="w-full max-w-[95vw] md:max-w-[50vw] max-h-[90vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle>Setup Alerts</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-amber-500" />
+              Setup Alerts
+            </DialogTitle>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
             {selectedHomeId ? (
               <MaintenanceNotifications selectedHomeId={selectedHomeId} />
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Select a home to configure alerts.
-              </p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <Home className="h-10 w-10 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Select a home above to configure alerts and reminders.
+                </p>
+              </div>
             )}
           </div>
         </DialogContent>
@@ -837,7 +855,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       <Dialog open={!!selectedTaskForDetails} onOpenChange={(open) => !open && setSelectedTaskForDetails(null)}>
         <DialogContent className="w-full max-w-[95vw] md:max-w-[600px] max-h-[90vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle>{selectedTaskForDetails?.title || 'Task details'}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary shrink-0" />
+              {selectedTaskForDetails?.title || 'Task details'}
+            </DialogTitle>
           </DialogHeader>
           {selectedTaskForDetails && (
             <div className="flex flex-col gap-3 py-1 overflow-y-auto max-h-[70vh]">

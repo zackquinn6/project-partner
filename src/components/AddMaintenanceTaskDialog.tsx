@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, FileText, User } from 'lucide-react';
+import { Plus, FileText, User, ClipboardList, Inbox, CheckCircle2, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -253,7 +253,10 @@ export function AddMaintenanceTaskDialog({
           </Button>
         </div>
         <DialogHeader>
-          <DialogTitle>Add Maintenance Task</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            Add Maintenance Task
+          </DialogTitle>
           <DialogDescription className="sr-only">
             Add a task from templates or create a custom maintenance task for your home.
           </DialogDescription>
@@ -272,7 +275,7 @@ export function AddMaintenanceTaskDialog({
           </TabsList>
 
           <TabsContent value="templates" className="mt-4">
-            <p className="text-xs text-muted-foreground mb-3">Add a task and open it from your plan to view full instructions.</p>
+            <p className="text-xs text-muted-foreground mb-3">Pick a task below and add it to your plan. Open any task from your list to see full step-by-step instructions.</p>
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <Select value={templateFilterCategory} onValueChange={setTemplateFilterCategory}>
                 <SelectTrigger className="w-[160px] h-9 text-sm">
@@ -344,22 +347,27 @@ export function AddMaintenanceTaskDialog({
               })}
               
               {templates.length === 0 && (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No templates available</h3>
-                  <p className="text-muted-foreground">
-                    Create a custom task or ask an admin to add maintenance templates.
+                <div className="text-center py-10 rounded-lg border border-dashed bg-muted/30">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted text-muted-foreground mb-4">
+                    <Inbox className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No templates available yet</h3>
+                  <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                    Create your own task in the Custom Task tab, or check back later for more templates.
                   </p>
                 </div>
               )}
               {templates.length > 0 && templatesNotYetAdded.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">All available templates have been added to your plan.</p>
+                <div className="text-center py-10 rounded-lg border border-primary/20 bg-primary/5">
+                  <CheckCircle2 className="h-12 w-12 mx-auto text-emerald-600 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">You've added them all</h3>
+                  <p className="text-muted-foreground text-sm">All available templates are on your plan. Add a custom task or check back for new templates.</p>
                 </div>
               )}
               {templates.length > 0 && templatesNotYetAdded.length > 0 && filteredTemplates.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No templates match the current filters.</p>
+                <div className="text-center py-8 flex flex-col items-center gap-2">
+                  <Search className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-muted-foreground text-sm">No templates match the current filters. Try a different category or criticality.</p>
                 </div>
               )}
             </div>
@@ -479,7 +487,9 @@ export function AddMaintenanceTaskDialog({
                   <Button 
                     onClick={handleAddCustomTask}
                     disabled={loading || !customTask.title.trim()}
+                    className="bg-primary hover:bg-primary/90"
                   >
+                    <Plus className="h-4 w-4 mr-2" />
                     {loading ? 'Adding...' : 'Add Custom Task'}
                   </Button>
                 </div>

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, MessageSquare, Bell, AlertCircle } from 'lucide-react';
+import { Mail, MessageSquare, Bell, AlertCircle, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -165,7 +165,7 @@ export function MaintenanceNotifications({
   return <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-lg font-semibold">
-          <Bell className="h-5 w-5" />
+          <Bell className="h-5 w-5 text-amber-500" />
           Notification Settings
         </h3>
         <Button onClick={saveNotificationSettings} disabled={saving} size="sm">
@@ -203,6 +203,7 @@ export function MaintenanceNotifications({
                 >
                   {sendingTest ? "Sending…" : "Send Test Email"}
                 </Button>
+                <p className="text-xs text-muted-foreground">We'll send a test to your email so you can confirm it works.</p>
               </div>}
           </div>
 
@@ -248,7 +249,10 @@ export function MaintenanceNotifications({
 
         {/* Notification Timing */}
         <div className="space-y-4">
-          <Label className="text-base font-medium">When to Send Reminders</Label>
+          <Label className="text-base font-medium flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            When to Send Reminders
+          </Label>
           
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
