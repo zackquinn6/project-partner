@@ -119,11 +119,8 @@ export function AddMaintenanceTaskDialog({
         description: `${template.title} has been added to your maintenance schedule`,
       });
 
-      // Remove the added template from the in-memory list to avoid duplicate tasks
       setTemplates(prev => prev.filter(t => t.id !== template.id));
-
       onTaskAdded();
-      onOpenChange(false);
     } catch (error) {
       console.error('Error adding task from template:', error);
       toast({
@@ -176,7 +173,6 @@ export function AddMaintenanceTaskDialog({
       });
 
       onTaskAdded();
-      onOpenChange(false);
     } catch (error) {
       console.error('Error adding custom task:', error);
       toast({
@@ -257,6 +253,7 @@ export function AddMaintenanceTaskDialog({
           </TabsList>
 
           <TabsContent value="templates" className="mt-4">
+            <p className="text-xs text-muted-foreground mb-3">Add a task and open it from your plan to view full instructions.</p>
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <Select value={templateFilterCategory} onValueChange={setTemplateFilterCategory}>
                 <SelectTrigger className="w-[160px] h-9 text-sm">
@@ -319,7 +316,6 @@ export function AddMaintenanceTaskDialog({
                         {(template.summary ?? template.description) && (
                           <CardContent className="pt-0">
                             <p className="text-sm text-muted-foreground">{template.summary ?? template.description}</p>
-                            <p className="text-[10px] text-muted-foreground mt-1">Add task and open it to view full instructions.</p>
                           </CardContent>
                         )}
                       </Card>
