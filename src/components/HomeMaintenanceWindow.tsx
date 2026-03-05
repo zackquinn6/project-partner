@@ -143,7 +143,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
   return (
     <div className="flex flex-col min-h-0 flex-1">
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="grid gap-3">
+        <div className="grid gap-2">
         <div>
           <Label htmlFor="edit-title">Task title</Label>
           <Input
@@ -156,7 +156,8 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           <Label htmlFor="edit-description">Description</Label>
           <Textarea
             id="edit-description"
-            rows={3}
+            rows={2}
+            className="min-h-0"
             value={form.description}
             onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
           />
@@ -174,23 +175,24 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           <Label htmlFor="edit-instructions">Instructions (shown when task is opened)</Label>
           <Textarea
             id="edit-instructions"
-            rows={4}
+            rows={2}
+            className="min-h-0"
             value={form.instructions}
             onChange={(e) => setForm(prev => ({ ...prev, instructions: e.target.value }))}
             placeholder="Step-by-step instructions"
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="min-w-0">
             <Label htmlFor="edit-category">Category</Label>
             <Select
               value={form.category}
               onValueChange={(value) => setForm(prev => ({ ...prev, category: value }))}
             >
-              <SelectTrigger id="edit-category">
+              <SelectTrigger id="edit-category" className="w-full min-w-0 max-w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
                 <SelectItem value="general">General</SelectItem>
                 <SelectItem value="appliances">Appliances</SelectItem>
                 <SelectItem value="electrical">Electrical</SelectItem>
@@ -206,13 +208,30 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="min-w-0">
+            <Label htmlFor="edit-criticality">Criticality</Label>
+            <Select
+              value={String(form.criticality)}
+              onValueChange={(v) => setForm(prev => ({ ...prev, criticality: parseInt(v, 10) as 1 | 2 | 3 }))}
+            >
+              <SelectTrigger id="edit-criticality" className="w-full min-w-0 max-w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
+                <SelectItem value="1">Low</SelectItem>
+                <SelectItem value="2">Medium</SelectItem>
+                <SelectItem value="3">High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-w-0">
             <Label htmlFor="edit-frequency">Frequency (days)</Label>
             <Input
               id="edit-frequency"
               type="number"
               min={1}
               max={3650}
+              className="w-full min-w-0"
               value={form.frequency_days}
               onChange={(e) =>
                 setForm(prev => ({
@@ -222,28 +241,13 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               }
             />
           </div>
-          <div>
-            <Label htmlFor="edit-criticality">Criticality</Label>
-            <Select
-              value={String(form.criticality)}
-              onValueChange={(v) => setForm(prev => ({ ...prev, criticality: parseInt(v, 10) as 1 | 2 | 3 }))}
-            >
-              <SelectTrigger id="edit-criticality">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Low</SelectItem>
-                <SelectItem value="2">Medium</SelectItem>
-                <SelectItem value="3">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
         <div>
           <Label htmlFor="edit-risks">Risks of skipping</Label>
           <Textarea
             id="edit-risks"
-            rows={2}
+            rows={1}
+            className="min-h-0 resize-none"
             placeholder="e.g. Sediment buildup, early failure"
             value={form.risks_of_skipping}
             onChange={(e) => setForm(prev => ({ ...prev, risks_of_skipping: e.target.value }))}
@@ -253,7 +257,8 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           <Label htmlFor="edit-benefits">Benefits of maintenance</Label>
           <Textarea
             id="edit-benefits"
-            rows={2}
+            rows={1}
+            className="min-h-0 resize-none"
             placeholder="e.g. Extend life from 10 to 20 yrs"
             value={form.benefits_of_maintenance}
             onChange={(e) => setForm(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
@@ -263,7 +268,8 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           <Label htmlFor="edit-repair-savings">Repair cost savings</Label>
           <Textarea
             id="edit-repair-savings"
-            rows={2}
+            rows={1}
+            className="min-h-0 resize-none"
             placeholder="e.g. Avoid $500–2000 water heater replacement"
             value={form.repair_cost_savings}
             onChange={(e) => setForm(prev => ({ ...prev, repair_cost_savings: e.target.value }))}
@@ -888,7 +894,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
       {/* Task edit dialog */}
       <Dialog open={!!taskBeingEdited} onOpenChange={(open) => !open && setTaskBeingEdited(null)}>
-        <DialogContent className="w-full max-w-[95vw] md:max-w-[600px] max-h-[76.5vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[780px] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex flex-row items-center justify-between space-y-0 shrink-0">
             <DialogTitle>Edit Maintenance Task</DialogTitle>
             <Button variant="outline" size="sm" className="shrink-0" onClick={() => setTaskBeingEdited(null)}>
