@@ -188,7 +188,8 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
                           const due = new Date(completion.scheduled_due_date);
                           const done = new Date(completion.completed_at);
                           const days = Math.round((done.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
-                          return days > 0 ? `+${days} days` : days < 0 ? `${days} days` : 'On time';
+                          if (days > 0) return `Off-plan +${days} days`;
+                          return `On-plan ${days} days`;
                         })()
                       : '-'}
                   </td>
