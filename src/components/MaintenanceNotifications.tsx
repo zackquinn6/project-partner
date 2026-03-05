@@ -40,29 +40,82 @@ export function MaintenanceNotifications({
     if (user?.email && !emailAddress) setEmailAddress(user.email);
   }, [user?.email]);
 
-  // Debug: confirm this component is mounted when Setup Alerts is open
+  // Load saved notification settings when user is available
+  const [loadingSettings, setLoadingSettings] = useState(true);
   useEffect(() => {
-    console.warn('[MaintenanceAlerts] Setup Alerts dialog mounted — Send Test Email button uses testEmailNotification');
-    return () => {
-      console.warn('[MaintenanceAlerts] Setup Alerts dialog unmounted');
-    };
-  }, []);
+    if (!user?.id || !selectedHomeId) {
+      setLoadingSettings(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingSettings(true);
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('maintenance_notification_settings')
+          .select('email_enabled, email_address, sms_enabled, phone_number, notify_monthly, notify_weekly, notify_due_date')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (error) throw error;
+        if (!cancelled && data) {
+          setEmailEnabled(data.email_enabled ?? true);
+          setEmailAddress(data.email_address ?? user.email ?? '');
+          setSmsEnabled(data.sms_enabled ?? false);
+          setPhoneNumber(data.phone_number ?? '');
+          setNotifyMonthly(data.notify_monthly ?? true);
+          setNotifyWeekly(data.notify_weekly ?? true);
+          setNotifyDueDate(data.notify_due_date ?? true);
+        }
+      } catch (e) {
+        if (!cancelled) console.error('Error loading notification settings:', e);
+      } finally {
+        if (!cancelled) setLoadingSettings(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, user?.email, selectedHomeId]);
 
   const saveNotificationSettings = async () => {
     if (!user?.id) return;
     setSaving(true);
     try {
-      // For now, just show success without database interaction
+      const payload = {
+        email_enabled: emailEnabled,
+        email_address: emailAddress.trim() || null,
+        sms_enabled: smsEnabled,
+        phone_number: phoneNumber.trim() || null,
+        notify_monthly: notifyMonthly,
+        notify_weekly: notifyWeekly,
+        notify_due_date: notifyDueDate,
+        updated_at: new Date().toISOString(),
+      };
+      const { data: existing } = await supabase
+        .from('maintenance_notification_settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (existing?.id) {
+        const { error } = await supabase
+          .from('maintenance_notification_settings')
+          .update(payload)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('maintenance_notification_settings')
+          .insert({ user_id: user.id, ...payload });
+        if (error) throw error;
+      }
       toast({
         title: "Settings Saved",
-        description: "Your notification preferences have been updated"
+        description: "Your notification preferences have been updated.",
       });
     } catch (error) {
       console.error('Error saving notification settings:', error);
       toast({
         title: "Error",
-        description: "Failed to save notification settings",
-        variant: "destructive"
+        description: "Failed to save notification settings.",
+        variant: "destructive",
       });
     } finally {
       setSaving(false);
@@ -168,8 +221,8 @@ export function MaintenanceNotifications({
           <Bell className="h-5 w-5 text-amber-500" />
           Notification Settings
         </h3>
-        <Button onClick={saveNotificationSettings} disabled={saving} size="sm">
-          {saving ? "Saving..." : "Save Settings"}
+        <Button onClick={saveNotificationSettings} disabled={saving || loadingSettings} size="sm">
+          {saving ? "Saving..." : loadingSettings ? "Loading..." : "Save Settings"}
         </Button>
       </div>
         
