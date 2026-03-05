@@ -70,7 +70,27 @@ Project Partner is designed to ensure each user has their own isolated data. Thi
 - ✅ `is_primary` - Primary home flag
 - ✅ `photos` - Array of photo URLs
 
-### 3. Tool Library
+### 3. Home Maintenance Tracker
+**Tables:** `homes`, `user_maintenance_tasks`, `maintenance_completions`
+
+**Architecture:** Each user has a unique set of maintenance data. Tasks are scoped by **home** (a user can have multiple homes). No sharing between users.
+
+| Table | User link | Home scope | Purpose |
+|-------|-----------|------------|---------|
+| `homes` | `user_id` | — | User’s homes (one-to-many) |
+| `user_maintenance_tasks` | `user_id` | `home_id` FK → `homes` | Tasks per user, per home |
+| `maintenance_completions` | `user_id` | `task_id` FK → `user_maintenance_tasks` | Completions per user, per task |
+
+**Creation:**
+- Homes: `user_id: user.id` (HomeManager)
+- Tasks: `user_id`, `home_id` (selected home); insert only allowed for homes owned by the user (RLS)
+- Completions: `user_id`, `task_id`; insert only allowed for tasks owned by the user (RLS)
+
+**Retrieval:** All queries filter by `user_id` (and by `home_id` or task’s `home_id` where applicable). RLS enforces `auth.uid() = user_id` (and home/task ownership on insert).
+
+**Security:** RLS is enabled on all three tables (migration `20250305000003_home_maintenance_rls_and_security.sql`). Policies restrict SELECT/INSERT/UPDATE/DELETE to the authenticated user’s rows; INSERT on tasks requires owning the home; INSERT on completions requires owning the task.
+
+### 4. Tool Library
 **Table:** `profiles` 
 **Column:** `owned_tools` (JSONB array)
 **User Link:** `user_id` column
@@ -91,7 +111,7 @@ Project Partner is designed to ensure each user has their own isolated data. Thi
 - ✅ `custom_description` - User's personal notes
 - ✅ `example_models`
 
-### 4. Materials Library
+### 5. Materials Library
 **Table:** `profiles`
 **Column:** `owned_materials` (JSONB array)
 **User Link:** `user_id` column
