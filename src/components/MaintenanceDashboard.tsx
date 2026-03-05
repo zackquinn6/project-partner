@@ -164,90 +164,86 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   const systemKeys = Object.keys(SYSTEM_CONFIG) as SystemKey[];
 
   return (
-    <div className="px-3 md:px-4 py-3 border-b bg-muted/30 space-y-3">
+    <div className="px-3 md:px-4 py-3 border-b bg-muted/30">
       <TooltipProvider delayDuration={300}>
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-stretch max-w-full">
-          {/* Home Health + System status row: header bar then content */}
-          <div className="space-y-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch max-w-full">
+          {/* 1. Home Health */}
+          <div className="space-y-0 min-w-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Home Health</div>
-            <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,240px)_1fr] gap-3 items-center">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed">
-                    <CardContent className="p-3 flex flex-col items-center justify-center flex-1 min-h-0 gap-1">
-                      <div className="relative w-full flex-1 min-h-[56px] md:min-h-[64px] flex items-end justify-center">
-                        <svg viewBox="0 0 120 70" className="w-full h-full max-h-14 md:max-h-16" aria-hidden preserveAspectRatio="xMidYMax meet">
-                          <defs>
-                            <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
-                              <stop offset="0%" stopColor="#ef4444" />
-                              <stop offset="40%" stopColor="#f97316" />
-                              <stop offset="70%" stopColor="#eab308" />
-                              <stop offset="100%" stopColor="#22c55e" />
-                            </linearGradient>
-                          </defs>
-                          {/* Dial: background arc */}
-                          <path d="M 12 58 A 48 48 0 0 1 108 58" fill="none" stroke="hsl(var(--muted-foreground) / 0.25)" strokeWidth="10" strokeLinecap="round" />
-                          {/* Dial: colored track */}
-                          <path d="M 12 58 A 48 48 0 0 1 108 58" fill="none" stroke="url(#gaugeTrack)" strokeWidth="8" strokeLinecap="round" />
-                          {/* Tick marks */}
-                          <g stroke="hsl(var(--muted-foreground) / 0.5)" strokeWidth="1">
-                            <line x1="22" y1="52" x2="26" y2="56" />
-                            <line x1="60" y1="26" x2="60" y2="30" />
-                            <line x1="98" y1="52" x2="94" y2="56" />
-                          </g>
-                          <g transform={`rotate(${gaugeRotation} 60 60)`}>
-                            <line x1="60" y1="60" x2="60" y2="24" stroke="var(--foreground)" strokeWidth="2.5" strokeLinecap="round" />
-                            <circle cx="60" cy="60" r="4" fill="var(--foreground)" />
-                          </g>
-                        </svg>
-                      </div>
-                      <span className="text-2xl md:text-3xl font-bold tabular-nums" aria-live="polite">{healthScore}</span>
-                    </CardContent>
-                  </Card>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[280px]" align="start">
-                  {healthScoreTooltip}
-                </TooltipContent>
-              </Tooltip>
-              {/* System status: 3-wide, 2-high grid */}
-              <Card className="min-w-0 flex flex-col">
-                <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center">
-                  <div className="grid grid-cols-3 grid-rows-2 gap-x-4 gap-y-2">
-                    {systemKeys.map(sys => {
-                      const status = systemStatus[sys];
-                      const Icon = SYSTEM_CONFIG[sys].icon;
-                      const StatusBadge = status === 'red' ? XCircle : status === 'yellow' ? AlertTriangle : CheckCircle2;
-                      const badgeColor = status === 'red' ? 'text-destructive' : status === 'yellow' ? 'text-amber-500' : 'text-emerald-600';
-                      return (
-                        <Tooltip key={sys}>
-                          <TooltipTrigger asChild>
-                            <div
-                              className="flex items-center gap-1.5"
-                              title={`${SYSTEM_CONFIG[sys].label}: ${status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due soon' : 'Good'}`}
-                            >
-                              <div className="relative flex-shrink-0">
-                                <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-                                <StatusBadge
-                                  className={`h-2.5 w-2.5 absolute -top-0.5 -right-0.5 ${badgeColor}`}
-                                  strokeWidth={2.5}
-                                />
-                              </div>
-                              <span className="text-[10px] text-muted-foreground">{SYSTEM_CONFIG[sys].label}</span>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom">
-                            {SYSTEM_CONFIG[sys].label}: {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due soon' : 'Good'}
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed">
+                  <CardContent className="p-3 flex flex-col items-center justify-center flex-1 min-h-0 gap-1">
+                    <div className="relative w-full flex-1 min-h-[56px] md:min-h-[64px] flex items-end justify-center">
+                      <svg viewBox="0 0 120 70" className="w-full h-full max-h-14 md:max-h-16" aria-hidden preserveAspectRatio="xMidYMax meet">
+                        <defs>
+                          <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#ef4444" />
+                            <stop offset="40%" stopColor="#f97316" />
+                            <stop offset="70%" stopColor="#eab308" />
+                            <stop offset="100%" stopColor="#22c55e" />
+                          </linearGradient>
+                        </defs>
+                        <path d="M 12 58 A 48 48 0 0 1 108 58" fill="none" stroke="hsl(var(--muted-foreground) / 0.25)" strokeWidth="10" strokeLinecap="round" />
+                        <path d="M 12 58 A 48 48 0 0 1 108 58" fill="none" stroke="url(#gaugeTrack)" strokeWidth="8" strokeLinecap="round" />
+                        <g stroke="hsl(var(--muted-foreground) / 0.5)" strokeWidth="1">
+                          <line x1="22" y1="52" x2="26" y2="56" />
+                          <line x1="60" y1="26" x2="60" y2="30" />
+                          <line x1="98" y1="52" x2="94" y2="56" />
+                        </g>
+                        <g transform={`rotate(${gaugeRotation} 60 60)`}>
+                          <line x1="60" y1="60" x2="60" y2="24" stroke="var(--foreground)" strokeWidth="2.5" strokeLinecap="round" />
+                          <circle cx="60" cy="60" r="4" fill="var(--foreground)" />
+                        </g>
+                      </svg>
+                    </div>
+                    <span className="text-2xl md:text-3xl font-bold tabular-nums" aria-live="polite">{healthScore}</span>
+                  </CardContent>
+                </Card>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[280px]" align="start">
+                {healthScoreTooltip}
+              </TooltipContent>
+            </Tooltip>
           </div>
 
-          {/* Tasks: header bar then Overdue / Due */}
+          {/* 2. System status – separate card, tightly packed */}
+          <div className="space-y-0 min-w-0">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">System status</div>
+            <Card className="min-w-0 flex flex-col">
+              <CardContent className="p-1.5 flex flex-col flex-1 min-h-0 justify-center">
+                <div className="grid grid-cols-3 grid-rows-2 gap-x-2 gap-y-1">
+                  {systemKeys.map(sys => {
+                    const status = systemStatus[sys];
+                    const Icon = SYSTEM_CONFIG[sys].icon;
+                    const StatusBadge = status === 'red' ? XCircle : status === 'yellow' ? AlertTriangle : CheckCircle2;
+                    const badgeColor = status === 'red' ? 'text-destructive' : status === 'yellow' ? 'text-amber-500' : 'text-emerald-600';
+                    return (
+                      <Tooltip key={sys}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1 min-w-0">
+                            <div className="relative flex-shrink-0">
+                              <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                              <StatusBadge
+                                className={`h-2 w-2 absolute -top-0.5 -right-0.5 ${badgeColor}`}
+                                strokeWidth={2.5}
+                              />
+                            </div>
+                            <span className="text-[9px] text-muted-foreground truncate">{SYSTEM_CONFIG[sys].label}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          {SYSTEM_CONFIG[sys].label}: {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due soon' : 'Good'}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 3. Tasks */}
           <div className="space-y-0 min-w-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Tasks</div>
             <Card className="min-w-0 flex flex-col">
@@ -263,26 +259,23 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
               </CardContent>
             </Card>
           </div>
-        </div>
 
-        {/* Benefits: header bar then two halves */}
-        <div className="space-y-0">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Benefits</div>
-          <Card className="min-w-0 flex flex-col">
-            <CardContent className="p-0 flex flex-1 min-h-0">
-              <div className="grid grid-cols-2 divide-x flex-1">
-                <div className="p-2 flex flex-col items-center justify-center gap-0.5">
+          {/* 4. Benefits – slim like Tasks */}
+          <div className="space-y-0 min-w-0">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Benefits</div>
+            <Card className="min-w-0 flex flex-col">
+              <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">Est. repairs avoided</span>
-                  <span className="text-lg font-bold tabular-nums text-emerald-600">${moneySaved}</span>
-                  <span className="text-[10px] text-muted-foreground">this year</span>
+                  <span className="text-lg md:text-xl font-bold tabular-nums text-emerald-600">${moneySaved}</span>
                 </div>
-                <div className="p-2 flex flex-col items-center justify-center gap-0.5">
-                  <span className="text-[10px] text-muted-foreground">Cumulative tasks completed</span>
-                  <span className="text-lg font-bold tabular-nums">{totalCompletions}</span>
+                <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                  <span className="text-[10px] text-muted-foreground">Cumulative completed</span>
+                  <span className="text-lg md:text-xl font-bold tabular-nums">{totalCompletions}</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </TooltipProvider>
     </div>
