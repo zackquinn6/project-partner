@@ -158,7 +158,7 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
         <div ref={historyRef} style={{ fontFamily: 'Arial, sans-serif', padding: '0 4px', boxSizing: 'border-box' }}>
           <header style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #eee' }}>
             <h1 style={{ fontSize: '22px', margin: '0 0 8px 0', color: '#333' }}>Home Maintenance Tracker</h1>
-            <h2 style={{ fontSize: '16px', color: '#666', margin: '0 0 4px 0' }}>{homeName} – History</h2>
+            <h2 style={{ fontSize: '16px', color: '#666', margin: '0 0 4px 0' }}>{homeName}</h2>
             <p style={{ fontSize: '11px', color: '#999', margin: 0 }}>Generated on {format(new Date(), 'MMMM dd, yyyy')}</p>
           </header>
           <h3 style={{ fontSize: '16px', marginBottom: '12px', color: '#333', borderBottom: '2px solid #ddd', paddingBottom: '4px' }}>
