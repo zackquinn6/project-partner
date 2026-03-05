@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,6 +34,20 @@ export function MaintenanceNotifications({
   const [notifyMonthly, setNotifyMonthly] = useState(true);
   const [notifyWeekly, setNotifyWeekly] = useState(true);
   const [notifyDueDate, setNotifyDueDate] = useState(true);
+
+  // Sync email from auth when user loads (e.g. dialog opened before auth ready)
+  useEffect(() => {
+    if (user?.email && !emailAddress) setEmailAddress(user.email);
+  }, [user?.email]);
+
+  // Debug: confirm this component is mounted when Setup Alerts is open
+  useEffect(() => {
+    console.warn('[MaintenanceAlerts] Setup Alerts dialog mounted — Send Test Email button uses testEmailNotification');
+    return () => {
+      console.warn('[MaintenanceAlerts] Setup Alerts dialog unmounted');
+    };
+  }, []);
+
   const saveNotificationSettings = async () => {
     if (!user?.id) return;
     setSaving(true);
@@ -57,7 +71,7 @@ export function MaintenanceNotifications({
   const DEBUG_PREFIX = '[MaintenanceAlerts SendTest]';
 
   const testEmailNotification = async () => {
-    console.log(`${DEBUG_PREFIX} 1. Click received — starting send test flow`);
+    console.warn(`${DEBUG_PREFIX} 1. Click received — starting send test flow`);
     const testEmail = user?.email ?? emailAddress.trim();
     console.log(`${DEBUG_PREFIX} 2. Resolved email`, {
       testEmail: testEmail || '(empty)',
@@ -178,7 +192,15 @@ export function MaintenanceNotifications({
                   <Label htmlFor="email-address">Email Address</Label>
                   <Input id="email-address" type="email" value={emailAddress} onChange={e => setEmailAddress(e.target.value)} placeholder="Enter your email address" />
                 </div>
-                <Button variant="outline" size="sm" onClick={testEmailNotification} disabled={!emailAddress || sendingTest}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    console.warn('[MaintenanceAlerts] Send Test Email button clicked');
+                    testEmailNotification();
+                  }}
+                  disabled={sendingTest || (!(emailAddress?.trim()) && !(user?.email))}
+                >
                   {sendingTest ? "Sending…" : "Send Test Email"}
                 </Button>
               </div>}

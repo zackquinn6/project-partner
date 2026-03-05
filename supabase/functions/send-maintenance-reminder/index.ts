@@ -46,7 +46,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Email mismatch with authenticated user');
     }
 
-    console.log(`Sending ${validatedData.type} maintenance reminder to ${validatedData.email}`);
+    console.log("[MaintenanceReminder] Step 1: Validated request", {
+      type: validatedData.type,
+      email: validatedData.email,
+      userName: validatedData.userName,
+    });
 
     let subject = "";
     let htmlContent = "";
@@ -114,6 +118,12 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     }
 
+    console.log("[MaintenanceReminder] Step 2: Calling Resend API", {
+      from: "Project Partner <onboarding@resend.dev>",
+      to: validatedData.email,
+      subject,
+    });
+    // Note: Resend sandbox (onboarding@resend.dev) only delivers to the email that signed up for Resend. Add/verify your domain for other recipients.
     const emailResponse = await resend.emails.send({
       from: "Project Partner <onboarding@resend.dev>",
       to: [validatedData.email],
@@ -121,12 +131,20 @@ const handler = async (req: Request): Promise<Response> => {
       html: htmlContent,
     });
 
+    console.log("[MaintenanceReminder] Step 3: Resend response", {
+      hasError: !!emailResponse.error,
+      error: emailResponse.error ? JSON.stringify(emailResponse.error) : null,
+      dataId: (emailResponse as { data?: { id?: string } }).data?.id ?? null,
+    });
+
     if (emailResponse.error) {
       console.error("Resend API error:", emailResponse.error);
       throw new Error(emailResponse.error.message || "Email service failed to send");
     }
 
-    console.log("Maintenance reminder email sent successfully");
+    console.log("[MaintenanceReminder] Step 4: Email sent successfully", {
+      id: (emailResponse as { data?: { id?: string } }).data?.id,
+    });
 
     return new Response(JSON.stringify({ 
       success: true, 
