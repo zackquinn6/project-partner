@@ -169,14 +169,14 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   return (
     <div className="px-3 md:px-4 py-2 border-b bg-muted/30 shrink-0 min-h-[6.5rem]" style={{ ['--card-min-h' as string]: cardMinH, ['--card-max-h' as string]: cardMaxH }}>
       <TooltipProvider delayDuration={300}>
-        <div className="grid grid-cols-2 lg:grid-cols-[1fr_1.6fr_0.5fr_0.5fr_1fr] gap-2 items-stretch max-w-full">
+        <div className="grid grid-cols-2 lg:grid-cols-[1fr_1.2fr_0.45fr_0.575fr_1fr] gap-2 items-stretch max-w-full">
           {/* 1. Home Health – speedometer left, score right */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">Home Health</div>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
-                  <CardContent className="p-1 flex flex-row items-center justify-between flex-1 min-h-0 gap-1">
+                  <CardContent className="p-1 flex flex-row items-center flex-1 min-h-0 gap-1">
                     <div className="relative flex-1 min-h-0 flex items-center justify-center min-w-0">
                       <svg viewBox="0 0 120 70" className="w-full h-full max-h-[3.25rem] text-foreground" aria-hidden preserveAspectRatio="xMidYMax meet">
                         <defs>
@@ -200,7 +200,14 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                         </g>
                       </svg>
                     </div>
-                    <span className="text-xl font-bold tabular-nums shrink-0" aria-live="polite">{healthScore}</span>
+                    <div className="flex-1 flex items-center justify-center min-w-0">
+                      <span
+                        className={`text-[1.56rem] font-bold tabular-nums ${healthScore >= 90 ? 'text-emerald-600' : healthScore >= 70 ? 'text-amber-500' : 'text-destructive'}`}
+                        aria-live="polite"
+                      >
+                        {healthScore}
+                      </span>
+                    </div>
                   </CardContent>
                 </Card>
               </TooltipTrigger>
@@ -210,12 +217,12 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             </Tooltip>
           </div>
 
-          {/* 2. System status – wider card */}
+          {/* 2. System status – 25% narrower, icons centered */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">System status</div>
             <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
-              <CardContent className="p-1 flex flex-col flex-1 min-h-0 justify-center">
-                <div className="grid grid-cols-3 grid-rows-2 gap-x-1.5 gap-y-0.5">
+              <CardContent className="p-1 flex flex-col flex-1 min-h-0 justify-center items-center">
+                <div className="grid grid-cols-3 grid-rows-2 gap-x-1.5 gap-y-0.5 justify-items-center w-fit">
                   {systemKeys.map(sys => {
                     const status = systemStatus[sys];
                     const Icon = SYSTEM_CONFIG[sys].icon;
@@ -224,7 +231,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                     return (
                       <Tooltip key={sys}>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1 min-w-0">
+                          <div className="flex items-center gap-1 min-w-0 justify-self-center">
                             <div className="relative flex-shrink-0">
                               <Icon className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
                               <StatusBadge

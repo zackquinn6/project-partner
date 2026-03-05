@@ -700,10 +700,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               onClick={() => handleTaskComplete(task)}
                               size="sm"
                               className="h-6 bg-green-600 hover:bg-green-700 text-white text-xs px-2"
-                              title="Complete Task"
+                              title="Mark completion"
                             >
                               <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                              Complete
+                              Mark completion
                             </Button>
                             <Button
                               variant="ghost"

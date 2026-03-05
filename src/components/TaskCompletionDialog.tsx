@@ -7,7 +7,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { CalendarIcon, Upload, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -112,14 +112,31 @@ export function TaskCompletionDialog({
 
     setLoading(true);
     try {
+      const dayStart = startOfDay(completedDate);
+      const dayEnd = endOfDay(completedDate);
+      const { data: existing } = await supabase
+        .from('maintenance_completions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('task_id', task.id)
+        .gte('completed_at', dayStart.toISOString())
+        .lte('completed_at', dayEnd.toISOString())
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        toast({
+          title: "Duplicate completion",
+          description: "This task is already marked complete for this date. Only one completion per task per day is allowed.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       let photoUrl: string | null = null;
-      
       if (photoFile) {
         photoUrl = await uploadPhoto(photoFile);
-        if (!photoUrl) {
-          // Upload failed, but continue without photo
-          setPhotoFile(null);
-        }
+        if (!photoUrl) setPhotoFile(null);
       }
 
       const { error } = await supabase
@@ -141,13 +158,10 @@ export function TaskCompletionDialog({
       });
 
       onCompleted();
-      
-      // Reset form
       setNotes('');
       setPhotoFile(null);
       setUploadProgress(0);
       setCompletedDate(new Date());
-      
     } catch (error) {
       console.error('Error completing task:', error);
       toast({
