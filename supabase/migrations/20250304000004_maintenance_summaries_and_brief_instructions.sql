@@ -1,4 +1,14 @@
 -- Update maintenance_templates: 2-line summaries (task + benefits; "Critical: " when high), brief instructions (2-3 lines).
+-- Ensure columns exist in case 20250304000003 was not run.
+
+ALTER TABLE public.maintenance_templates
+  ADD COLUMN IF NOT EXISTS summary TEXT,
+  ADD COLUMN IF NOT EXISTS repair_cost_savings TEXT;
+
+ALTER TABLE public.user_maintenance_tasks
+  ADD COLUMN IF NOT EXISTS summary TEXT,
+  ADD COLUMN IF NOT EXISTS instructions TEXT,
+  ADD COLUMN IF NOT EXISTS repair_cost_savings TEXT;
 
 -- High criticality (3): Test smoke alarms, Test CO detectors, Replace smoke alarm batteries, Check fire extinguisher,
 -- Test water heater pressure relief valve, Inspect sump pump, Test GFCI outlets.
