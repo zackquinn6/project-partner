@@ -169,16 +169,16 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   return (
     <div className="px-3 md:px-4 py-2 border-b bg-muted/30 shrink-0 min-h-[6.5rem]" style={{ ['--card-min-h' as string]: cardMinH, ['--card-max-h' as string]: cardMaxH }}>
       <TooltipProvider delayDuration={300}>
-        <div className="grid grid-cols-2 lg:grid-cols-[1fr_1.6fr_1fr_1fr] gap-2 items-stretch max-w-full">
-          {/* 1. Home Health */}
+        <div className="grid grid-cols-2 lg:grid-cols-[1fr_1.6fr_0.5fr_0.5fr_1fr] gap-2 items-stretch max-w-full">
+          {/* 1. Home Health – speedometer left, score right */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">Home Health</div>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
-                  <CardContent className="p-2 flex flex-col items-center justify-center flex-1 min-h-0 gap-0.5">
-                    <div className="relative w-full flex-1 min-h-0 max-h-8 flex items-end justify-center shrink-0">
-                      <svg viewBox="0 0 120 70" className="w-full h-full max-h-8 text-foreground" aria-hidden preserveAspectRatio="xMidYMax meet">
+                  <CardContent className="p-1 flex flex-row items-center justify-between flex-1 min-h-0 gap-1">
+                    <div className="relative flex-1 min-h-0 flex items-center justify-center min-w-0">
+                      <svg viewBox="0 0 120 70" className="w-full h-full max-h-[3.25rem] text-foreground" aria-hidden preserveAspectRatio="xMidYMax meet">
                         <defs>
                           <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#ef4444" />
@@ -200,7 +200,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                         </g>
                       </svg>
                     </div>
-                    <span className="text-lg font-bold tabular-nums shrink-0" aria-live="polite">{healthScore}</span>
+                    <span className="text-xl font-bold tabular-nums shrink-0" aria-live="polite">{healthScore}</span>
                   </CardContent>
                 </Card>
               </TooltipTrigger>
@@ -214,8 +214,8 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">System status</div>
             <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
-              <CardContent className="p-1.5 flex flex-col flex-1 min-h-0 justify-center">
-                <div className="grid grid-cols-3 grid-rows-2 gap-x-2 gap-y-1">
+              <CardContent className="p-1 flex flex-col flex-1 min-h-0 justify-center">
+                <div className="grid grid-cols-3 grid-rows-2 gap-x-1.5 gap-y-0.5">
                   {systemKeys.map(sys => {
                     const status = systemStatus[sys];
                     const Icon = SYSTEM_CONFIG[sys].icon;
@@ -224,11 +224,11 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                     return (
                       <Tooltip key={sys}>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="flex items-center gap-1 min-w-0">
                             <div className="relative flex-shrink-0">
-                              <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                              <Icon className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
                               <StatusBadge
-                                className={`h-3 w-3 absolute -top-0.5 -right-0.5 ${badgeColor}`}
+                                className={`h-3.5 w-3.5 absolute -top-0.5 -right-0.5 ${badgeColor}`}
                                 strokeWidth={2.5}
                               />
                             </div>
@@ -253,7 +253,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
               <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">Overdue</span>
-                  <span className="text-base md:text-lg font-bold tabular-nums text-destructive">{overdue.length}</span>
+                  <span className={`text-base md:text-lg font-bold tabular-nums ${overdue.length === 0 ? 'text-emerald-600' : 'text-destructive'}`}>{overdue.length}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2 border-t pt-1">
                   <span className="text-[10px] text-muted-foreground">Due (30d)</span>
@@ -279,6 +279,8 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
               </CardContent>
             </Card>
           </div>
+          {/* Spacer: space to the right of Benefits */}
+          <div className="hidden lg:block min-w-0" aria-hidden />
         </div>
       </TooltipProvider>
     </div>
