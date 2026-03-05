@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, X } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -141,8 +141,9 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-3">
+    <div className="flex flex-col min-h-0 flex-1">
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="grid gap-3">
         <div>
           <Label htmlFor="edit-title">Task title</Label>
           <Input
@@ -268,8 +269,9 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             onChange={(e) => setForm(prev => ({ ...prev, repair_cost_savings: e.target.value }))}
           />
         </div>
+        </div>
       </div>
-      <div className="flex justify-between gap-2 pt-2">
+      <div className="flex justify-between gap-2 pt-2 border-t shrink-0 bg-background">
         <Button variant="destructive" onClick={onDelete} className="mr-auto">
           <Trash2 className="h-4 w-4 mr-1" />
           Delete task
@@ -886,13 +888,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
       {/* Task edit dialog */}
       <Dialog open={!!taskBeingEdited} onOpenChange={(open) => !open && setTaskBeingEdited(null)}>
-        <DialogContent className="w-full max-w-[95vw] md:max-w-[600px] max-h-[76.5vh] overflow-hidden">
-          <DialogHeader className="flex flex-row items-center justify-between space-y-0">
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[600px] max-h-[76.5vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex flex-row items-center justify-between space-y-0 shrink-0">
             <DialogTitle>Edit Maintenance Task</DialogTitle>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setTaskBeingEdited(null)} aria-label="Close">
-              <X className="h-4 w-4" />
+            <Button variant="outline" size="sm" className="shrink-0" onClick={() => setTaskBeingEdited(null)}>
+              Close
             </Button>
           </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {taskBeingEdited && (
             <EditMaintenanceTaskForm
               task={taskBeingEdited}
@@ -905,6 +908,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               }}
             />
           )}
+          </div>
         </DialogContent>
       </Dialog>
 

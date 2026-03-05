@@ -232,10 +232,10 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                       <Tooltip key={sys}>
                         <TooltipTrigger asChild>
                           <div className="flex flex-col items-center gap-0.5 min-w-0 shrink-0">
-                            <div className="relative flex-shrink-0">
+                            <div className="flex flex-row items-center justify-center gap-0.5 flex-shrink-0">
                               <Icon className="h-[2.2rem] w-[2.2rem] text-muted-foreground" strokeWidth={1.5} />
                               <StatusBadge
-                                className={`h-5 w-5 absolute -top-0.5 -right-0.5 ${badgeColor}`}
+                                className={`h-5 w-5 shrink-0 ${badgeColor}`}
                                 strokeWidth={2.5}
                               />
                             </div>
