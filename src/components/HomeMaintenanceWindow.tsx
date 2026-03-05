@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, X } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +23,7 @@ import { MaintenancePdfPrinter } from './MaintenancePdfPrinter';
 import { MaintenanceNotifications } from './MaintenanceNotifications';
 import { MaintenanceDashboard, getSystemForCategory, SYSTEM_CONFIG, type SystemKey } from './MaintenanceDashboard';
 import { HomeManager } from './HomeManager';
+import { MaintenancePhotosWindow } from './MaintenancePhotosWindow';
 import {
   Tooltip,
   TooltipContent,
@@ -78,9 +79,10 @@ interface EditMaintenanceTaskFormProps {
   task: MaintenanceTask;
   onClose: () => void;
   onUpdated: () => void;
+  onDelete: () => void;
 }
 
-const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task, onClose, onUpdated }) => {
+const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task, onClose, onUpdated, onDelete }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [form, setForm] = useState({
@@ -268,13 +270,19 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           />
         </div>
       </div>
-      <div className="flex justify-end gap-2 pt-2">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
+      <div className="flex justify-between gap-2 pt-2">
+        <Button variant="destructive" onClick={onDelete} className="mr-auto">
+          <Trash2 className="h-4 w-4 mr-1" />
+          Delete task
         </Button>
-        <Button onClick={handleSave} disabled={saving || !form.title.trim()}>
-          {saving ? 'Saving...' : 'Save changes'}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving || !form.title.trim()}>
+            {saving ? 'Saving...' : 'Save changes'}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -303,6 +311,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [selectedTaskForDetails, setSelectedTaskForDetails] = useState<MaintenanceTask | null>(null);
   const [taskBeingEdited, setTaskBeingEdited] = useState<MaintenanceTask | null>(null);
   const [showHomeManager, setShowHomeManager] = useState(false);
+  const [showMaintenancePhotos, setShowMaintenancePhotos] = useState(false);
   const {
     isMobile
   } = useResponsive();
@@ -482,11 +491,24 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
         <div className="flex flex-col h-full max-h-full overflow-hidden">
-        {/* Header with title and close button */}
+        {/* Header with title, tooltip, and close button */}
         <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
-          <h2 className="text-lg md:text-xl font-bold">Home Maintenance Tracker</h2>
-          
-          {/* Close button - always visible */}
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg md:text-xl font-bold">Home Maintenance Tracker</h2>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-muted-foreground hover:text-foreground p-0.5 rounded" aria-label="About this app">
+                    <HelpCircle className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="font-medium mb-1">About this app</p>
+                  <p className="text-sm">Add and manage maintenance tasks, track completions (with optional photos), and view home maintenance health. Use filters and the dashboard to stay on top of due dates and priorities.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <Button 
             variant="outline" 
             size="sm" 
@@ -524,6 +546,15 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               </Button>
             </div>
             <div className="flex items-center gap-2 ml-auto w-full sm:w-auto justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMaintenancePhotos(true)}
+                title="View photos from task completions"
+              >
+                <ImageIcon className="h-4 w-4 mr-1" />
+                View Photos
+              </Button>
               {selectedHomeId && tasks.length > 0 && (
                 <MaintenancePdfPrinter
                   tasks={tasks}
@@ -715,20 +746,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={`text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 ${
-                                swipedTaskId === task.id ? 'opacity-100' : 'md:opacity-100'
-                              }`}
-                              title="Delete Task"
-                              onClick={() => {
-                                handleDeleteTask(task.id);
-                                setSwipedTaskId(null);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -870,19 +887,29 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
       {/* Task edit dialog */}
       <Dialog open={!!taskBeingEdited} onOpenChange={(open) => !open && setTaskBeingEdited(null)}>
-        <DialogContent className="w-full max-w-[95vw] md:max-w-[600px] max-h-[90vh] overflow-hidden">
-          <DialogHeader>
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[600px] max-h-[76.5vh] overflow-hidden">
+          <DialogHeader className="flex flex-row items-center justify-between space-y-0">
             <DialogTitle>Edit Maintenance Task</DialogTitle>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setTaskBeingEdited(null)} aria-label="Close">
+              <X className="h-4 w-4" />
+            </Button>
           </DialogHeader>
           {taskBeingEdited && (
             <EditMaintenanceTaskForm
               task={taskBeingEdited}
               onClose={() => setTaskBeingEdited(null)}
               onUpdated={fetchTasks}
+              onDelete={() => {
+                handleDeleteTask(taskBeingEdited.id);
+                setTaskBeingEdited(null);
+                fetchTasks();
+              }}
             />
           )}
         </DialogContent>
       </Dialog>
+
+      <MaintenancePhotosWindow open={showMaintenancePhotos} onOpenChange={setShowMaintenancePhotos} />
 
       <HomeManager
         open={showHomeManager}
