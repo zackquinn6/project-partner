@@ -497,9 +497,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           </Button>
         </div>
         
-        {/* Home Selection - Fixed at top */}
+        {/* Home Selection - Fixed at top; actions (PDF, Alerts) on far right */}
         <div className="px-3 md:px-6 py-3 shrink-0 bg-background border-b">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
                 <SelectTrigger className="w-full sm:w-[280px] h-9">
@@ -522,7 +522,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               >
                 <Home className="h-4 w-4" />
               </Button>
-
+            </div>
+            <div className="flex items-center gap-2 ml-auto w-full sm:w-auto justify-end">
               {selectedHomeId && tasks.length > 0 && (
                 <MaintenancePdfPrinter
                   tasks={tasks}
@@ -530,11 +531,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
                 />
               )}
-
               <Button
                 variant="outline"
                 size="sm"
-                className="ml-2"
                 disabled={!selectedHomeId}
                 onClick={() => setShowAlerts(true)}
               >
@@ -823,20 +822,24 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 <div><span className="font-medium">Criticality:</span> {selectedTaskForDetails.criticality === 3 ? 'High' : selectedTaskForDetails.criticality === 1 ? 'Low' : 'Medium'}</div>
                 <div><span className="font-medium">Next due:</span> {format(new Date(selectedTaskForDetails.next_due), 'MMM dd, yyyy')}</div>
               </div>
-              {(selectedTaskForDetails.summary || selectedTaskForDetails.description) && (
-                <div className="mt-2">
-                  <h3 className="text-sm font-medium mb-1">Summary</h3>
+              <section className="mt-2">
+                <h3 className="text-sm font-medium mb-1">Summary</h3>
+                {(selectedTaskForDetails.summary || selectedTaskForDetails.description) ? (
                   <p className="text-sm text-foreground whitespace-pre-wrap">
                     {selectedTaskForDetails.summary ?? selectedTaskForDetails.description}
                   </p>
-                </div>
-              )}
-              {selectedTaskForDetails.instructions && (
-                <div className="mt-2">
-                  <h3 className="text-sm font-medium mb-1">Instructions</h3>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No summary for this task.</p>
+                )}
+              </section>
+              <section className="mt-2 pt-3 border-t border-border">
+                <h3 className="text-sm font-medium mb-1">Instructions</h3>
+                {selectedTaskForDetails.instructions ? (
                   <p className="text-sm text-foreground whitespace-pre-wrap">{selectedTaskForDetails.instructions}</p>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-muted-foreground">No instructions added for this task.</p>
+                )}
+              </section>
               {(selectedTaskForDetails.risks_of_skipping || selectedTaskForDetails.benefits_of_maintenance || selectedTaskForDetails.repair_cost_savings) && (
                 <div className="mt-3 flex flex-col gap-2">
                   {selectedTaskForDetails.risks_of_skipping && (

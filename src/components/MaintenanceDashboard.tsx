@@ -166,16 +166,16 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   return (
     <div className="px-3 md:px-4 py-3 border-b bg-muted/30">
       <TooltipProvider delayDuration={300}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch max-w-full">
-          {/* 1. Home Health */}
+        <div className="grid grid-cols-2 lg:grid-cols-[1fr_1.6fr_1fr_1fr] gap-3 items-stretch max-w-full">
+          {/* 1. Home Health – same height as Tasks/Benefits */}
           <div className="space-y-0 min-w-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Home Health</div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed">
-                  <CardContent className="p-3 flex flex-col items-center justify-center flex-1 min-h-0 gap-1">
+                <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[5.5rem]">
+                  <CardContent className="p-3 flex flex-col items-center justify-center flex-1 min-h-[5.5rem] gap-1">
                     <div className="relative w-full flex-1 min-h-[56px] md:min-h-[64px] flex items-end justify-center">
-                      <svg viewBox="0 0 120 70" className="w-full h-full max-h-14 md:max-h-16" aria-hidden preserveAspectRatio="xMidYMax meet">
+                      <svg viewBox="0 0 120 70" className="w-full h-full max-h-14 md:max-h-16 text-foreground" aria-hidden preserveAspectRatio="xMidYMax meet">
                         <defs>
                           <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#ef4444" />
@@ -192,8 +192,8 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                           <line x1="98" y1="52" x2="94" y2="56" />
                         </g>
                         <g transform={`rotate(${gaugeRotation} 60 60)`}>
-                          <line x1="60" y1="60" x2="60" y2="24" stroke="var(--foreground)" strokeWidth="2.5" strokeLinecap="round" />
-                          <circle cx="60" cy="60" r="4" fill="var(--foreground)" />
+                          <line x1="60" y1="60" x2="60" y2="24" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                          <circle cx="60" cy="60" r="4" fill="currentColor" />
                         </g>
                       </svg>
                     </div>
@@ -207,11 +207,11 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             </Tooltip>
           </div>
 
-          {/* 2. System status – separate card, tightly packed */}
+          {/* 2. System status – wider card, same height */}
           <div className="space-y-0 min-w-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">System status</div>
-            <Card className="min-w-0 flex flex-col">
-              <CardContent className="p-1.5 flex flex-col flex-1 min-h-0 justify-center">
+            <Card className="min-w-0 flex flex-col h-full min-h-[5.5rem]">
+              <CardContent className="p-1.5 flex flex-col flex-1 min-h-[5.5rem] justify-center">
                 <div className="grid grid-cols-3 grid-rows-2 gap-x-2 gap-y-1">
                   {systemKeys.map(sys => {
                     const status = systemStatus[sys];
@@ -243,11 +243,11 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             </Card>
           </div>
 
-          {/* 3. Tasks */}
+          {/* 3. Tasks – same height as all cards */}
           <div className="space-y-0 min-w-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Tasks</div>
-            <Card className="min-w-0 flex flex-col">
-              <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
+            <Card className="min-w-0 flex flex-col h-full min-h-[5.5rem]">
+              <CardContent className="p-2 flex flex-col flex-1 min-h-[5.5rem] justify-center gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">Overdue</span>
                   <span className="text-lg md:text-xl font-bold tabular-nums text-destructive">{overdue.length}</span>
@@ -260,11 +260,11 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             </Card>
           </div>
 
-          {/* 4. Benefits – slim like Tasks */}
+          {/* 4. Benefits – same width as Tasks, same height */}
           <div className="space-y-0 min-w-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Benefits</div>
-            <Card className="min-w-0 flex flex-col">
-              <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
+            <Card className="min-w-0 flex flex-col h-full min-h-[5.5rem]">
+              <CardContent className="p-2 flex flex-col flex-1 min-h-[5.5rem] justify-center gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">Est. repairs avoided</span>
                   <span className="text-lg md:text-xl font-bold tabular-nums text-emerald-600">${moneySaved}</span>

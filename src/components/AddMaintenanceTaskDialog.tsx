@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,13 +46,16 @@ export function AddMaintenanceTaskDialog({
   const [templates, setTemplates] = useState<MaintenanceTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('templates');
-  
+  const [templateFilterCategory, setTemplateFilterCategory] = useState<string>('all');
+  const [templateFilterCriticality, setTemplateFilterCriticality] = useState<string>('all');
+
   // Custom task form
   const [customTask, setCustomTask] = useState({
     title: '',
     description: '',
     category: 'general',
     frequency_days: 90,
+    criticality: 2 as 1 | 2 | 3,
     risks_of_skipping: '',
     benefits_of_maintenance: '',
   });
@@ -166,7 +169,10 @@ export function AddMaintenanceTaskDialog({
         title: '',
         description: '',
         category: 'general',
-        frequency_days: 90
+        frequency_days: 90,
+        criticality: 2,
+        risks_of_skipping: '',
+        benefits_of_maintenance: '',
       });
 
       onTaskAdded();
@@ -183,27 +189,40 @@ export function AddMaintenanceTaskDialog({
     }
   };
 
-  const groupedTemplates = templates.reduce((acc, template) => {
-    if (!acc[template.category]) {
-      acc[template.category] = [];
-    }
-    acc[template.category].push(template);
-    return acc;
-  }, {} as Record<string, MaintenanceTemplate[]>);
-
   const categoryLabels: Record<string, string> = {
     appliances: 'Appliances',
     electrical: 'Electrical',
     exterior: 'Exterior',
+    general: 'General',
     hvac: 'HVAC',
     interior: 'Interior',
     landscaping: 'Landscaping',
     outdoor: 'Outdoor',
     plumbing: 'Plumbing',
+    roof: 'Roof',
     safety: 'Safety',
     security: 'Security',
-    general: 'General'
   };
+
+  const filteredTemplates = templates.filter((t) => {
+    const matchCategory = templateFilterCategory === 'all' || t.category === templateFilterCategory;
+    const c = t.criticality ?? 2;
+    const matchCriticality = templateFilterCriticality === 'all' || c === parseInt(templateFilterCriticality, 10);
+    return matchCategory && matchCriticality;
+  });
+  const sortedTemplates = [...filteredTemplates].sort((a, b) => {
+    if (a.category !== b.category) return a.category.localeCompare(b.category);
+    const ca = a.criticality ?? 2;
+    const cb = b.criticality ?? 2;
+    if (cb !== ca) return cb - ca;
+    return (a.title || '').localeCompare(b.title || '');
+  });
+  const groupedTemplates = sortedTemplates.reduce((acc, template) => {
+    if (!acc[template.category]) acc[template.category] = [];
+    acc[template.category].push(template);
+    return acc;
+  }, {} as Record<string, MaintenanceTemplate[]>);
+  const sortedCategoryKeys = Object.keys(groupedTemplates).sort((a, b) => a.localeCompare(b));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -220,6 +239,9 @@ export function AddMaintenanceTaskDialog({
         </button>
         <DialogHeader>
           <DialogTitle>Add Maintenance Task</DialogTitle>
+          <DialogDescription className="sr-only">
+            Add a task from templates or create a custom maintenance task for your home.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -235,8 +257,39 @@ export function AddMaintenanceTaskDialog({
           </TabsList>
 
           <TabsContent value="templates" className="mt-4">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Select value={templateFilterCategory} onValueChange={setTemplateFilterCategory}>
+                <SelectTrigger className="w-[160px] h-9 text-sm">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {Object.entries(categoryLabels)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Select value={templateFilterCriticality} onValueChange={setTemplateFilterCriticality}>
+                <SelectTrigger className="w-[140px] h-9 text-sm">
+                  <SelectValue placeholder="Criticality" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All criticality</SelectItem>
+                  <SelectItem value="3">High</SelectItem>
+                  <SelectItem value="2">Medium</SelectItem>
+                  <SelectItem value="1">Low</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">
+                {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
+              </span>
+            </div>
             <div className="max-h-[50vh] overflow-y-auto space-y-4">
-              {Object.entries(groupedTemplates).map(([category, categoryTemplates]) => (
+              {sortedCategoryKeys.map((category) => {
+                const categoryTemplates = groupedTemplates[category];
+                return (
                 <div key={category}>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     {categoryLabels[category] || category}
@@ -273,7 +326,8 @@ export function AddMaintenanceTaskDialog({
                     ))}
                   </div>
                 </div>
-              ))}
+              );
+              })}
               
               {templates.length === 0 && (
                 <div className="text-center py-8">
@@ -282,6 +336,11 @@ export function AddMaintenanceTaskDialog({
                   <p className="text-muted-foreground">
                     Create a custom task or ask an admin to add maintenance templates.
                   </p>
+                </div>
+              )}
+              {templates.length > 0 && filteredTemplates.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No templates match the current filters.</p>
                 </div>
               )}
             </div>
