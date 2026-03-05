@@ -17,7 +17,6 @@ interface MaintenanceNotificationsProps {
 export function MaintenanceNotifications({
   selectedHomeId
 }: MaintenanceNotificationsProps) {
-  console.log('🔔 MaintenanceNotifications render - checking spacing');
   const {
     user
   } = useAuth();
@@ -55,10 +54,18 @@ export function MaintenanceNotifications({
       setSaving(false);
     }
   };
+  const DEBUG_PREFIX = '[MaintenanceAlerts SendTest]';
+
   const testEmailNotification = async () => {
-    // Function requires the email to match the authenticated user
+    console.log(`${DEBUG_PREFIX} 1. Click received — starting send test flow`);
     const testEmail = user?.email ?? emailAddress.trim();
+    console.log(`${DEBUG_PREFIX} 2. Resolved email`, {
+      testEmail: testEmail || '(empty)',
+      userEmail: user?.email ?? '(no user email)',
+      inputEmailAddress: emailAddress.trim() || '(empty)',
+    });
     if (!testEmail) {
+      console.warn(`${DEBUG_PREFIX} 2b. Abort — no email address available`);
       toast({
         title: "Error",
         description: "No email address available. Please ensure you're logged in.",
@@ -67,6 +74,7 @@ export function MaintenanceNotifications({
       return;
     }
     if (user?.email && emailAddress.trim() && emailAddress.trim() !== user.email) {
+      console.warn(`${DEBUG_PREFIX} 2c. Abort — test email must use account email`, { userEmail: user.email, input: emailAddress.trim() });
       toast({
         title: "Error",
         description: "Test email is sent to your account email. Change the address above only after saving; test uses your logged-in email.",
@@ -74,14 +82,25 @@ export function MaintenanceNotifications({
       });
       return;
     }
+    const payload = {
+      type: 'test' as const,
+      email: testEmail,
+      userName: user?.email?.split('@')[0] || 'User',
+    };
+    console.log(`${DEBUG_PREFIX} 3. Invoking edge function send-maintenance-reminder`, { payload });
     setSendingTest(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-maintenance-reminder', {
-        body: {
-          type: 'test',
-          email: testEmail,
-          userName: user?.email?.split('@')[0] || 'User'
-        }
+        body: payload,
+      });
+      console.log(`${DEBUG_PREFIX} 4. Edge function returned`, {
+        hasError: !!error,
+        errorKeys: error ? Object.keys(error) : [],
+        errorMessage: (error as { message?: string } | null)?.message,
+        errorDetails: (error as { details?: string } | null)?.details,
+        dataType: data === null ? 'null' : typeof data,
+        dataKeys: data && typeof data === 'object' ? Object.keys(data) : [],
+        data,
       });
       if (error) {
         let errMsg = (error as { message?: string }).message ?? 'Failed to send test email';
@@ -94,17 +113,24 @@ export function MaintenanceNotifications({
             if (errAny.details.length < 200) errMsg = errAny.details;
           }
         }
+        console.error(`${DEBUG_PREFIX} 5. Throwing after parsing error`, { errMsg });
         throw new Error(errMsg);
       }
       if (data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error) {
-        throw new Error((data as { error: string }).error);
+        const bodyError = (data as { error: string }).error;
+        console.error(`${DEBUG_PREFIX} 5b. Body contained error`, { bodyError });
+        throw new Error(bodyError);
       }
+      console.log(`${DEBUG_PREFIX} 6. Success — showing toast for ${testEmail}`);
       toast({
         title: "Test Email Sent",
         description: `Test notification sent to ${testEmail}`
       });
     } catch (error) {
-      console.error('Error sending test email:', error);
+      console.error(`${DEBUG_PREFIX} 7. Caught error`, {
+        message: error instanceof Error ? error.message : String(error),
+        error,
+      });
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to send test email",
@@ -112,6 +138,7 @@ export function MaintenanceNotifications({
       });
     } finally {
       setSendingTest(false);
+      console.log(`${DEBUG_PREFIX} 8. Done (sendingTest cleared)`);
     }
   };
   const showSMSNotAvailable = () => {
