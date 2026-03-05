@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Slider } from '@/components/ui/slider';
 import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +50,7 @@ interface MaintenanceTask {
   benefits_of_maintenance?: string | null;
   criticality?: number | null;
   repair_cost_savings?: string | null;
+  progress_percentage?: number | null;
 }
 interface MaintenanceCompletion {
   id: string;
@@ -81,6 +83,14 @@ interface EditMaintenanceTaskFormProps {
   onDelete: () => void;
 }
 
+function computedProgress(task: MaintenanceTask): number {
+  if (task.progress_percentage != null) return Math.min(100, Math.max(0, task.progress_percentage));
+  if (!task.last_completed) return 0;
+  const totalDays = task.frequency_days;
+  const daysSinceCompletion = differenceInDays(new Date(), new Date(task.last_completed));
+  return Math.min(100, Math.max(0, Math.round((daysSinceCompletion / totalDays) * 100)));
+}
+
 const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task, onClose, onUpdated, onDelete }) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -95,6 +105,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
     benefits_of_maintenance: task.benefits_of_maintenance ?? '',
     criticality: task.criticality ?? 2,
     repair_cost_savings: task.repair_cost_savings ?? '',
+    progress_percentage: task.progress_percentage ?? computedProgress(task),
   });
   const [saving, setSaving] = useState(false);
 
@@ -115,6 +126,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           benefits_of_maintenance: form.benefits_of_maintenance.trim() || null,
           criticality: form.criticality,
           repair_cost_savings: form.repair_cost_savings.trim() || null,
+          progress_percentage: form.progress_percentage,
         })
         .eq('id', task.id)
         .eq('user_id', user.id);
@@ -241,6 +253,33 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               }
             />
           </div>
+        </div>
+        <div>
+          <Label htmlFor="edit-progress">Current progress (% toward due)</Label>
+          <div className="flex items-center gap-3 mt-1">
+            <Slider
+              id="edit-progress"
+              min={0}
+              max={100}
+              step={1}
+              value={[form.progress_percentage]}
+              onValueChange={([v]) => setForm(prev => ({ ...prev, progress_percentage: v }))}
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              className="w-14 h-8 text-center shrink-0"
+              value={form.progress_percentage}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!Number.isNaN(v)) setForm(prev => ({ ...prev, progress_percentage: Math.min(100, Math.max(0, v)) }));
+              }}
+            />
+            <span className="text-xs text-muted-foreground shrink-0 w-4">%</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Override the progress shown in the task list (0 = just started, 100 = due).</p>
         </div>
         <div>
           <Label htmlFor="edit-risks">Risks of skipping</Label>
@@ -411,9 +450,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   };
   const getTaskProgress = (task: MaintenanceTask) => {
+    if (task.progress_percentage != null) return Math.min(100, Math.max(0, task.progress_percentage));
     if (!task.last_completed) return 0;
     const lastCompleted = new Date(task.last_completed);
-    const nextDue = new Date(task.next_due);
     const now = new Date();
     const totalDays = task.frequency_days;
     const daysSinceCompletion = differenceInDays(now, lastCompleted);
