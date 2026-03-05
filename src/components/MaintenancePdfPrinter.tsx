@@ -49,6 +49,12 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
   const contentWidthMm = A4_WIDTH_MM - 2 * MARGIN_MM;
   const contentHeightMm = A4_HEIGHT_MM - 2 * MARGIN_MM;
 
+  const addFooterToPage = (pdf: jsPDF) => {
+    pdf.setFontSize(8);
+    pdf.setTextColor(128, 128, 128);
+    pdf.text('Created by Project Partner', A4_WIDTH_MM / 2, A4_HEIGHT_MM - 10, { align: 'center' });
+  };
+
   const addCanvasToPdf = (pdf: jsPDF, canvas: HTMLCanvasElement) => {
     const imgData = canvas.toDataURL('image/png');
     const imgWidthMm = contentWidthMm;
@@ -56,11 +62,13 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
     let heightLeft = imgHeightMm;
     let positionMm = MARGIN_MM;
     pdf.addImage(imgData, 'PNG', MARGIN_MM, positionMm, imgWidthMm, imgHeightMm);
+    addFooterToPage(pdf);
     heightLeft -= contentHeightMm;
     while (heightLeft > 0) {
       positionMm = MARGIN_MM + (heightLeft - imgHeightMm);
       pdf.addPage();
       pdf.addImage(imgData, 'PNG', MARGIN_MM, positionMm, imgWidthMm, imgHeightMm);
+      addFooterToPage(pdf);
       heightLeft -= contentHeightMm;
     }
   };
