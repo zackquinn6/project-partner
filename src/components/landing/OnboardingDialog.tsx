@@ -9,10 +9,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, ArrowLeft, Sparkles, Wrench, Hammer, Calendar, Award, PiggyBank } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Sparkles, Wrench, Hammer, Calendar, Award, PiggyBank, Target } from 'lucide-react';
 
 export type DIYLevel = 'Beginner' | 'Intermediate' | 'Advanced';
-export type PMFocus = 'schedule' | 'quality' | 'savings';
+export type PMFocus = 'schedule' | 'quality' | 'savings' | 'all_three';
 
 export interface OnboardingData {
   name: string;
@@ -49,6 +49,12 @@ export const PM_FOCUS_OPTIONS: {
     title: 'Maximize savings',
     description: 'Avoiding overspending / maximize savings',
     icon: PiggyBank,
+  },
+  {
+    value: 'all_three',
+    title: 'Optimize all 3',
+    description: 'Balance cost, quality, and schedule together',
+    icon: Target,
   },
 ];
 

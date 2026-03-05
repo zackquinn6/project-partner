@@ -17,6 +17,7 @@ const PROJECT_FOCUS_LABELS: Record<string, string> = {
   schedule: 'Hitting my schedule',
   quality: 'Highest quality work',
   savings: 'Maximize savings',
+  all_three: 'Optimize all 3',
 };
 
 interface ProfileData {
