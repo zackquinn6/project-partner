@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, FileText, User, X } from 'lucide-react';
+import { Plus, FileText, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +44,7 @@ export function AddMaintenanceTaskDialog({
   const { user } = useAuth();
   const { toast } = useToast();
   const [templates, setTemplates] = useState<MaintenanceTemplate[]>([]);
+  const [existingTemplateIds, setExistingTemplateIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('templates');
   const [templateFilterCategory, setTemplateFilterCategory] = useState<string>('all');
@@ -63,8 +64,9 @@ export function AddMaintenanceTaskDialog({
   useEffect(() => {
     if (open) {
       fetchTemplates();
+      if (homeId && user?.id) fetchExistingTemplateIds();
     }
-  }, [open]);
+  }, [open, homeId, user?.id]);
 
   const fetchTemplates = async () => {
     try {
@@ -83,6 +85,24 @@ export function AddMaintenanceTaskDialog({
         description: "Failed to load maintenance templates",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchExistingTemplateIds = async () => {
+    if (!homeId || !user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('user_maintenance_tasks')
+        .select('template_id')
+        .eq('user_id', user.id)
+        .eq('home_id', homeId)
+        .not('template_id', 'is', null);
+      if (error) throw error;
+      const ids = new Set((data || []).map((r: { template_id: string }) => r.template_id));
+      setExistingTemplateIds(ids);
+    } catch (error) {
+      console.error('Error fetching existing template IDs:', error);
+      setExistingTemplateIds(new Set());
     }
   };
 
@@ -120,6 +140,7 @@ export function AddMaintenanceTaskDialog({
       });
 
       setTemplates(prev => prev.filter(t => t.id !== template.id));
+      setExistingTemplateIds(prev => new Set(prev).add(template.id));
       onTaskAdded();
     } catch (error) {
       console.error('Error adding task from template:', error);
@@ -200,7 +221,8 @@ export function AddMaintenanceTaskDialog({
     security: 'Security',
   };
 
-  const filteredTemplates = templates.filter((t) => {
+  const templatesNotYetAdded = templates.filter((t) => !existingTemplateIds.has(t.id));
+  const filteredTemplates = templatesNotYetAdded.filter((t) => {
     const matchCategory = templateFilterCategory === 'all' || t.category === templateFilterCategory;
     const c = t.criticality ?? 2;
     const matchCriticality = templateFilterCriticality === 'all' || c === parseInt(templateFilterCriticality, 10);
@@ -225,14 +247,11 @@ export function AddMaintenanceTaskDialog({
       <DialogPortal>
         <DialogOverlay className="z-[100]" />
         <DialogContent className="w-full max-w-[95vw] md:max-w-[75vw] max-h-[90vh] overflow-hidden z-[101]">
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <div className="absolute right-4 top-4">
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </div>
         <DialogHeader>
           <DialogTitle>Add Maintenance Task</DialogTitle>
           <DialogDescription className="sr-only">
@@ -259,7 +278,7 @@ export function AddMaintenanceTaskDialog({
                 <SelectTrigger className="w-[160px] h-9 text-sm">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200]">
                   <SelectItem value="all">All categories</SelectItem>
                   {Object.entries(categoryLabels)
                     .sort(([a], [b]) => a.localeCompare(b))
@@ -272,16 +291,13 @@ export function AddMaintenanceTaskDialog({
                 <SelectTrigger className="w-[140px] h-9 text-sm">
                   <SelectValue placeholder="Criticality" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200]">
                   <SelectItem value="all">All criticality</SelectItem>
                   <SelectItem value="3">High</SelectItem>
                   <SelectItem value="2">Medium</SelectItem>
                   <SelectItem value="1">Low</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-xs text-muted-foreground">
-                {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
-              </span>
             </div>
             <div className="max-h-[50vh] overflow-y-auto space-y-4">
               {sortedCategoryKeys.map((category) => {
@@ -334,7 +350,12 @@ export function AddMaintenanceTaskDialog({
                   </p>
                 </div>
               )}
-              {templates.length > 0 && filteredTemplates.length === 0 && (
+              {templates.length > 0 && templatesNotYetAdded.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">All available templates have been added to your plan.</p>
+                </div>
+              )}
+              {templates.length > 0 && templatesNotYetAdded.length > 0 && filteredTemplates.length === 0 && (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">No templates match the current filters.</p>
                 </div>
@@ -373,10 +394,10 @@ export function AddMaintenanceTaskDialog({
                       value={customTask.category} 
                       onValueChange={(value) => setCustomTask(prev => ({ ...prev, category: value }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]">
                         <SelectItem value="general">General</SelectItem>
                         <SelectItem value="appliances">Appliances</SelectItem>
                         <SelectItem value="electrical">Electrical</SelectItem>
@@ -400,6 +421,7 @@ export function AddMaintenanceTaskDialog({
                       type="number"
                       min={1}
                       max="3650"
+                      className="w-[100px]"
                       value={customTask.frequency_days}
                       onChange={(e) => setCustomTask(prev => ({ 
                         ...prev, 
@@ -413,10 +435,10 @@ export function AddMaintenanceTaskDialog({
                       value={String(customTask.criticality)}
                       onValueChange={(v) => setCustomTask(prev => ({ ...prev, criticality: parseInt(v, 10) as 1 | 2 | 3 }))}
                     >
-                      <SelectTrigger id="custom-criticality">
+                      <SelectTrigger id="custom-criticality" className="w-[110px]">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]">
                         <SelectItem value="1">Low</SelectItem>
                         <SelectItem value="2">Medium</SelectItem>
                         <SelectItem value="3">High</SelectItem>
