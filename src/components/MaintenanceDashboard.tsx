@@ -164,20 +164,21 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
 
   const systemKeys = Object.keys(SYSTEM_CONFIG) as SystemKey[];
 
-  const cardMinH = '4.7rem';
+  const cardMinH = '4.5rem';
+  const cardMaxH = '4.5rem';
   return (
-    <div className="px-3 md:px-4 py-2 border-b bg-muted/30 shrink-0" style={{ ['--card-min-h' as string]: cardMinH }}>
+    <div className="px-3 md:px-4 py-2 border-b bg-muted/30 shrink-0 min-h-[6.5rem]" style={{ ['--card-min-h' as string]: cardMinH, ['--card-max-h' as string]: cardMaxH }}>
       <TooltipProvider delayDuration={300}>
         <div className="grid grid-cols-2 lg:grid-cols-[1fr_1.6fr_1fr_1fr] gap-2 items-stretch max-w-full">
           {/* 1. Home Health */}
-          <div className="space-y-0 min-w-0">
-            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5">Home Health</div>
+          <div className="space-y-0 min-w-0 flex flex-col min-h-0">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">Home Health</div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)]">
-                  <CardContent className="p-2 flex flex-col items-center justify-center flex-1 min-h-[var(--card-min-h)] gap-0.5">
-                    <div className="relative w-full flex-1 min-h-[48px] md:min-h-[52px] flex items-end justify-center">
-                      <svg viewBox="0 0 120 70" className="w-full h-full max-h-12 md:max-h-[3.25rem] text-foreground" aria-hidden preserveAspectRatio="xMidYMax meet">
+                <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
+                  <CardContent className="p-2 flex flex-col items-center justify-center flex-1 min-h-0 gap-0.5">
+                    <div className="relative w-full flex-1 min-h-0 max-h-8 flex items-end justify-center shrink-0">
+                      <svg viewBox="0 0 120 70" className="w-full h-full max-h-8 text-foreground" aria-hidden preserveAspectRatio="xMidYMax meet">
                         <defs>
                           <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#ef4444" />
@@ -199,7 +200,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                         </g>
                       </svg>
                     </div>
-                    <span className="text-xl md:text-2xl font-bold tabular-nums" aria-live="polite">{healthScore}</span>
+                    <span className="text-lg font-bold tabular-nums shrink-0" aria-live="polite">{healthScore}</span>
                   </CardContent>
                 </Card>
               </TooltipTrigger>
@@ -210,10 +211,10 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
           </div>
 
           {/* 2. System status – wider card */}
-          <div className="space-y-0 min-w-0">
-            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5">System status</div>
-            <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)]">
-              <CardContent className="p-1.5 flex flex-col flex-1 min-h-[var(--card-min-h)] justify-center">
+          <div className="space-y-0 min-w-0 flex flex-col min-h-0">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">System status</div>
+            <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
+              <CardContent className="p-1.5 flex flex-col flex-1 min-h-0 justify-center">
                 <div className="grid grid-cols-3 grid-rows-2 gap-x-2 gap-y-1">
                   {systemKeys.map(sys => {
                     const status = systemStatus[sys];
@@ -246,10 +247,10 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
           </div>
 
           {/* 3. Tasks */}
-          <div className="space-y-0 min-w-0">
-            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5">Tasks</div>
-            <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)]">
-              <CardContent className="p-2 flex flex-col flex-1 min-h-[var(--card-min-h)] justify-center gap-1">
+          <div className="space-y-0 min-w-0 flex flex-col min-h-0">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">Tasks</div>
+            <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
+              <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">Overdue</span>
                   <span className="text-base md:text-lg font-bold tabular-nums text-destructive">{overdue.length}</span>
@@ -263,10 +264,10 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
           </div>
 
           {/* 4. Benefits */}
-          <div className="space-y-0 min-w-0">
-            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5">Benefits</div>
-            <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)]">
-              <CardContent className="p-2 flex flex-col flex-1 min-h-[var(--card-min-h)] justify-center gap-1">
+          <div className="space-y-0 min-w-0 flex flex-col min-h-0">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">Benefits</div>
+            <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
+              <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">Est. repairs avoided</span>
                   <span className="text-base md:text-lg font-bold tabular-nums text-emerald-600">${moneySaved}</span>
