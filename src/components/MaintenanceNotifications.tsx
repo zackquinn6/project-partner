@@ -85,16 +85,19 @@ export function MaintenanceNotifications({
       });
       if (error) {
         let errMsg = (error as { message?: string }).message ?? 'Failed to send test email';
-        const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context;
-        if (ctx && typeof ctx.json === 'function') {
+        const errAny = error as { context?: unknown; details?: string };
+        if (errAny?.details && typeof errAny.details === 'string') {
           try {
-            const body = await ctx.json();
-            if (body?.error) errMsg = body.error;
+            const parsed = JSON.parse(errAny.details) as { error?: string };
+            if (parsed?.error) errMsg = parsed.error;
           } catch {
-            // use errMsg from above
+            if (errAny.details.length < 200) errMsg = errAny.details;
           }
         }
         throw new Error(errMsg);
+      }
+      if (data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error) {
+        throw new Error((data as { error: string }).error);
       }
       toast({
         title: "Test Email Sent",

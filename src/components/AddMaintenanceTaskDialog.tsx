@@ -322,10 +322,12 @@ export function AddMaintenanceTaskDialog({
                             <Button 
                               onClick={() => handleAddFromTemplate(template)}
                               disabled={loading}
-                              size="sm"
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 shrink-0"
+                              title="Add to plan"
                             >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add
+                              <Plus className="h-4 w-4" />
                             </Button>
                           </div>
                         </CardHeader>

@@ -597,8 +597,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               </Button>
                             );
                           })}
-                          <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="ml-auto h-8 w-8 p-0 shrink-0" title="Add Task">
-                            <Plus className="h-4 w-4" />
+                          <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="ml-auto h-8 shrink-0 text-xs" title="Add Tasks">
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Tasks
                           </Button>
                         </div>
 
