@@ -169,7 +169,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   return (
     <div className="px-3 md:px-4 py-2 border-b bg-muted/30 shrink-0 min-h-[6.5rem]" style={{ ['--card-min-h' as string]: cardMinH, ['--card-max-h' as string]: cardMaxH }}>
       <TooltipProvider delayDuration={300}>
-        <div className="grid grid-cols-2 lg:grid-cols-[1fr_1.2fr_0.45fr_0.575fr_1fr] gap-2 items-stretch max-w-full">
+        <div className="grid grid-cols-2 lg:grid-cols-[0.7fr_1.2fr_0.38fr_0.66fr_1fr] gap-2 items-stretch max-w-full">
           {/* 1. Home Health – speedometer left, score right */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">Home Health</div>
@@ -202,7 +202,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                     </div>
                     <div className="flex-1 flex items-center justify-center min-w-0">
                       <span
-                        className={`text-[1.56rem] font-bold tabular-nums ${healthScore >= 90 ? 'text-emerald-600' : healthScore >= 70 ? 'text-amber-500' : 'text-destructive'}`}
+                        className={`text-[1.87rem] font-bold tabular-nums ${healthScore >= 90 ? 'text-emerald-600' : healthScore >= 70 ? 'text-amber-500' : 'text-destructive'}`}
                         aria-live="polite"
                       >
                         {healthScore}
@@ -217,12 +217,12 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             </Tooltip>
           </div>
 
-          {/* 2. System status – 25% narrower, icons centered */}
+          {/* 2. System status – icons in one row, larger */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5 shrink-0">System status</div>
             <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
               <CardContent className="p-1 flex flex-col flex-1 min-h-0 justify-center items-center">
-                <div className="grid grid-cols-3 grid-rows-2 gap-x-1.5 gap-y-0.5 justify-items-center w-fit">
+                <div className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-0.5 w-full">
                   {systemKeys.map(sys => {
                     const status = systemStatus[sys];
                     const Icon = SYSTEM_CONFIG[sys].icon;
@@ -231,11 +231,11 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                     return (
                       <Tooltip key={sys}>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1 min-w-0 justify-self-center">
+                          <div className="flex items-center gap-1.5 min-w-0 shrink-0">
                             <div className="relative flex-shrink-0">
-                              <Icon className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+                              <Icon className="h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
                               <StatusBadge
-                                className={`h-3.5 w-3.5 absolute -top-0.5 -right-0.5 ${badgeColor}`}
+                                className={`h-4 w-4 absolute -top-0.5 -right-0.5 ${badgeColor}`}
                                 strokeWidth={2.5}
                               />
                             </div>
