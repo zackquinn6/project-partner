@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +23,12 @@ import { MaintenancePdfPrinter } from './MaintenancePdfPrinter';
 import { MaintenanceNotifications } from './MaintenanceNotifications';
 import { MaintenanceDashboard, getSystemForCategory, SYSTEM_CONFIG, type SystemKey } from './MaintenanceDashboard';
 import { HomeManager } from './HomeManager';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 interface MaintenanceTask {
   id: string;
   user_id: string;
@@ -30,6 +36,8 @@ interface MaintenanceTask {
   template_id?: string;
   title: string;
   description: string | null;
+  summary: string | null;
+  instructions: string | null;
   category: string;
   frequency_days: number;
   last_completed: string | null;
@@ -40,6 +48,7 @@ interface MaintenanceTask {
   risks_of_skipping?: string | null;
   benefits_of_maintenance?: string | null;
   criticality?: number | null;
+  repair_cost_savings?: string | null;
 }
 interface MaintenanceCompletion {
   id: string;
@@ -77,11 +86,14 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
   const [form, setForm] = useState({
     title: task.title,
     description: task.description || '',
+    summary: task.summary ?? '',
+    instructions: task.instructions ?? '',
     category: task.category,
     frequency_days: task.frequency_days,
     risks_of_skipping: task.risks_of_skipping ?? '',
     benefits_of_maintenance: task.benefits_of_maintenance ?? '',
     criticality: task.criticality ?? 2,
+    repair_cost_savings: task.repair_cost_savings ?? '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -94,11 +106,14 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
         .update({
           title: form.title.trim(),
           description: form.description.trim() || null,
+          summary: form.summary.trim() || null,
+          instructions: form.instructions.trim() || null,
           category: form.category,
           frequency_days: form.frequency_days,
           risks_of_skipping: form.risks_of_skipping.trim() || null,
           benefits_of_maintenance: form.benefits_of_maintenance.trim() || null,
           criticality: form.criticality,
+          repair_cost_savings: form.repair_cost_savings.trim() || null,
         })
         .eq('id', task.id)
         .eq('user_id', user.id);
@@ -142,6 +157,25 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             rows={3}
             value={form.description}
             onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-summary">Summary (shown in table)</Label>
+          <Input
+            id="edit-summary"
+            value={form.summary}
+            onChange={(e) => setForm(prev => ({ ...prev, summary: e.target.value }))}
+            placeholder="Short one-line overview"
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-instructions">Instructions (shown when task is opened)</Label>
+          <Textarea
+            id="edit-instructions"
+            rows={4}
+            value={form.instructions}
+            onChange={(e) => setForm(prev => ({ ...prev, instructions: e.target.value }))}
+            placeholder="Step-by-step instructions"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -221,6 +255,16 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             placeholder="e.g. Extend life from 10 to 20 yrs"
             value={form.benefits_of_maintenance}
             onChange={(e) => setForm(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-repair-savings">Repair cost savings</Label>
+          <Textarea
+            id="edit-repair-savings"
+            rows={2}
+            placeholder="e.g. Avoid $500–2000 water heater replacement"
+            value={form.repair_cost_savings}
+            onChange={(e) => setForm(prev => ({ ...prev, repair_cost_savings: e.target.value }))}
           />
         </div>
       </div>
@@ -583,10 +627,21 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <tr className="border-b border-border bg-muted/40">
                               <th className="text-left px-2 py-2 font-medium">Task</th>
                               <th className="text-left px-2 py-2 font-medium">Frequency</th>
-                              <th className="text-left px-2 py-2 font-medium">Criticality</th>
-                              <th className="text-left px-2 py-2 font-medium">Summary</th>
-                              <th className="text-left px-2 py-2 font-medium hidden lg:table-cell">Risks of skipping</th>
-                              <th className="text-left px-2 py-2 font-medium hidden lg:table-cell">Benefits of maintenance</th>
+                              <th className="text-left px-2 py-2 font-medium">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-flex items-center gap-1">
+                                        Summary
+                                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs">
+                                      <p>Short overview shown here. Open a task to view full step-by-step instructions.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </th>
                               <th className="text-right px-2 py-2 font-medium">Actions</th>
                             </tr>
                           </thead>
@@ -598,7 +653,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                       color,
                       icon: StatusIcon
                     } = getTaskStatus(task);
-                    const summary = task.description || 'No description yet.';
+                    const summary = task.summary ?? task.description ?? 'No summary yet.';
                     return (
                       <tr
                         key={task.id}
@@ -629,9 +684,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         <td className="px-2 py-2 align-top">
                           Every {task.frequency_days} days
                         </td>
-                        <td className="px-2 py-2 align-top">
-                          <span className="text-xs">{task.criticality === 3 ? 'High' : task.criticality === 1 ? 'Low' : 'Med'}</span>
-                        </td>
                         <td
                           className="px-2 py-2 align-top cursor-pointer max-w-xs"
                           onClick={() => {
@@ -641,28 +693,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         >
                           <span className="line-clamp-3 text-xs text-muted-foreground">
                             {summary}
-                          </span>
-                        </td>
-                        <td
-                          className="px-2 py-2 align-top hidden lg:table-cell max-w-[140px] cursor-pointer"
-                          onClick={() => {
-                            setSwipedTaskId(null);
-                            setSelectedTaskForDetails(task);
-                          }}
-                        >
-                          <span className="line-clamp-2 text-xs text-muted-foreground">
-                            {task.risks_of_skipping || '—'}
-                          </span>
-                        </td>
-                        <td
-                          className="px-2 py-2 align-top hidden lg:table-cell max-w-[140px] cursor-pointer"
-                          onClick={() => {
-                            setSwipedTaskId(null);
-                            setSelectedTaskForDetails(task);
-                          }}
-                        >
-                          <span className="line-clamp-2 text-xs text-muted-foreground">
-                            {task.benefits_of_maintenance || '—'}
                           </span>
                         </td>
                         <td className="px-2 py-2 align-top">
@@ -786,22 +816,28 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             <DialogTitle>{selectedTaskForDetails?.title || 'Task details'}</DialogTitle>
           </DialogHeader>
           {selectedTaskForDetails && (
-            <div className="flex flex-col gap-3 py-1">
+            <div className="flex flex-col gap-3 py-1 overflow-y-auto max-h-[70vh]">
               <div className="text-xs sm:text-sm text-muted-foreground">
                 <div><span className="font-medium">Category:</span> {categoryLabels[selectedTaskForDetails.category] || selectedTaskForDetails.category}</div>
                 <div><span className="font-medium">Frequency:</span> Every {selectedTaskForDetails.frequency_days} days</div>
                 <div><span className="font-medium">Criticality:</span> {selectedTaskForDetails.criticality === 3 ? 'High' : selectedTaskForDetails.criticality === 1 ? 'Low' : 'Medium'}</div>
                 <div><span className="font-medium">Next due:</span> {format(new Date(selectedTaskForDetails.next_due), 'MMM dd, yyyy')}</div>
               </div>
-              {selectedTaskForDetails.description && (
+              {(selectedTaskForDetails.summary || selectedTaskForDetails.description) && (
                 <div className="mt-2">
                   <h3 className="text-sm font-medium mb-1">Summary</h3>
                   <p className="text-sm text-foreground whitespace-pre-wrap">
-                    {selectedTaskForDetails.description}
+                    {selectedTaskForDetails.summary ?? selectedTaskForDetails.description}
                   </p>
                 </div>
               )}
-              {(selectedTaskForDetails.risks_of_skipping || selectedTaskForDetails.benefits_of_maintenance) && (
+              {selectedTaskForDetails.instructions && (
+                <div className="mt-2">
+                  <h3 className="text-sm font-medium mb-1">Instructions</h3>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{selectedTaskForDetails.instructions}</p>
+                </div>
+              )}
+              {(selectedTaskForDetails.risks_of_skipping || selectedTaskForDetails.benefits_of_maintenance || selectedTaskForDetails.repair_cost_savings) && (
                 <div className="mt-3 flex flex-col gap-2">
                   {selectedTaskForDetails.risks_of_skipping && (
                     <div>
@@ -813,6 +849,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     <div>
                       <h3 className="text-sm font-medium mb-1">Benefits of maintenance</h3>
                       <p className="text-sm text-muted-foreground">{selectedTaskForDetails.benefits_of_maintenance}</p>
+                    </div>
+                  )}
+                  {selectedTaskForDetails.repair_cost_savings && (
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Repair cost savings</h3>
+                      <p className="text-sm text-muted-foreground">{selectedTaskForDetails.repair_cost_savings}</p>
                     </div>
                   )}
                 </div>

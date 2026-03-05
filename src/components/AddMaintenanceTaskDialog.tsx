@@ -18,12 +18,14 @@ interface MaintenanceTemplate {
   id: string;
   title: string;
   description: string;
+  summary?: string | null;
   category: string;
   frequency_days: number;
-  instructions: string;
+  instructions: string | null;
   risks_of_skipping?: string | null;
   benefits_of_maintenance?: string | null;
   criticality?: number | null;
+  repair_cost_savings?: string | null;
 }
 
 interface AddMaintenanceTaskDialogProps {
@@ -96,12 +98,15 @@ export function AddMaintenanceTaskDialog({
           template_id: template.id,
           title: template.title,
           description: template.description,
+          summary: template.summary ?? null,
+          instructions: template.instructions ?? null,
           category: template.category,
           frequency_days: template.frequency_days,
           next_due: nextDueDate.toISOString(),
           risks_of_skipping: template.risks_of_skipping ?? null,
           benefits_of_maintenance: template.benefits_of_maintenance ?? null,
           criticality: template.criticality ?? 2,
+          repair_cost_savings: template.repair_cost_savings ?? null,
         });
 
       if (error) throw error;
@@ -258,14 +263,10 @@ export function AddMaintenanceTaskDialog({
                             </Button>
                           </div>
                         </CardHeader>
-                        {template.description && (
+                        {(template.summary ?? template.description) && (
                           <CardContent className="pt-0">
-                            <p className="text-sm text-muted-foreground">{template.description}</p>
-                            {template.instructions && (
-                              <div className="mt-2 p-2 bg-muted rounded text-xs">
-                                <strong>Instructions:</strong> {template.instructions}
-                              </div>
-                            )}
+                            <p className="text-sm text-muted-foreground">{template.summary ?? template.description}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">Add task and open it to view full instructions.</p>
                           </CardContent>
                         )}
                       </Card>
