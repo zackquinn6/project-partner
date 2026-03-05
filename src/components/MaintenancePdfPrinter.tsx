@@ -43,18 +43,25 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
   const historyRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
-  const addCanvasToPdf = (pdf: jsPDF, canvas: HTMLCanvasElement, imgWidth: number, pageHeight: number) => {
+  const MARGIN_MM = 20;
+  const A4_WIDTH_MM = 210;
+  const A4_HEIGHT_MM = 297;
+  const contentWidthMm = A4_WIDTH_MM - 2 * MARGIN_MM;
+  const contentHeightMm = A4_HEIGHT_MM - 2 * MARGIN_MM;
+
+  const addCanvasToPdf = (pdf: jsPDF, canvas: HTMLCanvasElement) => {
     const imgData = canvas.toDataURL('image/png');
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
+    const imgWidthMm = contentWidthMm;
+    const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
+    let heightLeft = imgHeightMm;
+    let positionMm = MARGIN_MM;
+    pdf.addImage(imgData, 'PNG', MARGIN_MM, positionMm, imgWidthMm, imgHeightMm);
+    heightLeft -= contentHeightMm;
+    while (heightLeft > 0) {
+      positionMm = MARGIN_MM + (heightLeft - imgHeightMm);
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      pdf.addImage(imgData, 'PNG', MARGIN_MM, positionMm, imgWidthMm, imgHeightMm);
+      heightLeft -= contentHeightMm;
     }
   };
 
@@ -63,17 +70,15 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
 
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 295;
       const opts = { scale: 2, allowTaint: true, useCORS: true, backgroundColor: '#ffffff' as const };
 
       const planCanvas = await html2canvas(planRef.current, opts);
-      addCanvasToPdf(pdf, planCanvas, imgWidth, pageHeight);
+      addCanvasToPdf(pdf, planCanvas);
 
       if (historyRef.current) {
         pdf.addPage();
         const historyCanvas = await html2canvas(historyRef.current, opts);
-        addCanvasToPdf(pdf, historyCanvas, imgWidth, pageHeight);
+        addCanvasToPdf(pdf, historyCanvas);
       }
 
       pdf.save(`${homeName.replace(/\s+/g, '_')}_maintenance_tracker.pdf`);
@@ -104,24 +109,24 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
         </Button>
       )}
 
-      {/* Hidden content for PDF generation - Plan and History in separate refs for separate pages */}
-      <div style={{ position: 'absolute', left: '-9999px', width: '210mm', backgroundColor: 'white', padding: '20px' }}>
-        <div ref={planRef} style={{ fontFamily: 'Arial, sans-serif' }}>
-          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-            <h1 style={{ fontSize: '24px', marginBottom: '10px', color: '#333' }}>
+      {/* Hidden content for PDF generation - width matches PDF content area so scaling is 1:1 with margins */}
+      <div style={{ position: 'absolute', left: '-9999px', width: `${contentWidthMm}mm`, backgroundColor: 'white', padding: '0', boxSizing: 'border-box' }}>
+        <div ref={planRef} style={{ fontFamily: 'Arial, sans-serif', padding: '0 4px', boxSizing: 'border-box' }}>
+          <header style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #eee' }}>
+            <h1 style={{ fontSize: '22px', margin: '0 0 8px 0', color: '#333' }}>
               Home Maintenance Tracker
             </h1>
-            <h2 style={{ fontSize: '18px', color: '#666', marginBottom: '5px' }}>
+            <h2 style={{ fontSize: '16px', color: '#666', margin: '0 0 4px 0' }}>
               {homeName}
             </h2>
-            <p style={{ fontSize: '12px', color: '#999' }}>
+            <p style={{ fontSize: '11px', color: '#999', margin: 0 }}>
               Generated on {format(new Date(), 'MMMM dd, yyyy')}
             </p>
-          </div>
+          </header>
 
           {/* Maintenance Plan Section */}
           <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '18px', marginBottom: '20px', color: '#333', borderBottom: '2px solid #ddd', paddingBottom: '5px' }}>
+            <h3 style={{ fontSize: '16px', marginBottom: '12px', color: '#333', borderBottom: '2px solid #ddd', paddingBottom: '4px' }}>
               Maintenance Plan
             </h3>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
@@ -150,8 +155,13 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
         </div>
 
         {/* History on its own (captured as second page) */}
-        <div ref={historyRef} style={{ fontFamily: 'Arial, sans-serif', paddingTop: '20px' }}>
-          <h3 style={{ fontSize: '18px', marginBottom: '20px', color: '#333', borderBottom: '2px solid #ddd', paddingBottom: '5px' }}>
+        <div ref={historyRef} style={{ fontFamily: 'Arial, sans-serif', padding: '0 4px', boxSizing: 'border-box' }}>
+          <header style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #eee' }}>
+            <h1 style={{ fontSize: '22px', margin: '0 0 8px 0', color: '#333' }}>Home Maintenance Tracker</h1>
+            <h2 style={{ fontSize: '16px', color: '#666', margin: '0 0 4px 0' }}>{homeName} – History</h2>
+            <p style={{ fontSize: '11px', color: '#999', margin: 0 }}>Generated on {format(new Date(), 'MMMM dd, yyyy')}</p>
+          </header>
+          <h3 style={{ fontSize: '16px', marginBottom: '12px', color: '#333', borderBottom: '2px solid #ddd', paddingBottom: '4px' }}>
             Maintenance History
           </h3>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>

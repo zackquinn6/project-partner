@@ -136,15 +136,16 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     const sys = getSystemForCategory(t.category);
     systemTasks[sys].push(t);
   });
+  const DUE_SOON_DAYS = 15;
   (Object.keys(systemStatus) as SystemKey[]).forEach(sys => {
     const list = systemTasks[sys];
     const hasOverdue = list.some(t => differenceInDays(today, new Date(t.next_due)) > 0);
-    const hasDue30 = list.some(t => {
+    const hasDueSoon = list.some(t => {
       const d = differenceInDays(new Date(t.next_due), today);
-      return d >= 0 && d <= 30;
+      return d >= 0 && d <= DUE_SOON_DAYS;
     });
     if (hasOverdue) systemStatus[sys] = 'red';
-    else if (hasDue30) systemStatus[sys] = 'yellow';
+    else if (hasDueSoon) systemStatus[sys] = 'yellow';
   });
 
   const healthScore = Math.max(0, Math.min(100, Math.round(100 - W_O * O - W_C * C - W_D * D)));
@@ -163,19 +164,20 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
 
   const systemKeys = Object.keys(SYSTEM_CONFIG) as SystemKey[];
 
+  const cardMinH = '4.7rem';
   return (
-    <div className="px-3 md:px-4 py-3 border-b bg-muted/30">
+    <div className="px-3 md:px-4 py-2 border-b bg-muted/30 shrink-0" style={{ ['--card-min-h' as string]: cardMinH }}>
       <TooltipProvider delayDuration={300}>
-        <div className="grid grid-cols-2 lg:grid-cols-[1fr_1.6fr_1fr_1fr] gap-3 items-stretch max-w-full">
-          {/* 1. Home Health – same height as Tasks/Benefits */}
+        <div className="grid grid-cols-2 lg:grid-cols-[1fr_1.6fr_1fr_1fr] gap-2 items-stretch max-w-full">
+          {/* 1. Home Health */}
           <div className="space-y-0 min-w-0">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Home Health</div>
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5">Home Health</div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[5.5rem]">
-                  <CardContent className="p-3 flex flex-col items-center justify-center flex-1 min-h-[5.5rem] gap-1">
-                    <div className="relative w-full flex-1 min-h-[56px] md:min-h-[64px] flex items-end justify-center">
-                      <svg viewBox="0 0 120 70" className="w-full h-full max-h-14 md:max-h-16 text-foreground" aria-hidden preserveAspectRatio="xMidYMax meet">
+                <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)]">
+                  <CardContent className="p-2 flex flex-col items-center justify-center flex-1 min-h-[var(--card-min-h)] gap-0.5">
+                    <div className="relative w-full flex-1 min-h-[48px] md:min-h-[52px] flex items-end justify-center">
+                      <svg viewBox="0 0 120 70" className="w-full h-full max-h-12 md:max-h-[3.25rem] text-foreground" aria-hidden preserveAspectRatio="xMidYMax meet">
                         <defs>
                           <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#ef4444" />
@@ -197,7 +199,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                         </g>
                       </svg>
                     </div>
-                    <span className="text-2xl md:text-3xl font-bold tabular-nums" aria-live="polite">{healthScore}</span>
+                    <span className="text-xl md:text-2xl font-bold tabular-nums" aria-live="polite">{healthScore}</span>
                   </CardContent>
                 </Card>
               </TooltipTrigger>
@@ -207,11 +209,11 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             </Tooltip>
           </div>
 
-          {/* 2. System status – wider card, same height */}
+          {/* 2. System status – wider card */}
           <div className="space-y-0 min-w-0">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">System status</div>
-            <Card className="min-w-0 flex flex-col h-full min-h-[5.5rem]">
-              <CardContent className="p-1.5 flex flex-col flex-1 min-h-[5.5rem] justify-center">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5">System status</div>
+            <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)]">
+              <CardContent className="p-1.5 flex flex-col flex-1 min-h-[var(--card-min-h)] justify-center">
                 <div className="grid grid-cols-3 grid-rows-2 gap-x-2 gap-y-1">
                   {systemKeys.map(sys => {
                     const status = systemStatus[sys];
@@ -221,19 +223,19 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                     return (
                       <Tooltip key={sys}>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1 min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <div className="relative flex-shrink-0">
-                              <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                              <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
                               <StatusBadge
-                                className={`h-2 w-2 absolute -top-0.5 -right-0.5 ${badgeColor}`}
+                                className={`h-3 w-3 absolute -top-0.5 -right-0.5 ${badgeColor}`}
                                 strokeWidth={2.5}
                               />
                             </div>
-                            <span className="text-[9px] text-muted-foreground truncate">{SYSTEM_CONFIG[sys].label}</span>
+                            <span className="text-[10px] text-muted-foreground truncate">{SYSTEM_CONFIG[sys].label}</span>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="bottom">
-                          {SYSTEM_CONFIG[sys].label}: {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due soon' : 'Good'}
+                          {SYSTEM_CONFIG[sys].label}: {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due within 15 days' : 'Good'}
                         </TooltipContent>
                       </Tooltip>
                     );
@@ -243,35 +245,35 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             </Card>
           </div>
 
-          {/* 3. Tasks – same height as all cards */}
+          {/* 3. Tasks */}
           <div className="space-y-0 min-w-0">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Tasks</div>
-            <Card className="min-w-0 flex flex-col h-full min-h-[5.5rem]">
-              <CardContent className="p-2 flex flex-col flex-1 min-h-[5.5rem] justify-center gap-1">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5">Tasks</div>
+            <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)]">
+              <CardContent className="p-2 flex flex-col flex-1 min-h-[var(--card-min-h)] justify-center gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">Overdue</span>
-                  <span className="text-lg md:text-xl font-bold tabular-nums text-destructive">{overdue.length}</span>
+                  <span className="text-base md:text-lg font-bold tabular-nums text-destructive">{overdue.length}</span>
                 </div>
-                <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                <div className="flex items-center justify-between gap-2 border-t pt-1">
                   <span className="text-[10px] text-muted-foreground">Due (30d)</span>
-                  <span className="text-lg md:text-xl font-bold tabular-nums">{upcoming30.length}</span>
+                  <span className="text-base md:text-lg font-bold tabular-nums">{upcoming30.length}</span>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* 4. Benefits – same width as Tasks, same height */}
+          {/* 4. Benefits */}
           <div className="space-y-0 min-w-0">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1.5 mb-2">Benefits</div>
-            <Card className="min-w-0 flex flex-col h-full min-h-[5.5rem]">
-              <CardContent className="p-2 flex flex-col flex-1 min-h-[5.5rem] justify-center gap-1">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1.5">Benefits</div>
+            <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)]">
+              <CardContent className="p-2 flex flex-col flex-1 min-h-[var(--card-min-h)] justify-center gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">Est. repairs avoided</span>
-                  <span className="text-lg md:text-xl font-bold tabular-nums text-emerald-600">${moneySaved}</span>
+                  <span className="text-base md:text-lg font-bold tabular-nums text-emerald-600">${moneySaved}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2 border-t pt-1.5">
                   <span className="text-[10px] text-muted-foreground">Cumulative completed</span>
-                  <span className="text-lg md:text-xl font-bold tabular-nums">{totalCompletions}</span>
+                  <span className="text-base md:text-lg font-bold tabular-nums">{totalCompletions}</span>
                 </div>
               </CardContent>
             </Card>
