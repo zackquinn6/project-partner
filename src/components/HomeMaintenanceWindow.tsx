@@ -619,27 +619,27 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 <Home className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex items-center gap-2 ml-auto w-full sm:w-auto justify-end">
+            <div className="flex flex-wrap items-center gap-2 ml-auto w-full sm:w-auto justify-end min-w-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMaintenancePlanComingSoon(true)}
+                disabled={!selectedHomeId}
+                title="Guided workflow to create your maintenance plan"
+                className="gap-1.5 shrink-0"
+              >
+                <ClipboardList className="h-4 w-4 text-primary" />
+                Generate Maintenance Plan
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowMaintenancePhotos(true)}
                 title="View photos from task completions"
-                className="gap-1.5"
+                className="gap-1.5 shrink-0"
               >
                 <ImageIcon className="h-4 w-4 text-primary" />
                 View Photos
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!selectedHomeId}
-                onClick={() => setShowMaintenancePlanComingSoon(true)}
-                title="Guided workflow to create your maintenance plan"
-                className="gap-1.5"
-              >
-                <ClipboardList className="h-4 w-4 text-primary" />
-                Generate Maintenance Plan
               </Button>
               {selectedHomeId && tasks.length > 0 && (
                 <MaintenancePdfPrinter
@@ -653,7 +653,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 size="sm"
                 disabled={!selectedHomeId}
                 onClick={() => setShowAlerts(true)}
-                className="gap-1.5"
+                className="gap-1.5 shrink-0"
               >
                 <Bell className="h-4 w-4 text-amber-500" />
                 Setup Alerts
