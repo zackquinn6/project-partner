@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { addDays } from 'date-fns';
 import { Slider } from '@/components/ui/slider';
+import { Progress } from '@/components/ui/progress';
 
 const HEATING_COOLING_OPTIONS = [
   'Oil furnace',
@@ -242,10 +243,12 @@ export function MaintenancePlanWorkflow({
 
   const addCustomTaskLine = () => {
     const t = customTaskInput.trim();
-    if (t) {
-      setCustomTasks((prev) => [...prev, { title: t, frequency_days: customTaskFrequencyDays }]);
-      setCustomTaskInput('');
+    if (!t) {
+      toast({ title: 'Enter a task name', description: 'Type a maintenance task above, then click Add task.', variant: 'destructive' });
+      return;
     }
+    setCustomTasks((prev) => [...prev, { title: t, frequency_days: customTaskFrequencyDays }]);
+    setCustomTaskInput('');
   };
 
   const removePlanEntry = (index: number) => {
@@ -459,29 +462,31 @@ export function MaintenancePlanWorkflow({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
+      <DialogContent className="max-w-3xl h-[85vh] min-h-[560px] max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-6 pt-5 pb-2 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+          <DialogTitle className="flex items-center gap-2 text-primary">
+            <ClipboardList className="h-5 w-5" />
             Generate Maintenance Plan {homeName ? `— ${homeName}` : ''}
           </DialogTitle>
+          {!loadingDetails && (
+            <div className="flex items-center gap-3 mt-2">
+              <Progress value={((step + 1) / totalSteps) * 100} className="h-2 flex-1" />
+              <span className="text-xs font-medium text-primary tabular-nums">Step {step + 1} of {totalSteps}</span>
+            </div>
+          )}
         </DialogHeader>
 
         {loadingDetails ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="flex-1 flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
           <>
-            <div className="text-xs text-muted-foreground mb-2">
-              Step {step + 1} of {totalSteps}
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+            <div className="flex-1 overflow-y-auto px-6 py-4 min-h-[380px]">
               {/* Step 0 — Heating & Cooling */}
               {step === 0 && (
-                <div className="space-y-4">
-                  <p className="text-sm">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                  <p className="text-sm font-medium">
                     Which heating or cooling system does your home use? Select all that apply.
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -491,6 +496,7 @@ export function MaintenancePlanWorkflow({
                         type="button"
                         variant={heatingCooling.includes(opt) ? 'default' : 'outline'}
                         size="sm"
+                        className={heatingCooling.includes(opt) ? 'ring-2 ring-primary/30' : ''}
                         onClick={() => toggleMulti(heatingCooling, opt, setHeatingCooling)}
                       >
                         {opt}
@@ -503,8 +509,8 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 1 — Hot Water */}
               {step === 1 && (
-                <div className="space-y-4">
-                  <p className="text-sm">How is your hot water generated?</p>
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                  <p className="text-sm font-medium">How is your hot water generated?</p>
                   <div className="flex flex-wrap gap-2">
                     {HOT_WATER_OPTIONS.map((opt) => (
                       <Button
@@ -512,6 +518,7 @@ export function MaintenancePlanWorkflow({
                         type="button"
                         variant={hotWater === opt ? 'default' : 'outline'}
                         size="sm"
+                        className={hotWater === opt ? 'ring-2 ring-primary/30' : ''}
                         onClick={() => setHotWater(opt)}
                       >
                         {opt}
@@ -535,7 +542,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 2 — ZIP / Climate */}
               {step === 2 && (
-                <div className="space-y-4">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   {zipFromProfile && zip.trim() ? (
                     <>
                       <p className="text-sm text-muted-foreground">
@@ -570,8 +577,8 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 3 — Home characteristics */}
               {step === 3 && (
-                <div className="space-y-4">
-                  <p className="text-sm">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                  <p className="text-sm font-medium">
                     Tell us a bit more about your home so we can fine-tune your maintenance plan.
                   </p>
                   <div className="grid gap-3">
@@ -650,8 +657,8 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 4 — Appliances & systems */}
               {step === 4 && (
-                <div className="space-y-4">
-                  <p className="text-sm">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                  <p className="text-sm font-medium">
                     Which of these systems or appliances do you have? Select all that apply.
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -661,6 +668,7 @@ export function MaintenancePlanWorkflow({
                         type="button"
                         variant={appliancesSystems.includes(opt) ? 'default' : 'outline'}
                         size="sm"
+                        className={appliancesSystems.includes(opt) ? 'ring-2 ring-primary/30' : ''}
                         onClick={() => toggleMulti(appliancesSystems, opt, setAppliancesSystems)}
                       >
                         {opt}
@@ -682,12 +690,12 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 5 — Unique home tasks */}
               {step === 5 && (
-                <div className="space-y-4 p-4">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <p className="text-sm">
                     Are there any maintenance tasks unique to your home that you'd like to include?
                     Examples: "Clean koi pond filter", "Check flat roof drains", "Inspect retaining wall".
                   </p>
-                  <div className="flex flex-wrap gap-2 items-end">
+                  <div className="flex flex-wrap gap-3 items-end">
                     <Input
                       value={customTaskInput}
                       onChange={(e) => setCustomTaskInput(e.target.value)}
@@ -695,8 +703,8 @@ export function MaintenancePlanWorkflow({
                       className="flex-1 min-w-[180px]"
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomTaskLine())}
                     />
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs whitespace-nowrap">Frequency</Label>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs font-medium">Frequency</Label>
                       <select
                         className="h-9 rounded-md border border-input bg-background px-2 py-1 text-sm min-w-[100px]"
                         value={customTaskFrequencyDays}
@@ -707,8 +715,9 @@ export function MaintenancePlanWorkflow({
                         ))}
                       </select>
                     </div>
-                    <Button type="button" variant="outline" size="icon" onClick={addCustomTaskLine}>
-                      <Plus className="h-4 w-4" />
+                    <Button type="button" variant="default" size="sm" onClick={addCustomTaskLine} className="shrink-0">
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add task
                     </Button>
                   </div>
                   {customTasks.length > 0 && (
@@ -738,8 +747,8 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 6 — Maintenance level */}
               {step === 6 && (
-                <div className="space-y-6 p-4">
-                  <p className="text-sm text-muted-foreground">
+                <div className="space-y-6 p-4 rounded-xl border border-primary/20 bg-card">
+                  <p className="text-sm font-medium text-foreground">
                     Choose how much maintenance to include. More tasks give you better control of your home.
                   </p>
                   <div className="space-y-4">
@@ -760,8 +769,8 @@ export function MaintenancePlanWorkflow({
                             key={level.value}
                             type="button"
                             onClick={() => setMaintenanceLevel(level.value)}
-                            className={`flex flex-col items-center gap-1 min-w-0 flex-1 p-2 rounded-md transition-colors ${
-                              active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+                            className={`flex flex-col items-center gap-1 min-w-0 flex-1 p-2 rounded-lg transition-colors ${
+                              active ? 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/40' : 'text-muted-foreground hover:bg-muted'
                             }`}
                           >
                             <Icon className="h-5 w-5 shrink-0" />
@@ -778,7 +787,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 7 — Generate & review plan */}
               {step === 7 && (
-                <div className="space-y-4 p-4">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   {loading && (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -791,7 +800,7 @@ export function MaintenancePlanWorkflow({
                       </p>
                       <div className="max-h-[320px] overflow-y-auto space-y-2 p-4 pr-6">
                         {planEntries.map((entry, index) => (
-                          <Card key={index}>
+                          <Card key={index} className="border-primary/15 hover:border-primary/30 transition-colors">
                             <CardContent className="py-3 px-4 flex items-center justify-between gap-2">
                               <span className="text-sm truncate flex-1 min-w-0">
                                 {entry.type === 'template' ? entry.title : entry.title}
@@ -824,7 +833,7 @@ export function MaintenancePlanWorkflow({
               )}
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t">
+            <div className="flex items-center justify-between px-6 py-3 border-t bg-muted/30">
               <Button variant="outline" onClick={handleBack} disabled={step === 0}>
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Back
