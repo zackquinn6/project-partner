@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3 } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -20,6 +20,7 @@ import { ProgressReportingStyleDialog } from './ProgressReportingStyleDialog';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
 import { formatEstimatedFinishDate } from '@/utils/estimatedFinishDate';
+import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 interface WorkflowSidebarProps {
   allSteps: any[];
   currentStep: any;
@@ -43,6 +44,7 @@ interface WorkflowSidebarProps {
   onNotesClick: () => void;
   onViewScheduleClick: () => void;
   onProgressViewsClick?: () => void;
+  onToolRentalsClick?: () => void;
 }
 export function WorkflowSidebar({
   allSteps,
@@ -66,9 +68,11 @@ export function WorkflowSidebar({
   onPhotosClick,
   onNotesClick,
   onViewScheduleClick,
-  onProgressViewsClick
+  onProgressViewsClick,
+  onToolRentalsClick
 }: WorkflowSidebarProps) {
   const { updateProjectRun } = useProject();
+  const { expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
   const {
     state
   } = useSidebar();
@@ -476,7 +480,7 @@ export function WorkflowSidebar({
                   {/* Project Tools Section */}
                   <div className="space-y-2">
                     <div className="text-xs font-semibold text-muted-foreground">Project Tools</div>
-                    {/* View Schedule Button - Full width with icon on same row */}
+                    {/* Row 1: View Schedule */}
                     <Button
                       variant="default"
                       size="sm"
@@ -487,18 +491,8 @@ export function WorkflowSidebar({
                       <Calendar className="h-3.5 w-3.5 mr-2" style={{ color: 'black' }} />
                       <span>View Schedule</span>
                     </Button>
-                    {/* First row: Chat, KeyInfo, Re-Plan - Icons on top of text */}
+                    {/* Row 2: Key Characteristics, Re-Plan */}
                     <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={onHelpClick}
-                        className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
-                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.40)', color: 'black' }}
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" style={{ color: 'black' }} />
-                        <span>Chat</span>
-                      </Button>
                       <Button
                         variant="default"
                         size="sm"
@@ -507,7 +501,7 @@ export function WorkflowSidebar({
                         style={{ backgroundColor: 'rgba(168, 85, 247, 0.40)', color: 'black' }}
                       >
                         <Key className="h-3.5 w-3.5" style={{ color: 'black' }} />
-                        <span>KeyInfo</span>
+                        <span>Key Characteristics</span>
                       </Button>
                       {isKickoffComplete && (
                         <Button
@@ -522,39 +516,67 @@ export function WorkflowSidebar({
                         </Button>
                       )}
                     </div>
-                    {/* Second row: Notes, Photos, Progress views - tighter padding on Notes/Photos so Progress fits */}
-                    <div className="flex items-center gap-1">
+                    {/* Row 3: Notes, Photos */}
+                    <div className="flex items-center gap-1.5">
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onNotesClick}
-                        className="h-7 min-w-0 px-1 text-[10px] flex-1 shrink"
+                        className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
                         style={{ backgroundColor: 'rgba(34, 197, 94, 0.40)', color: 'black' }}
                       >
-                        <FileText className="h-3 w-3 mr-0.5 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Notes</span>
+                        <FileText className="h-3.5 w-3.5" style={{ color: 'black' }} />
+                        <span>Notes</span>
                       </Button>
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onPhotosClick}
-                        className="h-7 min-w-0 px-1 text-[10px] flex-1 shrink"
+                        className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
                         style={{ backgroundColor: 'rgba(251, 146, 60, 0.40)', color: 'black' }}
                       >
-                        <Image className="h-3 w-3 mr-0.5 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Photos</span>
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={onProgressViewsClick ?? (() => {})}
-                        className="h-7 min-w-0 px-1.5 text-[10px] flex-1 min-w-[52px]"
-                        style={{ backgroundColor: 'rgba(20, 184, 166, 0.40)', color: 'black' }}
-                      >
-                        <BarChart3 className="h-3 w-3 mr-1 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Progress</span>
+                        <Image className="h-3.5 w-3.5" style={{ color: 'black' }} />
+                        <span>Photos</span>
                       </Button>
                     </div>
+                    {/* Row 4: Experts, Tool Rentals (visibility from admin toggles) */}
+                    <div className="flex items-center gap-1.5">
+                      {expertSupportEnabled && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={onHelpClick}
+                          className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
+                          style={{ backgroundColor: 'rgba(59, 130, 246, 0.40)', color: 'black' }}
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" style={{ color: 'black' }} />
+                          <span>Experts</span>
+                        </Button>
+                      )}
+                      {toolRentalsEnabled && onToolRentalsClick && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={onToolRentalsClick}
+                          className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
+                          style={{ backgroundColor: 'rgba(245, 158, 11, 0.40)', color: 'black' }}
+                        >
+                          <Wrench className="h-3.5 w-3.5" style={{ color: 'black' }} />
+                          <span>Tool Rentals</span>
+                        </Button>
+                      )}
+                    </div>
+                    {/* Progress views - keep below row 4 */}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={onProgressViewsClick ?? (() => {})}
+                      className="h-8 px-3 text-xs w-full"
+                      style={{ backgroundColor: 'rgba(20, 184, 166, 0.40)', color: 'black' }}
+                    >
+                      <BarChart3 className="h-3 w-3 mr-2" style={{ color: 'black' }} />
+                      <span>Progress</span>
+                    </Button>
                   </div>
 
                   {/* Separator */}

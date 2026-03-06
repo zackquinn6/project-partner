@@ -9,12 +9,13 @@ import { toast } from 'sonner';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 
 export const PartnerAppToggles: React.FC = () => {
-  const { partnerAppsEnabled, expertSupportEnabled, loading, refetch } = usePartnerAppSettings();
+  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, loading, refetch } = usePartnerAppSettings();
   const [updatingPartner, setUpdatingPartner] = useState(false);
   const [updatingExpert, setUpdatingExpert] = useState(false);
+  const [updatingToolRentals, setUpdatingToolRentals] = useState(false);
 
-  const updateSetting = async (key: 'partner_apps_enabled' | 'expert_support_enabled', enabled: boolean) => {
-    const setBusy = key === 'partner_apps_enabled' ? setUpdatingPartner : setUpdatingExpert;
+  const updateSetting = async (key: 'partner_apps_enabled' | 'expert_support_enabled' | 'tool_rentals_enabled', enabled: boolean) => {
+    const setBusy = key === 'partner_apps_enabled' ? setUpdatingPartner : key === 'expert_support_enabled' ? setUpdatingExpert : setUpdatingToolRentals;
     setBusy(true);
     try {
       const { error } = await supabase
@@ -30,7 +31,7 @@ export const PartnerAppToggles: React.FC = () => {
 
       if (error) throw error;
       await refetch();
-      const label = key === 'partner_apps_enabled' ? 'Partner apps' : 'Expert support';
+      const label = key === 'partner_apps_enabled' ? 'Partner apps' : key === 'expert_support_enabled' ? 'Expert support' : 'Tool rentals';
       toast.success(`${label} ${enabled ? 'enabled' : 'disabled'}`);
     } catch (err) {
       console.error('Error updating partner app setting:', err);
@@ -76,6 +77,21 @@ export const PartnerAppToggles: React.FC = () => {
             checked={expertSupportEnabled}
             onCheckedChange={checked => updateSetting('expert_support_enabled', checked)}
             disabled={loading || updatingExpert}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Label htmlFor="tool-rentals" className="flex-1">
+            <div className="font-medium">Tool rentals</div>
+            <div className="text-sm text-muted-foreground">
+              When enabled, Tool Rentals appears in the project workflow sidebar (Project Tools)
+            </div>
+          </Label>
+          <Switch
+            id="tool-rentals"
+            checked={toolRentalsEnabled}
+            onCheckedChange={checked => updateSetting('tool_rentals_enabled', checked)}
+            disabled={loading || updatingToolRentals}
           />
         </div>
 

@@ -2732,6 +2732,7 @@ export default function UserView({
               window.dispatchEvent(new CustomEvent('show-schedule-calendar'));
             }}
             onProgressViewsClick={() => setProgressViewsOpen(true)}
+            onToolRentalsClick={() => setToolRentalsOpen(true)}
           />
 
           <main className="flex-1 overflow-auto">
