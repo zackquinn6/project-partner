@@ -150,6 +150,7 @@ export default function EditWorkflowView({
               description,
               content_type,
               content,
+              content_sections,
               display_order,
               materials,
               tools,
@@ -176,26 +177,42 @@ export default function EditWorkflowView({
             flowType: op.flow_type || 'prime',
             displayOrder: op.display_order || 0,
             isStandard: phaseData.is_standard || false,
-            steps: (steps || []).map((step: any) => ({
-              id: step.id,
-              step: step.step_title,
-              description: step.description || '',
-              contentType: step.content_type || 'text',
-              content: step.content || '',
-              displayOrder: step.display_order || 0,
-              materials: step.materials || [],
-              tools: step.tools || [],
-              outputs: step.outputs || [],
-                  timeEstimation: {
-                    variableTime: {
-                  low: step.time_estimate_low || 0,
-                  medium: step.time_estimate_med || 0,
-                  high: step.time_estimate_high || 0
-                    }
-                  },
-              workersNeeded: step.number_of_workers || 1,
-              skillLevel: step.skill_level || 'intermediate'
-            })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
+            steps: (steps || []).map((step: any) => {
+              let parsedContentSections: any[] = [];
+              if (step.content_sections) {
+                if (typeof step.content_sections === 'string') {
+                  try {
+                    parsedContentSections = JSON.parse(step.content_sections);
+                  } catch (_) {
+                    parsedContentSections = [];
+                  }
+                } else if (Array.isArray(step.content_sections)) {
+                  parsedContentSections = step.content_sections;
+                }
+              }
+              return {
+                id: step.id,
+                step: step.step_title,
+                description: step.description || '',
+                contentType: step.content_type || 'text',
+                content: step.content || '',
+                contentSections: parsedContentSections,
+                allowContentEdit: step.allow_content_edit || false,
+                displayOrder: step.display_order || 0,
+                materials: step.materials || [],
+                tools: step.tools || [],
+                outputs: step.outputs || [],
+                timeEstimation: {
+                  variableTime: {
+                    low: step.time_estimate_low || 0,
+                    medium: step.time_estimate_med || 0,
+                    high: step.time_estimate_high || 0
+                  }
+                },
+                workersNeeded: step.number_of_workers || 1,
+                skillLevel: step.skill_level || 'intermediate'
+              };
+            }).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
           };
         }));
         
@@ -341,10 +358,14 @@ export default function EditWorkflowView({
                 description,
                 content_type,
                 content,
+                content_sections,
                 display_order,
                 materials,
                 tools,
                 outputs,
+                time_estimate_low,
+                time_estimate_med,
+                time_estimate_high,
                 allow_content_edit
               `)
               .eq('operation_id', op.id)
@@ -449,7 +470,10 @@ export default function EditWorkflowView({
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
+                  contentType: s.content_type || 'text',
+                  content: s.content || '',
                   contentSections: parsedContentSections,
+                  allowContentEdit: s.allow_content_edit || false,
                   timeEstimation: {
                     variableTime: {
                       low: s.time_estimate_low || 0,
@@ -458,8 +482,7 @@ export default function EditWorkflowView({
                     }
                   },
                   workersNeeded: s.number_of_workers || 1,
-                  skillLevel: s.skill_level,
-                  allowContentEdit: s.allow_content_edit || false
+                  skillLevel: s.skill_level
                 };
               })
             };
@@ -496,16 +519,17 @@ export default function EditWorkflowView({
                 description,
                 content_type,
                 content,
+                content_sections,
                 display_order,
                 materials,
                 tools,
                 outputs,
-              time_estimate_low,
-              time_estimate_med,
-              time_estimate_high,
-              number_of_workers,
-              skill_level,
-              allow_content_edit
+                time_estimate_low,
+                time_estimate_med,
+                time_estimate_high,
+                number_of_workers,
+                skill_level,
+                allow_content_edit
               `)
               .eq('operation_id', op.id)
               .order('display_order');
@@ -609,7 +633,10 @@ export default function EditWorkflowView({
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
+                  contentType: s.content_type || 'text',
+                  content: s.content || '',
                   contentSections: parsedContentSections,
+                  allowContentEdit: s.allow_content_edit || false,
                   timeEstimation: {
                     variableTime: {
                       low: s.time_estimate_low || 0,
@@ -676,6 +703,7 @@ export default function EditWorkflowView({
               description,
               content_type,
               content,
+              content_sections,
               display_order,
               materials,
               tools,
@@ -789,6 +817,8 @@ export default function EditWorkflowView({
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
+                  contentType: s.content_type || 'text',
+                  content: s.content || '',
                   contentSections: parsedContentSections,
                   timeEstimation: {
                     variableTime: {
