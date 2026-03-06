@@ -295,6 +295,10 @@ export default function Home({
                 </AccordionItem>
               </Accordion>
             </div>
+
+          <footer className="text-center py-6 mt-4">
+            <p className="text-[10px] text-muted-foreground">Project Partner - 2026</p>
+          </footer>
          </div>
        </div> :
     // Non-logged-in users see the new modern landing page
