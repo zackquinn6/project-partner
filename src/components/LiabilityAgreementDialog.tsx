@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -103,7 +102,7 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
     });
   };
 
-  const generatePdfBlob = async (): Promise<Blob> => {
+  const generatePdfBlob = async (displayName: string): Promise<Blob> => {
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageW = pdf.getPageWidth();
     const margin = 20;
@@ -126,7 +125,7 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
     y += 10;
 
     pdf.setFontSize(14);
-    pdf.text('Liability Policy', margin, y);
+    pdf.text('Usage Agreement', margin, y);
     y += 10;
 
     pdf.setFontSize(10);
@@ -152,9 +151,8 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
     pdf.text('Agreement', margin, y);
     y += 8;
     pdf.setFontSize(10);
-    const agreedAt = new Date().toISOString();
     const dateStr = new Date().toLocaleDateString(undefined, { dateStyle: 'long' });
-    pdf.text(`I, ${fullName.trim()}, have read and agree to the Liability Policy above.`, margin, y);
+    pdf.text(`I, ${displayName}, have read and agree to the Usage Agreement above.`, margin, y);
     y += 6;
     pdf.text(`Date: ${dateStr}`, margin, y);
     y += 6;
@@ -164,10 +162,11 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
   };
 
   const handleAccept = async () => {
-    if (!user || !fullName.trim() || !agreed) return;
+    if (!user || !agreed) return;
+    const displayName = fullName.trim() || user.email || 'User';
     setSubmitting(true);
     try {
-      const blob = await generatePdfBlob();
+      const blob = await generatePdfBlob(displayName);
       const path = `${user.id}/liability-${Date.now()}.pdf`;
       let pdfPath: string | null = path;
       const { error: uploadError } = await supabase.storage
@@ -180,7 +179,7 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
 
       const { error: insertError } = await supabase.from('liability_agreements').insert({
         user_id: user.id,
-        full_name: fullName.trim(),
+        full_name: displayName,
         agreed_at: new Date().toISOString(),
         policy_version: POLICY_VERSION,
         policy_text_snapshot: policyText,
@@ -212,11 +211,11 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Liability Policy – Required to Continue
+            Usage Agreement
           </DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          You must read and accept the liability policy below before using the app.
+          You must read and accept the usage agreement below before using the app.
         </p>
         <ScrollArea className="flex-1 border rounded-md p-4 min-h-[240px] max-h-[40vh]">
           <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{policyText}</pre>
@@ -229,22 +228,12 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
               onCheckedChange={(c) => setAgreed(!!c)}
             />
             <Label htmlFor="liability-agree" className="cursor-pointer text-sm font-normal">
-              I have read and agree to the Liability Policy above.
+              I have read and agree to the Usage Agreement above.
             </Label>
-          </div>
-          <div>
-            <Label htmlFor="liability-fullname">Full name (as on agreement)</Label>
-            <Input
-              id="liability-fullname"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your full name"
-              className="mt-1 max-w-sm"
-            />
           </div>
           <Button
             onClick={handleAccept}
-            disabled={!agreed || !fullName.trim() || submitting}
+            disabled={!agreed || submitting}
             className="w-full sm:w-auto"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
