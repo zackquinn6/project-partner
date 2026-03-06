@@ -84,11 +84,11 @@ interface EditMaintenanceTaskFormProps {
 }
 
 function computedProgress(task: MaintenanceTask): number {
-  if (task.progress_percentage != null) return Math.min(100, Math.max(0, task.progress_percentage));
+  if (task.progress_percentage != null) return Math.max(0, task.progress_percentage);
   if (!task.last_completed) return 0;
   const totalDays = task.frequency_days;
   const daysSinceCompletion = differenceInDays(new Date(), new Date(task.last_completed));
-  return Math.min(100, Math.max(0, Math.round((daysSinceCompletion / totalDays) * 100)));
+  return Math.max(0, (daysSinceCompletion / totalDays) * 100);
 }
 
 const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task, onClose, onUpdated, onDelete }) => {
@@ -295,17 +295,16 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             <Input
               type="number"
               min={0}
-              max={100}
               className="w-24 h-8 text-center shrink-0"
               value={form.progress_percentage}
               onChange={(e) => {
                 const v = parseInt(e.target.value, 10);
-                if (!Number.isNaN(v)) setForm(prev => ({ ...prev, progress_percentage: Math.min(100, Math.max(0, v)) }));
+                if (!Number.isNaN(v)) setForm(prev => ({ ...prev, progress_percentage: Math.max(0, v) }));
               }}
             />
             <span className="text-xs text-muted-foreground shrink-0 w-4">%</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Override the progress shown in the task list (0 = just started, 100 = due).</p>
+          <p className="text-xs text-muted-foreground mt-1">Override progress (0 = just started, 100 = due, &gt;100 = overdue).</p>
         </div>
         <div>
           <Label htmlFor="edit-risks">Risks of skipping</Label>
@@ -465,14 +464,16 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   };
   const getTaskProgress = (task: MaintenanceTask) => {
-    if (task.progress_percentage != null) return Math.min(100, Math.max(0, task.progress_percentage));
+    if (task.progress_percentage != null) return Math.max(0, task.progress_percentage);
     if (!task.last_completed) return 0;
     const lastCompleted = new Date(task.last_completed);
     const now = new Date();
     const totalDays = task.frequency_days;
     const daysSinceCompletion = differenceInDays(now, lastCompleted);
-    return Math.min(Math.max(daysSinceCompletion / totalDays * 100, 0), 100);
+    return Math.max(0, (daysSinceCompletion / totalDays) * 100);
   };
+  const getProgressBarColor = (progress: number) =>
+    progress >= 100 ? 'bg-destructive' : progress >= 91 ? 'bg-amber-500' : 'bg-emerald-600';
   const getTaskStatus = (task: MaintenanceTask) => {
     const dueDate = new Date(task.next_due);
     const now = new Date();
@@ -642,8 +643,21 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {/* Summary dashboard */}
             {selectedHomeId && tasks.length >= 0 && (
               <MaintenanceDashboard
-                tasks={tasks.map(t => ({ id: t.id, title: t.title, category: t.category, frequency_days: t.frequency_days, next_due: t.next_due, last_completed: t.last_completed, criticality: t.criticality ?? undefined }))}
-                completions={completions.map(c => ({ task_id: c.task_id, completed_at: c.completed_at, task: { category: c.task?.category } }))}
+                tasks={tasks.map(t => ({
+                  id: t.id,
+                  title: t.title,
+                  category: t.category,
+                  frequency_days: t.frequency_days,
+                  next_due: t.next_due,
+                  last_completed: t.last_completed,
+                  criticality: t.criticality ?? undefined,
+                  progress_percentage: t.progress_percentage ?? undefined,
+                }))}
+                completions={completions.map(c => ({
+                  task_id: c.task_id,
+                  completed_at: c.completed_at,
+                  task: { category: c.task?.category },
+                }))}
               />
             )}
 
@@ -782,7 +796,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
                             <span>Progress</span>
                             <span>{Math.round(progress)}%</span>
-                            <Progress value={progress} className="h-1.5 flex-1" />
+                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
                           </div>
                         </td>
                         <td className="px-2 py-2 align-top">
