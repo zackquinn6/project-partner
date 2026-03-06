@@ -1,29 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { SignatureCapture } from './SignatureCapture';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { CheckCircle } from 'lucide-react';
+-- Agreement templates (liability, membership) with full version history.
+-- Each edit inserts a new row; "current" = latest created_at per type.
+CREATE TABLE IF NOT EXISTS public.agreement_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  type text NOT NULL CHECK (type IN ('liability', 'membership')),
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
+);
 
-interface MembershipAgreementDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAgreementSigned: () => void;
-}
+CREATE INDEX IF NOT EXISTS idx_agreement_templates_type_created
+  ON public.agreement_templates(type, created_at DESC);
 
-interface Agreement {
-  signature: string;
-  signerName: string;
-  signedDate: string;
-  version: string;
-}
+ALTER TABLE public.agreement_templates ENABLE ROW LEVEL SECURITY;
 
-const DEFAULT_MEMBERSHIP_AGREEMENT = `### Service Terms for Project Partner
+-- Admins and authenticated can read (for display); only authenticated can insert (admin UI).
+CREATE POLICY "Allow read agreement_templates"
+  ON public.agreement_templates FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Allow insert agreement_templates"
+  ON public.agreement_templates FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+COMMENT ON TABLE public.agreement_templates IS 'Versioned agreement templates (liability, membership). Current = latest created_at per type.';
+
+-- Seed initial versions only when table is empty.
+INSERT INTO public.agreement_templates (type, body)
+SELECT 'liability', $body$
+LIABILITY POLICY (Placeholder)
+
+This is placeholder content for the Project Partner Liability Policy. It will be replaced with the full legal text.
+
+1. Scope
+Use of the Project Partner app and services is subject to this liability policy.
+
+2. Assumption of Risk
+You assume all risks associated with do-it-yourself projects, use of instructions, and reliance on app content. Project Partner provides informational guidance only and does not perform, supervise, or guarantee any work.
+
+3. Limitation of Liability
+To the maximum extent permitted by law, Project Partner's liability is limited. Project Partner is not liable for indirect, incidental, or consequential damages arising from your use of the app or services.
+
+4. Professional Advice
+Where applicable law requires licensed professionals (e.g. electrical, plumbing), you are responsible for obtaining such advice. The app does not replace professional judgment.
+
+5. Acceptance
+By accepting this policy you agree to the terms above and confirm you have read and understood them.
+$body$
+WHERE NOT EXISTS (SELECT 1 FROM public.agreement_templates WHERE type = 'liability');
+
+INSERT INTO public.agreement_templates (type, body)
+SELECT 'membership', $body$
+### Service Terms for Project Partner
 
 These Service Terms (the Terms) are between Project Partner ("Project Partner") and the individual or entity receiving services ("Participant"). These Terms govern Project Partner's provision of project guidance, instructional content, tools, and support related to do‑it‑yourself projects (the Services). By using the Services, forwarding receipts, or otherwise engaging with Project Partner, the Participant agrees to these Terms.
 
@@ -93,157 +122,6 @@ These Service Terms (the Terms) are between Project Partner ("Project Partner") 
 ---
 
 ### Acceptance
-By using Project Partner, the Participant acknowledges they have read, understand, and agree to these Terms.`;
-
-export const MembershipAgreementDialog: React.FC<MembershipAgreementDialogProps> = ({
-  open,
-  onOpenChange,
-  onAgreementSigned
-}) => {
-  const { user } = useAuth();
-  const [signature, setSignature] = useState<string>('');
-  const [signerName, setSignerName] = useState('');
-  const [isSigning, setIsSigning] = useState(false);
-  const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
-  const [agreementText, setAgreementText] = useState(DEFAULT_MEMBERSHIP_AGREEMENT);
-
-  useEffect(() => {
-    if (!open) return;
-    const load = async () => {
-      const { data } = await supabase
-        .from('agreement_templates')
-        .select('body')
-        .eq('type', 'membership')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (data?.body) setAgreementText(data.body);
-      else setAgreementText(DEFAULT_MEMBERSHIP_AGREEMENT);
-    };
-    load();
-  }, [open]);
-
-  useEffect(() => {
-    if (user) {
-      // Fetch user's profile to pre-fill name
-      const fetchProfile = async () => {
-        const { data } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (data?.display_name) {
-          setSignerName(data.display_name);
-        }
-      };
-      fetchProfile();
-    }
-  }, [user]);
-
-  const handleSignAgreement = async () => {
-    if (!signature || !signerName.trim() || !user) {
-      toast.error('Please provide your name and signature');
-      return;
-    }
-
-    setIsSigning(true);
-
-    try {
-      const agreement: Agreement = {
-        signature,
-        signerName,
-        signedDate: new Date().toISOString(),
-        version: '2.0'
-      };
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          signed_agreement: agreement as any,
-          agreement_signed_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      toast.success('Agreement signed successfully!');
-      onAgreementSigned();
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error signing agreement:', error);
-      toast.error('Failed to sign agreement. Please try again.');
-    } finally {
-      setIsSigning(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Service Terms Agreement</DialogTitle>
-          <DialogDescription>
-            Please review and sign the service terms before subscribing
-          </DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className="h-[50vh] pr-4">
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <pre className="whitespace-pre-wrap font-sans text-sm">{agreementText}</pre>
-          </div>
-        </ScrollArea>
-
-        <div className="space-y-4 pt-4 border-t">
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="agree-terms"
-              checked={hasAgreedToTerms}
-              onChange={(e) => setHasAgreedToTerms(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
-            />
-            <Label htmlFor="agree-terms" className="text-sm">
-              I have read and agree to the Service Terms
-            </Label>
-          </div>
-
-          {hasAgreedToTerms && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="signer-name">Full Name *</Label>
-                <Input
-                  id="signer-name"
-                  value={signerName}
-                  onChange={(e) => setSignerName(e.target.value)}
-                  placeholder="Enter your full name"
-                />
-              </div>
-
-              <SignatureCapture
-                onSignatureComplete={setSignature}
-                onClear={() => setSignature('')}
-              />
-            </>
-          )}
-
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSigning}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSignAgreement}
-              disabled={!signature || !signerName.trim() || !hasAgreedToTerms || isSigning}
-            >
-              {isSigning ? 'Signing...' : 'Sign Agreement & Continue'}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
+By using Project Partner, the Participant acknowledges they have read, understand, and agree to these Terms.
+$body$
+WHERE NOT EXISTS (SELECT 1 FROM public.agreement_templates WHERE type = 'membership');

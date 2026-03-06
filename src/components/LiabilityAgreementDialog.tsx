@@ -46,6 +46,23 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
   const [fullName, setFullName] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [policyText, setPolicyText] = useState(PLACEHOLDER_LIABILITY_POLICY);
+
+  useEffect(() => {
+    if (!open) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from('agreement_templates')
+        .select('body')
+        .eq('type', 'liability')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.body) setPolicyText(data.body);
+      else setPolicyText(PLACEHOLDER_LIABILITY_POLICY);
+    };
+    load();
+  }, [open]);
 
   useEffect(() => {
     if (!open || !user) return;
@@ -112,7 +129,7 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
     y += 10;
 
     pdf.setFontSize(10);
-    const lines = pdf.splitTextToSize(PLACEHOLDER_LIABILITY_POLICY, pageW - 2 * margin);
+    const lines = pdf.splitTextToSize(policyText, pageW - 2 * margin);
     for (const line of lines) {
       if (y > 270) {
         pdf.addPage();
@@ -193,7 +210,7 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
           You must read and accept the liability policy below before using the app.
         </p>
         <ScrollArea className="flex-1 border rounded-md p-4 min-h-[240px] max-h-[40vh]">
-          <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{PLACEHOLDER_LIABILITY_POLICY}</pre>
+          <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{policyText}</pre>
         </ScrollArea>
         <div className="space-y-4 pt-2">
           <div className="flex items-center gap-3">
