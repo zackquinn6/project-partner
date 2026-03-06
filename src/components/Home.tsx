@@ -25,6 +25,7 @@ import { FAQSection } from './landing/FAQSection';
 import { FinalCTASection } from './landing/FinalCTASection';
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import { TrialBanner } from '@/components/TrialBanner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
@@ -145,43 +146,72 @@ export default function Home({
             <div className="border-b border-border pb-1 mb-6"></div>
             
             {/* Core Apps Grid */}
+            <TooltipProvider delayDuration={300}>
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
               {/* Project Catalog - Reduced Prominence */}
               <div className="col-span-3 mb-2">
-                <Button onClick={() => {
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={() => {
               console.log('📱 Navigating to project catalog');
               navigate('/projects');
             }} variant="outline" className="w-full h-10 text-sm font-medium border-primary bg-slate-600 hover:bg-slate-500 text-slate-50">
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Explore New Projects
-                </Button>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Explore New Projects
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-center">
+                    <p>Project catalog for detailed multi-step projects like painting, tile, or carpentry.</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
               
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => {
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex flex-col items-center group cursor-pointer" onClick={() => {
             setCurrentProjectRun(null);
             window.dispatchEvent(new CustomEvent('force-progress-board-listing'));
             navigate('/', { state: { view: 'user' }, replace: true });
             onViewChange('user');
           }}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProjects} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <Folder className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Progress Board</span>
-              </div>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProjects} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                      <Folder className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Progress Board</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-center">
+                  <p>A view of active projects.</p>
+                </TooltipContent>
+              </Tooltip>
               
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeMaintenance} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <HomeIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Home Maintenance</span>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeMaintenance} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                      <HomeIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Home Maintenance</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-center">
+                  <p>Track ongoing maintenance tasks for homes.</p>
+                </TooltipContent>
+              </Tooltip>
               
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeTaskList} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <ListChecks className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">Task Manager</span>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeTaskList} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                      <ListChecks className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Task Manager</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-center">
+                  <p>A lightweight home improvement task tracker, with ability to link to projects. Best for managing a portfolio of projects, like renovations.</p>
+                </TooltipContent>
+              </Tooltip>
               
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProfile} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
@@ -204,6 +234,7 @@ export default function Home({
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">My Tools</span>
               </div>
             </div>
+            </TooltipProvider>
 
             {/* Labs - Experimental Features - Collapsed by default */}
             <div className="mb-6">
