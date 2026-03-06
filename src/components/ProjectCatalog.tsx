@@ -30,6 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import ProfileManager from '@/components/ProfileManager';
 import { HomeManager } from '@/components/HomeManager';
+import { HomeTaskList } from '@/components/HomeTaskList';
 import { BetaProjectWarning } from '@/components/BetaProjectWarning';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 interface ProjectTemplate {
@@ -106,6 +107,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [userProfile, setUserProfile] = useState<any>(null);
   const [homes, setHomes] = useState<any[]>([]);
   const [showHomeManager, setShowHomeManager] = useState(false);
+  const [taskManagerOpen, setTaskManagerOpen] = useState(false);
   const [projectSetupForm, setProjectSetupForm] = useState({
     customProjectName: '',
     projectLeader: '',
@@ -1233,15 +1235,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     variant="outline"
                     size="sm"
                     className="self-start sm:self-auto text-xs"
-                    onClick={() => {
-                      if (onClose) {
-                        onClose();
-                        window.dispatchEvent(new CustomEvent('show-home-task-list'));
-                      } else {
-                        sessionStorage.setItem('openTaskList', '1');
-                        navigate('/', { state: { openTaskList: true, view: 'home' }, replace: false });
-                      }
-                    }}
+                    onClick={() => setTaskManagerOpen(true)}
                   >
                     Open Task Manager
                   </Button>
@@ -1622,6 +1616,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
              }}
            />
          )}
+
+        {/* Task Manager (opened from Project Catalog) */}
+        {!isAdminMode && (
+          <HomeTaskList open={taskManagerOpen} onOpenChange={setTaskManagerOpen} />
+        )}
         {!isAdminMode && selectedTemplate && (
           <BetaProjectWarning
             projectName={selectedTemplate.name}
