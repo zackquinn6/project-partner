@@ -24,6 +24,7 @@ import { MaintenanceNotifications } from './MaintenanceNotifications';
 import { MaintenanceDashboard, getSystemForCategory, SYSTEM_CONFIG, type SystemKey } from './MaintenanceDashboard';
 import { HomeManager } from './HomeManager';
 import { MaintenancePhotosWindow } from './MaintenancePhotosWindow';
+import { MaintenancePlanWorkflow } from './MaintenancePlanWorkflow';
 import {
   Tooltip,
   TooltipContent,
@@ -922,19 +923,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       {/* Dialogs */}
       <AddMaintenanceTaskDialog open={showAddTask} onOpenChange={setShowAddTask} homeId={selectedHomeId} onTaskAdded={fetchTasks} />
 
-      <Dialog open={showMaintenancePlanComingSoon} onOpenChange={setShowMaintenancePlanComingSoon}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              Generate Maintenance Plan
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4 text-center text-muted-foreground">
-            Coming soon. A guided workflow to build your maintenance plan will be available here.
-          </div>
-        </DialogContent>
-      </Dialog>
+      <MaintenancePlanWorkflow
+        open={showMaintenancePlanComingSoon}
+        onOpenChange={setShowMaintenancePlanComingSoon}
+        homeId={selectedHomeId || null}
+        homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
+        onPlanSaved={fetchTasks}
+      />
 
       {selectedTask && <TaskCompletionDialog open={!!selectedTask} onOpenChange={open => !open && setSelectedTask(null)} task={selectedTask} onCompleted={handleTaskCompleted} />}
 
