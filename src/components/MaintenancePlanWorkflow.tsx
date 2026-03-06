@@ -6,11 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus, Shield, ShieldCheck, Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { addDays } from 'date-fns';
+import { Slider } from '@/components/ui/slider';
 
 const HEATING_COOLING_OPTIONS = [
   'Oil furnace',
@@ -26,9 +27,13 @@ const HEATING_COOLING_OPTIONS = [
 const HOT_WATER_OPTIONS = [
   'Tank water heater (gas/oil/electric)',
   'Tankless/on-demand',
-  'Indirect tank (connected to boiler)',
-  'Heat pump water heater',
-  'Solar hot water',
+  'Other',
+] as const;
+
+const MAINTENANCE_LEVELS = [
+  { value: 1, minCriticality: 3, label: 'Essential only', sublabel: 'High criticality tasks', icon: Shield },
+  { value: 2, minCriticality: 2, label: 'Add recommended', sublabel: 'High + medium criticality', icon: ShieldCheck },
+  { value: 3, minCriticality: 1, label: 'Full control', sublabel: 'All tasks for your home', icon: Home },
 ] as const;
 
 const HOME_TYPE_OPTIONS = ['Single family', 'Condo', 'Townhouse', 'Multi-family', 'Mobile', 'Other'];
@@ -139,6 +144,7 @@ export function MaintenancePlanWorkflow({
 
   const [heatingCooling, setHeatingCooling] = useState<string[]>([]);
   const [hotWater, setHotWater] = useState('');
+  const [hotWaterOther, setHotWaterOther] = useState('');
   const [zip, setZip] = useState('');
   const [zipFromProfile, setZipFromProfile] = useState(false);
   const [climateRegion, setClimateRegion] = useState('');
@@ -152,11 +158,12 @@ export function MaintenancePlanWorkflow({
   const [customTasks, setCustomTasks] = useState<{ title: string; frequency_days: number }[]>([]);
   const [customTaskInput, setCustomTaskInput] = useState('');
   const [customTaskFrequencyDays, setCustomTaskFrequencyDays] = useState(90);
+  const [maintenanceLevel, setMaintenanceLevel] = useState<1 | 2 | 3>(2);
 
   const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
   const [planGenerated, setPlanGenerated] = useState(false);
 
-  const totalSteps = 7;
+  const totalSteps = 8;
   const isLastStep = step === totalSteps - 1;
 
   const doNotSaveCheckbox = (
@@ -201,7 +208,10 @@ export function MaintenancePlanWorkflow({
         if (row) {
           const hc = row.heating_cooling_systems;
           setHeatingCooling(Array.isArray(hc) ? hc : []);
-          setHotWater(row.hot_water_system ?? '');
+          const hw = row.hot_water_system ?? '';
+          const hotWaterOpts = HOT_WATER_OPTIONS as readonly string[];
+          setHotWater(hotWaterOpts.includes(hw) ? hw : (hw ? 'Other' : ''));
+          setHotWaterOther(hotWaterOpts.includes(hw) ? '' : hw);
           const zipVal = row.zip ?? '';
           setZip(zipVal);
           setZipFromProfile(!!zipVal.trim());
@@ -271,7 +281,7 @@ export function MaintenancePlanWorkflow({
         categoriesToInclude.add('safety');
         categoriesToInclude.add('exterior');
         if (heatingCooling.length > 0) categoriesToInclude.add('hvac');
-        if (hotWater) categoriesToInclude.add('plumbing');
+        if (hotWater || hotWaterOther.trim()) categoriesToInclude.add('plumbing');
         if (
           appliancesSystems.some(
             (a) =>
@@ -294,9 +304,13 @@ export function MaintenancePlanWorkflow({
         categoriesToInclude.add('electrical');
         categoriesToInclude.add('interior');
 
+        const levelConfig = MAINTENANCE_LEVELS.find((l) => l.value === maintenanceLevel);
+        const minCriticality = levelConfig?.minCriticality ?? 2;
         const selected = templates.filter(
           (t: MaintenanceTemplate) =>
-            categoriesToInclude.has(t.category) && !existingTemplateIds.has(t.id)
+            categoriesToInclude.has(t.category) &&
+            !existingTemplateIds.has(t.id) &&
+            ((t.criticality ?? 2) >= minCriticality)
         );
         const entries: PlanEntry[] = [
           ...selected.map((t: MaintenanceTemplate) => ({
@@ -322,11 +336,28 @@ export function MaintenancePlanWorkflow({
     if (!homeId || !user) return;
     setSaving(true);
     try {
+      const { data: existingTasks } = await supabase
+        .from('user_maintenance_tasks')
+        .select('template_id, title')
+        .eq('user_id', user.id)
+        .eq('home_id', homeId);
+
+      const existingTemplateIds = new Set(
+        (existingTasks || []).filter((r) => r.template_id != null).map((r) => r.template_id as string)
+      );
+      const existingCustomTitles = new Set(
+        (existingTasks || [])
+          .filter((r) => r.template_id == null && r.title != null)
+          .map((r) => (r.title as string).trim().toLowerCase())
+      );
+
+      const toInsert: Record<string, unknown>[] = [];
+      const now = new Date();
       for (const entry of planEntries) {
         if (entry.type === 'template') {
+          if (existingTemplateIds.has(entry.templateId)) continue;
           const t = entry.template;
-          const nextDue = addDays(new Date(), t.frequency_days);
-          await supabase.from('user_maintenance_tasks').insert({
+          toInsert.push({
             user_id: user.id,
             home_id: homeId,
             template_id: t.id,
@@ -336,25 +367,32 @@ export function MaintenancePlanWorkflow({
             instructions: t.instructions ?? null,
             category: t.category,
             frequency_days: t.frequency_days,
-            next_due: nextDue.toISOString(),
+            next_due: addDays(now, t.frequency_days).toISOString(),
             risks_of_skipping: t.risks_of_skipping ?? null,
             benefits_of_maintenance: t.benefits_of_maintenance ?? null,
             criticality: t.criticality ?? 2,
             repair_cost_savings: t.repair_cost_savings ?? null,
           });
+          existingTemplateIds.add(entry.templateId);
         } else {
-          const nextDue = addDays(new Date(), entry.frequency_days);
-          await supabase.from('user_maintenance_tasks').insert({
+          if (existingCustomTitles.has(entry.title.trim().toLowerCase())) continue;
+          toInsert.push({
             user_id: user.id,
             home_id: homeId,
             title: entry.title,
             description: null,
             category: 'general',
             frequency_days: entry.frequency_days,
-            next_due: nextDue.toISOString(),
+            next_due: addDays(now, entry.frequency_days).toISOString(),
             criticality: 2,
           });
+          existingCustomTitles.add(entry.title.trim().toLowerCase());
         }
+      }
+
+      if (toInsert.length > 0) {
+        const { error } = await supabase.from('user_maintenance_tasks').insert(toInsert);
+        if (error) throw error;
       }
 
       if (!doNotSaveHomeInfo) {
@@ -362,11 +400,12 @@ export function MaintenancePlanWorkflow({
           ? [...appliancesSystems, appliancesOther.trim()]
           : appliancesSystems;
         const region = zip.trim() ? zipToClimateRegion(zip) : climateRegion;
+        const hotWaterVal = hotWater === 'Other' ? (hotWaterOther.trim() || null) : (hotWater || null);
 
         const payload = {
           home_id: homeId,
           heating_cooling_systems: heatingCooling,
-          hot_water_system: hotWater || null,
+          hot_water_system: hotWaterVal,
           zip: zip.trim() || null,
           climate_region: region || null,
           home_type: homeType || null,
@@ -404,9 +443,9 @@ export function MaintenancePlanWorkflow({
   const canNext = () => true;
 
   const handleNext = async () => {
-    if (step === 5 && !planGenerated) {
+    if (step === 6 && !planGenerated) {
       await generatePlan();
-      setStep(6);
+      setStep(7);
       return;
     }
     if (step < totalSteps - 1) setStep((s) => s + 1);
@@ -479,6 +518,17 @@ export function MaintenancePlanWorkflow({
                       </Button>
                     ))}
                   </div>
+                  {hotWater === 'Other' && (
+                    <div>
+                      <Label className="text-xs">Describe your hot water system</Label>
+                      <Input
+                        value={hotWaterOther}
+                        onChange={(e) => setHotWaterOther(e.target.value)}
+                        placeholder="e.g. Heat pump water heater"
+                        className="mt-1 max-w-sm"
+                      />
+                    </div>
+                  )}
                   {doNotSaveCheckbox}
                 </div>
               )}
@@ -686,8 +736,48 @@ export function MaintenancePlanWorkflow({
                 </div>
               )}
 
-              {/* Step 6 — Generate & review plan */}
+              {/* Step 6 — Maintenance level */}
               {step === 6 && (
+                <div className="space-y-6 p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Choose how much maintenance to include. More tasks give you better control of your home.
+                  </p>
+                  <div className="space-y-4">
+                    <Slider
+                      value={[maintenanceLevel]}
+                      onValueChange={([v]) => setMaintenanceLevel(v)}
+                      min={1}
+                      max={3}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between gap-2 text-xs">
+                      {MAINTENANCE_LEVELS.map((level) => {
+                        const Icon = level.icon;
+                        const active = maintenanceLevel === level.value;
+                        return (
+                          <button
+                            key={level.value}
+                            type="button"
+                            onClick={() => setMaintenanceLevel(level.value)}
+                            className={`flex flex-col items-center gap-1 min-w-0 flex-1 p-2 rounded-md transition-colors ${
+                              active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+                            }`}
+                          >
+                            <Icon className="h-5 w-5 shrink-0" />
+                            <span className="font-medium">{level.label}</span>
+                            <span className="text-[10px] opacity-90">{level.sublabel}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {doNotSaveCheckbox}
+                </div>
+              )}
+
+              {/* Step 7 — Generate & review plan */}
+              {step === 7 && (
                 <div className="space-y-4 p-4">
                   {loading && (
                     <div className="flex items-center justify-center py-8">
