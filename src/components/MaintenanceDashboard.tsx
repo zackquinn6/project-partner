@@ -177,7 +177,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   const cardMaxH = '4.5rem';
   return (
     <div
-      className="px-3 md:px-4 py-2 border-b bg-muted/30 shrink-0 min-h-[6.5rem]"
+      className="px-3 md:px-6 py-2 border-b bg-muted/30 shrink-0 min-h-[6.5rem]"
       style={{ ['--card-min-h' as string]: cardMinH, ['--card-max-h' as string]: cardMaxH }}
     >
       <TooltipProvider delayDuration={300}>

@@ -107,12 +107,12 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
   return (
     <>
       {isMobile ? (
-        <Button onClick={generatePDF} className="w-6 h-6 p-0" title="Save to PDF">
-          <Download className="h-3 w-3" />
+        <Button variant="outline" onClick={generatePDF} className="w-6 h-6 p-0" title="Save to PDF">
+          <Download className="h-3 w-3 text-primary" />
         </Button>
       ) : (
-        <Button onClick={generatePDF} className="flex items-center gap-2 text-xs h-8" title="Save to PDF">
-          <Download className="h-4 w-4" />
+        <Button variant="outline" onClick={generatePDF} className="flex items-center gap-2 text-xs h-8" title="Save to PDF">
+          <Download className="h-4 w-4 text-primary" />
           Export PDF
         </Button>
       )}

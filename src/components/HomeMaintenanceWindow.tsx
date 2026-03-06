@@ -30,6 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 interface MaintenanceTask {
   id: string;
   user_id: string;
@@ -558,18 +559,25 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           <div className="flex items-center gap-2">
             <Wrench className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
             <h2 className="text-lg md:text-xl font-bold">Home Maintenance Tracker</h2>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground p-0.5 rounded" aria-label="About this app">
-                    <HelpCircle className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs">
+            <TooltipProvider delayDuration={400}>
+              <Popover>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="text-muted-foreground hover:text-foreground p-0.5 rounded" aria-label="About this app">
+                        <HelpCircle className="h-4 w-4" />
+                      </button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p>About this app</p>
+                  </TooltipContent>
+                </Tooltip>
+                <PopoverContent side="bottom" className="max-w-xs" align="start">
                   <p className="font-medium mb-1">About this app</p>
                   <p className="text-sm">Add and manage maintenance tasks, track completions (with optional photos), and view home maintenance health. Use filters and the dashboard to stay on top of due dates and priorities.</p>
-                </TooltipContent>
-              </Tooltip>
+                </PopoverContent>
+              </Popover>
             </TooltipProvider>
           </div>
           <Button 
