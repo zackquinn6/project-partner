@@ -33,12 +33,15 @@ import { HomeTaskList } from '@/components/HomeTaskList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
 import { Button } from '@/components/ui/button';
+import { useLiabilityAcceptance } from '@/hooks/useLiabilityAcceptance';
+import { LiabilityAgreementDialog } from '@/components/LiabilityAgreementDialog';
 
 // Force rebuild to clear cache
 
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
+  const { accepted: liabilityAccepted, loading: liabilityLoading, refetch: refetchLiability } = useLiabilityAcceptance();
   const { isAdmin } = useUserRole();
   const { setCurrentProject, setCurrentProjectRun, currentProject, currentProjectRun, projects, projectRuns } = useProject();
   const navigate = useNavigate();
@@ -393,6 +396,22 @@ const Index = () => {
   // Show Home component as landing page for non-authenticated users
   if (!user) {
     return <Home onViewChange={() => {}} />;
+  }
+
+  // Block app until liability policy is accepted (after redirect post-signup)
+  if (liabilityLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!liabilityAccepted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <LiabilityAgreementDialog open onAccepted={refetchLiability} />
+      </div>
+    );
   }
 
   const handleProjectSelected = () => {

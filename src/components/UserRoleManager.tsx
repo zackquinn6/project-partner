@@ -62,12 +62,22 @@ export const UserRoleManager: React.FC = () => {
 
       console.log('✅ Loaded profiles:', profilesData?.length || 0);
 
-      // Combine the data
-      const userRolesWithProfiles = (rolesData || []).map(role => ({
+      // Build list: every profile appears at least once (with role from user_roles or default "user")
+      const rolesWithProfiles = (rolesData || []).map(role => ({
         ...role,
         profiles: profilesData?.find(profile => profile.user_id === role.user_id) || null
       }));
-      
+      const userIdsWithRoles = new Set((rolesData || []).map((r: { user_id: string }) => r.user_id));
+      const profilesWithoutRole = (profilesData || []).filter(p => !userIdsWithRoles.has(p.user_id));
+      const defaultUserRows: UserRole[] = profilesWithoutRole.map(profile => ({
+        id: '',
+        user_id: profile.user_id,
+        role: 'user',
+        created_at: new Date().toISOString(),
+        profiles: profile
+      }));
+      const userRolesWithProfiles = [...rolesWithProfiles, ...defaultUserRows];
+
       console.log('✅ Combined user roles with profiles:', userRolesWithProfiles.length);
       setUserRoles(userRolesWithProfiles);
     } catch (error: any) {
@@ -283,7 +293,7 @@ export const UserRoleManager: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {userRoles.map(userRole => <TableRow key={userRole.id}>
+                {userRoles.map(userRole => <TableRow key={userRole.id || `profile-${userRole.user_id}`}>
                     <TableCell className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       {userRole.profiles?.display_name || 'Unknown User'}
@@ -295,12 +305,16 @@ export const UserRoleManager: React.FC = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(userRole.created_at).toLocaleDateString()}
+                      {userRole.id ? new Date(userRole.created_at).toLocaleDateString() : '—'}
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => removeUserRole(userRole.id, userRole.profiles?.email || 'Unknown', userRole.role)} className="text-destructive hover:text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {userRole.id ? (
+                        <Button size="sm" variant="ghost" onClick={() => removeUserRole(userRole.id, userRole.profiles?.email || 'Unknown', userRole.role)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Default</span>
+                      )}
                     </TableCell>
                   </TableRow>)}
               </TableBody>

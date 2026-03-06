@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown } from "lucide-react";
+import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown, FileText } from "lucide-react";
 import { useProject } from '@/contexts/ProjectContext';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { DataPrivacyManager } from './DataPrivacyManager';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { AppDocumentationWindow } from './AppDocumentationWindow';
+import { PoliciesWindow } from './PoliciesWindow';
 import { ToolsMaterialsWindow } from './ToolsMaterialsWindow';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { AchievementNotificationCenter } from './AchievementNotificationCenter';
@@ -38,6 +39,7 @@ export default function Navigation({
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [isDocumentationOpen, setIsDocumentationOpen] = useState(false);
+  const [isPoliciesOpen, setIsPoliciesOpen] = useState(false);
   const [isToolsLibraryOpen, setIsToolsLibraryOpen] = useState(false);
   const [isExpertHelpOpen, setIsExpertHelpOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -414,6 +416,10 @@ export default function Navigation({
                   <BookOpen className="h-4 w-4 mr-2" />
                   Documentation
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsPoliciesOpen(true)}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Policies
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -428,6 +434,8 @@ export default function Navigation({
        <FeatureRoadmapWindow open={isRoadmapOpen} onOpenChange={setIsRoadmapOpen} />
        
        <AppDocumentationWindow open={isDocumentationOpen} onOpenChange={setIsDocumentationOpen} />
+      
+        <PoliciesWindow open={isPoliciesOpen} onOpenChange={setIsPoliciesOpen} />
       
         <ToolsMaterialsWindow open={isToolsLibraryOpen} onOpenChange={setIsToolsLibraryOpen} />
         
