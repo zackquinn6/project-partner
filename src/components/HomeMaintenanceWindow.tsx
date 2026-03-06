@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -374,6 +374,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [taskBeingEdited, setTaskBeingEdited] = useState<MaintenanceTask | null>(null);
   const [showHomeManager, setShowHomeManager] = useState(false);
   const [showMaintenancePhotos, setShowMaintenancePhotos] = useState(false);
+  const [showMaintenancePlanComingSoon, setShowMaintenancePlanComingSoon] = useState(false);
   const {
     isMobile
   } = useResponsive();
@@ -628,6 +629,17 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 <ImageIcon className="h-4 w-4 text-primary" />
                 View Photos
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedHomeId}
+                onClick={() => setShowMaintenancePlanComingSoon(true)}
+                title="Guided workflow to create your maintenance plan"
+                className="gap-1.5"
+              >
+                <ClipboardList className="h-4 w-4 text-primary" />
+                Generate Maintenance Plan
+              </Button>
               {selectedHomeId && tasks.length > 0 && (
                 <MaintenancePdfPrinter
                   tasks={tasks}
@@ -734,18 +746,25 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           <CardContent className="pt-6">
                             <div className="text-center py-8">
                               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 text-primary mb-4">
-                                <ListTodo className="h-7 w-7" />
+                                {tasks.length === 0 ? <ClipboardList className="h-7 w-7" /> : <ListTodo className="h-7 w-7" />}
                               </div>
                               <h3 className="text-lg font-medium mb-2">
-                                {tasks.length === 0 ? "You're all set to add your first task" : 'No tasks in this system'}
+                                {tasks.length === 0 ? "Create your maintenance plan" : 'No tasks in this system'}
                               </h3>
                               <p className="text-muted-foreground mb-4 text-sm max-w-sm mx-auto">
-                                {tasks.length === 0 ? "Add tasks from templates or create your own. We'll help you stay on top of due dates and keep your home in great shape." : 'Try selecting a different system filter or add a new task.'}
+                                {tasks.length === 0 ? "Use our guided workflow to build a plan tailored to your home, or add tasks manually." : 'Try selecting a different system filter or add a new task.'}
                               </p>
-                              <Button onClick={() => setShowAddTask(true)} className="bg-primary hover:bg-primary/90">
-                                <Plus className="h-4 w-4 mr-2" />
-                                {tasks.length === 0 ? 'Add Your First Task' : 'Add New Task'}
-                              </Button>
+                              {tasks.length === 0 ? (
+                                <Button onClick={() => setShowMaintenancePlanComingSoon(true)} className="bg-primary hover:bg-primary/90">
+                                  <ClipboardList className="h-4 w-4 mr-2" />
+                                  Generate Maintenance Plan
+                                </Button>
+                              ) : (
+                                <Button onClick={() => setShowAddTask(true)} className="bg-primary hover:bg-primary/90">
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add New Task
+                                </Button>
+                              )}
                             </div>
                           </CardContent>
                         </Card> : (
@@ -902,6 +921,20 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
       {/* Dialogs */}
       <AddMaintenanceTaskDialog open={showAddTask} onOpenChange={setShowAddTask} homeId={selectedHomeId} onTaskAdded={fetchTasks} />
+
+      <Dialog open={showMaintenancePlanComingSoon} onOpenChange={setShowMaintenancePlanComingSoon}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Generate Maintenance Plan
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-center text-muted-foreground">
+            Coming soon. A guided workflow to build your maintenance plan will be available here.
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {selectedTask && <TaskCompletionDialog open={!!selectedTask} onOpenChange={open => !open && setSelectedTask(null)} task={selectedTask} onCompleted={handleTaskCompleted} />}
 
