@@ -69,10 +69,11 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
     const loadName = async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('display_name')
+        .select('full_name, nickname')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (data?.display_name) setFullName(data.display_name);
+      const name = data?.full_name ?? data?.nickname ?? '';
+      if (name) setFullName(String(name).trim());
     };
     loadName();
   }, [open, user?.id]);
@@ -168,22 +169,30 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
     try {
       const blob = await generatePdfBlob();
       const path = `${user.id}/liability-${Date.now()}.pdf`;
+      let pdfPath: string | null = path;
       const { error: uploadError } = await supabase.storage
         .from('liability-pdfs')
         .upload(path, blob, { contentType: 'application/pdf', upsert: false });
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.warn('Liability PDF upload failed (e.g. size limit):', uploadError.message);
+        pdfPath = null;
+      }
 
       const { error: insertError } = await supabase.from('liability_agreements').insert({
         user_id: user.id,
         full_name: fullName.trim(),
         agreed_at: new Date().toISOString(),
         policy_version: POLICY_VERSION,
-        policy_text_snapshot: PLACEHOLDER_LIABILITY_POLICY,
-        pdf_storage_path: path,
+        policy_text_snapshot: policyText,
+        pdf_storage_path: pdfPath,
       });
       if (insertError) throw insertError;
 
-      toast({ title: 'Agreement saved', description: 'You can now use the app.' });
+      if (pdfPath) {
+        toast({ title: 'Agreement saved', description: 'You can now use the app.' });
+      } else {
+        toast({ title: 'Agreement saved', description: 'Your acceptance was recorded. PDF could not be stored (file too large).' });
+      }
       onAccepted();
     } catch (e) {
       console.error('Liability agreement save error:', e);
