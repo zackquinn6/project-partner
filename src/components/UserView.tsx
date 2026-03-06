@@ -2283,8 +2283,9 @@ export default function UserView({
               
               // Mark outputs for each kickoff step
               newOutputs['kickoff-step-1'] = new Set(['overview-output']);
-              newOutputs['kickoff-step-2'] = new Set(['agreement-output']);
-              newOutputs['kickoff-step-3'] = new Set(['planning-output']);
+              newOutputs['kickoff-step-2'] = new Set(['diy-profile-output']);
+              newOutputs['kickoff-step-3'] = new Set(['project-profile-output']);
+              newOutputs['kickoff-step-4'] = new Set(['tools-output']);
               
               console.log("✅ Kickoff outputs marked complete:", newOutputs);
               return newOutputs;

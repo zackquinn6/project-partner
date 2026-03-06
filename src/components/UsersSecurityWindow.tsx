@@ -2,7 +2,6 @@ import React from 'react';
 import { UserRoleManager } from '@/components/UserRoleManager';
 import { AgreementTemplatesSection } from '@/components/AgreementTemplatesSection';
 import { UsageAgreementsList } from '@/components/UsageAgreementsList';
-import { ProjectAgreementsList } from '@/components/ProjectAgreementsList';
 import { SecurityMonitoringDashboard } from '@/components/SecurityMonitoringDashboard';
 import { AdminSecurityDashboard } from '@/components/AdminSecurityDashboard';
 import { ProjectOwnerInvitationsList } from '@/components/ProjectOwnerInvitationsList';
@@ -53,7 +52,6 @@ export const UsersSecurityWindow: React.FC<UsersSecurityWindowProps> = ({ open, 
             <TabsContent value="agreements" className="mt-4 space-y-8">
               <AgreementTemplatesSection />
               <UsageAgreementsList />
-              <ProjectAgreementsList />
             </TabsContent>
 
             <TabsContent value="security" className="mt-4">

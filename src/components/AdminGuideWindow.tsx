@@ -93,7 +93,7 @@ const adminFunctions = [
     description: 'User role management, permissions, agreements, and comprehensive security monitoring.',
     keyFeatures: [
       'User role assignment (admin, editor, user) with granular permissions',
-      'Project agreement management and digital signature tracking',
+      'Usage agreement management and compliance tracking',
       'Security event monitoring and incident response',
       'Failed login attempt tracking and rate limiting',
       'User session management and forced logout capabilities',
