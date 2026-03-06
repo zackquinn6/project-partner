@@ -152,10 +152,13 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
     }
   };
 
+  const repairSavingsNum = form.repair_cost_savings.trim() === '' ? '' : parseInt(form.repair_cost_savings, 10);
+  const repairSavingsValid = form.repair_cost_savings.trim() === '' || (Number.isInteger(repairSavingsNum) && repairSavingsNum >= 0);
+
   return (
     <div className="flex flex-col min-h-0 flex-1">
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="grid gap-2">
+      <div className="flex-1 min-h-0 overflow-y-auto pl-4 pr-2">
+        <div className="grid gap-2 pb-6">
         <div>
           <Label htmlFor="edit-title">Task title</Label>
           <Input
@@ -169,15 +172,17 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           <Textarea
             id="edit-description"
             rows={2}
-            className="min-h-0"
+            className="min-h-0 resize-y"
             value={form.description}
             onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
           />
         </div>
         <div>
           <Label htmlFor="edit-summary">Summary (shown in table)</Label>
-          <Input
+          <Textarea
             id="edit-summary"
+            rows={2}
+            className="min-h-0 resize-y"
             value={form.summary}
             onChange={(e) => setForm(prev => ({ ...prev, summary: e.target.value }))}
             placeholder="Short one-line overview"
@@ -188,13 +193,13 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           <Textarea
             id="edit-instructions"
             rows={2}
-            className="min-h-0"
+            className="min-h-0 resize-y"
             value={form.instructions}
             onChange={(e) => setForm(prev => ({ ...prev, instructions: e.target.value }))}
             placeholder="Step-by-step instructions"
           />
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           <div className="min-w-0">
             <Label htmlFor="edit-category">Category</Label>
             <Select
@@ -236,14 +241,14 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               </SelectContent>
             </Select>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 max-w-[6rem]">
             <Label htmlFor="edit-frequency">Frequency (days)</Label>
             <Input
               id="edit-frequency"
               type="number"
               min={1}
               max={3650}
-              className="w-full min-w-0"
+              className="w-full min-w-0 max-w-full"
               value={form.frequency_days}
               onChange={(e) =>
                 setForm(prev => ({
@@ -251,6 +256,27 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
                   frequency_days: parseInt(e.target.value, 10) || prev.frequency_days,
                 }))
               }
+            />
+          </div>
+          <div className="min-w-0">
+            <Label htmlFor="edit-repair-savings">Repair cost savings ($)</Label>
+            <Input
+              id="edit-repair-savings"
+              type="number"
+              min={0}
+              step={1}
+              className="w-full min-w-0"
+              value={form.repair_cost_savings}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === '') {
+                  setForm(prev => ({ ...prev, repair_cost_savings: '' }));
+                  return;
+                }
+                const v = parseInt(raw, 10);
+                if (!Number.isNaN(v) && v >= 0) setForm(prev => ({ ...prev, repair_cost_savings: String(v) }));
+              }}
+              placeholder="0"
             />
           </div>
         </div>
@@ -270,7 +296,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               type="number"
               min={0}
               max={100}
-              className="w-14 h-8 text-center shrink-0"
+              className="w-24 h-8 text-center shrink-0"
               value={form.progress_percentage}
               onChange={(e) => {
                 const v = parseInt(e.target.value, 10);
@@ -286,7 +312,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           <Textarea
             id="edit-risks"
             rows={1}
-            className="min-h-0 resize-none"
+            className="min-h-0 resize-y"
             placeholder="e.g. Sediment buildup, early failure"
             value={form.risks_of_skipping}
             onChange={(e) => setForm(prev => ({ ...prev, risks_of_skipping: e.target.value }))}
@@ -297,26 +323,15 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           <Textarea
             id="edit-benefits"
             rows={1}
-            className="min-h-0 resize-none"
+            className="min-h-0 resize-y"
             placeholder="e.g. Extend life from 10 to 20 yrs"
             value={form.benefits_of_maintenance}
             onChange={(e) => setForm(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
           />
         </div>
-        <div>
-          <Label htmlFor="edit-repair-savings">Repair cost savings</Label>
-          <Textarea
-            id="edit-repair-savings"
-            rows={1}
-            className="min-h-0 resize-none"
-            placeholder="e.g. Avoid $500–2000 water heater replacement"
-            value={form.repair_cost_savings}
-            onChange={(e) => setForm(prev => ({ ...prev, repair_cost_savings: e.target.value }))}
-          />
-        </div>
         </div>
       </div>
-      <div className="flex justify-between gap-2 pt-2 border-t shrink-0 bg-background">
+      <div className="flex justify-between gap-2 pt-2 border-t shrink-0 bg-background px-4">
         <Button variant="destructive" onClick={onDelete} className="mr-auto">
           <Trash2 className="h-4 w-4 mr-1" />
           Delete task
@@ -325,7 +340,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving || !form.title.trim()}>
+          <Button onClick={handleSave} disabled={saving || !form.title.trim() || !repairSavingsValid}>
             {saving ? 'Saving...' : 'Save changes'}
           </Button>
         </div>
