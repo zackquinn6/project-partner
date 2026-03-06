@@ -1,5 +1,7 @@
 import React from 'react';
 import { UserRoleManager } from '@/components/UserRoleManager';
+import { AgreementTemplatesSection } from '@/components/AgreementTemplatesSection';
+import { UsageAgreementsList } from '@/components/UsageAgreementsList';
 import { ProjectAgreementsList } from '@/components/ProjectAgreementsList';
 import { SecurityMonitoringDashboard } from '@/components/SecurityMonitoringDashboard';
 import { AdminSecurityDashboard } from '@/components/AdminSecurityDashboard';
@@ -48,7 +50,9 @@ export const UsersSecurityWindow: React.FC<UsersSecurityWindowProps> = ({ open, 
               <ProjectOwnerInvitationsList />
             </TabsContent>
             
-            <TabsContent value="agreements" className="mt-4">
+            <TabsContent value="agreements" className="mt-4 space-y-8">
+              <AgreementTemplatesSection />
+              <UsageAgreementsList />
               <ProjectAgreementsList />
             </TabsContent>
 

@@ -15,14 +15,14 @@ interface UserRole {
   role: string;
   created_at: string;
   profiles?: {
-    email: string;
-    display_name: string;
+    full_name: string | null;
+    nickname: string | null;
   } | null;
 }
 interface UserProfile {
   user_id: string;
-  email: string;
-  display_name: string;
+  full_name: string | null;
+  nickname: string | null;
 }
 export const UserRoleManager: React.FC = () => {
   const { user } = useAuth();
@@ -54,7 +54,7 @@ export const UserRoleManager: React.FC = () => {
       const {
         data: profilesData,
         error: profilesError
-      } = await supabase.from('profiles').select('user_id, email, display_name');
+      } = await supabase.from('profiles').select('user_id, full_name, nickname');
       if (profilesError) {
         console.error('❌ Error loading profiles:', profilesError);
         throw profilesError;
@@ -94,7 +94,7 @@ export const UserRoleManager: React.FC = () => {
       const {
         data,
         error
-      } = await supabase.from('profiles').select('user_id, email, display_name').order('created_at', {
+      } = await supabase.from('profiles').select('user_id, full_name, nickname').order('created_at', {
         ascending: false
       });
       if (error) throw error;
@@ -286,7 +286,6 @@ export const UserRoleManager: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Added</TableHead>
                   <TableHead className="w-[100px]">Actions</TableHead>
@@ -296,9 +295,8 @@ export const UserRoleManager: React.FC = () => {
                 {userRoles.map(userRole => <TableRow key={userRole.id || `profile-${userRole.user_id}`}>
                     <TableCell className="flex items-center gap-2">
                       <User className="w-4 h-4" />
-                      {userRole.profiles?.display_name || 'Unknown User'}
+                      {userRole.profiles?.full_name || userRole.profiles?.nickname || 'Unknown User'}
                     </TableCell>
-                    <TableCell>{userRole.profiles?.email || 'No email'}</TableCell>
                     <TableCell>
                       <Badge variant={getRoleBadgeVariant(userRole.role)}>
                         {userRole.role}
@@ -309,7 +307,7 @@ export const UserRoleManager: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       {userRole.id ? (
-                        <Button size="sm" variant="ghost" onClick={() => removeUserRole(userRole.id, userRole.profiles?.email || 'Unknown', userRole.role)} className="text-destructive hover:text-destructive">
+                        <Button size="sm" variant="ghost" onClick={() => removeUserRole(userRole.id, userRole.profiles?.full_name || userRole.profiles?.nickname || 'Unknown', userRole.role)} className="text-destructive hover:text-destructive">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       ) : (

@@ -19,8 +19,8 @@ interface ProjectAgreement {
     agreementText: string;
   };
   profile?: {
-    email: string;
-    display_name: string;
+    full_name: string | null;
+    nickname: string | null;
   };
 }
 
@@ -38,8 +38,8 @@ export const ProjectAgreementsList: React.FC = () => {
   useEffect(() => {
     const filtered = agreements.filter(agreement => 
       agreement.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      agreement.profile?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      agreement.profile?.display_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      (agreement.profile?.full_name ?? '')?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (agreement.profile?.nickname ?? '')?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredAgreements(filtered);
   }, [searchTerm, agreements]);
@@ -87,7 +87,7 @@ export const ProjectAgreementsList: React.FC = () => {
       const userIds = projectRunsWithAgreements.map(run => run.user_id);
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, email, display_name')
+        .select('user_id, full_name, nickname')
         .in('user_id', userIds);
 
       if (profilesError) throw profilesError;
@@ -120,8 +120,8 @@ export const ProjectAgreementsList: React.FC = () => {
           created_at: run.created_at,
           agreement,
           profile: profile ? {
-            email: profile.email || '',
-            display_name: profile.display_name || ''
+            full_name: profile.full_name ?? null,
+            nickname: profile.nickname ?? null
           } : undefined
         };
       });
@@ -142,7 +142,7 @@ export const ProjectAgreementsList: React.FC = () => {
 Project: ${agreement.name}
 Signed by: ${agreement.agreement.signerName}
 Date: ${new Date(agreement.agreement.signedAt).toLocaleDateString()}
-User: ${agreement.profile?.display_name || agreement.profile?.email || 'Unknown'}
+User: ${agreement.profile?.full_name || agreement.profile?.nickname || 'Unknown'}
 
 Agreement Terms:
 ${agreement.agreement.agreementText}
@@ -173,7 +173,7 @@ Signed on: ${new Date(agreement.agreement.signedAt).toLocaleString()}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Search by project name, user email, or display name..."
+          placeholder="Search by project name or user name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -205,10 +205,7 @@ Signed on: ${new Date(agreement.agreement.signedAt).toLocaleString()}
                       <div className="flex items-center gap-2 text-sm">
                         <User className="w-3 h-3" />
                         <span className="break-words">
-                          {agreement.profile?.display_name || 'Unknown User'}
-                          <span className="text-muted-foreground ml-1">
-                            ({agreement.profile?.email || 'No email'})
-                          </span>
+                          {agreement.profile?.full_name || agreement.profile?.nickname || 'Unknown User'}
                         </span>
                       </div>
                     </CardDescription>
@@ -273,7 +270,7 @@ Signed on: ${new Date(agreement.agreement.signedAt).toLocaleString()}
                   <strong>Project:</strong> {selectedAgreement.name}
                 </div>
                 <div className="break-words">
-                  <strong>User:</strong> {selectedAgreement.profile?.display_name} ({selectedAgreement.profile?.email})
+                  <strong>User:</strong> {selectedAgreement.profile?.full_name || selectedAgreement.profile?.nickname || '—'}
                 </div>
                 <div>
                   <strong>Signed by:</strong> {selectedAgreement.agreement?.signerName}
