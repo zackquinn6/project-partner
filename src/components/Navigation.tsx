@@ -81,6 +81,27 @@ export default function Navigation({
     window.addEventListener('open-user-documentation', handleOpenUserDocs);
     return () => window.removeEventListener('open-user-documentation', handleOpenUserDocs);
   }, []);
+
+  // Listen for help menu actions from WorkflowSidebar (and elsewhere)
+  useEffect(() => {
+    const openPolicies = () => setIsPoliciesOpen(true);
+    const openFeedback = () => setShowFeedback(true);
+    const openRoadmap = () => setIsRoadmapOpen(true);
+    const openDocumentation = () => setIsDocumentationOpen(true);
+    const openExpertHelp = () => setIsExpertHelpOpen(true);
+    window.addEventListener('open-policies-window', openPolicies);
+    window.addEventListener('open-feedback-dialog', openFeedback);
+    window.addEventListener('open-roadmap-window', openRoadmap);
+    window.addEventListener('open-documentation-window', openDocumentation);
+    window.addEventListener('open-expert-help', openExpertHelp);
+    return () => {
+      window.removeEventListener('open-policies-window', openPolicies);
+      window.removeEventListener('open-feedback-dialog', openFeedback);
+      window.removeEventListener('open-roadmap-window', openRoadmap);
+      window.removeEventListener('open-documentation-window', openDocumentation);
+      window.removeEventListener('open-expert-help', openExpertHelp);
+    };
+  }, []);
   useEffect(() => {
     // Only handle Navigation-specific events
     const handleToolsLibraryEvent = (event: Event) => {
@@ -396,14 +417,14 @@ export default function Navigation({
               </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* Help Dropdown - Always visible */}
+            {/* Help Dropdown (upper right): Send Feedback, App Roadmap, Documentation, Policies */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 shrink-0">
+                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 shrink-0" aria-label="Help menu">
                   <HelpCircle className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-[9999] !bg-white dark:!bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl min-w-[200px] !opacity-100" sideOffset={5}>
+              <DropdownMenuContent align="end" className="z-[9999] !bg-white dark:!bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl min-w-[200px] !opacity-100 overflow-visible" sideOffset={5}>
                 <DropdownMenuItem onClick={() => setShowFeedback(true)}>
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Send Feedback
