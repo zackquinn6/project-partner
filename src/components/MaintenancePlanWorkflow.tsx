@@ -6,13 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Shield, Trash2, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { addDays } from 'date-fns';
-
-const PRIVACY_MESSAGE = 'We do not share your home information with any other businesses. Your data is safe and secure.';
 
 const HEATING_COOLING_OPTIONS = [
   'Oil furnace',
@@ -38,6 +36,13 @@ const HOME_AGE_OPTIONS = ['New (0–5 yrs)', '5–15 years', '15–30 years', '3
 const FOUNDATION_OPTIONS = ['Slab', 'Crawl space', 'Full basement', 'Other'];
 const EXTERIOR_OPTIONS = ['Vinyl siding', 'Brick', 'Wood siding', 'Stucco', 'Metal', 'Other'];
 const ROOF_OPTIONS = ['Asphalt shingle', 'Metal', 'Tile', 'Flat / built-up', 'Wood shake', 'Other'];
+
+const CUSTOM_TASK_FREQUENCIES = [
+  { label: 'Weekly', days: 7 },
+  { label: 'Monthly', days: 30 },
+  { label: 'Quarterly', days: 90 },
+  { label: 'Yearly', days: 365 },
+] as const;
 
 const APPLIANCES_SYSTEMS_OPTIONS = [
   'Sump pump',
@@ -104,6 +109,7 @@ interface PlanItem {
 interface PlanCustomItem {
   type: 'custom';
   title: string;
+  frequency_days: number;
 }
 
 type PlanEntry = PlanItem | PlanCustomItem;
@@ -132,26 +138,39 @@ export function MaintenancePlanWorkflow({
   const [loadingDetails, setLoadingDetails] = useState(true);
 
   const [heatingCooling, setHeatingCooling] = useState<string[]>([]);
-  const [heatingCoolingOther, setHeatingCoolingOther] = useState('');
   const [hotWater, setHotWater] = useState('');
-  const [hotWaterOther, setHotWaterOther] = useState('');
   const [zip, setZip] = useState('');
+  const [zipFromProfile, setZipFromProfile] = useState(false);
   const [climateRegion, setClimateRegion] = useState('');
   const [homeType, setHomeType] = useState('');
   const [homeAge, setHomeAge] = useState('');
   const [foundationType, setFoundationType] = useState('');
-  const [exteriorType, setExteriorType] = useState('');
+  const [exteriorTypes, setExteriorTypes] = useState<string[]>([]);
   const [roofType, setRoofType] = useState('');
-  const [appliancesSystems, setAppliancesSystems] = useState<string[]>([]);
+  const [appliancesSystems, setAppliancesSystems] = useState<string[]>(['Dryer (gas/electric)', 'Dishwasher']);
   const [appliancesOther, setAppliancesOther] = useState('');
-  const [customTaskLines, setCustomTaskLines] = useState<string[]>([]);
+  const [customTasks, setCustomTasks] = useState<{ title: string; frequency_days: number }[]>([]);
   const [customTaskInput, setCustomTaskInput] = useState('');
+  const [customTaskFrequencyDays, setCustomTaskFrequencyDays] = useState(90);
 
   const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
   const [planGenerated, setPlanGenerated] = useState(false);
 
-  const totalSteps = 8;
+  const totalSteps = 7;
   const isLastStep = step === totalSteps - 1;
+
+  const doNotSaveCheckbox = (
+    <div className="flex items-start gap-3 mt-4 pt-3 border-t">
+      <Checkbox
+        id="doNotSave"
+        checked={doNotSaveHomeInfo}
+        onCheckedChange={(c) => setDoNotSaveHomeInfo(!!c)}
+      />
+      <Label htmlFor="doNotSave" className="text-sm font-normal cursor-pointer leading-tight">
+        Do NOT save my home information. Only use it temporarily to build my plan.
+      </Label>
+    </div>
+  );
 
   useEffect(() => {
     if (open) {
@@ -183,15 +202,18 @@ export function MaintenancePlanWorkflow({
           const hc = row.heating_cooling_systems;
           setHeatingCooling(Array.isArray(hc) ? hc : []);
           setHotWater(row.hot_water_system ?? '');
-          setZip(row.zip ?? '');
+          const zipVal = row.zip ?? '';
+          setZip(zipVal);
+          setZipFromProfile(!!zipVal.trim());
           setClimateRegion(row.climate_region ?? '');
           setHomeType(row.home_type ?? '');
           setHomeAge(row.home_age ?? '');
           setFoundationType(row.foundation_type ?? '');
-          setExteriorType(row.exterior_type ?? '');
+          const ext = row.exterior_type;
+          setExteriorTypes(ext && typeof ext === 'string' ? ext.split(',').map((s) => s.trim()).filter(Boolean) : []);
           setRoofType(row.roof_type ?? '');
           const as = row.appliances_systems;
-          setAppliancesSystems(Array.isArray(as) ? as : []);
+          setAppliancesSystems(Array.isArray(as) && as.length > 0 ? as : ['Dryer (gas/electric)', 'Dishwasher']);
         }
         setLoadingDetails(false);
       });
@@ -211,7 +233,7 @@ export function MaintenancePlanWorkflow({
   const addCustomTaskLine = () => {
     const t = customTaskInput.trim();
     if (t) {
-      setCustomTaskLines((prev) => [...prev, t]);
+      setCustomTasks((prev) => [...prev, { title: t, frequency_days: customTaskFrequencyDays }]);
       setCustomTaskInput('');
     }
   };
@@ -248,8 +270,8 @@ export function MaintenancePlanWorkflow({
         const categoriesToInclude = new Set<string>();
         categoriesToInclude.add('safety');
         categoriesToInclude.add('exterior');
-        if (heatingCooling.length > 0 || heatingCoolingOther) categoriesToInclude.add('hvac');
-        if (hotWater || hotWaterOther) categoriesToInclude.add('plumbing');
+        if (heatingCooling.length > 0) categoriesToInclude.add('hvac');
+        if (hotWater) categoriesToInclude.add('plumbing');
         if (
           appliancesSystems.some(
             (a) =>
@@ -283,7 +305,7 @@ export function MaintenancePlanWorkflow({
             title: t.title,
             template: t,
           })),
-          ...customTaskLines.map((title) => ({ type: 'custom' as const, title })),
+          ...customTasks.map((ct) => ({ type: 'custom' as const, title: ct.title, frequency_days: ct.frequency_days })),
         ];
         setPlanEntries(entries);
         setPlanGenerated(true);
@@ -321,14 +343,14 @@ export function MaintenancePlanWorkflow({
             repair_cost_savings: t.repair_cost_savings ?? null,
           });
         } else {
-          const nextDue = addDays(new Date(), 90);
+          const nextDue = addDays(new Date(), entry.frequency_days);
           await supabase.from('user_maintenance_tasks').insert({
             user_id: user.id,
             home_id: homeId,
             title: entry.title,
             description: null,
             category: 'general',
-            frequency_days: 90,
+            frequency_days: entry.frequency_days,
             next_due: nextDue.toISOString(),
             criticality: 2,
           });
@@ -336,10 +358,6 @@ export function MaintenancePlanWorkflow({
       }
 
       if (!doNotSaveHomeInfo) {
-        const heatingArr = heatingCoolingOther.trim()
-          ? [...heatingCooling, heatingCoolingOther.trim()]
-          : heatingCooling;
-        const hotWaterVal = hotWaterOther.trim() || hotWater;
         const appliancesArr = appliancesOther.trim()
           ? [...appliancesSystems, appliancesOther.trim()]
           : appliancesSystems;
@@ -347,14 +365,14 @@ export function MaintenancePlanWorkflow({
 
         const payload = {
           home_id: homeId,
-          heating_cooling_systems: heatingArr,
-          hot_water_system: hotWaterVal || null,
+          heating_cooling_systems: heatingCooling,
+          hot_water_system: hotWater || null,
           zip: zip.trim() || null,
           climate_region: region || null,
           home_type: homeType || null,
           home_age: homeAge || null,
           foundation_type: foundationType || null,
-          exterior_type: exteriorType || null,
+          exterior_type: exteriorTypes.length > 0 ? exteriorTypes.join(',') : null,
           roof_type: roofType || null,
           appliances_systems: appliancesArr,
         };
@@ -383,17 +401,12 @@ export function MaintenancePlanWorkflow({
     }
   };
 
-  const canNext = () => {
-    if (step === 0) return true;
-    if (step === 3) return true;
-    if (step === 7) return true;
-    return true;
-  };
+  const canNext = () => true;
 
   const handleNext = async () => {
-    if (step === 6 && !planGenerated) {
+    if (step === 5 && !planGenerated) {
       await generatePlan();
-      setStep(7);
+      setStep(6);
       return;
     }
     if (step < totalSteps - 1) setStep((s) => s + 1);
@@ -407,7 +420,7 @@ export function MaintenancePlanWorkflow({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-primary" />
@@ -426,36 +439,12 @@ export function MaintenancePlanWorkflow({
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 pb-4">
-              {/* Step 0 — Privacy & persistence choice */}
+              {/* Step 0 — Heating & Cooling */}
               {step === 0 && (
-                <div className="space-y-4">
-                  <div className="rounded-lg border bg-muted/30 p-4 flex items-start gap-3">
-                    <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-sm">Data Privacy Notice</p>
-                      <p className="text-sm text-muted-foreground mt-1">{PRIVACY_MESSAGE}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 space-x-2">
-                    <Checkbox
-                      id="doNotSave"
-                      checked={doNotSaveHomeInfo}
-                      onCheckedChange={(c) => setDoNotSaveHomeInfo(!!c)}
-                    />
-                    <Label htmlFor="doNotSave" className="text-sm font-normal cursor-pointer leading-tight">
-                      Do NOT save my home information. Only use it temporarily to build my maintenance plan. Delete it after the plan is generated.
-                    </Label>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 1 — Heating & Cooling */}
-              {step === 1 && (
                 <div className="space-y-4">
                   <p className="text-sm">
                     Which heating or cooling system does your home use? Select all that apply.
                   </p>
-                  <p className="text-xs text-muted-foreground">{PRIVACY_MESSAGE}</p>
                   <div className="flex flex-wrap gap-2">
                     {HEATING_COOLING_OPTIONS.map((opt) => (
                       <Button
@@ -469,23 +458,14 @@ export function MaintenancePlanWorkflow({
                       </Button>
                     ))}
                   </div>
-                  <div>
-                    <Label className="text-xs">Other</Label>
-                    <Input
-                      value={heatingCoolingOther}
-                      onChange={(e) => setHeatingCoolingOther(e.target.value)}
-                      placeholder="Other (free-text)"
-                      className="mt-1"
-                    />
-                  </div>
+                  {doNotSaveCheckbox}
                 </div>
               )}
 
-              {/* Step 2 — Hot Water */}
-              {step === 2 && (
+              {/* Step 1 — Hot Water */}
+              {step === 1 && (
                 <div className="space-y-4">
                   <p className="text-sm">How is your hot water generated?</p>
-                  <p className="text-xs text-muted-foreground">{PRIVACY_MESSAGE}</p>
                   <div className="flex flex-wrap gap-2">
                     {HOT_WATER_OPTIONS.map((opt) => (
                       <Button
@@ -499,25 +479,26 @@ export function MaintenancePlanWorkflow({
                       </Button>
                     ))}
                   </div>
-                  <div>
-                    <Label className="text-xs">Other</Label>
-                    <Input
-                      value={hotWaterOther}
-                      onChange={(e) => setHotWaterOther(e.target.value)}
-                      placeholder="Other (free-text)"
-                      className="mt-1"
-                    />
-                  </div>
+                  {doNotSaveCheckbox}
                 </div>
               )}
 
-              {/* Step 3 — ZIP / Climate */}
-              {step === 3 && (
+              {/* Step 2 — ZIP / Climate */}
+              {step === 2 && (
                 <div className="space-y-4">
-                  <p className="text-sm">
-                    What's your ZIP code? We'll use it to determine your climate region.
-                  </p>
-                  <p className="text-xs text-muted-foreground">{PRIVACY_MESSAGE}</p>
+                  {zipFromProfile && zip.trim() ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Your home profile already has ZIP code <strong>{zip}</strong>.
+                        {climateRegion && ` Climate region: ${climateRegion}.`}
+                      </p>
+                      <p className="text-sm">You can change it below if needed.</p>
+                    </>
+                  ) : (
+                    <p className="text-sm">
+                      What's your ZIP code? We'll use it to determine your climate region.
+                    </p>
+                  )}
                   <div>
                     <Label>ZIP code</Label>
                     <Input
@@ -533,16 +514,16 @@ export function MaintenancePlanWorkflow({
                   {climateRegion && (
                     <p className="text-sm text-muted-foreground">Climate region: {climateRegion}</p>
                   )}
+                  {doNotSaveCheckbox}
                 </div>
               )}
 
-              {/* Step 4 — Home characteristics */}
-              {step === 4 && (
+              {/* Step 3 — Home characteristics */}
+              {step === 3 && (
                 <div className="space-y-4">
                   <p className="text-sm">
                     Tell us a bit more about your home so we can fine-tune your maintenance plan.
                   </p>
-                  <p className="text-xs text-muted-foreground">{PRIVACY_MESSAGE}</p>
                   <div className="grid gap-3">
                     <div>
                       <Label>Home type</Label>
@@ -584,17 +565,20 @@ export function MaintenancePlanWorkflow({
                       </select>
                     </div>
                     <div>
-                      <Label>Exterior type</Label>
-                      <select
-                        className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                        value={exteriorType}
-                        onChange={(e) => setExteriorType(e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {EXTERIOR_OPTIONS.map((o) => (
-                          <option key={o} value={o}>{o}</option>
+                      <Label>Exterior type (select all that apply)</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {EXTERIOR_OPTIONS.map((opt) => (
+                          <Button
+                            key={opt}
+                            type="button"
+                            variant={exteriorTypes.includes(opt) ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => toggleMulti(exteriorTypes, opt, setExteriorTypes)}
+                          >
+                            {opt}
+                          </Button>
                         ))}
-                      </select>
+                      </div>
                     </div>
                     <div>
                       <Label>Roof type</Label>
@@ -610,16 +594,16 @@ export function MaintenancePlanWorkflow({
                       </select>
                     </div>
                   </div>
+                  {doNotSaveCheckbox}
                 </div>
               )}
 
-              {/* Step 5 — Appliances & systems */}
-              {step === 5 && (
+              {/* Step 4 — Appliances & systems */}
+              {step === 4 && (
                 <div className="space-y-4">
                   <p className="text-sm">
                     Which of these systems or appliances do you have? Select all that apply.
                   </p>
-                  <p className="text-xs text-muted-foreground">{PRIVACY_MESSAGE}</p>
                   <div className="flex flex-wrap gap-2">
                     {APPLIANCES_SYSTEMS_OPTIONS.map((opt) => (
                       <Button
@@ -642,39 +626,55 @@ export function MaintenancePlanWorkflow({
                       className="mt-1"
                     />
                   </div>
+                  {doNotSaveCheckbox}
                 </div>
               )}
 
-              {/* Step 6 — Unique home tasks */}
-              {step === 6 && (
-                <div className="space-y-4">
+              {/* Step 5 — Unique home tasks */}
+              {step === 5 && (
+                <div className="space-y-4 p-4">
                   <p className="text-sm">
                     Are there any maintenance tasks unique to your home that you'd like to include?
                     Examples: "Clean koi pond filter", "Check flat roof drains", "Inspect retaining wall".
                   </p>
-                  <p className="text-xs text-muted-foreground">{PRIVACY_MESSAGE}</p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 items-end">
                     <Input
                       value={customTaskInput}
                       onChange={(e) => setCustomTaskInput(e.target.value)}
                       placeholder="e.g. Inspect retaining wall"
+                      className="flex-1 min-w-[180px]"
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomTaskLine())}
                     />
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs whitespace-nowrap">Frequency</Label>
+                      <select
+                        className="h-9 rounded-md border border-input bg-background px-2 py-1 text-sm min-w-[100px]"
+                        value={customTaskFrequencyDays}
+                        onChange={(e) => setCustomTaskFrequencyDays(Number(e.target.value))}
+                      >
+                        {CUSTOM_TASK_FREQUENCIES.map((f) => (
+                          <option key={f.days} value={f.days}>{f.label}</option>
+                        ))}
+                      </select>
+                    </div>
                     <Button type="button" variant="outline" size="icon" onClick={addCustomTaskLine}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  {customTaskLines.length > 0 && (
+                  {customTasks.length > 0 && (
                     <ul className="list-disc list-inside text-sm space-y-1">
-                      {customTaskLines.map((line, i) => (
+                      {customTasks.map((ct, i) => (
                         <li key={i} className="flex items-center justify-between gap-2">
-                          <span>{line}</span>
+                          <span>{ct.title}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {CUSTOM_TASK_FREQUENCIES.find((f) => f.days === ct.frequency_days)?.label ?? `${ct.frequency_days} days`}
+                          </span>
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => setCustomTaskLines((p) => p.filter((_, j) => j !== i))}
+                            onClick={() => setCustomTasks((p) => p.filter((_, j) => j !== i))}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -682,12 +682,13 @@ export function MaintenancePlanWorkflow({
                       ))}
                     </ul>
                   )}
+                  {doNotSaveCheckbox}
                 </div>
               )}
 
-              {/* Step 7 — Generate & review plan */}
-              {step === 7 && (
-                <div className="space-y-4">
+              {/* Step 6 — Generate & review plan */}
+              {step === 6 && (
+                <div className="space-y-4 p-4">
                   {loading && (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -698,14 +699,16 @@ export function MaintenancePlanWorkflow({
                       <p className="text-sm text-muted-foreground">
                         Review your plan. Remove any task you don't want, then tap Save My Plan.
                       </p>
-                      <div className="max-h-[320px] overflow-y-auto space-y-2 pr-1">
+                      <div className="max-h-[320px] overflow-y-auto space-y-2 p-4 pr-6">
                         {planEntries.map((entry, index) => (
                           <Card key={index}>
-                            <CardContent className="py-2 px-3 flex items-center justify-between gap-2">
-                              <span className="text-sm truncate flex-1">
+                            <CardContent className="py-3 px-4 flex items-center justify-between gap-2">
+                              <span className="text-sm truncate flex-1 min-w-0">
                                 {entry.type === 'template' ? entry.title : entry.title}
                                 {entry.type === 'custom' && (
-                                  <span className="text-muted-foreground ml-1">(custom)</span>
+                                  <span className="text-muted-foreground ml-1">
+                                    (custom · {CUSTOM_TASK_FREQUENCIES.find((f) => f.days === entry.frequency_days)?.label ?? `${entry.frequency_days} days`})
+                                  </span>
                                 )}
                               </span>
                               <Button
@@ -726,6 +729,7 @@ export function MaintenancePlanWorkflow({
                   {!loading && planGenerated && planEntries.length === 0 && (
                     <p className="text-sm text-muted-foreground">No tasks in plan. Add templates or custom tasks in earlier steps.</p>
                   )}
+                  {doNotSaveCheckbox}
                 </div>
               )}
             </div>
