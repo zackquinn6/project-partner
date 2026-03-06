@@ -2688,6 +2688,7 @@ export default function UserView({
             isKickoffComplete={isKickoffComplete}
             instructionLevel={instructionLevel}
             projectName={currentProjectRun?.customProjectName || currentProjectRun?.name || 'Project'}
+            projectRunId={currentProjectRun?.id}
             projectRun={currentProjectRun}
             estimatedFinishDate={estimatedFinishDate}
             estimatedFinishDateLoading={estimatedFinishDateLoading}

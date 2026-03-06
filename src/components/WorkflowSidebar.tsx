@@ -404,9 +404,9 @@ export function WorkflowSidebar({
         <SidebarGroup className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <SidebarGroupLabel className="px-4 text-sm font-semibold flex-shrink-0" data-tutorial="project-name">{projectName || 'Project Progress'}</SidebarGroupLabel>
           <SidebarGroupContent className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            {!collapsed && <div className="flex flex-col h-full p-2 min-h-0 overflow-hidden">
-                {/* Fixed Upper Section - No scrolling */}
-                <div className="flex-shrink-0 space-y-3 pb-3">
+            {!collapsed && <div className="flex flex-col h-full p-2 min-h-0 overflow-hidden min-w-0">
+                {/* Fixed Upper Section - scrolls when viewport short so Project Tools are never clipped */}
+                <div className="flex-shrink-0 min-h-0 min-w-0 overflow-y-auto overflow-x-visible max-h-[45vh] space-y-3 pb-3">
                   {/* Progress Header */}
                   <div className="space-y-0.5" data-tutorial="progress-bar">
                     <div className="flex justify-between items-center text-xs">
@@ -477,80 +477,80 @@ export function WorkflowSidebar({
                     </Select>
                   </div>
 
-                  {/* Project Tools Section */}
-                  <div className="space-y-2">
+                  {/* Project Tools Section - min-w-0 so flex children can shrink and are not clipped */}
+                    <div className="space-y-2 min-w-0">
                     <div className="text-xs font-semibold text-muted-foreground">Project Tools</div>
                     {/* Row 1: View Schedule */}
                     <Button
                       variant="default"
                       size="sm"
                       onClick={onViewScheduleClick}
-                      className="h-8 px-3 text-xs w-full"
+                      className="h-8 px-3 text-xs w-full min-w-0"
                       style={{ backgroundColor: 'rgba(99, 102, 241, 0.40)', color: 'black' }}
                     >
-                      <Calendar className="h-3.5 w-3.5 mr-2" style={{ color: 'black' }} />
-                      <span>View Schedule</span>
+                      <Calendar className="h-3.5 w-3.5 mr-2 shrink-0" style={{ color: 'black' }} />
+                      <span className="truncate">View Schedule</span>
                     </Button>
                     {/* Row 2: Key Characteristics, Re-Plan */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onKeysToSuccessClick}
-                        className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
+                        className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
                         style={{ backgroundColor: 'rgba(168, 85, 247, 0.40)', color: 'black' }}
                       >
-                        <Key className="h-3.5 w-3.5" style={{ color: 'black' }} />
-                        <span>Key Characteristics</span>
+                        <Key className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Key Characteristics</span>
                       </Button>
                       {isKickoffComplete && (
                         <Button
                           variant="default"
                           size="sm"
                           onClick={onUnplannedWorkClick}
-                          className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
+                          className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
                           style={{ backgroundColor: 'rgba(236, 72, 153, 0.40)', color: 'black' }}
                         >
-                          <Layers className="h-3.5 w-3.5" style={{ color: 'black' }} />
-                          <span>Re-Plan</span>
+                          <Layers className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                          <span className="truncate">Re-Plan</span>
                         </Button>
                       )}
                     </div>
                     {/* Row 3: Notes, Photos */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onNotesClick}
-                        className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
+                        className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
                         style={{ backgroundColor: 'rgba(34, 197, 94, 0.40)', color: 'black' }}
                       >
-                        <FileText className="h-3.5 w-3.5" style={{ color: 'black' }} />
-                        <span>Notes</span>
+                        <FileText className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Notes</span>
                       </Button>
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onPhotosClick}
-                        className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
+                        className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
                         style={{ backgroundColor: 'rgba(251, 146, 60, 0.40)', color: 'black' }}
                       >
-                        <Image className="h-3.5 w-3.5" style={{ color: 'black' }} />
-                        <span>Photos</span>
+                        <Image className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Photos</span>
                       </Button>
                     </div>
                     {/* Row 4: Experts, Tool Rentals (visibility from admin toggles) */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       {expertSupportEnabled && (
                         <Button
                           variant="default"
                           size="sm"
                           onClick={onHelpClick}
-                          className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
+                          className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
                           style={{ backgroundColor: 'rgba(59, 130, 246, 0.40)', color: 'black' }}
                         >
-                          <MessageCircle className="h-3.5 w-3.5" style={{ color: 'black' }} />
-                          <span>Experts</span>
+                          <MessageCircle className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                          <span className="truncate">Experts</span>
                         </Button>
                       )}
                       {toolRentalsEnabled && onToolRentalsClick && (
@@ -558,11 +558,11 @@ export function WorkflowSidebar({
                           variant="default"
                           size="sm"
                           onClick={onToolRentalsClick}
-                          className="h-auto py-1.5 px-2 text-[10px] flex-1 flex-col gap-1"
+                          className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
                           style={{ backgroundColor: 'rgba(245, 158, 11, 0.40)', color: 'black' }}
                         >
-                          <Wrench className="h-3.5 w-3.5" style={{ color: 'black' }} />
-                          <span>Tool Rentals</span>
+                          <Wrench className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                          <span className="truncate">Tool Rentals</span>
                         </Button>
                       )}
                     </div>
@@ -571,11 +571,11 @@ export function WorkflowSidebar({
                       variant="default"
                       size="sm"
                       onClick={onProgressViewsClick ?? (() => {})}
-                      className="h-8 px-3 text-xs w-full"
+                      className="h-8 px-3 text-xs w-full min-w-0"
                       style={{ backgroundColor: 'rgba(20, 184, 166, 0.40)', color: 'black' }}
                     >
-                      <BarChart3 className="h-3 w-3 mr-2" style={{ color: 'black' }} />
-                      <span>Progress</span>
+                      <BarChart3 className="h-3 w-3 mr-2 shrink-0" style={{ color: 'black' }} />
+                      <span className="truncate">Progress</span>
                     </Button>
                   </div>
 
