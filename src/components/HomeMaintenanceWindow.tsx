@@ -241,8 +241,8 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               </SelectContent>
             </Select>
           </div>
-          <div className="min-w-0 max-w-[6rem]">
-            <Label htmlFor="edit-frequency">Frequency (days)</Label>
+          <div className="min-w-0 max-w-[8rem]">
+            <Label htmlFor="edit-frequency" className="whitespace-nowrap">Frequency (days)</Label>
             <Input
               id="edit-frequency"
               type="number"
