@@ -287,20 +287,21 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             <Slider
               id="edit-progress"
               min={0}
-              max={100}
+              max={200}
               step={1}
-              value={[form.progress_percentage]}
+              value={[Math.min(200, form.progress_percentage)]}
               onValueChange={([v]) => setForm(prev => ({ ...prev, progress_percentage: v }))}
               className="flex-1"
             />
             <Input
               type="number"
               min={0}
+              max={9999}
               className="w-24 h-8 text-center shrink-0"
               value={form.progress_percentage}
               onChange={(e) => {
                 const v = parseInt(e.target.value, 10);
-                if (!Number.isNaN(v)) setForm(prev => ({ ...prev, progress_percentage: Math.max(0, v) }));
+                if (!Number.isNaN(v)) setForm(prev => ({ ...prev, progress_percentage: Math.max(0, Math.min(9999, v)) }));
               }}
             />
             <span className="text-xs text-muted-foreground shrink-0 w-4">%</span>
