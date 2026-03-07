@@ -181,15 +181,81 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
 
   const cardMinH = '4rem';
   const cardMaxH = '4.5rem';
+
+  const systemStatusCard = (
+    <div className="space-y-0 min-w-0 flex flex-col min-h-0">
+      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
+        System status
+      </div>
+      <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
+        <CardContent className="p-1 flex flex-col flex-1 min-h-0 justify-center items-center">
+          <div className="flex flex-row flex-nowrap items-center justify-evenly w-full gap-1">
+            {systemKeys.map(sys => {
+              const status = systemStatus[sys];
+              const Icon = SYSTEM_CONFIG[sys].icon;
+              const StatusBadge =
+                status === 'red' ? XCircle : status === 'yellow' ? AlertTriangle : CheckCircle2;
+              const badgeColor =
+                status === 'red'
+                  ? 'text-destructive'
+                  : status === 'yellow'
+                    ? 'text-amber-500'
+                    : 'text-emerald-600';
+              return (
+                <Tooltip key={sys}>
+                  <TooltipTrigger asChild>
+                    <div className="flex flex-col items-center gap-0.5 min-w-0 shrink-0">
+                      <div className="flex flex-row items-center justify-center gap-0.5">
+                        <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                        <StatusBadge className={`h-4 w-4 shrink-0 ${badgeColor}`} strokeWidth={2.5} />
+                      </div>
+                      <span className="text-[10px] sm:text-xs text-muted-foreground truncate text-center">
+                        {SYSTEM_CONFIG[sys].label}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {SYSTEM_CONFIG[sys].label}:{' '}
+                    {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Caution (90–99% toward due)' : 'Good'}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const benefitsCard = (
+    <div className="space-y-0 min-w-0 flex flex-col min-h-0">
+      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
+        Benefits
+      </div>
+      <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
+        <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">Est. repairs avoided</span>
+            <span className="text-base sm:text-lg font-bold tabular-nums text-emerald-600">${moneySaved}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2 border-t pt-1">
+            <span className="text-xs text-muted-foreground">Cumulative completed</span>
+            <span className="text-base sm:text-lg font-bold tabular-nums">{totalCompletions}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   return (
     <div
       className="px-3 md:px-6 py-2 border-b bg-muted/30 shrink-0"
       style={{ ['--card-min-h' as string]: cardMinH, ['--card-max-h' as string]: cardMaxH }}
     >
       <TooltipProvider delayDuration={300}>
-        {/* Front row: Home Health + Tasks card only */}
-        <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1.25fr] gap-2 sm:gap-4 items-stretch max-w-full mb-2">
-          {/* 1. Home Health – speedometer left, score right */}
+        {/* Desktop: all four metrics in one row */}
+        <div className="hidden md:grid md:grid-cols-[0.7fr_1.25fr_1.5fr_0.9fr] gap-2 lg:gap-3 items-stretch max-w-full mb-0">
+          {/* 1. Home Health */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
               Home Health
@@ -197,11 +263,11 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             <Tooltip>
               <TooltipTrigger asChild>
                 <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
-                  <CardContent className="p-1.5 sm:p-2 flex flex-row items-center flex-1 min-h-0 gap-1">
+                  <CardContent className="p-1.5 flex flex-row items-center flex-1 min-h-0 gap-1">
                     <div className="relative flex-1 min-h-0 flex items-center justify-center min-w-0">
                       <svg
                         viewBox="0 0 120 70"
-                        className="w-full h-full max-h-[2.75rem] sm:max-h-[3.25rem] text-foreground"
+                        className="w-full h-full max-h-[3rem] text-foreground"
                         aria-hidden
                         preserveAspectRatio="xMidYMax meet"
                       >
@@ -248,7 +314,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                     </div>
                     <div className="flex-1 flex items-center justify-center min-w-0">
                       <span
-                        className={`text-2xl sm:text-[2.24rem] font-bold tabular-nums ${
+                        className={`text-2xl font-bold tabular-nums ${
                           healthScore >= 90
                             ? 'text-emerald-600'
                             : healthScore >= 70
@@ -268,8 +334,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
               </TooltipContent>
             </Tooltip>
           </div>
-
-          {/* 2. Tasks – overdue & caution up front */}
+          {/* 2. Tasks */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
               Tasks
@@ -279,7 +344,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">Overdue</span>
                   <span
-                    className={`text-lg sm:text-xl font-bold tabular-nums ${
+                    className={`text-lg font-bold tabular-nums ${
                       overdue.length === 0 ? 'text-emerald-600' : 'text-destructive'
                     }`}
                   >
@@ -288,86 +353,193 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                 </div>
                 <div className="flex items-center justify-between gap-2 border-t pt-1">
                   <span className="text-xs text-muted-foreground">Caution (90–99%)</span>
-                  <span className="text-lg sm:text-xl font-bold tabular-nums">
-                    {caution.length}
-                  </span>
+                  <span className="text-lg font-bold tabular-nums">{caution.length}</span>
                 </div>
               </CardContent>
             </Card>
           </div>
+          {/* 3. System status */}
+          {systemStatusCard}
+          {/* 4. Benefits */}
+          {benefitsCard}
         </div>
 
-        {/* Other metrics in accordion */}
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="metrics" className="border rounded-lg px-2 sm:px-3">
-            <AccordionTrigger className="text-xs sm:text-sm font-semibold py-2 hover:no-underline">
-              More dashboard metrics
-            </AccordionTrigger>
-            <AccordionContent className="pt-0 pb-2">
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_0.9fr] gap-3">
-                {/* System status */}
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    System status
-                  </div>
-                  <Card className="overflow-hidden">
-                    <CardContent className="p-2 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                      {systemKeys.map(sys => {
-                        const status = systemStatus[sys];
-                        const Icon = SYSTEM_CONFIG[sys].icon;
-                        const StatusBadge =
-                          status === 'red' ? XCircle : status === 'yellow' ? AlertTriangle : CheckCircle2;
-                        const badgeColor =
-                          status === 'red'
-                            ? 'text-destructive'
-                            : status === 'yellow'
-                              ? 'text-amber-500'
-                              : 'text-emerald-600';
-                        return (
-                          <Tooltip key={sys}>
-                            <TooltipTrigger asChild>
-                              <div className="flex flex-col items-center gap-0.5 min-w-0 shrink-0">
-                                <div className="flex flex-row items-center justify-center gap-0.5">
-                                  <Icon className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
-                                  <StatusBadge className={`h-4 w-4 shrink-0 ${badgeColor}`} strokeWidth={2.5} />
-                                </div>
-                                <span className="text-xs text-muted-foreground truncate">{SYSTEM_CONFIG[sys].label}</span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom">
-                              {SYSTEM_CONFIG[sys].label}:{' '}
-                              {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Caution (90–99% toward due)' : 'Good'}
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })}
-                    </CardContent>
-                  </Card>
-                </div>
-                {/* Benefits */}
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Benefits
-                  </div>
-                  <Card>
-                    <CardContent className="p-2 flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">Est. repairs avoided</span>
-                        <span className="text-base sm:text-lg font-bold tabular-nums text-emerald-600">
-                          ${moneySaved}
+        {/* Mobile: Health + Tasks up front, rest in accordion */}
+        <div className="md:hidden">
+          <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1.25fr] gap-2 sm:gap-4 items-stretch max-w-full mb-2">
+            {/* 1. Home Health */}
+            <div className="space-y-0 min-w-0 flex flex-col min-h-0">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
+                Home Health
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
+                    <CardContent className="p-1.5 sm:p-2 flex flex-row items-center flex-1 min-h-0 gap-1">
+                      <div className="relative flex-1 min-h-0 flex items-center justify-center min-w-0">
+                        <svg
+                          viewBox="0 0 120 70"
+                          className="w-full h-full max-h-[2.75rem] sm:max-h-[3.25rem] text-foreground"
+                          aria-hidden
+                          preserveAspectRatio="xMidYMax meet"
+                        >
+                          <defs>
+                            <linearGradient id="gaugeTrackMobile" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#ef4444" />
+                              <stop offset="40%" stopColor="#f97316" />
+                              <stop offset="70%" stopColor="#eab308" />
+                              <stop offset="100%" stopColor="#22c55e" />
+                            </linearGradient>
+                          </defs>
+                          <path
+                            d="M 12 58 A 48 48 0 0 1 108 58"
+                            fill="none"
+                            stroke="hsl(var(--muted-foreground) / 0.25)"
+                            strokeWidth="10"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 12 58 A 48 48 0 0 1 108 58"
+                            fill="none"
+                            stroke="url(#gaugeTrackMobile)"
+                            strokeWidth="8"
+                            strokeLinecap="round"
+                          />
+                          <g stroke="hsl(var(--muted-foreground) / 0.5)" strokeWidth="1">
+                            <line x1="22" y1="52" x2="26" y2="56" />
+                            <line x1="60" y1="26" x2="60" y2="30" />
+                            <line x1="98" y1="52" x2="94" y2="56" />
+                          </g>
+                          <g transform={`rotate(${gaugeRotation} 60 60)`}>
+                            <line
+                              x1="60"
+                              y1="60"
+                              x2="60"
+                              y2="24"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            <circle cx="60" cy="60" r="4" fill="currentColor" />
+                          </g>
+                        </svg>
+                      </div>
+                      <div className="flex-1 flex items-center justify-center min-w-0">
+                        <span
+                          className={`text-2xl sm:text-[2.24rem] font-bold tabular-nums ${
+                            healthScore >= 90
+                              ? 'text-emerald-600'
+                              : healthScore >= 70
+                                ? 'text-amber-500'
+                                : 'text-destructive'
+                          }`}
+                          aria-live="polite"
+                        >
+                          {healthScore}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-2 border-t pt-1.5">
-                        <span className="text-xs text-muted-foreground">Cumulative completed</span>
-                        <span className="text-base sm:text-lg font-bold tabular-nums">{totalCompletions}</span>
-                      </div>
                     </CardContent>
                   </Card>
-                </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[280px]" align="start">
+                  {healthScoreTooltip}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            {/* 2. Tasks */}
+            <div className="space-y-0 min-w-0 flex flex-col min-h-0">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
+                Tasks
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
+                <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">Overdue</span>
+                    <span
+                      className={`text-lg sm:text-xl font-bold tabular-nums ${
+                        overdue.length === 0 ? 'text-emerald-600' : 'text-destructive'
+                      }`}
+                    >
+                      {overdue.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 border-t pt-1">
+                    <span className="text-xs text-muted-foreground">Caution (90–99%)</span>
+                    <span className="text-lg sm:text-xl font-bold tabular-nums">{caution.length}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="metrics" className="border rounded-lg px-2 sm:px-3">
+              <AccordionTrigger className="text-xs sm:text-sm font-semibold py-2 hover:no-underline">
+                More dashboard metrics
+              </AccordionTrigger>
+              <AccordionContent className="pt-0 pb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_0.9fr] gap-3">
+                  <div className="space-y-1">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      System status
+                    </div>
+                    <Card className="overflow-hidden">
+                      <CardContent className="p-2 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                        {systemKeys.map(sys => {
+                          const status = systemStatus[sys];
+                          const Icon = SYSTEM_CONFIG[sys].icon;
+                          const StatusBadge =
+                            status === 'red' ? XCircle : status === 'yellow' ? AlertTriangle : CheckCircle2;
+                          const badgeColor =
+                            status === 'red'
+                              ? 'text-destructive'
+                              : status === 'yellow'
+                                ? 'text-amber-500'
+                                : 'text-emerald-600';
+                          return (
+                            <Tooltip key={sys}>
+                              <TooltipTrigger asChild>
+                                <div className="flex flex-col items-center gap-0.5 min-w-0 shrink-0">
+                                  <div className="flex flex-row items-center justify-center gap-0.5">
+                                    <Icon className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+                                    <StatusBadge className={`h-4 w-4 shrink-0 ${badgeColor}`} strokeWidth={2.5} />
+                                  </div>
+                                  <span className="text-xs text-muted-foreground truncate">{SYSTEM_CONFIG[sys].label}</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom">
+                                {SYSTEM_CONFIG[sys].label}:{' '}
+                                {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Caution (90–99% toward due)' : 'Good'}
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Benefits
+                    </div>
+                    <Card>
+                      <CardContent className="p-2 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs text-muted-foreground">Est. repairs avoided</span>
+                          <span className="text-base sm:text-lg font-bold tabular-nums text-emerald-600">
+                            ${moneySaved}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                          <span className="text-xs text-muted-foreground">Cumulative completed</span>
+                          <span className="text-base sm:text-lg font-bold tabular-nums">{totalCompletions}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
       </TooltipProvider>
     </div>
   );

@@ -555,8 +555,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-        <div className="flex flex-col h-full max-h-full overflow-hidden">
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col min-h-0 [&>button]:hidden">
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {/* Header with title, tooltip, and close button */}
         <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -684,10 +684,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               />
             )}
 
-            {/* Tabs – takes remaining space so active tasks get 60–70% of screen */}
+            {/* Tabs – fills remaining height so task list uses full space on desktop */}
             {selectedHomeId && (
-              <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                <Tabs defaultValue="tasks" className="flex flex-col flex-1 min-h-0">
+              <div className="flex flex-col flex-1 min-h-0 basis-0 overflow-hidden">
+                <Tabs defaultValue="tasks" className="flex flex-col flex-1 min-h-0 basis-0">
                   <div className="px-3 md:px-6 py-2 sm:py-3 bg-background border-b shrink-0">
                     <TabsList className="grid grid-cols-2 w-full h-10 sm:h-11 p-1">
                       <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5 min-h-[44px] sm:min-h-0">
@@ -701,8 +701,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </TabsList>
                   </div>
 
-                  <TabsContent value="tasks" className="flex-1 min-h-0 overflow-hidden m-0 flex flex-col">
-                    <div className="flex flex-col flex-1 min-h-0">
+                  <TabsContent value="tasks" className="flex-1 min-h-0 basis-0 overflow-hidden m-0 flex flex-col">
+                    <div className="flex flex-col flex-1 min-h-0 basis-0">
                       {/* System filter + Add task – scroll horizontally on small screens */}
                       <div className="shrink-0 border-b px-3 md:px-6 py-2">
                         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin min-h-[44px] sm:min-h-0">
@@ -749,8 +749,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         </div>
                       </div>
 
-                      {/* Task list – 60–70% of screen; flex-1 + min-h for guaranteed space */}
-                      <div className="flex-1 min-h-0 overflow-y-auto py-3 px-3 md:px-6 min-h-[50vh]">
+                      {/* Task list – fills remaining height so table area uses full window on desktop */}
+                      <div className="flex-1 min-h-0 basis-0 overflow-y-auto py-3 px-3 md:px-6">
                         {loading ? (
                           <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>
                         ) : getFilteredTasks().length === 0 ? (
