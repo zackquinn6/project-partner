@@ -626,17 +626,18 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 onClick={() => setShowMaintenancePlanComingSoon(true)}
                 disabled={!selectedHomeId}
                 title="Guided workflow to create your maintenance plan"
-                className="gap-1.5 shrink-0"
+                className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0"
               >
-                <ClipboardList className="h-4 w-4 text-primary" />
-                Generate Maintenance Plan
+                <ClipboardList className="h-4 w-4 text-primary shrink-0" />
+                <span className="hidden sm:inline">Generate Maintenance Plan</span>
+                <span className="sm:hidden">Plan</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowMaintenancePhotos(true)}
                 title="View photos from task completions"
-                className="gap-1.5 shrink-0"
+                className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0"
               >
                 <ImageIcon className="h-4 w-4 text-primary" />
                 View Photos
@@ -653,7 +654,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 size="sm"
                 disabled={!selectedHomeId}
                 onClick={() => setShowAlerts(true)}
-                className="gap-1.5 shrink-0"
+                className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0"
+                title="Setup Alerts"
               >
                 <Bell className="h-4 w-4 text-amber-500" />
                 Setup Alerts
@@ -683,27 +685,28 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               />
             )}
 
-            {/* Tabs - Takes remaining space */}
-            {selectedHomeId && <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                <Tabs defaultValue="tasks" className="flex flex-col h-full">
-                  {/* Tab bar - Fixed at top of tabs area */}
-                  <div className="px-3 md:px-6 py-3 bg-background border-b shrink-0">
-                    <TabsList className="grid grid-cols-2 w-full h-11 p-1">
-                      <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5">
+            {/* Tabs – takes remaining space so active tasks get 60–70% of screen */}
+            {selectedHomeId && (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <Tabs defaultValue="tasks" className="flex flex-col flex-1 min-h-0">
+                  <div className="px-3 md:px-6 py-2 sm:py-3 bg-background border-b shrink-0">
+                    <TabsList className="grid grid-cols-2 w-full h-10 sm:h-11 p-1">
+                      <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5 min-h-[44px] sm:min-h-0">
                         <ListTodo className="h-3.5 w-3.5" />
                         Active
                       </TabsTrigger>
-                      <TabsTrigger value="history" className="text-xs md:text-sm gap-1.5">
+                      <TabsTrigger value="history" className="text-xs md:text-sm gap-1.5 min-h-[44px] sm:min-h-0">
                         <History className="h-3.5 w-3.5" />
                         History
                       </TabsTrigger>
                     </TabsList>
                   </div>
 
-                   <TabsContent value="tasks" className="flex-1 min-h-0 overflow-hidden m-0">
-                      <div className="flex flex-col h-full">
-                        {/* System filter buttons + Add task */}
-                        <div className="flex flex-wrap items-center gap-2 py-2 shrink-0 px-3 md:px-6 border-b">
+                  <TabsContent value="tasks" className="flex-1 min-h-0 overflow-hidden m-0 flex flex-col">
+                    <div className="flex flex-col flex-1 min-h-0">
+                      {/* System filter + Add task – scroll horizontally on small screens */}
+                      <div className="shrink-0 border-b px-3 md:px-6 py-2">
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin min-h-[44px] sm:min-h-0">
                           {(['all', ...Object.keys(SYSTEM_CONFIG)] as (SystemKey | 'all')[]).map(sys => {
                             if (sys === 'all') {
                               return (
@@ -711,7 +714,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   key="all"
                                   variant={systemFilter === 'all' ? 'default' : 'outline'}
                                   size="sm"
-                                  className="h-8 text-xs"
+                                  className="h-9 min-h-[40px] sm:h-8 shrink-0 text-xs"
                                   onClick={() => setSystemFilter('all')}
                                 >
                                   All
@@ -725,197 +728,260 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                 key={sys}
                                 variant={systemFilter === sys ? 'default' : 'outline'}
                                 size="sm"
-                                className="h-8 gap-1.5 text-xs"
+                                className="h-9 min-h-[40px] sm:h-8 gap-1.5 text-xs shrink-0"
                                 onClick={() => setSystemFilter(sys)}
                                 title={`${SYSTEM_CONFIG[sys].label}${count > 0 ? ` (${count})` : ''}`}
                               >
                                 <Icon className="h-3.5 w-3.5" />
-                                {SYSTEM_CONFIG[sys].label}
+                                <span className="whitespace-nowrap">{SYSTEM_CONFIG[sys].label}</span>
                                 {count > 0 && <span className="opacity-80">({count})</span>}
                               </Button>
                             );
                           })}
-                          <Button onClick={() => setShowAddTask(true)} disabled={!selectedHomeId} className="ml-auto h-8 shrink-0 text-xs bg-primary hover:bg-primary/90 text-primary-foreground" title="Add Tasks">
+                          <Button
+                            onClick={() => setShowAddTask(true)}
+                            disabled={!selectedHomeId}
+                            className="ml-auto h-9 min-h-[40px] sm:h-8 shrink-0 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                            title="Add Tasks"
+                          >
                             <Plus className="h-4 w-4 mr-1" />
                             Add Tasks
                           </Button>
                         </div>
+                      </div>
 
-                        {/* Scrollable task list */}
-                        <div className="flex-1 min-h-0 overflow-y-auto py-3 px-3 md:px-6">
-                      {loading ? <div className="text-center py-8 text-muted-foreground">Loading tasks...</div> : getFilteredTasks().length === 0 ? <Card className="mx-1 border-primary/20 bg-primary/5">
-                          <CardContent className="pt-6">
-                            <div className="text-center py-8">
-                              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 text-primary mb-4">
-                                {tasks.length === 0 ? <ClipboardList className="h-7 w-7" /> : <ListTodo className="h-7 w-7" />}
+                      {/* Task list – 60–70% of screen; flex-1 + min-h for guaranteed space */}
+                      <div className="flex-1 min-h-0 overflow-y-auto py-3 px-3 md:px-6 min-h-[50vh]">
+                        {loading ? (
+                          <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>
+                        ) : getFilteredTasks().length === 0 ? (
+                          <Card className="mx-1 border-primary/20 bg-primary/5">
+                            <CardContent className="pt-6">
+                              <div className="text-center py-8">
+                                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 text-primary mb-4">
+                                  {tasks.length === 0 ? <ClipboardList className="h-7 w-7" /> : <ListTodo className="h-7 w-7" />}
+                                </div>
+                                <h3 className="text-lg font-medium mb-2">
+                                  {tasks.length === 0 ? 'Create your maintenance plan' : 'No tasks in this system'}
+                                </h3>
+                                <p className="text-muted-foreground mb-4 text-sm max-w-sm mx-auto">
+                                  {tasks.length === 0
+                                    ? 'Use our guided workflow to build a plan tailored to your home, or add tasks manually.'
+                                    : 'Try selecting a different system filter or add a new task.'}
+                                </p>
+                                {tasks.length === 0 ? (
+                                  <Button onClick={() => setShowMaintenancePlanComingSoon(true)} className="bg-primary hover:bg-primary/90 min-h-[44px]">
+                                    <ClipboardList className="h-4 w-4 mr-2" />
+                                    Generate Maintenance Plan
+                                  </Button>
+                                ) : (
+                                  <Button onClick={() => setShowAddTask(true)} className="bg-primary hover:bg-primary/90 min-h-[44px]">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add New Task
+                                  </Button>
+                                )}
                               </div>
-                              <h3 className="text-lg font-medium mb-2">
-                                {tasks.length === 0 ? "Create your maintenance plan" : 'No tasks in this system'}
-                              </h3>
-                              <p className="text-muted-foreground mb-4 text-sm max-w-sm mx-auto">
-                                {tasks.length === 0 ? "Use our guided workflow to build a plan tailored to your home, or add tasks manually." : 'Try selecting a different system filter or add a new task.'}
-                              </p>
-                              {tasks.length === 0 ? (
-                                <Button onClick={() => setShowMaintenancePlanComingSoon(true)} className="bg-primary hover:bg-primary/90">
-                                  <ClipboardList className="h-4 w-4 mr-2" />
-                                  Generate Maintenance Plan
-                                </Button>
-                              ) : (
-                                <Button onClick={() => setShowAddTask(true)} className="bg-primary hover:bg-primary/90">
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add New Task
-                                </Button>
-                              )}
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          <>
+                            {/* Mobile: card list */}
+                            <div className="md:hidden space-y-3">
+                              {getFilteredTasks().map(task => {
+                                const progress = getTaskProgress(task);
+                                const summary = task.summary ?? task.description ?? 'No summary yet.';
+                                return (
+                                  <Card
+                                    key={task.id}
+                                    className="cursor-pointer hover:bg-muted/30 transition-colors border-border"
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={() => handleTouchEnd(task.id)}
+                                    onClick={() => {
+                                      setSwipedTaskId(null);
+                                      setSelectedTaskForDetails(task);
+                                    }}
+                                  >
+                                    <CardContent className="p-3">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                          <h4 className="font-medium text-sm">{task.title}</h4>
+                                          <p className="text-xs text-muted-foreground mt-0.5">
+                                            Due {format(new Date(task.next_due), 'MMM dd, yyyy')} · Every {task.frequency_days} days
+                                          </p>
+                                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                            <span>Progress</span>
+                                            <span>{Math.round(progress)}%</span>
+                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
+                                          </div>
+                                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
+                                        </div>
+                                        <div className="flex flex-col gap-2 shrink-0">
+                                          <Button
+                                            onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
+                                            size="sm"
+                                            className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs min-w-[44px]"
+                                            title="Mark completion"
+                                          >
+                                            <CheckCircle className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-9 w-9 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-foreground"
+                                            title="Edit Task"
+                                            onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
                             </div>
-                          </CardContent>
-                        </Card> : (
-                        <table className="w-full border-collapse text-xs sm:text-sm">
-                          <thead>
-                            <tr className="border-b border-border bg-muted/40">
-                              <th className="text-left px-2 py-2 font-medium">Task</th>
-                              <th className="text-left px-2 py-2 font-medium">Frequency</th>
-                              <th className="text-left px-2 py-2 font-medium">
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className="inline-flex items-center gap-1">
-                                        Summary
-                                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="max-w-xs">
-                                      <p>Short overview shown here. Open a task to view full step-by-step instructions.</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </th>
-                              <th className="text-right px-2 py-2 font-medium">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                        {getFilteredTasks().map(task => {
-                    const progress = getTaskProgress(task);
-                    const {
-                      status,
-                      color,
-                      icon: StatusIcon
-                    } = getTaskStatus(task);
-                    const summary = task.summary ?? task.description ?? 'No summary yet.';
-                    return (
-                      <tr
-                        key={task.id}
-                        className="border-b border-border hover:bg-muted/30 transition-colors"
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={() => handleTouchEnd(task.id)}
-                      >
-                        <td
-                          className="px-2 py-2 align-top cursor-pointer"
-                          onClick={() => {
-                            setSwipedTaskId(null);
-                            setSelectedTaskForDetails(task);
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium truncate">{task.title}</span>
-                          </div>
-                          <div className="mt-1 text-[10px] text-muted-foreground">
-                            Due {format(new Date(task.next_due), 'MMM dd, yyyy')}
-                          </div>
-                          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-                            <span>Progress</span>
-                            <span>{Math.round(progress)}%</span>
-                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
-                          </div>
-                        </td>
-                        <td className="px-2 py-2 align-top">
-                          Every {task.frequency_days} days
-                        </td>
-                        <td
-                          className="px-2 py-2 align-top cursor-pointer max-w-xs"
-                          onClick={() => {
-                            setSwipedTaskId(null);
-                            setSelectedTaskForDetails(task);
-                          }}
-                        >
-                          <span className="line-clamp-3 text-xs text-muted-foreground">
-                            {summary}
-                          </span>
-                        </td>
-                        <td className="px-2 py-2 align-top">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              onClick={() => handleTaskComplete(task)}
-                              size="sm"
-                              className="h-6 bg-green-600 hover:bg-green-700 text-white text-xs px-2"
-                              title="Mark completion"
-                            >
-                              <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                              Mark completion
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-muted-foreground hover:text-foreground"
-                              title="Edit Task"
-                              onClick={() => setTaskBeingEdited(task)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                          </tbody>
-                        </table>
-                      )}
-                        </div>
+                            {/* Desktop: table */}
+                            <div className="hidden md:block">
+                              <table className="w-full border-collapse text-sm">
+                                <thead>
+                                  <tr className="border-b border-border bg-muted/40">
+                                    <th className="text-left px-2 py-2 font-medium">Task</th>
+                                    <th className="text-left px-2 py-2 font-medium">Frequency</th>
+                                    <th className="text-left px-2 py-2 font-medium">
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="inline-flex items-center gap-1">
+                                              Summary
+                                              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs">
+                                            <p>Short overview shown here. Open a task to view full step-by-step instructions.</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    </th>
+                                    <th className="text-right px-2 py-2 font-medium">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {getFilteredTasks().map(task => {
+                                    const progress = getTaskProgress(task);
+                                    const summary = task.summary ?? task.description ?? 'No summary yet.';
+                                    return (
+                                      <tr
+                                        key={task.id}
+                                        className="border-b border-border hover:bg-muted/30 transition-colors"
+                                        onTouchStart={handleTouchStart}
+                                        onTouchMove={handleTouchMove}
+                                        onTouchEnd={() => handleTouchEnd(task.id)}
+                                      >
+                                        <td
+                                          className="px-2 py-2 align-top cursor-pointer"
+                                          onClick={() => {
+                                            setSwipedTaskId(null);
+                                            setSelectedTaskForDetails(task);
+                                          }}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium truncate">{task.title}</span>
+                                          </div>
+                                          <div className="mt-1 text-[10px] text-muted-foreground">
+                                            Due {format(new Date(task.next_due), 'MMM dd, yyyy')}
+                                          </div>
+                                          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+                                            <span>Progress</span>
+                                            <span>{Math.round(progress)}%</span>
+                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
+                                          </div>
+                                        </td>
+                                        <td className="px-2 py-2 align-top">Every {task.frequency_days} days</td>
+                                        <td
+                                          className="px-2 py-2 align-top cursor-pointer max-w-xs"
+                                          onClick={() => {
+                                            setSwipedTaskId(null);
+                                            setSelectedTaskForDetails(task);
+                                          }}
+                                        >
+                                          <span className="line-clamp-3 text-xs text-muted-foreground">{summary}</span>
+                                        </td>
+                                        <td className="px-2 py-2 align-top">
+                                          <div className="flex items-center justify-end gap-2">
+                                            <Button
+                                              onClick={() => handleTaskComplete(task)}
+                                              size="sm"
+                                              className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
+                                              title="Mark completion"
+                                            >
+                                              <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                                              Mark completion
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                              title="Edit Task"
+                                              onClick={() => setTaskBeingEdited(task)}
+                                            >
+                                              <Pencil className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    </TabsContent>
+                    </div>
+                  </TabsContent>
 
-                   <TabsContent value="history" className="flex-1 min-h-0 overflow-hidden m-0">
-                      <div className="flex flex-col h-full">
-                        {/* Filters - Fixed at top */}
-                        <div className="flex items-center gap-2 py-3 shrink-0 px-3 md:px-6 border-b">
-                         <Select value={historyCategoryFilter} onValueChange={setHistoryCategoryFilter}>
-                           <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
-                             <SelectValue placeholder="Filter by category" />
-                           </SelectTrigger>
-                           <SelectContent className="z-[200] bg-popover border">
-                             <SelectItem value="all">All Categories</SelectItem>
-                             {historyCategories.map(category => <SelectItem key={category} value={category}>
-                                 {categoryLabels[category]}
-                               </SelectItem>)}
-                           </SelectContent>
-                         </Select>
-
-                         <Select value={sortBy} onValueChange={setSortBy}>
-                           <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
-                             <SelectValue placeholder="Sort by" />
-                           </SelectTrigger>
-                           <SelectContent className="z-[200] bg-popover border">
-                             <SelectItem value="date-desc">Date (Newest First)</SelectItem>
-                             <SelectItem value="date-asc">Date (Oldest First)</SelectItem>
-                             <SelectItem value="category">Category</SelectItem>
-                             <SelectItem value="title">Task Name</SelectItem>
-                           </SelectContent>
-                         </Select>
-                       </div>
-
-                       {/* Scrollable history list - matches structure of Active tab */}
-                       <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
-                         <MaintenanceHistoryTab
-                           selectedHomeId={selectedHomeId}
-                           sortBy={sortBy}
-                           categoryFilter={historyCategoryFilter}
-                           onRefresh={() => { fetchTasks(); fetchCompletions(); }}
-                         />
-                       </div>
+                  <TabsContent value="history" className="flex-1 min-h-0 overflow-hidden m-0 flex flex-col">
+                    <div className="flex flex-col flex-1 min-h-0">
+                      <div className="flex flex-wrap items-center gap-2 py-2 sm:py-3 shrink-0 px-3 md:px-6 border-b">
+                        <Select value={historyCategoryFilter} onValueChange={setHistoryCategoryFilter}>
+                          <SelectTrigger className="w-full sm:w-[180px] h-9 min-h-[44px] sm:h-8 text-xs">
+                            <SelectValue placeholder="Filter by category" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[200] bg-popover border">
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {historyCategories.map(category => (
+                              <SelectItem key={category} value={category}>
+                                {categoryLabels[category]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                          <SelectTrigger className="w-full sm:w-[180px] h-9 min-h-[44px] sm:h-8 text-xs">
+                            <SelectValue placeholder="Sort by" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[200] bg-popover border">
+                            <SelectItem value="date-desc">Date (Newest First)</SelectItem>
+                            <SelectItem value="date-asc">Date (Oldest First)</SelectItem>
+                            <SelectItem value="category">Category</SelectItem>
+                            <SelectItem value="title">Task Name</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                   </TabsContent>
-                 </Tabs>
-               </div>}
+                      <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
+                        <MaintenanceHistoryTab
+                          selectedHomeId={selectedHomeId}
+                          sortBy={sortBy}
+                          categoryFilter={historyCategoryFilter}
+                          onRefresh={() => { fetchTasks(); fetchCompletions(); }}
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
