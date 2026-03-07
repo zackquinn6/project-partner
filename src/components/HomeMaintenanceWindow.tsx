@@ -688,7 +688,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {selectedHomeId && (
               <div className="flex flex-col flex-1 min-h-0 basis-0 overflow-hidden">
                 <Tabs defaultValue="tasks" className="flex flex-col flex-1 min-h-0 basis-0">
-                  <div className="px-3 md:px-6 py-2 sm:py-3 bg-background border-b shrink-0">
+                  <div className="px-3 md:px-6 py-2 bg-background border-b shrink-0">
                     <TabsList className="grid grid-cols-2 w-full h-10 sm:h-11 p-1">
                       <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5 min-h-[44px] sm:min-h-0">
                         <ListTodo className="h-3.5 w-3.5" />
@@ -701,7 +701,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </TabsList>
                   </div>
 
-                  <TabsContent value="tasks" className="flex-1 min-h-0 basis-0 overflow-hidden m-0 flex flex-col">
+                  <TabsContent value="tasks" className="flex-1 min-h-0 basis-0 overflow-hidden m-0 p-0 flex flex-col data-[state=inactive]:hidden">
                     <div className="flex flex-col flex-1 min-h-0 basis-0">
                       {/* System filter + Add task – scroll horizontally on small screens */}
                       <div className="shrink-0 border-b px-3 md:px-6 py-2">
@@ -940,9 +940,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="history" className="flex-1 min-h-0 overflow-hidden m-0 flex flex-col">
-                    <div className="flex flex-col flex-1 min-h-0">
-                      <div className="flex flex-wrap items-center gap-2 py-2 sm:py-3 shrink-0 px-3 md:px-6 border-b">
+                  <TabsContent value="history" className="flex-1 min-h-0 basis-0 overflow-hidden m-0 p-0 flex flex-col data-[state=inactive]:hidden">
+                    <div className="flex flex-col flex-1 min-h-0 basis-0">
+                      <div className="flex flex-wrap items-center gap-2 py-2 shrink-0 px-3 md:px-6 border-b">
                         <Select value={historyCategoryFilter} onValueChange={setHistoryCategoryFilter}>
                           <SelectTrigger className="w-full sm:w-[180px] h-9 min-h-[44px] sm:h-8 text-xs">
                             <SelectValue placeholder="Filter by category" />
@@ -968,7 +968,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
+                      <div className="flex-1 min-h-0 basis-0 overflow-y-auto py-2 px-3 md:px-6">
                         <MaintenanceHistoryTab
                           selectedHomeId={selectedHomeId}
                           sortBy={sortBy}
