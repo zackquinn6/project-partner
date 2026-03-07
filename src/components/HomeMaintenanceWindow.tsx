@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check } from 'lucide-react';
-import { format, differenceInDays, addDays } from 'date-fns';
+import { format, differenceInDays, addDays, startOfDay, endOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -516,6 +516,20 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     setQuickLoggingTaskId(task.id);
     try {
       const now = new Date();
+      const dayStart = startOfDay(now);
+      const dayEnd = endOfDay(now);
+      const { data: existing } = await supabase
+        .from('maintenance_completions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('task_id', task.id)
+        .gte('completed_at', dayStart.toISOString())
+        .lte('completed_at', dayEnd.toISOString())
+        .limit(1);
+      if (existing && existing.length > 0) {
+        setQuickLoggingTaskId(null);
+        return;
+      }
       const { error: insertError } = await supabase
         .from('maintenance_completions')
         .insert({
@@ -538,10 +552,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         .eq('id', task.id)
         .eq('user_id', user.id);
       if (updateError) throw updateError;
-      toast({
-        title: 'Task logged',
-        description: `${task.title} marked complete for today.`,
-      });
+      toast({ title: 'Saved' });
       fetchTasks();
       fetchCompletions();
     } catch (error) {
@@ -847,7 +858,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                     }}
                                   >
                                     <CardContent className="p-3">
-                                      <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center justify-between gap-2">
                                         <div className="min-w-0 flex-1">
                                           <h4 className="font-medium text-sm">{task.title}</h4>
                                           <p className="text-xs text-muted-foreground mt-0.5">
@@ -867,7 +878,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               disabled={quickLoggingTaskId === task.id}
                                               size="sm"
                                               className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs min-w-[44px] px-2"
-                                              title="Log complete for today (no photo)"
+                                              title="Log complete for today"
                                             >
                                               <Check className="h-4 w-4" />
                                             </Button>
@@ -934,7 +945,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                         onTouchEnd={() => handleTouchEnd(task.id)}
                                       >
                                         <td
-                                          className="px-2 py-2 align-top cursor-pointer"
+                                          className="px-2 py-2 align-middle cursor-pointer"
                                           onClick={() => {
                                             setSwipedTaskId(null);
                                             setSelectedTaskForDetails(task);
@@ -952,9 +963,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
                                           </div>
                                         </td>
-                                        <td className="px-2 py-2 align-top">Every {task.frequency_days} days</td>
+                                        <td className="px-2 py-2 align-middle">Every {task.frequency_days} days</td>
                                         <td
-                                          className="px-2 py-2 align-top cursor-pointer max-w-xs"
+                                          className="px-2 py-2 align-middle cursor-pointer max-w-xs"
                                           onClick={() => {
                                             setSwipedTaskId(null);
                                             setSelectedTaskForDetails(task);
@@ -962,14 +973,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                         >
                                           <span className="line-clamp-3 text-xs text-muted-foreground">{summary}</span>
                                         </td>
-                                        <td className="px-2 py-2 align-top">
+                                        <td className="px-2 py-2 align-middle">
                                           <div className="flex items-center justify-end gap-2">
                                             <Button
                                               onClick={() => handleQuickLogComplete(task)}
                                               disabled={quickLoggingTaskId === task.id}
                                               size="sm"
                                               className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
-                                              title="Log complete for today (no photo)"
+                                              title="Log complete for today"
                                             >
                                               <Check className="h-3.5 w-3.5" />
                                             </Button>
