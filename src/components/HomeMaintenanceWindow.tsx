@@ -619,18 +619,17 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 <Home className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2 ml-auto w-full sm:w-auto justify-end min-w-0">
+            <div className="flex flex-wrap items-center gap-2 ml-auto w-full sm:w-auto justify-end min-w-0 overflow-x-auto overflow-y-hidden">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowMaintenancePlanComingSoon(true)}
                 disabled={!selectedHomeId}
                 title="Guided workflow to create your maintenance plan"
-                className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0"
+                className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0 whitespace-nowrap"
               >
                 <ClipboardList className="h-4 w-4 text-primary shrink-0" />
-                <span className="hidden sm:inline">Generate Maintenance Plan</span>
-                <span className="sm:hidden">Plan</span>
+                Generate Maintenance Plan
               </Button>
               <Button
                 variant="outline"
