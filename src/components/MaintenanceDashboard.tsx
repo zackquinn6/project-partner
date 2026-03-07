@@ -188,7 +188,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     >
       <TooltipProvider delayDuration={300}>
         {/* Front row: Home Health + Tasks card only */}
-        <div className="grid grid-cols-[1fr_auto] sm:grid-cols-2 gap-2 sm:gap-4 items-stretch max-w-full mb-2">
+        <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1.25fr] gap-2 sm:gap-4 items-stretch max-w-full mb-2">
           {/* 1. Home Health – speedometer left, score right */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
@@ -304,7 +304,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
               More dashboard metrics
             </AccordionTrigger>
             <AccordionContent className="pt-0 pb-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_0.9fr] gap-3">
                 {/* System status */}
                 <div className="space-y-1">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
