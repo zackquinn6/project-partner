@@ -254,7 +254,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     >
       <TooltipProvider delayDuration={300}>
         {/* Desktop: all four metrics in one row */}
-        <div className="hidden md:grid md:grid-cols-[0.525fr_0.375fr_1.5fr_0.9fr] gap-2 lg:gap-3 items-stretch max-w-full mb-0">
+        <div className="hidden md:grid md:grid-cols-[0.525fr_0.375fr_1.5fr_0.45fr] gap-2 lg:gap-3 items-stretch max-w-full mb-0">
           {/* 1. Home Health */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">

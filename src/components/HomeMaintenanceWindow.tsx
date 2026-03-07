@@ -11,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check } from 'lucide-react';
+import { format, differenceInDays, addDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -376,6 +376,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [showHomeManager, setShowHomeManager] = useState(false);
   const [showMaintenancePhotos, setShowMaintenancePhotos] = useState(false);
   const [showMaintenancePlanComingSoon, setShowMaintenancePlanComingSoon] = useState(false);
+  const [quickLoggingTaskId, setQuickLoggingTaskId] = useState<string | null>(null);
   const {
     isMobile
   } = useResponsive();
@@ -509,6 +510,50 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     fetchTasks(); // Refresh tasks after completion
     fetchCompletions(); // Refresh completions after completion
     setSelectedTask(null);
+  };
+  const handleQuickLogComplete = async (task: MaintenanceTask) => {
+    if (!user) return;
+    setQuickLoggingTaskId(task.id);
+    try {
+      const now = new Date();
+      const { error: insertError } = await supabase
+        .from('maintenance_completions')
+        .insert({
+          user_id: user.id,
+          task_id: task.id,
+          completed_at: now.toISOString(),
+          scheduled_due_date: task.next_due,
+          notes: null,
+          photo_url: null,
+        });
+      if (insertError) throw insertError;
+      const nextDue = addDays(now, task.frequency_days).toISOString();
+      const { error: updateError } = await supabase
+        .from('user_maintenance_tasks')
+        .update({
+          last_completed: now.toISOString(),
+          next_due: nextDue,
+          updated_at: now.toISOString(),
+        })
+        .eq('id', task.id)
+        .eq('user_id', user.id);
+      if (updateError) throw updateError;
+      toast({
+        title: 'Task logged',
+        description: `${task.title} marked complete for today.`,
+      });
+      fetchTasks();
+      fetchCompletions();
+    } catch (error) {
+      console.error('Error quick-logging task:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to log completion',
+        variant: 'destructive',
+      });
+    } finally {
+      setQuickLoggingTaskId(null);
+    }
   };
   const handleDeleteTask = async (taskId: string) => {
     if (!user) return;
@@ -816,14 +861,25 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
                                         </div>
                                         <div className="flex flex-col gap-2 shrink-0">
-                                          <Button
-                                            onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
-                                            size="sm"
-                                            className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs min-w-[44px]"
-                                            title="Mark completion"
-                                          >
-                                            <CheckCircle className="h-4 w-4" />
-                                          </Button>
+                                          <div className="flex items-center gap-1.5">
+                                            <Button
+                                              onClick={(e) => { e.stopPropagation(); handleQuickLogComplete(task); }}
+                                              disabled={quickLoggingTaskId === task.id}
+                                              size="sm"
+                                              className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs min-w-[44px] px-2"
+                                              title="Log complete for today (no photo)"
+                                            >
+                                              <Check className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
+                                              size="sm"
+                                              className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs px-2"
+                                              title="Log Complete (add date, notes, photo)"
+                                            >
+                                              Log Complete
+                                            </Button>
+                                          </div>
                                           <Button
                                             variant="ghost"
                                             size="icon"
@@ -909,13 +965,21 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                         <td className="px-2 py-2 align-top">
                                           <div className="flex items-center justify-end gap-2">
                                             <Button
+                                              onClick={() => handleQuickLogComplete(task)}
+                                              disabled={quickLoggingTaskId === task.id}
+                                              size="sm"
+                                              className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
+                                              title="Log complete for today (no photo)"
+                                            >
+                                              <Check className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button
                                               onClick={() => handleTaskComplete(task)}
                                               size="sm"
                                               className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
-                                              title="Mark completion"
+                                              title="Log Complete (add date, notes, photo)"
                                             >
-                                              <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                                              Mark completion
+                                              Log Complete
                                             </Button>
                                             <Button
                                               variant="ghost"
