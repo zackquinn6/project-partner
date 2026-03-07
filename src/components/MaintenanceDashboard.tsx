@@ -206,7 +206,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                   <TooltipTrigger asChild>
                     <div className="flex flex-col items-center gap-0.5 min-w-0 shrink-0">
                       <div className="flex flex-row items-center justify-center gap-0.5">
-                        <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                        <Icon className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
                         <StatusBadge className={`h-4 w-4 shrink-0 ${badgeColor}`} strokeWidth={2.5} />
                       </div>
                       <span className="text-[10px] sm:text-xs text-muted-foreground truncate text-center">
@@ -254,7 +254,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     >
       <TooltipProvider delayDuration={300}>
         {/* Desktop: all four metrics in one row */}
-        <div className="hidden md:grid md:grid-cols-[0.7fr_0.3fr_1.5fr_0.9fr] gap-2 lg:gap-3 items-stretch max-w-full mb-0">
+        <div className="hidden md:grid md:grid-cols-[0.525fr_0.375fr_1.5fr_0.9fr] gap-2 lg:gap-3 items-stretch max-w-full mb-0">
           {/* 1. Home Health */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
@@ -314,7 +314,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                     </div>
                     <div className="flex-1 flex items-center justify-center min-w-0">
                       <span
-                        className={`text-2xl font-bold tabular-nums ${
+                        className={`text-4xl font-bold tabular-nums ${
                           healthScore >= 90
                             ? 'text-emerald-600'
                             : healthScore >= 70
@@ -426,7 +426,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                       </div>
                       <div className="flex-1 flex items-center justify-center min-w-0">
                         <span
-                          className={`text-2xl sm:text-[2.24rem] font-bold tabular-nums ${
+                          className={`text-3xl sm:text-[3.36rem] font-bold tabular-nums ${
                             healthScore >= 90
                               ? 'text-emerald-600'
                               : healthScore >= 70
