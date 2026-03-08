@@ -978,7 +978,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground md:h-7 md:w-7"
+                                              className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground md:h-7 md:w-7"
                                               title="Edit Task"
                                               onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                             >
@@ -1059,7 +1059,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                                 <Button
                                                   variant="ghost"
                                                   size="icon"
-                                                  className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground md:h-7 md:w-7"
+                                                  className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground md:h-7 md:w-7"
                                                   title="Edit Task"
                                                   onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                                 >

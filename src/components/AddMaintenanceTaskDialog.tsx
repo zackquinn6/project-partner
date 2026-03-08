@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, FileText, User, ClipboardList, Inbox, CheckCircle2, Search } from 'lucide-react';
+import { Plus, FileText, User, ClipboardList, Inbox, CheckCircle2, Search, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -49,6 +49,7 @@ export function AddMaintenanceTaskDialog({
   const [activeTab, setActiveTab] = useState('templates');
   const [templateFilterCategory, setTemplateFilterCategory] = useState<string>('all');
   const [templateFilterCriticality, setTemplateFilterCriticality] = useState<string>('all');
+  const [templateSearchQuery, setTemplateSearchQuery] = useState('');
 
   // Custom task form
   const [customTask, setCustomTask] = useState({
@@ -222,11 +223,21 @@ export function AddMaintenanceTaskDialog({
   };
 
   const templatesNotYetAdded = templates.filter((t) => !existingTemplateIds.has(t.id));
+  const searchTerms = templateSearchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const filteredTemplates = templatesNotYetAdded.filter((t) => {
     const matchCategory = templateFilterCategory === 'all' || t.category === templateFilterCategory;
     const c = t.criticality ?? 2;
     const matchCriticality = templateFilterCriticality === 'all' || c === parseInt(templateFilterCriticality, 10);
-    return matchCategory && matchCriticality;
+    const matchSearch =
+      searchTerms.length === 0 ||
+      searchTerms.every(
+        (term) =>
+          (t.title ?? '').toLowerCase().includes(term) ||
+          (t.description ?? '').toLowerCase().includes(term) ||
+          (t.summary ?? '').toLowerCase().includes(term) ||
+          (categoryLabels[t.category] ?? t.category).toLowerCase().includes(term)
+      );
+    return matchCategory && matchCriticality && matchSearch;
   });
   const sortedTemplates = [...filteredTemplates].sort((a, b) => {
     if (a.category !== b.category) return a.category.localeCompare(b.category);
@@ -247,16 +258,14 @@ export function AddMaintenanceTaskDialog({
       <DialogPortal>
         <DialogOverlay className="z-[100]" />
         <DialogContent className="w-full max-w-[95vw] md:max-w-[75vw] max-h-[90vh] overflow-hidden z-[101] flex flex-col p-4 md:p-6">
-        <div className="absolute right-4 top-4">
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+        <DialogHeader className="shrink-0 flex flex-row items-center justify-between gap-2 pr-0">
+          <DialogTitle className="flex items-center gap-2 min-w-0">
+            <ClipboardList className="h-5 w-5 text-primary shrink-0" />
+            <span className="truncate">Add Maintenance Task</span>
+          </DialogTitle>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="shrink-0">
             Close
           </Button>
-        </div>
-        <DialogHeader className="shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
-            Add Maintenance Task
-          </DialogTitle>
           <DialogDescription className="sr-only">
             Add a task from templates or create a custom maintenance task for your home.
           </DialogDescription>
@@ -276,6 +285,28 @@ export function AddMaintenanceTaskDialog({
 
           <TabsContent value="templates" className="mt-4 flex-1 min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden">
             <p className="text-xs text-muted-foreground mb-3">Pick a task below and add it to your plan. Open any task from your list to see full step-by-step instructions.</p>
+            <div className="relative w-full mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
+              <Input
+                type="search"
+                placeholder="Search templates by title, description, or category..."
+                value={templateSearchQuery}
+                onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-9 h-10 text-sm rounded-lg border-input bg-background"
+                autoComplete="off"
+                aria-label="Search maintenance templates"
+              />
+              {templateSearchQuery.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setTemplateSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <Select value={templateFilterCategory} onValueChange={setTemplateFilterCategory}>
                 <SelectTrigger className="w-[160px] h-9 text-sm">
