@@ -516,9 +516,15 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     setSelectedTask(task);
   };
   const handleTaskCompleted = () => {
-    fetchTasks(); // Refresh tasks after completion
-    fetchCompletions(); // Refresh completions after completion
+    const completed = selectedTask;
     setSelectedTask(null);
+    if (completed) {
+      const now = new Date();
+      const nextDue = addDays(now, completed.frequency_days).toISOString();
+      setTasks(prev => prev.map(t => t.id === completed.id ? { ...t, last_completed: now.toISOString(), next_due: nextDue } : t));
+    }
+    fetchTasks();
+    fetchCompletions();
   };
   const handleQuickLogComplete = async (task: MaintenanceTask) => {
     if (!user) return;
@@ -561,6 +567,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         .eq('id', task.id)
         .eq('user_id', user.id);
       if (updateError) throw updateError;
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, last_completed: now.toISOString(), next_due: nextDue } : t));
       toast({ title: 'Saved' });
       fetchTasks();
       fetchCompletions();
@@ -1010,6 +1017,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               })}
                               {tasksCompletedToday.length > 0 && (
                                 <>
+                                  <div className="border-t border-border my-3" aria-hidden />
                                   <p className="text-xs font-medium text-muted-foreground pt-2 pb-1 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                                     Completed today
                                   </p>
