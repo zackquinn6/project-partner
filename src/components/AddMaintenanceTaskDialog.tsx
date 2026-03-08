@@ -246,13 +246,13 @@ export function AddMaintenanceTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100]" />
-        <DialogContent className="w-full max-w-[95vw] md:max-w-[75vw] max-h-[90vh] overflow-hidden z-[101]">
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[75vw] max-h-[90vh] overflow-hidden z-[101] flex flex-col p-4 md:p-6">
         <div className="absolute right-4 top-4">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Close
           </Button>
         </div>
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-primary" />
             Add Maintenance Task
@@ -262,19 +262,19 @@ export function AddMaintenanceTaskDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="templates" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              From Templates
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2 shrink-0">
+            <TabsTrigger value="templates" className="flex items-center gap-2 text-xs sm:text-sm">
+              <FileText className="h-4 w-4 shrink-0" />
+              Templates
             </TabsTrigger>
-            <TabsTrigger value="custom" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Custom Task
+            <TabsTrigger value="custom" className="flex items-center gap-2 text-xs sm:text-sm">
+              <User className="h-4 w-4 shrink-0" />
+              Custom
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="templates" className="mt-4">
+          <TabsContent value="templates" className="mt-4 flex-1 min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden">
             <p className="text-xs text-muted-foreground mb-3">Pick a task below and add it to your plan. Open any task from your list to see full step-by-step instructions.</p>
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <Select value={templateFilterCategory} onValueChange={setTemplateFilterCategory}>
@@ -302,7 +302,7 @@ export function AddMaintenanceTaskDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="max-h-[50vh] overflow-y-auto space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
               {sortedCategoryKeys.map((category) => {
                 const categoryTemplates = groupedTemplates[category];
                 return (
@@ -373,8 +373,8 @@ export function AddMaintenanceTaskDialog({
             </div>
           </TabsContent>
 
-          <TabsContent value="custom" className="mt-4">
-            <div className="space-y-4">
+          <TabsContent value="custom" className="mt-4 flex-1 min-h-0 overflow-y-auto data-[state=inactive]:hidden">
+            <div className="space-y-4 pb-8">
               <div className="grid gap-4">
                 <div>
                   <Label htmlFor="title">Task Title *</Label>
@@ -477,17 +477,18 @@ export function AddMaintenanceTaskDialog({
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4">
+                <div className="flex flex-wrap justify-end gap-2 pt-4 pb-4">
                   <Button 
                     variant="outline" 
                     onClick={() => onOpenChange(false)}
+                    className="min-h-[44px]"
                   >
                     Cancel
                   </Button>
                   <Button 
                     onClick={handleAddCustomTask}
                     disabled={loading || !customTask.title.trim()}
-                    className="bg-primary hover:bg-primary/90"
+                    className="bg-primary hover:bg-primary/90 min-h-[44px]"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     {loading ? 'Adding...' : 'Add Custom Task'}
