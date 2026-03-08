@@ -250,7 +250,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
 
   return (
     <div
-      className="px-3 md:px-6 py-2 border-b bg-muted/30 shrink-0"
+      className="px-3 md:px-6 pt-2 pb-1 md:py-2 border-b bg-muted/30 shrink-0"
       style={{ ['--card-min-h' as string]: cardMinH, ['--card-max-h' as string]: cardMaxH }}
     >
       <TooltipProvider delayDuration={300}>
@@ -369,10 +369,10 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
         <div className="md:hidden">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="metrics" className="border-0">
-              <div className="flex gap-1 sm:gap-2 items-stretch max-w-full mb-2">
+              <div className="flex gap-1 sm:gap-2 items-stretch max-w-full mb-0">
                 {/* 1. Home Health - minimal padding on mobile */}
                 <div className="space-y-0 min-w-0 flex flex-col min-h-0 flex-1">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-0.5 mb-0.5 shrink-0">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-0.5 mb-0.5 shrink-0 leading-tight">
                 Home Health
               </div>
               <Tooltip>
@@ -451,7 +451,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             </div>
             {/* 2. Tasks */}
             <div className="space-y-0 min-w-0 flex flex-col min-h-0 shrink-0">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-0.5 mb-0.5 shrink-0">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-0.5 mb-0.5 shrink-0 leading-tight">
                 Tasks
               </div>
               <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
@@ -473,9 +473,10 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                 </CardContent>
               </Card>
             </div>
-                {/* 3. More metrics - button height matches card content; icon same visual weight as cards */}
-                <div className="shrink-0 flex items-center">
-                  <AccordionTrigger className="flex items-center justify-center gap-1 py-2 px-2 rounded-lg border border-border hover:no-underline hover:bg-muted/50 min-w-[2.5rem] h-[3.5rem] [&>svg:last-child]:rotate-0 data-[state=open]:[&>svg:last-child]:rotate-180">
+                {/* 3. More metrics - accordion button aligned with cards only (same height as white cards) */}
+                <div className="shrink-0 flex flex-col min-h-0">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-0.5 mb-0.5 shrink-0 leading-tight invisible select-none pointer-events-none" aria-hidden>&nbsp;</div>
+                  <AccordionTrigger className="flex items-center justify-center gap-1 py-0 px-2 rounded-lg border border-border hover:no-underline hover:bg-muted/50 min-w-[2.5rem] min-h-[var(--card-min-h)] h-[var(--card-max-h)] max-h-[var(--card-max-h)] [&>svg:last-child]:rotate-0 data-[state=open]:[&>svg:last-child]:rotate-180">
                     <BarChart2 className="h-6 w-6 sm:h-7 sm:w-7 text-muted-foreground shrink-0" aria-hidden />
                   </AccordionTrigger>
                 </div>

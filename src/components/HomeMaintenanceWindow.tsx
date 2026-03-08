@@ -394,6 +394,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       fetchHomes();
     }
   }, [open, user]);
+
+  // Avoid showing a focused/highlighted element when the maintenance view first opens
+  useEffect(() => {
+    if (open) {
+      (document.activeElement as HTMLElement)?.blur();
+    }
+  }, [open]);
   useEffect(() => {
     if (selectedHomeId && user) {
       fetchTasks();
@@ -813,7 +820,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {selectedHomeId && (
               <div className="flex flex-col flex-1 min-h-0 basis-0 overflow-hidden">
                 <Tabs defaultValue="tasks" className="flex flex-col flex-1 min-h-0 basis-0">
-                  <div className="px-2 md:px-6 py-0 md:py-2 bg-background border-b shrink-0 overflow-visible">
+                  <div className="px-2 md:px-6 pt-0.5 pb-0 md:py-2 bg-background border-b shrink-0 overflow-visible">
                     <TabsList className="grid grid-cols-2 w-full h-7 md:h-11 p-0 md:p-1 gap-0">
                       <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1 py-0 min-h-7 h-7 px-1.5 md:py-1.5 md:px-2 md:min-h-0 rounded-l-md rounded-r-none md:rounded-sm data-[state=active]:bg-background">
                         <ListTodo className="h-3 w-3 md:h-3.5 md:w-3.5 shrink-0" />
@@ -829,16 +836,16 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   <TabsContent value="tasks" className="flex-1 min-h-0 basis-0 overflow-hidden m-0 p-0 flex flex-col data-[state=inactive]:hidden">
                     <div className="flex flex-col flex-1 min-h-0 basis-0">
                       {/* System filter: mobile = Add button + filter dropdown; desktop = All + labels, Add right */}
-                      <div className="shrink-0 border-b px-2 md:px-6 py-1.5 md:py-2">
-                        <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto pb-0.5 md:pb-1 scrollbar-thin min-h-0">
+                      <div className="shrink-0 border-b px-2 md:px-6 py-1.5 md:py-2 overflow-visible">
+                        <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto overflow-y-visible pb-0.5 md:pb-1 scrollbar-thin min-h-0">
                           <Button
                             onClick={() => setShowAddTask(true)}
                             disabled={!selectedHomeId}
                             variant="outline"
-                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:bg-transparent md:text-primary md:hover:bg-primary/10 md:ml-auto"
+                            className="h-9 w-9 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:bg-transparent md:text-primary md:hover:bg-primary/10 md:ml-auto rounded-lg md:rounded-md flex items-center justify-center"
                             title="Add Tasks"
                           >
-                            <Plus className="h-4 w-4 md:mr-1 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} />
+                            <Plus className="h-5 w-5 md:h-4 md:w-4 md:mr-1 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
                             <span className="hidden md:inline">Add Tasks</span>
                           </Button>
                           {/* Mobile: single filter dropdown */}
@@ -847,13 +854,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 px-2 gap-1 shrink-0 text-xs md:hidden"
+                                className="h-8 min-h-8 py-1 px-2 gap-1 shrink-0 text-xs md:hidden rounded-md border border-input"
                               >
                                 {systemFilter === 'all' ? 'All' : SYSTEM_CONFIG[systemFilter as SystemKey]?.label ?? systemFilter}
                                 <ChevronDown className="h-3.5 w-3.5 shrink-0" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto">
+                            <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto min-w-[11rem] md:min-w-0 w-[11rem] md:w-auto">
                               <DropdownMenuRadioGroup value={systemFilter} onValueChange={(v) => setSystemFilter(v as SystemKey | 'all')}>
                                 <DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
                                 {(Object.keys(SYSTEM_CONFIG) as SystemKey[]).map(sys => {
