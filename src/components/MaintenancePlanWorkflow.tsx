@@ -246,6 +246,13 @@ export function MaintenancePlanWorkflow({
     }
   }, [open]);
 
+  // Generate plan when user reaches step 8 so we use the latest form state (selections from steps 0–7).
+  useEffect(() => {
+    if (!open || !homeId || !user || step !== 8 || planGenerated || loading) return;
+    generatePlan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when step becomes 8; generatePlan reads current state from closure
+  }, [open, homeId, user, step, planGenerated, loading]);
+
   useEffect(() => {
     if (!open || step !== 8 || !planGenerated) return;
     setLoadingTemplates(true);
@@ -412,6 +419,15 @@ export function MaintenancePlanWorkflow({
         if (appliancesSystems.some((a) => a === 'Dryer (gas/electric)')) categoriesToInclude.add('safety');
         if (appliancesSystems.some((a) => a === 'Dishwasher' || a === 'Garbage disposal'))
           categoriesToInclude.add('interior');
+        if (
+          appliancesSystems.some(
+            (a) =>
+              a === 'Dishwasher' ||
+              a === 'Garbage disposal' ||
+              a === 'Dryer (gas/electric)'
+          )
+        )
+          categoriesToInclude.add('appliances');
         categoriesToInclude.add('electrical');
         categoriesToInclude.add('interior');
 
@@ -613,12 +629,7 @@ export function MaintenancePlanWorkflow({
 
   const canNext = () => true;
 
-  const handleNext = async () => {
-    if (step === 7 && !planGenerated) {
-      await generatePlan();
-      setStep(8);
-      return;
-    }
+  const handleNext = () => {
     if (step < totalSteps - 1) setStep((s) => s + 1);
   };
 
@@ -1121,7 +1132,12 @@ export function MaintenancePlanWorkflow({
                       </PopoverContent>
                     </Popover>
                   </div>
-                  {loadingTemplates ? (
+                  {!planGenerated || loading ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground">Generating your plan from your selections…</p>
+                    </div>
+                  ) : loadingTemplates ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
@@ -1129,13 +1145,25 @@ export function MaintenancePlanWorkflow({
                     const alreadyInPlanIds = new Set(
                       planEntries.filter((e): e is PlanItem => e.type === 'template').map((e) => e.templateId)
                     );
-                    const notYetInPlan = allTemplates.filter((t) => !alreadyInPlanIds.has(t.id));
+                    const notYetInPlan = allTemplates
+                      .filter((t) => !alreadyInPlanIds.has(t.id))
+                      .sort((a, b) => (b.criticality ?? 0) - (a.criticality ?? 0));
                     const grouped = notYetInPlan.reduce((acc, t) => {
                       if (!acc[t.category]) acc[t.category] = [];
                       acc[t.category].push(t);
                       return acc;
                     }, {} as Record<string, MaintenanceTemplate[]>);
-                    const sortedCategories = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+                    // Order categories by highest criticality first, then name
+                    const sortedCategories = Object.keys(grouped).sort((a, b) => {
+                      const maxA = Math.max(...grouped[a].map((t) => t.criticality ?? 0));
+                      const maxB = Math.max(...grouped[b].map((t) => t.criticality ?? 0));
+                      if (maxB !== maxA) return maxB - maxA;
+                      return a.localeCompare(b);
+                    });
+                    // Within each category, templates already sorted by criticality desc from notYetInPlan
+                    sortedCategories.forEach((cat) => {
+                      grouped[cat].sort((a, b) => (b.criticality ?? 0) - (a.criticality ?? 0));
+                    });
                     return (
                       <div className="max-h-[360px] overflow-y-auto space-y-4 pr-2">
                         {sortedCategories.length === 0 ? (
