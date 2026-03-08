@@ -106,7 +106,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
     risks_of_skipping: task.risks_of_skipping ?? '',
     benefits_of_maintenance: task.benefits_of_maintenance ?? '',
     criticality: task.criticality ?? 2,
-    repair_cost_savings: task.repair_cost_savings ?? '',
+    repair_cost_savings: task.repair_cost_savings != null && task.repair_cost_savings !== '' ? String(task.repair_cost_savings) : '',
     progress_percentage: task.progress_percentage ?? computedProgress(task),
   });
   const [saving, setSaving] = useState(false);
@@ -127,7 +127,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           risks_of_skipping: form.risks_of_skipping.trim() || null,
           benefits_of_maintenance: form.benefits_of_maintenance.trim() || null,
           criticality: form.criticality,
-          repair_cost_savings: form.repair_cost_savings.trim() || null,
+          repair_cost_savings: repairSavingsStr || null,
           progress_percentage: form.progress_percentage,
         })
         .eq('id', task.id)
@@ -154,8 +154,9 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
     }
   };
 
-  const repairSavingsNum = form.repair_cost_savings.trim() === '' ? '' : parseInt(form.repair_cost_savings, 10);
-  const repairSavingsValid = form.repair_cost_savings.trim() === '' || (Number.isInteger(repairSavingsNum) && repairSavingsNum >= 0);
+  const repairSavingsStr = String(form.repair_cost_savings ?? '').trim();
+  const repairSavingsNum = repairSavingsStr === '' ? '' : parseInt(repairSavingsStr, 10);
+  const repairSavingsValid = repairSavingsStr === '' || (Number.isInteger(repairSavingsNum) && repairSavingsNum >= 0);
 
   return (
     <div className="flex flex-col min-h-0 flex-1 text-[0.75rem]">
@@ -1354,6 +1355,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {taskBeingEdited && (
             <EditMaintenanceTaskForm
+              key={taskBeingEdited.id}
               task={taskBeingEdited}
               onClose={() => setTaskBeingEdited(null)}
               onUpdated={fetchTasks}
