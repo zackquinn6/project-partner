@@ -201,14 +201,14 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             placeholder="Step-by-step instructions"
           />
         </div>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="min-w-0">
             <Label htmlFor="edit-category">Category</Label>
             <Select
               value={form.category}
               onValueChange={(value) => setForm(prev => ({ ...prev, category: value }))}
             >
-              <SelectTrigger id="edit-category" className="w-full min-w-0 max-w-full">
+              <SelectTrigger id="edit-category" className="w-full min-w-0 max-w-full h-7 md:h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
@@ -233,7 +233,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               value={String(form.criticality)}
               onValueChange={(v) => setForm(prev => ({ ...prev, criticality: parseInt(v, 10) as 1 | 2 | 3 }))}
             >
-              <SelectTrigger id="edit-criticality" className="w-full min-w-0 max-w-full">
+              <SelectTrigger id="edit-criticality" className="w-full min-w-0 max-w-full h-7 md:h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
@@ -243,14 +243,14 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               </SelectContent>
             </Select>
           </div>
-          <div className="min-w-0 max-w-[8rem]">
+          <div className="min-w-0">
             <Label htmlFor="edit-frequency" className="whitespace-nowrap">Frequency (days)</Label>
             <Input
               id="edit-frequency"
               type="number"
               min={1}
               max={3650}
-              className="w-full min-w-0 max-w-full"
+              className="w-full min-w-0 max-w-full h-7 md:h-8"
               value={form.frequency_days}
               onChange={(e) =>
                 setForm(prev => ({
@@ -258,27 +258,6 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
                   frequency_days: parseInt(e.target.value, 10) || prev.frequency_days,
                 }))
               }
-            />
-          </div>
-          <div className="min-w-0">
-            <Label htmlFor="edit-repair-savings"><span className="md:hidden">Benefit $</span><span className="hidden md:inline">Repair cost savings ($)</span></Label>
-            <Input
-              id="edit-repair-savings"
-              type="number"
-              min={0}
-              step={1}
-              className="w-full min-w-0"
-              value={form.repair_cost_savings}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw === '') {
-                  setForm(prev => ({ ...prev, repair_cost_savings: '' }));
-                  return;
-                }
-                const v = parseInt(raw, 10);
-                if (!Number.isNaN(v) && v >= 0) setForm(prev => ({ ...prev, repair_cost_savings: String(v) }));
-              }}
-              placeholder="0"
             />
           </div>
         </div>
@@ -329,6 +308,27 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             placeholder="e.g. Extend life from 10 to 20 yrs"
             value={form.benefits_of_maintenance}
             onChange={(e) => setForm(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-repair-savings"><span className="md:hidden">Benefit $</span><span className="hidden md:inline">Repair cost savings ($)</span></Label>
+          <Input
+            id="edit-repair-savings"
+            type="number"
+            min={0}
+            step={1}
+            className="w-full min-w-0 max-w-[8rem] h-7 md:h-8"
+            value={form.repair_cost_savings}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === '') {
+                setForm(prev => ({ ...prev, repair_cost_savings: '' }));
+                return;
+              }
+              const v = parseInt(raw, 10);
+              if (!Number.isNaN(v) && v >= 0) setForm(prev => ({ ...prev, repair_cost_savings: String(v) }));
+            }}
+            placeholder="0"
           />
         </div>
         </div>
@@ -879,13 +879,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[45%] md:max-w-none" />
                                             <Button
                                               variant="ghost"
-                                              size="sm"
-                                              className="h-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground px-1.5 gap-1"
+                                              size="icon"
+                                              className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
                                               title="Edit Task"
                                               onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                             >
                                               <Pencil className="h-3.5 w-3.5 shrink-0" />
-                                              <span className="text-xs">Edit</span>
                                             </Button>
                                           </div>
                                           <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
@@ -960,13 +959,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                                 <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[45%] md:max-w-none" />
                                                 <Button
                                                   variant="ghost"
-                                                  size="sm"
-                                                  className="h-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground px-1.5 gap-1"
+                                                  size="icon"
+                                                  className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
                                                   title="Edit Task"
                                                   onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                                 >
                                                   <Pencil className="h-3.5 w-3.5 shrink-0" />
-                                                  <span className="text-xs">Edit</span>
                                                 </Button>
                                               </div>
                                               <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
@@ -1269,7 +1267,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
             {selectedHomeId ? (
-              <MaintenanceNotifications selectedHomeId={selectedHomeId} />
+              <MaintenanceNotifications selectedHomeId={selectedHomeId} onSaved={() => setShowAlerts(false)} />
             ) : (
               <div className="flex flex-col items-center gap-2 py-6 text-center">
                 <Home className="h-10 w-10 text-muted-foreground" />
