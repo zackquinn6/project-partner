@@ -57,6 +57,21 @@ function homeAgeToMedianYear(ageLabel: string): number | null {
 const YEAR_MIN = 1850;
 const YEAR_MAX = new Date().getFullYear();
 
+const CATEGORY_LABELS: Record<string, string> = {
+  appliances: 'Appliances',
+  electrical: 'Electrical',
+  exterior: 'Exterior',
+  general: 'General',
+  hvac: 'HVAC',
+  interior: 'Interior',
+  landscaping: 'Landscaping',
+  outdoor: 'Outdoor',
+  plumbing: 'Plumbing',
+  roof: 'Roof',
+  safety: 'Safety',
+  security: 'Security',
+};
+
 const STEP_TOOLTIPS: Record<number, string> = {
   0: 'Your heating and cooling systems drive which HVAC tasks we recommend (e.g. filter changes, furnace tune-ups). This keeps your plan relevant to how your home is actually heated and cooled.',
   1: 'Hot water system type affects plumbing and safety tasks (e.g. flushing a tank, checking pressure relief). We use this to include the right maintenance for your setup.',
@@ -66,7 +81,8 @@ const STEP_TOOLTIPS: Record<number, string> = {
   5: 'Lawn and landscape choices determine whether we add mowing, irrigation, gutter, and leaf-cleanup tasks. This keeps outdoor maintenance in line with what you actually maintain.',
   6: 'Add one-off tasks that are specific to your property (e.g. a pond, flat roof, or retaining wall). They become part of your plan with the schedule you choose.',
   7: 'Choose how many tasks you want: essential only (high priority), recommended (high + medium), or full (all tasks). More tasks mean better coverage but more to track.',
-  8: 'Review the tasks we generated from your answers. You can remove any you don’t want before saving. Your plan will appear in your maintenance list so you can track and log completions.',
+  8: 'Browse templates that weren’t added from your answers. Add any that fit your home—for example, tasks for systems you have that the questionnaire didn’t cover. Already-added tasks don’t appear here.',
+  9: 'Here’s your plan. Remove any task you don’t want, then press Save to add everything to your maintenance list so you can track and log completions.',
 };
 const FOUNDATION_OPTIONS = ['Slab', 'Crawl space', 'Full basement', 'Other'];
 const EXTERIOR_OPTIONS = ['Vinyl siding', 'Brick', 'Wood siding', 'Stucco', 'Metal', 'Other'];
@@ -202,8 +218,10 @@ export function MaintenancePlanWorkflow({
 
   const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
   const [planGenerated, setPlanGenerated] = useState(false);
+  const [allTemplates, setAllTemplates] = useState<MaintenanceTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
-  const totalSteps = 9;
+  const totalSteps = 10;
   const isLastStep = step === totalSteps - 1;
 
   const doNotSaveCheckbox = (
@@ -224,8 +242,28 @@ export function MaintenancePlanWorkflow({
       setStep(0);
       setPlanGenerated(false);
       setPlanEntries([]);
+      setAllTemplates([]);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || step !== 8 || !planGenerated) return;
+    setLoadingTemplates(true);
+    supabase
+      .from('maintenance_templates')
+      .select('*')
+      .order('category', { ascending: true })
+      .order('title', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching templates for step 9:', error);
+          setAllTemplates([]);
+        } else {
+          setAllTemplates((data as MaintenanceTemplate[]) || []);
+        }
+        setLoadingTemplates(false);
+      });
+  }, [open, step, planGenerated]);
 
   useEffect(() => {
     if (!open || !homeId) {
@@ -317,6 +355,13 @@ export function MaintenancePlanWorkflow({
 
   const removePlanEntry = (index: number) => {
     setPlanEntries((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addTemplateToPlan = (template: MaintenanceTemplate) => {
+    setPlanEntries((prev) => [
+      ...prev,
+      { type: 'template' as const, templateId: template.id, title: template.title, template },
+    ]);
   };
 
   const generatePlan = (): Promise<void> => {
@@ -1058,60 +1103,127 @@ export function MaintenancePlanWorkflow({
                 </div>
               )}
 
-              {/* Step 8 — Generate & review plan */}
+              {/* Step 8 — Review template list and add any tasks */}
               {step === 8 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
-                  {loading && (
+                  <div className="flex items-start gap-2">
+                    <p className="text-sm font-medium flex-1">
+                      Review the template list and add any tasks that fit your home. Only templates not already in your plan are shown.
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[8]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  {loadingTemplates ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
-                  )}
-                  {!loading && planEntries.length > 0 && (
-                    <>
-                      <div className="flex items-start gap-2">
-                        <p className="text-sm text-muted-foreground flex-1">
-                          Review your plan. Remove any task you don't want, then tap Save My Plan.
-                        </p>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
-                              <HelpCircle className="h-4 w-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left" className="max-w-[280px]">
-                            {STEP_TOOLTIPS[8]}
-                          </TooltipContent>
-                        </Tooltip>
+                  ) : (() => {
+                    const alreadyInPlanIds = new Set(
+                      planEntries.filter((e): e is PlanItem => e.type === 'template').map((e) => e.templateId)
+                    );
+                    const notYetInPlan = allTemplates.filter((t) => !alreadyInPlanIds.has(t.id));
+                    const grouped = notYetInPlan.reduce((acc, t) => {
+                      if (!acc[t.category]) acc[t.category] = [];
+                      acc[t.category].push(t);
+                      return acc;
+                    }, {} as Record<string, MaintenanceTemplate[]>);
+                    const sortedCategories = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+                    return (
+                      <div className="max-h-[360px] overflow-y-auto space-y-4 pr-2">
+                        {sortedCategories.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">All available templates are already in your plan. Tap Next to review and save.</p>
+                        ) : (
+                          sortedCategories.map((category) => (
+                            <div key={category}>
+                              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                                {CATEGORY_LABELS[category] ?? category}
+                              </h3>
+                              <div className="space-y-2">
+                                {grouped[category].map((template) => (
+                                  <Card key={template.id} className="border-border hover:border-primary/30 transition-colors">
+                                    <CardContent className="py-2.5 px-3 flex items-center justify-between gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <span className="text-sm font-medium block truncate">{template.title}</span>
+                                        <span className="text-xs text-muted-foreground">Every {template.frequency_days} days</span>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="shrink-0 h-8"
+                                        onClick={() => addTemplateToPlan(template)}
+                                      >
+                                        <Plus className="h-3.5 w-3.5 mr-1" />
+                                        Add
+                                      </Button>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
-                      <div className="max-h-[320px] overflow-y-auto space-y-2 p-4 pr-6">
-                        {planEntries.map((entry, index) => (
-                          <Card key={index} className="border-primary/15 hover:border-primary/30 transition-colors">
-                            <CardContent className="py-3 px-4 flex items-center justify-between gap-2">
-                              <span className="text-sm truncate flex-1 min-w-0">
-                                {entry.type === 'template' ? entry.title : entry.title}
-                                {entry.type === 'custom' && (
-                                  <span className="text-muted-foreground ml-1">
-                                    (custom · {CUSTOM_TASK_FREQUENCIES.find((f) => f.days === entry.frequency_days)?.label ?? `${entry.frequency_days} days`})
-                                  </span>
-                                )}
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 shrink-0"
-                                onClick={() => removePlanEntry(index)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {!loading && planGenerated && planEntries.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No tasks in plan. Add templates or custom tasks in earlier steps.</p>
+                    );
+                  })()}
+                  {doNotSaveCheckbox}
+                </div>
+              )}
+
+              {/* Step 9 — Here's your plan, now press save */}
+              {step === 9 && (
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                  <div className="flex items-start gap-2">
+                    <p className="text-sm text-muted-foreground flex-1">
+                      Here's your plan. Remove any task you don't want, then press Save My Plan.
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[9]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  {planEntries.length > 0 ? (
+                    <div className="max-h-[320px] overflow-y-auto space-y-2 p-4 pr-6">
+                      {planEntries.map((entry, index) => (
+                        <Card key={index} className="border-primary/15 hover:border-primary/30 transition-colors">
+                          <CardContent className="py-3 px-4 flex items-center justify-between gap-2">
+                            <span className="text-sm truncate flex-1 min-w-0">
+                              {entry.type === 'template' ? entry.title : entry.title}
+                              {entry.type === 'custom' && (
+                                <span className="text-muted-foreground ml-1">
+                                  (custom · {CUSTOM_TASK_FREQUENCIES.find((f) => f.days === entry.frequency_days)?.label ?? `${entry.frequency_days} days`})
+                                </span>
+                              )}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0"
+                              onClick={() => removePlanEntry(index)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No tasks in your plan. Go back to add templates or custom tasks.</p>
                   )}
                   {doNotSaveCheckbox}
                 </div>
