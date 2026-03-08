@@ -771,10 +771,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowAddTask(true)}
                             disabled={!selectedHomeId}
                             variant="outline"
-                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-primary text-primary hover:bg-primary/10 md:ml-auto"
+                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:text-primary md:hover:bg-primary/10 md:ml-auto"
                             title="Add Tasks"
                           >
-                            <Plus className="h-4 w-4 md:mr-1" />
+                            <Plus className="h-4 w-4 md:mr-1" strokeWidth={2} />
                             <span className="hidden md:inline">Add Tasks</span>
                           </Button>
                           {(['all', ...Object.keys(SYSTEM_CONFIG)] as (SystemKey | 'all')[]).map(sys => {
@@ -814,7 +814,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                       </div>
 
                       {/* Task list – fills remaining height so table area uses full window on desktop */}
-                      <div className="flex-1 min-h-0 basis-0 overflow-y-auto py-3 px-3 md:px-6">
+                      <div className="flex-1 min-h-0 basis-0 overflow-y-auto py-3 pt-3 pb-1.5 px-3 md:py-3 md:px-6">
                         {loading ? (
                           <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>
                         ) : filteredTasks.length === 0 ? (
@@ -876,11 +876,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           <div className="flex items-center gap-1.5 mt-1 md:mt-2 text-xs text-muted-foreground">
                                             <span className="shrink-0">Progress</span>
                                             <span className="shrink-0 tabular-nums">{Math.round(progress)}%</span>
-                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[45%] md:max-w-none" />
+                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none" />
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
+                                              className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground md:h-7 md:w-7"
                                               title="Edit Task"
                                               onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                             >
@@ -956,11 +956,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               <div className="flex items-center gap-1.5 mt-1 md:mt-2 text-xs text-muted-foreground">
                                                 <span className="shrink-0">Progress</span>
                                                 <span className="shrink-0 tabular-nums">{Math.round(progress)}%</span>
-                                                <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[45%] md:max-w-none" />
+                                                <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none" />
                                                 <Button
                                                   variant="ghost"
                                                   size="icon"
-                                                  className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
+                                                  className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground md:h-7 md:w-7"
                                                   title="Edit Task"
                                                   onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                                 >
