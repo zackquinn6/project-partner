@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check, ChevronDown, Menu } from 'lucide-react';
-import { format, differenceInDays, addDays, startOfDay, endOfDay, isToday } from 'date-fns';
+import { format, differenceInDays, addDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -600,8 +600,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
 
   const filteredTasks = getFilteredTasks();
-  const tasksNotCompletedToday = filteredTasks.filter(t => !t.last_completed || !isToday(new Date(t.last_completed)));
-  const tasksCompletedToday = filteredTasks.filter(t => t.last_completed && isToday(new Date(t.last_completed)));
+  // Completed today = completion date is same calendar day as today; resets next day so task can be completed again
+  const today = new Date();
+  const tasksNotCompletedToday = filteredTasks.filter(t => !t.last_completed || !isSameDay(new Date(t.last_completed), today));
+  const tasksCompletedToday = filteredTasks.filter(t => t.last_completed && isSameDay(new Date(t.last_completed), today));
 
   const historyCategories = ['appliances', 'electrical', 'exterior', 'general', 'hvac', 'interior', 'landscaping', 'outdoor', 'plumbing', 'roof', 'safety', 'security'];
   const categoryLabels: Record<string, string> = {
