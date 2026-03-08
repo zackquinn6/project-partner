@@ -473,10 +473,10 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                 </CardContent>
               </Card>
             </div>
-                {/* 3. More metrics - icon + chevron, same row height as Home Health / Tasks cards */}
-                <div className="shrink-0 flex items-stretch self-stretch">
-                  <AccordionTrigger className="flex items-center justify-center gap-1 py-2 px-2 rounded-lg border border-border hover:no-underline hover:bg-muted/50 min-w-[2.5rem] h-full min-h-[var(--card-min-h)] [&>svg:last-child]:rotate-0 data-[state=open]:[&>svg:last-child]:rotate-180">
-                    <BarChart2 className="h-6 w-6 sm:h-7 sm:w-7 text-muted-foreground shrink-0" aria-hidden />
+                {/* 3. More metrics - button height matches card content only (not full row with headers) */}
+                <div className="shrink-0 flex items-center">
+                  <AccordionTrigger className="flex items-center justify-center gap-1 py-2 px-2 rounded-lg border border-border hover:no-underline hover:bg-muted/50 min-w-[2.5rem] h-[3.5rem] [&>svg:last-child]:rotate-0 data-[state=open]:[&>svg:last-child]:rotate-180">
+                    <BarChart2 className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground shrink-0" aria-hidden />
                   </AccordionTrigger>
                 </div>
               </div>

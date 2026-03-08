@@ -32,12 +32,15 @@ interface MaintenancePdfPrinterProps {
   tasks: MaintenanceTask[];
   completions: MaintenanceCompletion[];
   homeName: string;
+  /** Optional id for the export button (e.g. to trigger from a menu on mobile). */
+  buttonId?: string;
 }
 
 export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({ 
   tasks, 
   completions, 
-  homeName 
+  homeName,
+  buttonId,
 }) => {
   const planRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
@@ -107,11 +110,11 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
   return (
     <>
       {isMobile ? (
-        <Button variant="outline" onClick={generatePDF} className="w-6 h-6 p-0" title="Save to PDF">
+        <Button id={buttonId} variant="outline" onClick={generatePDF} className="w-6 h-6 p-0 hidden" title="Save to PDF" aria-hidden>
           <Download className="h-3 w-3 text-primary" />
         </Button>
       ) : (
-        <Button variant="outline" onClick={generatePDF} className="flex items-center gap-2 text-xs h-8" title="Save to PDF">
+        <Button id={buttonId} variant="outline" onClick={generatePDF} className="flex items-center gap-2 text-xs h-8" title="Save to PDF">
           <Download className="h-4 w-4 text-primary" />
           Export PDF
         </Button>

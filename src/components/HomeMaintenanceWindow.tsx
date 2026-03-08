@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check, ChevronDown } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check, ChevronDown, Menu } from 'lucide-react';
 import { format, differenceInDays, addDays, startOfDay, endOfDay, isToday } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,6 +35,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
@@ -662,10 +663,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           </Button>
         </div>
         
-        {/* Home Selection: mobile = one row (dropdown 40% + buttons); desktop = same as before */}
+        {/* Home Selection: mobile = wider dropdown + hamburger menu; desktop = dropdown + action buttons */}
         <div className="px-2 md:px-6 py-1 md:py-3 shrink-0 bg-background border-b">
-          <div className="flex flex-row items-center gap-1 md:gap-4 w-full min-w-0">
-            <div className="flex items-center gap-1 shrink-0 min-w-0 w-[50%] md:w-auto md:flex-initial">
+          <div className="flex flex-row items-center gap-2 w-full min-w-0">
+            <div className="flex items-center gap-1 min-w-0 flex-1 md:flex-initial">
               <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
                 <SelectTrigger className="h-8 md:h-9 w-full min-w-0 px-2 md:px-3 text-xs md:text-base md:w-[280px]">
                   <SelectValue placeholder="Select a home" />
@@ -681,14 +682,47 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 w-8 md:h-9 md:w-9 p-0 shrink-0"
+                className="h-8 w-8 md:h-9 md:w-9 p-0 shrink-0 hidden md:flex"
                 onClick={() => setShowHomeManager(true)}
                 title="Manage homes"
               >
                 <Home className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex items-center gap-1 shrink-0 min-w-0 overflow-x-auto overflow-y-hidden py-0.5">
+            {/* Mobile: hamburger menu with all actions */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 w-8 p-0 shrink-0 md:hidden" title="Actions">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => setShowHomeManager(true)}>
+                  <Home className="h-4 w-4 mr-2" />
+                  Edit home
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowMaintenancePlanComingSoon(true)} disabled={!selectedHomeId}>
+                  <ClipboardList className="h-4 w-4 mr-2 text-primary" />
+                  Generate plan
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowMaintenancePhotos(true)}>
+                  <ImageIcon className="h-4 w-4 mr-2 text-primary" />
+                  View photos
+                </DropdownMenuItem>
+                {selectedHomeId && tasks.length > 0 && (
+                  <DropdownMenuItem onSelect={() => document.getElementById('maintenance-pdf-trigger')?.click()}>
+                    <FileText className="h-4 w-4 mr-2 text-primary" />
+                    Export PDF
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setShowAlerts(true)} disabled={!selectedHomeId}>
+                  <Bell className="h-4 w-4 mr-2 text-amber-500" />
+                  Setup alerts
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {/* Desktop: action buttons */}
+            <div className="hidden md:flex items-center gap-1 shrink-0 overflow-x-auto overflow-y-hidden py-0.5">
               <Button
                 variant="outline"
                 size="sm"
@@ -729,6 +763,17 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 <span className="hidden md:inline ml-1.5">Setup Alerts</span>
               </Button>
             </div>
+            {/* PDF trigger for mobile (hidden; triggered from hamburger menu) */}
+            {selectedHomeId && tasks.length > 0 && (
+              <div className="md:hidden [.hidden]:!hidden" style={{ position: 'absolute', left: '-9999px', width: 0, height: 0, overflow: 'hidden' }}>
+                <MaintenancePdfPrinter
+                  tasks={tasks}
+                  completions={completions}
+                  homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
+                  buttonId="maintenance-pdf-trigger"
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -779,10 +824,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowAddTask(true)}
                             disabled={!selectedHomeId}
                             variant="outline"
-                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:text-primary md:hover:bg-primary/10 md:ml-auto"
+                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:text-primary md:hover:bg-primary/10 md:ml-auto [&>svg]:text-blue-600 md:[&>svg]:text-primary"
                             title="Add Tasks"
                           >
-                            <Plus className="h-4 w-4 md:mr-1" strokeWidth={2} />
+                            <Plus className="h-4 w-4 md:mr-1 shrink-0" strokeWidth={2} />
                             <span className="hidden md:inline">Add Tasks</span>
                           </Button>
                           {/* Mobile: single filter dropdown */}
@@ -1392,7 +1437,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               key={taskBeingEdited.id}
               task={taskBeingEdited}
               onClose={() => setTaskBeingEdited(null)}
-              onUpdated={fetchTasks}
+              onUpdated={() => { fetchTasks(); setTaskBeingEdited(null); }}
               onDelete={() => {
                 handleDeleteTask(taskBeingEdited.id);
                 setTaskBeingEdited(null);
