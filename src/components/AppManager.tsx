@@ -40,7 +40,7 @@ const WORKSPACE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 11
   },
   'progress-board': {
-    appName: 'Progress Board',
+    appName: 'Project Dashboard',
     appType: 'native',
     icon: 'FolderOpen',
     description: 'View and manage your active projects',

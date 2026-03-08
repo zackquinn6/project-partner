@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus, Shield, ShieldCheck, Home, HelpCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -231,7 +231,7 @@ export function MaintenancePlanWorkflow({
         checked={doNotSaveHomeInfo}
         onCheckedChange={(c) => setDoNotSaveHomeInfo(!!c)}
       />
-      <Label htmlFor="doNotSave" className="text-sm font-normal cursor-pointer leading-tight">
+      <Label htmlFor="doNotSave" className="text-xs font-normal cursor-pointer leading-tight">
         Do NOT save my home information. Only use it temporarily to build my plan.
       </Label>
     </div>
@@ -652,7 +652,6 @@ export function MaintenancePlanWorkflow({
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <TooltipProvider delayDuration={300}>
           <>
             <div className="flex-1 overflow-y-auto px-6 py-4 min-h-[380px]">
               {/* Step 0 — Heating & Cooling */}
@@ -662,16 +661,16 @@ export function MaintenancePlanWorkflow({
                     <p className="text-sm font-medium flex-1">
                       Which heating or cooling system does your home use? Select all that apply.
                     </p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[0]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {HEATING_COOLING_OPTIONS.map((opt) => (
@@ -696,16 +695,16 @@ export function MaintenancePlanWorkflow({
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
                     <p className="text-sm font-medium flex-1">How is your hot water generated?</p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[1]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {HOT_WATER_OPTIONS.map((opt) => (
@@ -744,16 +743,16 @@ export function MaintenancePlanWorkflow({
                         </p>
                       )}
                     </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[2]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div>
                     <Label>ZIP code</Label>
@@ -781,20 +780,20 @@ export function MaintenancePlanWorkflow({
                     <p className="text-sm font-medium flex-1">
                       Tell us a bit more about your home so we can fine-tune your maintenance plan.
                     </p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[3]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="grid gap-3">
                     <div>
-                      <Label>Home type</Label>
+                      <Label className="text-xs">Home type</Label>
                       <select
                         className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
                         value={homeType}
@@ -806,40 +805,41 @@ export function MaintenancePlanWorkflow({
                         ))}
                       </select>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <Label>Approximate home age</Label>
-                        <select
-                          className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                          value={homeAge}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setHomeAge(v);
-                            const median = homeAgeToMedianYear(v);
-                            if (median != null) setHomeYear(median);
-                          }}
-                        >
-                          <option value="">Select</option>
-                          {HOME_AGE_OPTIONS.map((o) => (
-                            <option key={o} value={o}>{o}</option>
-                          ))}
-                        </select>
+                    <div className="flex flex-wrap items-end gap-2">
+                        <div className="min-w-0 flex-1">
+                          <Label className="text-xs">Approx. age</Label>
+                          <select
+                            className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+                            value={homeAge}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setHomeAge(v);
+                              const median = homeAgeToMedianYear(v);
+                              if (median != null) setHomeYear(median);
+                            }}
+                          >
+                            <option value="">Select</option>
+                            {HOME_AGE_OPTIONS.map((o) => (
+                              <option key={o} value={o}>{o}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <span className="text-muted-foreground text-sm font-medium shrink-0 pb-2">or</span>
+                        <div className="min-w-0 flex-1">
+                          <Label className="text-xs">Build year</Label>
+                          <select
+                            className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+                            value={homeYear}
+                            onChange={(e) => setHomeYear(parseInt(e.target.value, 10))}
+                          >
+                            {Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MAX - i).map((y) => (
+                              <option key={y} value={y}>{y}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <Label>Build year</Label>
-                        <select
-                          className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                          value={homeYear}
-                          onChange={(e) => setHomeYear(parseInt(e.target.value, 10))}
-                        >
-                          {Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MAX - i).map((y) => (
-                            <option key={y} value={y}>{y}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
                     <div>
-                      <Label>Foundation type</Label>
+                      <Label className="text-xs">Foundation type</Label>
                       <select
                         className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
                         value={foundationType}
@@ -852,7 +852,7 @@ export function MaintenancePlanWorkflow({
                       </select>
                     </div>
                     <div>
-                      <Label>Exterior type (select all that apply)</Label>
+                      <Label className="text-xs">Exterior type (select all that apply)</Label>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {EXTERIOR_OPTIONS.map((opt) => (
                           <Button
@@ -868,7 +868,7 @@ export function MaintenancePlanWorkflow({
                       </div>
                     </div>
                     <div>
-                      <Label>Roof type</Label>
+                      <Label className="text-xs">Roof type</Label>
                       <select
                         className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
                         value={roofType}
@@ -892,16 +892,16 @@ export function MaintenancePlanWorkflow({
                     <p className="text-sm font-medium flex-1">
                       Which of these systems or appliances do you have? Select all that apply.
                     </p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[4]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {APPLIANCES_SYSTEMS_OPTIONS.map((opt) => (
@@ -928,16 +928,16 @@ export function MaintenancePlanWorkflow({
                     <p className="text-sm font-medium flex-1">
                       Are you maintaining a green lawn?
                     </p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[5]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {LAWN_LANDSCAPE_OPTIONS.map((opt) => (
@@ -990,16 +990,16 @@ export function MaintenancePlanWorkflow({
                       Are there any maintenance tasks unique to your home that you'd like to include?
                       Examples: "Clean koi pond filter", "Check flat roof drains", "Inspect retaining wall".
                     </p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[6]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="flex flex-wrap gap-3 items-end">
                     <Input
@@ -1058,16 +1058,16 @@ export function MaintenancePlanWorkflow({
                     <p className="text-sm font-medium text-foreground flex-1">
                       Choose how much maintenance to include. More tasks give you better control of your home - and require more effort to track them.
                     </p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[7]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-4">
                     <Slider
@@ -1110,16 +1110,16 @@ export function MaintenancePlanWorkflow({
                     <p className="text-sm font-medium flex-1">
                       Review the template list and add any tasks that fit your home. Only templates not already in your plan are shown.
                     </p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[8]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   {loadingTemplates ? (
                     <div className="flex items-center justify-center py-8">
@@ -1185,16 +1185,16 @@ export function MaintenancePlanWorkflow({
                     <p className="text-sm text-muted-foreground flex-1">
                       Here's your plan. Remove any task you don't want, then press Save My Plan.
                     </p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-[280px]">
+                      </PopoverTrigger>
+                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[9]}
-                      </TooltipContent>
-                    </Tooltip>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   {planEntries.length > 0 ? (
                     <div className="max-h-[320px] overflow-y-auto space-y-2 p-4 pr-6">
@@ -1251,8 +1251,7 @@ export function MaintenancePlanWorkflow({
               )}
             </div>
           </>
-          </TooltipProvider>
-        )}
+                  )}
       </DialogContent>
     </Dialog>
   );

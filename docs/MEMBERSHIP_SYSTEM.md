@@ -136,7 +136,7 @@ if (!canAccessPaidFeatures) {
 ### Upgrade Prompt
 Automatically shown when non-members try to access:
 - Project Catalog button
-- Progress Board navigation
+- Project Dashboard navigation
 - Any project workflow
 
 ## User Experience

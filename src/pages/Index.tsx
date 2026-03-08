@@ -250,20 +250,20 @@ const Index = () => {
     };
   }, []);
 
-  // Listen for force-progress-board-listing event - CRITICAL for Progress Board button
+  // Listen for force-project-dashboard-listing event - CRITICAL for Project Dashboard button
   useEffect(() => {
     const handleForceProgressBoardListing = () => {
-      console.log('🔄 Index: Force Progress Board listing event received - clearing project and forcing listing mode');
+      console.log('🔄 Index: Force Project Dashboard listing event received - clearing project and forcing listing mode');
       setCurrentProjectRun(null);
       setCurrentProject(null);
       setForceListingMode(true);
       setCurrentView('user');
-      // Clear projectRunId from location state so UserView never opens a project when showing Progress Board
+      // Clear projectRunId from location state so UserView never opens a project when showing Project Dashboard
       navigate('/', { state: { view: 'user' }, replace: true });
     };
 
-    window.addEventListener('force-progress-board-listing', handleForceProgressBoardListing);
-    return () => window.removeEventListener('force-progress-board-listing', handleForceProgressBoardListing);
+    window.addEventListener('force-project-dashboard-listing', handleForceProgressBoardListing);
+    return () => window.removeEventListener('force-project-dashboard-listing', handleForceProgressBoardListing);
   }, [setCurrentProjectRun, setCurrentProject, navigate]);
 
   // Listen for clear reset flags event and sync with Index

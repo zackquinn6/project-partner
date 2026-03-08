@@ -238,17 +238,17 @@ export default function UserView({
     }
   };
 
-  // Add event listener for Progress Board force listing
+  // Add event listener for Project Dashboard force listing
   useEffect(() => {
     const handleForceProgressBoardListing = () => {
       setViewMode('listing');
       setCurrentProjectRun(null);
     };
 
-    window.addEventListener('force-progress-board-listing', handleForceProgressBoardListing);
+    window.addEventListener('force-project-dashboard-listing', handleForceProgressBoardListing);
 
     return () => {
-      window.removeEventListener('force-progress-board-listing', handleForceProgressBoardListing);
+      window.removeEventListener('force-project-dashboard-listing', handleForceProgressBoardListing);
     };
   }, [setCurrentProjectRun]);
 
@@ -694,7 +694,7 @@ export default function UserView({
 
   // Load project run if projectRunId is provided
   useEffect(() => {
-    // If projectRunId is cleared/null, ensure we're in listing mode (e.g. after delete on Progress Board)
+    // If projectRunId is cleared/null, ensure we're in listing mode (e.g. after delete on Project Dashboard)
     if (!projectRunId) {
       if (currentProjectRun) {
         setCurrentProjectRun(null);
@@ -878,7 +878,7 @@ export default function UserView({
       return;
     }
 
-    // CRITICAL FIX: ALWAYS respect forceListingMode - Progress Board must show listing
+    // CRITICAL FIX: ALWAYS respect forceListingMode - Project Dashboard must show listing
     // BUT: Don't force listing if we have a projectRunId (project selected from dropdown or catalog)
     // When projectRunId is provided, we should directly open the project, not go to listing
     if (forceListingMode && !projectRunId) {

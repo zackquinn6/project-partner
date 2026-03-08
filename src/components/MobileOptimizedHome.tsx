@@ -77,7 +77,7 @@ export function MobileOptimizedHome() {
     {
       id: 'my-projects',
       icon: Folder,
-      title: 'Progress Board',
+      title: 'Project Dashboard',
       subtitle: 'Continue or start new',
       color: 'bg-blue-600', // Projects: Blue
       action: () => {

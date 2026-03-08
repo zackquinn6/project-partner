@@ -98,7 +98,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
 
   const handleDeleteProjectRun = async (projectRunId: string) => {
     // Always clear projectRunId from location state so UserView does not open
-    // another project (or kickoff) after delete. Stay on Progress Board listing.
+    // another project (or kickoff) after delete. Stay on Project Dashboard listing.
     navigate(window.location.pathname, {
       replace: true,
       state: { view: 'user' }
@@ -129,7 +129,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
         <CardHeader>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-xl">Progress Board</CardTitle>
+              <CardTitle className="text-xl">Project Dashboard</CardTitle>
               <CardDescription className="text-sm">
                 View and manage your project portfolio
               </CardDescription>

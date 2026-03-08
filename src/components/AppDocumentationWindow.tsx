@@ -36,7 +36,7 @@ const coreFeatures = [
   {
     id: 'my-projects',
     icon: Folder,
-    name: 'Progress Board',
+    name: 'Project Dashboard',
     category: 'core',
     description: 'Manage all your DIY project runs from start to finish with step-by-step guidance, progress tracking, and completion certificates.',
     keyFeatures: [
@@ -105,7 +105,7 @@ const coreFeatures = [
       },
       {
         q: 'How do I link tasks to projects?',
-        a: 'When creating a task, select an active project from your Progress Board to link them together.'
+        a: 'When creating a task, select an active project from your Project Dashboard to link them together.'
       }
     ]
   },
@@ -608,7 +608,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                           <CardContent>
                             <p className="mb-2 text-sm">Follow the proven workflow for success:</p>
                             <ul className="space-y-1 text-sm">
-                              <li>• Follow step-by-step guidance in "Progress Board"</li>
+                              <li>• Follow step-by-step guidance in "Project Dashboard"</li>
                               <li>• Document progress with photos at each phase</li>
                               <li>• Use "Call the Trades" for expert help when needed</li>
                               <li>• Celebrate completion and share with the community!</li>

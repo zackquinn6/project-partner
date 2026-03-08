@@ -185,7 +185,7 @@ export function HomeTaskProjectLink({
 
         <Tabs defaultValue="existing" className="flex-1 overflow-hidden flex flex-col">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="existing">Progress Board</TabsTrigger>
+            <TabsTrigger value="existing">Project Dashboard</TabsTrigger>
             <TabsTrigger value="catalog">Project Catalog</TabsTrigger>
           </TabsList>
 

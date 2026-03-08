@@ -321,19 +321,19 @@ export default function Navigation({
                 Home
               </Button>
               
-              {/* Combined Progress Board / Project Selector Dropdown */}
+              {/* Combined Project Dashboard / Project Selector Dropdown */}
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant={currentView === 'user' ? 'default' : 'ghost'} size="sm" className="text-xs" onClick={() => {
-                      // CRITICAL: Force listing mode when Progress Board button clicked
+                      // CRITICAL: Force listing mode when Project Dashboard button clicked
                       // Clear global context first, then dispatch event (Index.tsx will also handle it)
                       setCurrentProjectRun(null);
                       setCurrentProject(null);
-                      window.dispatchEvent(new CustomEvent('force-progress-board-listing'));
+                      window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
                       onViewChange('user');
                     }}>
                       <FolderOpen className="h-4 w-4 mr-2" />
-                      Progress Board
+                      Project Dashboard
                       <ChevronDown className="h-4 w-4 ml-2" />
                     </Button>
                   </DropdownMenuTrigger>

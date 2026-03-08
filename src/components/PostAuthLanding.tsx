@@ -105,10 +105,10 @@ export const PostAuthLanding = () => {
   // Section 1: My Work - Semantic color system
   const myWorkActions = [{
     icon: FolderOpen,
-    title: "Progress Board",
+    title: "Project Dashboard",
     action: () => {
-      console.log('🔄 PostAuthLanding: Progress Board clicked - forcing listing mode');
-      window.dispatchEvent(new CustomEvent('force-progress-board-listing'));
+      console.log('🔄 PostAuthLanding: Project Dashboard clicked - forcing listing mode');
+      window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
       navigate('/', { state: { view: 'user' } });
     },
     color: "bg-blue-600", // Projects: Blue

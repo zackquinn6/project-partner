@@ -170,14 +170,14 @@ export default function Home({
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center group cursor-pointer" onClick={() => {
             setCurrentProjectRun(null);
-            window.dispatchEvent(new CustomEvent('force-progress-board-listing'));
+            window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
             navigate('/', { state: { view: 'user' }, replace: true });
             onViewChange('user');
           }}>
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProjects} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                       <Folder className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Progress Board</span>
+                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Project Dashboard</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
