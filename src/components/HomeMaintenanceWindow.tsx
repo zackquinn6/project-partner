@@ -838,24 +838,25 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                       {/* System filter: mobile = Add button + filter dropdown; desktop = All + labels, Add right */}
                       <div className="shrink-0 border-b px-2 md:px-6 py-1.5 md:py-2 overflow-visible">
                         <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto overflow-y-visible pb-0.5 md:pb-1 scrollbar-thin min-h-0">
+                          {/* Mobile: Add Task button (same height as filter dropdown); desktop: Add Tasks */}
                           <Button
                             onClick={() => setShowAddTask(true)}
                             disabled={!selectedHomeId}
                             variant="outline"
-                            className="h-8 min-h-8 py-1 px-2 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:bg-transparent md:text-primary md:hover:bg-primary/10 md:ml-auto rounded-md flex items-center justify-center gap-1"
-                            title="Add Tasks"
+                            className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:bg-transparent md:text-primary md:hover:bg-primary/10 md:ml-auto rounded-md flex items-center justify-center gap-1.5"
+                            title="Add Task"
                           >
                             <Plus className="h-4 w-4 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
-                            <span className="md:hidden">add task</span>
+                            <span className="md:hidden whitespace-nowrap">Add Task</span>
                             <span className="hidden md:inline">Add Tasks</span>
                           </Button>
-                          {/* Mobile: single filter dropdown */}
+                          {/* Mobile: single filter dropdown (same h-8 as Add Task button); wider so label fits */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 min-h-8 py-1 px-2 gap-1 shrink-0 text-xs md:hidden rounded-md border border-input min-w-[7rem]"
+                                className="h-8 min-h-8 py-1.5 px-2.5 gap-1 shrink-0 text-xs md:hidden rounded-md border border-input min-w-[8rem]"
                               >
                                 {systemFilter === 'all' ? 'All' : SYSTEM_CONFIG[systemFilter as SystemKey]?.label ?? systemFilter}
                                 <ChevronDown className="h-3.5 w-3.5 shrink-0" />
