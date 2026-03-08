@@ -842,10 +842,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowAddTask(true)}
                             disabled={!selectedHomeId}
                             variant="outline"
-                            className="h-9 w-9 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:bg-transparent md:text-primary md:hover:bg-primary/10 md:ml-auto rounded-lg md:rounded-md flex items-center justify-center"
+                            className="h-8 min-h-8 py-1 px-2 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:bg-transparent md:text-primary md:hover:bg-primary/10 md:ml-auto rounded-md flex items-center justify-center gap-1"
                             title="Add Tasks"
                           >
-                            <Plus className="h-5 w-5 md:h-4 md:w-4 md:mr-1 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
+                            <Plus className="h-4 w-4 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
+                            <span className="md:hidden">add task</span>
                             <span className="hidden md:inline">Add Tasks</span>
                           </Button>
                           {/* Mobile: single filter dropdown */}
@@ -854,13 +855,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 min-h-8 py-1 px-2 gap-1 shrink-0 text-xs md:hidden rounded-md border border-input"
+                                className="h-8 min-h-8 py-1 px-2 gap-1 shrink-0 text-xs md:hidden rounded-md border border-input min-w-[7rem]"
                               >
                                 {systemFilter === 'all' ? 'All' : SYSTEM_CONFIG[systemFilter as SystemKey]?.label ?? systemFilter}
                                 <ChevronDown className="h-3.5 w-3.5 shrink-0" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto min-w-[11rem] md:min-w-0 w-[11rem] md:w-auto">
+                            <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto min-w-[12rem] w-[12rem] md:min-w-0 md:w-auto">
                               <DropdownMenuRadioGroup value={systemFilter} onValueChange={(v) => setSystemFilter(v as SystemKey | 'all')}>
                                 <DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
                                 {(Object.keys(SYSTEM_CONFIG) as SystemKey[]).map(sys => {
@@ -912,7 +913,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                       </div>
 
                       {/* Task list – fills remaining height so table area uses full window on desktop */}
-                      <div className="flex-1 min-h-0 basis-0 overflow-y-auto py-3 pt-3 pb-1.5 px-3 md:py-3 md:px-6">
+                      <div className="flex-1 min-h-0 basis-0 overflow-y-auto py-3 pt-3 pb-0 md:pb-3 px-3 md:py-3 md:px-6">
                         {loading ? (
                           <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>
                         ) : filteredTasks.length === 0 ? (
