@@ -17,7 +17,7 @@ import {
   Home,
   Refrigerator,
   ShieldCheck,
-  MoreHorizontal,
+  Layers,
   Droplets,
   CheckCircle2,
   AlertTriangle,
@@ -49,7 +49,7 @@ const SYSTEM_CONFIG: Record<SystemKey, { label: string; icon: React.ElementType 
   plumbing: { label: 'Plumbing', icon: Droplets },
   appliances: { label: 'Appliances', icon: Refrigerator },
   safety: { label: 'Safety', icon: ShieldCheck },
-  other: { label: 'Other', icon: MoreHorizontal },
+  other: { label: 'Other', icon: Layers },
 };
 
 export interface MaintenanceTaskForDashboard {

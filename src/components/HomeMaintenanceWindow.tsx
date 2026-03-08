@@ -158,7 +158,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
   const repairSavingsValid = form.repair_cost_savings.trim() === '' || (Number.isInteger(repairSavingsNum) && repairSavingsNum >= 0);
 
   return (
-    <div className="flex flex-col min-h-0 flex-1">
+    <div className="flex flex-col min-h-0 flex-1 text-[0.75rem]">
       <div className="flex-1 min-h-0 overflow-y-auto pl-4 pr-2">
         <div className="grid gap-2 pb-6">
         <div>
@@ -180,7 +180,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           />
         </div>
         <div>
-          <Label htmlFor="edit-summary">Summary (shown in table)</Label>
+          <Label htmlFor="edit-summary">Summary</Label>
           <Textarea
             id="edit-summary"
             rows={2}
@@ -298,7 +298,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               type="number"
               min={0}
               max={9999}
-              className="w-24 h-8 text-center shrink-0"
+              className="w-20 h-7 text-center shrink-0"
               value={form.progress_percentage}
               onChange={(e) => {
                 const v = parseInt(e.target.value, 10);
@@ -334,15 +334,15 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
         </div>
       </div>
       <div className="flex justify-between gap-2 pt-2 border-t shrink-0 bg-background px-4">
-        <Button variant="destructive" size="icon" onClick={onDelete} className="mr-auto h-9 w-9 md:h-auto md:w-auto md:px-3 md:py-2">
-          <Trash2 className="h-4 w-4 md:mr-1" />
+        <Button variant="destructive" size="sm" onClick={onDelete} className="mr-auto h-7 w-7 md:h-7 md:w-auto md:px-2 md:py-1.5">
+          <Trash2 className="h-3.5 w-3.5 md:mr-1" />
           <span className="hidden md:inline">Delete task</span>
         </Button>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex gap-1.5">
+          <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving || !form.title.trim() || !repairSavingsValid}>
+          <Button size="sm" onClick={handleSave} disabled={saving || !form.title.trim() || !repairSavingsValid}>
             {saving ? 'Saving...' : 'Save changes'}
           </Button>
         </div>
@@ -766,7 +766,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           <Button
                             onClick={() => setShowAddTask(true)}
                             disabled={!selectedHomeId}
-                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs bg-primary hover:bg-primary/90 text-primary-foreground md:ml-auto"
+                            variant="outline"
+                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-primary text-primary hover:bg-primary/10 md:ml-auto"
                             title="Add Tasks"
                           >
                             <Plus className="h-4 w-4 md:mr-1" />
