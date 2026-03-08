@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check, ChevronDown } from 'lucide-react';
 import { format, differenceInDays, addDays, startOfDay, endOfDay, isToday } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,6 +32,13 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 interface MaintenanceTask {
   id: string;
   user_id: string;
@@ -765,7 +772,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
                   <TabsContent value="tasks" className="flex-1 min-h-0 basis-0 overflow-hidden m-0 p-0 flex flex-col data-[state=inactive]:hidden">
                     <div className="flex flex-col flex-1 min-h-0 basis-0">
-                      {/* System filter: mobile = Add (plus) left, then icon-only filters; desktop = All + labels, Add right */}
+                      {/* System filter: mobile = Add button + filter dropdown; desktop = All + labels, Add right */}
                       <div className="shrink-0 border-b px-2 md:px-6 py-1.5 md:py-2">
                         <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto pb-0.5 md:pb-1 scrollbar-thin min-h-0">
                           <Button
@@ -778,6 +785,33 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <Plus className="h-4 w-4 md:mr-1" strokeWidth={2} />
                             <span className="hidden md:inline">Add Tasks</span>
                           </Button>
+                          {/* Mobile: single filter dropdown */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-2 gap-1 shrink-0 text-xs md:hidden"
+                              >
+                                {systemFilter === 'all' ? 'All' : SYSTEM_CONFIG[systemFilter as SystemKey]?.label ?? systemFilter}
+                                <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto">
+                              <DropdownMenuRadioGroup value={systemFilter} onValueChange={(v) => setSystemFilter(v as SystemKey | 'all')}>
+                                <DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+                                {(Object.keys(SYSTEM_CONFIG) as SystemKey[]).map(sys => {
+                                  const count = tasks.filter(t => getSystemForCategory(t.category) === sys).length;
+                                  return (
+                                    <DropdownMenuRadioItem key={sys} value={sys}>
+                                      {SYSTEM_CONFIG[sys].label}{count > 0 ? ` (${count})` : ''}
+                                    </DropdownMenuRadioItem>
+                                  );
+                                })}
+                              </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          {/* Desktop: All + system filter buttons */}
                           {(['all', ...Object.keys(SYSTEM_CONFIG)] as (SystemKey | 'all')[]).map(sys => {
                             if (sys === 'all') {
                               return (
@@ -785,7 +819,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   key="all"
                                   variant={systemFilter === 'all' ? 'default' : 'outline'}
                                   size="sm"
-                                  className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 shrink-0 text-xs p-0"
+                                  className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 shrink-0 text-xs p-0 hidden md:flex"
                                   onClick={() => setSystemFilter('all')}
                                   title="All"
                                 >
@@ -801,7 +835,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                 key={sys}
                                 variant={systemFilter === sys ? 'default' : 'outline'}
                                 size="sm"
-                                className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:gap-1.5 shrink-0 text-xs p-0"
+                                className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:gap-1.5 shrink-0 text-xs p-0 hidden md:flex"
                                 onClick={() => setSystemFilter(sys)}
                                 title={`${SYSTEM_CONFIG[sys].label}${count > 0 ? ` (${count})` : ''}`}
                               >
@@ -1204,7 +1238,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     <div className="flex flex-col flex-1 min-h-0 basis-0">
                       <div className="flex flex-row flex-nowrap items-center gap-2 py-1.5 md:py-2 shrink-0 px-2 md:px-6 border-b">
                         <Select value={historyCategoryFilter} onValueChange={setHistoryCategoryFilter}>
-                          <SelectTrigger className="w-[90px] md:w-[180px] h-8 md:h-9 px-2 text-xs shrink-0">
+                          <SelectTrigger className="min-w-0 flex-1 md:flex-none md:w-[180px] h-9 md:h-9 px-3 text-xs">
                             <SelectValue placeholder="Category" />
                           </SelectTrigger>
                           <SelectContent className="z-[200] bg-popover border">
@@ -1217,7 +1251,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           </SelectContent>
                         </Select>
                         <Select value={sortBy} onValueChange={setSortBy}>
-                          <SelectTrigger className="w-[90px] md:w-[180px] h-8 md:h-9 px-2 text-xs shrink-0">
+                          <SelectTrigger className="min-w-0 flex-1 md:flex-none md:w-[180px] h-9 md:h-9 px-3 text-xs">
                             <SelectValue placeholder="Sort" />
                           </SelectTrigger>
                           <SelectContent className="z-[200] bg-popover border">
