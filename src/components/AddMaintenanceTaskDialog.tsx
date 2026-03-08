@@ -440,7 +440,7 @@ export function AddMaintenanceTaskDialog({
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="frequency">Frequency (days)</Label>
+                    <Label htmlFor="frequency">Freq (days)</Label>
                     <Input
                       id="frequency"
                       type="number"
