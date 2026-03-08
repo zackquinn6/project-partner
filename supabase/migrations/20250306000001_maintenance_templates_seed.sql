@@ -3,6 +3,20 @@
 -- Category mapping: Safety->safety, HVAC->hvac, Plumbing->plumbing, Exterior->exterior, Electrical->electrical, Structure->interior.
 -- Criticality: High=3, Medium=2, Low=1. Frequency: Monthly=30, Quarterly=90, Yearly=365, Twice yearly=182, 1-3 months=60.
 
+-- Ensure maintenance_templates has criticality (and other columns if missing)
+ALTER TABLE public.maintenance_templates
+  ADD COLUMN IF NOT EXISTS criticality smallint;
+ALTER TABLE public.maintenance_templates
+  ADD COLUMN IF NOT EXISTS summary text;
+ALTER TABLE public.maintenance_templates
+  ADD COLUMN IF NOT EXISTS instructions text;
+ALTER TABLE public.maintenance_templates
+  ADD COLUMN IF NOT EXISTS risks_of_skipping text;
+ALTER TABLE public.maintenance_templates
+  ADD COLUMN IF NOT EXISTS benefits_of_maintenance text;
+ALTER TABLE public.maintenance_templates
+  ADD COLUMN IF NOT EXISTS repair_cost_savings text;
+
 INSERT INTO public.maintenance_templates (
   title,
   description,
@@ -17,8 +31,7 @@ INSERT INTO public.maintenance_templates (
 )
 SELECT v.title, v.description, v.summary, v.instructions, v.category, v.frequency_days, v.criticality, v.risks_of_skipping, v.benefits_of_maintenance, v.repair_cost_savings
 FROM (VALUES
-  ('Test smoke detectors', 'Test all smoke detectors to ensure they sound when triggered.', 'Verify every smoke detector sounds during a test.', '1. Locate all smoke detectors. 2. Press and hold the test button until the alarm sounds. 3. Replace batteries or units that do not respond. 4. Test monthly.', 'safety', 30, 3, 'Non-working detectors delay escape and increase fire injury or death risk.', 'Early warning in a fire saves lives and reduces property loss.', 'Avoid fire-related injury, death, and major property damage.'),
-  ('Test carbon monoxide detectors', 'Test CO detectors to ensure they alert to dangerous carbon monoxide levels.', 'Confirm CO detectors respond correctly.', '1. Find all CO detectors (often near bedrooms and fuel-burning appliances). 2. Press test button and confirm alarm. 3. Replace batteries or units as needed. 4. Test monthly.', 'safety', 30, 3, 'CO is odorless and deadly; faulty detectors can lead to poisoning or death.', 'Reliable detection prevents CO poisoning and fatalities.', 'Prevents CO poisoning; avoids emergency care and potential loss of life.'),
+  ('Test smoke and CO detectors', 'Test all smoke alarms (fire detectors) and carbon monoxide detectors so they sound when triggered.', 'Verify every smoke and CO detector responds correctly.', '1. Locate all smoke alarms and CO detectors (often near bedrooms, hallways, and fuel-burning appliances). 2. Press and hold the test button on each until the alarm sounds. 3. Replace batteries or units that do not respond. 4. Test monthly.', 'safety', 30, 3, 'Non-working smoke or CO detectors delay escape and increase risk of fire injury, death, or carbon monoxide poisoning.', 'Working detectors provide early warning in a fire and alert to dangerous CO levels.', 'Avoids fire- and CO-related injury, death, and property damage.'),
   ('Replace smoke/CO batteries', 'Replace batteries in all smoke and carbon monoxide detectors.', 'Swap batteries in all smoke and CO detectors once a year.', '1. Note detector locations. 2. Replace batteries with fresh ones (use same type). 3. Test each unit after replacement. 4. Mark calendar for next year.', 'safety', 365, 3, 'Dead batteries mean no alarm during fire or CO emergency.', 'Fresh batteries ensure detectors work when needed.', 'Ensures detectors function in an emergency; avoids battery-related failures.'),
   ('Inspect fire extinguishers', 'Check fire extinguishers for charge, damage, and accessibility.', 'Verify extinguishers are charged, visible, and not expired.', '1. Locate all extinguishers. 2. Check gauge (needle in green). 3. Inspect for damage or corrosion. 4. Confirm they are unobstructed and mounted correctly. 5. Replace or recharge if needed.', 'safety', 365, 3, 'Discharged or missing extinguishers reduce ability to control small fires.', 'Working extinguishers allow quick response to small fires.', 'Helps contain small fires and avoid major fire damage.'),
   ('Check GFCI outlets', 'Test GFCI outlets to ensure they trip and reset correctly.', 'Test all GFCIs so they trip and reset as designed.', '1. Find all GFCI outlets (kitchen, bath, garage, exterior). 2. Press TEST; outlet should cut power. 3. Press RESET to restore. 4. If they do not trip or reset, replace or call an electrician.', 'safety', 90, 3, 'Faulty GFCIs increase risk of shock or electrocution near water.', 'Proper GFCIs prevent shock in wet areas.', 'Reduces shock risk and potential injury or code violations.'),
