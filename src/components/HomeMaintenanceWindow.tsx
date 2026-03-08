@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check } from 'lucide-react';
-import { format, differenceInDays, addDays, startOfDay, endOfDay } from 'date-fns';
+import { format, differenceInDays, addDays, startOfDay, endOfDay, isToday } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -583,6 +583,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     return [...list].sort((a, b) => new Date(a.next_due).getTime() - new Date(b.next_due).getTime());
   };
 
+  const filteredTasks = getFilteredTasks();
+  const tasksNotCompletedToday = filteredTasks.filter(t => !t.last_completed || !isToday(new Date(t.last_completed)));
+  const tasksCompletedToday = filteredTasks.filter(t => t.last_completed && isToday(new Date(t.last_completed)));
+
   const historyCategories = ['appliances', 'electrical', 'exterior', 'general', 'hvac', 'interior', 'landscaping', 'outdoor', 'plumbing', 'roof', 'safety', 'security'];
   const categoryLabels: Record<string, string> = {
     appliances: 'Appliances', electrical: 'Electrical', exterior: 'Exterior', general: 'General',
@@ -813,7 +817,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                       <div className="flex-1 min-h-0 basis-0 overflow-y-auto py-3 px-3 md:px-6">
                         {loading ? (
                           <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>
-                        ) : getFilteredTasks().length === 0 ? (
+                        ) : filteredTasks.length === 0 ? (
                           <Card className="mx-1 border-primary/20 bg-primary/5">
                             <CardContent className="pt-6">
                               <div className="text-center py-8">
@@ -847,7 +851,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           <>
                             {/* Mobile: card list */}
                             <div className="md:hidden space-y-2">
-                              {getFilteredTasks().map(task => {
+                              {tasksNotCompletedToday.map(task => {
                                 const progress = getTaskProgress(task);
                                 const summary = task.summary ?? task.description ?? 'No summary yet.';
                                 return (
@@ -923,6 +927,89 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   </Card>
                                 );
                               })}
+                              {tasksCompletedToday.length > 0 && (
+                                <>
+                                  <p className="text-xs font-medium text-muted-foreground pt-2 pb-1 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                                    Completed today
+                                  </p>
+                                  {tasksCompletedToday.map(task => {
+                                    const progress = getTaskProgress(task);
+                                    const summary = task.summary ?? task.description ?? 'No summary yet.';
+                                    return (
+                                      <Card
+                                        key={task.id}
+                                        className="cursor-pointer hover:bg-muted/30 transition-colors border-border border-green-200 dark:border-green-900/40 bg-green-50/50 dark:bg-green-950/20"
+                                        onTouchStart={handleTouchStart}
+                                        onTouchMove={handleTouchMove}
+                                        onTouchEnd={() => handleTouchEnd(task.id)}
+                                        onClick={() => {
+                                          setSwipedTaskId(null);
+                                          setSelectedTaskForDetails(task);
+                                        }}
+                                      >
+                                        <CardContent className="p-1.5 md:p-3">
+                                          <div className="flex items-center justify-between gap-1.5 md:gap-2">
+                                            <div className="min-w-0 flex-1">
+                                              <h4 className="font-medium text-sm">{task.title}</h4>
+                                              <p className="text-xs text-muted-foreground mt-0.5">
+                                                Due {format(new Date(task.next_due), 'MMM dd, yyyy')} · Every {task.frequency_days} days
+                                              </p>
+                                              <div className="flex items-center gap-1.5 mt-1 md:mt-2 text-xs text-muted-foreground">
+                                                <span className="shrink-0">Progress</span>
+                                                <span className="shrink-0 tabular-nums">{Math.round(progress)}%</span>
+                                                <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[45%] md:max-w-none" />
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground px-1.5 gap-1"
+                                                  title="Edit Task"
+                                                  onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
+                                                >
+                                                  <Pencil className="h-3.5 w-3.5 shrink-0" />
+                                                  <span className="text-xs">Edit</span>
+                                                </Button>
+                                              </div>
+                                              <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
+                                            </div>
+                                            <div className="flex flex-col gap-1 md:gap-2 shrink-0">
+                                              <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-1.5">
+                                                <Button
+                                                  onClick={(e) => { e.stopPropagation(); handleQuickLogComplete(task); }}
+                                                  disabled={quickLoggingTaskId === task.id}
+                                                  size="sm"
+                                                  className="h-7 w-7 md:h-9 md:min-w-[44px] md:w-auto bg-green-600 hover:bg-green-700 text-white p-0 shrink-0 md:px-2"
+                                                  title="Log complete for today"
+                                                >
+                                                  <Check className="h-3.5 w-3.5 md:h-3.5 md:w-3.5" />
+                                                </Button>
+                                                <Button
+                                                  onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-7 w-7 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2 shrink-0"
+                                                  title="Log Complete (add date, notes, photo)"
+                                                >
+                                                  <FileText className="h-4 w-4 md:hidden shrink-0" />
+                                                  <span className="hidden md:inline">Log Complete</span>
+                                                </Button>
+                                              </div>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="hidden md:flex h-9 w-9 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-foreground"
+                                                title="Edit Task"
+                                                onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
+                                              >
+                                                <Pencil className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    );
+                                  })}
+                                </>
+                              )}
                             </div>
                             {/* Desktop: table */}
                             <div className="hidden md:block">
@@ -950,7 +1037,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {getFilteredTasks().map(task => {
+                                  {tasksNotCompletedToday.map(task => {
                                     const progress = getTaskProgress(task);
                                     const summary = task.summary ?? task.description ?? 'No summary yet.';
                                     return (
@@ -1024,6 +1111,88 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                     );
                                   })}
                                 </tbody>
+                                {tasksCompletedToday.length > 0 && (
+                                  <tbody>
+                                    <tr>
+                                      <td colSpan={4} className="px-2 pt-4 pb-1 text-xs font-medium text-muted-foreground bg-muted/30 border-t border-border">
+                                        Completed today
+                                      </td>
+                                    </tr>
+                                    {tasksCompletedToday.map(task => {
+                                      const progress = getTaskProgress(task);
+                                      const summary = task.summary ?? task.description ?? 'No summary yet.';
+                                      return (
+                                        <tr
+                                          key={task.id}
+                                          className="border-b border-border hover:bg-muted/30 transition-colors bg-green-50/50 dark:bg-green-950/20"
+                                          onTouchStart={handleTouchStart}
+                                          onTouchMove={handleTouchMove}
+                                          onTouchEnd={() => handleTouchEnd(task.id)}
+                                        >
+                                          <td
+                                            className="px-2 py-2 align-middle cursor-pointer"
+                                            onClick={() => {
+                                              setSwipedTaskId(null);
+                                              setSelectedTaskForDetails(task);
+                                            }}
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-medium truncate">{task.title}</span>
+                                            </div>
+                                            <div className="mt-1 text-[10px] text-muted-foreground">
+                                              Due {format(new Date(task.next_due), 'MMM dd, yyyy')}
+                                            </div>
+                                            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+                                              <span>Progress</span>
+                                              <span>{Math.round(progress)}%</span>
+                                              <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
+                                            </div>
+                                          </td>
+                                          <td className="px-2 py-2 align-middle">Every {task.frequency_days} days</td>
+                                          <td
+                                            className="px-2 py-2 align-middle cursor-pointer max-w-xs"
+                                            onClick={() => {
+                                              setSwipedTaskId(null);
+                                              setSelectedTaskForDetails(task);
+                                            }}
+                                          >
+                                            <span className="line-clamp-3 text-xs text-muted-foreground">{summary}</span>
+                                          </td>
+                                          <td className="px-2 py-2 align-middle">
+                                            <div className="flex items-center justify-end gap-2">
+                                              <Button
+                                                onClick={() => handleQuickLogComplete(task)}
+                                                disabled={quickLoggingTaskId === task.id}
+                                                size="sm"
+                                                className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
+                                                title="Log complete for today"
+                                              >
+                                                <Check className="h-3.5 w-3.5" />
+                                              </Button>
+                                              <Button
+                                                onClick={() => handleTaskComplete(task)}
+                                                size="sm"
+                                                className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
+                                                title="Log Complete (add date, notes, photo)"
+                                              >
+                                                Log Complete
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                title="Edit Task"
+                                                onClick={() => setTaskBeingEdited(task)}
+                                              >
+                                                <Pencil className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                )}
                               </table>
                             </div>
                           </>
