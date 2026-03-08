@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus, Shield, ShieldCheck, Home } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus, Shield, ShieldCheck, Home, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -28,7 +29,6 @@ const HEATING_COOLING_OPTIONS = [
 const HOT_WATER_OPTIONS = [
   'Tank water heater (gas/oil/electric)',
   'Tankless/on-demand',
-  'Other',
 ] as const;
 
 const MAINTENANCE_LEVELS = [
@@ -38,7 +38,36 @@ const MAINTENANCE_LEVELS = [
 ] as const;
 
 const HOME_TYPE_OPTIONS = ['Single family', 'Condo', 'Townhouse', 'Multi-family', 'Mobile', 'Other'];
-const HOME_AGE_OPTIONS = ['New (0–5 yrs)', '5–15 years', '15–30 years', '30–50 years', '50+ years', 'Unknown'];
+
+const HOME_AGE_OPTIONS = ['New (0–5 yrs)', '5–15 years', '15–30 years', '30–50 years', '50+ years', 'Unknown'] as const;
+/** Median year for each approximate age range (e.g. 1980-2000 -> 1990). */
+function homeAgeToMedianYear(ageLabel: string): number | null {
+  const now = new Date().getFullYear();
+  switch (ageLabel) {
+    case 'New (0–5 yrs)': return now - 2;
+    case '5–15 years': return now - 10;
+    case '15–30 years': return now - 22;
+    case '30–50 years': return now - 40;
+    case '50+ years': return now - 55;
+    case 'Unknown': return 2000;
+    default: return null;
+  }
+}
+
+const YEAR_MIN = 1850;
+const YEAR_MAX = new Date().getFullYear();
+
+const STEP_TOOLTIPS: Record<number, string> = {
+  0: 'Your heating and cooling systems drive which HVAC tasks we recommend (e.g. filter changes, furnace tune-ups). This keeps your plan relevant to how your home is actually heated and cooled.',
+  1: 'Hot water system type affects plumbing and safety tasks (e.g. flushing a tank, checking pressure relief). We use this to include the right maintenance for your setup.',
+  2: 'Your ZIP code helps us pick a climate region so we can tailor tasks to your area—for example, winterizing in cold regions or AC and irrigation in warmer ones.',
+  3: 'Home type, age, foundation, exterior, and roof shape which categories and tasks we suggest. Older homes or certain materials often need specific checks and care.',
+  4: 'Systems like sump pumps, septic, or solar have their own maintenance needs. Telling us what you have ensures those tasks are included and nothing important is missed.',
+  5: 'Lawn and landscape choices determine whether we add mowing, irrigation, gutter, and leaf-cleanup tasks. This keeps outdoor maintenance in line with what you actually maintain.',
+  6: 'Add one-off tasks that are specific to your property (e.g. a pond, flat roof, or retaining wall). They become part of your plan with the schedule you choose.',
+  7: 'Choose how many tasks you want: essential only (high priority), recommended (high + medium), or full (all tasks). More tasks mean better coverage but more to track.',
+  8: 'Review the tasks we generated from your answers. You can remove any you don’t want before saving. Your plan will appear in your maintenance list so you can track and log completions.',
+};
 const FOUNDATION_OPTIONS = ['Slab', 'Crawl space', 'Full basement', 'Other'];
 const EXTERIOR_OPTIONS = ['Vinyl siding', 'Brick', 'Wood siding', 'Stucco', 'Metal', 'Other'];
 const ROOF_OPTIONS = ['Asphalt shingle', 'Metal', 'Tile', 'Flat / built-up', 'Wood shake', 'Other'];
@@ -88,6 +117,7 @@ interface HomeDetailsRow {
   climate_region?: string | null;
   home_type?: string | null;
   home_age?: string | null;
+  home_year?: number | null;
   foundation_type?: string | null;
   exterior_type?: string | null;
   roof_type?: string | null;
@@ -153,17 +183,16 @@ export function MaintenancePlanWorkflow({
 
   const [heatingCooling, setHeatingCooling] = useState<string[]>([]);
   const [hotWater, setHotWater] = useState('');
-  const [hotWaterOther, setHotWaterOther] = useState('');
   const [zip, setZip] = useState('');
   const [zipFromProfile, setZipFromProfile] = useState(false);
   const [climateRegion, setClimateRegion] = useState('');
   const [homeType, setHomeType] = useState('');
   const [homeAge, setHomeAge] = useState('');
+  const [homeYear, setHomeYear] = useState<number>(2000);
   const [foundationType, setFoundationType] = useState('');
   const [exteriorTypes, setExteriorTypes] = useState<string[]>([]);
   const [roofType, setRoofType] = useState('');
   const [appliancesSystems, setAppliancesSystems] = useState<string[]>(['Dryer (gas/electric)', 'Dishwasher']);
-  const [appliancesOther, setAppliancesOther] = useState('');
   const [lawnLandscapeChoice, setLawnLandscapeChoice] = useState<'yes' | 'not_important' | 'no_lawn' | ''>('');
   const [sprinklerSystem, setSprinklerSystem] = useState(false);
   const [customTasks, setCustomTasks] = useState<{ title: string; frequency_days: number }[]>([]);
@@ -204,31 +233,38 @@ export function MaintenancePlanWorkflow({
       return;
     }
     setLoadingDetails(true);
-    supabase
-      .from('home_details')
-      .select('*')
-      .eq('home_id', homeId)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Error fetching home details:', error);
-          setLoadingDetails(false);
-          return;
-        }
-        const row = data as HomeDetailsRow | null;
+    Promise.all([
+      supabase.from('home_details').select('*').eq('home_id', homeId).maybeSingle(),
+      supabase.from('homes').select('address, home_type, build_year').eq('id', homeId).maybeSingle(),
+    ])
+      .then(([detailsRes, homesRes]) => {
+        const row = detailsRes.data as HomeDetailsRow | null;
+        const homeRow = homesRes.data as { address?: string | null; home_type?: string | null; build_year?: string | null } | null;
+        const zipFromAddress = (): string => {
+          const addr = homeRow?.address ?? '';
+          const match = addr.match(/\b(\d{5})(-\d{4})?\b/);
+          return match ? match[1] : '';
+        };
         if (row) {
           const hc = row.heating_cooling_systems;
           setHeatingCooling(Array.isArray(hc) ? hc : []);
           const hw = row.hot_water_system ?? '';
           const hotWaterOpts = HOT_WATER_OPTIONS as readonly string[];
-          setHotWater(hotWaterOpts.includes(hw) ? hw : (hw ? 'Other' : ''));
-          setHotWaterOther(hotWaterOpts.includes(hw) ? '' : hw);
-          const zipVal = row.zip ?? '';
+          setHotWater(hotWaterOpts.includes(hw) ? hw : '');
+          const zipVal = (row.zip ?? '').trim() || zipFromAddress();
           setZip(zipVal);
-          setZipFromProfile(!!zipVal.trim());
+          setZipFromProfile(!!(row.zip ?? '').trim() || !!zipFromAddress());
           setClimateRegion(row.climate_region ?? '');
-          setHomeType(row.home_type ?? '');
+          setHomeType((row.home_type ?? '').trim() || (homeRow?.home_type ?? '') || '');
           setHomeAge(row.home_age ?? '');
+          if (row.home_year != null) setHomeYear(row.home_year);
+          else if (row.home_age) {
+            const median = homeAgeToMedianYear(row.home_age);
+            if (median != null) setHomeYear(median);
+          } else if (homeRow?.build_year) {
+            const y = parseInt(String(homeRow.build_year), 10);
+            if (!Number.isNaN(y)) setHomeYear(y);
+          }
           setFoundationType(row.foundation_type ?? '');
           const ext = row.exterior_type;
           setExteriorTypes(ext && typeof ext === 'string' ? ext.split(',').map((s) => s.trim()).filter(Boolean) : []);
@@ -238,7 +274,22 @@ export function MaintenancePlanWorkflow({
           const ll = row.lawn_landscape_choice;
           setLawnLandscapeChoice(ll === 'yes' || ll === 'not_important' || ll === 'no_lawn' ? ll : '');
           setSprinklerSystem(!!row.sprinkler_system);
+        } else if (homeRow) {
+          const zipVal = zipFromAddress();
+          if (zipVal) {
+            setZip(zipVal);
+            setZipFromProfile(true);
+          }
+          if (homeRow.home_type) setHomeType(homeRow.home_type);
+          if (homeRow.build_year) {
+            const y = parseInt(String(homeRow.build_year), 10);
+            if (!Number.isNaN(y)) setHomeYear(y);
+          }
         }
+        setLoadingDetails(false);
+      })
+      .catch((err) => {
+        console.error('Error fetching home details / homes:', err);
         setLoadingDetails(false);
       });
   }, [open, homeId]);
@@ -297,7 +348,7 @@ export function MaintenancePlanWorkflow({
         categoriesToInclude.add('safety');
         categoriesToInclude.add('exterior');
         if (heatingCooling.length > 0) categoriesToInclude.add('hvac');
-        if (hotWater || hotWaterOther.trim()) categoriesToInclude.add('plumbing');
+        if (hotWater) categoriesToInclude.add('plumbing');
         if (
           appliancesSystems.some(
             (a) =>
@@ -459,24 +510,25 @@ export function MaintenancePlanWorkflow({
       }
 
       if (!doNotSaveHomeInfo) {
-        const appliancesArr = appliancesOther.trim()
-          ? [...appliancesSystems, appliancesOther.trim()]
-          : appliancesSystems;
         const region = zip.trim() ? zipToClimateRegion(zip) : climateRegion;
-        const hotWaterVal = hotWater === 'Other' ? (hotWaterOther.trim() || null) : (hotWater || null);
+        const resolvedHomeYear =
+          homeAge
+            ? homeAgeToMedianYear(homeAge) ?? homeYear
+            : homeYear;
 
         const payload = {
           home_id: homeId,
           heating_cooling_systems: heatingCooling,
-          hot_water_system: hotWaterVal,
+          hot_water_system: hotWater || null,
           zip: zip.trim() || null,
           climate_region: region || null,
           home_type: homeType || null,
           home_age: homeAge || null,
+          home_year: resolvedHomeYear,
           foundation_type: foundationType || null,
           exterior_type: exteriorTypes.length > 0 ? exteriorTypes.join(',') : null,
           roof_type: roofType || null,
-          appliances_systems: appliancesArr,
+          appliances_systems: appliancesSystems,
           lawn_landscape_choice: lawnLandscapeChoice || null,
           sprinkler_system: sprinklerSystem || null,
         };
@@ -492,6 +544,15 @@ export function MaintenancePlanWorkflow({
         } else {
           await supabase.from('home_details').insert(payload);
         }
+
+        await supabase
+          .from('homes')
+          .update({
+            home_type: homeType || null,
+            build_year: resolvedHomeYear ? String(resolvedHomeYear) : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', homeId);
       }
 
       toast({ title: 'Plan saved', description: 'Your maintenance plan has been saved.' });
@@ -526,9 +587,12 @@ export function MaintenancePlanWorkflow({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl h-[85vh] min-h-[560px] max-h-[90vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-5 pb-2 border-b bg-gradient-to-r from-primary/5 to-primary/10">
-          <DialogTitle className="flex items-center gap-2 text-primary">
-            <ClipboardList className="h-5 w-5" />
-            Generate Maintenance Plan {homeName ? `— ${homeName}` : ''}
+          <DialogTitle className="flex flex-col gap-0.5 text-primary">
+            <span className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 shrink-0" />
+              Generate Maintenance Plan
+            </span>
+            {homeName ? <span className="text-sm font-medium text-muted-foreground mt-0.5">{homeName}</span> : null}
           </DialogTitle>
           {!loadingDetails && (
             <div className="flex items-center gap-3 mt-2">
@@ -543,14 +607,27 @@ export function MaintenancePlanWorkflow({
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
+          <TooltipProvider delayDuration={300}>
           <>
             <div className="flex-1 overflow-y-auto px-6 py-4 min-h-[380px]">
               {/* Step 0 — Heating & Cooling */}
               {step === 0 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
-                  <p className="text-sm font-medium">
-                    Which heating or cooling system does your home use? Select all that apply.
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-sm font-medium flex-1">
+                      Which heating or cooling system does your home use? Select all that apply.
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[0]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {HEATING_COOLING_OPTIONS.map((opt) => (
                       <Button
@@ -572,7 +649,19 @@ export function MaintenancePlanWorkflow({
               {/* Step 1 — Hot Water */}
               {step === 1 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
-                  <p className="text-sm font-medium">How is your hot water generated?</p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-sm font-medium flex-1">How is your hot water generated?</p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[1]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {HOT_WATER_OPTIONS.map((opt) => (
                       <Button
@@ -587,17 +676,6 @@ export function MaintenancePlanWorkflow({
                       </Button>
                     ))}
                   </div>
-                  {hotWater === 'Other' && (
-                    <div>
-                      <Label className="text-xs">Describe your hot water system</Label>
-                      <Input
-                        value={hotWaterOther}
-                        onChange={(e) => setHotWaterOther(e.target.value)}
-                        placeholder="e.g. Heat pump water heater"
-                        className="mt-1 max-w-sm"
-                      />
-                    </div>
-                  )}
                   {doNotSaveCheckbox}
                 </div>
               )}
@@ -605,19 +683,33 @@ export function MaintenancePlanWorkflow({
               {/* Step 2 — ZIP / Climate */}
               {step === 2 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
-                  {zipFromProfile && zip.trim() ? (
-                    <>
-                      <p className="text-sm text-muted-foreground">
-                        Your home profile already has ZIP code <strong>{zip}</strong>.
-                        {climateRegion && ` Climate region: ${climateRegion}.`}
-                      </p>
-                      <p className="text-sm">You can change it below if needed.</p>
-                    </>
-                  ) : (
-                    <p className="text-sm">
-                      What's your ZIP code? We'll use it to determine your climate region.
-                    </p>
-                  )}
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      {zipFromProfile && zip.trim() ? (
+                        <>
+                          <p className="text-sm text-muted-foreground">
+                            Your home profile already has ZIP code <strong>{zip}</strong>.
+                            {climateRegion && ` Climate region: ${climateRegion}.`}
+                          </p>
+                          <p className="text-sm">You can change it below if needed.</p>
+                        </>
+                      ) : (
+                        <p className="text-sm">
+                          What's your ZIP code? We'll use it to determine your climate region.
+                        </p>
+                      )}
+                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[2]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <div>
                     <Label>ZIP code</Label>
                     <Input
@@ -640,9 +732,21 @@ export function MaintenancePlanWorkflow({
               {/* Step 3 — Home characteristics */}
               {step === 3 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
-                  <p className="text-sm font-medium">
-                    Tell us a bit more about your home so we can fine-tune your maintenance plan.
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-sm font-medium flex-1">
+                      Tell us a bit more about your home so we can fine-tune your maintenance plan.
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[3]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <div className="grid gap-3">
                     <div>
                       <Label>Home type</Label>
@@ -657,18 +761,37 @@ export function MaintenancePlanWorkflow({
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <Label>Approximate home age</Label>
-                      <select
-                        className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                        value={homeAge}
-                        onChange={(e) => setHomeAge(e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {HOME_AGE_OPTIONS.map((o) => (
-                          <option key={o} value={o}>{o}</option>
-                        ))}
-                      </select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label>Approximate home age</Label>
+                        <select
+                          className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          value={homeAge}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setHomeAge(v);
+                            const median = homeAgeToMedianYear(v);
+                            if (median != null) setHomeYear(median);
+                          }}
+                        >
+                          <option value="">Select</option>
+                          {HOME_AGE_OPTIONS.map((o) => (
+                            <option key={o} value={o}>{o}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <Label>Build year</Label>
+                        <select
+                          className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          value={homeYear}
+                          onChange={(e) => setHomeYear(parseInt(e.target.value, 10))}
+                        >
+                          {Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MAX - i).map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <div>
                       <Label>Foundation type</Label>
@@ -720,9 +843,21 @@ export function MaintenancePlanWorkflow({
               {/* Step 4 — Appliances & systems */}
               {step === 4 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
-                  <p className="text-sm font-medium">
-                    Which of these systems or appliances do you have? Select all that apply.
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-sm font-medium flex-1">
+                      Which of these systems or appliances do you have? Select all that apply.
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[4]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {APPLIANCES_SYSTEMS_OPTIONS.map((opt) => (
                       <Button
@@ -737,15 +872,6 @@ export function MaintenancePlanWorkflow({
                       </Button>
                     ))}
                   </div>
-                  <div>
-                    <Label className="text-xs">Other</Label>
-                    <Input
-                      value={appliancesOther}
-                      onChange={(e) => setAppliancesOther(e.target.value)}
-                      placeholder="Other (free-text)"
-                      className="mt-1"
-                    />
-                  </div>
                   {doNotSaveCheckbox}
                 </div>
               )}
@@ -753,9 +879,21 @@ export function MaintenancePlanWorkflow({
               {/* Step 5 — Lawn & Landscape */}
               {step === 5 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
-                  <p className="text-sm font-medium">
-                    Are you maintaining a green lawn?
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-sm font-medium flex-1">
+                      Are you maintaining a green lawn?
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[5]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {LAWN_LANDSCAPE_OPTIONS.map((opt) => (
                       <Button
@@ -802,10 +940,22 @@ export function MaintenancePlanWorkflow({
               {/* Step 6 — Unique home tasks */}
               {step === 6 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
-                  <p className="text-sm">
-                    Are there any maintenance tasks unique to your home that you'd like to include?
-                    Examples: "Clean koi pond filter", "Check flat roof drains", "Inspect retaining wall".
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-sm flex-1">
+                      Are there any maintenance tasks unique to your home that you'd like to include?
+                      Examples: "Clean koi pond filter", "Check flat roof drains", "Inspect retaining wall".
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[6]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <div className="flex flex-wrap gap-3 items-end">
                     <Input
                       value={customTaskInput}
@@ -859,9 +1009,21 @@ export function MaintenancePlanWorkflow({
               {/* Step 7 — Maintenance level */}
               {step === 7 && (
                 <div className="space-y-6 p-4 rounded-xl border border-primary/20 bg-card">
-                  <p className="text-sm font-medium text-foreground">
-                    Choose how much maintenance to include. More tasks give you better control of your home.
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-sm font-medium text-foreground flex-1">
+                      Choose how much maintenance to include. More tasks give you better control of your home - and require more effort to track them.
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-[280px]">
+                        {STEP_TOOLTIPS[7]}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <div className="space-y-4">
                     <Slider
                       value={[maintenanceLevel]}
@@ -906,9 +1068,21 @@ export function MaintenancePlanWorkflow({
                   )}
                   {!loading && planEntries.length > 0 && (
                     <>
-                      <p className="text-sm text-muted-foreground">
-                        Review your plan. Remove any task you don't want, then tap Save My Plan.
-                      </p>
+                      <div className="flex items-start gap-2">
+                        <p className="text-sm text-muted-foreground flex-1">
+                          Review your plan. Remove any task you don't want, then tap Save My Plan.
+                        </p>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5" aria-label="Why we ask this">
+                              <HelpCircle className="h-4 w-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-[280px]">
+                            {STEP_TOOLTIPS[8]}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <div className="max-h-[320px] overflow-y-auto space-y-2 p-4 pr-6">
                         {planEntries.map((entry, index) => (
                           <Card key={index} className="border-primary/15 hover:border-primary/30 transition-colors">
@@ -965,6 +1139,7 @@ export function MaintenancePlanWorkflow({
               )}
             </div>
           </>
+          </TooltipProvider>
         )}
       </DialogContent>
     </Dialog>
