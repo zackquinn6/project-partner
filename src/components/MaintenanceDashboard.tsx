@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  BarChart2,
 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 
@@ -364,18 +365,20 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
           {benefitsCard}
         </div>
 
-        {/* Mobile: Health + Tasks up front, rest in accordion */}
+        {/* Mobile: Health + Tasks + metrics trigger in one row; accordion content below */}
         <div className="md:hidden">
-          <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1.25fr] gap-2 sm:gap-4 items-stretch max-w-full mb-2">
-            {/* 1. Home Health */}
-            <div className="space-y-0 min-w-0 flex flex-col min-h-0">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="metrics" className="border-0">
+              <div className="flex gap-1 sm:gap-2 items-stretch max-w-full mb-2">
+                {/* 1. Home Health - minimal padding on mobile */}
+                <div className="space-y-0 min-w-0 flex flex-col min-h-0 flex-1">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-0.5 mb-0.5 shrink-0">
                 Home Health
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
-                    <CardContent className="p-1.5 sm:p-2 flex flex-row items-center flex-1 min-h-0 gap-1">
+                    <CardContent className="p-1 flex flex-row items-center flex-1 min-h-0 gap-0.5 sm:p-2 sm:gap-1">
                       <div className="relative flex-1 min-h-0 flex items-center justify-center min-w-0">
                         <svg
                           viewBox="0 0 120 70"
@@ -447,12 +450,12 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
               </Tooltip>
             </div>
             {/* 2. Tasks */}
-            <div className="space-y-0 min-w-0 flex flex-col min-h-0">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
+            <div className="space-y-0 min-w-0 flex flex-col min-h-0 shrink-0">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-0.5 mb-0.5 shrink-0">
                 Tasks
               </div>
               <Card className="min-w-0 flex flex-col h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
-                <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
+                <CardContent className="p-1.5 sm:p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground">Overdue</span>
                     <span
@@ -470,13 +473,14 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                 </CardContent>
               </Card>
             </div>
-          </div>
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="metrics" className="border rounded-lg px-2 sm:px-3">
-              <AccordionTrigger className="text-xs sm:text-sm font-semibold py-2 hover:no-underline">
-                More dashboard metrics
-              </AccordionTrigger>
-              <AccordionContent className="pt-0 pb-2">
+                {/* 3. More metrics - icon + chevron, right of Tasks */}
+                <div className="shrink-0 flex items-center">
+                  <AccordionTrigger className="flex items-center justify-center gap-1 py-2 px-2 rounded-lg border border-border hover:no-underline hover:bg-muted/50 min-w-[2.5rem] [&>svg:last-child]:rotate-0 data-[state=open]:[&>svg:last-child]:rotate-180">
+                    <BarChart2 className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
+                  </AccordionTrigger>
+                </div>
+              </div>
+              <AccordionContent className="pt-0 pb-2 px-0">
                 <div className="grid grid-cols-1 sm:grid-cols-[1fr_0.9fr] gap-3">
                   <div className="space-y-1">
                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">

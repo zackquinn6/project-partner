@@ -614,10 +614,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col min-h-0 [&>button]:hidden">
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {/* Header with title, tooltip, and close button */}
-        <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
+        <div className="px-4 md:px-6 py-2 md:py-4 border-b flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <Wrench className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
-            <h2 className="text-lg md:text-xl font-bold">Home Maintenance Tracker</h2>
+            <h2 className="text-base font-bold md:hidden">Home maintenance</h2>
+            <h2 className="hidden md:block text-xl font-bold">Home Maintenance Tracker</h2>
             <TooltipProvider delayDuration={400}>
               <Popover>
                 <Tooltip>
@@ -650,11 +651,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         </div>
         
         {/* Home Selection - Fixed at top; actions (PDF, Alerts) on far right */}
-        <div className="px-3 md:px-6 py-3 shrink-0 bg-background border-b">
+        <div className="px-3 md:px-6 py-2 md:py-3 shrink-0 bg-background border-b">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
-                <SelectTrigger className="w-full sm:w-[280px] h-9">
+                <SelectTrigger className="w-full sm:w-[280px] h-9 text-sm md:text-base">
                   <SelectValue placeholder="Select a home" />
                 </SelectTrigger>
                 <SelectContent className="z-[200] bg-popover border border-border shadow-md">
@@ -682,20 +683,21 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 onClick={() => setShowMaintenancePlanComingSoon(true)}
                 disabled={!selectedHomeId}
                 title="Guided workflow to create your maintenance plan"
-                className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0 whitespace-nowrap"
+                className="gap-1.5 shrink-0 min-h-[44px] md:min-h-0 whitespace-nowrap"
               >
                 <ClipboardList className="h-4 w-4 text-primary shrink-0" />
-                Generate Maintenance Plan
+                <span className="md:hidden">Plan Generator</span>
+                <span className="hidden md:inline">Generate Maintenance Plan</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowMaintenancePhotos(true)}
                 title="View photos from task completions"
-                className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0"
+                className="gap-1.5 shrink-0 min-h-[44px] md:min-h-0 p-0 w-9 h-9 md:w-auto md:h-8 md:px-3 md:py-2"
               >
                 <ImageIcon className="h-4 w-4 text-primary" />
-                View Photos
+                <span className="hidden md:inline ml-1.5">View Photos</span>
               </Button>
               {selectedHomeId && tasks.length > 0 && (
                 <MaintenancePdfPrinter
@@ -709,11 +711,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 size="sm"
                 disabled={!selectedHomeId}
                 onClick={() => setShowAlerts(true)}
-                className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0"
+                className="gap-1.5 shrink-0 min-h-[44px] md:min-h-0 p-0 w-9 h-9 md:w-auto md:h-8 md:px-3 md:py-2"
                 title="Setup Alerts"
               >
                 <Bell className="h-4 w-4 text-amber-500" />
-                Setup Alerts
+                <span className="hidden md:inline ml-1.5">Setup Alerts</span>
               </Button>
             </div>
           </div>
@@ -744,14 +746,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {selectedHomeId && (
               <div className="flex flex-col flex-1 min-h-0 basis-0 overflow-hidden">
                 <Tabs defaultValue="tasks" className="flex flex-col flex-1 min-h-0 basis-0">
-                  <div className="px-3 md:px-6 py-2 bg-background border-b shrink-0">
-                    <TabsList className="grid grid-cols-2 w-full h-10 sm:h-11 p-1">
-                      <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5 min-h-[44px] sm:min-h-0">
-                        <ListTodo className="h-3.5 w-3.5" />
+                  <div className="px-3 md:px-6 py-2 bg-background border-b shrink-0 overflow-visible">
+                    <TabsList className="grid grid-cols-2 w-full min-h-[40px] h-auto py-1 md:h-11 md:min-h-0 p-1">
+                      <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5 py-2 md:py-1.5">
+                        <ListTodo className="h-3.5 w-3.5 shrink-0" />
                         Active
                       </TabsTrigger>
-                      <TabsTrigger value="history" className="text-xs md:text-sm gap-1.5 min-h-[44px] sm:min-h-0">
-                        <History className="h-3.5 w-3.5" />
+                      <TabsTrigger value="history" className="text-xs md:text-sm gap-1.5 py-2 md:py-1.5">
+                        <History className="h-3.5 w-3.5 shrink-0" />
                         History
                       </TabsTrigger>
                     </TabsList>
@@ -827,7 +829,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                 {tasks.length === 0 ? (
                                   <Button onClick={() => setShowMaintenancePlanComingSoon(true)} className="bg-primary hover:bg-primary/90 min-h-[44px]">
                                     <ClipboardList className="h-4 w-4 mr-2" />
-                                    Generate Maintenance Plan
+                                    <span className="md:hidden">Plan Generator</span>
+                                    <span className="hidden md:inline">Generate Maintenance Plan</span>
                                   </Button>
                                 ) : (
                                   <Button onClick={() => setShowAddTask(true)} className="bg-primary hover:bg-primary/90 min-h-[44px]">
@@ -872,7 +875,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
                                         </div>
                                         <div className="flex flex-col gap-2 shrink-0">
-                                          <div className="flex items-center gap-1.5">
+                                          <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:gap-1.5">
                                             <Button
                                               onClick={(e) => { e.stopPropagation(); handleQuickLogComplete(task); }}
                                               disabled={quickLoggingTaskId === task.id}
@@ -880,15 +883,16 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs min-w-[44px] px-2"
                                               title="Log complete for today"
                                             >
-                                              <Check className="h-4 w-4" />
+                                              <Check className="h-4 w-4 md:h-3.5 md:w-3.5" />
                                             </Button>
                                             <Button
                                               onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
                                               size="sm"
-                                              className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs px-2"
+                                              className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs px-2 md:min-h-[36px]"
                                               title="Log Complete (add date, notes, photo)"
                                             >
-                                              Log Complete
+                                              <span className="md:hidden">Log</span>
+                                              <span className="hidden md:inline">Log Complete</span>
                                             </Button>
                                           </div>
                                           <Button
