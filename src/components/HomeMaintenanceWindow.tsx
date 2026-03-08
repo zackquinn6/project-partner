@@ -624,7 +624,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
-                      <button type="button" className="text-muted-foreground hover:text-foreground p-0.5 rounded" aria-label="About this app">
+                      <button type="button" tabIndex={-1} className="text-muted-foreground hover:text-foreground p-0.5 rounded" aria-label="About this app">
                         <HelpCircle className="h-4 w-4" />
                       </button>
                     </PopoverTrigger>
@@ -861,45 +861,46 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                       setSelectedTaskForDetails(task);
                                     }}
                                   >
-                                    <CardContent className="p-2 md:p-3">
-                                      <div className="flex items-center justify-between gap-2">
+                                    <CardContent className="p-1.5 md:p-3">
+                                      <div className="flex items-center justify-between gap-1.5 md:gap-2">
                                         <div className="min-w-0 flex-1">
                                           <h4 className="font-medium text-sm">{task.title}</h4>
                                           <p className="text-xs text-muted-foreground mt-0.5">
                                             Due {format(new Date(task.next_due), 'MMM dd, yyyy')} · Every {task.frequency_days} days
                                           </p>
-                                          <div className="flex items-center gap-1.5 mt-1.5 md:mt-2 text-xs text-muted-foreground">
+                                          <div className="flex items-center gap-1.5 mt-1 md:mt-2 text-xs text-muted-foreground">
                                             <span className="shrink-0">Progress</span>
                                             <span className="shrink-0 tabular-nums">{Math.round(progress)}%</span>
                                             <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[45%] md:max-w-none" />
                                             <Button
                                               variant="ghost"
-                                              size="icon"
-                                              className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
+                                              size="sm"
+                                              className="h-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground px-1.5 gap-1"
                                               title="Edit Task"
                                               onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                             >
-                                              <Pencil className="h-3.5 w-3.5" />
+                                              <Pencil className="h-3.5 w-3.5 shrink-0" />
+                                              <span className="text-xs">Edit</span>
                                             </Button>
                                           </div>
                                           <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
                                         </div>
-                                        <div className="flex flex-col gap-1.5 md:gap-2 shrink-0">
+                                        <div className="flex flex-col gap-1 md:gap-2 shrink-0">
                                           <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-1.5">
                                             <Button
                                               onClick={(e) => { e.stopPropagation(); handleQuickLogComplete(task); }}
                                               disabled={quickLoggingTaskId === task.id}
                                               size="sm"
-                                              className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs min-w-[36px] px-2 md:min-w-[44px] md:h-9"
+                                              className="h-7 w-7 md:h-9 md:min-w-[44px] md:w-auto bg-green-600 hover:bg-green-700 text-white p-0 shrink-0 md:px-2"
                                               title="Log complete for today"
                                             >
-                                              <Check className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                                              <Check className="h-3.5 w-3.5 md:h-3.5 md:w-3.5" />
                                             </Button>
                                             <Button
                                               onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
                                               variant="ghost"
                                               size="sm"
-                                              className="h-8 w-8 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2"
+                                              className="h-7 w-7 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2 shrink-0"
                                               title="Log Complete (add date, notes, photo)"
                                             >
                                               <FileText className="h-4 w-4 md:hidden shrink-0" />
