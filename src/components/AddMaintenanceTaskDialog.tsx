@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Plus, FileText, User, ClipboardList, Inbox, CheckCircle2, Search, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -257,7 +258,7 @@ export function AddMaintenanceTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100]" />
-        <DialogContent className="w-full max-w-[95vw] md:max-w-[75vw] max-h-[90vh] overflow-hidden z-[101] flex flex-col p-4 md:p-6">
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[75vw] max-h-[90vh] overflow-hidden z-[101] flex flex-col pl-5 pr-4 py-4 md:p-6">
         <DialogHeader className="shrink-0 flex flex-row items-center justify-between gap-2 pr-0">
           <DialogTitle className="flex items-center gap-2 min-w-0">
             <ClipboardList className="h-5 w-5 text-primary shrink-0" />
@@ -272,20 +273,20 @@ export function AddMaintenanceTaskDialog({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2 shrink-0">
-            <TabsTrigger value="templates" className="flex items-center gap-2 text-xs sm:text-sm">
+          <TabsList className="grid w-full grid-cols-2 shrink-0 h-auto min-h-10 py-1.5 px-1 mb-1 rounded-md">
+            <TabsTrigger value="templates" className="flex items-center gap-2 text-xs sm:text-sm py-2 rounded-sm">
               <FileText className="h-4 w-4 shrink-0" />
               Templates
             </TabsTrigger>
-            <TabsTrigger value="custom" className="flex items-center gap-2 text-xs sm:text-sm">
+            <TabsTrigger value="custom" className="flex items-center gap-2 text-xs sm:text-sm py-2 rounded-sm">
               <User className="h-4 w-4 shrink-0" />
               Custom
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="templates" className="mt-4 flex-1 min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden">
+          <TabsContent value="templates" className="mt-4 flex-1 min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden pr-1 min-w-0">
             <p className="text-xs text-muted-foreground mb-3">Pick a task below and add it to your plan. Open any task from your list to see full step-by-step instructions.</p>
-            <div className="relative w-full mb-3">
+            <div className="relative w-full mb-3 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
               <Input
                 type="search"
@@ -405,108 +406,123 @@ export function AddMaintenanceTaskDialog({
           </TabsContent>
 
           <TabsContent value="custom" className="mt-4 flex-1 min-h-0 overflow-y-auto data-[state=inactive]:hidden">
-            <div className="space-y-4 pb-8">
+            <div className="space-y-4 pb-8 pr-1">
               <div className="grid gap-4">
                 <div>
-                  <Label htmlFor="title">Task Title *</Label>
+                  <Label htmlFor="title">Name *</Label>
                   <Input
                     id="title"
                     value={customTask.title}
                     onChange={(e) => setCustomTask(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="e.g., Check garage door opener"
+                    className="min-w-0"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={customTask.description}
-                    onChange={(e) => setCustomTask(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Optional description of the maintenance task"
-                    rows={3}
-                  />
+                  <Label htmlFor="frequency">Frequency</Label>
+                  <Select
+                    value={String(customTask.frequency_days)}
+                    onValueChange={(v) => setCustomTask(prev => ({ ...prev, frequency_days: parseInt(v, 10) || 90 }))}
+                  >
+                    <SelectTrigger id="frequency" className="w-full min-w-0 max-w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[200]">
+                      <SelectItem value="7">Weekly (7 days)</SelectItem>
+                      <SelectItem value="30">Monthly (30 days)</SelectItem>
+                      <SelectItem value="90">Quarterly (90 days)</SelectItem>
+                      <SelectItem value="182">Twice yearly (182 days)</SelectItem>
+                      <SelectItem value="365">Yearly (365 days)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Select 
-                      value={customTask.category} 
-                      onValueChange={(value) => setCustomTask(prev => ({ ...prev, category: value }))}
-                    >
-                      <SelectTrigger className="w-full min-w-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="z-[200]">
-                        <SelectItem value="general">General</SelectItem>
-                        <SelectItem value="appliances">Appliances</SelectItem>
-                        <SelectItem value="electrical">Electrical</SelectItem>
-                        <SelectItem value="exterior">Exterior</SelectItem>
-                        <SelectItem value="hvac">HVAC</SelectItem>
-                        <SelectItem value="interior">Interior</SelectItem>
-                        <SelectItem value="landscaping">Landscaping</SelectItem>
-                        <SelectItem value="outdoor">Outdoor</SelectItem>
-                        <SelectItem value="plumbing">Plumbing</SelectItem>
-                        <SelectItem value="roof">Roof</SelectItem>
-                        <SelectItem value="safety">Safety</SelectItem>
-                        <SelectItem value="security">Security</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="custom-criticality">Criticality</Label>
-                    <Select
-                      value={String(customTask.criticality)}
-                      onValueChange={(v) => setCustomTask(prev => ({ ...prev, criticality: parseInt(v, 10) as 1 | 2 | 3 }))}
-                    >
-                      <SelectTrigger id="custom-criticality" className="w-full min-w-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="z-[200]">
-                        <SelectItem value="1">Low</SelectItem>
-                        <SelectItem value="2">Medium</SelectItem>
-                        <SelectItem value="3">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="frequency">Freq (days)</Label>
-                    <Input
-                      id="frequency"
-                      type="number"
-                      min={1}
-                      max="3650"
-                      className="w-full min-w-0"
-                      value={customTask.frequency_days}
-                      onChange={(e) => setCustomTask(prev => ({ 
-                        ...prev, 
-                        frequency_days: parseInt(e.target.value) || 90 
-                      }))}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="custom-risks">Risks of skipping (optional)</Label>
-                  <Textarea
-                    id="custom-risks"
-                    rows={2}
-                    placeholder="e.g. Sediment buildup, early failure"
-                    value={customTask.risks_of_skipping}
-                    onChange={(e) => setCustomTask(prev => ({ ...prev, risks_of_skipping: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="custom-benefits">Benefits of maintenance (optional)</Label>
-                  <Textarea
-                    id="custom-benefits"
-                    rows={2}
-                    placeholder="e.g. Extend life from 10 to 20 yrs"
-                    value={customTask.benefits_of_maintenance}
-                    onChange={(e) => setCustomTask(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
-                  />
-                </div>
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="additional" className="border rounded-md px-3">
+                    <AccordionTrigger className="py-3 text-sm font-medium hover:no-underline">
+                      Add additional task information
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pb-4">
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={customTask.description}
+                          onChange={(e) => setCustomTask(prev => ({ ...prev, description: e.target.value }))}
+                          placeholder="Optional description of the maintenance task"
+                          rows={3}
+                          className="min-w-0"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="category">Category</Label>
+                          <Select 
+                            value={customTask.category} 
+                            onValueChange={(value) => setCustomTask(prev => ({ ...prev, category: value }))}
+                          >
+                            <SelectTrigger id="category" className="w-full min-w-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="z-[200]">
+                              <SelectItem value="general">General</SelectItem>
+                              <SelectItem value="appliances">Appliances</SelectItem>
+                              <SelectItem value="electrical">Electrical</SelectItem>
+                              <SelectItem value="exterior">Exterior</SelectItem>
+                              <SelectItem value="hvac">HVAC</SelectItem>
+                              <SelectItem value="interior">Interior</SelectItem>
+                              <SelectItem value="landscaping">Landscaping</SelectItem>
+                              <SelectItem value="outdoor">Outdoor</SelectItem>
+                              <SelectItem value="plumbing">Plumbing</SelectItem>
+                              <SelectItem value="roof">Roof</SelectItem>
+                              <SelectItem value="safety">Safety</SelectItem>
+                              <SelectItem value="security">Security</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="custom-criticality">Criticality</Label>
+                          <Select
+                            value={String(customTask.criticality)}
+                            onValueChange={(v) => setCustomTask(prev => ({ ...prev, criticality: parseInt(v, 10) as 1 | 2 | 3 }))}
+                          >
+                            <SelectTrigger id="custom-criticality" className="w-full min-w-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="z-[200]">
+                              <SelectItem value="1">Low</SelectItem>
+                              <SelectItem value="2">Medium</SelectItem>
+                              <SelectItem value="3">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="custom-risks">Risks of skipping (optional)</Label>
+                        <Textarea
+                          id="custom-risks"
+                          rows={2}
+                          placeholder="e.g. Sediment buildup, early failure"
+                          value={customTask.risks_of_skipping}
+                          onChange={(e) => setCustomTask(prev => ({ ...prev, risks_of_skipping: e.target.value }))}
+                          className="min-w-0"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="custom-benefits">Benefits of maintenance (optional)</Label>
+                        <Textarea
+                          id="custom-benefits"
+                          rows={2}
+                          placeholder="e.g. Extend life from 10 to 20 yrs"
+                          value={customTask.benefits_of_maintenance}
+                          onChange={(e) => setCustomTask(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
+                          className="min-w-0"
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
 
                 <div className="flex flex-wrap justify-end gap-2 pt-4 pb-4">
                   <Button 

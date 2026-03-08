@@ -230,6 +230,7 @@ export function MaintenancePlanWorkflow({
         id="doNotSave"
         checked={doNotSaveHomeInfo}
         onCheckedChange={(c) => setDoNotSaveHomeInfo(!!c)}
+        className="h-2 w-2 shrink-0 [&_svg]:h-2 [&_svg]:w-2"
       />
       <Label htmlFor="doNotSave" className="text-xs font-normal cursor-pointer leading-tight">
         Do NOT save my home information. Only use it temporarily to build my plan.
