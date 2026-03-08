@@ -653,7 +653,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         {/* Home Selection: mobile = one row (dropdown 40% + buttons); desktop = same as before */}
         <div className="px-2 md:px-6 py-1 md:py-3 shrink-0 bg-background border-b">
           <div className="flex flex-row items-center gap-1 md:gap-4 w-full min-w-0">
-            <div className="flex items-center gap-1 shrink-0 min-w-0 w-[40%] md:w-auto md:flex-initial">
+            <div className="flex items-center gap-1 shrink-0 min-w-0 w-[50%] md:w-auto md:flex-initial">
               <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
                 <SelectTrigger className="h-8 md:h-9 w-full min-w-0 px-2 md:px-3 text-xs md:text-base md:w-[280px]">
                   <SelectValue placeholder="Select a home" />
@@ -745,14 +745,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {selectedHomeId && (
               <div className="flex flex-col flex-1 min-h-0 basis-0 overflow-hidden">
                 <Tabs defaultValue="tasks" className="flex flex-col flex-1 min-h-0 basis-0">
-                  <div className="px-2 md:px-6 py-1 md:py-2 bg-background border-b shrink-0 overflow-visible">
-                    <TabsList className="grid grid-cols-2 w-full h-8 md:h-11 py-0.5 md:p-1 p-0.5">
-                      <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5 py-1 md:py-1.5 px-2">
-                        <ListTodo className="h-3.5 w-3.5 shrink-0" />
+                  <div className="px-2 md:px-6 py-0 md:py-2 bg-background border-b shrink-0 overflow-visible">
+                    <TabsList className="grid grid-cols-2 w-full h-7 md:h-11 p-0 md:p-1 gap-0">
+                      <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1 py-0 min-h-7 h-7 px-1.5 md:py-1.5 md:px-2 md:min-h-0 rounded-l-md rounded-r-none md:rounded-sm data-[state=active]:bg-background">
+                        <ListTodo className="h-3 w-3 md:h-3.5 md:w-3.5 shrink-0" />
                         Active
                       </TabsTrigger>
-                      <TabsTrigger value="history" className="text-xs md:text-sm gap-1.5 py-1 md:py-1.5 px-2">
-                        <History className="h-3.5 w-3.5 shrink-0" />
+                      <TabsTrigger value="history" className="text-xs md:text-sm gap-1 py-0 min-h-7 h-7 px-1.5 md:py-1.5 md:px-2 md:min-h-0 rounded-r-md rounded-l-none md:rounded-sm data-[state=active]:bg-background">
+                        <History className="h-3 w-3 md:h-3.5 md:w-3.5 shrink-0" />
                         History
                       </TabsTrigger>
                     </TabsList>
@@ -871,7 +871,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <span>{Math.round(progress)}%</span>
                                             <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
                                           </div>
-                                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
+                                          <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
                                         </div>
                                         <div className="flex flex-col gap-2 shrink-0">
                                           <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:gap-1.5">
@@ -886,11 +886,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             </Button>
                                             <Button
                                               onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
+                                              variant="ghost"
                                               size="sm"
-                                              className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs px-2 md:min-h-[36px]"
+                                              className="h-9 w-9 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2"
                                               title="Log Complete (add date, notes, photo)"
                                             >
-                                              <span className="md:hidden">Log</span>
+                                              <FileText className="h-4 w-4 md:hidden shrink-0" />
                                               <span className="hidden md:inline">Log Complete</span>
                                             </Button>
                                           </div>
