@@ -74,6 +74,12 @@ function zipToClimateRegion(zip: string): string {
   return 'West';
 }
 
+const LAWN_LANDSCAPE_OPTIONS = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'not_important', label: 'Not important' },
+  { value: 'no_lawn', label: 'No Lawn / No Maintenance Needs' },
+] as const;
+
 interface HomeDetailsRow {
   home_id: string;
   heating_cooling_systems?: string[] | null;
@@ -86,6 +92,8 @@ interface HomeDetailsRow {
   exterior_type?: string | null;
   roof_type?: string | null;
   appliances_systems?: string[] | null;
+  lawn_landscape_choice?: string | null;
+  sprinkler_system?: boolean | null;
   square_footage?: number | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
@@ -156,6 +164,8 @@ export function MaintenancePlanWorkflow({
   const [roofType, setRoofType] = useState('');
   const [appliancesSystems, setAppliancesSystems] = useState<string[]>(['Dryer (gas/electric)', 'Dishwasher']);
   const [appliancesOther, setAppliancesOther] = useState('');
+  const [lawnLandscapeChoice, setLawnLandscapeChoice] = useState<'yes' | 'not_important' | 'no_lawn' | ''>('');
+  const [sprinklerSystem, setSprinklerSystem] = useState(false);
   const [customTasks, setCustomTasks] = useState<{ title: string; frequency_days: number }[]>([]);
   const [customTaskInput, setCustomTaskInput] = useState('');
   const [customTaskFrequencyDays, setCustomTaskFrequencyDays] = useState(90);
@@ -164,7 +174,7 @@ export function MaintenancePlanWorkflow({
   const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
   const [planGenerated, setPlanGenerated] = useState(false);
 
-  const totalSteps = 8;
+  const totalSteps = 9;
   const isLastStep = step === totalSteps - 1;
 
   const doNotSaveCheckbox = (
@@ -225,6 +235,9 @@ export function MaintenancePlanWorkflow({
           setRoofType(row.roof_type ?? '');
           const as = row.appliances_systems;
           setAppliancesSystems(Array.isArray(as) && as.length > 0 ? as : ['Dryer (gas/electric)', 'Dishwasher']);
+          const ll = row.lawn_landscape_choice;
+          setLawnLandscapeChoice(ll === 'yes' || ll === 'not_important' || ll === 'no_lawn' ? ll : '');
+          setSprinklerSystem(!!row.sprinkler_system);
         }
         setLoadingDetails(false);
       });
@@ -299,22 +312,69 @@ export function MaintenancePlanWorkflow({
           categoriesToInclude.add('safety');
           categoriesToInclude.add('exterior');
         }
-        if (appliancesSystems.some((a) => a === 'Irrigation system' || a === 'Solar panels'))
-          categoriesToInclude.add('exterior');
+        if (appliancesSystems.some((a) => a === 'Solar panels')) categoriesToInclude.add('exterior');
         if (appliancesSystems.some((a) => a === 'Dryer (gas/electric)')) categoriesToInclude.add('safety');
         if (appliancesSystems.some((a) => a === 'Dishwasher' || a === 'Garbage disposal'))
           categoriesToInclude.add('interior');
         categoriesToInclude.add('electrical');
         categoriesToInclude.add('interior');
 
+        // Lawn & landscape: no_lawn = no landscape tasks; not_important = gutter (medium) + leaf (low) only; yes = all landscape (irrigation only if sprinkler)
+        const lawnChoice = lawnLandscapeChoice || 'no_lawn';
+        const LANDSCAPE_TITLE_GUTTER = 'Clean gutters';
+        const LANDSCAPE_TITLE_LEAF = 'Leaf cleanup';
+        const LANDSCAPE_TITLE_IRRIGATION = 'Flush lawn sprinkler irrigation system';
+
+        if (lawnChoice === 'no_lawn') {
+          categoriesToInclude.delete('landscaping');
+        } else if (lawnChoice === 'not_important') {
+          categoriesToInclude.delete('landscaping');
+        } else {
+          categoriesToInclude.add('landscaping');
+        }
+
         const levelConfig = MAINTENANCE_LEVELS.find((l) => l.value === maintenanceLevel);
         const minCriticality = levelConfig?.minCriticality ?? 2;
-        const selected = templates.filter(
+        let selected = templates.filter(
           (t: MaintenanceTemplate) =>
             categoriesToInclude.has(t.category) &&
             !existingTemplateIds.has(t.id) &&
             ((t.criticality ?? 2) >= minCriticality)
         );
+
+        if (lawnChoice === 'no_lawn') {
+          selected = selected.filter(
+            (t: MaintenanceTemplate) =>
+              t.title !== LANDSCAPE_TITLE_GUTTER &&
+              t.title !== LANDSCAPE_TITLE_LEAF &&
+              !t.title.toLowerCase().includes('sprinkler') &&
+              !t.title.toLowerCase().includes('irrigation') &&
+              t.category !== 'landscaping'
+          );
+        } else if (lawnChoice === 'not_important') {
+          selected = selected.filter(
+            (t: MaintenanceTemplate) =>
+              t.title !== LANDSCAPE_TITLE_GUTTER &&
+              t.category !== 'landscaping'
+          );
+          const gutterTemplate = templates.find((t: MaintenanceTemplate) => t.title === LANDSCAPE_TITLE_GUTTER);
+          const leafTemplate = templates.find((t: MaintenanceTemplate) => t.title === LANDSCAPE_TITLE_LEAF);
+          if (gutterTemplate && !existingTemplateIds.has(gutterTemplate.id)) {
+            selected.push({ ...gutterTemplate, criticality: 2 });
+          }
+          if (leafTemplate && !existingTemplateIds.has(leafTemplate.id)) {
+            selected.push(leafTemplate);
+          }
+        } else {
+          selected = selected.filter((t: MaintenanceTemplate) => {
+            if (t.category !== 'landscaping') return true;
+            if (t.title === LANDSCAPE_TITLE_IRRIGATION || (t.title.toLowerCase().includes('sprinkler') || t.title.toLowerCase().includes('irrigation'))) {
+              return sprinklerSystem;
+            }
+            return true;
+          });
+        }
+
         const entries: PlanEntry[] = [
           ...selected.map((t: MaintenanceTemplate) => ({
             type: 'template' as const,
@@ -417,6 +477,8 @@ export function MaintenancePlanWorkflow({
           exterior_type: exteriorTypes.length > 0 ? exteriorTypes.join(',') : null,
           roof_type: roofType || null,
           appliances_systems: appliancesArr,
+          lawn_landscape_choice: lawnLandscapeChoice || null,
+          sprinkler_system: sprinklerSystem || null,
         };
 
         const { data: existing } = await supabase
@@ -446,9 +508,9 @@ export function MaintenancePlanWorkflow({
   const canNext = () => true;
 
   const handleNext = async () => {
-    if (step === 6 && !planGenerated) {
+    if (step === 7 && !planGenerated) {
       await generatePlan();
-      setStep(7);
+      setStep(8);
       return;
     }
     if (step < totalSteps - 1) setStep((s) => s + 1);
@@ -688,8 +750,57 @@ export function MaintenancePlanWorkflow({
                 </div>
               )}
 
-              {/* Step 5 — Unique home tasks */}
+              {/* Step 5 — Lawn & Landscape */}
               {step === 5 && (
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                  <p className="text-sm font-medium">
+                    Are you maintaining a green lawn?
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {LAWN_LANDSCAPE_OPTIONS.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={lawnLandscapeChoice === opt.value ? 'default' : 'outline'}
+                        size="sm"
+                        className={lawnLandscapeChoice === opt.value ? 'ring-2 ring-primary/30' : ''}
+                        onClick={() => setLawnLandscapeChoice(opt.value)}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                  {lawnLandscapeChoice === 'yes' && (
+                    <>
+                      <p className="text-sm font-medium pt-2">Do you have a sprinkler system?</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant={sprinklerSystem ? 'default' : 'outline'}
+                          size="sm"
+                          className={sprinklerSystem ? 'ring-2 ring-primary/30' : ''}
+                          onClick={() => setSprinklerSystem(true)}
+                        >
+                          Yes
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={!sprinklerSystem ? 'default' : 'outline'}
+                          size="sm"
+                          className={!sprinklerSystem ? 'ring-2 ring-primary/30' : ''}
+                          onClick={() => setSprinklerSystem(false)}
+                        >
+                          No
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                  {doNotSaveCheckbox}
+                </div>
+              )}
+
+              {/* Step 6 — Unique home tasks */}
+              {step === 6 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <p className="text-sm">
                     Are there any maintenance tasks unique to your home that you'd like to include?
@@ -745,8 +856,8 @@ export function MaintenancePlanWorkflow({
                 </div>
               )}
 
-              {/* Step 6 — Maintenance level */}
-              {step === 6 && (
+              {/* Step 7 — Maintenance level */}
+              {step === 7 && (
                 <div className="space-y-6 p-4 rounded-xl border border-primary/20 bg-card">
                   <p className="text-sm font-medium text-foreground">
                     Choose how much maintenance to include. More tasks give you better control of your home.
@@ -785,8 +896,8 @@ export function MaintenancePlanWorkflow({
                 </div>
               )}
 
-              {/* Step 7 — Generate & review plan */}
-              {step === 7 && (
+              {/* Step 8 — Generate & review plan */}
+              {step === 8 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   {loading && (
                     <div className="flex items-center justify-center py-8">
