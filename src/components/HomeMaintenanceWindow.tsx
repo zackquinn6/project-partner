@@ -650,17 +650,17 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           </Button>
         </div>
         
-        {/* Home Selection - Fixed at top; actions (PDF, Alerts) on far right */}
-        <div className="px-3 md:px-6 py-2 md:py-3 shrink-0 bg-background border-b">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+        {/* Home Selection: mobile = one row (dropdown 40% + buttons); desktop = same as before */}
+        <div className="px-2 md:px-6 py-1 md:py-3 shrink-0 bg-background border-b">
+          <div className="flex flex-row items-center gap-1 md:gap-4 w-full min-w-0">
+            <div className="flex items-center gap-1 shrink-0 min-w-0 w-[40%] md:w-auto md:flex-initial">
               <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
-                <SelectTrigger className="w-full sm:w-[280px] h-9 text-sm md:text-base">
+                <SelectTrigger className="h-8 md:h-9 w-full min-w-0 px-2 md:px-3 text-xs md:text-base md:w-[280px]">
                   <SelectValue placeholder="Select a home" />
                 </SelectTrigger>
                 <SelectContent className="z-[200] bg-popover border border-border shadow-md">
                   {homes.map(home => (
-                    <SelectItem key={home.id} value={home.id} className="cursor-pointer">
+                    <SelectItem key={home.id} value={home.id} className="cursor-pointer text-xs md:text-sm">
                       {home.name} {home.address && `- ${home.address}`}
                     </SelectItem>
                   ))}
@@ -669,24 +669,23 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 w-9 p-0 shrink-0"
+                className="h-8 w-8 md:h-9 md:w-9 p-0 shrink-0"
                 onClick={() => setShowHomeManager(true)}
                 title="Manage homes"
               >
                 <Home className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2 ml-auto w-full sm:w-auto justify-end min-w-0 overflow-x-auto overflow-y-hidden">
+            <div className="flex items-center gap-1 shrink-0 min-w-0 overflow-x-auto overflow-y-hidden py-0.5">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowMaintenancePlanComingSoon(true)}
                 disabled={!selectedHomeId}
                 title="Guided workflow to create your maintenance plan"
-                className="gap-1.5 shrink-0 min-h-[44px] md:min-h-0 whitespace-nowrap"
+                className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 md:gap-1.5"
               >
                 <ClipboardList className="h-4 w-4 text-primary shrink-0" />
-                <span className="md:hidden">Plan Generator</span>
                 <span className="hidden md:inline">Generate Maintenance Plan</span>
               </Button>
               <Button
@@ -694,7 +693,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 size="sm"
                 onClick={() => setShowMaintenancePhotos(true)}
                 title="View photos from task completions"
-                className="gap-1.5 shrink-0 min-h-[44px] md:min-h-0 p-0 w-9 h-9 md:w-auto md:h-8 md:px-3 md:py-2"
+                className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2"
               >
                 <ImageIcon className="h-4 w-4 text-primary" />
                 <span className="hidden md:inline ml-1.5">View Photos</span>
@@ -711,7 +710,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 size="sm"
                 disabled={!selectedHomeId}
                 onClick={() => setShowAlerts(true)}
-                className="gap-1.5 shrink-0 min-h-[44px] md:min-h-0 p-0 w-9 h-9 md:w-auto md:h-8 md:px-3 md:py-2"
+                className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2"
                 title="Setup Alerts"
               >
                 <Bell className="h-4 w-4 text-amber-500" />
@@ -746,13 +745,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             {selectedHomeId && (
               <div className="flex flex-col flex-1 min-h-0 basis-0 overflow-hidden">
                 <Tabs defaultValue="tasks" className="flex flex-col flex-1 min-h-0 basis-0">
-                  <div className="px-3 md:px-6 py-2 bg-background border-b shrink-0 overflow-visible">
-                    <TabsList className="grid grid-cols-2 w-full min-h-[40px] h-auto py-1 md:h-11 md:min-h-0 p-1">
-                      <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5 py-2 md:py-1.5">
+                  <div className="px-2 md:px-6 py-1 md:py-2 bg-background border-b shrink-0 overflow-visible">
+                    <TabsList className="grid grid-cols-2 w-full h-8 md:h-11 py-0.5 md:p-1 p-0.5">
+                      <TabsTrigger value="tasks" className="text-xs md:text-sm gap-1.5 py-1 md:py-1.5 px-2">
                         <ListTodo className="h-3.5 w-3.5 shrink-0" />
                         Active
                       </TabsTrigger>
-                      <TabsTrigger value="history" className="text-xs md:text-sm gap-1.5 py-2 md:py-1.5">
+                      <TabsTrigger value="history" className="text-xs md:text-sm gap-1.5 py-1 md:py-1.5 px-2">
                         <History className="h-3.5 w-3.5 shrink-0" />
                         History
                       </TabsTrigger>

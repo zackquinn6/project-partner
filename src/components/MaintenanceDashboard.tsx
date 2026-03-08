@@ -173,7 +173,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     <div className="space-y-1.5 text-left">
       <p className="font-semibold">Home Health Score</p>
       <p className="text-sm text-muted-foreground">
-        Starts at 100 and decreases for: overdue tasks (5 pts each), their criticality (3 pts per level), and tasks in the caution zone (90–99% toward due, 1 pt each). Higher is better—stay on top of maintenance to keep your score up.
+        Starts at 100 and decreases for: overdue tasks (5 pts each), their criticality (3 pts per level), and tasks due soon (90–99% toward due, 1 pt each). Higher is better—stay on top of maintenance to keep your score up.
       </p>
     </div>
   );
@@ -217,7 +217,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
                     {SYSTEM_CONFIG[sys].label}:{' '}
-                    {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Caution (90–99% toward due)' : 'Good'}
+                    {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due Soon' : 'Good'}
                   </TooltipContent>
                 </Tooltip>
               );
@@ -353,7 +353,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-2 border-t pt-1">
-                  <span className="text-xs text-muted-foreground">Caution (90–99%)</span>
+                  <span className="text-xs text-muted-foreground">Due Soon</span>
                   <span className="text-lg font-bold tabular-nums">{caution.length}</span>
                 </div>
               </CardContent>
@@ -467,7 +467,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2 border-t pt-1">
-                    <span className="text-xs text-muted-foreground">Caution (90–99%)</span>
+                    <span className="text-xs text-muted-foreground">Due Soon</span>
                     <span className="text-lg sm:text-xl font-bold tabular-nums">{caution.length}</span>
                   </div>
                 </CardContent>
@@ -512,7 +512,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                               </TooltipTrigger>
                               <TooltipContent side="bottom">
                                 {SYSTEM_CONFIG[sys].label}:{' '}
-                                {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Caution (90–99% toward due)' : 'Good'}
+                                {status === 'red' ? 'Overdue' : status === 'yellow' ? 'Due Soon' : 'Good'}
                               </TooltipContent>
                             </Tooltip>
                           );
