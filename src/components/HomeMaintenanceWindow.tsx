@@ -261,7 +261,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             />
           </div>
           <div className="min-w-0">
-            <Label htmlFor="edit-repair-savings">Repair cost savings ($)</Label>
+            <Label htmlFor="edit-repair-savings"><span className="md:hidden">Benefit $</span><span className="hidden md:inline">Repair cost savings ($)</span></Label>
             <Input
               id="edit-repair-savings"
               type="number"
@@ -334,9 +334,9 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
         </div>
       </div>
       <div className="flex justify-between gap-2 pt-2 border-t shrink-0 bg-background px-4">
-        <Button variant="destructive" onClick={onDelete} className="mr-auto">
-          <Trash2 className="h-4 w-4 mr-1" />
-          Delete task
+        <Button variant="destructive" size="icon" onClick={onDelete} className="mr-auto h-9 w-9 md:h-auto md:w-auto md:px-3 md:py-2">
+          <Trash2 className="h-4 w-4 md:mr-1" />
+          <span className="hidden md:inline">Delete task</span>
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onClose}>
@@ -760,9 +760,18 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
                   <TabsContent value="tasks" className="flex-1 min-h-0 basis-0 overflow-hidden m-0 p-0 flex flex-col data-[state=inactive]:hidden">
                     <div className="flex flex-col flex-1 min-h-0 basis-0">
-                      {/* System filter + Add task – scroll horizontally on small screens */}
-                      <div className="shrink-0 border-b px-3 md:px-6 py-2">
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin min-h-[44px] sm:min-h-0">
+                      {/* System filter: mobile = Add (plus) left, then icon-only filters; desktop = All + labels, Add right */}
+                      <div className="shrink-0 border-b px-2 md:px-6 py-1.5 md:py-2">
+                        <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto pb-0.5 md:pb-1 scrollbar-thin min-h-0">
+                          <Button
+                            onClick={() => setShowAddTask(true)}
+                            disabled={!selectedHomeId}
+                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs bg-primary hover:bg-primary/90 text-primary-foreground md:ml-auto"
+                            title="Add Tasks"
+                          >
+                            <Plus className="h-4 w-4 md:mr-1" />
+                            <span className="hidden md:inline">Add Tasks</span>
+                          </Button>
                           {(['all', ...Object.keys(SYSTEM_CONFIG)] as (SystemKey | 'all')[]).map(sys => {
                             if (sys === 'all') {
                               return (
@@ -770,10 +779,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   key="all"
                                   variant={systemFilter === 'all' ? 'default' : 'outline'}
                                   size="sm"
-                                  className="h-9 min-h-[40px] sm:h-8 shrink-0 text-xs"
+                                  className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 shrink-0 text-xs p-0"
                                   onClick={() => setSystemFilter('all')}
+                                  title="All"
                                 >
-                                  All
+                                  <ListTodo className="h-4 w-4 md:hidden shrink-0" />
+                                  <span className="hidden md:inline">All</span>
                                 </Button>
                               );
                             }
@@ -784,25 +795,16 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                 key={sys}
                                 variant={systemFilter === sys ? 'default' : 'outline'}
                                 size="sm"
-                                className="h-9 min-h-[40px] sm:h-8 gap-1.5 text-xs shrink-0"
+                                className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:gap-1.5 shrink-0 text-xs p-0"
                                 onClick={() => setSystemFilter(sys)}
                                 title={`${SYSTEM_CONFIG[sys].label}${count > 0 ? ` (${count})` : ''}`}
                               >
-                                <Icon className="h-3.5 w-3.5" />
-                                <span className="whitespace-nowrap">{SYSTEM_CONFIG[sys].label}</span>
-                                {count > 0 && <span className="opacity-80">({count})</span>}
+                                <Icon className="h-4 w-4 md:h-3.5 md:w-3.5 shrink-0" />
+                                <span className="hidden md:inline whitespace-nowrap">{SYSTEM_CONFIG[sys].label}</span>
+                                {count > 0 && <span className="hidden md:inline opacity-80">({count})</span>}
                               </Button>
                             );
                           })}
-                          <Button
-                            onClick={() => setShowAddTask(true)}
-                            disabled={!selectedHomeId}
-                            className="ml-auto h-9 min-h-[40px] sm:h-8 shrink-0 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
-                            title="Add Tasks"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add Tasks
-                          </Button>
                         </div>
                       </div>
 
@@ -843,7 +845,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         ) : (
                           <>
                             {/* Mobile: card list */}
-                            <div className="md:hidden space-y-3">
+                            <div className="md:hidden space-y-2">
                               {getFilteredTasks().map(task => {
                                 const progress = getTaskProgress(task);
                                 const summary = task.summary ?? task.description ?? 'No summary yet.';
@@ -859,27 +861,36 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                       setSelectedTaskForDetails(task);
                                     }}
                                   >
-                                    <CardContent className="p-3">
+                                    <CardContent className="p-2 md:p-3">
                                       <div className="flex items-center justify-between gap-2">
                                         <div className="min-w-0 flex-1">
                                           <h4 className="font-medium text-sm">{task.title}</h4>
                                           <p className="text-xs text-muted-foreground mt-0.5">
                                             Due {format(new Date(task.next_due), 'MMM dd, yyyy')} · Every {task.frequency_days} days
                                           </p>
-                                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                                            <span>Progress</span>
-                                            <span>{Math.round(progress)}%</span>
-                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
+                                          <div className="flex items-center gap-1.5 mt-1.5 md:mt-2 text-xs text-muted-foreground">
+                                            <span className="shrink-0">Progress</span>
+                                            <span className="shrink-0 tabular-nums">{Math.round(progress)}%</span>
+                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[45%] md:max-w-none" />
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
+                                              title="Edit Task"
+                                              onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
+                                            >
+                                              <Pencil className="h-3.5 w-3.5" />
+                                            </Button>
                                           </div>
                                           <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
                                         </div>
-                                        <div className="flex flex-col gap-2 shrink-0">
-                                          <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:gap-1.5">
+                                        <div className="flex flex-col gap-1.5 md:gap-2 shrink-0">
+                                          <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-1.5">
                                             <Button
                                               onClick={(e) => { e.stopPropagation(); handleQuickLogComplete(task); }}
                                               disabled={quickLoggingTaskId === task.id}
                                               size="sm"
-                                              className="h-9 bg-green-600 hover:bg-green-700 text-white text-xs min-w-[44px] px-2"
+                                              className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs min-w-[36px] px-2 md:min-w-[44px] md:h-9"
                                               title="Log complete for today"
                                             >
                                               <Check className="h-4 w-4 md:h-3.5 md:w-3.5" />
@@ -888,7 +899,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
                                               variant="ghost"
                                               size="sm"
-                                              className="h-9 w-9 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2"
+                                              className="h-8 w-8 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2"
                                               title="Log Complete (add date, notes, photo)"
                                             >
                                               <FileText className="h-4 w-4 md:hidden shrink-0" />
@@ -898,7 +909,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-9 w-9 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-foreground"
+                                            className="hidden md:flex h-9 w-9 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-foreground"
                                             title="Edit Task"
                                             onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                           >
@@ -1021,10 +1032,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
                   <TabsContent value="history" className="flex-1 min-h-0 basis-0 overflow-hidden m-0 p-0 flex flex-col data-[state=inactive]:hidden">
                     <div className="flex flex-col flex-1 min-h-0 basis-0">
-                      <div className="flex flex-wrap items-center gap-2 py-2 shrink-0 px-3 md:px-6 border-b">
+                      <div className="flex flex-row flex-nowrap items-center gap-2 py-1.5 md:py-2 shrink-0 px-2 md:px-6 border-b">
                         <Select value={historyCategoryFilter} onValueChange={setHistoryCategoryFilter}>
-                          <SelectTrigger className="w-full sm:w-[180px] h-9 min-h-[44px] sm:h-8 text-xs">
-                            <SelectValue placeholder="Filter by category" />
+                          <SelectTrigger className="w-[90px] md:w-[180px] h-8 md:h-9 px-2 text-xs shrink-0">
+                            <SelectValue placeholder="Category" />
                           </SelectTrigger>
                           <SelectContent className="z-[200] bg-popover border">
                             <SelectItem value="all">All Categories</SelectItem>
@@ -1036,8 +1047,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           </SelectContent>
                         </Select>
                         <Select value={sortBy} onValueChange={setSortBy}>
-                          <SelectTrigger className="w-full sm:w-[180px] h-9 min-h-[44px] sm:h-8 text-xs">
-                            <SelectValue placeholder="Sort by" />
+                          <SelectTrigger className="w-[90px] md:w-[180px] h-8 md:h-9 px-2 text-xs shrink-0">
+                            <SelectValue placeholder="Sort" />
                           </SelectTrigger>
                           <SelectContent className="z-[200] bg-popover border">
                             <SelectItem value="date-desc">Date (Newest First)</SelectItem>
