@@ -689,14 +689,15 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 <Home className="h-4 w-4" />
               </Button>
             </div>
-            {/* Mobile: hamburger menu with all actions */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0 shrink-0 md:hidden" title="Actions">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+            {/* Mobile: hamburger menu with all actions (wrapper ensures visibility; content above dialog) */}
+            <div className="flex shrink-0 md:hidden items-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 w-9 p-0 shrink-0 inline-flex items-center justify-center" title="Actions">
+                    <Menu className="h-5 w-5 shrink-0" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 z-[100]">
                 <DropdownMenuItem onClick={() => setShowHomeManager(true)}>
                   <Home className="h-4 w-4 mr-2" />
                   Edit home
@@ -720,7 +721,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   Setup alerts
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </div>
             {/* Desktop: action buttons */}
             <div className="hidden md:flex items-center gap-1 shrink-0 overflow-x-auto overflow-y-hidden py-0.5">
               <Button
@@ -824,10 +826,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowAddTask(true)}
                             disabled={!selectedHomeId}
                             variant="outline"
-                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:text-primary md:hover:bg-primary/10 md:ml-auto [&>svg]:text-blue-600 md:[&>svg]:text-primary"
+                            className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:bg-transparent md:text-primary md:hover:bg-primary/10 md:ml-auto"
                             title="Add Tasks"
                           >
-                            <Plus className="h-4 w-4 md:mr-1 shrink-0" strokeWidth={2} />
+                            <Plus className="h-4 w-4 md:mr-1 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} />
                             <span className="hidden md:inline">Add Tasks</span>
                           </Button>
                           {/* Mobile: single filter dropdown */}
