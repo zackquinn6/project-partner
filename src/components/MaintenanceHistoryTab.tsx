@@ -4,12 +4,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Calendar as CalendarIcon, Trash2, Pencil } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MaintenanceCompletion {
   id: string;
@@ -34,9 +36,10 @@ interface MaintenanceHistoryTabProps {
 export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ selectedHomeId, sortBy, categoryFilter, onRefresh }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [completions, setCompletions] = useState<MaintenanceCompletion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCompletion, setEditingCompletion] = useState<MaintenanceCompletion | null>(null);
   const [editDate, setEditDate] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -159,7 +162,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
       setCompletions(prev =>
         prev.map(c => (c.id === completion.id ? { ...c, completed_at: newDate.toISOString() } : c))
       );
-      setEditingId(null);
+      setEditingCompletion(null);
       setEditDate(null);
       onRefresh?.();
       toast({ title: 'Updated', description: 'Completion date updated.' });
@@ -244,54 +247,77 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                  <Popover
-                    open={editingId === completion.id}
-                    onOpenChange={(open) => {
-                      if (!open) {
-                        setEditingId(null);
-                        setEditDate(null);
-                      } else {
-                        setEditingId(completion.id);
+                  {isMobile ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1"
+                      onClick={() => {
+                        setEditingCompletion(completion);
                         setEditDate(new Date(completion.completed_at));
-                      }
-                    }}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
-                        <CalendarIcon className="h-3 w-3" />
-                        {format(new Date(completion.completed_at), 'MMM dd, yyyy')}
-                        {completion.scheduled_due_date && (() => {
-                          const due = new Date(completion.scheduled_due_date);
-                          const done = new Date(completion.completed_at);
-                          const days = differenceInDays(done, due);
-                          const planVsActual = days > 0 ? `+${days} days` : days < 0 ? `${days} days` : 'On time';
-                          return <span className="text-muted-foreground">({planVsActual})</span>;
-                        })()}
-                        <Pencil className="h-3 w-3 ml-0.5" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-3" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={editDate ?? undefined}
-                        onSelect={(d) => d && setEditDate(d)}
-                        disabled={(d) => d > new Date()}
-                      />
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          size="sm"
-                          className="flex-1"
-                          disabled={saving || !editDate}
-                          onClick={() => editDate && handleEditDate(completion, editDate)}
-                        >
-                          {saving ? 'Saving...' : 'Save'}
+                      }}
+                    >
+                      <CalendarIcon className="h-3 w-3" />
+                      {format(new Date(completion.completed_at), 'MMM dd, yyyy')}
+                      {completion.scheduled_due_date && (() => {
+                        const due = new Date(completion.scheduled_due_date);
+                        const done = new Date(completion.completed_at);
+                        const days = differenceInDays(done, due);
+                        const planVsActual = days > 0 ? `+${days} days` : days < 0 ? `${days} days` : 'On time';
+                        return <span className="text-muted-foreground">({planVsActual})</span>;
+                      })()}
+                      <Pencil className="h-3 w-3 ml-0.5" />
+                    </Button>
+                  ) : (
+                    <Popover
+                      open={editingCompletion?.id === completion.id}
+                      onOpenChange={(open) => {
+                        if (!open) {
+                          setEditingCompletion(null);
+                          setEditDate(null);
+                        } else {
+                          setEditingCompletion(completion);
+                          setEditDate(new Date(completion.completed_at));
+                        }
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
+                          <CalendarIcon className="h-3 w-3" />
+                          {format(new Date(completion.completed_at), 'MMM dd, yyyy')}
+                          {completion.scheduled_due_date && (() => {
+                            const due = new Date(completion.scheduled_due_date);
+                            const done = new Date(completion.completed_at);
+                            const days = differenceInDays(done, due);
+                            const planVsActual = days > 0 ? `+${days} days` : days < 0 ? `${days} days` : 'On time';
+                            return <span className="text-muted-foreground">({planVsActual})</span>;
+                          })()}
+                          <Pencil className="h-3 w-3 ml-0.5" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={editDate ?? undefined}
+                          onSelect={(d) => d && setEditDate(d)}
+                          disabled={(d) => d > new Date()}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            disabled={saving || !editDate}
+                            onClick={() => editDate && handleEditDate(completion, editDate)}
+                          >
+                            {saving ? 'Saving...' : 'Save'}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingCompletion(null)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                 </div>
                 {completion.notes && (
                   <p className="text-xs text-muted-foreground mt-2">{completion.notes}</p>
@@ -320,6 +346,47 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
           </CardContent>
         </Card>
       ))}
+      {/* Mobile: centered dialog for editing completion date so calendar is fully visible */}
+      <Dialog
+        open={isMobile && editingCompletion !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingCompletion(null);
+            setEditDate(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-[min(95vw,360px)] p-4">
+          {editingCompletion && (
+            <>
+              <p className="text-sm font-medium text-center">{editingCompletion.task.title}</p>
+              <Calendar
+                mode="single"
+                selected={editDate ?? undefined}
+                onSelect={(d) => d && setEditDate(d)}
+                disabled={(d) => d > new Date()}
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  disabled={saving || !editDate}
+                  onClick={() => {
+                    if (editDate && editingCompletion) {
+                      handleEditDate(editingCompletion, editDate);
+                    }
+                  }}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setEditingCompletion(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

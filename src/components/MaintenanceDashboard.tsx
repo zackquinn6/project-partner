@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/tooltip';
 import {
   Thermometer,
-  Home,
+  Building2,
   Refrigerator,
   ShieldCheck,
   Layers,
@@ -45,7 +45,7 @@ const CATEGORY_TO_SYSTEM: Record<string, SystemKey> = {
 
 const SYSTEM_CONFIG: Record<SystemKey, { label: string; icon: React.ElementType }> = {
   hvac: { label: 'HVAC', icon: Thermometer },
-  roof: { label: 'Roof', icon: Home },
+  roof: { label: 'Roof', icon: Building2 },
   plumbing: { label: 'Plumbing', icon: Droplets },
   appliances: { label: 'Appliances', icon: Refrigerator },
   safety: { label: 'Safety', icon: ShieldCheck },
