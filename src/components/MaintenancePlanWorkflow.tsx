@@ -644,25 +644,29 @@ export function MaintenancePlanWorkflow({
           sprinkler_system: sprinklerSystem || null,
         };
 
-        const { data: existing } = await supabase
+        const { data: existing, error: existingDetailsError } = await supabase
           .from('home_details')
           .select('home_id')
           .eq('home_id', homeId)
           .maybeSingle();
+        if (existingDetailsError) throw existingDetailsError;
 
         if (existing) {
-          await supabase.from('home_details').update(payload).eq('home_id', homeId);
+          const { error } = await supabase.from('home_details').update(payload).eq('home_id', homeId);
+          if (error) throw error;
         } else {
-          await supabase.from('home_details').insert(payload);
+          const { error } = await supabase.from('home_details').insert(payload);
+          if (error) throw error;
         }
 
-        await supabase
+        const { error: homesError } = await supabase
           .from('homes')
           .update({
             ZIP_code: zip.trim() || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', homeId);
+        if (homesError) throw homesError;
       }
 
       toast({ title: 'Plan saved', description: 'Your maintenance plan has been saved.' });
