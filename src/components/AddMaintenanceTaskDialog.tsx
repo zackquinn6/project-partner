@@ -438,7 +438,7 @@ export function AddMaintenanceTaskDialog({
             </div>
           </TabsContent>
 
-          <TabsContent value="custom" className="mt-4 flex-1 min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden pr-1 min-w-0">
+          <TabsContent value="custom" className="mt-4 flex-1 min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden px-1 md:px-0 pr-1 min-w-0">
             <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pb-8">
               <div className="grid gap-4">
                 <div>
@@ -465,8 +465,11 @@ export function AddMaintenanceTaskDialog({
                       <SelectItem value="7">Weekly (7 days)</SelectItem>
                       <SelectItem value="30">Monthly (30 days)</SelectItem>
                       <SelectItem value="90">Quarterly (90 days)</SelectItem>
-                      <SelectItem value="182">Twice yearly (182 days)</SelectItem>
+                      <SelectItem value="182">Bi-annual (Every 6 months)</SelectItem>
                       <SelectItem value="365">Yearly (365 days)</SelectItem>
+                      <SelectItem value="730">Every 2 years (730 days)</SelectItem>
+                      <SelectItem value="1095">Every 3 years (1095 days)</SelectItem>
+                      <SelectItem value="1825">Every 5 years (1825 days)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
