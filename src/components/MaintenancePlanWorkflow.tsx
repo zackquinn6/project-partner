@@ -398,7 +398,17 @@ export function MaintenancePlanWorkflow({
         const categoriesToInclude = new Set<string>();
         categoriesToInclude.add('safety');
         categoriesToInclude.add('exterior');
-        if (heatingCooling.length > 0) categoriesToInclude.add('hvac');
+        const hasDuctedOrMechanicalHeatOrCooling = heatingCooling.some(
+          (system) =>
+            system === 'Oil furnace' ||
+            system === 'Gas furnace' ||
+            system === 'Electric furnace' ||
+            system === 'Hydronic (boiler + radiators/baseboards)' ||
+            system === 'Heat pump' ||
+            system === 'Central air conditioning' ||
+            system === 'Mini-split system'
+        );
+        if (hasDuctedOrMechanicalHeatOrCooling) categoriesToInclude.add('hvac');
         if (hotWater) categoriesToInclude.add('plumbing');
         if (
           appliancesSystems.some(
@@ -491,6 +501,40 @@ export function MaintenancePlanWorkflow({
         if (!HAS_SUMP_PUMP) {
           const SUMP_TITLES = new Set<string>(['Inspect sump pump', 'Test sump pump backup']);
           selected = selected.filter((t: MaintenanceTemplate) => !SUMP_TITLES.has(t.title));
+        }
+
+        // Filter templates that depend on specific systems so we only include them when the user has that system.
+        const hasDryer = appliancesSystems.some((a) => a === 'Dryer (gas/electric)');
+        const hasDishwasher = appliancesSystems.some((a) => a === 'Dishwasher');
+        const hasGarbageDisposal = appliancesSystems.some((a) => a === 'Garbage disposal');
+        const hasWaterSoftener = appliancesSystems.some((a) => a === 'Water softener');
+        const hasSepticSystem = appliancesSystems.some((a) => a === 'Septic system');
+        const hasFireplaceOrChimney = appliancesSystems.some((a) => a === 'Fireplace/chimney');
+
+        if (!hasDryer) {
+          const DRYER_TITLES = new Set<string>(['Clean dryer vent', 'Inspect dryer exhaust duct']);
+          selected = selected.filter((t: MaintenanceTemplate) => !DRYER_TITLES.has(t.title));
+        }
+        if (!hasDishwasher) {
+          const DISHWASHER_TITLES = new Set<string>([
+            'Clean dishwasher interior and filter',
+            'Inspect dishwasher door seal and connections',
+          ]);
+          selected = selected.filter((t: MaintenanceTemplate) => !DISHWASHER_TITLES.has(t.title));
+        }
+        if (!hasGarbageDisposal) {
+          const DISPOSAL_TITLES = new Set<string>(['Clean garbage disposal', 'Sharpen garbage disposal']);
+          selected = selected.filter((t: MaintenanceTemplate) => !DISPOSAL_TITLES.has(t.title));
+        }
+        if (!hasWaterSoftener) {
+          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Water softener maintenance');
+        }
+        if (!hasSepticSystem) {
+          const SEPTIC_TITLES = new Set<string>(['Inspect septic tank', 'Pump septic tank']);
+          selected = selected.filter((t: MaintenanceTemplate) => !SEPTIC_TITLES.has(t.title));
+        }
+        if (!hasFireplaceOrChimney) {
+          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Chimney cleaning');
         }
 
         const entries: PlanEntry[] = [
@@ -694,7 +738,7 @@ export function MaintenancePlanWorkflow({
               {step === 0 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm md:text-lg font-medium flex-1">
+                    <p className="text-sm md:text-xl font-medium flex-1">
                       Which heating or cooling system does your home use? Select all that apply.
                     </p>
                     <Popover>
@@ -730,7 +774,7 @@ export function MaintenancePlanWorkflow({
               {step === 1 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm md:text-lg font-medium flex-1">How is your hot water generated?</p>
+                    <p className="text-sm md:text-xl font-medium flex-1">How is your hot water generated?</p>
                     <Popover>
                       <PopoverTrigger asChild>
                         <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
@@ -765,7 +809,7 @@ export function MaintenancePlanWorkflow({
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <div className="flex-1">
-                      <p className="text-sm md:text-lg">
+                      <p className="text-sm md:text-xl">
                         {zipFromProfile && zip.trim()
                           ? `ZIP code for this home: ${zip}. We use it to determine your climate region. You can change it below.`
                           : "Enter this home's ZIP code. We'll use it to determine your climate region."}
@@ -805,7 +849,7 @@ export function MaintenancePlanWorkflow({
               {step === 3 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm md:text-lg font-medium flex-1">
+                    <p className="text-sm md:text-xl font-medium flex-1">
                       Tell us a bit more about your home so we can fine-tune your maintenance plan.
                     </p>
                     <Popover>
@@ -953,7 +997,7 @@ export function MaintenancePlanWorkflow({
               {step === 5 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm md:text-lg font-medium flex-1">
+                    <p className="text-sm md:text-xl font-medium flex-1">
                       Are you maintaining a green lawn?
                     </p>
                     <Popover>
@@ -1014,7 +1058,7 @@ export function MaintenancePlanWorkflow({
               {step === 8 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
-                      <p className="text-sm md:text-lg flex-1">
+                      <p className="text-sm md:text-xl flex-1">
                       Are there any maintenance tasks unique to your home that you'd like to include?
                       Examples: "Clean koi pond filter", "Check flat roof drains", "Inspect retaining wall".
                     </p>
@@ -1083,7 +1127,7 @@ export function MaintenancePlanWorkflow({
               {step === 6 && (
                 <div className="space-y-6 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm md:text-lg font-medium text-foreground flex-1">
+                    <p className="text-sm md:text-xl font-medium text-foreground flex-1">
                       Choose how much maintenance to include. More tasks give you better control of your home - and require more effort to track them.
                     </p>
                     <Popover>
@@ -1135,7 +1179,7 @@ export function MaintenancePlanWorkflow({
               {step === 7 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm md:text-lg font-medium flex-1">
+                    <p className="text-sm md:text-xl font-medium flex-1">
                       Your maintenance plan currently includes{' '}
                       <span className="font-semibold">
                         {planEntries.length} task{planEntries.length === 1 ? '' : 's'}
@@ -1236,7 +1280,7 @@ export function MaintenancePlanWorkflow({
               {step === 9 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm md:text-lg text-muted-foreground flex-1">
+                    <p className="text-sm md:text-xl text-muted-foreground flex-1">
                       Here's your plan. Remove any task you don't want, then press Save My Plan.
                     </p>
                     <Popover>
