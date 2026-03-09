@@ -743,19 +743,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* Desktop: action buttons (right-aligned on the row) */}
+            {/* Desktop: action buttons (right-aligned on the row; Generate Plan moved next to Add Tasks in task toolbar) */}
             <div className="flex items-center gap-1 shrink-0 overflow-x-auto overflow-y-hidden py-0.5 ml-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMaintenancePlanComingSoon(true)}
-                disabled={!selectedHomeId}
-                title="Guided workflow to create your maintenance plan"
-                className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 md:gap-1.5"
-              >
-                <ClipboardList className="h-4 w-4 text-primary shrink-0" />
-                <span className="ml-1.5 text-xs md:text-sm">Generate Maintenance Plan</span>
-              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -847,12 +836,24 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowAddTask(true)}
                             disabled={!selectedHomeId}
                             variant="outline"
-                            className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-primary md:bg-transparent md:text-primary md:hover:bg-primary/10 md:ml-auto rounded-md flex items-center justify-center gap-1.5"
+                            className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-blue-600 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:hover:border-blue-700 rounded-md flex items-center justify-center gap-1.5"
                             title="Add Task"
                           >
                             <Plus className="h-4 w-4 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
                             <span className="md:hidden whitespace-nowrap">Add Task</span>
                             <span className="hidden md:inline">Add Tasks</span>
+                          </Button>
+                          {/* Desktop: Generate Maintenance Plan button next to Add Tasks */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowMaintenancePlanComingSoon(true)}
+                            disabled={!selectedHomeId}
+                            title="Guided workflow to create your maintenance plan"
+                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs md:text-sm rounded-md gap-1.5"
+                          >
+                            <ClipboardList className="h-4 w-4 text-primary shrink-0" />
+                            <span>Generate Maintenance Plan</span>
                           </Button>
                           {/* Mobile: single filter dropdown (same h-8 as Add Task button); wider so label fits */}
                           <DropdownMenu>
