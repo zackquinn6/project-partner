@@ -395,10 +395,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   }, [open, user]);
 
-  // Avoid showing a focused/highlighted element when the maintenance view first opens
+  // Avoid showing a focused/highlighted element or selected text when the maintenance view first opens
   useEffect(() => {
     if (open) {
       (document.activeElement as HTMLElement)?.blur();
+      const selection = window.getSelection?.();
+      if (selection && selection.removeAllRanges) {
+        selection.removeAllRanges();
+      }
     }
   }, [open]);
   useEffect(() => {
