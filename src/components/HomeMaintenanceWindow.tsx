@@ -739,8 +739,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* Desktop: action buttons */}
-            <div className="hidden md:flex items-center gap-1 shrink-0 overflow-x-auto overflow-y-hidden py-0.5">
+            {/* Desktop: action buttons (also visible on wider mobile screens) */}
+            <div className="flex items-center gap-1 shrink-0 overflow-x-auto overflow-y-hidden py-0.5">
               <Button
                 variant="outline"
                 size="sm"
@@ -750,7 +750,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 md:gap-1.5"
               >
                 <ClipboardList className="h-4 w-4 text-primary shrink-0" />
-                <span className="hidden md:inline">Generate Maintenance Plan</span>
+                <span className="ml-1.5 text-xs md:text-sm">Generate Maintenance Plan</span>
               </Button>
               <Button
                 variant="outline"
