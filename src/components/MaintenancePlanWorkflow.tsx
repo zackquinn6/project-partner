@@ -285,13 +285,22 @@ export function MaintenancePlanWorkflow({
     Promise.all([
       supabase.from('home_details').select('*').eq('home_id', homeId).maybeSingle(),
       supabase.from('homes').select('address, home_type, build_year').eq('id', homeId).maybeSingle(),
+      user
+        ? supabase
+            .from('homes')
+            .select('address')
+            .eq('user_id', user.id)
+            .eq('is_primary', true)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
     ])
-      .then(([detailsRes, homesRes]) => {
+      .then(([detailsRes, homesRes, primaryHomeRes]) => {
         const row = detailsRes.data as HomeDetailsRow | null;
         const homeRow = homesRes.data as { address?: string | null; home_type?: string | null; build_year?: string | null } | null;
-        const zipFromAddress = (): string => {
-          const addr = homeRow?.address ?? '';
-          const match = addr.match(/\b(\d{5})(-\d{4})?\b/);
+        const primaryHome = primaryHomeRes.data as { address?: string | null } | null;
+        const zipFromAddress = (addr?: string | null): string => {
+          const source = addr ?? '';
+          const match = source.match(/\b(\d{5})(-\d{4})?\b/);
           return match ? match[1] : '';
         };
         if (row) {
@@ -300,9 +309,12 @@ export function MaintenancePlanWorkflow({
           const hw = row.hot_water_system ?? '';
           const hotWaterOpts = HOT_WATER_OPTIONS as readonly string[];
           setHotWater(hotWaterOpts.includes(hw) ? hw : '');
-          const zipVal = (row.zip ?? '').trim() || zipFromAddress();
+          const zipFromDetails = (row.zip ?? '').trim();
+          const zipFromHome = zipFromAddress(homeRow?.address);
+          const zipFromPrimary = zipFromAddress(primaryHome?.address);
+          const zipVal = zipFromDetails || zipFromHome || zipFromPrimary;
           setZip(zipVal);
-          setZipFromProfile(!!(row.zip ?? '').trim() || !!zipFromAddress());
+          setZipFromProfile(!!zipVal);
           setClimateRegion(row.climate_region ?? '');
           setHomeType((row.home_type ?? '').trim() || (homeRow?.home_type ?? '') || '');
           setHomeAge(row.home_age ?? '');
@@ -323,14 +335,16 @@ export function MaintenancePlanWorkflow({
           const ll = row.lawn_landscape_choice;
           setLawnLandscapeChoice(ll === 'yes' || ll === 'not_important' || ll === 'no_lawn' ? ll : '');
           setSprinklerSystem(!!row.sprinkler_system);
-        } else if (homeRow) {
-          const zipVal = zipFromAddress();
+        } else {
+          const zipFromHome = zipFromAddress(homeRow?.address);
+          const zipFromPrimary = zipFromAddress(primaryHome?.address);
+          const zipVal = zipFromHome || zipFromPrimary;
           if (zipVal) {
             setZip(zipVal);
             setZipFromProfile(true);
           }
-          if (homeRow.home_type) setHomeType(homeRow.home_type);
-          if (homeRow.build_year) {
+          if (homeRow?.home_type) setHomeType(homeRow.home_type);
+          if (homeRow?.build_year) {
             const y = parseInt(String(homeRow.build_year), 10);
             if (!Number.isNaN(y)) setHomeYear(y);
           }
@@ -341,7 +355,7 @@ export function MaintenancePlanWorkflow({
         console.error('Error fetching home details / homes:', err);
         setLoadingDetails(false);
       });
-  }, [open, homeId]);
+  }, [open, homeId, user]);
 
   useEffect(() => {
     if (zip.trim() && !climateRegion) {
@@ -687,7 +701,7 @@ export function MaintenancePlanWorkflow({
             <div className="flex-1 overflow-y-auto px-4 md:px-8 py-3 md:py-5 min-h-[380px]">
               {/* Step 0 — Heating & Cooling */}
               {step === 0 && (
-                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-lg font-medium flex-1">
                       Which heating or cooling system does your home use? Select all that apply.
@@ -723,7 +737,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 1 — Hot Water */}
               {step === 1 && (
-                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-lg font-medium flex-1">How is your hot water generated?</p>
                     <Popover>
@@ -757,7 +771,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 2 — ZIP / Climate */}
               {step === 2 && (
-                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <div className="flex-1">
                       {zipFromProfile && zip.trim() ? (
@@ -806,7 +820,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 3 — Home characteristics */}
               {step === 3 && (
-                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-lg font-medium flex-1">
                       Tell us a bit more about your home so we can fine-tune your maintenance plan.
@@ -918,7 +932,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 4 — Appliances & systems */}
               {step === 4 && (
-                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-base font-medium flex-1">
                       Which of these systems or appliances do you have? Select all that apply.
@@ -954,7 +968,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 5 — Lawn & Landscape */}
               {step === 5 && (
-                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-lg font-medium flex-1">
                       Are you maintaining a green lawn?
@@ -1015,7 +1029,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 9 — Unique home tasks */}
               {step === 8 && (
-                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                       <p className="text-sm md:text-lg flex-1">
                       Are there any maintenance tasks unique to your home that you'd like to include?
@@ -1084,7 +1098,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 7 — Maintenance level */}
               {step === 6 && (
-                <div className="space-y-6 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-6 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-lg font-medium text-foreground flex-1">
                       Choose how much maintenance to include. More tasks give you better control of your home - and require more effort to track them.
@@ -1136,7 +1150,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 8 — Plan summary and add any tasks */}
               {step === 7 && (
-                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-lg font-medium flex-1">
                       Your maintenance plan currently includes{' '}
@@ -1237,7 +1251,7 @@ export function MaintenancePlanWorkflow({
 
               {/* Step 9 — Here's your plan, now press save */}
               {step === 9 && (
-                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
+                <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-lg text-muted-foreground flex-1">
                       Here's your plan. Remove any task you don't want, then press Save My Plan.
