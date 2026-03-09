@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addDays } from 'date-fns';
 import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
+import { useResponsive } from '@/hooks/useResponsive';
 
 const HEATING_COOLING_OPTIONS = [
   'Oil furnace',
@@ -191,6 +192,7 @@ export function MaintenancePlanWorkflow({
 }: MaintenancePlanWorkflowProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isMobile } = useResponsive();
   const [step, setStep] = useState(0);
   const [doNotSaveHomeInfo, setDoNotSaveHomeInfo] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -651,14 +653,22 @@ export function MaintenancePlanWorkflow({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl h-[85vh] min-h-[560px] max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="px-6 pt-5 pb-2 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+      <DialogContent
+        className={`h-[85vh] min-h-[560px] max-h-[90vh] overflow-hidden flex flex-col p-0 ${
+          isMobile ? 'max-w-3xl' : 'max-w-6xl w-full'
+        }`}
+      >
+        <DialogHeader className="px-4 md:px-8 pt-4 md:pt-6 pb-2 md:pb-3 border-b bg-gradient-to-r from-primary/5 to-primary/10">
           <DialogTitle className="flex flex-col gap-0.5 text-primary">
             <span className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 shrink-0" />
-              Generate Maintenance Plan
+              <ClipboardList className="h-5 w-5 md:h-6 md:w-6 shrink-0" />
+              <span className="text-base md:text-2xl font-semibold">Generate Maintenance Plan</span>
             </span>
-            {homeName ? <span className="text-sm font-medium text-muted-foreground mt-0.5">{homeName}</span> : null}
+            {homeName ? (
+              <span className="text-xs md:text-sm font-medium text-muted-foreground mt-0.5">
+                {homeName}
+              </span>
+            ) : null}
           </DialogTitle>
           {!loadingDetails && (
             <div className="flex items-center gap-3 mt-2">
@@ -674,12 +684,12 @@ export function MaintenancePlanWorkflow({
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto px-6 py-4 min-h-[380px]">
+            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-3 md:py-5 min-h-[380px]">
               {/* Step 0 — Heating & Cooling */}
               {step === 0 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm font-medium flex-1">
+                    <p className="text-sm md:text-base font-medium flex-1">
                       Which heating or cooling system does your home use? Select all that apply.
                     </p>
                     <Popover>
@@ -715,7 +725,7 @@ export function MaintenancePlanWorkflow({
               {step === 1 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm font-medium flex-1">How is your hot water generated?</p>
+                    <p className="text-sm md:text-base font-medium flex-1">How is your hot water generated?</p>
                     <Popover>
                       <PopoverTrigger asChild>
                         <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground rounded p-0.5 touch-manipulation" aria-label="Why we ask this">
@@ -752,14 +762,14 @@ export function MaintenancePlanWorkflow({
                     <div className="flex-1">
                       {zipFromProfile && zip.trim() ? (
                         <>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm md:text-base text-muted-foreground">
                             Your home profile already has ZIP code <strong>{zip}</strong>.
                             {climateRegion && ` Climate region: ${climateRegion}.`}
                           </p>
-                          <p className="text-sm">You can change it below if needed.</p>
+                          <p className="text-sm md:text-base">You can change it below if needed.</p>
                         </>
                       ) : (
-                        <p className="text-sm">
+                        <p className="text-sm md:text-base">
                           What's your ZIP code? We'll use it to determine your climate region.
                         </p>
                       )}
@@ -798,7 +808,7 @@ export function MaintenancePlanWorkflow({
               {step === 3 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm font-medium flex-1">
+                    <p className="text-sm md:text-base font-medium flex-1">
                       Tell us a bit more about your home so we can fine-tune your maintenance plan.
                     </p>
                     <Popover>
@@ -910,7 +920,7 @@ export function MaintenancePlanWorkflow({
               {step === 4 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm font-medium flex-1">
+                    <p className="text-sm md:text-base font-medium flex-1">
                       Which of these systems or appliances do you have? Select all that apply.
                     </p>
                     <Popover>
@@ -1007,7 +1017,7 @@ export function MaintenancePlanWorkflow({
               {step === 6 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm flex-1">
+                      <p className="text-sm md:text-base flex-1">
                       Are there any maintenance tasks unique to your home that you'd like to include?
                       Examples: "Clean koi pond filter", "Check flat roof drains", "Inspect retaining wall".
                     </p>
@@ -1076,7 +1086,7 @@ export function MaintenancePlanWorkflow({
               {step === 7 && (
                 <div className="space-y-6 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm font-medium text-foreground flex-1">
+                    <p className="text-sm md:text-base font-medium text-foreground flex-1">
                       Choose how much maintenance to include. More tasks give you better control of your home - and require more effort to track them.
                     </p>
                     <Popover>
@@ -1128,7 +1138,7 @@ export function MaintenancePlanWorkflow({
               {step === 8 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm font-medium flex-1">
+                    <p className="text-sm md:text-base font-medium flex-1">
                       Your maintenance plan currently includes{' '}
                       <span className="font-semibold">
                         {planEntries.length} task{planEntries.length === 1 ? '' : 's'}
@@ -1229,7 +1239,7 @@ export function MaintenancePlanWorkflow({
               {step === 9 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
-                    <p className="text-sm text-muted-foreground flex-1">
+                    <p className="text-sm md:text-base text-muted-foreground flex-1">
                       Here's your plan. Remove any task you don't want, then press Save My Plan.
                     </p>
                     <Popover>
