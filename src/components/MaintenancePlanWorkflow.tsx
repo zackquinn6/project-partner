@@ -409,11 +409,21 @@ export function MaintenancePlanWorkflow({
         ]);
 
         if (templatesRes.error) throw templatesRes.error;
-        const templates = templatesRes.data || [];
-        const existingTemplateIdSet = new Set(
-          (existingRes.data || []).map((r: { template_id: string }) => r.template_id)
+        const templates = (templatesRes.data || []) as MaintenanceTemplate[];
+        const existingTemplateIdSet = new Set<string>(
+          existingRes.error
+            ? []
+            : (existingRes.data || []).map((r: { template_id: string }) => r.template_id)
         );
         setExistingTemplateIds(existingTemplateIdSet);
+
+        if (templates.length === 0) {
+          toast({
+            title: 'No templates available',
+            description: 'Maintenance templates could not be loaded. Your plan will only include custom tasks you add.',
+            variant: 'destructive',
+          });
+        }
 
         const categoriesToInclude = new Set<string>();
         categoriesToInclude.add('safety');
@@ -490,10 +500,10 @@ export function MaintenancePlanWorkflow({
           );
           const gutterTemplate = templates.find((t: MaintenanceTemplate) => t.title === LANDSCAPE_TITLE_GUTTER);
           const leafTemplate = templates.find((t: MaintenanceTemplate) => t.title === LANDSCAPE_TITLE_LEAF);
-          if (gutterTemplate && !existingTemplateIds.has(gutterTemplate.id)) {
+          if (gutterTemplate && !existingTemplateIdSet.has(gutterTemplate.id)) {
             selected.push({ ...gutterTemplate, criticality: 2 });
           }
-          if (leafTemplate && !existingTemplateIds.has(leafTemplate.id)) {
+          if (leafTemplate && !existingTemplateIdSet.has(leafTemplate.id)) {
             selected.push(leafTemplate);
           }
         } else {
