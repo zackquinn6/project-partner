@@ -102,21 +102,22 @@ const Index = () => {
     if (location.state?.view) {
       console.log('🎯 Index: Setting view from navigation state:', location.state.view);
       setCurrentView(location.state.view);
-      
-      // Handle projectRunId on mobile - ensure we can find the project run
+
+      // Opening a specific project (e.g. from catalog) → go to kickoff, not dashboard
+      if (location.state.projectRunId) {
+        setForceListingMode(false);
+        setResetUserView(false);
+      }
+
+      // Handle projectRunId on mobile - open workflow (kickoff) immediately when coming from catalog
       if (location.state.projectRunId && isMobile) {
         console.log('📱 Index: Mobile navigation with projectRunId:', location.state.projectRunId);
-        // Wait for project runs to load and then set the project run
         const projectRun = projectRuns.find(run => run.id === location.state.projectRunId);
         if (projectRun) {
-          console.log('📱 Index: Found project run, setting as current:', projectRun.name);
           setCurrentProjectRun(projectRun);
-          setMobileView('workflow');
-        } else if (projectRuns.length > 0) {
-          console.log('📱 Index: Project run not found in loaded runs, staying in projects view');
-          setMobileView('projects');
         }
-        // If projectRuns is empty, wait for them to load
+        // Always open workflow (kickoff) when projectRunId is in state; UserView will fetch run by ID if needed
+        setMobileView('workflow');
       }
       
       if (location.state.resetToListing) {
