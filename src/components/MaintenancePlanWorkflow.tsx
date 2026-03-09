@@ -108,6 +108,7 @@ const APPLIANCES_SYSTEMS_OPTIONS = [
   'Dryer (gas/electric)',
   'Dishwasher',
   'Garbage disposal',
+  'Garage door & opener',
 ] as const;
 
 function zipToClimateRegion(zip: string): string {
@@ -499,7 +500,7 @@ export function MaintenancePlanWorkflow({
         // Sump pump templates should only be included when user selected a sump pump in the workflow.
         const HAS_SUMP_PUMP = appliancesSystems.some((a) => a === 'Sump pump');
         if (!HAS_SUMP_PUMP) {
-          const SUMP_TITLES = new Set<string>(['Inspect sump pump', 'Test sump pump backup']);
+          const SUMP_TITLES = new Set<string>(['Check sump pump', 'Test sump pump backup']);
           selected = selected.filter((t: MaintenanceTemplate) => !SUMP_TITLES.has(t.title));
         }
 
@@ -510,6 +511,7 @@ export function MaintenancePlanWorkflow({
         const hasWaterSoftener = appliancesSystems.some((a) => a === 'Water softener');
         const hasSepticSystem = appliancesSystems.some((a) => a === 'Septic system');
         const hasFireplaceOrChimney = appliancesSystems.some((a) => a === 'Fireplace/chimney');
+        const hasGarageDoor = appliancesSystems.some((a) => a === 'Garage door & opener');
 
         if (!hasDryer) {
           const DRYER_TITLES = new Set<string>(['Clean dryer vent', 'Inspect dryer exhaust duct']);
@@ -535,6 +537,10 @@ export function MaintenancePlanWorkflow({
         }
         if (!hasFireplaceOrChimney) {
           selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Chimney cleaning');
+        }
+        if (!hasGarageDoor) {
+          const GARAGE_TITLES = new Set<string>(['Test garage door auto reverse', 'Lubricate garage door openers']);
+          selected = selected.filter((t: MaintenanceTemplate) => !GARAGE_TITLES.has(t.title));
         }
 
         const entries: PlanEntry[] = [
