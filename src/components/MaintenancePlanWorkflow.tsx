@@ -220,6 +220,7 @@ export function MaintenancePlanWorkflow({
   const [planGenerated, setPlanGenerated] = useState(false);
   const [allTemplates, setAllTemplates] = useState<MaintenanceTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [existingTemplateIds, setExistingTemplateIds] = useState<Set<string>>(new Set());
 
   const totalSteps = 10;
   const isLastStep = step === totalSteps - 1;
@@ -393,9 +394,10 @@ export function MaintenancePlanWorkflow({
 
         if (templatesRes.error) throw templatesRes.error;
         const templates = templatesRes.data || [];
-        const existingTemplateIds = new Set(
+        const existingTemplateIdSet = new Set(
           (existingRes.data || []).map((r: { template_id: string }) => r.template_id)
         );
+        setExistingTemplateIds(existingTemplateIdSet);
 
         const categoriesToInclude = new Set<string>();
         categoriesToInclude.add('safety');
@@ -451,7 +453,7 @@ export function MaintenancePlanWorkflow({
         let selected = templates.filter(
           (t: MaintenanceTemplate) =>
             categoriesToInclude.has(t.category) &&
-            !existingTemplateIds.has(t.id) &&
+            !existingTemplateIdSet.has(t.id) &&
             ((t.criticality ?? 2) >= minCriticality)
         );
 
@@ -486,6 +488,13 @@ export function MaintenancePlanWorkflow({
             }
             return true;
           });
+        }
+
+        // Sump pump templates should only be included when user selected a sump pump in the workflow.
+        const HAS_SUMP_PUMP = appliancesSystems.some((a) => a === 'Sump pump');
+        if (!HAS_SUMP_PUMP) {
+          const SUMP_TITLES = new Set<string>(['Inspect sump pump', 'Test sump pump backup']);
+          selected = selected.filter((t: MaintenanceTemplate) => !SUMP_TITLES.has(t.title));
         }
 
         const entries: PlanEntry[] = [
@@ -1146,8 +1155,13 @@ export function MaintenancePlanWorkflow({
                     const alreadyInPlanIds = new Set(
                       planEntries.filter((e): e is PlanItem => e.type === 'template').map((e) => e.templateId)
                     );
+                    const existingIds = existingTemplateIds;
+                    const excludedIds = new Set<string>([
+                      ...Array.from(alreadyInPlanIds),
+                      ...Array.from(existingIds),
+                    ]);
                     const notYetInPlan = allTemplates
-                      .filter((t) => !alreadyInPlanIds.has(t.id))
+                      .filter((t) => !excludedIds.has(t.id))
                       .sort((a, b) => (b.criticality ?? 0) - (a.criticality ?? 0));
                     const grouped = notYetInPlan.reduce((acc, t) => {
                       if (!acc[t.category]) acc[t.category] = [];
