@@ -73,13 +73,21 @@ export function CodePermitsWindow({ open, onOpenChange }: CodePermitsWindowProps
       if (!user) return;
       
       try {
-        const { data: homes, error } = await supabase
+        const { data: homesData, error } = await supabase
           .from('homes')
-          .select('*')
+          .select('id, user_id, name, notes, is_primary, photos, created_at, updated_at, ZIP_code')
           .eq('user_id', user.id);
-        
         if (error) throw error;
-        setUserHomes(homes || []);
+        const homeIds = (homesData || []).map((h) => h.id);
+        const { data: detailsData } = homeIds.length
+          ? await supabase.from('home_details').select('home_id, city, state').in('home_id', homeIds)
+          : { data: [] };
+        const detailsByHomeId = new Map((detailsData || []).map((d) => [d.home_id, d]));
+        const merged = (homesData || []).map((h) => {
+          const d = detailsByHomeId.get(h.id);
+          return { ...h, city: d?.city, state: d?.state };
+        });
+        setUserHomes(merged || []);
       } catch (error) {
         console.error('Error fetching user homes:', error);
       }

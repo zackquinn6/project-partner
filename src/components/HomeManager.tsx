@@ -15,6 +15,12 @@ interface Home {
   id: string;
   user_id: string;
   name: string;
+  notes?: string;
+  is_primary: boolean;
+  photos?: string[];
+  created_at: string;
+  updated_at: string;
+  ZIP_code?: string | null;
   address?: string;
   city?: string;
   state?: string;
@@ -22,11 +28,6 @@ interface Home {
   build_year?: string;
   home_ownership?: string;
   purchase_date?: string;
-  notes?: string;
-  is_primary: boolean;
-  photos?: string[];
-  created_at: string;
-  updated_at: string;
 }
 interface HomeManagerProps {
   open: boolean;
@@ -73,30 +74,34 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
     if (!user) return;
     setLoading(true);
     try {
-      console.log('🏠 HomeManager - Fetching homes for user:', {
-        userId: user.id,
-        userEmail: user.email
+      const { data: homesData, error: homesError } = await supabase
+        .from('homes')
+        .select('id, user_id, name, notes, is_primary, photos, created_at, updated_at, ZIP_code')
+        .eq('user_id', user.id)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (homesError) throw homesError;
+      const homeIds = (homesData || []).map((h) => h.id);
+      const { data: detailsData } = homeIds.length
+        ? await supabase.from('home_details').select('home_id, address, city, state, home_type, build_year, home_ownership, purchase_date').in('home_id', homeIds)
+        : { data: [] };
+      const detailsByHomeId = new Map((detailsData || []).map((d) => [d.home_id, d]));
+      const merged: Home[] = (homesData || []).map((h) => {
+        const details = detailsByHomeId.get(h.id);
+        return {
+          ...h,
+          address: details?.address ?? undefined,
+          city: details?.city ?? undefined,
+          state: details?.state ?? undefined,
+          home_type: details?.home_type ?? undefined,
+          build_year: details?.build_year ?? undefined,
+          home_ownership: details?.home_ownership ?? undefined,
+          purchase_date: details?.purchase_date ?? undefined,
+        } as Home;
       });
-      
-      const {
-        data,
-        error
-      } = await supabase.from('homes').select('*').eq('user_id', user.id).order('is_primary', {
-        ascending: false
-      }).order('created_at', {
-        ascending: false
-      });
-      
-      if (error) throw error;
-      
-      console.log('✅ HomeManager - Fetched homes:', {
-        count: data?.length || 0,
-        homeNames: data?.map(h => h.name) || []
-      });
-      
-      setHomes(data || []);
+      setHomes(merged);
     } catch (error) {
-      console.error('❌ HomeManager - Error fetching homes:', error);
+      console.error('Error fetching homes:', error);
       toast.error('Failed to load homes');
     } finally {
       setLoading(false);
@@ -151,26 +156,31 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
     
     try {
       let homeId = editingHome?.id;
+      const homesPayload = { name: formData.name, notes: formData.notes, is_primary: formData.is_primary, updated_at: new Date().toISOString() };
+      const detailsPayload = {
+        home_id: homeId!,
+        city: formData.city || null,
+        state: formData.state || null,
+        home_type: formData.home_type || null,
+        build_year: formData.build_year || null,
+        home_ownership: formData.home_ownership || null,
+        purchase_date: formData.purchase_date || null,
+      };
       if (editingHome) {
-        // Update existing home
-        const {
-          error
-        } = await supabase.from('homes').update({
-          ...formData,
-          updated_at: new Date().toISOString()
-        }).eq('id', editingHome.id).eq('user_id', user.id);
+        const { error } = await supabase.from('homes').update(homesPayload).eq('id', editingHome.id).eq('user_id', user.id);
         if (error) throw error;
+        const { data: existing } = await supabase.from('home_details').select('home_id').eq('home_id', editingHome.id).maybeSingle();
+        if (existing) {
+          const { home_id: _hid, ...updateFields } = detailsPayload;
+          await supabase.from('home_details').update(updateFields).eq('home_id', editingHome.id);
+        } else {
+          await supabase.from('home_details').insert(detailsPayload);
+        }
       } else {
-        // Create new home
-        const {
-          data: newHome,
-          error
-        } = await supabase.from('homes').insert({
-          ...formData,
-          user_id: user.id
-        }).select().single();
+        const { data: newHome, error } = await supabase.from('homes').insert({ name: formData.name, notes: formData.notes, is_primary: formData.is_primary, user_id: user.id }).select().single();
         if (error) throw error;
         homeId = newHome.id;
+        await supabase.from('home_details').insert({ ...detailsPayload, home_id: homeId });
       }
 
       // Upload photos if any

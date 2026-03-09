@@ -417,7 +417,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       const {
         data,
         error
-      } = await supabase.from('homes').select('id, name, address, city, state').eq('user_id', user.id).order('is_primary', {
+      } = await supabase.from('homes').select('id, name, is_primary').eq('user_id', user.id).order('is_primary', {
         ascending: false
       });
       if (error) throw error;

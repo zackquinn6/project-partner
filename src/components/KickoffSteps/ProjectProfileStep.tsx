@@ -168,20 +168,25 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: homesData, error } = await supabase
         .from('homes')
-        .select('*')
+        .select('id, user_id, name, notes, is_primary, photos, created_at, updated_at, ZIP_code')
         .eq('user_id', user.id)
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-      
-      setHomes(data || []);
-      
-      // Auto-select primary home if no home is selected yet
+      const homeIds = (homesData || []).map((h) => h.id);
+      const { data: detailsData } = homeIds.length
+        ? await supabase.from('home_details').select('home_id, address, city, state, home_type, build_year').in('home_id', homeIds)
+        : { data: [] };
+      const detailsByHomeId = new Map((detailsData || []).map((d) => [d.home_id, d]));
+      const merged = (homesData || []).map((h) => {
+        const d = detailsByHomeId.get(h.id);
+        return { ...h, address: d?.address, city: d?.city, state: d?.state, home_type: d?.home_type, build_year: d?.build_year };
+      });
+      setHomes(merged);
       if (!selectedHomeId) {
-        const primaryHome = data?.find(home => home.is_primary);
+        const primaryHome = merged?.find(home => home.is_primary);
         if (primaryHome) {
           setSelectedHomeId(primaryHome.id);
         }
@@ -231,24 +236,17 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       if (!homeId && user) {
         const { data: newHome, error: homeCreateError } = await supabase
           .from('homes')
-          .insert({
-            user_id: user.id,
-            name: 'My Home',
-            is_primary: true,
-            home_ownership: 'own'
-          })
+          .insert({ user_id: user.id, name: 'My Home', is_primary: true })
           .select('id')
           .single();
-
         if (homeCreateError) {
           console.error('Error creating default home:', homeCreateError);
           toast.error('Failed to create default home');
           return;
         }
-
         homeId = newHome.id;
+        await supabase.from('home_details').insert({ home_id: homeId, home_ownership: 'own' });
         setSelectedHomeId(homeId);
-        // Refresh homes list
         await fetchHomes();
       }
 

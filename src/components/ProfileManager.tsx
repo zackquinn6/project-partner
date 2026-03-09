@@ -88,20 +88,26 @@ export default function ProfileManager({
         return;
       }
 
-      // Then fetch primary home data
-      const {
-        data: homeData,
-        error: homeError
-      } = await supabase.from('homes').select('name, city, state').eq('user_id', user?.id).eq('is_primary', true).maybeSingle();
+      // Fetch primary home (slim) then its home_details for city, state
+      const { data: primaryHome, error: homeError } = await supabase
+        .from('homes')
+        .select('id, name')
+        .eq('user_id', user?.id)
+        .eq('is_primary', true)
+        .maybeSingle();
       if (homeError && homeError.code !== 'PGRST116') {
         console.error('Error loading primary home:', homeError);
       }
+      let primaryWithLocation = primaryHome ?? undefined;
+      if (primaryHome?.id) {
+        const { data: details } = await supabase.from('home_details').select('city, state').eq('home_id', primaryHome.id).maybeSingle();
+        if (details) primaryWithLocation = { ...primaryHome, city: details.city ?? undefined, state: details.state ?? undefined };
+      }
 
-      // Combine profile and home data
       const completeProfile = {
         ...profileData,
         owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
-        primary_home: homeData || undefined
+        primary_home: primaryWithLocation
       };
       setExistingProfile(completeProfile);
     } catch (error) {

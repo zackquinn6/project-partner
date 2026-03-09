@@ -52,19 +52,26 @@ export const ProjectCreationFlow: React.FC<ProjectCreationFlowProps> = ({
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: homesData, error } = await supabase
         .from('homes')
-        .select('*')
+        .select('id, user_id, name, notes, is_primary, photos, created_at, updated_at, ZIP_code')
         .eq('user_id', user.id)
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-      
-      setHomes(data || []);
+      const homeIds = (homesData || []).map((h) => h.id);
+      const { data: detailsData } = homeIds.length
+        ? await supabase.from('home_details').select('home_id, address, city, state, home_type, build_year').in('home_id', homeIds)
+        : { data: [] };
+      const detailsByHomeId = new Map((detailsData || []).map((d) => [d.home_id, d]));
+      const merged = (homesData || []).map((h) => {
+        const d = detailsByHomeId.get(h.id);
+        return { ...h, address: d?.address, city: d?.city, state: d?.state, home_type: d?.home_type, build_year: d?.build_year };
+      });
+      setHomes(merged);
       
       // Auto-select primary home if exists
-      const primaryHome = data?.find(home => home.is_primary);
+      const primaryHome = merged?.find(home => home.is_primary);
       if (primaryHome) {
         setSelectedHomeId(primaryHome.id);
       }

@@ -284,47 +284,28 @@ export function MaintenancePlanWorkflow({
     setLoadingDetails(true);
     Promise.all([
       supabase.from('home_details').select('*').eq('home_id', homeId).maybeSingle(),
-      supabase.from('homes').select('address, home_type, build_year').eq('id', homeId).maybeSingle(),
-      user
-        ? supabase
-            .from('homes')
-            .select('address')
-            .eq('user_id', user.id)
-            .eq('is_primary', true)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
+      supabase.from('homes').select('ZIP_code').eq('id', homeId).maybeSingle(), // column created as "ZIP_code" in migration
     ])
-      .then(([detailsRes, homesRes, primaryHomeRes]) => {
+      .then(([detailsRes, homesRes]) => {
         const row = detailsRes.data as HomeDetailsRow | null;
-        const homeRow = homesRes.data as { address?: string | null; home_type?: string | null; build_year?: string | null } | null;
-        const primaryHome = primaryHomeRes.data as { address?: string | null } | null;
-        const zipFromAddress = (addr?: string | null): string => {
-          const source = addr ?? '';
-          const match = source.match(/\b(\d{5})(-\d{4})?\b/);
-          return match ? match[1] : '';
-        };
+        const homeRow = homesRes.data as { ZIP_code?: string | null } | null;
+        const zipVal = (homeRow?.ZIP_code ?? '').trim();
+        setZip(zipVal);
+        setZipFromProfile(!!zipVal);
         if (row) {
           const hc = row.heating_cooling_systems;
           setHeatingCooling(Array.isArray(hc) ? hc : []);
           const hw = row.hot_water_system ?? '';
           const hotWaterOpts = HOT_WATER_OPTIONS as readonly string[];
           setHotWater(hotWaterOpts.includes(hw) ? hw : '');
-          const zipFromDetails = (row.zip ?? '').trim();
-          const zipFromHome = zipFromAddress(homeRow?.address);
-          const zipFromPrimary = zipFromAddress(primaryHome?.address);
-          const zipVal = zipFromDetails || zipFromHome || zipFromPrimary;
-          setZip(zipVal);
-          setZipFromProfile(!!zipVal);
-          setClimateRegion(row.climate_region ?? '');
-          setHomeType((row.home_type ?? '').trim() || (homeRow?.home_type ?? '') || '');
+          if (zipVal) setClimateRegion(zipToClimateRegion(zipVal));
+          else setClimateRegion(row.climate_region ?? '');
+          setHomeType((row.home_type ?? '').trim());
           setHomeAge(row.home_age ?? '');
           if (row.home_year != null) setHomeYear(row.home_year);
           else if (row.home_age) {
             const median = homeAgeToMedianYear(row.home_age);
             if (median != null) setHomeYear(median);
-          } else if (homeRow?.build_year) {
-            const y = parseInt(String(homeRow.build_year), 10);
-            if (!Number.isNaN(y)) setHomeYear(y);
           }
           setFoundationType(row.foundation_type ?? '');
           const ext = row.exterior_type;
@@ -335,19 +316,8 @@ export function MaintenancePlanWorkflow({
           const ll = row.lawn_landscape_choice;
           setLawnLandscapeChoice(ll === 'yes' || ll === 'not_important' || ll === 'no_lawn' ? ll : '');
           setSprinklerSystem(!!row.sprinkler_system);
-        } else {
-          const zipFromHome = zipFromAddress(homeRow?.address);
-          const zipFromPrimary = zipFromAddress(primaryHome?.address);
-          const zipVal = zipFromHome || zipFromPrimary;
-          if (zipVal) {
-            setZip(zipVal);
-            setZipFromProfile(true);
-          }
-          if (homeRow?.home_type) setHomeType(homeRow.home_type);
-          if (homeRow?.build_year) {
-            const y = parseInt(String(homeRow.build_year), 10);
-            if (!Number.isNaN(y)) setHomeYear(y);
-          }
+        } else if (zipVal) {
+          setClimateRegion(zipToClimateRegion(zipVal));
         }
         setLoadingDetails(false);
       })
@@ -355,7 +325,7 @@ export function MaintenancePlanWorkflow({
         console.error('Error fetching home details / homes:', err);
         setLoadingDetails(false);
       });
-  }, [open, homeId, user]);
+  }, [open, homeId]);
 
   useEffect(() => {
     if (zip.trim() && !climateRegion) {
@@ -645,8 +615,7 @@ export function MaintenancePlanWorkflow({
         await supabase
           .from('homes')
           .update({
-            home_type: homeType || null,
-            build_year: resolvedHomeYear ? String(resolvedHomeYear) : null,
+            ZIP_code: zip.trim() || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', homeId);
@@ -779,24 +748,16 @@ export function MaintenancePlanWorkflow({
                 </div>
               )}
 
-              {/* Step 2 — ZIP / Climate */}
+              {/* Step 2 — ZIP / Climate (single path: selected home's ZIP from homes.ZIP_code) */}
               {step === 2 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
                   <div className="flex items-start gap-2">
                     <div className="flex-1">
-                      {zipFromProfile && zip.trim() ? (
-                        <>
-                          <p className="text-sm md:text-lg text-muted-foreground">
-                            Your home profile already has ZIP code <strong>{zip}</strong>.
-                            {climateRegion && ` Climate region: ${climateRegion}.`}
-                          </p>
-                          <p className="text-sm md:text-lg">You can change it below if needed.</p>
-                        </>
-                      ) : (
-                        <p className="text-sm md:text-lg">
-                          What's your ZIP code? We'll use it to determine your climate region.
-                        </p>
-                      )}
+                      <p className="text-sm md:text-lg">
+                        {zipFromProfile && zip.trim()
+                          ? `ZIP code for this home: ${zip}. We use it to determine your climate region. You can change it below.`
+                          : "Enter this home's ZIP code. We'll use it to determine your climate region."}
+                      </p>
                     </div>
                     <Popover>
                       <PopoverTrigger asChild>

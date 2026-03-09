@@ -457,21 +457,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         console.log('🏠 No homes found - creating default home for user');
         const { data: newHome, error: homeCreateError } = await supabase
           .from('homes')
-          .insert({
-            user_id: user.id,
-            name: 'My Home',
-            is_primary: true,
-            home_ownership: 'own' // Default value
-          })
+          .insert({ user_id: user.id, name: 'My Home', is_primary: true })
           .select('id')
           .single();
-
         if (homeCreateError) {
           console.error('Error creating default home:', homeCreateError);
           throw homeCreateError;
         }
-
         defaultHomeId = newHome.id;
+        await supabase.from('home_details').insert({ home_id: defaultHomeId, home_ownership: 'own' });
         console.log('✅ Default home created:', defaultHomeId);
       }
 

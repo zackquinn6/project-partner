@@ -141,7 +141,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
     try {
       const { data, error } = await supabase
         .from('homes')
-        .select('*')
+        .select('id, name, is_primary')
         .eq('user_id', user.id)
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: false });
