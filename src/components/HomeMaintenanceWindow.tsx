@@ -743,8 +743,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
               </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* Desktop: action buttons (also visible on wider mobile screens) */}
-            <div className="flex items-center gap-1 shrink-0 overflow-x-auto overflow-y-hidden py-0.5">
+            {/* Desktop: action buttons (right-aligned on the row) */}
+            <div className="flex items-center gap-1 shrink-0 overflow-x-auto overflow-y-hidden py-0.5 ml-auto">
               <Button
                 variant="outline"
                 size="sm"
@@ -764,7 +764,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2"
               >
                 <ImageIcon className="h-4 w-4 text-primary" />
-                <span className="hidden md:inline ml-1.5">View Photos</span>
+                <span className="hidden md:inline ml-1.5 text-xs md:text-sm">View Photos</span>
               </Button>
               {selectedHomeId && tasks.length > 0 && (
                 <MaintenancePdfPrinter
@@ -782,7 +782,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 title="Setup Alerts"
               >
                 <Bell className="h-4 w-4 text-amber-500" />
-                <span className="hidden md:inline ml-1.5">Setup Alerts</span>
+                <span className="hidden md:inline ml-1.5 text-xs md:text-sm">Setup Alerts</span>
               </Button>
             </div>
             {/* PDF trigger for mobile (hidden; triggered from hamburger menu) */}
