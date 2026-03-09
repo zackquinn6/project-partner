@@ -273,7 +273,7 @@ export function AddMaintenanceTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100]" />
-        <DialogContent className="w-full max-w-[95vw] md:max-w-[75vw] max-h-[90vh] overflow-hidden z-[101] flex flex-col pl-5 pr-4 py-4 md:p-6">
+        <DialogContent className="w-full max-w-[95vw] md:max-w-[75vw] max-h-[90vh] overflow-hidden z-[101] flex flex-col pl-6 pr-4 py-4 md:pl-10 md:pr-6 md:py-6">
         <DialogHeader className="shrink-0 flex flex-row items-center justify-between gap-2 pr-0">
           <DialogTitle className="flex items-center gap-2 min-w-0">
             <ClipboardList className="h-5 w-5 text-primary shrink-0" />
@@ -438,8 +438,8 @@ export function AddMaintenanceTaskDialog({
             </div>
           </TabsContent>
 
-          <TabsContent value="custom" className="mt-4 flex-1 min-h-0 overflow-y-auto data-[state=inactive]:hidden">
-            <div className="space-y-4 pb-8 pr-1">
+          <TabsContent value="custom" className="mt-4 flex-1 min-h-0 overflow-hidden flex flex-col data-[state=inactive]:hidden pr-1 min-w-0">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pb-8">
               <div className="grid gap-4">
                 <div>
                   <Label htmlFor="title">Name *</Label>

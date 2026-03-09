@@ -889,7 +889,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   key="all"
                                   variant={systemFilter === 'all' ? 'default' : 'outline'}
                                   size="sm"
-                                  className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 shrink-0 text-xs p-0 hidden md:flex"
+                                  className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:ml-8 shrink-0 text-xs p-0 hidden md:flex"
                                   onClick={() => setSystemFilter('all')}
                                   title="All"
                                 >
