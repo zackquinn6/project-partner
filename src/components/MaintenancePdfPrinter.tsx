@@ -114,7 +114,13 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
           <Download className="h-3 w-3 text-primary" />
         </Button>
       ) : (
-        <Button id={buttonId} variant="outline" onClick={generatePDF} className="flex items-center gap-2 text-xs h-8" title="Save to PDF">
+        <Button
+          id={buttonId}
+          variant="outline"
+          onClick={generatePDF}
+          className="flex items-center gap-2 text-xs md:text-sm h-8"
+          title="Save to PDF"
+        >
           <Download className="h-4 w-4 text-primary" />
           Export PDF
         </Button>
