@@ -1124,12 +1124,16 @@ export function MaintenancePlanWorkflow({
                 </div>
               )}
 
-              {/* Step 8 — Review template list and add any tasks */}
+              {/* Step 8 — Plan summary and add any tasks */}
               {step === 8 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
                     <p className="text-sm font-medium flex-1">
-                      Review the template list and add any tasks that fit your home. Only templates not already in your plan are shown.
+                      Your maintenance plan currently includes{' '}
+                      <span className="font-semibold">
+                        {planEntries.length} task{planEntries.length === 1 ? '' : 's'}
+                      </span>
+                      . Add any additional tasks below. Only templates not already in your plan are shown.
                     </p>
                     <Popover>
                       <PopoverTrigger asChild>
