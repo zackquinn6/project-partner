@@ -1143,7 +1143,7 @@ export function MaintenancePlanWorkflow({
                       <span className="font-semibold">
                         {planEntries.length} task{planEntries.length === 1 ? '' : 's'}
                       </span>
-                      . Add any additional tasks below. Only templates not already in your plan are shown.
+                      . Add any additional tasks below.
                     </p>
                     <Popover>
                       <PopoverTrigger asChild>
