@@ -250,15 +250,15 @@ export function MaintenancePlanWorkflow({
     }
   }, [open]);
 
-  // Generate plan when user reaches step 8 so we use the latest form state (selections from steps 0–7).
+  // Generate plan when user reaches step 7 so we use the latest form state (selections from steps 0–6).
   useEffect(() => {
-    if (!open || !homeId || !user || step !== 8 || planGenerated || loading) return;
+    if (!open || !homeId || !user || step !== 7 || planGenerated || loading) return;
     generatePlan();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when step becomes 8; generatePlan reads current state from closure
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when step becomes 7; generatePlan reads current state from closure
   }, [open, homeId, user, step, planGenerated, loading]);
 
   useEffect(() => {
-    if (!open || step !== 8 || !planGenerated) return;
+    if (!open || step !== 7 || !planGenerated) return;
     setLoadingTemplates(true);
     supabase
       .from('maintenance_templates')
@@ -1013,8 +1013,8 @@ export function MaintenancePlanWorkflow({
                 </div>
               )}
 
-              {/* Step 6 — Unique home tasks */}
-              {step === 6 && (
+              {/* Step 9 — Unique home tasks */}
+              {step === 8 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
                       <p className="text-sm md:text-base flex-1">
@@ -1083,7 +1083,7 @@ export function MaintenancePlanWorkflow({
               )}
 
               {/* Step 7 — Maintenance level */}
-              {step === 7 && (
+              {step === 6 && (
                 <div className="space-y-6 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-base font-medium text-foreground flex-1">
@@ -1135,7 +1135,7 @@ export function MaintenancePlanWorkflow({
               )}
 
               {/* Step 8 — Plan summary and add any tasks */}
-              {step === 8 && (
+              {step === 7 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-card">
                   <div className="flex items-start gap-2">
                     <p className="text-sm md:text-base font-medium flex-1">
